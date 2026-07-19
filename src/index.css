@@ -4,72 +4,165 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.625rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* AgentHive — shadcn vars mapeadas a la paleta cálida (design.md §1) */
+    --background: 40 47% 96%;        /* paper */
+    --foreground: 34 15% 9%;         /* ink */
+    --card: 40 47% 96%;
+    --card-foreground: 34 15% 9%;
+    --popover: 40 47% 96%;
+    --popover-foreground: 34 15% 9%;
+    --primary: 34 15% 9%;            /* ink */
+    --primary-foreground: 40 47% 96%;
+    --secondary: 41 38% 92%;         /* cream */
+    --secondary-foreground: 34 15% 9%;
+    --muted: 42 36% 87%;             /* sand */
+    --muted-foreground: 38 9% 50%;   /* ink-3 */
+    --accent: 39 73% 88%;            /* honey-soft */
+    --accent-foreground: 36 74% 41%; /* honey-deep */
+    --destructive: 18 59% 44%;       /* terra */
+    --destructive-foreground: 40 47% 96%;
+    --border: 43 33% 83%;            /* line */
+    --input: 43 33% 83%;
+    --ring: 36 76% 53%;              /* honey */
+    --radius: 0.75rem;
+    --sidebar-background: 40 47% 96%;
+    --sidebar-foreground: 36 11% 26%;
+    --sidebar-primary: 34 15% 9%;
+    --sidebar-primary-foreground: 40 47% 96%;
+    --sidebar-accent: 41 38% 92%;
+    --sidebar-accent-foreground: 34 15% 9%;
+    --sidebar-border: 43 33% 83%;
+    --sidebar-ring: 36 76% 53%;
   }
 
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-}
-
-@layer base {
   * {
     @apply border-border;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-paper text-ink font-sans antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  ::selection {
+    background: #e29a2e;
+    color: #1b1814;
+  }
+
+  :focus-visible {
+    outline: 2px solid #e29a2e;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f2ede2;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #e2dac6;
+    border-radius: 8px;
+    border: 2px solid #f2ede2;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #e29a2e;
+  }
+}
+
+@layer components {
+  /* Contenedor editorial (design.md §3) */
+  .container-hive {
+    @apply mx-auto w-full max-w-[1280px] px-6 md:px-10;
+  }
+
+  /* Escala tipográfica (design.md §2) */
+  .display-xl {
+    @apply font-display font-bold;
+    font-size: clamp(3.25rem, 8vw, 6.75rem);
+    line-height: 0.97;
+    letter-spacing: -0.035em;
+  }
+  .display-l {
+    @apply font-display font-bold;
+    font-size: clamp(2.4rem, 5vw, 3.9rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .display-m {
+    @apply font-display font-semibold;
+    font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+  }
+  .eyebrow {
+    @apply font-sans text-xs font-semibold uppercase;
+    letter-spacing: 0.16em;
+    line-height: 1.2;
+  }
+  .stat-number {
+    @apply font-display font-bold;
+    font-size: clamp(2rem, 4vw, 3.25rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .serif-accent {
+    @apply font-serif italic font-normal;
+  }
+
+  /* Marquee: pausa en hover (design.md §4) */
+  .marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+}
+
+@layer utilities {
+  /* Overlay global de grano (design.md §1) */
+  .grain-overlay {
+    background-image: url("/grain.png");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    opacity: 0.05;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+  .grain-overlay-dark {
+    background-image: url("/grain.png");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+  
+@media (pointer: fine) and (min-width: 1024px) {
+  .has-custom-cursor,
+  .has-custom-cursor * {
+    cursor: none !important;
+  }
+}
+
+  /* Retícula hexagonal */
+  .bg-honeycomb {
+    background-image: url("/honeycomb-grid.svg");
+    background-size: 96px 96px;
+  }
+  .text-balance {
+    text-wrap: balance;
   }
 }
