@@ -1,0 +1,151 @@
+import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Bookmark, Check, Share2, Shield } from 'lucide-react';
+import { toast } from 'sonner';
+import LiveDot from '@/components/LiveDot';
+import { useWallet } from '@/hooks/useWallet';
+import { cn } from '@/lib/utils';
+import type { Agent } from '@/data/agents';
+import { formatMon, formatRating } from '@/data/agents';
+import { MON_USD, currentQueue } from '@/components/market/detail-data';
+
+export interface HireCardProps {
+  agent: Agent;
+  onHire: () => void;
+}
+
+/**
+ * Tarjeta de contratación sticky (agente.md S1): precio, métricas, CTA grande,
+ * Guardar/Compartir y nota de escrow. Entra x 40→0 (.8s, delay .2).
+ */
+export default function HireCard({ agent, onHire }: HireCardProps) {
+  const [saved, setSaved] = useState(false);
+  const { connected, connecting, addressShort, connect } = useWallet();
+
+  const share = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+    } catch {
+      /* portapapeles no disponible */
+    }
+    toast('Enlace copiado', { icon: <Check size={14} className="text-olive" /> });
+  };
+
+  return (
+    <motion.aside
+      initial={{ opacity: 0, x: 40 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      className="rounded-2xl border border-line bg-paper p-6 shadow-card lg:sticky lg:top-24"
+    >
+      <p className="eyebrow text-ink-3">Precio por tarea</p>
+      <div className="mt-3 flex items-baseline gap-3">
+        <span className="font-display text-[2rem] font-bold leading-none tracking-[-0.02em] text-ink">
+          {formatMon(agent.pricePerTask)} MON
+        </span>
+        <span className="text-[0.875rem] text-ink-3">≈ ${(agent.pricePerTask * MON_USD).toFixed(2)}</span>
+      </div>
+
+      <p className="mt-4 font-mono text-[12px] leading-relaxed text-ink-2">
+        resp. media {agent.avgResponse} · éxito {formatRating(agent.successRate)}% · cola actual:{' '}
+        {currentQueue(agent)} tareas
+      </p>
+
+      <button
+        type="button"
+        onClick={onHire}
+        className="mt-5 w-full rounded-full bg-honey px-5 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors duration-200 hover:bg-honey-deep hover:text-paper"
+      >
+        Contratar — {formatMon(agent.pricePerTask)} MON
+      </button>
+
+      {/* estado de wallet */}
+      <div className="mt-3 flex justify-center">
+        {connected ? (
+          <span className="inline-flex items-center gap-2 font-mono text-[12px] text-ink-2">
+            <LiveDot variant="olive" ping={false} />
+            {addressShort} conectada
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={connect}
+            disabled={connecting}
+            className="font-mono text-[12px] text-ink-3 underline decoration-dotted underline-offset-4 transition-colors hover:text-honey-deep disabled:opacity-50"
+          >
+            {connecting ? 'Conectando wallet…' : 'Conecta tu wallet para contratar'}
+          </button>
+        )}
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setSaved((s) => !s)}
+          aria-pressed={saved}
+          className={cn(
+            'flex flex-1 items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-[0.8125rem] font-medium transition-colors duration-200',
+            saved ? 'border-honey bg-honey-soft text-honey-deep' : 'border-line text-ink-2 hover:border-honey',
+          )}
+        >
+          <Bookmark size={14} className={cn(saved && 'fill-honey text-honey')} aria-hidden />
+          {saved ? 'Guardado' : 'Guardar'}
+        </button>
+        <button
+          type="button"
+          onClick={share}
+          className="flex flex-1 items-center justify-center gap-2 rounded-full border border-line px-4 py-2.5 text-[0.8125rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey"
+        >
+          <Share2 size={14} aria-hidden />
+          Compartir
+        </button>
+      </div>
+
+      <p className="mt-5 flex items-start gap-2 border-t border-line pt-4 text-[0.8125rem] leading-[1.5] text-ink-2">
+        <Shield size={15} className="mt-0.5 shrink-0 text-honey-deep" aria-hidden />
+        Pago protegido por TaskEscrow. Se libera solo al verificar la entrega.
+      </p>
+    </motion.aside>
+  );
+}
+
+/**
+ * Barra fija inferior en móvil (agente.md Notas): h-16, blur, precio + CTA.
+ * Visible tras 300px de scroll, slide-up .3s.
+ */
+export function MobileHireBar({ agent, onHire }: HireCardProps) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 300);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ y: 64, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 64, opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-between gap-4 border-t border-line bg-paper/90 px-4 backdrop-blur-md lg:hidden"
+        >
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-mono text-[0.9375rem] font-semibold text-ink">{formatMon(agent.pricePerTask)}</span>
+            <span className="text-[0.75rem] text-ink-3">MON/tarea</span>
+          </div>
+          <button
+            type="button"
+            onClick={onHire}
+            className="rounded-full bg-honey px-6 py-2.5 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
+          >
+            Contratar
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
