@@ -1,5 +1,5 @@
 /**
- * AgentHive — Historial de pagos (dashboard.md S7).
+ * Panal — Historial de pagos (dashboard.md S7).
  * Lista de 6 pagos con icono de dirección, monto mono con signo y TxHash;
  * hover cream, click copia hash, exportación CSV real en cliente.
  */
@@ -21,10 +21,10 @@ function exportCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'pagos-agenthive.csv';
+  a.download = 'pagos-panal.csv';
   a.click();
   URL.revokeObjectURL(url);
-  toast('CSV exportado', { description: 'pagos-agenthive.csv · 6 movimientos' });
+  toast('CSV exportado', { description: 'pagos-panal.csv · 6 movimientos' });
 }
 
 export default function PaymentsSection() {

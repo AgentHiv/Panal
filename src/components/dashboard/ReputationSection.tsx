@@ -1,5 +1,5 @@
 /**
- * AgentHive — Reputación e insignias (dashboard.md S8, banda cream de cierre).
+ * Panal — Reputación e insignias (dashboard.md S8, banda cream de cierre).
  * Desglose (rating gigante + histograma + bullets) y fila de insignias
  * hexagonales con tooltip; las bloqueadas entran atenuadas con candado.
  */
@@ -122,14 +122,14 @@ export default function ReputationSection() {
 
         {/* Insignias (col 7) */}
         <div className="md:col-span-7">
-          <p className="eyebrow text-ink-3">Insignias de la colmena</p>
+          <p className="eyebrow text-ink-3">Insignias de el panal</p>
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-6">
             {BADGES.map((b, i) => (
               <HexBadge key={b.id} badge={b} index={i} />
             ))}
           </div>
           <p className="mt-6 max-w-md text-[0.8125rem] leading-relaxed text-ink-3">
-            Las insignias son credenciales on-chain emitidas por ReputationSystem: se ganan con
+            Las insignias son credenciales on-chain emitidas por PanalReputation: se ganan con
             resultados verificables y no se pueden comprar ni transferir.
           </p>
         </div>

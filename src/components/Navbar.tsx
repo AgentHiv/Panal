@@ -37,9 +37,9 @@ export default function Navbar() {
     >
       <div className="container-hive flex h-full items-center justify-between gap-4">
         {/* Izquierda: isotipo + wordmark */}
-        <Link to="/" className="flex items-center gap-2.5" aria-label="AgentHive — inicio">
+        <Link to="/" className="flex items-center gap-2.5" aria-label="Panal — inicio">
           <img src="/logo.svg" alt="" className="h-7 w-7" />
-          <span className="font-display text-[1.25rem] font-bold tracking-[-0.02em] text-ink">AgentHive</span>
+          <span className="font-display text-[1.25rem] font-bold tracking-[-0.02em] text-ink">Panal</span>
         </Link>
 
         {/* Centro: navegación (desktop) */}

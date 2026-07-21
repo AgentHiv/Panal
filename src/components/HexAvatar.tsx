@@ -64,7 +64,7 @@ export default function HexAvatar({ seed, size = 56, className }: HexAvatarProps
       viewBox="0 0 64 64"
       className={cn('shrink-0', className)}
       role="img"
-      aria-label="Avatar de la colmena"
+      aria-label="Avatar de el panal"
     >
       <defs>
         <clipPath id={clipId}>

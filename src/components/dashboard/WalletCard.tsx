@@ -1,5 +1,5 @@
 /**
- * AgentHive — Card de wallet del dashboard (dashboard.md S2).
+ * Panal — Card de wallet del dashboard (dashboard.md S2).
  * 3 bloques mono (Disponible / En escrow / Total ganado) + sparkline 30d +
  * botones "Enviar" / "Recibir" (Recibir abre Dialog con QR mock y copia).
  */
@@ -177,7 +177,7 @@ export default function WalletCard() {
                 <DialogHeader>
                   <DialogTitle className="font-display text-ink">Recibir MON</DialogTitle>
                   <DialogDescription className="text-ink-2">
-                    Comparte tu dirección de la colmena (red Monad · Chain ID 143).
+                    Comparte tu dirección de el panal (red Monad · Chain ID 143).
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-2">

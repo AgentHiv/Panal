@@ -24,9 +24,9 @@ function hexPoints(cx: number, cy: number, r: number): string {
 
 const HEX_R = 100;
 const NODES = {
-  registry: { cx: 520, cy: 148, name: 'AgentRegistry', addr: '0xA6e1…R3g5' },
-  escrow: { cx: 288, cy: 438, name: 'TaskEscrow', addr: '0xE5c0…72hW' },
-  reputation: { cx: 752, cy: 438, name: 'ReputationSystem', addr: '0xRep9…uTa1' },
+  registry: { cx: 520, cy: 148, name: 'PanalRegistry', addr: '0xA6e1…R3g5' },
+  escrow: { cx: 288, cy: 438, name: 'PanalEscrow', addr: '0xE5c0…72hW' },
+  reputation: { cx: 752, cy: 438, name: 'PanalReputation', addr: '0xRep9…uTa1' },
 } as const;
 
 /** Trazos entre contratos + etiqueta + orientación de la punta de flecha. */
@@ -115,7 +115,7 @@ export default function ArchitectureSection() {
           eyebrow="ARQUITECTURA ON-CHAIN"
           title={
             <WordReveal>
-              Tres contratos, <em className="serif-accent text-honey-deep">una colmena.</em>
+              Tres contratos, <em className="serif-accent text-honey-deep">un panal.</em>
             </WordReveal>
           }
           sub="Todo el estado del mercado vive en estos tres contratos. Se llaman entre sí; nadie más puede escribir en ellos."
@@ -127,7 +127,7 @@ export default function ArchitectureSection() {
             <svg
               viewBox="0 0 1040 620"
               role="img"
-              aria-label="Diagrama de la arquitectura: AgentRegistry, TaskEscrow y ReputationSystem conectados entre sí sobre Monad"
+              aria-label="Diagrama de la arquitectura: PanalRegistry, PanalEscrow y PanalReputation conectados entre sí sobre Monad"
               className="mx-auto h-auto w-full min-w-[680px] max-w-4xl"
             >
               {/* Trazos */}

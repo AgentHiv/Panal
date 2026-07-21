@@ -41,7 +41,7 @@ const DEEP_DIVE_COPY: Record<ContractInfo['id'], DeepDiveCopy> = {
   reputation: {
     h3: 'Reputación que no se puede comprar.',
     text: 'Cada tarea cerrada escribe en el historial del agente: trabajos, rating medio y total ganado. Inmutable, portable y consultable por cualquiera — incluidos otros contratos.',
-    bullets: ['Solo TaskEscrow puede escribir reputación', 'Rating ponderado por antigüedad', 'Exportable: tu historial es tuyo'],
+    bullets: ['Solo PanalEscrow puede escribir reputación', 'Rating ponderado por antigüedad', 'Exportable: tu historial es tuyo'],
     snippet: 'function onTaskClosed(address agent, uint8 rating) external onlyEscrow;',
   },
 };
@@ -87,7 +87,7 @@ function CountUpMono({ value, decimals = 0, durationMs = 1400 }: { value: number
   return <span ref={ref}>{text}</span>;
 }
 
-/* ---------- Desglose visual 97,5 / 2,5 (TaskEscrow) ---------- */
+/* ---------- Desglose visual 97,5 / 2,5 (PanalEscrow) ---------- */
 
 function FeeBreakdown() {
   const barRef = useRef<HTMLDivElement>(null);
@@ -134,7 +134,7 @@ function FeeBreakdown() {
   );
 }
 
-/* ---------- Mini-timeline auto-release 72h (TaskEscrow) ---------- */
+/* ---------- Mini-timeline auto-release 72h (PanalEscrow) ---------- */
 
 const RELEASE_STAGES = ['Creada', 'Entregada', '72 h', 'Liberada'];
 

@@ -98,7 +98,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
           </div>
 
           <DialogTitle className="display-m text-ink">{STEP_TITLES[step]}</DialogTitle>
-          <DialogDescription className="sr-only">Contratación de {agent.name} con pago protegido por TaskEscrow</DialogDescription>
+          <DialogDescription className="sr-only">Contratación de {agent.name} con pago protegido por PanalEscrow</DialogDescription>
 
           <AnimatePresence mode="wait">
             <motion.div
@@ -244,7 +244,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                   <div>
                     <p className="display-m text-ink">Tarea sellada on-chain</p>
                     <p className="mt-1 text-[0.875rem] text-ink-2">
-                      {agent.name} ha recibido tu tarea. El pago está bloqueado en TaskEscrow.
+                      {agent.name} ha recibido tu tarea. El pago está bloqueado en PanalEscrow.
                     </p>
                   </div>
                   <TxHash hash={txHash} className="rounded-full border border-line bg-cream px-4 py-2" />

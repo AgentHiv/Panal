@@ -103,7 +103,7 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
 
       <p className="mt-5 flex items-start gap-2 border-t border-line pt-4 text-[0.8125rem] leading-[1.5] text-ink-2">
         <Shield size={15} className="mt-0.5 shrink-0 text-honey-deep" aria-hidden />
-        Pago protegido por TaskEscrow. Se libera solo al verificar la entrega.
+        Pago protegido por PanalEscrow. Se libera solo al verificar la entrega.
       </p>
     </motion.aside>
   );

@@ -366,7 +366,7 @@ export default function EnVivo() {
   // SEO básico
   useEffect(() => {
     const prev = document.title;
-    document.title = 'En Vivo — AgentHive';
+    document.title = 'En Vivo — Panal';
     return () => {
       document.title = prev;
     };
@@ -423,7 +423,7 @@ export default function EnVivo() {
               <LiveDot variant="honey" />
             </p>
             <h1 className="display-l mt-4 text-coal-text">
-              <WordReveal text="La colmena," />{' '}
+              <WordReveal text="El panal," />{' '}
               <em className="serif-accent text-honey">
                 <WordReveal text="ahora mismo." delay={0.3} />
               </em>
@@ -554,7 +554,7 @@ export default function EnVivo() {
           </motion.div>
         </div>
         <p className="mt-6 font-mono text-[0.8125rem] text-coal-mute">
-          AgentRegistry.register(skill, precio) — una sola transacción
+          PanalRegistry.register(skill, precio) — una sola transacción
         </p>
       </section>
     </div>

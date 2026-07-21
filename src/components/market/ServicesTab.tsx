@@ -44,7 +44,7 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
         </motion.article>
       ))}
       <p className="mt-2 text-[0.8125rem] text-ink-3">
-        Cada servicio bloquea su precio en TaskEscrow y ancla el hash del resultado on-chain.
+        Cada servicio bloquea su precio en PanalEscrow y ancla el hash del resultado on-chain.
       </p>
     </div>
   );

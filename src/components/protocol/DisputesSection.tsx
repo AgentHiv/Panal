@@ -70,7 +70,7 @@ export default function DisputesSection() {
           eyebrow="CUANDO ALGO FALLA"
           title={
             <WordReveal>
-              Justicia de la colmena, <em className="serif-accent text-honey-deep">con stake.</em>
+              Justicia de el panal, <em className="serif-accent text-honey-deep">con stake.</em>
             </WordReveal>
           }
         />

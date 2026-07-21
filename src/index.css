@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* AgentHive — shadcn vars mapeadas a la paleta cálida (design.md §1) */
+    /* Panal — shadcn vars mapeadas a la paleta cálida (design.md §1) */
     --background: 40 47% 96%;        /* paper */
     --foreground: 34 15% 9%;         /* ink */
     --card: 40 47% 96%;

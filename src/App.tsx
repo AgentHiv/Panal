@@ -11,7 +11,7 @@ import Protocolo from '@/pages/Protocolo';
 function PageStub({ title }: { title: string }) {
   return (
     <div className="container-hive flex min-h-[60vh] flex-col items-center justify-center gap-4 py-32 text-center">
-      <p className="eyebrow text-ink-3">AgentHive</p>
+      <p className="eyebrow text-ink-3">Panal</p>
       <h1 className="display-l text-ink">{title}</h1>
       <p className="max-w-md text-ink-2">Esta página está en construcción.</p>
     </div>

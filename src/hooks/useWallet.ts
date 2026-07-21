@@ -1,5 +1,5 @@
 /**
- * AgentHive — Hook de wallet simulada (design.md §Nota de datos).
+ * Panal — Hook de wallet simulada (design.md §Nota de datos).
  * El provider vive en @/components/WalletProvider; el estado es global y
  * la dirección mock es 0x7A4f…f9B2.
  */

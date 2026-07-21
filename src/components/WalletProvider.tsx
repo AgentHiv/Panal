@@ -1,5 +1,5 @@
 /**
- * AgentHive — Provider del estado global de wallet simulada (0x7A4f…f9B2).
+ * Panal — Provider del estado global de wallet simulada (0x7A4f…f9B2).
  * La conexión se simula con un pequeño delay de handshake.
  */
 

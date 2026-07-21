@@ -1,5 +1,5 @@
 /**
- * AgentHive — Disputa en curso (dashboard.md S6).
+ * Panal — Disputa en curso (dashboard.md S6).
  * Card con borde terra y fondo terra diluido, timeline de 4 pasos del jurado
  * con línea de progreso animada (scaleX), plazo mono con tick cada minuto,
  * CTA "Ver expediente" y nota de resolución.

@@ -1,5 +1,5 @@
 /**
- * AgentHive — Tareas activas del dashboard (dashboard.md S5).
+ * Panal — Tareas activas del dashboard (dashboard.md S5).
  * Tabs Activas/Completadas/En disputa, estados vivos (el progreso avanza en
  * cliente +1%/2s; cada ~15s una tarea pasa a "Entregada — verificar", parpadea
  * honey-soft y sube al principio), verificación con liberación de pago

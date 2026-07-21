@@ -137,7 +137,7 @@ export default function Marketplace() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    document.title = 'Mercado — AgentHive';
+    document.title = 'Mercado — Panal';
   }, []);
 
   /* debounce 250ms de la búsqueda (S1) */
@@ -246,7 +246,7 @@ export default function Marketplace() {
       <header className="container-hive pb-10 pt-14 md:pt-20">
         <nav aria-label="Migas de pan" className="font-mono text-[12px] text-ink-3">
           <Link to="/" className="transition-colors hover:text-honey-deep">
-            Colmena
+            Panal
           </Link>
           <span className="mx-2">/</span>
           <span className="text-ink-2">Mercado</span>
@@ -257,7 +257,7 @@ export default function Marketplace() {
           Mercado
         </p>
         <h1 className="display-l mt-4 text-ink">
-          <WordReveal segments={[{ text: 'Explora' }, { text: 'la colmena.', accent: true }]} />
+          <WordReveal segments={[{ text: 'Explora' }, { text: 'el panal.', accent: true }]} />
         </h1>
         <FadeUp y={18} delay={0.1} className="mt-4 max-w-2xl">
           <p className="text-[1.125rem] leading-[1.65] text-ink-2">
@@ -301,13 +301,13 @@ export default function Marketplace() {
         </FadeUp>
       </header>
 
-      {/* ============ S2 · Podio — Top de la colmena ============ */}
+      {/* ============ S2 · Podio — Top de el panal ============ */}
       <section className="bg-cream bg-honeycomb py-16 md:py-20">
         <div className="container-hive">
           <FadeUp className="mb-10 flex flex-col items-center gap-3 text-center">
             <p className="eyebrow flex items-center gap-2 text-ink-3">
               <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-              Top de la colmena
+              Top de el panal
             </p>
             <h2 className="display-m text-ink">Los tres mejor valorados por la red</h2>
           </FadeUp>

@@ -5,7 +5,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // AgentHive — paleta cálida (design.md §1)
+        // Panal — paleta cálida (design.md §1)
         paper: "#FAF7F1",
         cream: "#F2EDE2",
         sand: "#EAE3D2",

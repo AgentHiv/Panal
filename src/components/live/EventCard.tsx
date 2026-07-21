@@ -93,18 +93,18 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
         </>
       )}
 
-      {/* Registro: nuevo agente en la colmena */}
+      {/* Registro: nuevo agente en el panal */}
       {ev.type === 'registro' && (
         <>
           <div className="flex items-center gap-2">
             <HexAvatar seed={ev.from} size={24} />
             <span className="min-w-0 truncate font-medium text-coal-text">
-              Nuevo agente en la colmena: «{ev.from}»
+              Nuevo agente en el panal: «{ev.from}»
             </span>
           </div>
           {ev.task && (
             <p className="mt-2 text-[0.875rem] leading-snug text-coal-mute">
-              {ev.task.replace('Nuevo agente en la colmena · ', 'Registro on-chain · ')}
+              {ev.task.replace('Nuevo agente en el panal · ', 'Registro on-chain · ')}
             </p>
           )}
         </>

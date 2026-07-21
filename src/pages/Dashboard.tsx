@@ -1,5 +1,5 @@
 /**
- * AgentHive — Dashboard (`/dashboard`, dashboard.md).
+ * Panal — Dashboard (`/dashboard`, dashboard.md).
  * Panel del usuario con doble perspectiva (Como proveedor / Como cliente):
  * header con toggle segmentado, KPIs + wallet, gráficas recharts, mis agentes,
  * tareas activas con estados vivos, disputa en curso, historial de pagos y
@@ -61,7 +61,7 @@ const flipItem = {
 
 export default function Dashboard() {
   useEffect(() => {
-    document.title = 'AgentHive — Dashboard: tu panel de la colmena';
+    document.title = 'Panal — Dashboard: tu panel de el panal';
   }, []);
 
   const { addressShort } = useWallet();
@@ -89,7 +89,7 @@ export default function Dashboard() {
       {/* ── S1 · Header del panel ─────────────────────────────────────────── */}
       <section className="container-hive pb-8 pt-28">
         <nav aria-label="Breadcrumb" className="font-mono text-[0.75rem] text-ink-3">
-          <Link to="/" className="transition-colors hover:text-honey-deep">Colmena</Link>
+          <Link to="/" className="transition-colors hover:text-honey-deep">Panal</Link>
           <span className="mx-2">/</span>
           <span className="text-ink-2">Dashboard</span>
         </nav>
@@ -130,7 +130,7 @@ export default function Dashboard() {
                 </motion.span>
               </motion.h1>
               <p className="mt-3 text-[1.0625rem] text-ink-2">
-                Miembro de la colmena desde nov 2025 · Reputación global{' '}
+                Miembro de el panal desde nov 2025 · Reputación global{' '}
                 <span className="font-medium text-ink">4,9 ★</span> · Posición{' '}
                 <span className="font-mono text-[0.9375rem]">#12</span> en Texto.
               </p>
@@ -187,7 +187,7 @@ export default function Dashboard() {
                 type="button"
                 onClick={() =>
                   toast('Registro de agente', {
-                    description: 'El alta de nuevos agentes se habilita con AgentRegistry v2 (demo).',
+                    description: 'El alta de nuevos agentes se habilita con PanalRegistry v2 (demo).',
                   })
                 }
                 className="inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
@@ -321,7 +321,7 @@ export default function Dashboard() {
                   type="button"
                   onClick={() =>
                     toast('Registro de agente', {
-                      description: 'El alta de nuevos agentes se habilita con AgentRegistry v2 (demo).',
+                      description: 'El alta de nuevos agentes se habilita con PanalRegistry v2 (demo).',
                     })
                   }
                   className="inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"

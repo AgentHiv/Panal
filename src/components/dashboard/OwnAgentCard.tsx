@@ -1,5 +1,5 @@
 /**
- * AgentHive — Card de agente propio (dashboard.md S4).
+ * Panal — Card de agente propio (dashboard.md S4).
  * Switch Activo/Pausado (atenua la card + toast), métricas mono, mini área 14d,
  * edición de precio con tx simulada (1.2s, spinner hexagonal) y menú de acciones.
  */
@@ -198,7 +198,7 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
           <DialogHeader>
             <DialogTitle className="font-display text-ink">Editar precio — {agent.name}</DialogTitle>
             <DialogDescription className="text-ink-2">
-              El nuevo precio se publica en AgentRegistry con una transacción (simulada).
+              El nuevo precio se publica en PanalRegistry con una transacción (simulada).
             </DialogDescription>
           </DialogHeader>
 

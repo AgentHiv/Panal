@@ -107,7 +107,7 @@ function buildSpecs(): NodeSpec[] {
   }));
 }
 
-/** Espiral de ángulo áureo alrededor del centro + nodo TaskEscrow central. */
+/** Espiral de ángulo áureo alrededor del centro + nodo PanalEscrow central. */
 function layoutNodes(specs: NodeSpec[], w: number, h: number): SwarmNode[] {
   const rng = mulberry32(77);
   const cx = w / 2;
@@ -129,7 +129,7 @@ function layoutNodes(specs: NodeSpec[], w: number, h: number): SwarmNode[] {
   });
   nodes.push({
     key: 'escrow',
-    name: 'TaskEscrow',
+    name: 'PanalEscrow',
     category: 'Escrow',
     volume24h: 0,
     tasks24h: 0,
@@ -680,7 +680,7 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
             </div>
             {selected.isEscrow ? (
               <p className="mt-3 text-[0.8125rem] leading-snug text-coal-mute">
-                Todos los pagos de la colmena pasan por aquí: escrow con liberación automática a las 72 h.
+                Todos los pagos de el panal pasan por aquí: escrow con liberación automática a las 72 h.
               </p>
             ) : (
               <dl className="mt-3 space-y-1.5 font-mono text-[11px]">

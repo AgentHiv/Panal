@@ -46,15 +46,15 @@ export default function AgentDetail() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    document.title = agent ? `${agent.name} — AgentHive` : 'Agente no encontrado — AgentHive';
+    document.title = agent ? `${agent.name} — Panal` : 'Agente no encontrado — Panal';
   }, [agent]);
 
   if (!agent) {
     return (
       <div className="container-hive flex min-h-[60vh] items-center justify-center py-24">
         <EmptyState
-          title="Este agente no está en la colmena"
-          description="Puede que se haya dado de baja del AgentRegistry o que el enlace esté mal escrito."
+          title="Este agente no está en el panal"
+          description="Puede que se haya dado de baja del PanalRegistry o que el enlace esté mal escrito."
           actionLabel="Volver al mercado"
           onAction={() => navigate('/mercado')}
         />
@@ -233,11 +233,11 @@ export default function AgentDetail() {
               />
             </div>
           ))}
-          {/* "En la colmena desde" es texto, no count-up */}
+          {/* "En el panal desde" es texto, no count-up */}
           <div className="relative pb-3 lg:pl-6">
             <div className="flex flex-col gap-2">
               <span className="stat-number text-ink">{agent.memberSince}</span>
-              <span className="eyebrow text-ink-3">En la colmena desde</span>
+              <span className="eyebrow text-ink-3">En el panal desde</span>
             </div>
             <motion.span
               className="absolute bottom-0 left-0 h-[2px] w-full bg-honey lg:left-6"
@@ -346,7 +346,7 @@ export default function AgentDetail() {
           </FadeUp>
           <p className="flex items-center gap-2 font-mono text-[12px] text-coal-mute">
             <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-            Pago protegido por TaskEscrow · Monad · Chain ID 143
+            Pago protegido por PanalEscrow · Monad · Chain ID 143
           </p>
         </div>
       </section>

@@ -1,5 +1,5 @@
 /**
- * AgentHive — Generadores deterministas de contenido del perfil de agente (agente.md).
+ * Panal — Generadores deterministas de contenido del perfil de agente (agente.md).
  * CodeAuditor lleva los textos canónicos del diseño; el resto de agentes del mock
  * recibe contenido plausible derivado de sus propios datos (misma plantilla).
  */
@@ -84,7 +84,7 @@ export function slaGuarantees(agent: Agent): string[] {
   out.push('Reembolso automático si la entrega no supera la verificación on-chain');
   out.push(
     agent.acceptsSubcontracting
-      ? 'Acepta subcontratar a otros agentes de la colmena para segundas opiniones'
+      ? 'Acepta subcontratar a otros agentes de el panal para segundas opiniones'
       : 'Ejecuta cada tarea de extremo a extremo, sin subcontratas',
   );
   return out;
@@ -93,7 +93,7 @@ export function slaGuarantees(agent: Agent): string[] {
 /** Card "Composición" (honey-soft). */
 export function compositionNote(agent: Agent): string {
   if (agent.id === 'codeauditor') {
-    return 'Este agente reinvierte sus ganancias: subcontrata a PriceOracle Bot para datos de mercado y a SummarizerAI para resúmenes ejecutivos. La colmena trabaja para la colmena.';
+    return 'Este agente reinvierte sus ganancias: subcontrata a PriceOracle Bot para datos de mercado y a SummarizerAI para resúmenes ejecutivos. El panal trabaja para el panal.';
   }
   if (!agent.acceptsSubcontracting) {
     return 'Este agente trabaja en solitario: cada tarea se ejecuta de extremo a extremo, sin subcontratas, y la evidencia queda anclada on-chain.';
@@ -102,7 +102,7 @@ export function compositionNote(agent: Agent): string {
   const h = hashString(agent.id);
   const a1 = others[h % others.length];
   const a2 = others[(h + 3) % others.length];
-  return `Este agente reinvierte sus ganancias: subcontrata a ${a1.name} y a ${a2.name} cuando la tarea lo requiere. La colmena trabaja para la colmena.`;
+  return `Este agente reinvierte sus ganancias: subcontrata a ${a1.name} y a ${a2.name} cuando la tarea lo requiere. El panal trabaja para el panal.`;
 }
 
 /** Insignias hexagonales del sidebar en Resumen. */
@@ -112,7 +112,7 @@ export function badges(agent: Agent): string[] {
   const milestone = [100000, 50000, 10000, 5000, 1000, 100].find((m) => agent.tasksCompleted >= m);
   if (milestone) out.push(`${formatInt(milestone)} tareas`);
   out.push(agent.successRate >= 99 ? 'Cero disputas 90d' : `Éxito ${formatRating(agent.successRate)}%`);
-  out.push(agent.verified ? 'Verificado por la comunidad' : `En la colmena desde ${agent.memberSince}`);
+  out.push(agent.verified ? 'Verificado por la comunidad' : `En el panal desde ${agent.memberSince}`);
   return out.slice(0, 4);
 }
 
@@ -156,7 +156,7 @@ export interface Review {
 
 const REVIEW_TEMPLATES = [
   'Cumplió el SLA al segundo. La entrega firmada on-chain nos ahorró la verificación manual.',
-  'La relación precio/resultado es imbatible en la colmena. Repetiremos cada sprint.',
+  'La relación precio/resultado es imbatible en el panal. Repetiremos cada sprint.',
   'Lo integramos en nuestro pipeline; cada entrega llega con su hash anclado. Cero fricción.',
   'Tuvimos una disputa menor y el escrow la resolvió en horas, sin correos ni facturas.',
   'Resultados consistentes incluso con tareas ambiguas. El informe final es impecable.',

@@ -21,10 +21,10 @@ gsap.registerPlugin(ScrollTrigger, SplitText);
 const REDUCED = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const DEFAULT_TITLE = 'AgentHive — La colmena donde las máquinas se contratan';
+const DEFAULT_TITLE = 'Panal — El panal donde las máquinas se contratan';
 
 /* ============================================================
- * S1 · Hero (claro): "Cómo funciona la colmena."
+ * S1 · Hero (claro): "Cómo funciona el panal."
  * ============================================================ */
 function ProtocolHero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -71,7 +71,7 @@ function ProtocolHero() {
 
         <h1 className="display-xl mt-6 text-ink">
           <span className="proto-h1-line block">Cómo funciona</span>
-          <span className="proto-h1-line serif-accent block text-honey-deep">la colmena.</span>
+          <span className="proto-h1-line serif-accent block text-honey-deep">el panal.</span>
         </h1>
 
         <p className="proto-sub mt-6 max-w-2xl text-[1.125rem] leading-[1.65] text-ink-2">
@@ -108,7 +108,7 @@ function FinalCta() {
       <div className="container-hive relative flex flex-col items-center text-center">
         <h2 className="display-l max-w-3xl text-balance text-coal-text">
           <WordReveal>
-            El código está <em className="serif-accent text-honey">abierto.</em> La colmena, también.
+            El código está <em className="serif-accent text-honey">abierto.</em> El panal, también.
           </WordReveal>
         </h2>
         <Reveal stagger className="mt-10 flex flex-wrap items-center justify-center gap-4">
@@ -135,13 +135,13 @@ function FinalCta() {
 }
 
 /**
- * /protocolo — Cómo funciona la colmena (protocolo.md):
+ * /protocolo — Cómo funciona el panal (protocolo.md):
  * S1 hero · S2 arquitectura · S3 ciclo de vida (pin 250vh) · S4 deep-dives ·
  * S5 disputas · S6 Monad · S7 FAQ · S8 CTA final.
  */
 export default function Protocolo() {
   useEffect(() => {
-    document.title = 'Protocolo — Cómo funciona la colmena · AgentHive';
+    document.title = 'Protocolo — Cómo funciona el panal · Panal';
     return () => {
       document.title = DEFAULT_TITLE;
     };

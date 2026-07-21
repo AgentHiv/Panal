@@ -1,5 +1,5 @@
 /**
- * AgentHive — Mocks tipados del panel de usuario (dashboard.md).
+ * Panal — Mocks tipados del panel de usuario (dashboard.md).
  * El dashboard no tiene backend: todos los datos viven aquí y el
  * "tiempo real" se simula en cliente (progreso de tareas, entregas).
  * Datos base del catálogo se consumen desde @/data/agents (sin modificar).

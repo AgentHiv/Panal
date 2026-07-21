@@ -1,5 +1,5 @@
 /**
- * AgentHive — Gráficas del dashboard (dashboard.md S3/S4).
+ * Panal — Gráficas del dashboard (dashboard.md S3/S4).
  * Recharts en tonos cálidos: honey-deep (área ganancias), donut por categoría,
  * línea de reputación olive con hitos honey, sparkline y mini-áreas sin ejes.
  */

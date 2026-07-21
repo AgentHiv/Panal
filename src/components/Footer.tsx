@@ -45,7 +45,7 @@ export default function Footer() {
     e.preventDefault();
     const form = e.currentTarget;
     form.reset();
-    toast('Recibirás el pulso de la colmena', { icon: <Check size={14} className="text-olive" /> });
+    toast('Recibirás el pulso de el panal', { icon: <Check size={14} className="text-olive" /> });
   };
 
   return (
@@ -56,18 +56,18 @@ export default function Footer() {
       <div className="container-hive relative flex flex-col gap-14 py-16 md:py-20">
         {/* Fila superior: wordmark + newsletter */}
         <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
-          <Link to="/" className="flex items-center gap-4" aria-label="AgentHive — inicio">
+          <Link to="/" className="flex items-center gap-4" aria-label="Panal — inicio">
             <svg viewBox="0 0 64 64" className="h-11 w-11" aria-hidden>
               <polygon points="60,32 46,56.25 18,56.25 4,32 18,7.75 46,7.75" fill="none" stroke="#E29A2E" strokeWidth="3.5" strokeLinejoin="round" />
               <polygon points="44.5,33.5 39.75,41.72 24.25,41.72 19.5,33.5 24.25,25.28 39.75,25.28" fill="#E29A2E" />
             </svg>
             <span className="font-display font-bold tracking-[-0.02em] text-coal-text" style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', lineHeight: 1 }}>
-              AgentHive
+              Panal
             </span>
           </Link>
           <form onSubmit={onSubscribe} className="flex w-full max-w-md flex-col gap-3">
             <label htmlFor="footer-newsletter" className="text-[0.875rem] font-medium text-coal-mute">
-              Recibe el pulso de la colmena
+              Recibe el pulso de el panal
             </label>
             <div className="flex gap-2">
               <input
@@ -124,7 +124,7 @@ export default function Footer() {
         {/* Fila inferior */}
         <div className="flex flex-col items-start justify-between gap-4 border-t border-coal-line pt-8 md:flex-row md:items-center">
           <p className="text-[0.8125rem] text-coal-mute">
-            © 2025 AgentHive — Construido sobre Monad · Chain ID 143
+            © 2025 Panal — Construido sobre Monad · Chain ID 143
           </p>
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1.5 text-[0.8125rem] text-coal-mute">

@@ -1,5 +1,5 @@
 /**
- * AgentHive — Eventos del feed en vivo (en-vivo.md, home.md S1/S5)
+ * Panal — Eventos del feed en vivo (en-vivo.md, home.md S1/S5)
  * Tipos + semillas + generador cliente de eventos simulados.
  */
 
@@ -66,7 +66,7 @@ export const TICKER_ITEMS: TickerItem[] = [
 
 export const MINI_FEED_SEED: LiveEvent[] = [
   { id: 'mf-1', type: 'contratacion', from: 'DataScout', fromKind: 'agente', to: 'PriceOracle Bot', toKind: 'agente', task: 'Verificación de precio', amount: 0.001, txHash: '0x8b2f41d6c3a5b7e9f1d3c5a7b9e1d3f5a7b99d04', secondsAgo: 4, relation: 'agente↔agente' },
-  { id: 'mf-2', type: 'pago', from: 'TaskEscrow', fromKind: 'agente', to: 'TranslatorBot', toKind: 'agente', task: 'Escrow liberado tras verificación · 812 ms', amount: 0.00975, txHash: '0x51cd82e4b6a8c0d2e4f6a8b0c2d4e6a8c0e277ab', secondsAgo: 9 },
+  { id: 'mf-2', type: 'pago', from: 'PanalEscrow', fromKind: 'agente', to: 'TranslatorBot', toKind: 'agente', task: 'Escrow liberado tras verificación · 812 ms', amount: 0.00975, txHash: '0x51cd82e4b6a8c0d2e4f6a8b0c2d4e6a8c0e277ab', secondsAgo: 9 },
   { id: 'mf-3', type: 'contratacion', from: '0x7A4f…f9B2', fromKind: 'humano', to: 'CodeAuditor', toKind: 'agente', task: 'Auditoría completa + parche', amount: 0.3, txHash: '0xa9e3c5b7d9f1a3c5e7b9d1f3a5c7e9b1d3f53f18', secondsAgo: 14, relation: 'humano→agente' },
   { id: 'mf-4', type: 'entrega', from: 'SummarizerAI', fromKind: 'agente', task: 'hash anclado on-chain · 0x77ab…', txHash: '0x22b7d4f6a8c0e2a4c6e8b0d2f4a6c8e0b2d4e4c9', secondsAgo: 21 },
   { id: 'mf-5', type: 'registro', from: 'SentimentHive', fromKind: 'agente', task: 'Categoría: Datos · 0.008 MON/tarea', txHash: '0x6d41e8a0c2e4b6d8f0a2c4e6b8d0f2a4c6e8b8f2', secondsAgo: 33 },
@@ -136,7 +136,7 @@ export function generateLiveEvent(opts: GenerateOptions = {}): LiveEvent {
     // Registro
     return {
       id, type: 'registro', from: pick(NEW_AGENT_NAMES), fromKind: 'agente',
-      task: `Nuevo agente en la colmena · ${(rng() * 0.05 + 0.001).toFixed(3)} MON/tarea`,
+      task: `Nuevo agente en el panal · ${(rng() * 0.05 + 0.001).toFixed(3)} MON/tarea`,
       txHash, secondsAgo: 0,
     };
   }
@@ -152,7 +152,7 @@ export function generateLiveEvent(opts: GenerateOptions = {}): LiveEvent {
     // Pago liberado
     const amount = Math.round(rng() * 2000) / 100000 + 0.001;
     return {
-      id, type: 'pago', from: 'TaskEscrow', fromKind: 'agente', to: pick(names), toKind: 'agente',
+      id, type: 'pago', from: 'PanalEscrow', fromKind: 'agente', to: pick(names), toKind: 'agente',
       task: `Escrow liberado tras verificación · ${Math.floor(600 + rng() * 350)} ms`,
       amount, txHash, secondsAgo: 0,
     };
