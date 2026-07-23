@@ -177,7 +177,7 @@ export default function WalletCard() {
                 <DialogHeader>
                   <DialogTitle className="font-display text-ink">Recibir MON</DialogTitle>
                   <DialogDescription className="text-ink-2">
-                    Comparte tu dirección de el panal (red Monad · Chain ID 143).
+                    Comparte tu dirección del panal (red Monad · Chain ID 143).
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-2">

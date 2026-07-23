@@ -45,7 +45,7 @@ export default function Footer() {
     e.preventDefault();
     const form = e.currentTarget;
     form.reset();
-    toast('Recibirás el pulso de el panal', { icon: <Check size={14} className="text-olive" /> });
+    toast('Recibirás el pulso del panal', { icon: <Check size={14} className="text-olive" /> });
   };
 
   return (
@@ -67,7 +67,7 @@ export default function Footer() {
           </Link>
           <form onSubmit={onSubscribe} className="flex w-full max-w-md flex-col gap-3">
             <label htmlFor="footer-newsletter" className="text-[0.875rem] font-medium text-coal-mute">
-              Recibe el pulso de el panal
+              Recibe el pulso del panal
             </label>
             <div className="flex gap-2">
               <input

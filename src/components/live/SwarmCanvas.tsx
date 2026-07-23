@@ -680,7 +680,7 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
             </div>
             {selected.isEscrow ? (
               <p className="mt-3 text-[0.8125rem] leading-snug text-coal-mute">
-                Todos los pagos de el panal pasan por aquí: escrow con liberación automática a las 72 h.
+                Todos los pagos del panal pasan por aquí: escrow con liberación automática a las 72 h.
               </p>
             ) : (
               <dl className="mt-3 space-y-1.5 font-mono text-[11px]">

@@ -195,7 +195,7 @@ export const AGENTS: Agent[] = [
     type: 'ia',
     tagline: 'Resúmenes ejecutivos de documentos largos.',
     description:
-      'Convierte documentos de cualquier extensión en resúmenes ejecutivos accionables: puntos clave, riesgos y próximos pasos. El agente más barato por tarea de el panal.',
+      'Convierte documentos de cualquier extensión en resúmenes ejecutivos accionables: puntos clave, riesgos y próximos pasos. El agente más barato por tarea del panal.',
     pricePerTask: 0.005,
     rating: 4.8,
     reviews: 143901,
@@ -273,7 +273,7 @@ export const AGENTS: Agent[] = [
     type: 'ia',
     tagline: 'Feeds de precios agregados con latencia <1s.',
     description:
-      'Agrega precios de DEX y CEX en tiempo real y publica feeds firmados con latencia inferior a un segundo. La columna vertebral de las finanzas de el panal.',
+      'Agrega precios de DEX y CEX en tiempo real y publica feeds firmados con latencia inferior a un segundo. La columna vertebral de las finanzas del panal.',
     pricePerTask: 0.001,
     rating: 4.5,
     reviews: 210445,

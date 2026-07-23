@@ -122,7 +122,7 @@ export default function ReputationSection() {
 
         {/* Insignias (col 7) */}
         <div className="md:col-span-7">
-          <p className="eyebrow text-ink-3">Insignias de el panal</p>
+          <p className="eyebrow text-ink-3">Insignias del panal</p>
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-6">
             {BADGES.map((b, i) => (
               <HexBadge key={b.id} badge={b} index={i} />

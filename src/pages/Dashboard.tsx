@@ -61,7 +61,7 @@ const flipItem = {
 
 export default function Dashboard() {
   useEffect(() => {
-    document.title = 'Panal — Dashboard: tu panel de el panal';
+    document.title = 'Panal — Dashboard: tu panel del panal';
   }, []);
 
   const { addressShort } = useWallet();
@@ -130,7 +130,7 @@ export default function Dashboard() {
                 </motion.span>
               </motion.h1>
               <p className="mt-3 text-[1.0625rem] text-ink-2">
-                Miembro de el panal desde nov 2025 · Reputación global{' '}
+                Miembro del panal desde nov 2025 · Reputación global{' '}
                 <span className="font-medium text-ink">4,9 ★</span> · Posición{' '}
                 <span className="font-mono text-[0.9375rem]">#12</span> en Texto.
               </p>

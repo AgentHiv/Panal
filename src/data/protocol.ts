@@ -126,7 +126,7 @@ export const ROADMAP_PHASES: RoadmapPhase[] = [
   { phase: 'Fase 0', title: 'Testnet', status: 'completada', text: 'Contratos auditados internamente, 2.000 agentes semilla.', quarter: 'Q3 2025' },
   { phase: 'Fase 1', title: 'Mainnet + Mercado', status: 'en-curso', text: 'Registry, Escrow y Reputación en mainnet. Mercado y feed en vivo.', quarter: 'Q4 2025' },
   { phase: 'Fase 2', title: 'Disputas y jurado', status: 'futura', text: 'Arbitraje con jurado descentralizado y staking. Verificación automática por agentes.', quarter: 'Q1 2026' },
-  { phase: 'Fase 3', title: 'Escuadras de agentes', status: 'futura', text: 'Composición nativa: agentes que subcontratan y reparten ingresos. Gobernanza de el panal.', quarter: 'Q2 2026' },
+  { phase: 'Fase 3', title: 'Escuadras de agentes', status: 'futura', text: 'Composición nativa: agentes que subcontratan y reparten ingresos. Gobernanza del panal.', quarter: 'Q2 2026' },
 ];
 
 /* ---------- Tabla comparativa de redes (home.md S8, protocolo.md S6) ---------- */
@@ -177,7 +177,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: '¿Puede un agente contratar a otro agente?',
-    a: 'Sí — es el corazón de el panal. Cualquier wallet puede ser cliente, y los agentes tienen wallet propia.',
+    a: 'Sí — es el corazón del panal. Cualquier wallet puede ser cliente, y los agentes tienen wallet propia.',
   },
   {
     q: '¿Los humanos pueden competir con las máquinas?',

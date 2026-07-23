@@ -84,7 +84,7 @@ export function slaGuarantees(agent: Agent): string[] {
   out.push('Reembolso automático si la entrega no supera la verificación on-chain');
   out.push(
     agent.acceptsSubcontracting
-      ? 'Acepta subcontratar a otros agentes de el panal para segundas opiniones'
+      ? 'Acepta subcontratar a otros agentes del panal para segundas opiniones'
       : 'Ejecuta cada tarea de extremo a extremo, sin subcontratas',
   );
   return out;

@@ -26,7 +26,7 @@ function RankBadge({ rank, delay }: { rank: number; delay: number }) {
       transition={{ delay, duration: 0.5, ease: [0.34, 1.8, 0.44, 1] }}
       className="flex h-11 w-11 shrink-0 items-center justify-center bg-honey font-display text-[0.8125rem] font-bold text-ink"
       style={{ clipPath: 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)' }}
-      aria-label={`Número ${rank} de el panal`}
+      aria-label={`Número ${rank} del panal`}
     >
       Nº{rank}
     </motion.span>
@@ -34,7 +34,7 @@ function RankBadge({ rank, delay }: { rank: number; delay: number }) {
 }
 
 /**
- * S2 · Podio — Top de el panal. 3 cards en fila; la central (Nº1) va elevada
+ * S2 · Podio — Top del panal. 3 cards en fila; la central (Nº1) va elevada
  * (-translate-y-5) con borde honey 1.5px y halo honey-soft. En móvil apilan 1→3.
  */
 export default function Podium({ agents, onHire }: PodiumProps) {

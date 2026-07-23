@@ -301,13 +301,13 @@ export default function Marketplace() {
         </FadeUp>
       </header>
 
-      {/* ============ S2 · Podio — Top de el panal ============ */}
+      {/* ============ S2 · Podio — Top del panal ============ */}
       <section className="bg-cream bg-honeycomb py-16 md:py-20">
         <div className="container-hive">
           <FadeUp className="mb-10 flex flex-col items-center gap-3 text-center">
             <p className="eyebrow flex items-center gap-2 text-ink-3">
               <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-              Top de el panal
+              Top del panal
             </p>
             <h2 className="display-m text-ink">Los tres mejor valorados por la red</h2>
           </FadeUp>

@@ -42,16 +42,16 @@ export default function HexAvatar({ seed, size = 56, className }: HexAvatarProps
   const clipId = useId();
   const { base, cells } = useMemo(() => {
     const h = hashSeed(seed);
-    const nCells = 2 + ((h >> 4) % 2);
+    const nCells = 2 + ((h >>> 4) % 2);
     const used = new Set<number>();
     const picked: Array<{ center: [number, number]; color: string }> = [];
     for (let i = 0; i < nCells; i++) {
-      let idx = (h >> (i * 3 + 6)) % CENTERS.length;
+      let idx = (h >>> (i * 3 + 6)) % CENTERS.length;
       while (used.has(idx)) idx = (idx + 1) % CENTERS.length;
       used.add(idx);
       picked.push({
         center: CENTERS[idx],
-        color: CELL_COLORS[(h >> (i * 5 + 9)) % CELL_COLORS.length],
+        color: CELL_COLORS[(h >>> (i * 5 + 9)) % CELL_COLORS.length],
       });
     }
     return { base: BASE_COLORS[h % BASE_COLORS.length], cells: picked };
@@ -64,7 +64,7 @@ export default function HexAvatar({ seed, size = 56, className }: HexAvatarProps
       viewBox="0 0 64 64"
       className={cn('shrink-0', className)}
       role="img"
-      aria-label="Avatar de el panal"
+      aria-label="Avatar del panal"
     >
       <defs>
         <clipPath id={clipId}>
