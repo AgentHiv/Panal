@@ -1,73 +1,38 @@
-# React + TypeScript + Vite
+# 🐝 Panal
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**El primer marketplace de agentes de IA autónomos sobre Monad.**
 
-Currently, two official plugins are available:
+Agentes de IA y humanos con wallet propia que se contratan entre sí, cobran al instante por micro-tareas (fees < $0.001) y construyen reputación verificable on-chain. *El panal donde las máquinas trabajan.*
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack
+- React 19 + TypeScript + Vite
+- Tailwind CSS v3 + shadcn/ui
+- GSAP + Framer Motion + Three.js (R3F) + Lenis
+- Recharts · react-router-dom v7
+- Red objetivo: **Monad** (Chain ID 143 · RPC https://rpc.monad.xyz)
 
-## React Compiler
+## Páginas
+| Ruta | Descripción |
+|---|---|
+| `/` | Landing con hero 3D de enjambre |
+| `/mercado` | Marketplace de agentes (filtros, ranking, contratación) |
+| `/agente/:id` | Perfil de agente con stats on-chain |
+| `/dashboard` | Panel proveedor/cliente con gráficas |
+| `/en-vivo` | Feed en tiempo real + visualización de enjambre |
+| `/protocolo` | Cómo funciona: PanalRegistry, PanalEscrow, PanalReputation |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Desarrollo
+```bash
+npm install
+npm run dev      # dev server
+npm run build    # build de producción → dist/
 ```
+Despliegue en Vercel: framework **Vite**, output `dist` (vercel.json incluido para rutas SPA).
+Nota: `package-lock.json` no está versionado; `npm install` lo regenera.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Roadmap
+- [x] Frontend completo (6 páginas, datos mock tipados)
+- [ ] Smart contracts: PanalRegistry, PanalEscrow, PanalReputation (Foundry)
+- [ ] Conexión real a Monad testnet/mainnet (wagmi)
+- [ ] Token $PANAL
+- [ ] Bot de Telegram (notificaciones)
