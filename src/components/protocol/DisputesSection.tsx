@@ -5,6 +5,7 @@ import { useGSAP } from '@gsap/react';
 import { ArrowRight, Bot } from 'lucide-react';
 import Reveal, { WordReveal } from '@/components/home/Reveal';
 import SectionHeader from '@/components/SectionHeader';
+import { useTranslation } from 'react-i18next';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -12,26 +13,10 @@ const REDUCED = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const DISPUTE_STEPS = [
-  {
-    n: '01',
-    title: 'Apelación',
-    text: 'Cualquiera de las partes abre disputa antes del auto-release y deposita una fianza.',
-  },
-  {
-    n: '02',
-    title: 'Jurado',
-    text: '5 jurados aleatorios con reputación alta y MON en stake revisan el expediente.',
-  },
-  {
-    n: '03',
-    title: 'Voto',
-    text: '48 h para votar con la evidencia (hash de entrega, historial). Mayoría simple.',
-  },
-  {
-    n: '04',
-    title: 'Resolución',
-    text: 'El escrow se libera al ganador; el perdedor pierde parte de su stake o fianza. Todo queda en el historial.',
-  },
+  { n: '01', title: 'disputes.1.title', text: 'disputes.1.text' },
+  { n: '02', title: 'disputes.2.title', text: 'disputes.2.text' },
+  { n: '03', title: 'disputes.3.title', text: 'disputes.3.text' },
+  { n: '04', title: 'disputes.4.title', text: 'disputes.4.text' },
 ];
 
 /**
@@ -39,6 +24,7 @@ const DISPUTE_STEPS = [
  * dibujan + nota sobre verificación sin humanos (card honey-soft, icono Bot).
  */
 export default function DisputesSection() {
+  const { t } = useTranslation();
   const flowRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -67,10 +53,10 @@ export default function DisputesSection() {
     <section className="border-t border-line bg-paper py-24 md:py-32">
       <div className="container-hive">
         <SectionHeader
-          eyebrow="CUANDO ALGO FALLA"
+          eyebrow={t('disputes.eyebrow')}
           title={
             <WordReveal>
-              Justicia del panal, <em className="serif-accent text-honey-deep">con stake.</em>
+              {t('disputes.title')} <em className="serif-accent text-honey-deep">{t('disputes.titleEm')}</em>
             </WordReveal>
           }
         />
@@ -80,8 +66,8 @@ export default function DisputesSection() {
             <Fragment key={step.n}>
               <div className="dispute-card flex-1 rounded-2xl border border-line bg-paper p-6 shadow-card transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-honey hover:shadow-card-hover">
                 <span className="font-mono text-[12px] font-semibold text-honey-deep">{step.n}</span>
-                <h3 className="mt-3 font-display text-[1.1rem] font-semibold text-ink">{step.title}</h3>
-                <p className="mt-2 text-[0.875rem] leading-[1.6] text-ink-2">{step.text}</p>
+                <h3 className="mt-3 font-display text-[1.1rem] font-semibold text-ink">{t(step.title)}</h3>
+                <p className="mt-2 text-[0.875rem] leading-[1.6] text-ink-2">{t(step.text)}</p>
               </div>
               {i < DISPUTE_STEPS.length - 1 && (
                 <div className="dispute-arrow flex items-center justify-center py-1 text-ink-3 lg:px-2 lg:py-0" aria-hidden>
@@ -98,8 +84,7 @@ export default function DisputesSection() {
               <Bot size={18} className="text-honey-deep" aria-hidden />
             </span>
             <p className="text-[0.9375rem] leading-[1.65] text-ink-2">
-              Para tareas objetivas, la verificación puede resolverse sin humanos: un agente
-              verificador independiente ejecuta el check y su resultado es la sentencia.
+              {t('disputes.note')}
             </p>
           </div>
         </Reveal>

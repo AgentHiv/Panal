@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ExternalLink, Hexagon, Loader2, Timer, TriangleAlert } from 'lucide-react';
@@ -29,8 +30,8 @@ export interface HireDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const EXAMPLE_CHIPS = ['Audita este contrato', 'Resume este PDF', 'Verifica este precio', 'Traduce esta documentación'];
-const STEP_TITLES = ['Define la tarea', 'Bloquea el pago (escrow)', 'Confirmación'];
+const EXAMPLE_CHIPS = ['hire.chip1', 'hire.chip2', 'hire.chip3', 'hire.chip4'];
+const STEP_TITLES = ['hire.step1.title', 'hire.step2.title', 'hire.step3.title'];
 
 /**
  * Modal global "Contratar agente" — 3 pasos con stepper de hexágonos (marketplace.md S8).
@@ -49,6 +50,7 @@ export default function HireDialog({ agent, open, onOpenChange }: HireDialogProp
 }
 
 function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open: boolean) => void }) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [taskText, setTaskText] = useState('');
   const [params, setParams] = useState('');
@@ -99,7 +101,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   return (
     <div className="px-7 pb-7 pt-6">
           {/* Stepper de hexágonos */}
-          <div className="mb-6 flex items-center gap-3" aria-label={`Paso ${step + 1} de 3`}>
+          <div className="mb-6 flex items-center gap-3" aria-label={t('hire.stepAria', { step: step + 1 })}>
             {[0, 1, 2].map((i) => (
               <div key={i} className="flex items-center gap-3">
                 <span
@@ -131,8 +133,8 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
             <span className="ml-2 font-mono text-[12px] text-ink-3">0{step + 1}/03</span>
           </div>
 
-          <DialogTitle className="display-m text-ink">{STEP_TITLES[step]}</DialogTitle>
-          <DialogDescription className="sr-only">Contratación de {agent.name} con pago protegido por PanalEscrow</DialogDescription>
+          <DialogTitle className="display-m text-ink">{t(STEP_TITLES[step])}</DialogTitle>
+          <DialogDescription className="sr-only">{t('hire.desc', { name: agent.name })}</DialogDescription>
 
           <AnimatePresence mode="wait">
             <motion.div
@@ -150,14 +152,14 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                     <HexAvatar seed={agent.wallet} size={40} />
                     <div className="flex-1">
                       <p className="text-[0.875rem] font-semibold text-ink">{agent.name}</p>
-                      <p className="font-mono text-[12px] text-ink-3">{formatMon(price)} MON/tarea</p>
+                      <p className="font-mono text-[12px] text-ink-3">{t('common.monPerTask', { price: formatMon(price) })}</p>
                     </div>
                   </div>
                   <textarea
                     value={taskText}
                     onChange={(e) => setTaskText(e.target.value)}
                     rows={4}
-                    placeholder="Describe la tarea…"
+                    placeholder={t('hire.taskPlaceholder')}
                     className="w-full resize-none rounded-xl border border-line bg-paper px-4 py-3 text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
                   />
                   <div className="flex flex-wrap gap-2">
@@ -168,14 +170,14 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         onClick={() => setTaskText(chip)}
                         className="rounded-full bg-sand px-3 py-1.5 text-[0.8125rem] text-ink-2 transition-colors hover:bg-honey-soft hover:text-honey-deep"
                       >
-                        {chip}
+                        {t(chip)}
                       </button>
                     ))}
                   </div>
                   <input
                     value={params}
                     onChange={(e) => setParams(e.target.value)}
-                    placeholder="Parámetros (opcional) — p. ej. solidity ^0.8.24"
+                    placeholder={t('hire.paramsPlaceholder')}
                     className="w-full rounded-xl border border-line bg-paper px-4 py-2.5 font-mono text-[12px] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
                   />
                   <button
@@ -184,7 +186,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                     disabled={taskText.trim().length === 0}
                     className="mt-2 rounded-full bg-ink px-5 py-3 text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep disabled:opacity-40"
                   >
-                    Continuar
+                    {t('common.continue')}
                   </button>
                 </div>
               )}
@@ -193,21 +195,21 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-2 rounded-xl border border-line bg-cream px-5 py-4 font-mono text-[0.875rem]">
                     <div className="flex justify-between">
-                      <span className="text-ink-2">Precio de la tarea</span>
+                      <span className="text-ink-2">{t('hire.step2.taskPrice')}</span>
                       <span className="text-ink">{price.toFixed(3)} MON</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-ink-2">Comisión del protocolo (2.5%)</span>
+                      <span className="text-ink-2">{t('hire.step2.protocolFee')}</span>
                       <span className="text-ink">{formatMon(fee, 5)} MON</span>
                     </div>
                     <div className="mt-1 flex justify-between border-t border-line pt-2 font-semibold">
-                      <span className="text-ink">Total a bloquear</span>
+                      <span className="text-ink">{t('hire.step2.totalLock')}</span>
                       <span className="text-honey-deep">{formatMon(total, 5)} MON</span>
                     </div>
                   </div>
                   <p className="flex items-start gap-2 text-[0.8125rem] text-ink-2">
                     <Timer size={15} className="mt-0.5 shrink-0 text-honey-deep" />
-                    Si no hay disputa, el pago se libera solo en {ESCROW_AUTO_RELEASE_H} h.
+                    {t('hire.step2.autoRelease', { hours: ESCROW_AUTO_RELEASE_H })}
                   </p>
                   <label className="flex cursor-pointer items-center gap-2.5 text-[0.875rem] text-ink-2">
                     <Checkbox
@@ -215,13 +217,13 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                       onCheckedChange={(v) => setAccepted(v === true)}
                       className="border-line data-[state=checked]:border-honey data-[state=checked]:bg-honey data-[state=checked]:text-ink"
                     />
-                    Acepto los términos del escrow
+                    {t('hire.step2.accept')}
                   </label>
                   {onchain && connected && wrongNetwork ? (
                     <div className="mt-1 flex flex-col gap-3">
                       <p className="flex items-start gap-2 rounded-xl border border-honey bg-honey-soft px-4 py-3 text-[0.8125rem] text-honey-deep">
                         <TriangleAlert size={15} className="mt-0.5 shrink-0" />
-                        Este agente es on-chain: para contratarlo de verdad tu wallet debe estar en Monad testnet.
+                        {t('hire.step2.wrongNetwork')}
                       </p>
                       <div className="flex gap-3">
                         <button
@@ -229,14 +231,14 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                           onClick={() => setStep(0)}
                           className="rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
                         >
-                          Volver
+                          {t('common.back')}
                         </button>
                         <button
                           type="button"
                           onClick={switchToMonad}
                           className="flex-1 rounded-full bg-ink px-5 py-3 text-[0.875rem] font-semibold text-paper transition-colors hover:bg-honey-deep"
                         >
-                          Cambiar a Monad testnet
+                          {t('nav.switchNetwork')}
                         </button>
                       </div>
                     </div>
@@ -247,7 +249,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         onClick={() => setStep(0)}
                         className="rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
                       >
-                        Volver
+                        {t('common.back')}
                       </button>
                       <button
                         type="button"
@@ -255,7 +257,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         disabled={!accepted || signing}
                         className="flex-1 rounded-full bg-honey px-5 py-3 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper disabled:opacity-40"
                       >
-                        {realMode ? `Firmar y bloquear ${formatMon(price)} MON` : 'Bloquear y contratar'}
+                        {realMode ? t('hire.step2.signLock', { price: formatMon(price) }) : t('hire.step2.lockHire')}
                       </button>
                     </div>
                   )}
@@ -270,10 +272,10 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         <TriangleAlert size={28} />
                       </span>
                       <div>
-                        <p className="display-m text-ink">La transacción no se envió</p>
+                        <p className="display-m text-ink">{t('hire.step3.txFailed')}</p>
                         <p className="mt-1 max-w-sm text-[0.875rem] text-ink-2">
                           {writeError.message.includes('User rejected')
-                            ? 'Has rechazado la firma en tu wallet.'
+                            ? t('hire.step3.rejected')
                             : writeError.message.split("\n")[0]}
                         </p>
                       </div>
@@ -286,7 +288,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                           }}
                           className="flex-1 rounded-full bg-ink px-5 py-3 text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep"
                         >
-                          Volver e intentarlo
+                          {t('hire.step3.retry')}
                         </button>
                       </div>
                     </>
@@ -295,12 +297,10 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                       <Loader2 size={40} className="animate-spin text-honey-deep" aria-hidden />
                       <div>
                         <p className="display-m text-ink">
-                          {!realTxHash ? 'Firmando en wallet…' : 'Confirmando en Monad…'}
+                          {!realTxHash ? t('hire.step3.signing') : t('hire.step3.confirming')}
                         </p>
                         <p className="mt-1 text-[0.875rem] text-ink-2">
-                          {!realTxHash
-                            ? 'Revisa tu wallet y confirma la transacción de createTask en PanalEscrow.'
-                            : 'La transacción está enviada; esperando confirmación en Monad testnet.'}
+                          {!realTxHash ? t('hire.step3.signingHint') : t('hire.step3.confirmingHint')}
                         </p>
                       </div>
                       {realTxHash && (
@@ -310,11 +310,11 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                           rel="noreferrer"
                           className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 font-mono text-[12px] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
                         >
-                          Ver transacción en MonadVision
+                          {t('hire.step3.viewTx')}
                           <ExternalLink size={13} />
                         </a>
                       )}
-                      {confirming && <p className="font-mono text-[11px] text-ink-3">1 confirmación requerida…</p>}
+                      {confirming && <p className="font-mono text-[11px] text-ink-3">{t('hire.step3.oneConfirm')}</p>}
                     </>
                   ) : (
                     <>
@@ -343,9 +343,9 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         </svg>
                       </div>
                       <div>
-                        <p className="display-m text-ink">Tarea sellada on-chain</p>
+                        <p className="display-m text-ink">{t('hire.step3.sealed')}</p>
                         <p className="mt-1 text-[0.875rem] text-ink-2">
-                          {agent.name} ha recibido tu tarea. {formatMon(price)} MON bloqueados en PanalEscrow.
+                          {t('hire.step3.sealedDescReal', { name: agent.name, price: formatMon(price) })}
                         </p>
                       </div>
                       {realTxHash && <TxHash hash={realTxHash} className="rounded-full border border-line bg-cream px-4 py-2" />}
@@ -355,7 +355,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                           onClick={() => onOpenChange(false)}
                           className="flex-1 rounded-full bg-ink px-5 py-3 text-center text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep"
                         >
-                          Ver tarea en mi dashboard
+                          {t('hire.step3.viewDashboard')}
                         </Link>
                         {realTxHash && (
                           <a
@@ -364,7 +364,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                             rel="noreferrer"
                             className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
                           >
-                            Ver en el explorador
+                            {t('hire.step3.viewExplorer')}
                             <ExternalLink size={14} />
                           </a>
                         )}
@@ -413,9 +413,9 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                     ))}
                   </div>
                   <div>
-                    <p className="display-m text-ink">Tarea sellada on-chain</p>
+                    <p className="display-m text-ink">{t('hire.step3.sealed')}</p>
                     <p className="mt-1 text-[0.875rem] text-ink-2">
-                      {agent.name} ha recibido tu tarea. El pago está bloqueado en PanalEscrow.
+                      {t('hire.step3.sealedDesc', { name: agent.name })}
                     </p>
                   </div>
                   <TxHash hash={txHash} className="rounded-full border border-line bg-cream px-4 py-2" />
@@ -425,13 +425,13 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                       onClick={() => onOpenChange(false)}
                       className="flex-1 rounded-full bg-ink px-5 py-3 text-center text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep"
                     >
-                      Ver tarea en mi dashboard
+                      {t('hire.step3.viewDashboard')}
                     </Link>
                     <button
                       type="button"
                       className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
                     >
-                      Ver en el explorador
+                      {t('hire.step3.viewExplorer')}
                       <ExternalLink size={14} />
                     </button>
                   </div>

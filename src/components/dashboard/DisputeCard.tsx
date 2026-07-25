@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Check, Gavel, Hexagon, Scale, Users } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,18 +14,17 @@ import { cn } from '@/lib/utils';
 import { DISPUTE } from './data';
 
 /** Contador de plazo: tick a la baja cada minuto (mono). */
-function useDeadline(initialMin: number) {
+function useDeadline(initialMin: number): { h: number; m: number } {
   const [minutes, setMinutes] = useState(initialMin);
   useEffect(() => {
     const id = window.setInterval(() => setMinutes((m) => Math.max(0, m - 1)), 60_000);
     return () => window.clearInterval(id);
   }, []);
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `quedan ${h} h ${String(m).padStart(2, '0')} min`;
+  return { h: Math.floor(minutes / 60), m: minutes % 60 };
 }
 
 export default function DisputeCard() {
+  const { t } = useTranslation();
   const deadline = useDeadline(DISPUTE.deadlineMin);
   const doneCount = DISPUTE.steps.filter((s) => s.done).length;
   // progreso de la línea: pasos completos + mitad del paso en curso
@@ -42,12 +42,12 @@ export default function DisputeCard() {
         <div className="max-w-2xl flex-1">
           <p className="eyebrow flex items-center gap-2 text-terra">
             <Hexagon size={12} className="fill-terra/20 text-terra" aria-hidden />
-            DISPUTA {DISPUTE.id}
+            {t('dash.dispute.eyebrow')} {DISPUTE.id}
           </p>
-          <h3 className="display-m mt-3 text-ink">{DISPUTE.title}</h3>
+          <h3 className="display-m mt-3 text-ink">{t(DISPUTE.title)}</h3>
           <p className="mt-2 text-[0.9375rem] text-ink-2">
-            Tarea {DISPUTE.taskId} · {DISPUTE.counterparty} · escrow de{' '}
-            <span className="font-mono">{DISPUTE.amount.toFixed(3)} MON</span> bloqueado hasta la resolución.
+            {t('dash.dispute.line', { task: DISPUTE.taskId, counterparty: DISPUTE.counterparty })}{' '}
+            <span className="font-mono">{DISPUTE.amount.toFixed(3)} MON</span> {t('dash.dispute.locked')}
           </p>
 
           {/* Timeline del jurado */}
@@ -81,13 +81,13 @@ export default function DisputeCard() {
                     </span>
                     <div>
                       <p className={cn('text-[0.8125rem] font-semibold leading-tight', step.current ? 'text-terra' : step.done ? 'text-ink' : 'text-ink-3')}>
-                        {step.title}
+                        {t(step.title)}
                       </p>
                       {step.detail && (
                         <p className="mt-0.5 flex items-center gap-1 font-mono text-[0.6875rem] text-ink-3">
-                          {step.title.includes('Jurado') && <Users size={10} />}
-                          {step.title.includes('Votación') && <Gavel size={10} />}
-                          {step.detail}
+                          {step.title === 'dash.dispute.step2' && <Users size={10} />}
+                          {step.title === 'dash.dispute.step3' && <Gavel size={10} />}
+                          {t(step.detail)}
                         </p>
                       )}
                     </div>
@@ -101,22 +101,24 @@ export default function DisputeCard() {
         {/* Plazo + CTA */}
         <div className="flex shrink-0 flex-col items-start gap-4 lg:items-end">
           <div className="rounded-xl border border-terra/30 bg-paper px-4 py-3">
-            <p className="eyebrow text-ink-3">Plazo de votación</p>
-            <p className="mt-1 font-mono text-[1.125rem] font-medium text-terra">{deadline}</p>
+            <p className="eyebrow text-ink-3">{t('dash.dispute.deadline')}</p>
+            <p className="mt-1 font-mono text-[1.125rem] font-medium text-terra">
+              {t('dash.dispute.remaining', { h: deadline.h, m: String(deadline.m).padStart(2, '0') })}
+            </p>
           </div>
           <button
             type="button"
             onClick={() =>
-              toast(`Expediente ${DISPUTE.id}`, {
+              toast(t('dash.dispute.caseToast', { id: DISPUTE.id }), {
                 icon: <Scale size={14} className="text-terra" />,
-                description: 'Apelación, evidencias y votos del jurado (vista de demo).',
+                description: t('dash.dispute.caseToastDesc'),
               })
             }
             className="rounded-full border border-terra/50 px-4 py-2 text-[0.875rem] font-semibold text-terra transition-colors hover:bg-terra/10"
           >
-            Ver expediente
+            {t('dash.dispute.viewCase')}
           </button>
-          <p className="max-w-[260px] text-[0.8125rem] leading-relaxed text-ink-2 lg:text-right">{DISPUTE.note}</p>
+          <p className="max-w-[260px] text-[0.8125rem] leading-relaxed text-ink-2 lg:text-right">{t(DISPUTE.note)}</p>
         </div>
       </div>
     </motion.div>

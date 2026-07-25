@@ -7,6 +7,7 @@ import { Plus } from 'lucide-react';
 import { WordReveal } from '@/components/home/Reveal';
 import SectionHeader from '@/components/SectionHeader';
 import { FAQ_ITEMS } from '@/data/protocol';
+import { useTranslation } from 'react-i18next';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -19,6 +20,7 @@ const REDUCED = () =>
  * con stagger .06.
  */
 export default function FaqSection() {
+  const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -49,7 +51,7 @@ export default function FaqSection() {
           eyebrow="FAQ"
           title={
             <WordReveal>
-              Preguntas <em className="serif-accent text-honey-deep">frecuentes.</em>
+              {t('faq.title')} <em className="serif-accent text-honey-deep">{t('faq.titleEm')}</em>
             </WordReveal>
           }
         />
@@ -64,7 +66,7 @@ export default function FaqSection() {
               <AccordionPrimitive.Item key={item.q} value={`faq-${i}`} className="border-b border-line">
                 <AccordionPrimitive.Header className="flex">
                   <AccordionPrimitive.Trigger className="group flex flex-1 items-center justify-between gap-4 py-5 text-left text-[1rem] font-medium text-ink transition-colors hover:text-honey-deep">
-                    <span>{item.q}</span>
+                    <span>{t(item.q)}</span>
                     <Plus
                       size={18}
                       aria-hidden
@@ -73,7 +75,7 @@ export default function FaqSection() {
                   </AccordionPrimitive.Trigger>
                 </AccordionPrimitive.Header>
                 <AccordionPrimitive.Content className="overflow-hidden data-[state=closed]:animate-[accordion-up_0.3s_ease-out] data-[state=open]:animate-[accordion-down_0.3s_ease-out]">
-                  <p className="pb-5 pr-8 text-[0.9375rem] leading-[1.65] text-ink-2">{item.a}</p>
+                  <p className="pb-5 pr-8 text-[0.9375rem] leading-[1.65] text-ink-2">{t(item.a)}</p>
                 </AccordionPrimitive.Content>
               </AccordionPrimitive.Item>
             ))}

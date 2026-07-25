@@ -1,51 +1,54 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Check } from 'lucide-react';
 import LiveDot from '@/components/LiveDot';
 import TxHash from '@/components/TxHash';
 import { CONTRACTS } from '@/data/protocol';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string }> }> = [
   {
-    title: 'Producto',
+    title: 'footer.product',
     links: [
-      { label: 'Mercado', to: '/mercado' },
-      { label: 'En Vivo', to: '/en-vivo' },
-      { label: 'Dashboard', to: '/dashboard' },
-      { label: 'Publicar agente', to: '/mercado' },
+      { label: 'nav.market', to: '/mercado' },
+      { label: 'nav.live', to: '/en-vivo' },
+      { label: 'nav.dashboard', to: '/dashboard' },
+      { label: 'footer.publishAgent', to: '/mercado' },
     ],
   },
   {
-    title: 'Protocolo',
+    title: 'footer.protocol',
     links: [
-      { label: 'Cómo funciona', to: '/protocolo' },
-      { label: 'Contratos', to: '/protocolo' },
-      { label: 'Disputas', to: '/protocolo' },
-      { label: 'Comisiones', to: '/protocolo' },
+      { label: 'footer.howItWorks', to: '/protocolo' },
+      { label: 'footer.contracts', to: '/protocolo' },
+      { label: 'footer.disputes', to: '/protocolo' },
+      { label: 'footer.fees', to: '/protocolo' },
     ],
   },
   {
-    title: 'Recursos',
+    title: 'footer.resources',
     links: [
-      { label: 'Documentación' },
+      { label: 'footer.docs' },
       { label: 'Monad' },
-      { label: 'Explorador' },
-      { label: 'Prensa' },
+      { label: 'footer.explorer' },
+      { label: 'footer.press' },
     ],
   },
   {
-    title: 'Comunidad',
+    title: 'footer.community',
     links: [{ label: 'X' }, { label: 'Discord' }, { label: 'GitHub' }, { label: 'Telegram' }],
   },
 ];
 
 /** Footer global (design.md §5): fondo coal, honeycomb sutil, contratos, status. */
 export default function Footer() {
+  const { t } = useTranslation();
   const onSubscribe = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     form.reset();
-    toast('Recibirás el pulso del panal', { icon: <Check size={14} className="text-olive" /> });
+    toast(t('footer.subscribedToast'), { icon: <Check size={14} className="text-olive" /> });
   };
 
   return (
@@ -67,7 +70,7 @@ export default function Footer() {
           </Link>
           <form onSubmit={onSubscribe} className="flex w-full max-w-md flex-col gap-3">
             <label htmlFor="footer-newsletter" className="text-[0.875rem] font-medium text-coal-mute">
-              Recibe el pulso del panal
+              {t('footer.newsletter')}
             </label>
             <div className="flex gap-2">
               <input
@@ -81,7 +84,7 @@ export default function Footer() {
                 type="submit"
                 className="h-11 shrink-0 rounded-full bg-honey px-5 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
               >
-                Suscribirme
+                {t('footer.subscribe')}
               </button>
             </div>
           </form>
@@ -91,7 +94,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 gap-8 border-t border-coal-line pt-10 md:grid-cols-4">
           {COLUMNS.map((col) => (
             <div key={col.title} className="flex flex-col gap-3">
-              <p className="eyebrow text-coal-mute">{col.title}</p>
+              <p className="eyebrow text-coal-mute">{t(col.title)}</p>
               {col.links.map((link) =>
                 link.to ? (
                   <Link
@@ -99,11 +102,11 @@ export default function Footer() {
                     to={link.to}
                     className="text-[0.875rem] text-coal-text/80 transition-colors hover:text-honey"
                   >
-                    {link.label}
+                    {t(link.label)}
                   </Link>
                 ) : (
                   <span key={link.label} className="cursor-pointer text-[0.875rem] text-coal-text/80 transition-colors hover:text-honey">
-                    {link.label}
+                    {t(link.label)}
                   </span>
                 ),
               )}
@@ -124,16 +127,13 @@ export default function Footer() {
         {/* Fila inferior */}
         <div className="flex flex-col items-start justify-between gap-4 border-t border-coal-line pt-8 md:flex-row md:items-center">
           <p className="text-[0.8125rem] text-coal-mute">
-            © 2025 Panal — Construido sobre Monad · Chain ID 143
+            {t('footer.copyright')}
           </p>
           <div className="flex items-center gap-6">
-            <span className="flex items-center gap-1.5 text-[0.8125rem] text-coal-mute">
-              <span className="rounded bg-coal-2 px-1.5 py-0.5 font-mono text-[11px] text-honey">ES</span>
-              <span className="opacity-50">EN</span>
-            </span>
+            <LanguageSwitcher className="border-coal-line bg-coal-2 text-coal-text hover:border-honey" />
             <span className="flex items-center gap-2 text-[0.8125rem] text-coal-mute">
               <LiveDot variant="olive" />
-              Todos los sistemas operativos
+              {t('footer.systemsOk')}
             </span>
           </div>
         </div>

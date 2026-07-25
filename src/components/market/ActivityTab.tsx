@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Check, Download } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,9 +12,9 @@ import type { Agent } from '@/data/agents';
 import { formatMon } from '@/data/agents';
 
 const STATUS_STYLES: Record<ActivityStatus, { label: string; className: string }> = {
-  completada: { label: 'Completada', className: 'bg-olive/10 text-olive' },
-  'en-curso': { label: 'En curso', className: 'bg-honey-soft text-honey-deep' },
-  disputa: { label: 'Disputa', className: 'bg-terra/10 text-terra' },
+  completada: { label: 'activity.status.completada', className: 'bg-olive/10 text-olive' },
+  'en-curso': { label: 'activity.status.enCurso', className: 'bg-honey-soft text-honey-deep' },
+  disputa: { label: 'activity.status.disputa', className: 'bg-terra/10 text-terra' },
 };
 
 /**
@@ -21,13 +22,14 @@ const STATUS_STYLES: Record<ActivityStatus, { label: string; className: string }
  * de estado, exportación CSV y click en fila que copia el hash.
  */
 export default function ActivityTab({ agent }: { agent: Agent }) {
-  const rows = useMemo(() => activityFor(agent), [agent]);
+  const { t } = useTranslation();
+  const rows = useMemo(() => activityFor(agent, t), [agent, t]);
 
   const exportCsv = () => {
     const lines = [
       'tx;cliente;servicio;monto_mon;estado;duracion;cuando',
       ...rows.map((r) =>
-        [r.tx, r.client, `"${r.service}"`, String(r.amount), STATUS_STYLES[r.status].label, `"${r.duration}"`, `"${r.ago}"`].join(';'),
+        [r.tx, r.client, `"${r.service}"`, String(r.amount), t(STATUS_STYLES[r.status].label), `"${r.duration}"`, `"${r.ago}"`].join(';'),
       ),
     ];
     const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
@@ -37,7 +39,7 @@ export default function ActivityTab({ agent }: { agent: Agent }) {
     a.download = `actividad-${agent.id}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast('CSV exportado', { icon: <Download size={14} className="text-olive" /> });
+    toast(t('activity.csvToast'), { icon: <Download size={14} className="text-olive" /> });
   };
 
   const copyRowHash = async (hash: string) => {
@@ -46,7 +48,7 @@ export default function ActivityTab({ agent }: { agent: Agent }) {
     } catch {
       /* portapapeles no disponible */
     }
-    toast('Hash copiado', { icon: <Check size={14} className="text-olive" /> });
+    toast(t('activity.hashToast'), { icon: <Check size={14} className="text-olive" /> });
   };
 
   return (
@@ -54,7 +56,7 @@ export default function ActivityTab({ agent }: { agent: Agent }) {
       {/* header con export */}
       <div className="mb-5 flex items-center justify-between gap-4">
         <p className="text-[0.875rem] text-ink-3">
-          Últimas <span className="font-mono text-ink-2">{rows.length}</span> tareas de este agente
+          {t('activity.lastTasks', { count: rows.length })}
         </p>
         <button
           type="button"
@@ -62,7 +64,7 @@ export default function ActivityTab({ agent }: { agent: Agent }) {
           className="flex items-center gap-2 rounded-full border border-line bg-paper px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-honey-deep"
         >
           <Download size={14} aria-hidden />
-          Exportar CSV
+          {t('activity.exportCsv')}
         </button>
       </div>
 
@@ -70,7 +72,7 @@ export default function ActivityTab({ agent }: { agent: Agent }) {
         <Table>
           <TableHeader>
             <TableRow className="border-line hover:bg-transparent">
-              {['Tx', 'Cliente', 'Servicio', 'Monto', 'Estado', 'Duración', ''].map((h, i) => (
+              {[t('activity.colTx'), t('activity.colClient'), t('activity.colService'), t('activity.colAmount'), t('activity.colStatus'), t('activity.colDuration'), ''].map((h, i) => (
                 <TableHead
                   key={h || 'cuando'}
                   className={cn(
@@ -81,7 +83,7 @@ export default function ActivityTab({ agent }: { agent: Agent }) {
                     i === 5 && 'hidden md:table-cell',
                   )}
                 >
-                  {i === 6 ? 'Cuándo' : h}
+                  {i === 6 ? t('activity.colWhen') : h}
                 </TableHead>
               ))}
             </TableRow>
@@ -98,7 +100,7 @@ export default function ActivityTab({ agent }: { agent: Agent }) {
                   transition={{ duration: 0.4, delay: i * 0.04, ease: 'easeOut' }}
                   onClick={() => copyRowHash(r.tx)}
                   className="cursor-pointer border-line transition-colors hover:bg-cream"
-                  title="Copiar hash de la transacción"
+                  title={t('activity.copyHashTitle')}
                 >
                   <TableCell className="pl-5" onClick={(e) => e.stopPropagation()}>
                     <TxHash hash={r.tx} />
@@ -107,7 +109,7 @@ export default function ActivityTab({ agent }: { agent: Agent }) {
                   <TableCell className="text-[0.8125rem] text-ink-2">{r.service}</TableCell>
                   <TableCell className="text-right font-mono text-[0.8125rem] text-ink">{formatMon(r.amount)} MON</TableCell>
                   <TableCell>
-                    <span className={cn('rounded-full px-2.5 py-0.5 text-[0.75rem] font-medium', st.className)}>{st.label}</span>
+                    <span className={cn('rounded-full px-2.5 py-0.5 text-[0.75rem] font-medium', st.className)}>{t(st.label)}</span>
                   </TableCell>
                   <TableCell className="hidden text-right font-mono text-[0.8125rem] text-ink-2 md:table-cell">{r.duration}</TableCell>
                   <TableCell className="pr-5 text-right text-[0.8125rem] text-ink-3">{r.ago}</TableCell>
@@ -119,7 +121,7 @@ export default function ActivityTab({ agent }: { agent: Agent }) {
       </div>
 
       <p className="mt-4 text-[0.8125rem] text-ink-3">
-        Los resultados viajan off-chain; el hash del resultado queda anclado on-chain.
+        {t('activity.offchainNote')}
       </p>
     </div>
   );

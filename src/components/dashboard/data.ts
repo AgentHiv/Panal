@@ -43,16 +43,16 @@ export interface Kpi {
 
 export const KPIS: Record<Perspective, Kpi[]> = {
   proveedor: [
-    { id: 'ingresos', label: 'Ingresos (30 días)', value: 96.32, decimals: 2, suffix: 'MON', delta: '+18,4%', deltaIcon: 'up' },
-    { id: 'activas', label: 'Tareas activas ahora', value: 23, sub: '4 en cola' },
-    { id: 'rating', label: 'Rating medio', value: 4.9, decimals: 1, suffix: '★', sub: '512 reseñas' },
-    { id: 'ranking', label: 'Ranking en Texto', value: 12, prefix: '#', delta: '▲ 3 esta semana', deltaIcon: 'none' },
+    { id: 'ingresos', label: 'dash.kpi.income', value: 96.32, decimals: 2, suffix: 'MON', delta: '+18,4%', deltaIcon: 'up' },
+    { id: 'activas', label: 'dash.kpi.activeTasks', value: 23, sub: 'dash.kpi.inQueue' },
+    { id: 'rating', label: 'dash.kpi.avgRating', value: 4.9, decimals: 1, suffix: '★', sub: 'dash.kpi.reviews' },
+    { id: 'ranking', label: 'dash.kpi.rankingTexto', value: 12, prefix: '#', delta: 'dash.kpi.up3', deltaIcon: 'none' },
   ],
   cliente: [
-    { id: 'gastado', label: 'Gastado (30 días)', value: 12.4, decimals: 2, suffix: 'MON', sub: '11 contrataciones' },
-    { id: 'pedidas', label: 'Tareas pedidas', value: 8, sub: '3 en curso' },
-    { id: 'puntual', label: 'Entregas a tiempo', value: 100, suffix: '%', sub: '0 reclamaciones' },
-    { id: 'favoritos', label: 'Agentes favoritos', value: 2, sub: 'TranslatorBot · CodeAuditor' },
+    { id: 'gastado', label: 'dash.kpi.spent', value: 12.4, decimals: 2, suffix: 'MON', sub: 'dash.kpi.hires' },
+    { id: 'pedidas', label: 'dash.kpi.requested', value: 8, sub: 'dash.kpi.inProgress' },
+    { id: 'puntual', label: 'dash.kpi.onTime', value: 100, suffix: '%', sub: 'dash.kpi.claims' },
+    { id: 'favoritos', label: 'dash.kpi.favorites', value: 2, sub: 'TranslatorBot · CodeAuditor' },
   ],
 };
 
@@ -136,23 +136,23 @@ export interface CategorySlice {
 
 export const CATEGORY_SPLIT: Record<Perspective, { title: string; center: string; centerLabel: string; slices: CategorySlice[] }> = {
   proveedor: {
-    title: 'Tareas por categoría',
+    title: 'dash.donut.tasksByCategory',
     center: '1.284',
-    centerLabel: 'tareas',
+    centerLabel: 'dash.donut.tasks',
     slices: [
-      { name: 'Texto', pct: 62, color: '#E29A2E' },
-      { name: 'Datos', pct: 24, color: '#6E7B4E' },
-      { name: 'Código', pct: 14, color: '#C9B68C' },
+      { name: 'categories.texto', pct: 62, color: '#E29A2E' },
+      { name: 'categories.datos', pct: 24, color: '#6E7B4E' },
+      { name: 'categories.codigo', pct: 14, color: '#C9B68C' },
     ],
   },
   cliente: {
-    title: 'Gasto por categoría',
+    title: 'dash.donut.spendByCategory',
     center: '12,40',
-    centerLabel: 'MON en 30 días',
+    centerLabel: 'dash.donut.mon30',
     slices: [
-      { name: 'Texto', pct: 48, color: '#E29A2E' },
-      { name: 'Código', pct: 37, color: '#6E7B4E' },
-      { name: 'Datos', pct: 15, color: '#C9B68C' },
+      { name: 'categories.texto', pct: 48, color: '#E29A2E' },
+      { name: 'categories.codigo', pct: 37, color: '#6E7B4E' },
+      { name: 'categories.datos', pct: 15, color: '#C9B68C' },
     ],
   },
 };
@@ -298,7 +298,7 @@ export interface DisputeStep {
 
 export const DISPUTE = {
   id: '#D-104',
-  title: 'Entrega impugnada: informe de DataMole',
+  title: 'dash.dispute.title',
   taskId: '#T-8281',
   amount: 0.018,
   counterparty: '0xF21…7bC9',
@@ -307,12 +307,12 @@ export const DISPUTE = {
   votes: 3,
   votesTotal: 5,
   steps: [
-    { title: 'Apelación enviada', detail: 'hace 2 días', done: true },
-    { title: 'Jurado seleccionado', detail: '5 jurados con stake', done: true },
-    { title: 'Votación en curso', detail: '3/5 votos', done: false, current: true },
-    { title: 'Resolución', detail: 'estimado en ~31 h', done: false },
+    { title: 'dash.dispute.step1', detail: 'dash.dispute.step1detail', done: true },
+    { title: 'dash.dispute.step2', detail: 'dash.dispute.step2detail', done: true },
+    { title: 'dash.dispute.step3', detail: 'dash.dispute.step3detail', done: false, current: true },
+    { title: 'dash.dispute.step4', detail: 'dash.dispute.step4detail', done: false },
   ] as DisputeStep[],
-  note: 'Si el jurado falla a tu favor, recibes el 100% del escrow y el contrario pierde parte de su stake.',
+  note: 'dash.dispute.note',
 };
 
 /* ---------- Historial de pagos (S7) ---------- */
@@ -355,7 +355,7 @@ export const REPUTATION: ReputationBreakdown = {
     { stars: 2, pct: 0 },
     { stars: 1, pct: 0 },
   ],
-  bullets: ['512 reseñas verificadas on-chain', '0 disputas perdidas', '100% pagos puntuales'],
+  bullets: ['dash.reputation.bullet1', 'dash.reputation.bullet2', 'dash.reputation.bullet3'],
 };
 
 export type BadgeTone = 'honey' | 'olive' | 'ink' | 'terra';
@@ -371,9 +371,9 @@ export interface HiveBadge {
 }
 
 export const BADGES: HiveBadge[] = [
-  { id: 'top1', name: 'Top 1% Texto', detail: 'Entre los mejores 1% de la categoría Texto', tone: 'honey', icon: 'trophy' },
-  { id: 'mil', name: '1.000 tareas', detail: 'Más de 1.000 tareas completadas', tone: 'olive', icon: 'hexagon' },
-  { id: 'pionero', name: 'Pionero mainnet', detail: 'Presente desde el bloque génesis de Monad', tone: 'ink', icon: 'rocket' },
-  { id: 'cero', name: 'Cero disputas 90d', detail: '90 días sin una sola disputa', tone: 'olive', icon: 'shield' },
-  { id: 'jurado', name: 'Jurado de honor', detail: 'Jurado destacado del sistema de disputas', tone: 'terra', icon: 'scale', locked: true, lockedHint: 'Resuelve 10 disputas para desbloquear' },
+  { id: 'top1', name: 'dash.badges.top1.name', detail: 'dash.badges.top1.detail', tone: 'honey', icon: 'trophy' },
+  { id: 'mil', name: 'dash.badges.mil.name', detail: 'dash.badges.mil.detail', tone: 'olive', icon: 'hexagon' },
+  { id: 'pionero', name: 'dash.badges.pionero.name', detail: 'dash.badges.pionero.detail', tone: 'ink', icon: 'rocket' },
+  { id: 'cero', name: 'dash.badges.cero.name', detail: 'dash.badges.cero.detail', tone: 'olive', icon: 'shield' },
+  { id: 'jurado', name: 'dash.badges.jurado.name', detail: 'dash.badges.jurado.detail', tone: 'terra', icon: 'scale', locked: true, lockedHint: 'dash.badges.jurado.hint' },
 ];

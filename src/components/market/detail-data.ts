@@ -40,22 +40,24 @@ export function currentQueue(agent: Agent): number {
 
 /* ---------- Tab Resumen ---------- */
 
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
 /** "Cómo trabaja" — 3 pasos numerados. */
-export function workSteps(agent: Agent): string[] {
+export function workSteps(agent: Agent, t: TFn): string[] {
   if (agent.id === 'codeauditor') {
-    return ['Envías contrato o repo', 'Análisis estático + fuzzing', 'Informe firmado on-chain'];
+    return [t('detail.steps.audit1'), t('detail.steps.audit2'), t('detail.steps.audit3')];
   }
   if (agent.type === 'humano') {
     return [
-      'Defines el alcance, el plazo y las referencias',
-      `${agent.name} trabaja y comparte avances verificables`,
-      'Entrega final verificada y pago liberado del escrow',
+      t('detail.steps.human1'),
+      t('detail.steps.human2', { name: agent.name }),
+      t('detail.steps.human3'),
     ];
   }
   return [
-    'Describes la tarea y adjuntas el material',
-    `${agent.name} la ejecuta y verifica el resultado`,
-    'Entrega firmada con el hash anclado on-chain',
+    t('detail.steps.ia1'),
+    t('detail.steps.ia2', { name: agent.name }),
+    t('detail.steps.ia3'),
   ];
 }
 
@@ -67,52 +69,52 @@ function slaWindow(agent: Agent): string {
 }
 
 /** "Garantías del agente (SLA)". */
-export function slaGuarantees(agent: Agent): string[] {
+export function slaGuarantees(agent: Agent, t: TFn): string[] {
   if (agent.id === 'codeauditor') {
-    return [
-      'Entrega < 60s o la tarea es gratis',
-      'Reembolso automático si el informe falla la verificación',
-      'Acepta subcontratar a CodeAuditor-Pro para segunda opinión',
-    ];
+    return [t('detail.sla.audit1'), t('detail.sla.audit2'), t('detail.sla.audit3')];
   }
   const out: string[] = [];
   if (agent.type === 'humano') {
-    out.push('Entrega en 24–48h o se renegocian los términos del escrow');
+    out.push(t('detail.sla.humanDelivery'));
   } else {
-    out.push(`Entrega en menos de ${slaWindow(agent)} o la tarea es gratis`);
+    out.push(t('detail.sla.iaDelivery', { window: slaWindow(agent) }));
   }
-  out.push('Reembolso automático si la entrega no supera la verificación on-chain');
-  out.push(
-    agent.acceptsSubcontracting
-      ? 'Acepta subcontratar a otros agentes del panal para segundas opiniones'
-      : 'Ejecuta cada tarea de extremo a extremo, sin subcontratas',
-  );
+  out.push(t('detail.sla.refund'));
+  out.push(agent.acceptsSubcontracting ? t('detail.sla.subcontract') : t('detail.sla.solo'));
   return out;
 }
 
 /** Card "Composición" (honey-soft). */
-export function compositionNote(agent: Agent): string {
+export function compositionNote(agent: Agent, t: TFn): string {
   if (agent.id === 'codeauditor') {
-    return 'Este agente reinvierte sus ganancias: subcontrata a PriceOracle Bot para datos de mercado y a SummarizerAI para resúmenes ejecutivos. El panal trabaja para el panal.';
+    return t('detail.composition.audit');
   }
   if (!agent.acceptsSubcontracting) {
-    return 'Este agente trabaja en solitario: cada tarea se ejecuta de extremo a extremo, sin subcontratas, y la evidencia queda anclada on-chain.';
+    return t('detail.composition.solo');
   }
   const others = AGENTS.filter((a) => a.id !== agent.id && a.type === 'ia');
   const h = hashString(agent.id);
   const a1 = others[h % others.length];
   const a2 = others[(h + 3) % others.length];
-  return `Este agente reinvierte sus ganancias: subcontrata a ${a1.name} y a ${a2.name} cuando la tarea lo requiere. El panal trabaja para el panal.`;
+  return t('detail.composition.reinvest', { a1: a1.name, a2: a2.name });
 }
 
 /** Insignias hexagonales del sidebar en Resumen. */
-export function badges(agent: Agent): string[] {
+export function badges(agent: Agent, t: TFn): string[] {
   const out: string[] = [];
-  out.push(`Top ${agent.rating >= 4.7 ? '1%' : '10%'} ${CATEGORY_LABELS[agent.category]}`);
+  out.push(
+    t(agent.rating >= 4.7 ? 'detail.badges.top1' : 'detail.badges.top10', {
+      category: t(CATEGORY_LABELS[agent.category]),
+    }),
+  );
   const milestone = [100000, 50000, 10000, 5000, 1000, 100].find((m) => agent.tasksCompleted >= m);
-  if (milestone) out.push(`${formatInt(milestone)} tareas`);
-  out.push(agent.successRate >= 99 ? 'Cero disputas 90d' : `Éxito ${formatRating(agent.successRate)}%`);
-  out.push(agent.verified ? 'Verificado por la comunidad' : `En el panal desde ${agent.memberSince}`);
+  if (milestone) out.push(t('detail.badges.tasks', { count: formatInt(milestone) }));
+  out.push(
+    agent.successRate >= 99
+      ? t('detail.badges.zeroDisputes')
+      : t('detail.badges.success', { rate: formatRating(agent.successRate) }),
+  );
+  out.push(agent.verified ? t('detail.badges.communityVerified') : t('detail.memberSince') + ' ' + agent.memberSince);
   return out.slice(0, 4);
 }
 
@@ -125,20 +127,25 @@ export interface ServiceItem {
 }
 
 /** Servicios del agente; si el mock no define, se generan 3 a partir del precio base. */
-export function servicesFor(agent: Agent): ServiceItem[] {
+export function servicesFor(agent: Agent, t?: TFn): ServiceItem[] {
   if (agent.services && agent.services.length > 0) return agent.services;
   const base = agent.pricePerTask;
+  const tt: TFn = t ?? ((k) => k);
   return [
-    { name: 'Tarea estándar', price: base, description: `${agent.tagline} Entrega verificada con hash on-chain.` },
     {
-      name: 'Tarea prioritaria',
-      price: Math.round(base * 1.5 * 1000) / 1000,
-      description: 'La misma entrega con prioridad en la cola y verificación reforzada.',
+      name: tt('detail.services.standard.name'),
+      price: base,
+      description: tt('detail.services.standard.desc', { tagline: agent.tagline }),
     },
     {
-      name: 'Pack 10 tareas',
+      name: tt('detail.services.priority.name'),
+      price: Math.round(base * 1.5 * 1000) / 1000,
+      description: tt('detail.services.priority.desc'),
+    },
+    {
+      name: tt('detail.services.pack.name'),
       price: Math.round(base * 9 * 1000) / 1000,
-      description: 'Diez tareas prepagadas con un 10% de descuento y un único escrow.',
+      description: tt('detail.services.pack.desc'),
     },
   ];
 }
@@ -171,11 +178,15 @@ const REVIEW_AUTHORS: Array<{ name: string; kind: 'humano' | 'agente' }> = [
   { name: 'SentimentHive', kind: 'agente' },
 ];
 
-const REVIEW_AGOS = ['hace 1 día', 'hace 3 días', 'hace 1 semana', 'hace 2 semanas'];
-
-export function reviewsFor(agent: Agent): Review[] {
+export function reviewsFor(agent: Agent, t?: TFn): Review[] {
   const rng = mulberry32(hashString(`${agent.id}-resenas`));
-  const ago = REVIEW_AGOS;
+  const tt: TFn = t ?? ((k) => k);
+  const ago = [
+    tt('detail.ago.day', { count: 1 }),
+    tt('detail.ago.day', { count: 3 }),
+    tt('detail.ago.week', { count: 1 }),
+    tt('detail.ago.week', { count: 2 }),
+  ];
   if (agent.id === 'codeauditor') {
     return [
       {
@@ -184,7 +195,7 @@ export function reviewsFor(agent: Agent): Review[] {
         rating: 5,
         text: 'Detectó una reentrancy que dos auditorías humanas habían pasado por alto. El PoC funcionó a la primera.',
         tx: randomTxHash(rng),
-        ago: 'hace 2 días',
+        ago: t ? t('detail.ago.day', { count: 2 }) : 'hace 2 días',
       },
       {
         author: 'DeFiFactory',
@@ -192,7 +203,7 @@ export function reviewsFor(agent: Agent): Review[] {
         rating: 5,
         text: 'Lo uso como segunda opinión en cada despliegue. 12 segundos por auditoría es absurdo.',
         tx: randomTxHash(rng),
-        ago: 'hace 4 días',
+        ago: t ? t('detail.ago.day', { count: 4 }) : 'hace 4 días',
       },
       {
         author: '0xB22…9eF0',
@@ -200,7 +211,7 @@ export function reviewsFor(agent: Agent): Review[] {
         rating: 5,
         text: 'El informe firmado on-chain nos sirvió como evidencia en gobernanza.',
         tx: randomTxHash(rng),
-        ago: 'hace 1 semana',
+        ago: t ? t('detail.ago.week', { count: 1 }) : 'hace 1 semana',
       },
       {
         author: 'YieldKeeper',
@@ -208,7 +219,7 @@ export function reviewsFor(agent: Agent): Review[] {
         rating: 5,
         text: 'Solo una vez falló la entrega y el reembolso fue automático. Confianza total.',
         tx: randomTxHash(rng),
-        ago: 'hace 2 semanas',
+        ago: t ? t('detail.ago.week', { count: 2 }) : 'hace 2 semanas',
       },
     ];
   }
@@ -248,7 +259,7 @@ export interface ActivityRow {
   ago: string;
 }
 
-const ACTIVITY_AGOS = ['hace 12 min', 'hace 38 min', 'hace 1 h', 'hace 3 h', 'hace 7 h', 'hace 1 d', 'hace 2 d', 'hace 4 d'];
+
 const ACTIVITY_WALLETS = ['0x7A4f…f9B2', '0xB22…9eF0', '0x8F1c…2Aa4', '0x3f9a…c21e', 'DeFiFactory', 'SentimentHive'];
 
 function durationFor(agent: Agent, rng: () => number): string {
@@ -261,9 +272,20 @@ function durationFor(agent: Agent, rng: () => number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-export function activityFor(agent: Agent): ActivityRow[] {
+export function activityFor(agent: Agent, t?: TFn): ActivityRow[] {
   const rng = mulberry32(hashString(`${agent.id}-actividad`));
-  const services = servicesFor(agent);
+  const tt: TFn = t ?? ((k) => k);
+  const agos = [
+    tt('common.timeAgo.minutes', { count: 12 }),
+    tt('common.timeAgo.minutes', { count: 38 }),
+    tt('common.timeAgo.hours', { count: 1 }),
+    tt('common.timeAgo.hours', { count: 3 }),
+    tt('common.timeAgo.hours', { count: 7 }),
+    tt('detail.ago.d', { count: 1 }),
+    tt('detail.ago.d', { count: 2 }),
+    tt('detail.ago.d', { count: 4 }),
+  ];
+  const services = servicesFor(agent, t);
   const others = AGENTS.filter((a) => a.id !== agent.id).map((a) => a.name);
   const clients = [...ACTIVITY_WALLETS, ...others.slice(0, 3)];
   return Array.from({ length: 8 }, (_, i) => {
@@ -277,7 +299,7 @@ export function activityFor(agent: Agent): ActivityRow[] {
       amount: svc.price,
       status,
       duration: durationFor(agent, rng),
-      ago: ACTIVITY_AGOS[i],
+      ago: agos[i],
     };
   });
 }
@@ -295,10 +317,10 @@ export function similarAgents(agent: Agent, n = 3): Agent[] {
   return [...sameCategory, ...fillers].slice(0, n);
 }
 
-/** "responde en 12 segundos" — CTA inferior (agente.md S5). */
-export function responseInWords(agent: Agent): string {
+/** "12 segundos" — CTA inferior (agente.md S5), localizado vía i18n. */
+export function responseInWords(agent: Agent, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const s = agent.avgResponseSec;
-  if (s < 60) return `${s} segundos`;
-  if (s < 3600) return `${Math.round(s / 60)} minutos`;
-  return `${Math.round(s / 3600)} horas`;
+  if (s < 60) return t('detail.response.seconds', { count: s });
+  if (s < 3600) return t('detail.response.minutes', { count: Math.round(s / 60) });
+  return t('detail.response.hours', { count: Math.round(s / 3600) });
 }

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { BadgeCheck, Star } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,6 +18,7 @@ const HEX_CLIP = 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7%
 
 /** Badge hexagonal para los 3 primeros del ranking (marketplace.md S6). */
 function RankCell({ rank }: { rank: number }) {
+  const { t } = useTranslation();
   if (rank > 3) {
     return <span className="font-mono text-[0.8125rem] text-ink-3">{rank}</span>;
   }
@@ -27,7 +29,7 @@ function RankCell({ rank }: { rank: number }) {
         rank === 1 ? 'bg-honey text-ink' : 'bg-honey-soft text-honey-deep',
       )}
       style={{ clipPath: HEX_CLIP }}
-      aria-label={`Puesto ${rank}`}
+      aria-label={t('ranking.rankAria', { rank })}
     >
       {rank}
     </span>
@@ -39,6 +41,7 @@ function RankCell({ rank }: { rank: number }) {
  * En móvil colapsan Tareas, Resp. y Tendencia.
  */
 export default function RankingTable({ agents, onHire }: RankingTableProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -47,23 +50,23 @@ export default function RankingTable({ agents, onHire }: RankingTableProps) {
         <TableHeader>
           <TableRow className="border-line hover:bg-transparent">
             <TableHead className="w-12 pl-5 text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3">#</TableHead>
-            <TableHead className="text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3">Agente</TableHead>
-            <TableHead className="text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3">Categoría</TableHead>
-            <TableHead className="text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3">Rating</TableHead>
+            <TableHead className="text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3">{t('ranking.colAgent')}</TableHead>
+            <TableHead className="text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3">{t('ranking.colCategory')}</TableHead>
+            <TableHead className="text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3">{t('ranking.colRating')}</TableHead>
             <TableHead className="hidden text-right text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3 md:table-cell">
-              Tareas
+              {t('ranking.colTasks')}
             </TableHead>
             <TableHead className="text-right text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3">
-              Volumen (MON)
+              {t('ranking.colVolume')}
             </TableHead>
             <TableHead className="hidden text-right text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3 md:table-cell">
-              Resp. media
+              {t('ranking.colResponse')}
             </TableHead>
             <TableHead className="hidden text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3 md:table-cell">
-              Tendencia 7d
+              {t('ranking.colTrend')}
             </TableHead>
             <TableHead className="pr-5 text-right text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3">
-              <span className="sr-only">Acciones</span>
+              <span className="sr-only">{t('ranking.colActions')}</span>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -92,7 +95,7 @@ export default function RankingTable({ agents, onHire }: RankingTableProps) {
               </TableCell>
               <TableCell>
                 <span className="rounded-full bg-honey-soft px-2.5 py-0.5 text-[0.75rem] font-medium text-honey-deep">
-                  {CATEGORY_LABELS[agent.category]}
+                  {t(CATEGORY_LABELS[agent.category])}
                 </span>
               </TableCell>
               <TableCell>
@@ -122,7 +125,7 @@ export default function RankingTable({ agents, onHire }: RankingTableProps) {
                   }}
                   className="rounded-full border border-line px-4 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:bg-honey hover:text-ink"
                 >
-                  Contratar
+                  {t('common.hire')}
                 </button>
               </TableCell>
             </motion.tr>

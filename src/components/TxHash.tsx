@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -13,6 +14,7 @@ export interface TxHashProps {
 
 /** Mono truncado `0x3f9a…c21e` + icono copy; copia con toast (design.md §5). */
 export default function TxHash({ hash, short = true, className }: TxHashProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const label = short ? truncateHash(hash) : hash;
 
@@ -23,7 +25,7 @@ export default function TxHash({ hash, short = true, className }: TxHashProps) {
       /* portapapeles no disponible: el toast igualmente confirma la acción */
     }
     setCopied(true);
-    toast('Hash copiado', { icon: <Check size={14} className="text-olive" /> });
+    toast(t('activity.hashToast'), { icon: <Check size={14} className="text-olive" /> });
     window.setTimeout(() => setCopied(false), 1600);
   };
 
@@ -35,7 +37,7 @@ export default function TxHash({ hash, short = true, className }: TxHashProps) {
         'group inline-flex items-center gap-1.5 font-mono text-[0.8125rem] text-ink-2 transition-colors hover:text-honey-deep',
         className,
       )}
-      aria-label={`Copiar hash ${label}`}
+      aria-label={t('common.copyHash', { label })}
     >
       <span>{label}</span>
       {copied ? (

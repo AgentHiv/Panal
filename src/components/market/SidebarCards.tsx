@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Lock, Timer } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
@@ -12,11 +13,12 @@ const HEX_CLIP = 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7%
 
 /** Insignias hexagonales del agente (agente.md Tab Resumen, columna lateral). */
 export function InsigniasCard({ agent }: { agent: Agent }) {
+  const { t } = useTranslation();
   return (
     <FadeUp y={20} className="rounded-2xl border border-line bg-paper p-5">
-      <h3 className="text-[0.875rem] font-semibold text-ink">Insignias</h3>
+      <h3 className="text-[0.875rem] font-semibold text-ink">{t('detail.badgesTitle')}</h3>
       <div className="mt-4 grid grid-cols-2 gap-3">
-        {badges(agent).map((b, i) => (
+        {badges(agent, t).map((b, i) => (
           <motion.span
             key={b}
             initial={{ scale: 0, opacity: 0 }}
@@ -39,16 +41,17 @@ export function InsigniasCard({ agent }: { agent: Agent }) {
  * dividida y auto-release 72h con mini-timeline.
  */
 export function EscrowCard() {
+  const { t } = useTranslation();
   const agentPct = (1 - PROTOCOL_FEE) * 100;
   return (
     <FadeUp y={20} delay={0.05} className="rounded-2xl border border-line bg-paper p-5">
       <div className="flex items-center gap-2">
         <Lock size={16} className="text-honey-deep" aria-hidden />
-        <h3 className="text-[0.875rem] font-semibold text-ink">Protegido por escrow</h3>
+        <h3 className="text-[0.875rem] font-semibold text-ink">{t('escrow.title')}</h3>
       </div>
 
       {/* barra dividida honey/sand */}
-      <div className="mt-4 flex h-2.5 overflow-hidden rounded-full" role="img" aria-label="97,5% para el agente, 2,5% para el protocolo">
+      <div className="mt-4 flex h-2.5 overflow-hidden rounded-full" role="img" aria-label={t('escrow.splitAria')}>
         <motion.div
           className="bg-honey"
           initial={{ scaleX: 0 }}
@@ -61,10 +64,10 @@ export function EscrowCard() {
       </div>
       <div className="mt-2 flex justify-between font-mono text-[11px] text-ink-3">
         <span>
-          <span className="text-honey-deep">97,5%</span> agente
+          <span className="text-honey-deep">97,5%</span> {t('escrow.agent')}
         </span>
         <span>
-          <span className="text-ink-2">2,5%</span> protocolo
+          <span className="text-ink-2">2,5%</span> {t('escrow.protocol')}
         </span>
       </div>
 
@@ -85,15 +88,15 @@ export function EscrowCard() {
           ))}
         </div>
         <div className="mt-1.5 flex justify-between text-[10.5px] font-medium text-ink-3">
-          <span>Bloqueo</span>
-          <span>Verificación</span>
-          <span>Liberación {ESCROW_AUTO_RELEASE_H}h</span>
+          <span>{t('escrow.lock')}</span>
+          <span>{t('escrow.verification')}</span>
+          <span>{t('escrow.release', { hours: ESCROW_AUTO_RELEASE_H })}</span>
         </div>
       </div>
 
       <p className="mt-4 flex items-start gap-2 text-[0.75rem] leading-[1.5] text-ink-3">
         <Timer size={13} className="mt-0.5 shrink-0 text-honey-deep" aria-hidden />
-        Si no hay disputa, el pago se libera solo en {ESCROW_AUTO_RELEASE_H} h.
+        {t('hire.step2.autoRelease', { hours: ESCROW_AUTO_RELEASE_H })}
       </p>
     </FadeUp>
   );
@@ -101,10 +104,11 @@ export function EscrowCard() {
 
 /** Card "Agentes similares" (agente.md S4): 3 mini-filas enlazadas. */
 export function SimilarAgentsCard({ agent }: { agent: Agent }) {
+  const { t } = useTranslation();
   const similares = similarAgents(agent, 3);
   return (
     <FadeUp y={20} delay={0.1} className="rounded-2xl border border-line bg-paper p-5">
-      <h3 className="text-[0.875rem] font-semibold text-ink">Agentes similares</h3>
+      <h3 className="text-[0.875rem] font-semibold text-ink">{t('detail.similarTitle')}</h3>
       <div className="mt-3 flex flex-col">
         {similares.map((a) => (
           <Link

@@ -7,12 +7,13 @@
 import { motion } from 'framer-motion';
 import { ArrowDownLeft, ArrowUpRight, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import TxHash from '@/components/TxHash';
 import { cn } from '@/lib/utils';
 import { PAYMENTS } from './data';
 import { formatMonEs } from './data';
 
-function exportCsv() {
+function exportCsv(t: (k: string, o?: Record<string, unknown>) => string) {
   const header = 'id,direccion,descripcion,contraparte,fecha,monto_mon,tx';
   const rows = PAYMENTS.map((p) =>
     [p.id, p.direction, `"${p.description}"`, p.counterparty, `"${p.date}"`, p.amount, p.txHash].join(','),
@@ -24,10 +25,11 @@ function exportCsv() {
   a.download = 'pagos-panal.csv';
   a.click();
   URL.revokeObjectURL(url);
-  toast('CSV exportado', { description: 'pagos-panal.csv · 6 movimientos' });
+  toast(t('activity.csvToast'), { description: t('payments.csvDesc') });
 }
 
 export default function PaymentsSection() {
+  const { t } = useTranslation();
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-paper shadow-card">
       <ul className="divide-y divide-line">
@@ -77,11 +79,11 @@ export default function PaymentsSection() {
       <div className="border-t border-line bg-cream/60 px-5 py-3">
         <button
           type="button"
-          onClick={exportCsv}
+          onClick={() => exportCsv(t)}
           className="inline-flex items-center gap-1.5 rounded-full border border-line bg-paper px-3.5 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
         >
           <Download size={14} />
-          Exportar CSV
+          {t('activity.exportCsv')}
         </button>
       </div>
     </div>

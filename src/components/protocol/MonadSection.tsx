@@ -4,6 +4,7 @@ import { WordReveal } from '@/components/home/Reveal';
 import SectionHeader from '@/components/SectionHeader';
 import { NETWORK_COMPARISON } from '@/data/protocol';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const GRID_COLS = 'grid-cols-[1.1fr_0.9fr_0.9fr_0.7fr_1.2fr_0.8fr]';
 
@@ -14,15 +15,16 @@ const GRID_COLS = 'grid-cols-[1.1fr_0.9fr_0.9fr_0.7fr_1.2fr_0.8fr]';
  * crece scaleY primero y word-reveal después.
  */
 export default function MonadSection() {
+  const { t } = useTranslation();
   return (
     <section className="border-t border-line bg-paper py-24 md:py-32">
       <div className="mx-auto max-w-4xl px-6">
         <SectionHeader
           align="center"
-          eyebrow="LA RED"
+          eyebrow={t('monadPage.eyebrow')}
           title={
             <WordReveal>
-              La única EVM donde la economía agéntica <em className="serif-accent text-honey-deep">es viable.</em>
+              {t('monadPage.title')} <em className="serif-accent text-honey-deep">{t('monadPage.titleEm')}</em>
             </WordReveal>
           }
         />
@@ -35,11 +37,11 @@ export default function MonadSection() {
               GRID_COLS,
             )}
           >
-            <span>Red</span>
-            <span>Comisión / tx</span>
-            <span>Finalidad</span>
+            <span>{t('home.monad.colNetwork')}</span>
+            <span>{t('home.monad.colFee')}</span>
+            <span>{t('home.monad.colFinality')}</span>
             <span>TPS</span>
-            <span>Micro-tarea $0.002</span>
+            <span>{t('monadPage.colMicrotask')}</span>
             <span>EVM</span>
           </div>
           {NETWORK_COMPARISON.map((row, i) => (
@@ -63,23 +65,23 @@ export default function MonadSection() {
                 {row.microtask === 'si' && (
                   <>
                     <Check size={16} className="text-olive" strokeWidth={3} />
-                    <span className="text-olive">{row.microtaskLabel}</span>
+                    <span className="text-olive">{t(row.microtaskLabel)}</span>
                   </>
                 )}
                 {row.microtask === 'no' && (
                   <>
                     <X size={16} className="text-terra" strokeWidth={3} />
-                    <span className="text-terra">{row.microtaskLabel}</span>
+                    <span className="text-terra">{t(row.microtaskLabel)}</span>
                   </>
                 )}
                 {row.microtask === 'apenas' && (
                   <>
                     <Minus size={16} className="text-honey-deep" strokeWidth={3} />
-                    <span className="text-ink-2">{row.microtaskLabel}</span>
+                    <span className="text-ink-2">{t(row.microtaskLabel)}</span>
                   </>
                 )}
               </span>
-              <span className="font-mono text-[0.875rem] text-ink-2">{row.evm ?? '—'}</span>
+              <span className="font-mono text-[0.875rem] text-ink-2">{row.evm ? t(row.evm) : '—'}</span>
               {row.highlight && (
                 <motion.span
                   initial={{ scaleX: 0 }}
@@ -106,8 +108,7 @@ export default function MonadSection() {
           />
           <p className="serif-accent text-[clamp(1.5rem,3vw,2.1rem)] leading-[1.35] text-ink">
             <WordReveal delay={0.25}>
-              “Un agente no espera 12 minutos a que finalice un pago. Espera 800 milisegundos — y ya
-              está en la siguiente tarea.”
+              {t('monadPage.quote')}
             </WordReveal>
           </p>
           <footer className="mt-4 font-mono text-[12px] tracking-[0.06em] text-ink-3">

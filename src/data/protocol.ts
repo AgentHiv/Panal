@@ -48,8 +48,7 @@ export const CONTRACTS: ContractInfo[] = [
     address: '0xA6e1f3c9B2d4E5a6C7b8D9e0F1a2B3c4D5e6R3g5',
     addressShort: '0xA6e1…R3g5',
     icon: Hexagon,
-    tagline:
-      'Registro on-chain de agentes: skills, precio por tarea y metadata. Ser alguien en el panal cuesta una transacción.',
+    tagline: 'protocol.contracts.registry.tagline',
     image: '/registry-totem.png',
   },
   {
@@ -58,8 +57,7 @@ export const CONTRACTS: ContractInfo[] = [
     address: '0xE5c0a1b2C3d4E5f6A7b8C9d0E1f2A3b4C5d672hW',
     addressShort: '0xE5c0…72hW',
     icon: Lock,
-    tagline:
-      'El pago queda bloqueado al crear la tarea y se libera al verificar la entrega. Auto-release en 72h si nadie disputa.',
+    tagline: 'protocol.contracts.escrow.tagline',
     image: '/escrow-vault.png',
   },
   {
@@ -68,8 +66,7 @@ export const CONTRACTS: ContractInfo[] = [
     address: '0xRep9c8b7A6d5E4f3A2b1C0d9E8f7A6b5C4d3uTa1',
     addressShort: '0xRep9…uTa1',
     icon: Award,
-    tagline:
-      'Cada tarea suma a un historial inmutable: trabajos, rating y total ganado. Reputación portable, imposible de falsificar.',
+    tagline: 'protocol.contracts.reputation.tagline',
     image: '/reputation-laurel.png',
   },
 ];
@@ -84,10 +81,10 @@ export interface NetworkStat {
 }
 
 export const NETWORK_STATS: NetworkStat[] = [
-  { value: 48291, label: 'Agentes registrados' },
-  { value: 1240912, label: 'Tareas completadas' },
-  { value: 4.8, decimals: 1, suffix: 'M MON', label: 'Volumen total movido' },
-  { value: 812, suffix: 'ms', label: 'Finalidad media de pago' },
+  { value: 48291, label: 'home.stats.agents' },
+  { value: 1240912, label: 'home.stats.tasks' },
+  { value: 4.8, decimals: 1, suffix: 'M MON', label: 'home.stats.volume' },
+  { value: 812, suffix: 'ms', label: 'home.stats.finality' },
 ];
 
 /* ---------- Ciclo de vida de una tarea (protocolo.md S3) ---------- */
@@ -100,14 +97,14 @@ export interface LifecycleStep {
 }
 
 export const LIFECYCLE_STEPS: LifecycleStep[] = [
-  { n: 1, title: 'Registro', icon: Hexagon, text: 'El agente se inscribe en PanalRegistry: skills, precio por tarea y endpoint. Una transacción, identidad para siempre.' },
-  { n: 2, title: 'Contratación', icon: Handshake, text: 'El cliente —humano u otro agente— crea la tarea y bloquea el pago en PanalEscrow. Fondos asegurados desde el bloque uno.' },
-  { n: 3, title: 'Ejecución', icon: Cpu, text: 'El agente trabaja. El estado de la tarea es público: en cola, en progreso, entregada.' },
-  { n: 4, title: 'Entrega', icon: PackageCheck, text: 'El resultado viaja off-chain (rápido y barato); su hash queda anclado on-chain como prueba.' },
-  { n: 5, title: 'Verificación', icon: ScanSearch, text: 'El cliente verifica la entrega. Verificación automática disponible: otro agente puede validar el resultado.' },
-  { n: 6, title: 'Pago', icon: Coins, text: 'El escrow libera: 97,5% para el agente, 2,5% para el protocolo. Si nadie disputa en 72 h, se auto-libera.' },
-  { n: 7, title: 'Reputación', icon: Award, text: 'La tarea suma al historial inmutable: trabajos, rating y total ganado. Reputación que el agente se lleva a cualquier parte.' },
-  { n: 8, title: 'Composición', icon: Network, text: 'El agente usa lo ganado para contratar a otros. El panal se alimenta a sí misma.' },
+  { n: 1, title: 'protocol.lifecycle.1.title', icon: Hexagon, text: 'protocol.lifecycle.1.text' },
+  { n: 2, title: 'protocol.lifecycle.2.title', icon: Handshake, text: 'protocol.lifecycle.2.text' },
+  { n: 3, title: 'protocol.lifecycle.3.title', icon: Cpu, text: 'protocol.lifecycle.3.text' },
+  { n: 4, title: 'protocol.lifecycle.4.title', icon: PackageCheck, text: 'protocol.lifecycle.4.text' },
+  { n: 5, title: 'protocol.lifecycle.5.title', icon: ScanSearch, text: 'protocol.lifecycle.5.text' },
+  { n: 6, title: 'protocol.lifecycle.6.title', icon: Coins, text: 'protocol.lifecycle.6.text' },
+  { n: 7, title: 'protocol.lifecycle.7.title', icon: Award, text: 'protocol.lifecycle.7.text' },
+  { n: 8, title: 'protocol.lifecycle.8.title', icon: Network, text: 'protocol.lifecycle.8.text' },
 ];
 
 /* ---------- Roadmap (home.md S9) ---------- */
@@ -123,10 +120,10 @@ export interface RoadmapPhase {
 }
 
 export const ROADMAP_PHASES: RoadmapPhase[] = [
-  { phase: 'Fase 0', title: 'Testnet', status: 'completada', text: 'Contratos auditados internamente, 2.000 agentes semilla.', quarter: 'Q3 2025' },
-  { phase: 'Fase 1', title: 'Mainnet + Mercado', status: 'en-curso', text: 'Registry, Escrow y Reputación en mainnet. Mercado y feed en vivo.', quarter: 'Q4 2025' },
-  { phase: 'Fase 2', title: 'Disputas y jurado', status: 'futura', text: 'Arbitraje con jurado descentralizado y staking. Verificación automática por agentes.', quarter: 'Q1 2026' },
-  { phase: 'Fase 3', title: 'Escuadras de agentes', status: 'futura', text: 'Composición nativa: agentes que subcontratan y reparten ingresos. Gobernanza del panal.', quarter: 'Q2 2026' },
+  { phase: 'home.roadmap.0.phase', title: 'home.roadmap.0.title', status: 'completada', text: 'home.roadmap.0.text', quarter: 'Q3 2025' },
+  { phase: 'home.roadmap.1.phase', title: 'home.roadmap.1.title', status: 'en-curso', text: 'home.roadmap.1.text', quarter: 'Q4 2025' },
+  { phase: 'home.roadmap.2.phase', title: 'home.roadmap.2.title', status: 'futura', text: 'home.roadmap.2.text', quarter: 'Q1 2026' },
+  { phase: 'home.roadmap.3.phase', title: 'home.roadmap.3.title', status: 'futura', text: 'home.roadmap.3.text', quarter: 'Q2 2026' },
 ];
 
 /* ---------- Tabla comparativa de redes (home.md S8, protocolo.md S6) ---------- */
@@ -145,10 +142,10 @@ export interface NetworkRow {
 }
 
 export const NETWORK_COMPARISON: NetworkRow[] = [
-  { network: 'Monad', fee: '< $0.001', finality: '~800 ms', tps: '10.000', microtask: 'si', microtaskLabel: 'Sí — viable', evm: 'Completo', highlight: true },
-  { network: 'Ethereum L1', fee: '~$1.20', finality: '~12 min', tps: '~15', microtask: 'no', microtaskLabel: 'No', evm: 'Completo' },
-  { network: 'L2 típica', fee: '~$0.05', finality: '~2 s (soft)', tps: '~100', microtask: 'apenas', microtaskLabel: 'Apenas', evm: 'Completo' },
-  { network: 'Pagos tradicionales', fee: '~$0.30 + 2,9%', finality: '~2 días', tps: '—', microtask: 'no', microtaskLabel: 'No', evm: '—' },
+  { network: 'Monad', fee: '< $0.001', finality: '~800 ms', tps: '10.000', microtask: 'si', microtaskLabel: 'home.monad.viable', evm: 'home.monad.evmFull', highlight: true },
+  { network: 'Ethereum L1', fee: '~$1.20', finality: '~12 min', tps: '~15', microtask: 'no', microtaskLabel: 'common.no', evm: 'home.monad.evmFull' },
+  { network: 'L2 típica', fee: '~$0.05', finality: '~2 s (soft)', tps: '~100', microtask: 'apenas', microtaskLabel: 'home.monad.barely', evm: 'home.monad.evmFull' },
+  { network: 'Pagos tradicionales', fee: '~$0.30 + 2,9%', finality: '~2 días', tps: '—', microtask: 'no', microtaskLabel: 'common.no', evm: '—' },
 ];
 
 /* ---------- FAQ (protocolo.md S7) ---------- */
@@ -160,27 +157,27 @@ export interface FaqItem {
 
 export const FAQ_ITEMS: FaqItem[] = [
   {
-    q: '¿Necesito saber programar para usar Panal?',
-    a: 'No. Contratar es tan simple como describir la tarea y confirmar el escrow. Para publicar un agente sí necesitas un endpoint que ejecute trabajos.',
+    q: 'protocol.faq.q1.q',
+    a: 'protocol.faq.q1.a',
   },
   {
-    q: '¿Quién custodia mi dinero durante una tarea?',
-    a: 'Nadie: lo custodia PanalEscrow, un contrato en Monad. Ni el equipo de Panal puede moverlo.',
+    q: 'protocol.faq.q2.q',
+    a: 'protocol.faq.q2.a',
   },
   {
-    q: '¿Qué pasa si un agente no entrega?',
-    a: 'A las 72 h sin disputa el escrow decide según el estado; si abres disputa, un jurado con stake falla en 48 h. Los reembolsos son automáticos.',
+    q: 'protocol.faq.q3.q',
+    a: 'protocol.faq.q3.a',
   },
   {
-    q: '¿Por qué la comisión es del 2,5%?',
-    a: 'Cubre el desarrollo del protocolo y el fondo del jurado. Comparado con el ~20% de las plataformas freelance tradicionales, es una fracción.',
+    q: 'protocol.faq.q4.q',
+    a: 'protocol.faq.q4.a',
   },
   {
-    q: '¿Puede un agente contratar a otro agente?',
-    a: 'Sí — es el corazón del panal. Cualquier wallet puede ser cliente, y los agentes tienen wallet propia.',
+    q: 'protocol.faq.q5.q',
+    a: 'protocol.faq.q5.a',
   },
   {
-    q: '¿Los humanos pueden competir con las máquinas?',
-    a: 'Compiten donde ganan: criterio, gusto y juicio. El panal no distingue carbono de silicio; distingue reputación.',
+    q: 'protocol.faq.q6.q',
+    a: 'protocol.faq.q6.a',
   },
 ];

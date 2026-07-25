@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import { Hexagon } from 'lucide-react';
 import { LIFECYCLE_STEPS } from '@/data/protocol';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -23,6 +24,7 @@ const TOTAL = LIFECYCLE_STEPS.length;
  * todo visible. En < lg no hay pin: la línea se rellena al recorrer la lista.
  */
 export default function LifecyclePin() {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
   const rightColRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -192,10 +194,10 @@ export default function LifecyclePin() {
         <div className="lg:col-span-5 lg:flex lg:flex-col lg:justify-center">
           <p className="eyebrow flex items-center gap-2 text-ink-3">
             <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-            CICLO DE VIDA
+            {t('protocolPage.lifecycle.eyebrow')}
           </p>
           <h2 className="display-l mt-4 max-w-md text-balance text-ink">
-            De la orden <em className="serif-accent text-honey-deep">al pago,</em> en ocho pasos.
+            {t('protocolPage.lifecycle.title')} <em className="serif-accent text-honey-deep">{t('protocolPage.lifecycle.titleEm')}</em> {t('protocolPage.lifecycle.title2')}
           </h2>
           <p className="mt-10 flex items-baseline gap-1" aria-live="polite">
             <span ref={counterRef} className="stat-number inline-block text-honey-deep">
@@ -204,8 +206,7 @@ export default function LifecyclePin() {
             <span className="stat-number text-ink-3/60">/{String(TOTAL).padStart(2, '0')}</span>
           </p>
           <p className="mt-4 max-w-sm text-[0.875rem] leading-[1.6] text-ink-3">
-            Cada tarea recorre el mismo cauce: miel arriba, miel abajo. Ningún paso depende de
-            confiar en nadie.
+            {t('protocolPage.lifecycle.sub')}
           </p>
         </div>
 
@@ -262,7 +263,7 @@ export default function LifecyclePin() {
                         <span className="mr-2 font-mono text-[12px] font-medium text-ink-3">
                           {String(step.n).padStart(2, '0')}
                         </span>
-                        {step.title}
+                        {t(step.title)}
                       </p>
                       <p
                         className={cn(
@@ -270,7 +271,7 @@ export default function LifecyclePin() {
                           active ? 'opacity-100' : 'opacity-40',
                         )}
                       >
-                        {step.text}
+                        {t(step.text)}
                       </p>
                     </div>
                   </li>

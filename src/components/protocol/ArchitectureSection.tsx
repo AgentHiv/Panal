@@ -6,6 +6,7 @@ import { ArrowUpRight, Hexagon } from 'lucide-react';
 import Reveal, { WordReveal } from '@/components/home/Reveal';
 import SectionHeader from '@/components/SectionHeader';
 import { CONTRACTS, NETWORK } from '@/data/protocol';
+import { useTranslation } from 'react-i18next';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -34,7 +35,7 @@ const EDGES = [
   {
     id: 'registry-escrow',
     d: 'M 470.0 234.6 C 428 302 392 300 338.0 351.4',
-    label: 'agente válido + precio',
+    label: 'protocolPage.arch.edge1',
     labelX: 352,
     labelY: 284,
     arrowX: 338.0,
@@ -44,7 +45,7 @@ const EDGES = [
   {
     id: 'escrow-reputation',
     d: 'M 388.0 438.0 C 462 486 578 486 652.0 438.0',
-    label: 'resultado: éxito / disputa',
+    label: 'protocolPage.arch.edge2',
     labelX: 520,
     labelY: 496,
     arrowX: 652.0,
@@ -54,7 +55,7 @@ const EDGES = [
   {
     id: 'reputation-registry',
     d: 'M 702.0 351.4 C 648 300 612 302 570.0 234.6',
-    label: 'rating actualizado (metadata)',
+    label: 'protocolPage.arch.edge3',
     labelX: 688,
     labelY: 284,
     arrowX: 570.0,
@@ -70,6 +71,7 @@ const EDGES = [
  * su trazo. Banda base "Monad · EVM · TPS" + mini-cards de cada contrato.
  */
 export default function ArchitectureSection() {
+  const { t } = useTranslation();
   const diagramRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -112,13 +114,13 @@ export default function ArchitectureSection() {
 
       <div className="container-hive relative">
         <SectionHeader
-          eyebrow="ARQUITECTURA ON-CHAIN"
+          eyebrow={t('protocolPage.arch.eyebrow')}
           title={
             <WordReveal>
-              Tres contratos, <em className="serif-accent text-honey-deep">un panal.</em>
+              {t('protocolPage.arch.title')} <em className="serif-accent text-honey-deep">{t('protocolPage.arch.titleEm')}</em>
             </WordReveal>
           }
-          sub="Todo el estado del mercado vive en estos tres contratos. Se llaman entre sí; nadie más puede escribir en ellos."
+          sub={t('protocolPage.arch.sub')}
         />
 
         {/* Diagrama SVG */}
@@ -127,7 +129,7 @@ export default function ArchitectureSection() {
             <svg
               viewBox="0 0 1040 620"
               role="img"
-              aria-label="Diagrama de la arquitectura: PanalRegistry, PanalEscrow y PanalReputation conectados entre sí sobre Monad"
+              aria-label={t('protocolPage.arch.diagramAria')}
               className="mx-auto h-auto w-full min-w-[680px] max-w-4xl"
             >
               {/* Trazos */}
@@ -159,7 +161,7 @@ export default function ArchitectureSection() {
                     fontSize={15}
                     fontFamily="'JetBrains Mono', ui-monospace, monospace"
                   >
-                    {edge.label}
+                    {t(edge.label)}
                   </text>
                 </g>
               ))}
@@ -214,7 +216,7 @@ export default function ArchitectureSection() {
                 Monad · EVM · {NETWORK.tps} TPS
               </span>
               <span className="hidden h-3.5 w-px bg-paper/25 sm:block" aria-hidden />
-              <span className="text-paper/70">Todo estado vive en MonadDb — finalidad {NETWORK.finality.replace('ms', ' ms')}</span>
+              <span className="text-paper/70">{t('protocolPage.arch.monadBand', { finality: NETWORK.finality.replace('ms', ' ms') })}</span>
             </div>
           </Reveal>
         </div>
@@ -232,7 +234,7 @@ export default function ArchitectureSection() {
                 </span>
                 <p className="font-mono text-[0.875rem] font-semibold text-ink">{c.name}</p>
               </div>
-              <p className="mt-3 text-[0.875rem] leading-[1.6] text-ink-2">{c.tagline}</p>
+              <p className="mt-3 text-[0.875rem] leading-[1.6] text-ink-2">{t(c.tagline)}</p>
             </div>
           ))}
         </Reveal>
@@ -244,7 +246,7 @@ export default function ArchitectureSection() {
             rel="noreferrer"
             className="inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-honey-deep transition-colors hover:text-honey"
           >
-            Leer el código fuente
+            {t('protocolPage.arch.readSource')}
             <ArrowUpRight size={16} aria-hidden />
           </a>
         </Reveal>

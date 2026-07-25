@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { BadgeCheck } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
@@ -18,6 +19,7 @@ const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 /** Insignia hexagonal de ranking — honey, texto ink (marketplace.md S2). */
 function RankBadge({ rank, delay }: { rank: number; delay: number }) {
+  const { t } = useTranslation();
   return (
     <motion.span
       initial={{ scale: 0, opacity: 0 }}
@@ -26,7 +28,7 @@ function RankBadge({ rank, delay }: { rank: number; delay: number }) {
       transition={{ delay, duration: 0.5, ease: [0.34, 1.8, 0.44, 1] }}
       className="flex h-11 w-11 shrink-0 items-center justify-center bg-honey font-display text-[0.8125rem] font-bold text-ink"
       style={{ clipPath: 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)' }}
-      aria-label={`Número ${rank} del panal`}
+      aria-label={t('podium.rankAria', { rank })}
     >
       Nº{rank}
     </motion.span>
@@ -38,6 +40,7 @@ function RankBadge({ rank, delay }: { rank: number; delay: number }) {
  * (-translate-y-5) con borde honey 1.5px y halo honey-soft. En móvil apilan 1→3.
  */
 export default function Podium({ agents, onHire }: PodiumProps) {
+  const { t } = useTranslation();
   const [first, second, third] = agents;
   if (!first || !second || !third) return null;
 
@@ -79,15 +82,15 @@ export default function Podium({ agents, onHire }: PodiumProps) {
                         {agent.name}
                       </h3>
                       {agent.verified && (
-                        <BadgeCheck size={17} className="shrink-0 fill-olive text-paper" aria-label="Verificado" />
+                        <BadgeCheck size={17} className="shrink-0 fill-olive text-paper" aria-label={t('common.verified')} />
                       )}
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       <span className="rounded-full bg-honey-soft px-2.5 py-0.5 text-[0.75rem] font-medium text-honey-deep">
-                        {CATEGORY_LABELS[agent.category]}
+                        {t(CATEGORY_LABELS[agent.category])}
                       </span>
                       <span className="rounded-full bg-sand px-2.5 py-0.5 text-[0.75rem] font-medium text-ink-2">
-                        {agent.type === 'ia' ? 'IA' : 'Humano'}
+                        {agent.type === 'ia' ? t('common.typeIa') : t('common.typeHuman')}
                       </span>
                     </div>
                   </div>
@@ -98,18 +101,17 @@ export default function Podium({ agents, onHire }: PodiumProps) {
               <div className="flex items-center gap-2">
                 <RatingStars rating={agent.rating} />
                 <span className="text-[0.875rem] font-semibold text-ink">{formatRating(agent.rating)}</span>
-                <span className="font-mono text-[12px] text-ink-3">({formatInt(agent.reviews)} reseñas)</span>
+                <span className="font-mono text-[12px] text-ink-3">{t('podium.reviews', { count: formatInt(agent.reviews) })}</span>
               </div>
 
               <p className="font-mono text-[12px] leading-relaxed text-ink-2">
-                {formatMon(agent.pricePerTask)} MON/tarea · éxito {formatRating(agent.successRate)}% · resp. media{' '}
-                {agent.avgResponse}
+                {t('podium.metrics', { price: formatMon(agent.pricePerTask), success: formatRating(agent.successRate), response: agent.avgResponse })}
               </p>
 
               <div className="mt-auto flex flex-col gap-3 border-t border-line pt-4">
                 <span className="flex items-center gap-2 text-[0.8125rem] text-ink-2">
                   <LiveDot variant={agent.status === 'desconectado' ? 'ink' : agent.status === 'ocupado' ? 'honey' : 'olive'} />
-                  {STATUS_LABELS[agent.status]}
+                  {t(STATUS_LABELS[agent.status])}
                 </span>
                 <div className="flex gap-2">
                   <button
@@ -117,13 +119,13 @@ export default function Podium({ agents, onHire }: PodiumProps) {
                     onClick={() => onHire(agent)}
                     className="flex-1 rounded-full bg-honey px-4 py-2.5 text-[0.875rem] font-semibold text-ink transition-colors duration-200 hover:bg-honey-deep hover:text-paper"
                   >
-                    Contratar
+                    {t('common.hire')}
                   </button>
                   <Link
                     to={`/agente/${agent.id}`}
                     className="flex-1 rounded-full border border-line px-4 py-2.5 text-center text-[0.875rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-honey-deep"
                   >
-                    Ver perfil
+                    {t('common.viewProfile')}
                   </Link>
                 </div>
               </div>

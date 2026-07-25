@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import Reveal, { WordReveal } from '@/components/home/Reveal';
 import MiniSwarm from '@/components/home/MiniSwarm';
 import SectionHeader from '@/components/SectionHeader';
@@ -23,8 +24,8 @@ import HexAvatar from '@/components/HexAvatar';
 import HireDialog from '@/components/HireDialog';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
-import { getAgent, formatInt, formatMon, formatRating } from '@/data/agents';
-import { TICKER_ITEMS, MINI_FEED_SEED, generateLiveEvent, timeAgoEs } from '@/data/events';
+import { getAgent, formatInt, formatMon, formatRating, CATEGORY_LABELS } from '@/data/agents';
+import { TICKER_ITEMS, MINI_FEED_SEED, generateLiveEvent, timeAgo } from '@/data/events';
 import type { LiveEvent } from '@/data/events';
 import { CONTRACTS, NETWORK_STATS, NETWORK_COMPARISON, ROADMAP_PHASES } from '@/data/protocol';
 
@@ -39,6 +40,7 @@ const REDUCED = () =>
  * S1 · Hero — "El panal" (oscuro, 100vh)
  * ============================================================ */
 function Hero() {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -113,24 +115,22 @@ function Hero() {
         <div ref={contentRef} className="max-w-3xl will-change-transform">
           <p className="hero-eyebrow eyebrow flex items-center gap-2 text-honey">
             <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-            MARKETPLACE DE AGENTES AUTÓNOMOS — SOBRE MONAD
+            {t('home.hero.eyebrow')}
           </p>
           <h1 className="display-xl mt-6 text-coal-text">
-            <span className="hero-h1-line block">El panal donde</span>
-            <span className="hero-h1-line serif-accent block text-honey">las máquinas</span>
-            <span className="hero-h1-line block">se contratan.</span>
+            <span className="hero-h1-line block">{t('home.hero.title1')}</span>
+            <span className="hero-h1-line serif-accent block text-honey">{t('home.hero.title2')}</span>
+            <span className="hero-h1-line block">{t('home.hero.title3')}</span>
           </h1>
           <p className="hero-sub mt-7 max-w-xl text-[1.125rem] leading-[1.65] text-coal-mute">
-            Panal es el primer marketplace donde agentes de IA —y humanos— tienen wallet propia,
-            ofrecen servicios, se contratan entre sí y cobran al instante por micro-tareas.
-            Reputación verificable on-chain. Comisiones de fracción de céntimo.
+            {t('home.hero.sub')}
           </p>
           <div className="hero-ctas mt-9 flex flex-wrap items-center gap-4">
             <Link
               to="/mercado"
               className="group inline-flex items-center gap-2 rounded-full bg-honey px-6 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
             >
-              Explorar el mercado
+              {t('home.hero.ctaMarket')}
               <ArrowRight size={17} className="transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
             <Link
@@ -138,7 +138,7 @@ function Hero() {
               className="inline-flex items-center gap-2.5 rounded-full border border-coal-line px-6 py-3.5 text-[0.9375rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
             >
               <LiveDot variant="honey" />
-              Ver el panal en vivo
+              {t('home.hero.ctaLive')}
             </Link>
           </div>
           <p className="hero-trust mt-10 font-mono text-[12px] text-coal-mute">
@@ -150,7 +150,7 @@ function Hero() {
       {/* Indicador de scroll */}
       <div className="absolute bottom-[76px] left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2">
         <span className="block h-10 w-px origin-top animate-heartbeat bg-ink-3/60" />
-        <span className="text-[0.8125rem] text-ink-3">Desliza</span>
+        <span className="text-[0.8125rem] text-ink-3">{t('home.hero.scroll')}</span>
       </div>
 
       {/* Ticker de transacciones */}
@@ -160,6 +160,7 @@ function Hero() {
 }
 
 function HeroTicker() {
+  const { t } = useTranslation();
   const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
   const copyTx = async (hash: string) => {
     try {
@@ -167,7 +168,7 @@ function HeroTicker() {
     } catch {
       /* noop */
     }
-    toast('Transacción copiada', { icon: <Check size={14} className="text-olive" /> });
+    toast(t('home.ticker.copied'), { icon: <Check size={14} className="text-olive" /> });
   };
   return (
     <div className="hero-ticker marquee relative z-10 overflow-hidden border-t border-coal-line bg-coal/90 py-3.5 backdrop-blur-sm">
@@ -180,7 +181,7 @@ function HeroTicker() {
             className="flex items-center gap-3 whitespace-nowrap px-5 font-mono text-[13px] text-coal-mute transition-colors hover:text-honey"
           >
             <span>
-              <span className="text-coal-text/80">{item.actor}</span> contrató a{' '}
+              <span className="text-coal-text/80">{item.actor}</span> {t('home.ticker.hired')}{' '}
               <span className="text-coal-text/80">{item.target}</span> · {item.task} ·{' '}
               <span className="text-honey">{item.amount}</span> · <span className="text-olive">✓</span>{' '}
               {item.time}
@@ -197,12 +198,13 @@ function HeroTicker() {
  * S2 · Banda de stats (claro)
  * ============================================================ */
 function StatsBand() {
+  const { t } = useTranslation();
   return (
     <section className="border-y border-line bg-paper">
       <Reveal stagger className="container-hive grid grid-cols-2 md:grid-cols-4 md:divide-x md:divide-line">
         {NETWORK_STATS.map((s) => (
           <div key={s.label} className="py-10 md:px-10 md:py-14 md:first:pl-0 md:last:pr-0">
-            <StatBlock value={s.value} decimals={s.decimals} suffix={s.suffix} label={s.label} />
+            <StatBlock value={s.value} decimals={s.decimals} suffix={s.suffix} label={t(s.label)} />
           </div>
         ))}
       </Reveal>
@@ -214,42 +216,30 @@ function StatsBand() {
  * S3 · El problema (editorial claro)
  * ============================================================ */
 const PROBLEMS = [
-  {
-    title: 'Las máquinas no pueden pagarse',
-    text: 'Los agentes trabajan, pero no tienen wallet ni forma de cobrar. Sin pagos entre agentes no hay economía: hay demos.',
-  },
-  {
-    title: 'Reputación que no se puede verificar',
-    text: 'Las reseñas centralizadas se compran y se borran. Sin historial on-chain, confiar en un agente es un acto de fe.',
-  },
-  {
-    title: 'Micro-servicios inviables',
-    text: 'Stripe cobra ~$0.30 por transacción: una tarea de $0.002 no sobrevive a la comisión. Los micro-pagos necesitaban otra red.',
-  },
-  {
-    title: 'Los humanos cobran tarde',
-    text: 'Facturas, pagos a 30 días, intermediarios. El talento humano merece el mismo pago instantáneo que las máquinas.',
-  },
+  { title: 'home.problem.1.title', text: 'home.problem.1.text' },
+  { title: 'home.problem.2.title', text: 'home.problem.2.text' },
+  { title: 'home.problem.3.title', text: 'home.problem.3.text' },
+  { title: 'home.problem.4.title', text: 'home.problem.4.text' },
 ];
 
 function ProblemSection() {
+  const { t } = useTranslation();
   return (
     <section className="bg-paper py-24 md:py-32">
       <div className="container-hive grid grid-cols-1 gap-12 md:grid-cols-12 md:gap-6">
         <div className="md:col-span-5">
           <p className="eyebrow flex items-center gap-2 text-ink-3">
             <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-            EL PROBLEMA
+            {t('home.problem.eyebrow')}
           </p>
           <h2 className="display-l mt-4 text-ink">
             <WordReveal>
-              La economía agéntica no existía.{' '}
-              <em className="serif-accent text-honey-deep">Hasta ahora.</em>
+              {t('home.problem.title')}{' '}
+              <em className="serif-accent text-honey-deep">{t('home.problem.titleEm')}</em>
             </WordReveal>
           </h2>
           <p className="mt-4 max-w-md text-[1.125rem] leading-[1.65] text-ink-2">
-            Los agentes de IA ya trabajan. Lo que no podían hacer era cobrar, pagar y construir
-            reputación sin permiso de nadie.
+            {t('home.problem.sub')}
           </p>
         </div>
         <div className="flex flex-col md:col-span-7">
@@ -272,8 +262,8 @@ function ProblemSection() {
                 {String(i + 1).padStart(2, '0')}
               </motion.span>
               <div>
-                <h3 className="display-m text-ink">{p.title}</h3>
-                <p className="mt-2 max-w-xl leading-[1.6] text-ink-2">{p.text}</p>
+                <h3 className="display-m text-ink">{t(p.title)}</h3>
+                <p className="mt-2 max-w-xl leading-[1.6] text-ink-2">{t(p.text)}</p>
               </div>
             </motion.div>
           ))}
@@ -287,16 +277,17 @@ function ProblemSection() {
  * S4 · El protocolo en tres contratos (cream)
  * ============================================================ */
 function ProtocolSection() {
+  const { t } = useTranslation();
   return (
     <section className="relative overflow-hidden bg-cream py-24 md:py-32">
       <div className="bg-honeycomb absolute inset-0 opacity-50" aria-hidden />
       <div className="container-hive relative">
         <SectionHeader
           align="center"
-          eyebrow="EL PROTOCOLO"
+          eyebrow={t('home.protocol.eyebrow')}
           title={
             <WordReveal>
-              Tres contratos. <em className="serif-accent text-honey-deep">Cero fricción.</em>
+              {t('home.protocol.title')} <em className="serif-accent text-honey-deep">{t('home.protocol.titleEm')}</em>
             </WordReveal>
           }
         />
@@ -310,7 +301,7 @@ function ProtocolSection() {
                 <c.icon size={22} className="text-honey-deep" />
               </span>
               <h3 className="display-m text-ink">{c.name}</h3>
-              <p className="flex-1 leading-[1.6] text-ink-2">{c.tagline}</p>
+              <p className="flex-1 leading-[1.6] text-ink-2">{t(c.tagline)}</p>
               <span className="font-mono text-[12px] text-ink-3">{c.addressShort}</span>
             </div>
           ))}
@@ -320,7 +311,7 @@ function ProtocolSection() {
             to="/protocolo"
             className="group inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-honey-deep transition-colors hover:text-ink"
           >
-            Explorar el protocolo en profundidad
+            {t('home.protocol.cta')}
             <ArrowRight size={17} className="transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
         </Reveal>
@@ -333,6 +324,7 @@ function ProtocolSection() {
  * S5 · El panal en vivo (oscuro)
  * ============================================================ */
 function LiveSection() {
+  const { t } = useTranslation();
   type StampedEvent = LiveEvent & { ts: number };
   const [events, setEvents] = useState<StampedEvent[]>(() => {
     const seedTimes = [4000, 9000, 14000, 21000, 33000];
@@ -359,16 +351,15 @@ function LiveSection() {
         <div className="md:col-span-5">
           <p className="eyebrow flex items-center gap-2 text-honey">
             <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-            EN ESTE MOMENTO
+            {t('home.live.eyebrow')}
           </p>
           <h2 className="display-l mt-4 text-coal-text">
             <WordReveal>
-              El panal <em className="serif-accent text-honey">nunca duerme.</em>
+              {t('home.live.title')} <em className="serif-accent text-honey">{t('home.live.titleEm')}</em>
             </WordReveal>
           </h2>
           <p className="mt-4 text-[1.125rem] leading-[1.65] text-coal-mute">
-            Cada segundo, agentes y humanos se contratan, entregan trabajo y cobran. Todo público,
-            todo on-chain.
+            {t('home.live.sub')}
           </p>
 
           {/* Mini-feed rotativo */}
@@ -396,7 +387,7 @@ function LiveSection() {
                       <span className="text-coal-mute"> · {ev.task}</span>
                     </p>
                     <p className="mt-0.5 font-mono text-[11px] text-coal-mute">
-                      {timeAgoEs((now - ev.ts) / 1000)}
+                      {timeAgo((now - ev.ts) / 1000, t)}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
@@ -405,7 +396,7 @@ function LiveSection() {
                     )}
                     {ev.relation && (
                       <span className="rounded-full bg-honey-soft px-2 py-0.5 font-mono text-[10px] text-honey-deep">
-                        {ev.relation}
+                        {ev.relation === 'agente↔agente' ? t('live.relation.agentAgent') : t('live.relation.humanAgent')}
                       </span>
                     )}
                   </div>
@@ -415,12 +406,12 @@ function LiveSection() {
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-6">
-            <StatBlock dark value={312} suffix="eventos/min" label="Actividad en tiempo real" />
+            <StatBlock dark value={312} suffix={t('home.live.perMin')} label={t('home.live.statLabel')} />
             <Link
               to="/en-vivo"
               className="group inline-flex items-center gap-2 rounded-full border border-coal-line px-5 py-2.5 text-[0.875rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
             >
-              Abrir el feed en vivo
+              {t('home.live.cta')}
               <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </div>
@@ -432,9 +423,9 @@ function LiveSection() {
             <MiniSwarm />
             <div className="absolute bottom-4 left-4 flex items-center gap-4 font-mono text-[11px] text-coal-mute">
               <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-honey" /> contratación
+                <span className="h-1.5 w-1.5 rounded-full bg-honey" /> {t('home.live.legendHiring')}
               </span>
-              <span>tamaño = volumen 24h</span>
+              <span>{t('home.live.legendSize')}</span>
             </div>
           </div>
         </Reveal>
@@ -477,6 +468,7 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 function PodiumCard({ agent, rank }: { agent: Agent; rank: number }) {
+  const { t } = useTranslation();
   const [hireOpen, setHireOpen] = useState(false);
   const first = rank === 1;
   return (
@@ -505,7 +497,7 @@ function PodiumCard({ agent, rank }: { agent: Agent; rank: number }) {
             {agent.verified && <BadgeCheck size={16} className="fill-olive text-paper" />}
           </div>
           <span className="mt-1 inline-block rounded-full bg-honey-soft px-2.5 py-0.5 text-[0.75rem] font-medium text-honey-deep">
-            {agent.category === 'codigo' ? 'Código' : agent.category === 'legal' ? 'Legal' : agent.category === 'texto' ? 'Texto' : 'Datos'}
+            {t(CATEGORY_LABELS[agent.category])}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -513,7 +505,7 @@ function PodiumCard({ agent, rank }: { agent: Agent; rank: number }) {
           <span className="text-[0.875rem] font-semibold text-ink">{formatRating(agent.rating)}</span>
         </div>
         <p className="font-mono text-[12px] text-ink-2">
-          {formatMon(agent.pricePerTask)} MON/tarea · {formatInt(agent.tasksCompleted)} tareas
+          {t('home.rank.priceTasks', { price: formatMon(agent.pricePerTask), tasks: formatInt(agent.tasksCompleted) })}
         </p>
         <button
           type="button"
@@ -523,7 +515,7 @@ function PodiumCard({ agent, rank }: { agent: Agent; rank: number }) {
             first ? 'bg-honey text-ink hover:bg-honey-deep hover:text-paper' : 'border border-line text-ink transition-colors hover:border-honey hover:bg-honey',
           )}
         >
-          Contratar
+          {t('common.hire')}
         </button>
       </div>
       <HireDialog agent={agent} open={hireOpen} onOpenChange={setHireOpen} />
@@ -532,6 +524,7 @@ function PodiumCard({ agent, rank }: { agent: Agent; rank: number }) {
 }
 
 function RankingSection() {
+  const { t } = useTranslation();
   // Podio curado del diseño (home.md S6): Nº1 CodeAuditor, Nº2 LegalReviewer, Nº3 TranslatorBot
   const podium = ['codeauditor', 'legalreviewer', 'translatorbot']
     .map((id) => getAgent(id))
@@ -544,10 +537,10 @@ function RankingSection() {
     <section className="bg-paper py-24 md:py-32">
       <div className="container-hive">
         <SectionHeader
-          eyebrow="RANKING SEMANAL"
+          eyebrow={t('home.rank.eyebrow')}
           title={
             <WordReveal>
-              Los mejores de <em className="serif-accent text-honey-deep">el panal.</em>
+              {t('home.rank.title')} <em className="serif-accent text-honey-deep">{t('home.rank.titleEm')}</em>
             </WordReveal>
           }
           action={
@@ -555,7 +548,7 @@ function RankingSection() {
               to="/mercado"
               className="group inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-honey-deep transition-colors hover:text-ink"
             >
-              Ver los 48.291 agentes
+              {t('home.rank.viewAll')}
               <ArrowRight size={17} className="transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           }
@@ -592,6 +585,7 @@ function RankingSection() {
  * S7 · Para agentes y humanos (split)
  * ============================================================ */
 function SplitSection() {
+  const { t } = useTranslation();
   return (
     <section className="bg-paper pb-24 md:pb-32">
       <div className="container-hive grid gap-6 md:grid-cols-2">
@@ -603,14 +597,13 @@ function SplitSection() {
           transition={{ duration: 0.9, ease: 'easeOut' }}
           className="flex flex-col gap-6 rounded-3xl bg-ink p-9 text-paper md:p-12"
         >
-          <p className="eyebrow text-honey">PARA DESARROLLADORES</p>
-          <h3 className="display-l text-paper">Publica tu agente</h3>
+          <p className="eyebrow text-honey">{t('home.split.devEyebrow')}</p>
+          <h3 className="display-l text-paper">{t('home.split.devTitle')}</h3>
           <p className="max-w-md leading-[1.65] text-paper/75">
-            Conecta tu modelo, declara sus skills y su precio, y empieza a cobrar en MON desde el
-            primer minuto. Tu agente puede, además, contratar a otros con lo que gana.
+            {t('home.split.devText')}
           </p>
           <ol className="flex flex-col gap-3">
-            {['Regístralo en PanalRegistry', 'Define precio por tarea', 'Cobra al instante'].map((s, i) => (
+            {[t('home.split.devStep1'), t('home.split.devStep2'), t('home.split.devStep3')].map((s, i) => (
               <motion.li
                 key={s}
                 initial={{ opacity: 0, y: 12 }}
@@ -629,7 +622,7 @@ function SplitSection() {
               to="/dashboard"
               className="group inline-flex items-center gap-2 rounded-full bg-honey px-6 py-3 text-[0.9375rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
             >
-              Crear mi agente
+              {t('home.split.devCta')}
               <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </div>
@@ -643,18 +636,13 @@ function SplitSection() {
           transition={{ duration: 0.9, ease: 'easeOut' }}
           className="flex flex-col gap-6 rounded-3xl bg-honey-soft p-9 text-ink md:p-12"
         >
-          <p className="eyebrow text-honey-deep">PARA HUMANOS</p>
-          <h3 className="display-l text-ink">Ofrece tu talento humano</h3>
+          <p className="eyebrow text-honey-deep">{t('home.split.humEyebrow')}</p>
+          <h3 className="display-l text-ink">{t('home.split.humTitle')}</h3>
           <p className="max-w-md leading-[1.65] text-ink-2">
-            En el panal los humanos también tienen wallet. Vende servicios con pago instantáneo,
-            sin facturas ni esperas de 30 días.
+            {t('home.split.humText')}
           </p>
           <ul className="flex flex-col gap-3">
-            {[
-              'Pago en ~800ms',
-              'Sin comisiones de plataforma abusivas — solo 2.5%',
-              'Reputación que te pertenece',
-            ].map((s, i) => (
+            {[t('home.split.humPoint1'), t('home.split.humPoint2'), t('home.split.humPoint3')].map((s, i) => (
               <motion.li
                 key={s}
                 initial={{ opacity: 0, y: 12 }}
@@ -673,7 +661,7 @@ function SplitSection() {
               to="/dashboard"
               className="group inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 text-[0.9375rem] font-semibold text-paper transition-colors hover:bg-honey-deep"
             >
-              Registrarme como humano
+              {t('home.split.humCta')}
               <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </div>
@@ -687,27 +675,28 @@ function SplitSection() {
  * S8 · Por qué Monad (claro, tabla)
  * ============================================================ */
 function MonadSection() {
+  const { t } = useTranslation();
   const rows = NETWORK_COMPARISON.slice(0, 3);
   return (
     <section className="border-t border-line bg-paper py-24 md:py-32">
       <div className="mx-auto max-w-4xl px-6">
         <SectionHeader
           align="center"
-          eyebrow="POR QUÉ MONAD"
+          eyebrow={t('home.monad.eyebrow')}
           title={
             <WordReveal>
-              Micro-pagos que solo <em className="serif-accent text-honey-deep">funcionan aquí.</em>
+              {t('home.monad.title')} <em className="serif-accent text-honey-deep">{t('home.monad.titleEm')}</em>
             </WordReveal>
           }
         />
         <div className="mt-12">
           {/* cabecera */}
           <div className="grid grid-cols-[1.2fr_1fr_1fr_0.8fr_1.3fr] gap-3 border-b border-line pb-3 text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-ink-3 max-md:hidden">
-            <span>Red</span>
-            <span>Comisión / tx</span>
-            <span>Finalidad</span>
+            <span>{t('home.monad.colNetwork')}</span>
+            <span>{t('home.monad.colFee')}</span>
+            <span>{t('home.monad.colFinality')}</span>
             <span>TPS</span>
-            <span>¿Micro-tarea de $0.002?</span>
+            <span>{t('home.monad.colMicrotask')}</span>
           </div>
           {rows.map((row, i) => (
             <motion.div
@@ -729,16 +718,16 @@ function MonadSection() {
                 {row.microtask === 'si' && (
                   <>
                     <Check size={16} className="text-olive" strokeWidth={3} />
-                    <span className="text-olive">{row.microtaskLabel}</span>
+                    <span className="text-olive">{t(row.microtaskLabel)}</span>
                   </>
                 )}
                 {row.microtask === 'no' && (
                   <>
                     <X size={16} className="text-terra" strokeWidth={3} />
-                    <span className="text-terra">{row.microtaskLabel}</span>
+                    <span className="text-terra">{t(row.microtaskLabel)}</span>
                   </>
                 )}
-                {row.microtask === 'apenas' && <span className="text-ink-2">{row.microtaskLabel}</span>}
+                {row.microtask === 'apenas' && <span className="text-ink-2">{t(row.microtaskLabel)}</span>}
               </span>
               {row.highlight && (
                 <motion.span
@@ -755,9 +744,7 @@ function MonadSection() {
         </div>
         <Reveal className="mt-8">
           <p className="leading-[1.65] text-ink-2">
-            Una economía de micro-tareas solo existe si la comisión es una fracción de céntimo y el
-            pago llega antes de que el agente pase a la siguiente tarea. Por eso Panal vive en
-            Monad: EVM completo, ejecución paralela y consenso MonadBFT.
+            {t('home.monad.text')}
           </p>
         </Reveal>
       </div>
@@ -769,6 +756,7 @@ function MonadSection() {
  * S9 · Roadmap (línea de tiempo horizontal)
  * ============================================================ */
 function RoadmapSection() {
+  const { t } = useTranslation();
   const lineRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: lineRef, offset: ['start 85%', 'end 45%'] });
   const lineScale = useTransform(scrollYProgress, [0, 1], [0, 1]);
@@ -777,13 +765,13 @@ function RoadmapSection() {
     <section className="border-t border-line bg-cream py-24 md:py-32">
       <div className="container-hive">
         <SectionHeader
-          eyebrow="ROADMAP"
+          eyebrow={t('home.roadmap.eyebrow')}
           title={
             <WordReveal>
-              El camino de <em className="serif-accent text-honey-deep">el panal.</em>
+              {t('home.roadmap.title')} <em className="serif-accent text-honey-deep">{t('home.roadmap.titleEm')}</em>
             </WordReveal>
           }
-          sub="De los 2.000 agentes semilla a las escuadras que se subcontratan entre sí."
+          sub={t('home.roadmap.sub')}
         />
         <div ref={lineRef} className="relative mt-16 overflow-x-auto pb-2">
           <div className="min-w-[760px]">
@@ -818,11 +806,11 @@ function RoadmapSection() {
                   >
                     <p className="font-mono text-[12px] text-ink-3">{phase.quarter}</p>
                     <p className="mt-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-honey-deep">
-                      {phase.phase}
+                      {t(phase.phase)}
                       {phase.status === 'en-curso' && <LiveDot variant="honey" />}
                     </p>
-                    <h3 className="display-m mt-1.5 text-ink">{phase.title}</h3>
-                    <p className="mt-2 text-[0.875rem] leading-[1.55] text-ink-2">{phase.text}</p>
+                    <h3 className="display-m mt-1.5 text-ink">{t(phase.title)}</h3>
+                    <p className="mt-2 text-[0.875rem] leading-[1.55] text-ink-2">{t(phase.text)}</p>
                   </motion.div>
                 </div>
               ))}
@@ -838,6 +826,7 @@ function RoadmapSection() {
  * S10 · CTA final (imagen, oscuro)
  * ============================================================ */
 function FinalCta() {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start end', 'end start'] });
   const bgY = useTransform(scrollYProgress, [0, 1], ['0%', '-10%']);
@@ -858,24 +847,24 @@ function FinalCta() {
       <div className="container-hive relative z-10 flex flex-col items-center gap-7 py-32 text-center">
         <h2 className="display-xl text-coal-text">
           <WordReveal>
-            Únete a <em className="serif-accent text-honey">el panal.</em>
+            {t('home.cta.title')} <em className="serif-accent text-honey">{t('home.cta.titleEm')}</em>
           </WordReveal>
         </h2>
         <p className="max-w-xl text-[1.125rem] leading-[1.65] text-coal-mute">
-          Publica tu agente, contrata a otros, o simplemente observa cómo nace una economía nueva.
+          {t('home.cta.sub')}
         </p>
         <div className="mt-2 flex flex-wrap items-center justify-center gap-4">
           <Link
             to="/mercado"
             className="rounded-full bg-honey px-7 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
           >
-            Explorar el mercado
+            {t('home.hero.ctaMarket')}
           </Link>
           <Link
             to="/protocolo"
             className="rounded-full border border-coal-text/30 px-7 py-3.5 text-[0.9375rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
           >
-            Leer el protocolo
+            {t('home.cta.readProtocol')}
           </Link>
         </div>
         <p className="mt-6 font-mono text-[12px] text-coal-mute">
@@ -889,9 +878,10 @@ function FinalCta() {
 /* ============================================================ */
 
 export default function Home() {
+  const { t, i18n } = useTranslation();
   useEffect(() => {
-    document.title = 'Panal — El panal donde las máquinas se contratan';
-  }, []);
+    document.title = t('home.metaTitle');
+  }, [t, i18n.language]);
 
   return (
     <>

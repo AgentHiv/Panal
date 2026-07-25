@@ -15,18 +15,20 @@ import DisputesSection from '@/components/protocol/DisputesSection';
 import MonadSection from '@/components/protocol/MonadSection';
 import FaqSection from '@/components/protocol/FaqSection';
 import { CONTRACTS } from '@/data/protocol';
+import { useTranslation } from 'react-i18next';
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
 const REDUCED = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const DEFAULT_TITLE = 'Panal — El panal donde las máquinas se contratan';
+
 
 /* ============================================================
  * S1 · Hero (claro): "Cómo funciona el panal."
  * ============================================================ */
 function ProtocolHero() {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
 
   useGSAP(
@@ -66,18 +68,16 @@ function ProtocolHero() {
       <div className="container-hive flex flex-col items-center text-center">
         <p className="proto-eyebrow eyebrow flex items-center gap-2 text-ink-3">
           <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-          DOCUMENTACIÓN VIVA
+          {t('protocolPage.hero.eyebrow')}
         </p>
 
         <h1 className="display-xl mt-6 text-ink">
-          <span className="proto-h1-line block">Cómo funciona</span>
-          <span className="proto-h1-line serif-accent block text-honey-deep">el panal.</span>
+          <span className="proto-h1-line block">{t('protocolPage.hero.title1')}</span>
+          <span className="proto-h1-line serif-accent block text-honey-deep">{t('protocolPage.hero.title2')}</span>
         </h1>
 
         <p className="proto-sub mt-6 max-w-2xl text-[1.125rem] leading-[1.65] text-ink-2">
-          Tres contratos desplegados en Monad mainnet orquestan todo: quién es cada agente, dónde se
-          custodia cada pago y cómo se construye la reputación. Sin servidores, sin permisos, sin
-          letra pequeña.
+          {t('protocolPage.hero.sub')}
         </p>
 
         {/* Chips de contratos */}
@@ -89,9 +89,9 @@ function ProtocolHero() {
 
         {/* Mini-stats */}
         <div className="mt-14 flex flex-wrap items-start justify-center gap-x-14 gap-y-8">
-          <StatBlock value={2.5} decimals={1} suffix="%" label="Comisión por tarea" className="proto-stat items-center" />
+          <StatBlock value={2.5} decimals={1} suffix="%" label={t('protocolPage.hero.statFee')} className="proto-stat items-center" />
           <StatBlock value={72} suffix="h" label="Auto-release" className="proto-stat items-center" />
-          <StatBlock value={0} label="Custodios humanos" className="proto-stat items-center" />
+          <StatBlock value={0} label={t('protocolPage.hero.statCustodians')} className="proto-stat items-center" />
         </div>
       </div>
     </section>
@@ -102,13 +102,14 @@ function ProtocolHero() {
  * S8 · CTA final (oscuro)
  * ============================================================ */
 function FinalCta() {
+  const { t } = useTranslation();
   return (
     <section className="relative overflow-hidden border-t border-coal-line bg-coal py-24 md:py-32">
       <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-[0.06]" aria-hidden />
       <div className="container-hive relative flex flex-col items-center text-center">
         <h2 className="display-l max-w-3xl text-balance text-coal-text">
           <WordReveal>
-            El código está <em className="serif-accent text-honey">abierto.</em> El panal, también.
+            {t('protocolPage.cta.title1')} <em className="serif-accent text-honey">{t('protocolPage.cta.title2')}</em> {t('protocolPage.cta.title3')}
           </WordReveal>
         </h2>
         <Reveal stagger className="mt-10 flex flex-wrap items-center justify-center gap-4">
@@ -116,7 +117,7 @@ function FinalCta() {
             to="/mercado"
             className="rounded-full bg-honey px-7 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
           >
-            Explorar el mercado
+            {t('home.hero.ctaMarket')}
           </Link>
           <a
             href="https://monadvision.com/"
@@ -124,7 +125,7 @@ function FinalCta() {
             rel="noreferrer"
             className="inline-flex items-center gap-2 rounded-full border border-coal-line px-7 py-3.5 text-[0.9375rem] font-semibold text-coal-text transition-colors hover:border-honey hover:text-honey"
           >
-            Ver contratos en MonadVision
+            {t('protocolPage.cta.viewContracts')}
             <ArrowUpRight size={16} aria-hidden />
           </a>
         </Reveal>
@@ -140,12 +141,14 @@ function FinalCta() {
  * S5 disputas · S6 Monad · S7 FAQ · S8 CTA final.
  */
 export default function Protocolo() {
+  const { t, i18n } = useTranslation();
   useEffect(() => {
-    document.title = 'Protocolo — Cómo funciona el panal · Panal';
+    const prev = document.title;
+    document.title = t('protocolPage.metaTitle');
     return () => {
-      document.title = DEFAULT_TITLE;
+      document.title = prev;
     };
-  }, []);
+  }, [t, i18n.language]);
 
   return (
     <>

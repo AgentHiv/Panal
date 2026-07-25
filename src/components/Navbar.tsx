@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu } from 'lucide-react';
@@ -7,12 +8,13 @@ import LiveDot from '@/components/LiveDot';
 import HexAvatar from '@/components/HexAvatar';
 import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const NAV_LINKS = [
-  { to: '/mercado', label: 'Mercado' },
-  { to: '/en-vivo', label: 'En Vivo', live: true },
-  { to: '/protocolo', label: 'Protocolo' },
-  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/mercado', key: 'nav.market' },
+  { to: '/en-vivo', key: 'nav.live', live: true },
+  { to: '/protocolo', key: 'nav.protocol' },
+  { to: '/dashboard', key: 'nav.dashboard' },
 ];
 
 /** Navbar fija de todas las páginas (design.md §5) — sticky top-0 z-50, en flujo normal. */
@@ -20,6 +22,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { connected, connecting, addressShort, address, connect, disconnect, wrongNetwork, switchToMonad } = useWallet();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -37,7 +40,7 @@ export default function Navbar() {
     >
       <div className="container-hive flex h-full items-center justify-between gap-4">
         {/* Izquierda: isotipo + wordmark */}
-        <Link to="/" className="flex items-center gap-2.5" aria-label="Panal — inicio">
+        <Link to="/" className="flex items-center gap-2.5" aria-label={t('nav.homeAria')}>
           <img src="/logo.svg" alt="" className="h-7 w-7" />
           <span className="font-display text-[1.25rem] font-bold tracking-[-0.02em] text-ink">Panal</span>
         </Link>
@@ -58,7 +61,7 @@ export default function Navbar() {
               {({ isActive }) => (
                 <>
                   <span className="flex items-center gap-1.5">
-                    {link.label}
+                    {t(link.key)}
                     {link.live && <LiveDot variant="honey" className="h-1.5 w-1.5" />}
                   </span>
                   {isActive && (
@@ -80,11 +83,11 @@ export default function Navbar() {
             <button
               type="button"
               onClick={switchToMonad}
-              title="Cambiar a Monad testnet"
+              title={t('nav.switchNetwork')}
               className="hidden items-center gap-2 rounded-full border border-terra/40 bg-terra/10 px-3 py-1.5 font-mono text-[12px] font-medium text-terra transition-colors hover:bg-terra/20 md:inline-flex"
             >
               <LiveDot variant="terra" />
-              Red incorrecta — cambiar a Monad
+              {t('nav.wrongNetwork')}
             </button>
           ) : (
             <span className="hidden items-center gap-2 rounded-full border border-line bg-cream px-3 py-1.5 font-mono text-[12px] text-ink-2 md:inline-flex">
@@ -97,7 +100,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={disconnect}
-              title="Desconectar wallet"
+              title={t('nav.disconnect')}
               className="hidden items-center gap-2 rounded-full border border-line bg-paper px-3 py-1.5 font-mono text-[12px] text-ink transition-colors hover:border-honey sm:flex"
             >
               <HexAvatar seed={address ?? 'wallet'} size={18} />
@@ -110,9 +113,11 @@ export default function Navbar() {
               disabled={connecting}
               className="hidden items-center gap-2 rounded-full bg-ink px-4 py-2 text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep disabled:opacity-70 sm:inline-flex"
             >
-              {connecting ? 'Conectando…' : 'Conectar wallet'}
+              {connecting ? t('nav.connecting') : t('nav.connect')}
             </button>
           )}
+
+          <LanguageSwitcher />
 
           {/* Móvil: hamburguesa → Sheet lateral */}
           <Sheet open={open} onOpenChange={setOpen}>
@@ -120,15 +125,15 @@ export default function Navbar() {
               <button
                 type="button"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-line text-ink lg:hidden"
-                aria-label="Abrir menú"
+                aria-label={t('nav.openMenu')}
               >
                 <Menu size={18} />
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[320px] border-line bg-paper p-0">
-              <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
+              <SheetTitle className="sr-only">{t('nav.menuTitle')}</SheetTitle>
               <div className="flex h-full flex-col px-8 pb-8 pt-16">
-                <nav className="flex flex-col gap-5" aria-label="Móvil">
+                <nav className="flex flex-col gap-5" aria-label={t('nav.mobileAria')}>
                   {NAV_LINKS.map((link, i) => (
                     <motion.div
                       key={link.to}
@@ -141,7 +146,7 @@ export default function Navbar() {
                         onClick={() => setOpen(false)}
                         className="display-m flex items-center gap-3 text-ink transition-colors hover:text-honey-deep"
                       >
-                        {link.label}
+                        {t(link.key)}
                         {link.live && <LiveDot variant="honey" />}
                       </Link>
                     </motion.div>
@@ -155,7 +160,7 @@ export default function Navbar() {
                       className="inline-flex w-fit items-center gap-2 rounded-full border border-terra/40 bg-terra/10 px-3 py-1.5 font-mono text-[12px] font-medium text-terra"
                     >
                       <LiveDot variant="terra" />
-                      Red incorrecta — cambiar a Monad
+                      {t('nav.wrongNetwork')}
                     </button>
                   ) : (
                     <span className="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-cream px-3 py-1.5 font-mono text-[12px] text-ink-2">
@@ -178,9 +183,12 @@ export default function Navbar() {
                       onClick={connect}
                       className="rounded-full bg-ink px-4 py-3 text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep"
                     >
-                      {connecting ? 'Conectando…' : 'Conectar wallet'}
+                      {connecting ? t('nav.connecting') : t('nav.connect')}
                     </button>
                   )}
+                  <div className="pt-2">
+                    <LanguageSwitcher />
+                  </div>
                 </div>
               </div>
             </SheetContent>

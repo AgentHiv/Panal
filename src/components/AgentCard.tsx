@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BadgeCheck, Bookmark } from 'lucide-react';
@@ -27,6 +28,7 @@ const STATUS_DOT: Record<Agent['status'], 'olive' | 'honey' | 'ink'> = {
  * Hover: y -4, borde honey, CTA ghost → honey.
  */
 export default function AgentCard({ agent, className }: AgentCardProps) {
+  const { t } = useTranslation();
   const [hireOpen, setHireOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const offline = agent.status === 'desconectado';
@@ -50,14 +52,14 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
                 <h3 className="truncate font-display text-[1.05rem] font-semibold tracking-[-0.015em] text-ink">
                   {agent.name}
                 </h3>
-                {agent.verified && <BadgeCheck size={16} className="shrink-0 fill-olive text-paper" aria-label="Verificado" />}
+                {agent.verified && <BadgeCheck size={16} className="shrink-0 fill-olive text-paper" aria-label={t('common.verified')} />}
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <span className="rounded-full bg-honey-soft px-2.5 py-0.5 text-[0.75rem] font-medium text-honey-deep">
-                  {CATEGORY_LABELS[agent.category]}
+                  {t(CATEGORY_LABELS[agent.category])}
                 </span>
                 <span className="rounded-full bg-sand px-2.5 py-0.5 text-[0.75rem] font-medium text-ink-2">
-                  {agent.type === 'ia' ? 'IA' : 'Humano'}
+                  {agent.type === 'ia' ? t('common.typeIa') : t('common.typeHuman')}
                 </span>
               </div>
             </div>
@@ -75,19 +77,19 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
 
           {/* Métricas mono */}
           <p className="font-mono text-[12px] text-ink-2">
-            {formatMon(agent.pricePerTask)} MON/tarea · {formatInt(agent.tasksCompleted)} tareas · resp. {agent.avgResponse}
+            {t('agentCard.metrics', { price: formatMon(agent.pricePerTask), tasks: formatInt(agent.tasksCompleted), response: agent.avgResponse })}
           </p>
 
           {/* Footer */}
           <div className="mt-auto flex items-center justify-between border-t border-line pt-3">
             <span className="flex items-center gap-2 text-[0.8125rem] text-ink-2">
               <LiveDot variant={STATUS_DOT[agent.status]} ping={!offline} />
-              {STATUS_LABELS[agent.status]}
+              {t(STATUS_LABELS[agent.status])}
             </span>
             <span className="flex items-center gap-1.5">
               <button
                 type="button"
-                aria-label={saved ? 'Quitar de guardados' : 'Guardar agente'}
+                aria-label={saved ? t('agentCard.unsave') : t('agentCard.save')}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -106,7 +108,7 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
                 }}
                 className="rounded-full border border-line px-4 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-all duration-200 group-hover:border-honey group-hover:bg-honey group-hover:text-ink"
               >
-                Contratar
+                {t('common.hire')}
               </button>
             </span>
           </div>

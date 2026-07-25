@@ -7,6 +7,6 @@ export {
   generateLiveEvent,
   randomTxHash,
   truncateHash,
-  timeAgoEs,
+  timeAgo,
   MINI_FEED_SEED,
 } from './events';

@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Check, Eye, FileCheck, Hexagon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import HexAvatar from '@/components/HexAvatar';
 import RatingStars from '@/components/RatingStars';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,13 +29,14 @@ import type { DashTask, Perspective, TaskStatus } from './data';
 import { ACTIVE_TASKS, COMPLETED_TASKS, TASK_COUNTS } from './data';
 
 const STATUS_META: Record<TaskStatus, { label: string; className: string; pulse?: boolean }> = {
-  escrow: { label: 'En escrow', className: 'bg-sand text-ink-2' },
-  progreso: { label: 'En progreso', className: 'bg-honey-soft text-honey-deep' },
-  entregada: { label: 'Entregada — verificar', className: 'bg-olive/10 text-olive', pulse: true },
-  disputa: { label: 'En disputa', className: 'bg-terra/10 text-terra' },
+  escrow: { label: 'tasks.status.escrow', className: 'bg-sand text-ink-2' },
+  progreso: { label: 'tasks.status.progreso', className: 'bg-honey-soft text-honey-deep' },
+  entregada: { label: 'tasks.status.entregada', className: 'bg-olive/10 text-olive', pulse: true },
+  disputa: { label: 'tasks.status.disputa', className: 'bg-terra/10 text-terra' },
 };
 
 function StatusBadge({ status }: { status: TaskStatus }) {
+  const { t } = useTranslation();
   const meta = STATUS_META[status];
   return (
     <span
@@ -45,7 +47,7 @@ function StatusBadge({ status }: { status: TaskStatus }) {
       )}
     >
       {status === 'disputa' && <AlertTriangle size={12} />}
-      {meta.label}
+      {t(meta.label)}
     </span>
   );
 }
@@ -67,6 +69,7 @@ function ProgressCell({ task }: { task: DashTask }) {
 const PAGE_SIZE = 6;
 
 export default function TasksSection({ perspective }: { perspective: Perspective }) {
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<DashTask[]>(() => ACTIVE_TASKS[perspective].map((t) => ({ ...t })));
   const [flashId, setFlashId] = useState<string | null>(null);
   const [verifyTask, setVerifyTask] = useState<DashTask | null>(null);
@@ -114,12 +117,12 @@ export default function TasksSection({ perspective }: { perspective: Perspective
       });
       setFlashId(next.id);
       window.setTimeout(() => setFlashId((f) => (f === next.id ? null : f)), 2400);
-      toast(`Nueva entrega de ${next.counterparty} — verifícala`, {
+      toast(t('tasks.newDelivery', { name: next.counterparty }), {
         icon: <FileCheck size={15} className="text-olive" />,
       });
     }, 15000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [t]);
 
   const liberarPago = () => {
     if (!verifyTask) return;
@@ -129,9 +132,9 @@ export default function TasksSection({ perspective }: { perspective: Perspective
       setTasks((prev) => prev.filter((t) => t.id !== verifyTask.id));
       setReleasing(false);
       setVerifyTask(null);
-      toast(`Pago liberado: tx ${truncateHash(tx)}`, {
+      toast(t('tasks.paymentReleased', { tx: truncateHash(tx) }), {
         icon: <Check size={14} className="text-olive" />,
-        description: `${verifyTask.id} · ${formatMon(verifyTask.amount)} MON transferidos (simulado).`,
+        description: t('tasks.paymentReleasedDesc', { id: verifyTask.id, amount: formatMon(verifyTask.amount) }),
       });
     }, 1200);
   };
@@ -139,9 +142,9 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   const abrirDisputa = (task: DashTask) => {
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: 'disputa' as TaskStatus } : t)));
     setVerifyTask(null);
-    toast(`Disputa abierta en ${task.id}`, {
+    toast(t('tasks.disputeOpened', { id: task.id }), {
       icon: <AlertTriangle size={14} className="text-terra" />,
-      description: 'El jurado con stake será convocado en las próximas horas.',
+      description: t('tasks.disputeOpenedDesc'),
     });
   };
 
@@ -153,57 +156,57 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   const completedPage = completed.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
   const renderRows = (rows: DashTask[], withActions: boolean) =>
-    rows.map((t, i) => (
+    rows.map((task, i) => (
       <motion.tr
-        key={t.id}
+        key={task.id}
         layout="position"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: Math.min(i * 0.04, 0.4), layout: { type: 'spring', stiffness: 300, damping: 30 } }}
         className={cn(
           'border-b border-line last:border-0 hover:bg-cream/70',
-          flashId === t.id && 'bg-honey-soft/70',
+          flashId === task.id && 'bg-honey-soft/70',
         )}
       >
-        <td className="whitespace-nowrap py-3.5 pl-5 pr-3 font-mono text-[0.8125rem] text-ink-2">{t.id}</td>
+        <td className="whitespace-nowrap py-3.5 pl-5 pr-3 font-mono text-[0.8125rem] text-ink-2">{task.id}</td>
         <td className="px-3 py-3.5">
           <span className="flex items-center gap-2">
-            <HexAvatar seed={t.counterpartyWallet} size={32} />
-            <span className="max-w-[130px] truncate text-[0.875rem] font-medium text-ink">{t.counterparty}</span>
+            <HexAvatar seed={task.counterpartyWallet} size={32} />
+            <span className="max-w-[130px] truncate text-[0.875rem] font-medium text-ink">{task.counterparty}</span>
           </span>
         </td>
         <td className="max-w-[240px] px-3 py-3.5">
-          <span className="block truncate text-[0.875rem] text-ink-2">{t.task}</span>
+          <span className="block truncate text-[0.875rem] text-ink-2">{task.task}</span>
         </td>
-        <td className="whitespace-nowrap px-3 py-3.5 font-mono text-[0.8125rem] text-ink">{formatMon(t.amount)} MON</td>
-        <td className="px-3 py-3.5"><StatusBadge status={t.status} /></td>
-        <td className="px-3 py-3.5"><ProgressCell task={t} /></td>
+        <td className="whitespace-nowrap px-3 py-3.5 font-mono text-[0.8125rem] text-ink">{formatMon(task.amount)} MON</td>
+        <td className="px-3 py-3.5"><StatusBadge status={task.status} /></td>
+        <td className="px-3 py-3.5"><ProgressCell task={task} /></td>
         {withActions && (
           <td className="whitespace-nowrap py-3.5 pl-3 pr-5">
             <div className="flex items-center justify-end gap-1.5">
-              {t.status === 'entregada' && (
+              {task.status === 'entregada' && (
                 <button
                   type="button"
-                  onClick={() => setVerifyTask(t)}
+                  onClick={() => setVerifyTask(task)}
                   className="rounded-full bg-olive px-3 py-1.5 text-[0.75rem] font-semibold text-paper transition-opacity hover:opacity-85"
                 >
-                  Verificar entrega
+                  {t('tasks.verify')}
                 </button>
               )}
               <button
                 type="button"
-                onClick={() => setDetailTask(t)}
+                onClick={() => setDetailTask(task)}
                 className="rounded-full border border-line px-3 py-1.5 text-[0.75rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
               >
-                Ver detalle
+                {t('tasks.viewDetail')}
               </button>
-              {t.status !== 'disputa' && (
+              {task.status !== 'disputa' && (
                 <button
                   type="button"
-                  onClick={() => abrirDisputa(t)}
+                  onClick={() => abrirDisputa(task)}
                   className="rounded-full border border-terra/30 px-3 py-1.5 text-[0.75rem] font-medium text-terra transition-colors hover:bg-terra/10"
                 >
-                  Abrir disputa
+                  {t('tasks.openDispute')}
                 </button>
               )}
             </div>
@@ -216,22 +219,22 @@ export default function TasksSection({ perspective }: { perspective: Perspective
     <thead>
       <tr className="border-b border-line text-left">
         <th className="py-3 pl-5 pr-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">ID</th>
-        <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">Contraparte</th>
-        <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">Tarea</th>
-        <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">Monto</th>
+        <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colCounterparty')}</th>
+        <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colTask')}</th>
+        <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colAmount')}</th>
         {completedView ? (
           <>
-            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">Duración</th>
-            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">Rating dado</th>
+            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colDuration')}</th>
+            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colRatingGiven')}</th>
           </>
         ) : (
           <>
-            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">Estado</th>
-            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">Progreso</th>
+            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colStatus')}</th>
+            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colProgress')}</th>
           </>
         )}
         {withActions && !completedView && (
-          <th className="py-3 pl-3 pr-5 text-right text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">Acciones</th>
+          <th className="py-3 pl-3 pr-5 text-right text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('ranking.colActions')}</th>
         )}
       </tr>
     </thead>
@@ -245,19 +248,19 @@ export default function TasksSection({ perspective }: { perspective: Perspective
             value="activas"
             className="rounded-full px-4 py-2 text-[0.8125rem] data-[state=active]:bg-paper data-[state=active]:text-ink data-[state=active]:shadow-sm"
           >
-            Activas <span className="ml-1.5 rounded-full bg-honey-soft px-1.5 py-0.5 font-mono text-[0.6875rem] text-honey-deep">{counts.activas}</span>
+            {t('tasks.tabActive')} <span className="ml-1.5 rounded-full bg-honey-soft px-1.5 py-0.5 font-mono text-[0.6875rem] text-honey-deep">{counts.activas}</span>
           </TabsTrigger>
           <TabsTrigger
             value="completadas"
             className="rounded-full px-4 py-2 text-[0.8125rem] data-[state=active]:bg-paper data-[state=active]:text-ink data-[state=active]:shadow-sm"
           >
-            Completadas
+            {t('tasks.tabCompleted')}
           </TabsTrigger>
           <TabsTrigger
             value="disputa"
             className="rounded-full px-4 py-2 text-[0.8125rem] data-[state=active]:bg-paper data-[state=active]:text-ink data-[state=active]:shadow-sm"
           >
-            En disputa
+            {t('tasks.tabDisputed')}
             {disputed.length > 0 && (
               <span className="ml-1.5 rounded-full bg-terra/15 px-1.5 py-0.5 font-mono text-[0.6875rem] text-terra">{disputed.length}</span>
             )}
@@ -272,7 +275,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
             </table>
           </div>
           <p className="mt-3 text-[0.8125rem] text-ink-3">
-            Mostrando {active.length} de {counts.activas} tareas activas · el progreso se actualiza en vivo (simulado).
+            {t('tasks.showingActive', { shown: active.length, total: counts.activas })}
           </p>
         </TabsContent>
 
@@ -313,14 +316,14 @@ export default function TasksSection({ perspective }: { perspective: Perspective
           {/* Paginación simple */}
           <div className="mt-4 flex items-center justify-between">
             <p className="font-mono text-[0.75rem] text-ink-3">
-              Página {page + 1} de {pages} · {completed.length} tareas
+              {t('tasks.page', { page: page + 1, pages, total: completed.length })}
             </p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded-full border-line bg-transparent hover:bg-cream">
-                Anterior
+                {t('common.previous')}
               </Button>
               <Button variant="outline" size="sm" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)} className="rounded-full border-line bg-transparent hover:bg-cream">
-                Siguiente
+                {t('common.next')}
               </Button>
             </div>
           </div>
@@ -337,9 +340,9 @@ export default function TasksSection({ perspective }: { perspective: Perspective
           ) : (
             <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line bg-paper px-6 py-16 text-center">
               <Hexagon size={40} className="text-line" strokeWidth={1.25} />
-              <p className="font-display text-[1.05rem] font-semibold text-ink">Sin disputas abiertas</p>
+              <p className="font-display text-[1.05rem] font-semibold text-ink">{t('tasks.noDisputes')}</p>
               <p className="max-w-sm text-[0.875rem] text-ink-2">
-                Cuando una entrega se impugne, el expediente y la votación del jurado aparecerán aquí.
+                {t('tasks.noDisputesDesc')}
               </p>
             </div>
           )}
@@ -352,7 +355,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
           {verifyTask && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-display text-ink">Verificar entrega — {verifyTask.id}</DialogTitle>
+                <DialogTitle className="font-display text-ink">{t('tasks.verifyTitle', { id: verifyTask.id })}</DialogTitle>
                 <DialogDescription className="text-ink-2">
                   {verifyTask.task} · {verifyTask.counterparty}
                 </DialogDescription>
@@ -360,18 +363,17 @@ export default function TasksSection({ perspective }: { perspective: Perspective
               {releasing ? (
                 <div className="flex flex-col items-center gap-4 py-8">
                   <Hexagon size={44} className="animate-spin-slow text-honey" strokeWidth={1.5} />
-                  <p className="font-mono text-[0.8125rem] text-ink-2">Liberando escrow…</p>
+                  <p className="font-mono text-[0.8125rem] text-ink-2">{t('tasks.releasing')}</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
                   <div className="rounded-xl border border-line bg-cream p-4">
-                    <p className="eyebrow mb-2 text-ink-3">Resultado entregado (mock)</p>
+                    <p className="eyebrow mb-2 text-ink-3">{t('tasks.resultMock')}</p>
                     <p className="text-[0.875rem] leading-relaxed text-ink-2">
-                      «Resumen ejecutivo generado: 12 puntos clave, 3 riesgos y próximos pasos. Hash del
-                      resultado anclado on-chain para verificación.»
+                      {t('tasks.resultMockText')}
                     </p>
                     <p className="mt-3 font-mono text-[0.75rem] text-ink-3">
-                      resultado: {resultHash} · monto {formatMon(verifyTask.amount)} MON
+                      {t('tasks.resultLine', { hash: resultHash, amount: formatMon(verifyTask.amount) })}
                     </p>
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">
@@ -380,14 +382,14 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                       onClick={liberarPago}
                       className="flex-1 rounded-full bg-honey px-4 py-2.5 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
                     >
-                      Liberar pago
+                      {t('tasks.releasePayment')}
                     </button>
                     <button
                       type="button"
                       onClick={() => abrirDisputa(verifyTask)}
                       className="flex-1 rounded-full border border-terra/40 px-4 py-2.5 text-[0.875rem] font-semibold text-terra transition-colors hover:bg-terra/10"
                     >
-                      Abrir disputa
+                      {t('tasks.openDispute')}
                     </button>
                   </div>
                 </div>
@@ -403,27 +405,27 @@ export default function TasksSection({ perspective }: { perspective: Perspective
           {detailTask && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-display text-ink">Detalle — {detailTask.id}</DialogTitle>
+                <DialogTitle className="font-display text-ink">{t('tasks.detailTitle', { id: detailTask.id })}</DialogTitle>
                 <DialogDescription className="text-ink-2">{detailTask.task}</DialogDescription>
               </DialogHeader>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-line bg-cream p-4 text-[0.875rem]">
-                <dt className="text-ink-3">Contraparte</dt>
+                <dt className="text-ink-3">{t('tasks.colCounterparty')}</dt>
                 <dd className="text-right font-medium text-ink">{detailTask.counterparty}</dd>
-                <dt className="text-ink-3">Monto en escrow</dt>
+                <dt className="text-ink-3">{t('tasks.escrowAmount')}</dt>
                 <dd className="text-right font-mono text-ink">{formatMon(detailTask.amount)} MON</dd>
-                <dt className="text-ink-3">Fee protocolo (2,5%)</dt>
+                <dt className="text-ink-3">{t('tasks.protocolFee')}</dt>
                 <dd className="text-right font-mono text-ink">{formatMon(detailTask.amount * 0.025, 5)} MON</dd>
-                <dt className="text-ink-3">Estado</dt>
+                <dt className="text-ink-3">{t('tasks.colStatus')}</dt>
                 <dd className="text-right"><StatusBadge status={detailTask.status} /></dd>
                 <dt className="text-ink-3">Auto-release</dt>
-                <dd className="text-right font-mono text-ink-2">72 h sin disputa</dd>
+                <dd className="text-right font-mono text-ink-2">{t('tasks.autoRelease72')}</dd>
               </dl>
               <Button
                 variant="outline"
                 className="rounded-full border-line bg-transparent hover:bg-cream"
                 onClick={() => setDetailTask(null)}
               >
-                <Eye size={14} className="mr-1.5" /> Cerrar
+                <Eye size={14} className="mr-1.5" /> {t('common.close')}
               </Button>
             </>
           )}

@@ -176,12 +176,14 @@ export function generateLiveEvent(opts: GenerateOptions = {}): LiveEvent {
   };
 }
 
-/** "hace 4s" / "hace 2 min" / "hace 1 h" */
-export function timeAgoEs(seconds: number): string {
-  if (seconds < 5) return 'ahora mismo';
-  if (seconds < 60) return `hace ${Math.floor(seconds)}s`;
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+/** "hace 4s" / "hace 2 min" / "hace 1 h" (localizado vía i18n) */
+export function timeAgo(seconds: number, t: TFn): string {
+  if (seconds < 5) return t('common.timeAgo.now');
+  if (seconds < 60) return t('common.timeAgo.seconds', { count: Math.floor(seconds) });
   const m = Math.floor(seconds / 60);
-  if (m < 60) return `hace ${m} min`;
+  if (m < 60) return t('common.timeAgo.minutes', { count: m });
   const h = Math.floor(m / 60);
-  return `hace ${h} h`;
+  return t('common.timeAgo.hours', { count: h });
 }

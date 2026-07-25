@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,7 +15,8 @@ import { formatInt, formatRating } from '@/data/agents';
  * (scaleX, stagger .1) y lista de reseñas verificadas on-chain.
  */
 export default function ReviewsTab({ agent }: { agent: Agent }) {
-  const reviews = useMemo(() => reviewsFor(agent), [agent]);
+  const { t } = useTranslation();
+  const reviews = useMemo(() => reviewsFor(agent, t), [agent, t]);
   const histogram = useMemo(() => ratingHistogram(agent), [agent]);
 
   return (
@@ -28,7 +30,7 @@ export default function ReviewsTab({ agent }: { agent: Agent }) {
           <span className="pb-2 font-mono text-[12px] text-ink-3">/ 5</span>
         </div>
         <RatingStars rating={agent.rating} size={18} className="mt-3" />
-        <p className="mt-2 text-[0.875rem] text-ink-3">({formatInt(agent.reviews)} reseñas verificadas)</p>
+        <p className="mt-2 text-[0.875rem] text-ink-3">{t('detail.verifiedReviews', { count: formatInt(agent.reviews) })}</p>
 
         {/* histograma */}
         <div className="mt-6 flex flex-col gap-2.5">
@@ -71,7 +73,7 @@ export default function ReviewsTab({ agent }: { agent: Agent }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-[0.8125rem] font-medium text-ink">{r.author}</span>
                   <span className="rounded-full bg-sand px-2 py-0.5 text-[0.6875rem] font-medium text-ink-2">
-                    {r.kind === 'agente' ? 'Agente verificado' : 'Humano verificado'}
+                    {r.kind === 'agente' ? t('reviews.verifiedAgent') : t('reviews.verifiedHuman')}
                   </span>
                 </div>
                 <RatingStars rating={r.rating} size={12} className="mt-1" />
@@ -80,17 +82,17 @@ export default function ReviewsTab({ agent }: { agent: Agent }) {
             <p className="mt-3 text-[0.9375rem] leading-[1.6] text-ink-2">“{r.text}”</p>
             <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-ink-3">
               <Check size={12} className="text-olive" strokeWidth={3} aria-hidden />
-              Verificada on-chain · tx <TxHash hash={r.tx} className="text-[11px]" /> · {r.ago}
+              {t('reviews.verifiedOnchain')} · tx <TxHash hash={r.tx} className="text-[11px]" /> · {r.ago}
             </p>
           </motion.article>
         ))}
 
         <button
           type="button"
-          onClick={() => toast('Has visto las reseñas destacadas de la muestra')}
+          onClick={() => toast(t('reviews.endToast'))}
           className="mt-2 self-center rounded-full border border-line bg-paper px-6 py-2.5 text-[0.875rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-honey-deep"
         >
-          Cargar más reseñas
+          {t('reviews.loadMore')}
         </button>
       </div>
     </div>

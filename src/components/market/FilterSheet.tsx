@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -14,9 +15,9 @@ const fmtSliderMon = (v: number) => (v >= 0.1 ? v.toFixed(2) : v.toFixed(3));
 
 const RATING_STEPS = [4, 4.5, 4.8, 5] as const;
 const TYPE_OPTIONS = [
-  { value: 'todos', label: 'Todos' },
-  { value: 'ia', label: 'IA' },
-  { value: 'humano', label: 'Humano' },
+  { value: 'todos', label: 'market.all' },
+  { value: 'ia', label: 'common.typeIa' },
+  { value: 'humano', label: 'common.typeHuman' },
 ] as const;
 
 export interface FilterSheetProps {
@@ -29,6 +30,7 @@ export interface FilterSheetProps {
 }
 
 export default function FilterSheet({ open, onOpenChange, filters, onChange, resultCount, onClear }: FilterSheetProps) {
+  const { t } = useTranslation();
   const set = (patch: Partial<AdvancedFilters>) => onChange({ ...filters, ...patch });
   const sliderValue = [toSlider(filters.priceMin), toSlider(filters.priceMax)];
 
@@ -36,8 +38,8 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="flex w-[380px] max-w-[92vw] flex-col border-line bg-paper p-0">
         <SheetHeader className="border-b border-line px-6 py-5 text-left">
-          <SheetTitle className="display-m text-ink">Filtros</SheetTitle>
-          <SheetDescription className="sr-only">Filtros avanzados del mercado de agentes</SheetDescription>
+          <SheetTitle className="display-m text-ink">{t('market.filters')}</SheetTitle>
+          <SheetDescription className="sr-only">{t('filters.desc')}</SheetDescription>
         </SheetHeader>
 
         <motion.div
@@ -52,7 +54,7 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
             className="flex flex-col gap-4"
           >
             <div className="flex items-baseline justify-between">
-              <h3 className="text-[0.875rem] font-semibold text-ink">Precio por tarea</h3>
+              <h3 className="text-[0.875rem] font-semibold text-ink">{t('filters.pricePerTask')}</h3>
               <span className="font-mono text-[12px] text-honey-deep">
                 {fmtSliderMon(filters.priceMin)} – {fmtSliderMon(filters.priceMax)} MON
               </span>
@@ -66,12 +68,12 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
               max={SLIDER_MAX}
               step={1}
               minStepsBetweenThumbs={1}
-              aria-label="Rango de precio por tarea en MON"
+              aria-label={t('filters.priceAria')}
               className="py-2"
             />
             <div className="flex justify-between font-mono text-[11px] text-ink-3">
               <span>0.001 MON</span>
-              <span>escala logarítmica</span>
+              <span>{t('filters.logScale')}</span>
               <span>1 MON</span>
             </div>
           </motion.section>
@@ -81,7 +83,7 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
             variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}
             className="mt-8 flex flex-col gap-3"
           >
-            <h3 className="text-[0.875rem] font-semibold text-ink">Rating mínimo</h3>
+            <h3 className="text-[0.875rem] font-semibold text-ink">{t('filters.minRating')}</h3>
             <div className="grid grid-cols-4 gap-2">
               {RATING_STEPS.map((r) => {
                 const active = filters.minRating === r;
@@ -112,9 +114,9 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
           >
             {(
               [
-                ['onlyVerified', 'Solo verificados'],
-                ['onlyOnline', 'Solo en línea'],
-                ['onlySubcontracting', 'Acepta subcontratación de agentes'],
+                ['onlyVerified', t('filters.onlyVerified')],
+                ['onlyOnline', t('filters.onlyOnline')],
+                ['onlySubcontracting', t('filters.onlySubcontracting')],
               ] as const
             ).map(([key, label]) => (
               <label key={key} className="flex cursor-pointer items-center justify-between gap-3 text-[0.875rem] text-ink-2">
@@ -133,8 +135,8 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
             variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}
             className="mt-8 flex flex-col gap-3"
           >
-            <h3 className="text-[0.875rem] font-semibold text-ink">Tipo</h3>
-            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Tipo de agente">
+            <h3 className="text-[0.875rem] font-semibold text-ink">{t('filters.type')}</h3>
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('filters.typeAria')}>
               {TYPE_OPTIONS.map((opt) => {
                 const active = filters.type === opt.value;
                 return (
@@ -151,7 +153,7 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
                         : 'border-line text-ink-2 hover:border-honey hover:text-honey-deep',
                     )}
                   >
-                    {opt.label}
+                    {t(opt.label)}
                   </button>
                 );
               })}
@@ -166,14 +168,14 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
             onClick={onClear}
             className="rounded-full px-4 py-2.5 text-[0.875rem] font-medium text-ink-2 transition-colors hover:text-honey-deep"
           >
-            Limpiar todo
+            {t('filters.clearAll')}
           </button>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
             className="flex-1 rounded-full bg-honey px-4 py-2.5 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
           >
-            Ver{' '}
+            {t('filters.see')}{' '}
             <motion.span
               key={resultCount}
               initial={{ opacity: 0, y: 6 }}
@@ -183,7 +185,7 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
             >
               {resultCount}
             </motion.span>{' '}
-            resultados
+            {t('filters.results')}
           </button>
         </div>
       </SheetContent>

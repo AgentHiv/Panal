@@ -8,6 +8,7 @@ import type { LiveEvent } from '@/data/events';
 import { EVENT_META } from './meta';
 import type { StreamEntry } from './useLiveStream';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /* ------------------------------------------------------------------ */
 /* Modelo                                                              */
@@ -60,7 +61,15 @@ const SYNTH_NAMES = [
   'NFTScout', 'ZKProver', 'VaultScout', 'LedgerLark', 'SubnetSage', 'TensorTarea',
   'BitBrio', 'CifraSol', 'NeuroNectar', 'PanaLab',
 ];
-const SYNTH_CATS = ['Datos', 'Texto', 'DeFi', 'Código', 'Visión', 'Creativo', 'Legal'];
+const SYNTH_CATS = [
+  'categories.datos',
+  'categories.texto',
+  'categories.defi',
+  'categories.codigo',
+  'categories.vision',
+  'categories.creativo',
+  'categories.legal',
+];
 
 function mulberry32(seed: number) {
   return () => {
@@ -596,11 +605,13 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
     setSelected(hoverNodeRef.current);
   };
 
+  const { t } = useTranslation();
+  const catLabel = (cat: string) => (cat.includes('.') ? t(cat) : cat);
   const cta = selected?.isEscrow
-    ? { to: '/protocolo', label: 'Ver protocolo' }
+    ? { to: '/protocolo', label: t('swarm.viewProtocol') }
     : selected?.agentId
-      ? { to: `/agente/${selected.agentId}`, label: 'Ver agente' }
-      : { to: '/mercado', label: 'Explorar el mercado' };
+      ? { to: `/agente/${selected.agentId}`, label: t('swarm.viewAgent') }
+      : { to: '/mercado', label: t('home.hero.ctaMarket') };
 
   return (
     <motion.div
@@ -625,7 +636,7 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
         onMouseLeave={onLeave}
         onClick={onClickCanvas}
         role="img"
-        aria-label="Visualización del enjambre: nodos hexagonales de agentes conectados por eventos en vivo"
+        aria-label={t('swarm.canvasAria')}
       />
 
       {/* Tooltip de nodo */}
@@ -638,12 +649,12 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
           }}
         >
           <p className="truncate text-[0.8125rem] font-semibold text-coal-text">{hoverTip.node.name}</p>
-          <p className="text-[11px] text-coal-mute">{hoverTip.node.category}</p>
+          <p className="text-[11px] text-coal-mute">{catLabel(hoverTip.node.category)}</p>
           {!hoverTip.node.isEscrow && (
             <p className="mt-1 font-mono text-[11px] text-honey">
               {formatMon(hoverTip.node.volume24h, 2)} MON <span className="text-coal-mute">24h</span>
               {' · '}
-              {formatInt(hoverTip.node.tasks24h)} <span className="text-coal-mute">tareas</span>
+              {formatInt(hoverTip.node.tasks24h)} <span className="text-coal-mute">{t('swarm.tasks')}</span>
             </p>
           )}
         </div>
@@ -664,7 +675,7 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
               type="button"
               onClick={() => setSelected(null)}
               className="absolute right-2.5 top-2.5 grid h-7 w-7 place-items-center rounded-full text-coal-mute transition-colors hover:text-coal-text"
-              aria-label="Cerrar mini-perfil"
+              aria-label={t('swarm.closeAria')}
             >
               <X size={14} />
             </button>
@@ -673,23 +684,23 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
               <div className="min-w-0">
                 <p className="flex items-center gap-1.5 truncate font-semibold text-coal-text">
                   {selected.name}
-                  {selected.verified && <BadgeCheck size={13} className="shrink-0 text-olive" aria-label="Verificado" />}
+                  {selected.verified && <BadgeCheck size={13} className="shrink-0 text-olive" aria-label={t('common.verified')} />}
                 </p>
-                <p className="text-[11px] text-coal-mute">{selected.category}</p>
+                <p className="text-[11px] text-coal-mute">{catLabel(selected.category)}</p>
               </div>
             </div>
             {selected.isEscrow ? (
               <p className="mt-3 text-[0.8125rem] leading-snug text-coal-mute">
-                Todos los pagos del panal pasan por aquí: escrow con liberación automática a las 72 h.
+                {t('swarm.escrowNote')}
               </p>
             ) : (
               <dl className="mt-3 space-y-1.5 font-mono text-[11px]">
                 <div className="flex justify-between gap-2">
-                  <dt className="text-coal-mute">Volumen 24h</dt>
+                  <dt className="text-coal-mute">{t('swarm.volume24h')}</dt>
                   <dd className="text-honey">{formatMon(selected.volume24h, 2)} MON</dd>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <dt className="text-coal-mute">Tareas 24h</dt>
+                  <dt className="text-coal-mute">{t('swarm.tasks24h')}</dt>
                   <dd className="text-coal-text">{formatInt(selected.tasks24h)}</dd>
                 </div>
               </dl>
@@ -708,13 +719,13 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
       <div className="pointer-events-none absolute bottom-3 left-4 flex items-center gap-3 text-[11px] text-coal-mute">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#E29A2E' }} />
-          contratación
+          {t('home.live.legendHiring')}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#6E7B4E' }} />
-          pago
+          {t('live.events.pago').toLowerCase()}
         </span>
-        <span className="hidden sm:inline">tamaño = volumen 24h</span>
+        <span className="hidden sm:inline">{t('home.live.legendSize')}</span>
       </div>
       <div className="absolute bottom-3 right-4">
         <BlockTicker />

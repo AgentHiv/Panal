@@ -5,6 +5,7 @@
  */
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowDownLeft, ArrowUpRight, Check, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -23,6 +24,7 @@ import { WALLET_SUMMARY, formatMonEs } from './data';
 
 /** QR mock determinista a partir de la dirección (sin dependencias extra). */
 function MockQr({ seed, size = 168 }: { seed: string; size?: number }) {
+  const { t } = useTranslation();
   const cells = 21;
   const grid = useMemo(() => {
     let h = 2166136261;
@@ -56,7 +58,7 @@ function MockQr({ seed, size = 168 }: { seed: string; size?: number }) {
 
   const cell = size / cells;
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="rounded-lg border border-line bg-paper p-0" role="img" aria-label="Código QR de la dirección">
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="rounded-lg border border-line bg-paper p-0" role="img" aria-label={t('wallet.qrAria')}>
       <rect width={size} height={size} fill="#FAF7F1" />
       {grid.flatMap((row, y) =>
         row.map((on, x) =>
@@ -87,6 +89,7 @@ function WalletBlock({ label, value, hint }: { label: string; value: string; hin
 }
 
 export default function WalletCard() {
+  const { t } = useTranslation();
   const { address, addressShort } = useWallet();
   const addr = address ?? '0x7A4f9e2B8c3D5a7F1b6E4d8C2a0F9e3B7c5Df9B2';
   const addrShort = addressShort ?? '0x7A4f…f9B2';
@@ -101,7 +104,7 @@ export default function WalletCard() {
       /* portapapeles no disponible */
     }
     setCopied(true);
-    toast('Dirección copiada', { icon: <Check size={14} className="text-olive" /> });
+    toast(t('detail.copied'), { icon: <Check size={14} className="text-olive" /> });
     window.setTimeout(() => setCopied(false), 1600);
   };
 
@@ -111,8 +114,8 @@ export default function WalletCard() {
     window.setTimeout(() => {
       setSending(false);
       setSendOpen(false);
-      toast('Envío simulado confirmado', {
-        description: 'La transacción se ha firmado y propagado a Monad (demo).',
+      toast(t('wallet.sendToast'), {
+        description: t('wallet.sendToastDesc'),
       });
     }, 1200);
   };
@@ -122,15 +125,15 @@ export default function WalletCard() {
       <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
         {/* 3 bloques mono */}
         <div className="grid flex-1 grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
-          <WalletBlock label="Disponible" value={formatMonEs(WALLET_SUMMARY.disponible)} />
-          <WalletBlock label="En escrow" value={formatMonEs(WALLET_SUMMARY.escrow)} hint="se auto-libera en 72 h" />
-          <WalletBlock label="Total ganado" value={formatMonEs(WALLET_SUMMARY.totalGanado)} hint="desde nov 2025" />
+          <WalletBlock label={t('wallet.available')} value={formatMonEs(WALLET_SUMMARY.disponible)} />
+          <WalletBlock label={t('wallet.inEscrow')} value={formatMonEs(WALLET_SUMMARY.escrow)} hint={t('wallet.autoRelease')} />
+          <WalletBlock label={t('wallet.totalEarned')} value={formatMonEs(WALLET_SUMMARY.totalGanado)} hint={t('wallet.since')} />
         </div>
 
         {/* Sparkline + acciones */}
         <div className="flex items-center gap-6">
           <div className="flex flex-col items-end gap-1">
-            <span className="eyebrow text-ink-3">Saldo · 30 días</span>
+            <span className="eyebrow text-ink-3">{t('wallet.balance30')}</span>
             <WalletSparkline data={WALLET_SUMMARY.spark30d} />
           </div>
           <div className="flex flex-col gap-2">
@@ -139,27 +142,27 @@ export default function WalletCard() {
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full border-line bg-transparent font-mono text-[0.8125rem] hover:bg-cream">
                   <ArrowUpRight size={14} className="mr-1.5" />
-                  Enviar
+                  {t('wallet.send')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="border-line bg-paper sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="font-display text-ink">Enviar MON</DialogTitle>
+                  <DialogTitle className="font-display text-ink">{t('wallet.sendTitle')}</DialogTitle>
                   <DialogDescription className="text-ink-2">
-                    Transferencia simulada desde {addrShort} — sin fondos reales.
+                    {t('wallet.sendDesc', { address: addrShort })}
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={fakeSend} className="flex flex-col gap-4">
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-[0.8125rem] font-medium text-ink-2">Dirección destino</span>
+                    <span className="text-[0.8125rem] font-medium text-ink-2">{t('wallet.destAddress')}</span>
                     <Input required placeholder="0x…" className="rounded-xl border-line bg-paper font-mono text-[0.8125rem]" />
                   </label>
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-[0.8125rem] font-medium text-ink-2">Cantidad (MON)</span>
+                    <span className="text-[0.8125rem] font-medium text-ink-2">{t('wallet.amount')}</span>
                     <Input required type="number" min="0.001" step="0.001" placeholder="0.010" className="rounded-xl border-line bg-paper font-mono text-[0.8125rem]" />
                   </label>
                   <Button type="submit" disabled={sending} className="rounded-full bg-ink text-paper hover:bg-honey-deep">
-                    {sending ? 'Firmando…' : 'Confirmar envío'}
+                    {sending ? t('wallet.signing') : t('wallet.confirmSend')}
                   </Button>
                 </form>
               </DialogContent>
@@ -170,14 +173,14 @@ export default function WalletCard() {
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="rounded-full border-line bg-transparent font-mono text-[0.8125rem] hover:bg-cream">
                   <ArrowDownLeft size={14} className="mr-1.5" />
-                  Recibir
+                  {t('wallet.receive')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="border-line bg-paper sm:max-w-sm">
                 <DialogHeader>
-                  <DialogTitle className="font-display text-ink">Recibir MON</DialogTitle>
+                  <DialogTitle className="font-display text-ink">{t('wallet.receiveTitle')}</DialogTitle>
                   <DialogDescription className="text-ink-2">
-                    Comparte tu dirección del panal (red Monad · Chain ID 143).
+                    {t('wallet.receiveDesc')}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-2">

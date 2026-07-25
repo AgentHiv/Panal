@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BadgeCheck, Check, Copy, ExternalLink, Hexagon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import EmptyState from '@/components/EmptyState';
 import HexAvatar from '@/components/HexAvatar';
 import HireDialog from '@/components/HireDialog';
@@ -27,10 +28,10 @@ import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating, get
  * ============================================================ */
 
 const TABS = [
-  { value: 'resumen', label: 'Resumen' },
-  { value: 'servicios', label: 'Servicios' },
-  { value: 'resenas', label: 'Reseñas' },
-  { value: 'actividad', label: 'Actividad on-chain' },
+  { value: 'resumen', label: 'detail.tabs.summary' },
+  { value: 'servicios', label: 'detail.tabs.services' },
+  { value: 'resenas', label: 'detail.tabs.reviews' },
+  { value: 'actividad', label: 'detail.tabs.activity' },
 ] as const;
 
 type TabValue = (typeof TABS)[number]['value'];
@@ -38,6 +39,7 @@ type TabValue = (typeof TABS)[number]['value'];
 const STATUS_DOT = { 'en-linea': 'olive', ocupado: 'honey', desconectado: 'ink' } as const;
 
 export default function AgentDetail() {
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const agent = id ? getAgent(id) : undefined;
@@ -46,16 +48,16 @@ export default function AgentDetail() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    document.title = agent ? `${agent.name} — Panal` : 'Agente no encontrado — Panal';
-  }, [agent]);
+    document.title = agent ? `${agent.name} — Panal` : t('detail.notFoundTitle');
+  }, [agent, t, i18n.language]);
 
   if (!agent) {
     return (
       <div className="container-hive flex min-h-[60vh] items-center justify-center py-24">
         <EmptyState
-          title="Este agente no está en el panal"
-          description="Puede que se haya dado de baja del PanalRegistry o que el enlace esté mal escrito."
-          actionLabel="Volver al mercado"
+          title={t('detail.emptyTitle')}
+          description={t('detail.emptyDesc')}
+          actionLabel={t('detail.backToMarket')}
           onAction={() => navigate('/mercado')}
         />
       </div>
@@ -69,7 +71,7 @@ export default function AgentDetail() {
       /* portapapeles no disponible */
     }
     setCopied(true);
-    toast('Dirección copiada', { icon: <Check size={14} className="text-olive" /> });
+    toast(t('detail.copied'), { icon: <Check size={14} className="text-olive" /> });
     window.setTimeout(() => setCopied(false), 1600);
   };
 
@@ -81,11 +83,11 @@ export default function AgentDetail() {
       : { value: agent.avgResponseSec, suffix: 's', decimals: 0 };
 
   const stats = [
-    { value: agent.tasksCompleted, label: 'Tareas completadas' },
-    { value: agent.rating, label: 'Rating medio', decimals: 1, suffix: '★' },
-    { value: agent.successRate, label: 'Tasa de éxito', decimals: 1, suffix: '%' },
-    { value: responseStat.value, label: 'Respuesta media', decimals: responseStat.decimals, suffix: responseStat.suffix },
-    { value: agent.totalEarned, label: 'Total ganado', suffix: 'MON' },
+    { value: agent.tasksCompleted, label: t('detail.stats.tasks') },
+    { value: agent.rating, label: t('detail.stats.rating'), decimals: 1, suffix: '★' },
+    { value: agent.successRate, label: t('detail.stats.success'), decimals: 1, suffix: '%' },
+    { value: responseStat.value, label: t('detail.stats.response'), decimals: responseStat.decimals, suffix: responseStat.suffix },
+    { value: agent.totalEarned, label: t('detail.stats.earned'), suffix: 'MON' },
   ];
 
   return (
@@ -93,13 +95,13 @@ export default function AgentDetail() {
       {/* ============ S1 · Header de identidad ============ */}
       <header className="border-b border-line bg-honeycomb">
         <div className="container-hive pb-12 pt-14 md:pt-20">
-          <nav aria-label="Migas de pan" className="font-mono text-[12px] text-ink-3">
+          <nav aria-label={t('market.breadcrumbAria')} className="font-mono text-[12px] text-ink-3">
             <Link to="/mercado" className="transition-colors hover:text-honey-deep">
-              Mercado
+              {t('nav.market')}
             </Link>
             <span className="mx-2">/</span>
             <Link to={`/mercado?categoria=${agent.category}`} className="transition-colors hover:text-honey-deep">
-              {CATEGORY_LABELS[agent.category]}
+              {t(CATEGORY_LABELS[agent.category])}
             </Link>
             <span className="mx-2">/</span>
             <span className="text-ink-2">{agent.name}</span>
@@ -119,7 +121,7 @@ export default function AgentDetail() {
                   <HexAvatar seed={agent.wallet} size={128} className="drop-shadow-[0_12px_24px_rgba(27,24,20,0.16)]" />
                   <span
                     className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-paper shadow-card"
-                    title={STATUS_LABELS[agent.status]}
+                    title={t(STATUS_LABELS[agent.status])}
                   >
                     <LiveDot variant={STATUS_DOT[agent.status]} />
                   </span>
@@ -131,7 +133,7 @@ export default function AgentDetail() {
                       <WordReveal mode="chars" segments={[{ text: agent.name }]} />
                     </h1>
                     {agent.verified && (
-                      <BadgeCheck size={26} className="shrink-0 fill-olive text-paper" aria-label="Verificado" />
+                      <BadgeCheck size={26} className="shrink-0 fill-olive text-paper" aria-label={t('common.verified')} />
                     )}
                   </div>
                   {/* chips con stagger .05 */}
@@ -142,9 +144,9 @@ export default function AgentDetail() {
                     transition={{ staggerChildren: 0.05, delayChildren: 0.25 }}
                   >
                     {[
-                      { label: agent.type === 'ia' ? 'IA' : 'Humano', className: 'bg-sand text-ink-2' },
-                      { label: CATEGORY_LABELS[agent.category], className: 'bg-honey-soft text-honey-deep' },
-                      { label: STATUS_LABELS[agent.status], className: 'bg-sand text-ink-2' },
+                      { label: agent.type === 'ia' ? t('common.typeIa') : t('common.typeHuman'), className: 'bg-sand text-ink-2' },
+                      { label: t(CATEGORY_LABELS[agent.category]), className: 'bg-honey-soft text-honey-deep' },
+                      { label: t(STATUS_LABELS[agent.status]), className: 'bg-sand text-ink-2' },
                     ].map((chip) => (
                       <motion.span
                         key={chip.label}
@@ -163,7 +165,7 @@ export default function AgentDetail() {
                       {formatRating(agent.rating)}
                     </span>
                     <span className="text-[0.875rem] text-ink-3">
-                      ({formatInt(agent.reviews)} reseñas verificadas)
+                      {t('detail.verifiedReviews', { count: formatInt(agent.reviews) })}
                     </span>
                   </FadeUp>
                 </div>
@@ -176,7 +178,7 @@ export default function AgentDetail() {
                   <button
                     type="button"
                     onClick={copyWallet}
-                    aria-label="Copiar dirección de la wallet"
+                    aria-label={t('detail.copyWallet')}
                     className="text-ink-3 transition-colors hover:text-honey-deep"
                   >
                     {copied ? <Check size={14} className="text-olive" /> : <Copy size={14} />}
@@ -188,7 +190,7 @@ export default function AgentDetail() {
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-[0.8125rem] font-medium text-honey-deep transition-colors hover:text-ink"
                 >
-                  Ver en MonadVision
+                  {t('detail.viewMonadvision')}
                   <ExternalLink size={13} aria-hidden />
                 </a>
               </FadeUp>
@@ -237,7 +239,7 @@ export default function AgentDetail() {
           <div className="relative pb-3 lg:pl-6">
             <div className="flex flex-col gap-2">
               <span className="stat-number text-ink">{agent.memberSince}</span>
-              <span className="eyebrow text-ink-3">En el panal desde</span>
+              <span className="eyebrow text-ink-3">{t('detail.memberSince')}</span>
             </div>
             <motion.span
               className="absolute bottom-0 left-0 h-[2px] w-full bg-honey lg:left-6"
@@ -256,14 +258,14 @@ export default function AgentDetail() {
       <section className="container-hive py-14">
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
           <TabsList className="flex w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-line bg-transparent p-0">
-            {TABS.map((t) => (
+            {TABS.map((tabDef) => (
               <TabsTrigger
-                key={t.value}
-                value={t.value}
+                key={tabDef.value}
+                value={tabDef.value}
                 className="relative shrink-0 rounded-none bg-transparent px-4 pb-3 pt-2 text-[0.875rem] font-medium text-ink-3 shadow-none transition-colors hover:text-ink-2 data-[state=active]:bg-transparent data-[state=active]:text-ink data-[state=active]:shadow-none"
               >
-                {t.label}
-                {tab === t.value && (
+                {t(tabDef.label)}
+                {tab === tabDef.value && (
                   <motion.span
                     layoutId="detalle-tab-underline"
                     className="absolute inset-x-2 -bottom-px h-[2px] bg-honey"
@@ -319,9 +321,9 @@ export default function AgentDetail() {
             <WordReveal
               accentClassName="serif-accent text-honey"
               segments={[
-                { text: '¿Trabajamos?' },
+                { text: t('detail.cta.work') },
                 { text: agent.name, accent: true },
-                { text: `responde en ${responseInWords(agent)}.` },
+                { text: t('detail.cta.responds', { time: responseInWords(agent, t) }) },
               ]}
             />
           </h2>
@@ -335,18 +337,18 @@ export default function AgentDetail() {
               transition={{ duration: 0.4, ease: 'easeOut' }}
               className="rounded-full bg-honey px-7 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors duration-200 hover:bg-paper"
             >
-              Contratar ahora — {formatMon(agent.pricePerTask)} MON
+              {t('detail.cta.hireNow', { price: formatMon(agent.pricePerTask) })}
             </motion.button>
             <Link
               to="/mercado"
               className="rounded-full border border-coal-line px-7 py-3.5 text-[0.9375rem] font-medium text-coal-text transition-colors duration-200 hover:border-honey hover:text-honey"
             >
-              Volver al mercado
+              {t('detail.backToMarket')}
             </Link>
           </FadeUp>
           <p className="flex items-center gap-2 font-mono text-[12px] text-coal-mute">
             <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-            Pago protegido por PanalEscrow · Monad · Chain ID 143
+            {t('detail.cta.escrowNote')}
           </p>
         </div>
       </section>

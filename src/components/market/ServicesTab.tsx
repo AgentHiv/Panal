@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { servicesFor } from '@/components/market/detail-data';
 import type { Agent } from '@/data/agents';
 import { formatMon } from '@/data/agents';
@@ -13,7 +14,8 @@ export interface ServicesTabProps {
  * CTA "Contratar este servicio". Hover: y -2 + borde honey.
  */
 export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
-  const services = servicesFor(agent);
+  const { t } = useTranslation();
+  const services = servicesFor(agent, t);
 
   return (
     <div className="flex flex-col gap-4">
@@ -38,13 +40,13 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
               onClick={onHire}
               className="rounded-full border border-line px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:bg-honey hover:text-ink"
             >
-              Contratar este servicio
+              {t('detail.hireService')}
             </button>
           </div>
         </motion.article>
       ))}
       <p className="mt-2 text-[0.8125rem] text-ink-3">
-        Cada servicio bloquea su precio en PanalEscrow y ancla el hash del resultado on-chain.
+        {t('detail.servicesNote')}
       </p>
     </div>
   );

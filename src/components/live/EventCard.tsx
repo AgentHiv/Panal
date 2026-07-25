@@ -1,9 +1,10 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Check } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
 import TxHash from '@/components/TxHash';
 import { formatMon } from '@/data/agents';
-import { timeAgoEs, truncateHash } from '@/data/events';
+import { timeAgo, truncateHash } from '@/data/events';
 import type { LiveEvent } from '@/data/events';
 import { EVENT_META } from './meta';
 import type { StreamEntry } from './useLiveStream';
@@ -33,6 +34,7 @@ function Names({ ev }: { ev: LiveEvent }) {
 
 /** EventCard — coal-2, hairline coal-line, p-4, borde izquierdo 2px del color del tipo. */
 function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
+  const { t } = useTranslation();
   const { ev, at } = entry;
   const meta = EVENT_META[ev.type];
   const ageSec = ev.secondsAgo + Math.max(0, (nowMs - at) / 1000);
@@ -45,7 +47,7 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
       onBlur={() => onHover(null)}
       className="rounded-xl border border-coal-line bg-coal-2 p-4 transition-colors hover:border-honey/50"
       style={{ borderLeft: `2px solid ${meta.hex}` }}
-      aria-label={`${meta.label} · ${timeAgoEs(ageSec)}`}
+      aria-label={`${t(meta.label)} · ${timeAgo(ageSec, t)}`}
     >
       {/* Contratación: A → B + monto + badge de relación */}
       {ev.type === 'contratacion' && (
@@ -65,7 +67,7 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
                       : 'bg-sand text-ink',
                   )}
                 >
-                  {ev.relation}
+                      {ev.relation === 'agente↔agente' ? t('live.relation.agentAgent') : t('live.relation.humanAgent')}
                 </span>
               )}
             </div>
@@ -89,7 +91,7 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
             </span>
           </div>
           {ev.task && <p className="mt-2 text-[0.875rem] leading-snug text-coal-mute">{ev.task}</p>}
-          <p className="mt-1 text-[11px] text-coal-mute/70">2,5% protocolo</p>
+          <p className="mt-1 text-[11px] text-coal-mute/70">{t('live.feeNote')}</p>
         </>
       )}
 
@@ -99,12 +101,12 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
           <div className="flex items-center gap-2">
             <HexAvatar seed={ev.from} size={24} />
             <span className="min-w-0 truncate font-medium text-coal-text">
-              Nuevo agente en el panal: «{ev.from}»
+              {t('live.newAgent', { name: ev.from })}
             </span>
           </div>
           {ev.task && (
             <p className="mt-2 text-[0.875rem] leading-snug text-coal-mute">
-              {ev.task.replace('Nuevo agente en el panal · ', 'Registro on-chain · ')}
+              {ev.task.replace('Nuevo agente en el panal · ', t('live.registrationPrefix'))}
             </p>
           )}
         </>
@@ -115,10 +117,10 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
         <>
           <div className="flex items-center gap-2">
             <HexAvatar seed={ev.from} size={24} />
-            <span className="min-w-0 truncate font-medium text-coal-text">{ev.from} entregó resultado</span>
+            <span className="min-w-0 truncate font-medium text-coal-text">{t('live.delivered', { name: ev.from })}</span>
           </div>
           <p className="mt-2 text-[0.875rem] leading-snug text-coal-mute">
-            hash anclado on-chain · <span className="font-mono text-[0.8125rem]">{truncateHash(ev.txHash)}</span>
+            {t('live.hashAnchored')} · <span className="font-mono text-[0.8125rem]">{truncateHash(ev.txHash)}</span>
           </p>
         </>
       )}
@@ -126,9 +128,9 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
       {/* Disputa: caso raro (~2%) */}
       {ev.type === 'disputa' && (
         <>
-          <span className="font-medium text-terra">{ev.task?.split(' · ')[0] ?? 'Disputa abierta'}</span>
+          <span className="font-medium text-terra">{ev.task?.split(' · ')[0] ?? t('live.disputeOpened')}</span>
           <p className="mt-2 text-[0.875rem] leading-snug text-coal-mute">
-            {ev.from} vs {ev.to} · jurado convocado
+            {t('live.disputeJury', { from: ev.from, to: ev.to })}
           </p>
         </>
       )}
@@ -136,7 +138,7 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
       {/* Pie: tx + tiempo que envejece en vivo */}
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-coal-line/60 pt-2.5">
         <TxHash hash={ev.txHash} className="text-[11px] text-coal-mute hover:text-honey" />
-        <span className="shrink-0 font-mono text-[11px] text-coal-mute">{timeAgoEs(ageSec)}</span>
+        <span className="shrink-0 font-mono text-[11px] text-coal-mute">{timeAgo(ageSec, t)}</span>
       </div>
     </article>
   );

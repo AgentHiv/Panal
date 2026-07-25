@@ -166,3 +166,34 @@
     text-wrap: balance;
   }
 }
+
+/* i18n — fuentes para scripts no latinos (Inter como fallback latin) */
+:lang(zh) body,
+:lang(zh) {
+  font-family: 'Noto Sans SC', 'Inter', system-ui, sans-serif;
+}
+:lang(hi) body,
+:lang(hi) {
+  font-family: 'Noto Sans Devanagari', 'Inter', system-ui, sans-serif;
+}
+:lang(ar) body,
+:lang(ar) {
+  font-family: 'Noto Sans Arabic', 'Inter', system-ui, sans-serif;
+}
+:lang(bn) body,
+:lang(bn) {
+  font-family: 'Noto Sans Bengali', 'Inter', system-ui, sans-serif;
+}
+:lang(ur) body,
+:lang(ur) {
+  font-family: 'Noto Nastaliq Urdu', 'Noto Sans Arabic', 'Inter', system-ui, sans-serif;
+  line-height: 2;
+}
+
+/* RTL — fixes globales básicos */
+[dir='rtl'] .text-left {
+  text-align: right;
+}
+[dir='rtl'] .text-right {
+  text-align: left;
+}

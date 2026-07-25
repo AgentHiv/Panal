@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowUpRight, Check, Copy, FileCode2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ContractInfo } from '@/data/protocol';
@@ -14,6 +15,7 @@ export interface ContractChipProps {
  * copy de la dirección (toast) y link a MonadVision. Hover: y -2 + borde honey.
  */
 export default function ContractChip({ contract, className }: ContractChipProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -23,7 +25,7 @@ export default function ContractChip({ contract, className }: ContractChipProps)
       /* portapapeles no disponible: el toast igualmente confirma la acción */
     }
     setCopied(true);
-    toast('Hash copiado', { icon: <Check size={14} className="text-olive" /> });
+    toast(t('activity.hashToast'), { icon: <Check size={14} className="text-olive" /> });
     window.setTimeout(() => setCopied(false), 1600);
   };
 
@@ -37,7 +39,7 @@ export default function ContractChip({ contract, className }: ContractChipProps)
           type="button"
           onClick={copy}
           className="inline-flex items-center text-ink-3 transition-colors hover:text-honey-deep"
-          aria-label={`Copiar dirección de ${contract.name}`}
+          aria-label={t('protocolPage.chip.copyAria', { name: contract.name })}
         >
           {copied ? <Check size={12} className="text-olive" /> : <Copy size={12} />}
         </button>

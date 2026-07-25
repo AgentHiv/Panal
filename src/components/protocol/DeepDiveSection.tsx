@@ -10,6 +10,7 @@ import TxHash from '@/components/TxHash';
 import type { ContractInfo } from '@/data/protocol';
 import { CONTRACTS } from '@/data/protocol';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -27,21 +28,21 @@ interface DeepDiveCopy {
 
 const DEEP_DIVE_COPY: Record<ContractInfo['id'], DeepDiveCopy> = {
   registry: {
-    h3: 'Identidad programable.',
-    text: 'Un agente es su wallet. El registry guarda skills, precio y metadata; cualquier contrato puede consultarlo y componer con él.',
-    bullets: ['Registro: 1 tx, < $0.001', 'Metadata actualizable por el dueño', 'Listado público y permisionless'],
+    h3: 'deepdive.registry.h3',
+    text: 'deepdive.registry.text',
+    bullets: ['deepdive.registry.b1', 'deepdive.registry.b2', 'deepdive.registry.b3'],
     snippet: 'function register(string calldata skillURI, uint256 pricePerTask) external;',
   },
   escrow: {
-    h3: 'El pago, custodiado por código.',
-    text: 'Nadie toca los fondos: se bloquean al crear la tarea y solo el flujo del contrato los libera.',
+    h3: 'deepdive.escrow.h3',
+    text: 'deepdive.escrow.text',
     bullets: [],
     snippet: 'function release(bytes32 taskId) external { /* solo si verificado o +72h */ }',
   },
   reputation: {
-    h3: 'Reputación que no se puede comprar.',
-    text: 'Cada tarea cerrada escribe en el historial del agente: trabajos, rating medio y total ganado. Inmutable, portable y consultable por cualquiera — incluidos otros contratos.',
-    bullets: ['Solo PanalEscrow puede escribir reputación', 'Rating ponderado por antigüedad', 'Exportable: tu historial es tuyo'],
+    h3: 'deepdive.reputation.h3',
+    text: 'deepdive.reputation.text',
+    bullets: ['deepdive.reputation.b1', 'deepdive.reputation.b2', 'deepdive.reputation.b3'],
     snippet: 'function onTaskClosed(address agent, uint8 rating) external onlyEscrow;',
   },
 };
@@ -90,6 +91,7 @@ function CountUpMono({ value, decimals = 0, durationMs = 1400 }: { value: number
 /* ---------- Desglose visual 97,5 / 2,5 (PanalEscrow) ---------- */
 
 function FeeBreakdown() {
+  const { t } = useTranslation();
   const barRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -112,7 +114,7 @@ function FeeBreakdown() {
 
   return (
     <div className="mt-8">
-      <p className="eyebrow text-coal-mute">Desglose de cada pago</p>
+      <p className="eyebrow text-coal-mute">{t('escrow.breakdown')}</p>
       <div
         ref={barRef}
         className="mt-3 flex h-11 w-full origin-left overflow-hidden rounded-full border border-coal-line will-change-transform"
@@ -124,10 +126,10 @@ function FeeBreakdown() {
       </div>
       <div className="mt-2.5 flex items-center justify-between gap-4 font-mono text-[12px]">
         <span className="text-honey">
-          <CountUpMono value={97.5} decimals={1} />% — agente
+          <CountUpMono value={97.5} decimals={1} />% — {t('escrow.agent')}
         </span>
         <span className="text-coal-mute">
-          <CountUpMono value={2.5} decimals={1} />% — protocolo
+          <CountUpMono value={2.5} decimals={1} />% — {t('escrow.protocol')}
         </span>
       </div>
     </div>
@@ -136,12 +138,13 @@ function FeeBreakdown() {
 
 /* ---------- Mini-timeline auto-release 72h (PanalEscrow) ---------- */
 
-const RELEASE_STAGES = ['Creada', 'Entregada', '72 h', 'Liberada'];
+const RELEASE_STAGES = ['deepdive.stage.created', 'deepdive.stage.delivered', '72 h', 'deepdive.stage.released'];
 
 function AutoReleaseTimeline() {
+  const { t } = useTranslation();
   return (
     <div className="mt-8">
-      <p className="eyebrow text-coal-mute">Auto-release si nadie disputa</p>
+      <p className="eyebrow text-coal-mute">{t('deepdive.autoRelease')}</p>
       <div className="mt-4 flex items-start">
         {RELEASE_STAGES.map((stage, i) => {
           const last = i === RELEASE_STAGES.length - 1;
@@ -158,7 +161,7 @@ function AutoReleaseTimeline() {
                     )}
                   />
                 )}
-                <span className="whitespace-nowrap font-mono text-[11px] text-coal-mute">{stage}</span>
+                <span className="whitespace-nowrap font-mono text-[11px] text-coal-mute">{stage.includes('.') ? t(stage) : stage}</span>
               </div>
               {!last && (
                 <span
@@ -177,6 +180,7 @@ function AutoReleaseTimeline() {
 /* ---------- Bloque alternado imagen/texto ---------- */
 
 function DeepDiveBlock({ contract, reversed }: { contract: ContractInfo; reversed: boolean }) {
+  const { t } = useTranslation();
   const copy = DEEP_DIVE_COPY[contract.id];
   const frameRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -220,7 +224,7 @@ function DeepDiveBlock({ contract, reversed }: { contract: ContractInfo; reverse
           <img
             ref={imgRef}
             src={contract.image}
-            alt={`Representación 3D del contrato ${contract.name}`}
+            alt={t('deepdive.imageAlt', { name: contract.name })}
             loading="lazy"
             className="h-full w-full scale-[1.12] object-cover will-change-transform"
           />
@@ -236,15 +240,15 @@ function DeepDiveBlock({ contract, reversed }: { contract: ContractInfo; reverse
           </p>
           <TxHash hash={contract.address} className="text-[12px] text-coal-mute hover:text-honey" />
         </div>
-        <h3 className="display-m mt-4 text-coal-text">{copy.h3}</h3>
-        <p className="mt-4 max-w-lg text-[1rem] leading-[1.65] text-coal-mute">{copy.text}</p>
+        <h3 className="display-m mt-4 text-coal-text">{t(copy.h3)}</h3>
+        <p className="mt-4 max-w-lg text-[1rem] leading-[1.65] text-coal-mute">{t(copy.text)}</p>
 
         {copy.bullets.length > 0 && (
           <ul className="mt-6 flex flex-col gap-2.5">
             {copy.bullets.map((b) => (
               <li key={b} className="flex items-start gap-3 text-[0.9375rem] text-coal-text/85">
                 <Hexagon size={10} className="mt-[5px] shrink-0 fill-honey/25 text-honey" aria-hidden />
-                {b}
+                {t(b)}
               </li>
             ))}
           </ul>

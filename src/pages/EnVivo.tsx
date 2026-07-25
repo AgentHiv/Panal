@@ -13,6 +13,7 @@ import type { StreamEntry } from '@/components/live/useLiveStream';
 import { formatMon } from '@/data/agents';
 import type { LiveEvent } from '@/data/events';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -108,7 +109,8 @@ function LiveStat({
     return () => cancelAnimationFrame(raf);
   }, [target, reduced]);
 
-  const text = new Intl.NumberFormat('es-ES', {
+  const { i18n } = useTranslation();
+  const text = new Intl.NumberFormat(i18n.language, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(reduced ? target : display);
@@ -138,6 +140,7 @@ interface StreamListProps {
 }
 
 function StreamList({ entries, pending, paused, tabHidden, onResume, onHover }: StreamListProps) {
+  const { t } = useTranslation();
   const reduced = usePrefersReduced();
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -162,7 +165,7 @@ function StreamList({ entries, pending, paused, tabHidden, onResume, onHover }: 
               className="inline-flex items-center gap-2 rounded-full border border-coal-line bg-coal-2 px-3.5 py-1.5 text-[0.8125rem] text-coal-mute"
             >
               <LiveDot variant="ink" ping={false} />
-              En pausa — vuelve para ver el pulso
+              {t('livePage.tabPaused')}
             </motion.span>
           )}
           {paused && (
@@ -177,14 +180,14 @@ function StreamList({ entries, pending, paused, tabHidden, onResume, onHover }: 
               className="inline-flex items-center gap-2 rounded-full border border-honey/40 bg-coal-2 px-3.5 py-1.5 text-[0.8125rem] text-honey transition-colors hover:border-honey"
             >
               <Play size={12} aria-hidden />
-              Pausado — {pending} eventos en espera
+              {t('livePage.paused', { pending })}
             </motion.button>
           )}
         </AnimatePresence>
       </div>
 
       {/* Lista: evento nuevo entra por arriba empujando la pila; las antiguas se desvanecen */}
-      <div className="flex flex-col gap-3" role="feed" aria-label="Stream de eventos de la red en tiempo real">
+      <div className="flex flex-col gap-3" role="feed" aria-label={t('livePage.streamAria')}>
         <AnimatePresence initial={false}>
           {entries.map((entry, i) => (
             <motion.div
@@ -204,7 +207,7 @@ function StreamList({ entries, pending, paused, tabHidden, onResume, onHover }: 
         </AnimatePresence>
         {entries.length === 0 && (
           <p className="rounded-xl border border-dashed border-coal-line p-6 text-center text-[0.875rem] text-coal-mute">
-            Ningún evento con estos filtros — el enjambre sigue zumbando.
+            {t('livePage.emptyFiltered')}
           </p>
         )}
       </div>
@@ -216,25 +219,26 @@ function StreamList({ entries, pending, paused, tabHidden, onResume, onHover }: 
 /* S2d · Columna flotante del modo enjambre                            */
 /* ------------------------------------------------------------------ */
 
-function shortText(ev: LiveEvent): string {
+function shortText(ev: LiveEvent, t: (k: string, o?: Record<string, unknown>) => string): string {
   switch (ev.type) {
     case 'contratacion':
       return `${ev.from} → ${ev.to}`;
     case 'pago':
-      return `Pago liberado → ${ev.to}`;
+      return t('livePage.miniPayment', { to: ev.to });
     case 'registro':
-      return `Nuevo agente: ${ev.from}`;
+      return t('livePage.miniNewAgent', { name: ev.from });
     case 'entrega':
-      return `${ev.from} entregó resultado`;
+      return t('live.delivered', { name: ev.from });
     case 'disputa':
-      return `Disputa abierta: ${ev.from}`;
+      return t('livePage.miniDispute', { name: ev.from });
   }
 }
 
 function MiniStream({ entries }: { entries: StreamEntry[] }) {
+  const { t } = useTranslation();
   return (
     <div className="pointer-events-none absolute bottom-4 right-4 top-20 z-10 hidden w-80 flex-col overflow-hidden rounded-xl border border-coal-line bg-coal-2/70 p-3 backdrop-blur md:flex">
-      <p className="eyebrow mb-3 text-coal-mute">Últimos eventos</p>
+      <p className="eyebrow mb-3 text-coal-mute">{t('livePage.lastEvents')}</p>
       <div className="flex flex-col gap-2">
         <AnimatePresence initial={false}>
           {entries.slice(0, 8).map((entry) => (
@@ -253,7 +257,7 @@ function MiniStream({ entries }: { entries: StreamEntry[] }) {
                 aria-hidden
               />
               <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-coal-text">
-                {shortText(entry.ev)}
+                {shortText(entry.ev, t)}
               </span>
               {entry.ev.amount !== undefined && (
                 <span className="shrink-0 font-mono text-[11px] text-honey">
@@ -273,34 +277,35 @@ function MiniStream({ entries }: { entries: StreamEntry[] }) {
 /* ------------------------------------------------------------------ */
 
 const BIG_CONTRACTS = [
-  { from: '0x7A4f…f9B2', to: 'CodeAuditor', task: 'Auditoría completa + parche', amount: 0.3, ago: 'hace 6 min' },
-  { from: 'DeFiFactory', to: 'LegalReviewer', task: 'Revisión de términos v2', amount: 0.16, ago: 'hace 12 min' },
-  { from: 'HelenaRojas.eth', to: 'StudioNadir', task: 'Sprint de identidad', amount: 0.8, ago: 'hace 21 min', badge: 'humano↔humano' },
-  { from: 'ResearchAgent', to: 'SummarizerAI', task: 'Dossier de protocolo L2', amount: 0.12, ago: 'hace 34 min' },
-  { from: '0xB22…9eF0', to: 'ImageAnalyst', task: 'OCR de 400 facturas', amount: 0.09, ago: 'hace 47 min' },
+  { from: '0x7A4f…f9B2', to: 'CodeAuditor', task: 'Auditoría completa + parche', amount: 0.3, agoMin: 6 },
+  { from: 'DeFiFactory', to: 'LegalReviewer', task: 'Revisión de términos v2', amount: 0.16, agoMin: 12 },
+  { from: 'HelenaRojas.eth', to: 'StudioNadir', task: 'Sprint de identidad', amount: 0.8, agoMin: 21, badge: 'humano↔humano' },
+  { from: 'ResearchAgent', to: 'SummarizerAI', task: 'Dossier de protocolo L2', amount: 0.12, agoMin: 34 },
+  { from: '0xB22…9eF0', to: 'ImageAnalyst', task: 'OCR de 400 facturas', amount: 0.09, agoMin: 47 },
 ];
 const MAX_AMOUNT = Math.max(...BIG_CONTRACTS.map((c) => c.amount));
 
 function BigContracts() {
+  const { t } = useTranslation();
   const reduced = usePrefersReduced();
   return (
     <section className="border-t border-coal-line">
       <div className="container-hive py-16">
         <p className="eyebrow flex items-center gap-2 text-coal-mute">
           <Hexagon size={12} className="text-honey" aria-hidden />
-          GRANDES MOVIMIENTOS
+          {t('livePage.bigEyebrow')}
         </p>
-        <h3 className="display-m mt-3 text-coal-text">Los contratos más jugosos de la hora.</h3>
+        <h3 className="display-m mt-3 text-coal-text">{t('livePage.bigTitle')}</h3>
 
         <div className="mt-8 overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-left">
             <thead>
               <tr className="border-b border-coal-line text-[11px] uppercase tracking-[0.14em] text-coal-mute">
                 <th className="py-3 pr-4 font-medium">#</th>
-                <th className="py-3 pr-4 font-medium">Contratante → Agente</th>
-                <th className="py-3 pr-4 font-medium">Tarea</th>
-                <th className="py-3 pr-4 text-right font-medium">Monto</th>
-                <th className="py-3 text-right font-medium">Hace</th>
+                <th className="py-3 pr-4 font-medium">{t('livePage.colParties')}</th>
+                <th className="py-3 pr-4 font-medium">{t('tasks.colTask')}</th>
+                <th className="py-3 pr-4 text-right font-medium">{t('tasks.colAmount')}</th>
+                <th className="py-3 text-right font-medium">{t('activity.colWhen')}</th>
               </tr>
             </thead>
             <tbody>
@@ -338,7 +343,7 @@ function BigContracts() {
                       <span className="text-honey">{formatMon(c.amount, 2)} MON</span>
                     )}
                   </td>
-                  <td className="py-4 text-right font-mono text-[11px] text-coal-mute">{c.ago}</td>
+                  <td className="py-4 text-right font-mono text-[11px] text-coal-mute">{t('common.timeAgo.minutes', { count: c.agoMin })}</td>
                 </motion.tr>
               ))}
             </tbody>
@@ -354,6 +359,7 @@ function BigContracts() {
 /* ------------------------------------------------------------------ */
 
 export default function EnVivo() {
+  const { t, i18n } = useTranslation();
   const reduced = usePrefersReduced();
   const tabHidden = useDocumentHidden();
   const stream = useLiveStream();
@@ -366,11 +372,11 @@ export default function EnVivo() {
   // SEO básico
   useEffect(() => {
     const prev = document.title;
-    document.title = 'En Vivo — Panal';
+    document.title = t('livePage.metaTitle');
     return () => {
       document.title = prev;
     };
-  }, []);
+  }, [t, i18n.language]);
 
   // Modo enjambre: Esc para salir + bloqueo de scroll + entrada fade/scale
   useEffect(() => {
@@ -419,24 +425,23 @@ export default function EnVivo() {
           <div className="max-w-2xl">
             <p className="eyebrow flex items-center gap-2 text-honey">
               <Hexagon size={12} aria-hidden />
-              EN DIRECTO — MONAD MAINNET
+              {t('livePage.eyebrow')}
               <LiveDot variant="honey" />
             </p>
             <h1 className="display-l mt-4 text-coal-text">
-              <WordReveal text="El panal," />{' '}
+              <WordReveal text={t('livePage.h1a')} />{' '}
               <em className="serif-accent text-honey">
-                <WordReveal text="ahora mismo." delay={0.3} />
+                <WordReveal text={t('livePage.h1b')} delay={0.3} />
               </em>
             </h1>
             <p className="mt-4 max-w-xl text-[1.125rem] leading-relaxed text-coal-mute">
-              Cada contratación, pago y registro aparece aquí en el momento en que se confirma el
-              bloque. Bloques de 400 ms: parpadea y te lo pierdes.
+              {t('livePage.sub')}
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-8 md:gap-10">
-            <LiveStat base={312} label="eventos/min" />
-            <LiveStat base={4.2} decimals={1} suffix="MON" label="movidos/min" />
-            <LiveStat base={1847} label="agentes activos ahora" />
+            <LiveStat base={312} label={t('livePage.statEvents')} />
+            <LiveStat base={4.2} decimals={1} suffix="MON" label={t('livePage.statMoved')} />
+            <LiveStat base={1847} label={t('livePage.statAgents')} />
           </div>
         </div>
       </section>
@@ -468,17 +473,17 @@ export default function EnVivo() {
                   <div className="absolute left-4 top-4 z-20 flex items-center gap-3">
                     <span className="eyebrow flex items-center gap-2 text-honey">
                       <LiveDot variant="honey" />
-                      MODO ENJAMBRE
+                      {t('livePage.swarmMode')}
                     </span>
                     <span className="hidden font-mono text-[11px] text-coal-mute sm:inline">
-                      Esc para salir
+                      {t('livePage.escExit')}
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setSwarmMode(false)}
                     className="absolute right-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-coal-line bg-coal-2/80 text-coal-text backdrop-blur transition-colors hover:border-honey hover:text-honey"
-                    aria-label="Salir del modo enjambre"
+                    aria-label={t('livePage.exitSwarmAria')}
                   >
                     <X size={16} />
                   </button>
@@ -520,9 +525,9 @@ export default function EnVivo() {
       {/* S4 · CTA */}
       <section className="container-hive py-20 text-center">
         <h3 className="display-m mx-auto max-w-2xl text-coal-text">
-          <WordReveal inView text="¿Quieres que tu agente aparezca" />{' '}
+          <WordReveal inView text={t('livePage.ctaTitle1')} />{' '}
           <em className="serif-accent text-honey">
-            <WordReveal inView text="aquí?" delay={0.5} />
+            <WordReveal inView text={t('livePage.ctaTitle2')} delay={0.5} />
           </em>
         </h3>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -536,7 +541,7 @@ export default function EnVivo() {
               to="/dashboard"
               className="inline-block rounded-full bg-honey px-6 py-3 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
             >
-              Registrar mi agente
+              {t('livePage.ctaRegister')}
             </Link>
           </motion.div>
           <motion.div
@@ -549,12 +554,12 @@ export default function EnVivo() {
               to="/mercado"
               className="inline-block rounded-full border border-coal-line px-6 py-3 text-[0.875rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
             >
-              Explorar el mercado
+              {t('home.hero.ctaMarket')}
             </Link>
           </motion.div>
         </div>
         <p className="mt-6 font-mono text-[0.8125rem] text-coal-mute">
-          PanalRegistry.register(skill, precio) — una sola transacción
+          {t('livePage.ctaNote')}
         </p>
       </section>
     </div>

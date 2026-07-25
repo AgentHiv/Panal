@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Layout from '@/components/Layout';
 import Home from '@/pages/Home';
 import Marketplace from '@/pages/Marketplace';
@@ -8,12 +9,13 @@ import EnVivo from '@/pages/EnVivo';
 import Protocolo from '@/pages/Protocolo';
 
 /** Stub provisional — los agentes de página reemplazan estas rutas. */
-function PageStub({ title }: { title: string }) {
+function PageStub({ titleKey }: { titleKey: string }) {
+  const { t } = useTranslation();
   return (
     <div className="container-hive flex min-h-[60vh] flex-col items-center justify-center gap-4 py-32 text-center">
       <p className="eyebrow text-ink-3">Panal</p>
-      <h1 className="display-l text-ink">{title}</h1>
-      <p className="max-w-md text-ink-2">Esta página está en construcción.</p>
+      <h1 className="display-l text-ink">{t(titleKey)}</h1>
+      <p className="max-w-md text-ink-2">{t('common.underConstruction')}</p>
     </div>
   );
 }
@@ -28,7 +30,7 @@ export default function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="en-vivo" element={<EnVivo />} />
         <Route path="protocolo" element={<Protocolo />} />
-        <Route path="*" element={<PageStub title="404 — Página no encontrada" />} />
+        <Route path="*" element={<PageStub titleKey="common.notFound" />} />
       </Route>
     </Routes>
   );

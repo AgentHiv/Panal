@@ -20,6 +20,7 @@ import {
   YAxis,
 } from 'recharts';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import type { CategorySlice, EarningsPoint, ReputationPoint } from './data';
 import { formatMonEs } from './data';
 
@@ -205,6 +206,7 @@ export function ReputationLineChart({ data }: { data: ReputationPoint[] }) {
 /* ---------- S2 · Sparkline de saldo (se dibuja, dashoffset 1s) ---------- */
 
 export function WalletSparkline({ data, width = 220, height = 64 }: { data: number[]; width?: number; height?: number }) {
+  const { t } = useTranslation();
   const min = Math.min(...data);
   const max = Math.max(...data);
   const span = max - min || 1;
@@ -214,7 +216,7 @@ export function WalletSparkline({ data, width = 220, height = 64 }: { data: numb
   const area = `${path} L${width},${height} L0,${height} Z`;
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible" role="img" aria-label="Evolución del saldo en 30 días">
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible" role="img" aria-label={t('wallet.chartAria')}>
       <path d={area} fill={HONEY_SOFT} opacity={0.5} />
       <motion.path
         d={path}

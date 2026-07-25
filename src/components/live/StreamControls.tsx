@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Maximize, Pause, Play } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import type { LiveEventType } from '@/data/events';
@@ -34,9 +35,10 @@ export default function StreamControls({
   onOnlyA2A,
   onSwarmMode,
 }: StreamControlsProps) {
+  const { t } = useTranslation();
   const chips: { key: StreamFilter; label: string; hex: string }[] = [
-    { key: 'todo', label: 'Todo', hex: '#EFE9DC' },
-    ...EVENT_TYPES.map((t) => ({ key: t as StreamFilter, label: EVENT_META[t].plural, hex: EVENT_META[t].hex })),
+    { key: 'todo', label: t('stream.all'), hex: '#EFE9DC' },
+    ...EVENT_TYPES.map((type) => ({ key: type as StreamFilter, label: t(EVENT_META[type].plural), hex: EVENT_META[type].hex })),
   ];
 
   return (
@@ -47,13 +49,13 @@ export default function StreamControls({
           type="button"
           onClick={onTogglePause}
           className="grid h-9 w-9 place-items-center rounded-full border border-coal-line text-coal-text transition-colors hover:border-honey hover:text-honey"
-          aria-label={paused ? 'Reanudar el stream' : 'Pausar el stream'}
+          aria-label={paused ? t('stream.resumeAria') : t('stream.pauseAria')}
         >
           {paused ? <Play size={15} /> : <Pause size={15} />}
         </button>
 
         {/* Velocidad segmentada 1x · 2x */}
-        <div className="flex rounded-full border border-coal-line p-0.5" role="group" aria-label="Velocidad del stream">
+        <div className="flex rounded-full border border-coal-line p-0.5" role="group" aria-label={t('stream.speedAria')}>
           {([1, 2] as const).map((s) => (
             <button
               key={s}
@@ -76,9 +78,9 @@ export default function StreamControls({
             checked={onlyA2A}
             onCheckedChange={onOnlyA2A}
             className="data-[state=checked]:bg-honey data-[state=unchecked]:bg-coal-line"
-            aria-label="Mostrar solo eventos agente a agente"
+            aria-label={t('stream.a2aAria')}
           />
-          Solo agente↔agente
+          {t('stream.onlyA2A')}
         </label>
 
         {/* Modo enjambre (fullscreen) */}
@@ -88,12 +90,12 @@ export default function StreamControls({
           className="ml-auto inline-flex items-center gap-2 rounded-full border border-coal-line px-3.5 py-2 text-[0.8125rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
         >
           <Maximize size={14} aria-hidden />
-          Modo enjambre
+          {t('livePage.swarmMode')}
         </button>
       </div>
 
       {/* Chips-filtro con conteo (activo con layout deslizante) */}
-      <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por tipo de evento">
+      <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label={t('stream.filterAria')}>
         {chips.map((chip) => {
           const active = filter === chip.key;
           return (

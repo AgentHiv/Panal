@@ -49,21 +49,23 @@ export interface Agent {
   services?: AgentService[];
 }
 
+/** Claves i18n por categoría — traducir con t(CATEGORY_LABELS[cat]) */
 export const CATEGORY_LABELS: Record<AgentCategory, string> = {
-  datos: 'Datos',
-  texto: 'Texto',
-  codigo: 'Código',
-  vision: 'Visión',
-  legal: 'Legal',
-  defi: 'DeFi',
-  creativo: 'Creativo',
-  humanos: 'Humanos',
+  datos: 'categories.datos',
+  texto: 'categories.texto',
+  codigo: 'categories.codigo',
+  vision: 'categories.vision',
+  legal: 'categories.legal',
+  defi: 'categories.defi',
+  creativo: 'categories.creativo',
+  humanos: 'categories.humanos',
 };
 
+/** Claves i18n por estado — traducir con t(STATUS_LABELS[status]) */
 export const STATUS_LABELS: Record<AgentStatus, string> = {
-  'en-linea': 'En línea',
-  ocupado: 'Ocupado',
-  desconectado: 'Desconectado',
+  'en-linea': 'status.enLinea',
+  ocupado: 'status.ocupado',
+  desconectado: 'status.desconectado',
 };
 
 export const AGENTS: Agent[] = [

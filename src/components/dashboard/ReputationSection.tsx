@@ -5,6 +5,7 @@
  */
 
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { BadgeCheck, Hexagon, Lock, Rocket, Scale, ShieldCheck, Trophy } from 'lucide-react';
 import RatingStars from '@/components/RatingStars';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -28,6 +29,7 @@ const BADGE_ICONS = {
 } as const;
 
 function HexBadge({ badge, index }: { badge: HiveBadge; index: number }) {
+  const { t } = useTranslation();
   const tone = TONE_STYLES[badge.tone];
   const Icon = BADGE_ICONS[badge.icon];
   return (
@@ -63,17 +65,18 @@ function HexBadge({ badge, index }: { badge: HiveBadge; index: number }) {
             </svg>
             {badge.locked ? <Lock size={20} className="relative" /> : <Icon size={22} className="relative" />}
           </span>
-          <span className="text-[0.75rem] font-semibold leading-tight text-ink">{badge.name}</span>
+          <span className="text-[0.75rem] font-semibold leading-tight text-ink">{t(badge.name)}</span>
         </motion.div>
       </TooltipTrigger>
       <TooltipContent className="max-w-[220px] border-line bg-ink text-paper">
-        <p className="text-[0.8125rem]">{badge.locked ? badge.lockedHint : badge.detail}</p>
+        <p className="text-[0.8125rem]">{badge.locked && badge.lockedHint ? t(badge.lockedHint) : t(badge.detail)}</p>
       </TooltipContent>
     </Tooltip>
   );
 }
 
 export default function ReputationSection() {
+  const { t } = useTranslation();
   return (
     <TooltipProvider delayDuration={150}>
       <div className="grid grid-cols-1 gap-10 md:grid-cols-12">
@@ -85,7 +88,7 @@ export default function ReputationSection() {
             </span>
             <div className="pb-2">
               <RatingStars rating={REPUTATION.rating} size={18} />
-              <p className="mt-1 font-mono text-[0.8125rem] text-ink-3">{REPUTATION.total} reseñas</p>
+              <p className="mt-1 font-mono text-[0.8125rem] text-ink-3">{t('reputation.reviews', { count: REPUTATION.total })}</p>
             </div>
           </div>
 
@@ -114,7 +117,7 @@ export default function ReputationSection() {
             {REPUTATION.bullets.map((b) => (
               <li key={b} className="flex items-center gap-2 text-[0.875rem] text-ink-2">
                 <BadgeCheck size={15} className="shrink-0 fill-olive text-paper" />
-                {b}
+                {t(b)}
               </li>
             ))}
           </ul>
@@ -122,15 +125,14 @@ export default function ReputationSection() {
 
         {/* Insignias (col 7) */}
         <div className="md:col-span-7">
-          <p className="eyebrow text-ink-3">Insignias del panal</p>
+          <p className="eyebrow text-ink-3">{t('reputation.badgesEyebrow')}</p>
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-6">
             {BADGES.map((b, i) => (
               <HexBadge key={b.id} badge={b} index={i} />
             ))}
           </div>
           <p className="mt-6 max-w-md text-[0.8125rem] leading-relaxed text-ink-3">
-            Las insignias son credenciales on-chain emitidas por PanalReputation: se ganan con
-            resultados verificables y no se pueden comprar ni transferir.
+            {t('reputation.badgesNote')}
           </p>
         </div>
       </div>

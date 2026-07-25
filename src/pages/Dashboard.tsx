@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowDownToLine, Check, Copy, Plus, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import AgentCard from '@/components/AgentCard';
 import HexAvatar from '@/components/HexAvatar';
 import SectionHeader from '@/components/SectionHeader';
@@ -61,9 +62,10 @@ const flipItem = {
 };
 
 export default function Dashboard() {
+  const { t, i18n } = useTranslation();
   useEffect(() => {
-    document.title = 'Panal — Dashboard: tu panel del panal';
-  }, []);
+    document.title = t('dash.metaTitle');
+  }, [t, i18n.language]);
 
   const { address, addressShort, connected, wrongNetwork } = useWallet();
   const addrShort = addressShort ?? WALLET_USER_SHORT;
@@ -79,10 +81,8 @@ export default function Dashboard() {
     if (canRegisterOnchain) {
       setRegisterOpen(true);
     } else {
-      toast('Registro de agente', {
-        description: connected
-          ? 'Cambia tu wallet a Monad testnet para registrar el agente on-chain.'
-          : 'Conecta tu wallet para registrar el agente on-chain en PanalRegistry.',
+      toast(t('dash.registerToast'), {
+        description: connected ? t('dash.registerToastSwitch') : t('dash.registerToastConnect'),
       });
     }
   };
@@ -94,7 +94,7 @@ export default function Dashboard() {
       /* portapapeles no disponible */
     }
     setCopied(true);
-    toast('Dirección copiada', { icon: <Check size={14} className="text-olive" /> });
+    toast(t('detail.copied'), { icon: <Check size={14} className="text-olive" /> });
     window.setTimeout(() => setCopied(false), 1600);
   };
 
@@ -122,7 +122,7 @@ export default function Dashboard() {
                 animate="show"
                 variants={{ hidden: {}, show: { transition: { staggerChildren: 0.09 } } }}
               >
-                {['Hola,'].map((w) => (
+                {[t('dash.hello')].map((w) => (
                   <motion.span
                     key={w}
                     className="mr-3 inline-block"
@@ -139,7 +139,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={copyAddress}
-                    aria-label="Copiar dirección"
+                    aria-label={t('dash.copyAddress')}
                     className="rounded-full p-1.5 text-ink-3 transition-colors hover:bg-honey-soft hover:text-honey-deep"
                   >
                     {copied ? <Check size={16} className="text-olive" /> : <Copy size={16} />}
@@ -147,9 +147,7 @@ export default function Dashboard() {
                 </motion.span>
               </motion.h1>
               <p className="mt-3 text-[1.0625rem] text-ink-2">
-                Miembro del panal desde nov 2025 · Reputación global{' '}
-                <span className="font-medium text-ink">4,9 ★</span> · Posición{' '}
-                <span className="font-mono text-[0.9375rem]">#12</span> en Texto.
+                {t('dash.memberLine')}
               </p>
             </div>
           </div>
@@ -162,7 +160,7 @@ export default function Dashboard() {
             className="flex flex-col items-start gap-4 sm:flex-row sm:items-center"
           >
             {/* Toggle segmentado con layoutId animado */}
-            <div className="relative flex rounded-full border border-line bg-cream p-1" role="tablist" aria-label="Perspectiva del panel">
+            <div className="relative flex rounded-full border border-line bg-cream p-1" role="tablist" aria-label={t('dash.perspectiveAria')}>
               {(['proveedor', 'cliente'] as Perspective[]).map((p) => (
                 <button
                   key={p}
@@ -182,7 +180,7 @@ export default function Dashboard() {
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
                   )}
-                  {p === 'proveedor' ? 'Como proveedor' : 'Como cliente'}
+                  {p === 'proveedor' ? t('dash.asProvider') : t('dash.asClient')}
                 </button>
               ))}
             </div>
@@ -191,14 +189,14 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() =>
-                  toast('Retiro iniciado', {
+                  toast(t('dash.withdrawToast'), {
                     icon: <ArrowDownToLine size={14} className="text-honey-deep" />,
-                    description: `1.284,50 MON → ${addrShort} (simulado).`,
+                    description: t('dash.withdrawToastDesc', { address: addrShort }),
                   })
                 }
                 className="rounded-full border border-line px-4 py-2 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
               >
-                Retirar fondos
+                {t('dash.withdraw')}
               </button>
               <button
                 type="button"
@@ -206,7 +204,7 @@ export default function Dashboard() {
                 className="inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
               >
                 <Plus size={15} />
-                Registrar nuevo agente
+                {t('dash.registerAgent')}
               </button>
             </div>
           </motion.div>
@@ -232,7 +230,7 @@ export default function Dashboard() {
                     decimals={kpi.decimals}
                     prefix={kpi.prefix}
                     suffix={kpi.suffix ? ` ${kpi.suffix}` : undefined}
-                    label={kpi.label}
+                    label={t(kpi.label)}
                   />
                   {(kpi.delta || kpi.sub) && (
                     <motion.p
@@ -244,10 +242,10 @@ export default function Dashboard() {
                       {kpi.delta && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-olive/10 px-2 py-0.5 font-mono text-[0.75rem] font-medium text-olive">
                           {kpi.deltaIcon === 'up' && <TrendingUp size={12} />}
-                          {kpi.delta}
+                          {kpi.delta?.startsWith('dash.') ? t(kpi.delta) : kpi.delta}
                         </span>
                       )}
-                      {kpi.sub && <span className="text-ink-3">{kpi.sub}</span>}
+                      {kpi.sub && <span className="text-ink-3">{kpi.sub.startsWith('dash.') ? t(kpi.sub) : kpi.sub}</span>}
                     </motion.p>
                   )}
                 </div>
@@ -266,7 +264,7 @@ export default function Dashboard() {
             <div className="rounded-2xl border border-line bg-paper p-6 shadow-card lg:col-span-8">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <h3 className="font-display text-[1.125rem] font-semibold tracking-[-0.015em] text-ink">
-                  {perspective === 'proveedor' ? 'Ganancias' : 'Gasto'}
+                  {perspective === 'proveedor' ? t('dash.earnings') : t('dash.spending')}
                 </h3>
                 <div className="flex gap-1 rounded-full border border-line bg-cream p-0.5">
                   {RANGE_LABELS.map((r) => (
@@ -290,18 +288,18 @@ export default function Dashboard() {
             {/* Donut por categoría */}
             <div className="rounded-2xl border border-line bg-paper p-6 shadow-card lg:col-span-4">
               <h3 className="mb-5 font-display text-[1.125rem] font-semibold tracking-[-0.015em] text-ink">
-                {donut.title}
+                {t(donut.title)}
               </h3>
-              <CategoryDonut slices={donut.slices} center={donut.center} centerLabel={donut.centerLabel} />
+              <CategoryDonut slices={donut.slices.map((s) => ({ ...s, name: t(s.name) }))} center={donut.center} centerLabel={t(donut.centerLabel)} />
             </div>
 
             {/* Reputación en el tiempo */}
             <div className="rounded-2xl border border-line bg-paper p-6 shadow-card lg:col-span-12">
               <div className="mb-4 flex items-baseline justify-between gap-4">
                 <h3 className="font-display text-[1.125rem] font-semibold tracking-[-0.015em] text-ink">
-                  Reputación en el tiempo
+                  {t('dash.reputationOverTime')}
                 </h3>
-                <p className="font-mono text-[0.75rem] text-ink-3">hitos: 1.000 tareas · Top 25</p>
+                <p className="font-mono text-[0.75rem] text-ink-3">{t('dash.milestones')}</p>
               </div>
               <ReputationLineChart data={REPUTATION_TIMELINE} />
             </div>
@@ -311,22 +309,20 @@ export default function Dashboard() {
         {/* ── S4 · Mis agentes / Favoritos ───────────────────────────────── */}
         <motion.section variants={flipItem} className="container-hive pb-14 md:pb-20">
           <SectionHeader
-            eyebrow={perspective === 'proveedor' ? 'Tus agentes' : 'Favoritos'}
+            eyebrow={perspective === 'proveedor' ? t('dash.yourAgents') : t('dash.favorites')}
             title={
               perspective === 'proveedor' ? (
                 <>
-                  Mis <em className="serif-accent text-honey-deep">agentes</em>
+                  {t('dash.myAgentsTitle')} <em className="serif-accent text-honey-deep">{t('dash.myAgentsEm')}</em>
                 </>
               ) : (
                 <>
-                  Tus agentes <em className="serif-accent text-honey-deep">favoritos</em>
+                  {t('dash.favAgentsTitle')} <em className="serif-accent text-honey-deep">{t('dash.favAgentsEm')}</em>
                 </>
               )
             }
             sub={
-              perspective === 'proveedor'
-                ? 'Pausa, ajusta precios y retira ganancias de tus agentes publicados.'
-                : 'Los agentes que más contratas, a un clic de distancia.'
+              perspective === 'proveedor' ? t('dash.myAgentsSub') : t('dash.favAgentsSub')
             }
             action={
               perspective === 'proveedor' ? (
@@ -360,13 +356,13 @@ export default function Dashboard() {
         {/* ── S5 · Tareas activas ────────────────────────────────────────── */}
         <motion.section variants={flipItem} className="container-hive pb-14 md:pb-20">
           <SectionHeader
-            eyebrow="Escrow en marcha"
+            eyebrow={t('dash.escrowRunning')}
             title={
               <>
-                Tareas <em className="serif-accent text-honey-deep">activas</em>
+                {t('dash.tasksTitle')} <em className="serif-accent text-honey-deep">{t('dash.tasksEm')}</em>
               </>
             }
-            sub="El progreso avanza en vivo; las entregas llegan a la primera fila para que las verifiques."
+            sub={t('dash.tasksSub')}
             className="mb-8"
           />
           <TasksSection perspective={perspective} />
@@ -376,10 +372,10 @@ export default function Dashboard() {
       {/* ── S6 · Disputa en curso ─────────────────────────────────────────── */}
       <section className="container-hive pb-14 md:pb-20">
         <SectionHeader
-          eyebrow="Arbitraje"
+          eyebrow={t('dash.arbitration')}
           title={
             <>
-              Disputa <em className="serif-accent text-honey-deep">en curso</em>
+              {t('dash.disputeTitle')} <em className="serif-accent text-honey-deep">{t('dash.disputeEm')}</em>
             </>
           }
           className="mb-8"
@@ -390,13 +386,13 @@ export default function Dashboard() {
       {/* ── S7 · Historial de pagos ───────────────────────────────────────── */}
       <section className="container-hive pb-14 md:pb-20">
         <SectionHeader
-          eyebrow="Movimientos"
+          eyebrow={t('dash.movements')}
           title={
             <>
-              Historial de <em className="serif-accent text-honey-deep">pagos</em>
+              {t('dash.paymentsTitle')} <em className="serif-accent text-honey-deep">{t('dash.paymentsEm')}</em>
             </>
           }
-          sub="Cobros y pagos con su hash verificable en el explorador de Monad."
+          sub={t('dash.paymentsSub')}
           className="mb-8"
         />
         <PaymentsSection />
@@ -407,10 +403,10 @@ export default function Dashboard() {
         <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-40" aria-hidden />
         <div className="container-hive relative py-16 md:py-24">
           <SectionHeader
-            eyebrow="Reputación on-chain"
+            eyebrow={t('dash.reputationEyebrow')}
             title={
               <>
-                Tu palabra, <em className="serif-accent text-honey-deep">medida</em>
+                {t('dash.reputationTitle')} <em className="serif-accent text-honey-deep">{t('dash.reputationEm')}</em>
               </>
             }
             className="mb-10"

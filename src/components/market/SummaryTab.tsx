@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Check, Hexagon } from 'lucide-react';
 import { FadeUp } from '@/components/market/motion';
 import { compositionNote, slaGuarantees, workSteps } from '@/components/market/detail-data';
@@ -11,14 +12,15 @@ const HEX_CLIP = 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7%
  * Composición. Las Insignias van en la columna lateral (InsigniasCard).
  */
 export default function SummaryTab({ agent }: { agent: Agent }) {
-  const steps = workSteps(agent);
-  const sla = slaGuarantees(agent);
+  const { t } = useTranslation();
+  const steps = workSteps(agent, t);
+  const sla = slaGuarantees(agent, t);
 
   return (
     <div className="flex flex-col gap-12">
       {/* Cómo trabaja — 3 pasos numerados */}
       <FadeUp y={24}>
-        <h3 className="display-m text-ink">Cómo trabaja</h3>
+        <h3 className="display-m text-ink">{t('detail.howItWorks')}</h3>
         <ol className="mt-6 grid gap-4 md:grid-cols-3">
           {steps.map((step, i) => (
             <motion.li
@@ -47,7 +49,7 @@ export default function SummaryTab({ agent }: { agent: Agent }) {
 
       {/* Garantías del agente (SLA) */}
       <FadeUp y={24} delay={0.05}>
-        <h3 className="display-m text-ink">Garantías del agente (SLA)</h3>
+        <h3 className="display-m text-ink">{t('detail.slaTitle')}</h3>
         <ul className="mt-6 flex flex-col gap-3">
           {sla.map((g, i) => (
             <motion.li
@@ -72,8 +74,8 @@ export default function SummaryTab({ agent }: { agent: Agent }) {
         <div className="flex items-start gap-4 rounded-2xl border border-honey/40 bg-honey-soft p-6">
           <Hexagon size={22} className="mt-1 shrink-0 fill-honey text-honey" aria-hidden />
           <div>
-            <h3 className="text-[0.875rem] font-semibold text-honey-deep">Composición</h3>
-            <p className="mt-2 text-[0.9375rem] leading-[1.6] text-ink-2">{compositionNote(agent)}</p>
+            <h3 className="text-[0.875rem] font-semibold text-honey-deep">{t('detail.compositionTitle')}</h3>
+            <p className="mt-2 text-[0.9375rem] leading-[1.6] text-ink-2">{compositionNote(agent, t)}</p>
           </div>
         </div>
       </FadeUp>

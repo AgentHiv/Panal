@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BarChart3, Coins, Hexagon, MoreHorizontal, PauseCircle, PlayCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import HexAvatar from '@/components/HexAvatar';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -43,6 +44,7 @@ function HexSpinner({ size = 44 }: { size?: number }) {
 }
 
 export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; className?: string }) {
+  const { t } = useTranslation();
   const [active, setActive] = useState(true);
   const [price, setPrice] = useState(agent.pricePerTask);
   const [draft, setDraft] = useState(agent.pricePerTask);
@@ -52,11 +54,11 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
   const toggleActive = (next: boolean) => {
     setActive(next);
     if (!next) {
-      toast(`${agent.name} pausado — no recibirá tareas nuevas`, {
+      toast(t('ownAgent.paused', { name: agent.name }), {
         icon: <PauseCircle size={15} className="text-honey-deep" />,
       });
     } else {
-      toast(`${agent.name} activo de nuevo`, {
+      toast(t('ownAgent.resumed', { name: agent.name }), {
         icon: <PlayCircle size={15} className="text-olive" />,
       });
     }
@@ -69,7 +71,7 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
       setPrice(draft);
       setSaving(false);
       setDialogOpen(false);
-      toast(`Precio actualizado: tx ${truncateHash(tx)}`, {
+      toast(t('ownAgent.priceUpdated', { tx: truncateHash(tx) }), {
         icon: <Hexagon size={14} className="fill-honey-soft text-honey-deep" />,
       });
     }, 1200);
@@ -94,21 +96,21 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
           </h3>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <span className="rounded-full bg-honey-soft px-2.5 py-0.5 text-[0.75rem] font-medium text-honey-deep">
-              {CATEGORY_LABELS[agent.category]}
+              {t(CATEGORY_LABELS[agent.category])}
             </span>
             <span className="rounded-full bg-sand px-2.5 py-0.5 font-mono text-[0.75rem] text-ink-2">
-              {formatMon(price)} MON/tarea
+              {t('common.monPerTask', { price: formatMon(price) })}
             </span>
           </div>
         </div>
         <label className="flex shrink-0 items-center gap-2">
           <span className={cn('text-[0.75rem] font-medium', active ? 'text-olive' : 'text-ink-3')}>
-            {active ? 'Activo' : 'Pausado'}
+            {active ? t('ownAgent.active') : t('ownAgent.pausedLabel')}
           </span>
           <Switch
             checked={active}
             onCheckedChange={toggleActive}
-            aria-label={`${active ? 'Pausar' : 'Activar'} ${agent.name}`}
+            aria-label={`${active ? t('ownAgent.pause') : t('ownAgent.activate')} ${agent.name}`}
             className="data-[state=checked]:bg-honey"
           />
         </label>
@@ -117,11 +119,11 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
       {/* Métricas mono en 3 columnas */}
       <div className="grid grid-cols-3 gap-3 border-y border-line py-3">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">Hoy</span>
+          <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">{t('ownAgent.today')}</span>
           <span className="font-mono text-[0.875rem] font-medium text-ink">{formatMonEs(agent.todayMon)} MON</span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">Tareas 30d</span>
+          <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">{t('ownAgent.tasks30')}</span>
           <span className="font-mono text-[0.875rem] font-medium text-ink">{formatInt(agent.tasks30d)}</span>
         </div>
         <div className="flex flex-col gap-0.5">
@@ -133,7 +135,7 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
       {/* Mini área de ingresos 14d */}
       <div>
         <span className="mb-1 block text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">
-          Ingresos · 14 días
+          {t('ownAgent.income14')}
         </span>
         <MiniAreaChart data={agent.trend14d} />
       </div>
@@ -148,19 +150,19 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
           }}
           className="rounded-full bg-ink px-3.5 py-1.5 text-[0.8125rem] font-medium text-paper transition-colors hover:bg-honey-deep"
         >
-          Editar precio
+          {t('ownAgent.editPrice')}
         </button>
         <Link
           to={`/agente/${agent.id}`}
           className="rounded-full border border-line px-3.5 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
         >
-          Ver perfil público
+          {t('ownAgent.viewPublic')}
         </Link>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={`Más acciones de ${agent.name}`}
+              aria-label={t('ownAgent.moreActions', { name: agent.name })}
               className="ml-auto rounded-full p-2 text-ink-3 transition-colors hover:bg-cream hover:text-ink"
             >
               <MoreHorizontal size={16} />
@@ -169,24 +171,24 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
           <DropdownMenuContent align="end" className="border-line bg-paper">
             <DropdownMenuItem onSelect={() => toggleActive(!active)} className="gap-2 text-ink-2">
               {active ? <PauseCircle size={14} /> : <PlayCircle size={14} />}
-              {active ? 'Pausar' : 'Reanudar'}
+              {active ? t('ownAgent.pause') : t('ownAgent.resume')}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onSelect={() => toast(`Estadísticas de ${agent.name}`, { description: 'Panel avanzado disponible en la Fase 2.' })}
+              onSelect={() => toast(t('ownAgent.statsToast', { name: agent.name }), { description: t('ownAgent.statsToastDesc') })}
               className="gap-2 text-ink-2"
             >
-              <BarChart3 size={14} /> Estadísticas
+              <BarChart3 size={14} /> {t('ownAgent.stats')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() =>
-                toast(`Retiro de ganancias de ${agent.name} iniciado`, {
+                toast(t('ownAgent.withdrawToast', { name: agent.name }), {
                   icon: <Coins size={14} className="text-honey-deep" />,
-                  description: `${formatMonEs(agent.todayMon)} MON → tu wallet (simulado).`,
+                  description: t('ownAgent.withdrawToastDesc', { amount: formatMonEs(agent.todayMon) }),
                 })
               }
               className="gap-2 text-ink-2"
             >
-              <Coins size={14} /> Retirar ganancias
+              <Coins size={14} /> {t('ownAgent.withdrawEarnings')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -196,16 +198,16 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
       <Dialog open={dialogOpen} onOpenChange={(o) => !saving && setDialogOpen(o)}>
         <DialogContent className="border-line bg-paper sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display text-ink">Editar precio — {agent.name}</DialogTitle>
+            <DialogTitle className="font-display text-ink">{t('ownAgent.editTitle', { name: agent.name })}</DialogTitle>
             <DialogDescription className="text-ink-2">
-              El nuevo precio se publica en PanalRegistry con una transacción (simulada).
+              {t('ownAgent.editDesc')}
             </DialogDescription>
           </DialogHeader>
 
           {saving ? (
             <div className="flex flex-col items-center gap-4 py-8">
               <HexSpinner />
-              <p className="font-mono text-[0.8125rem] text-ink-2">Firmando transacción…</p>
+              <p className="font-mono text-[0.8125rem] text-ink-2">{t('ownAgent.signing')}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-5 py-2">
@@ -213,7 +215,7 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
                 <span className="font-mono text-[2rem] font-medium leading-none text-ink">
                   {formatMon(draft, 4)}
                 </span>
-                <span className="text-[0.875rem] text-ink-3">MON/tarea</span>
+                <span className="text-[0.875rem] text-ink-3">{t('common.monTask')}</span>
               </div>
               <Slider
                 value={[draft]}
@@ -221,7 +223,7 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
                 max={0.05}
                 step={0.001}
                 onValueChange={([v]) => setDraft(v)}
-                aria-label="Precio por tarea en MON"
+                aria-label={t('ownAgent.priceAria')}
               />
               <div className="flex justify-between font-mono text-[0.6875rem] text-ink-3">
                 <span>0.001</span>
@@ -232,7 +234,7 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
                 onClick={savePrice}
                 className="rounded-full bg-honey px-4 py-2.5 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
               >
-                Guardar precio
+                {t('ownAgent.savePrice')}
               </button>
             </div>
           )}

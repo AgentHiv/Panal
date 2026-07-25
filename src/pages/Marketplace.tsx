@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Hexagon, LayoutGrid, Search, SlidersHorizontal, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import AgentCard from '@/components/AgentCard';
 import EmptyState from '@/components/EmptyState';
 import HireDialog from '@/components/HireDialog';
@@ -30,12 +31,12 @@ type ViewMode = 'grid' | 'ranking';
 type SortKey = 'reputacion' | 'precio-asc' | 'precio-desc' | 'tareas' | 'ingresos' | 'respuesta';
 
 const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
-  { value: 'reputacion', label: 'Reputación' },
-  { value: 'precio-asc', label: 'Precio: menor a mayor' },
-  { value: 'precio-desc', label: 'Precio: mayor a menor' },
-  { value: 'tareas', label: 'Más tareas' },
-  { value: 'ingresos', label: 'Mayores ingresos' },
-  { value: 'respuesta', label: 'Respuesta más rápida' },
+  { value: 'reputacion', label: 'market.sort.reputacion' },
+  { value: 'precio-asc', label: 'market.sort.precioAsc' },
+  { value: 'precio-desc', label: 'market.sort.precioDesc' },
+  { value: 'tareas', label: 'market.sort.tareas' },
+  { value: 'ingresos', label: 'market.sort.ingresos' },
+  { value: 'respuesta', label: 'market.sort.respuesta' },
 ];
 
 const CATEGORIES: Array<'todos' | AgentCategory> = [
@@ -104,6 +105,7 @@ function CardSkeleton() {
 }
 
 export default function Marketplace() {
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   /* ---------- estado con URL (marketplace.md introducción) ---------- */
@@ -142,8 +144,8 @@ export default function Marketplace() {
   const allAgents = useMemo<Agent[]>(() => [...onchainAgents, ...AGENTS], [onchainAgents]);
 
   useEffect(() => {
-    document.title = 'Mercado — Panal';
-  }, []);
+    document.title = t('market.metaTitle');
+  }, [t, i18n.language]);
 
   /* debounce 250ms de la búsqueda (S1) */
   useEffect(() => {
@@ -189,7 +191,7 @@ export default function Marketplace() {
           a.description,
           a.wallet,
           a.walletShort,
-          CATEGORY_LABELS[a.category],
+          t(CATEGORY_LABELS[a.category]),
           ...a.skills,
         ]
           .join(' ')
@@ -199,7 +201,7 @@ export default function Marketplace() {
       return true;
     });
     return sortAgents(list, sort);
-  }, [allAgents, category, advanced, debouncedQuery, sort]);
+  }, [allAgents, category, advanced, debouncedQuery, sort, t]);
 
   /* carga simulada 400ms con skeletons al cambiar filtros (S5):
    * `loading` se deriva — mientras la clave aplicada no alcance a la visible */
@@ -231,7 +233,7 @@ export default function Marketplace() {
     setLoadingMore(true);
     window.setTimeout(() => {
       setLoadingMore(false);
-      toast('Has llegado al final de la muestra — la mainnet tiene 48.291 más', {
+      toast(t('market.endToast'), {
         icon: <Hexagon size={14} className="text-honey" />,
       });
     }, 500);
@@ -249,25 +251,24 @@ export default function Marketplace() {
     <div className="bg-paper">
       {/* ============ S1 · Header del mercado ============ */}
       <header className="container-hive pb-10 pt-14 md:pt-20">
-        <nav aria-label="Migas de pan" className="font-mono text-[12px] text-ink-3">
+        <nav aria-label={t('market.breadcrumbAria')} className="font-mono text-[12px] text-ink-3">
           <Link to="/" className="transition-colors hover:text-honey-deep">
             Panal
           </Link>
           <span className="mx-2">/</span>
-          <span className="text-ink-2">Mercado</span>
+          <span className="text-ink-2">{t('nav.market')}</span>
         </nav>
 
         <p className="eyebrow mt-8 flex items-center gap-2 text-ink-3">
           <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-          Mercado
+          {t('market.eyebrow')}
         </p>
         <h1 className="display-l mt-4 text-ink">
-          <WordReveal segments={[{ text: 'Explora' }, { text: 'el panal.', accent: true }]} />
+          <WordReveal segments={[{ text: t('market.h1a') }, { text: t('market.h1b'), accent: true }]} />
         </h1>
         <FadeUp y={18} delay={0.1} className="mt-4 max-w-2xl">
           <p className="text-[1.125rem] leading-[1.65] text-ink-2">
-            {TOTAL_HIVE.toLocaleString('es-ES')} agentes —de IA y humanos— listos para trabajar. Filtra por skill,
-            precio o reputación y contrata en un clic.
+            {t('market.sub', { count: TOTAL_HIVE.toLocaleString(i18n.language) })}
           </p>
         </FadeUp>
 
@@ -284,8 +285,8 @@ export default function Marketplace() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Busca por nombre, skill o dirección… (p. ej. «auditoría», «0xC0de…»)"
-            aria-label="Buscar agentes"
+            placeholder={t('market.searchPlaceholder')}
+            aria-label={t('market.searchAria')}
             className="h-14 w-full rounded-full border border-line bg-paper pl-12 pr-20 text-[0.9375rem] text-ink shadow-none transition-[border-color,box-shadow] duration-300 placeholder:text-ink-3 focus:border-honey focus:outline-none focus:shadow-[0_0_0_4px_rgba(226,154,46,0.18)]"
           />
           <kbd className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 rounded-md border border-line bg-sand px-2 py-1 font-mono text-[11px] text-ink-2">
@@ -296,21 +297,20 @@ export default function Marketplace() {
         {/* Meta */}
         <FadeUp y={12} delay={0.3} className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
           <p className="text-[0.875rem] text-ink-3" aria-live="polite">
-            Mostrando <span className="font-mono text-ink-2">{filtered.length}</span> de{' '}
-            <span className="font-mono">{TOTAL_HIVE.toLocaleString('es-ES')}</span> agentes
+            {t('market.showing', { shown: filtered.length, total: TOTAL_HIVE.toLocaleString(i18n.language) })}
           </p>
           <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1 font-mono text-[12px] text-ink-2">
             <LiveDot variant="olive" />
-            Red: Monad Testnet
+            {t('market.network')}
           </span>
           {hasOnchain ? (
             <span className="inline-flex items-center gap-2 rounded-full bg-olive/10 px-3 py-1 font-mono text-[12px] font-medium text-olive">
               <LiveDot variant="olive" />
-              {onchainAgents.length} on-chain · PanalRegistry
+              {t('market.onchainCount', { count: onchainAgents.length })}
             </span>
           ) : (
             <span className="inline-flex items-center gap-2 rounded-full bg-sand px-3 py-1 font-mono text-[12px] text-ink-2">
-              Datos demo — sin agentes on-chain todavía
+              {t('market.demoData')}
             </span>
           )}
         </FadeUp>
@@ -322,9 +322,9 @@ export default function Marketplace() {
           <FadeUp className="mb-10 flex flex-col items-center gap-3 text-center">
             <p className="eyebrow flex items-center gap-2 text-ink-3">
               <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-              Top del panal
+              {t('market.podiumEyebrow')}
             </p>
-            <h2 className="display-m text-ink">Los tres mejor valorados por la red</h2>
+            <h2 className="display-m text-ink">{t('market.podiumTitle')}</h2>
           </FadeUp>
           <Podium agents={podiumAgents} onHire={openHire} />
         </div>
@@ -361,7 +361,7 @@ export default function Marketplace() {
                     />
                   )}
                   <span className="relative z-10">
-                    {c === 'todos' ? 'Todos' : CATEGORY_LABELS[c]}{' '}
+                    {c === 'todos' ? t('market.all') : t(CATEGORY_LABELS[c])}{' '}
                     <span className={cn('ml-1 font-mono text-[11px]', active ? 'text-honey-deep/80' : 'text-ink-3')}>
                       {categoryCount(c)}
                     </span>
@@ -374,11 +374,11 @@ export default function Marketplace() {
           {/* controles derecha */}
           <div className="flex shrink-0 items-center gap-2">
             {/* toggle de vista */}
-            <div className="hidden items-center rounded-full border border-line bg-cream p-1 sm:flex" role="tablist" aria-label="Modo de vista">
+            <div className="hidden items-center rounded-full border border-line bg-cream p-1 sm:flex" role="tablist" aria-label={t('market.viewAria')}>
               {(
                 [
-                  { v: 'grid', label: 'Cuadrícula', icon: LayoutGrid },
-                  { v: 'ranking', label: 'Ranking', icon: Trophy },
+                  { v: 'grid', label: t('market.viewGrid'), icon: LayoutGrid },
+                  { v: 'ranking', label: t('market.viewRanking'), icon: Trophy },
                 ] as const
               ).map(({ v, label, icon: Icon }) => {
                 const active = view === v;
@@ -411,15 +411,15 @@ export default function Marketplace() {
             {/* orden */}
             <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
               <SelectTrigger
-                aria-label="Ordenar agentes"
+                aria-label={t('market.sortAria')}
                 className="h-9 w-[172px] rounded-full border-line bg-paper text-[0.8125rem] text-ink-2 hover:border-honey focus:ring-honey"
               >
-                <SelectValue placeholder="Ordenar" />
+                <SelectValue placeholder={t('market.sortPlaceholder')} />
               </SelectTrigger>
               <SelectContent className="border-line bg-paper">
                 {SORT_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value} className="text-[0.8125rem] focus:bg-honey-soft focus:text-honey-deep">
-                    {o.label}
+                    {t(o.label)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -432,7 +432,7 @@ export default function Marketplace() {
               className="relative flex items-center gap-2 rounded-full border border-line bg-paper px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-honey-deep"
             >
               <SlidersHorizontal size={14} aria-hidden />
-              <span className="hidden sm:inline">Filtros</span>
+              <span className="hidden sm:inline">{t('market.filters')}</span>
               {activeFilters > 0 && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-honey px-1 font-mono text-[11px] font-semibold text-ink">
                   {activeFilters}
@@ -461,9 +461,9 @@ export default function Marketplace() {
               </div>
             ) : filtered.length === 0 ? (
               <EmptyState
-                title="Ningún agente coincide con esos filtros."
-                description="Prueba a ampliar el rango de precio, bajar el rating mínimo o limpiar la búsqueda."
-                actionLabel="Limpiar filtros"
+                title={t('market.emptyTitle')}
+                description={t('market.emptyDesc')}
+                actionLabel={t('market.emptyAction')}
                 onAction={clearAll}
               />
             ) : view === 'grid' ? (
@@ -519,7 +519,7 @@ export default function Marketplace() {
               disabled={loadingMore}
               className="flex items-center gap-2 rounded-full border border-line bg-paper px-6 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-honey-deep disabled:opacity-50"
             >
-              Cargar más agentes
+              {t('market.loadMore')}
               <ChevronDown size={16} className={cn(loadingMore && 'animate-bounce')} aria-hidden />
             </button>
           </div>
