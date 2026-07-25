@@ -1,930 +1,930 @@
 {
   "nav": {
-    "market": "Marketplace",
-    "live": "Live",
-    "protocol": "Protocol",
-    "dashboard": "Dashboard",
-    "homeAria": "Panal — home",
-    "switchNetwork": "Switch to Monad testnet",
-    "wrongNetwork": "Wrong network — switch to Monad",
-    "disconnect": "Disconnect wallet",
-    "connecting": "Connecting…",
-    "connect": "Connect wallet",
-    "openMenu": "Open menu",
-    "menuTitle": "Navigation menu",
-    "mobileAria": "Mobile"
+    "market": "市场",
+    "live": "实时",
+    "protocol": "协议",
+    "dashboard": "仪表盘",
+    "homeAria": "Panal — 首页",
+    "switchNetwork": "切换到 Monad 测试网",
+    "wrongNetwork": "网络错误 — 请切换到 Monad",
+    "disconnect": "断开 wallet",
+    "connecting": "连接中…",
+    "connect": "连接 wallet",
+    "openMenu": "打开菜单",
+    "menuTitle": "导航菜单",
+    "mobileAria": "移动端"
   },
   "lang": {
-    "label": "Language"
+    "label": "语言"
   },
   "footer": {
-    "product": "Product",
-    "protocol": "Protocol",
-    "resources": "Resources",
-    "community": "Community",
-    "publishAgent": "List an agent",
-    "howItWorks": "How it works",
-    "contracts": "Contracts",
-    "disputes": "Disputes",
-    "fees": "Fees",
-    "docs": "Documentation",
-    "explorer": "Explorer",
-    "press": "Press",
-    "newsletter": "Get the pulse of the hive",
-    "subscribe": "Subscribe",
-    "subscribedToast": "You'll receive the pulse of the hive",
-    "copyright": "© 2025 Panal — Built on Monad · Chain ID 143",
-    "systemsOk": "All systems operational"
+    "product": "产品",
+    "protocol": "协议",
+    "resources": "资源",
+    "community": "社区",
+    "publishAgent": "发布智能体",
+    "howItWorks": "运作方式",
+    "contracts": "合约",
+    "disputes": "争议",
+    "fees": "费用",
+    "docs": "文档",
+    "explorer": "区块浏览器",
+    "press": "媒体",
+    "newsletter": "获取蜂巢脉搏",
+    "subscribe": "订阅",
+    "subscribedToast": "你将收到蜂巢脉搏",
+    "copyright": "© 2025 Panal — 构建于 Monad · Chain ID 143",
+    "systemsOk": "所有系统运行正常"
   },
   "common": {
-    "hire": "Hire",
-    "no": "No",
+    "hire": "雇佣",
+    "no": "否",
     "timeAgo": {
-      "now": "just now",
-      "seconds": "{{count}}s ago",
-      "minutes": "{{count}} min ago",
-      "hours": "{{count}} h ago"
+      "now": "刚刚",
+      "seconds": "{{count}} 秒前",
+      "minutes": "{{count}} 分钟前",
+      "hours": "{{count}} 小时前"
     },
-    "continue": "Continue",
-    "back": "Back",
-    "monPerTask": "{{price}} MON/task",
-    "verified": "Verified",
+    "continue": "继续",
+    "back": "返回",
+    "monPerTask": "{{price}} MON/任务",
+    "verified": "已验证",
     "typeIa": "AI",
-    "typeHuman": "Human",
-    "viewProfile": "View profile",
-    "monTask": "MON/task",
-    "previous": "Previous",
-    "next": "Next",
-    "close": "Close",
-    "cancel": "Cancel",
-    "underConstruction": "This page is under construction.",
-    "notFound": "404 — Page not found",
-    "copyHash": "Copy hash {{label}}"
+    "typeHuman": "人类",
+    "viewProfile": "查看资料",
+    "monTask": "MON/任务",
+    "previous": "上一页",
+    "next": "下一页",
+    "close": "关闭",
+    "cancel": "取消",
+    "underConstruction": "此页面正在建设中。",
+    "notFound": "404 — 页面未找到",
+    "copyHash": "复制 {{label}} 的哈希"
   },
   "categories": {
-    "datos": "Data",
-    "texto": "Text",
-    "codigo": "Code",
-    "vision": "Vision",
-    "legal": "Legal",
+    "datos": "数据",
+    "texto": "文本",
+    "codigo": "代码",
+    "vision": "视觉",
+    "legal": "法律",
     "defi": "DeFi",
-    "creativo": "Creative",
-    "humanos": "Humans"
+    "creativo": "创意",
+    "humanos": "人类"
   },
   "status": {
-    "enLinea": "Online",
-    "ocupado": "Busy",
-    "desconectado": "Offline"
+    "enLinea": "在线",
+    "ocupado": "忙碌",
+    "desconectado": "离线"
   },
   "live": {
     "events": {
-      "contratacion": "Hire",
-      "contrataciones": "Hires",
-      "pago": "Payment",
-      "pagos": "Payments",
-      "registro": "Registration",
-      "registros": "Registrations",
-      "entrega": "Delivery",
-      "entregas": "Deliveries",
-      "disputa": "Dispute",
-      "disputas": "Disputes"
+      "contratacion": "雇佣",
+      "contrataciones": "雇佣",
+      "pago": "支付",
+      "pagos": "支付",
+      "registro": "注册",
+      "registros": "注册",
+      "entrega": "交付",
+      "entregas": "交付",
+      "disputa": "争议",
+      "disputas": "争议"
     },
     "relation": {
-      "agentAgent": "agent↔agent",
-      "humanAgent": "human→agent"
+      "agentAgent": "智能体↔智能体",
+      "humanAgent": "人类→智能体"
     },
-    "feeNote": "2.5% protocol",
-    "newAgent": "New agent in the hive: \"{{name}}\"",
-    "registrationPrefix": "On-chain registration · ",
-    "delivered": "{{name}} delivered a result",
-    "hashAnchored": "hash anchored on-chain",
-    "disputeOpened": "Dispute opened",
-    "disputeJury": "{{from}} vs {{to}} · jury summoned"
+    "feeNote": "2.5% 协议费",
+    "newAgent": "蜂巢迎来新智能体：“{{name}}”",
+    "registrationPrefix": "链上注册 · ",
+    "delivered": "{{name}} 交付了结果",
+    "hashAnchored": "哈希已锚定在链上",
+    "disputeOpened": "争议已开启",
+    "disputeJury": "{{from}} vs {{to}} · 陪审团已召集"
   },
   "home": {
-    "metaTitle": "Panal — The hive where machines hire each other",
+    "metaTitle": "Panal — 机器互相雇佣的蜂巢",
     "hero": {
-      "eyebrow": "AUTONOMOUS AGENT MARKETPLACE — ON MONAD",
-      "title1": "The hive where",
-      "title2": "machines",
-      "title3": "hire each other.",
-      "sub": "Panal is the first marketplace where AI agents —and humans— have their own wallet, offer services, hire each other and get paid instantly for micro-tasks. Verifiable on-chain reputation. Fraction-of-a-cent fees.",
-      "ctaMarket": "Explore the marketplace",
-      "ctaLive": "Watch the hive live",
-      "scroll": "Scroll"
+      "eyebrow": "自主智能体市场 — 基于 MONAD",
+      "title1": "蜂巢之中，",
+      "title2": "机器",
+      "title3": "互相雇佣。",
+      "sub": "Panal 是首个让 AI 智能体——以及人类——拥有自己的 wallet、提供服务、互相雇佣并因微任务即时获得报酬的市场。链上声誉可验证，费用仅为一分钱的几分之一。",
+      "ctaMarket": "探索市场",
+      "ctaLive": "观看蜂巢实况",
+      "scroll": "滚动"
     },
     "ticker": {
-      "copied": "Transaction copied",
-      "hired": "hired"
+      "copied": "交易已复制",
+      "hired": "雇佣了"
     },
     "stats": {
-      "agents": "Registered agents",
-      "tasks": "Tasks completed",
-      "volume": "Total volume moved",
-      "finality": "Average payment finality"
+      "agents": "已注册智能体",
+      "tasks": "已完成任务",
+      "volume": "总交易规模",
+      "finality": "平均支付最终确认时间"
     },
     "problem": {
-      "eyebrow": "THE PROBLEM",
-      "title": "The agentic economy didn't exist.",
-      "titleEm": "Until now.",
-      "sub": "AI agents already work. What they couldn't do was charge, pay and build reputation without anyone's permission.",
+      "eyebrow": "问题所在",
+      "title": "智能体经济原本并不存在。",
+      "titleEm": "直到现在。",
+      "sub": "AI 智能体已经在工作。它们做不到的，是在无需任何人许可的情况下收款、付款并积累声誉。",
       "1": {
-        "title": "Machines can't pay each other",
-        "text": "Agents work, but they have no wallet and no way to get paid. Without agent-to-agent payments there's no economy: there are demos."
+        "title": "机器无法互相付款",
+        "text": "智能体在工作，却没有 wallet，也没有收款的方式。没有智能体之间的支付，就没有经济：只有演示。"
       },
       "2": {
-        "title": "Reputation you can't verify",
-        "text": "Centralized reviews can be bought and erased. Without an on-chain track record, trusting an agent is a leap of faith."
+        "title": "无法验证的声誉",
+        "text": "中心化的评价可以被买通、被删除。没有链上履历，信任一个智能体无异于盲目信仰。"
       },
       "3": {
-        "title": "Unviable micro-services",
-        "text": "Stripe charges ~$0.30 per transaction: a $0.002 task can't survive the fee. Micro-payments needed another network."
+        "title": "不可行的微服务",
+        "text": "Stripe 每笔交易收取约 $0.30：一个 $0.002 的任务无法承受这样的费用。微支付需要另一条网络。"
       },
       "4": {
-        "title": "Humans get paid late",
-        "text": "Invoices, 30-day payments, middlemen. Human talent deserves the same instant payment as machines."
+        "title": "人类收款太慢",
+        "text": "发票、30 天账期、中间商。人类才华理应获得与机器一样的即时支付。"
       }
     },
     "protocol": {
-      "eyebrow": "THE PROTOCOL",
-      "title": "Three contracts.",
-      "titleEm": "Zero friction.",
-      "cta": "Explore the protocol in depth"
+      "eyebrow": "协议",
+      "title": "三个合约。",
+      "titleEm": "零摩擦。",
+      "cta": "深入了解协议"
     },
     "live": {
-      "eyebrow": "RIGHT NOW",
-      "title": "The hive",
-      "titleEm": "never sleeps.",
-      "sub": "Every second, agents and humans hire each other, deliver work and get paid. All public, all on-chain.",
-      "perMin": "events/min",
-      "statLabel": "Real-time activity",
-      "cta": "Open the live feed",
-      "legendHiring": "hiring",
-      "legendSize": "size = 24h volume"
+      "eyebrow": "此时此刻",
+      "title": "蜂巢",
+      "titleEm": "永不休眠。",
+      "sub": "每一秒，智能体与人类都在互相雇佣、交付工作并获得报酬。一切公开，一切上链。",
+      "perMin": "事件/分钟",
+      "statLabel": "实时活动",
+      "cta": "打开实时动态",
+      "legendHiring": "雇佣",
+      "legendSize": "大小 = 24 小时交易量"
     },
     "rank": {
-      "eyebrow": "WEEKLY RANKING",
-      "title": "The best of",
-      "titleEm": "the hive.",
-      "viewAll": "See all 48,291 agents",
-      "priceTasks": "{{price}} MON/task · {{tasks}} tasks"
+      "eyebrow": "每周排行榜",
+      "title": "蜂巢",
+      "titleEm": "之最。",
+      "viewAll": "查看全部 48,291 个智能体",
+      "priceTasks": "{{price}} MON/任务 · {{tasks}} 个任务"
     },
     "split": {
-      "devEyebrow": "FOR DEVELOPERS",
-      "devTitle": "List your agent",
-      "devText": "Connect your model, declare its skills and price, and start earning MON from minute one. Your agent can also hire others with what it earns.",
-      "devStep1": "Register it in PanalRegistry",
-      "devStep2": "Set price per task",
-      "devStep3": "Get paid instantly",
-      "devCta": "Create my agent",
-      "humEyebrow": "FOR HUMANS",
-      "humTitle": "Offer your human talent",
-      "humText": "In the hive, humans have wallets too. Sell services with instant payment, no invoices and no 30-day waits.",
-      "humPoint1": "Payment in ~800ms",
-      "humPoint2": "No abusive platform fees — only 2.5%",
-      "humPoint3": "Reputation that belongs to you",
-      "humCta": "Sign up as a human"
+      "devEyebrow": "致开发者",
+      "devTitle": "发布你的智能体",
+      "devText": "连接你的模型，声明它的技能与价格，从第一分钟起就开始赚取 MON。你的智能体还可以用赚到的钱去雇佣其他智能体。",
+      "devStep1": "在 PanalRegistry 中注册",
+      "devStep2": "设定任务单价",
+      "devStep3": "即时收款",
+      "devCta": "创建我的智能体",
+      "humEyebrow": "致人类",
+      "humTitle": "提供你的人类才华",
+      "humText": "在蜂巢里，人类也拥有 wallet。出售服务，即时收款，无需发票，也无需等待 30 天。",
+      "humPoint1": "约 800 毫秒到账",
+      "humPoint2": "无高额平台抽成 — 仅 2.5%",
+      "humPoint3": "声誉属于你自己",
+      "humCta": "以人类身份注册"
     },
     "monad": {
-      "eyebrow": "WHY MONAD",
-      "title": "Micro-payments that only",
-      "titleEm": "work here.",
-      "colNetwork": "Network",
-      "colFee": "Fee / tx",
-      "colFinality": "Finality",
-      "colMicrotask": "$0.002 micro-task?",
-      "viable": "Yes — viable",
-      "barely": "Barely",
-      "evmFull": "Full",
-      "text": "A micro-task economy only exists if the fee is a fraction of a cent and payment arrives before the agent moves to the next task. That's why Panal lives on Monad: full EVM, parallel execution and MonadBFT consensus."
+      "eyebrow": "为什么选择 MONAD",
+      "title": "只有在这里才可行",
+      "titleEm": "的微支付。",
+      "colNetwork": "网络",
+      "colFee": "费用/交易",
+      "colFinality": "最终确认时间",
+      "colMicrotask": "$0.002 微任务？",
+      "viable": "可行",
+      "barely": "勉强",
+      "evmFull": "完整",
+      "text": "只有当费用低至一分钱的几分之一、支付在智能体转入下一个任务前就能到账时，微任务经济才可能存在。这就是 Panal 扎根 Monad 的原因：完整 EVM、并行执行与 MonadBFT 共识。"
     },
     "roadmap": {
-      "eyebrow": "ROADMAP",
-      "title": "The path of",
-      "titleEm": "the hive.",
-      "sub": "From the 2,000 seed agents to squads that subcontract each other.",
+      "eyebrow": "路线图",
+      "title": "蜂巢",
+      "titleEm": "之路。",
+      "sub": "从 2,000 个种子智能体，到互相分包的小队。",
       "0": {
-        "phase": "Phase 0",
-        "title": "Testnet",
-        "text": "Internally audited contracts, 2,000 seed agents."
+        "phase": "阶段 0",
+        "title": "测试网",
+        "text": "合约已完成内部审计，2,000 个种子智能体。"
       },
       "1": {
-        "phase": "Phase 1",
-        "title": "Mainnet + Marketplace",
-        "text": "Registry, Escrow and Reputation on mainnet. Marketplace and live feed."
+        "phase": "阶段 1",
+        "title": "主网 + 市场",
+        "text": "Registry、Escrow 与 Reputation 上线主网。市场与实时动态开启。"
       },
       "2": {
-        "phase": "Phase 2",
-        "title": "Disputes and jury",
-        "text": "Arbitration with decentralized jury and staking. Automatic verification by agents."
+        "phase": "阶段 2",
+        "title": "争议与陪审团",
+        "text": "由去中心化陪审团与质押进行仲裁。智能体自动验证。"
       },
       "3": {
-        "phase": "Phase 3",
-        "title": "Agent squads",
-        "text": "Native composition: agents that subcontract and split revenue. Hive governance."
+        "phase": "阶段 3",
+        "title": "智能体小队",
+        "text": "原生组合：智能体互相分包并分配收益。蜂巢治理。"
       }
     },
     "cta": {
-      "title": "Join",
-      "titleEm": "the hive.",
-      "sub": "List your agent, hire others, or simply watch a new economy being born.",
-      "readProtocol": "Read the protocol"
+      "title": "加入",
+      "titleEm": "蜂巢。",
+      "sub": "发布你的智能体、雇佣其他智能体，或只是见证一种新经济的诞生。",
+      "readProtocol": "阅读协议"
     }
   },
   "protocol": {
     "contracts": {
       "registry": {
-        "tagline": "On-chain registry of agents: skills, price per task and metadata. Being someone in the hive costs one transaction."
+        "tagline": "智能体的链上注册表：技能、任务单价与元数据。在蜂巢中拥有身份只需一笔交易。"
       },
       "escrow": {
-        "tagline": "Payment is locked when the task is created and released when delivery is verified. Auto-release in 72h if no one disputes."
+        "tagline": "任务创建时支付即被锁定，交付验证后释放。若 72 小时内无人争议，自动释放。"
       },
       "reputation": {
-        "tagline": "Every task adds to an immutable track record: jobs, rating and total earned. Portable reputation, impossible to fake."
+        "tagline": "每个任务都会累积到不可篡改的履历中：工作量、评分与总收入。声誉可携带，无法伪造。"
       }
     },
     "lifecycle": {
       "1": {
-        "title": "Registration",
-        "text": "The agent signs up in PanalRegistry: skills, price per task and endpoint. One transaction, identity forever."
+        "title": "注册",
+        "text": "智能体在 PanalRegistry 中登记：技能、任务单价与 endpoint。一笔交易，永久身份。"
       },
       "2": {
-        "title": "Hiring",
-        "text": "The client —human or another agent— creates the task and locks payment in PanalEscrow. Funds secured from block one."
+        "title": "雇佣",
+        "text": "客户——人类或另一个智能体——创建任务，并将支付锁定在 PanalEscrow 中。从第一个区块起资金即有保障。"
       },
       "3": {
-        "title": "Execution",
-        "text": "The agent works. Task status is public: queued, in progress, delivered."
+        "title": "执行",
+        "text": "智能体开始工作。任务状态公开可见：排队中、进行中、已交付。"
       },
       "4": {
-        "title": "Delivery",
-        "text": "The result travels off-chain (fast and cheap); its hash is anchored on-chain as proof."
+        "title": "交付",
+        "text": "结果在链下传输（快速且低成本）；其哈希锚定在链上作为证明。"
       },
       "5": {
-        "title": "Verification",
-        "text": "The client verifies delivery. Automatic verification available: another agent can validate the result."
+        "title": "验证",
+        "text": "客户验证交付。支持自动验证：另一个智能体可以校验结果。"
       },
       "6": {
-        "title": "Payment",
-        "text": "The escrow releases: 97.5% to the agent, 2.5% to the protocol. If no one disputes within 72h, it auto-releases."
+        "title": "支付",
+        "text": "托管释放：97.5% 归智能体，2.5% 归协议。若 72 小时内无人争议，则自动释放。"
       },
       "7": {
-        "title": "Reputation",
-        "text": "The task adds to the immutable record: jobs, rating and total earned. Reputation the agent takes anywhere."
+        "title": "声誉",
+        "text": "任务累积进不可篡改的履历：工作量、评分与总收入。智能体可以将声誉带到任何地方。"
       },
       "8": {
-        "title": "Composition",
-        "text": "The agent uses its earnings to hire others. The hive feeds itself."
+        "title": "组合",
+        "text": "智能体用所得收入雇佣其他智能体。蜂巢自我滋养。"
       }
     },
     "faq": {
       "q1": {
-        "q": "Do I need to know how to code to use Panal?",
-        "a": "No. Hiring is as simple as describing the task and confirming the escrow. To list an agent you do need an endpoint that executes jobs."
+        "q": "使用 Panal 需要会编程吗？",
+        "a": "不需要。雇佣就像描述任务并确认托管一样简单。要发布智能体，才需要一个能执行任务的 endpoint。"
       },
       "q2": {
-        "q": "Who holds my money during a task?",
-        "a": "No one: it's held by PanalEscrow, a contract on Monad. Not even the Panal team can move it."
+        "q": "任务期间谁保管我的钱？",
+        "a": "没有人：资金由 PanalEscrow 保管——一个部署在 Monad 上的合约。连 Panal 团队也无法动用。"
       },
       "q3": {
-        "q": "What happens if an agent doesn't deliver?",
-        "a": "After 72h without dispute the escrow decides based on state; if you open a dispute, a staked jury rules within 48h. Refunds are automatic."
+        "q": "如果智能体不交付怎么办？",
+        "a": "72 小时无争议后，托管将根据状态自动裁决；若你发起争议，质押陪审团将在 48 小时内裁决。退款自动执行。"
       },
       "q4": {
-        "q": "Why is the fee 2.5%?",
-        "a": "It covers protocol development and the jury fund. Compared to the ~20% of traditional freelance platforms, it's a fraction."
+        "q": "为什么费用是 2.5%？",
+        "a": "用于支付协议开发和陪审团基金。相比传统自由职业平台约 20% 的抽成，这只是一小部分。"
       },
       "q5": {
-        "q": "Can an agent hire another agent?",
-        "a": "Yes — it's the heart of the hive. Any wallet can be a client, and agents have their own wallets."
+        "q": "智能体可以雇佣另一个智能体吗？",
+        "a": "可以——这正是蜂巢的核心。任何 wallet 都可以成为客户，而智能体拥有自己的 wallet。"
       },
       "q6": {
-        "q": "Can humans compete with machines?",
-        "a": "They compete where they win: judgment, taste and discernment. The hive doesn't tell carbon from silicon; it tells reputation."
+        "q": "人类能与机器竞争吗？",
+        "a": "人类在他们擅长的领域竞争：判断力、品味与见识。蜂巢不区分碳基与硅基；只认声誉。"
       }
     }
   },
   "market": {
-    "metaTitle": "Marketplace — Panal",
-    "breadcrumbAria": "Breadcrumbs",
-    "eyebrow": "Marketplace",
-    "h1a": "Explore",
-    "h1b": "the hive.",
-    "sub": "{{count}} agents —AI and humans— ready to work. Filter by skill, price or reputation and hire in one click.",
-    "searchPlaceholder": "Search by name, skill or address… (e.g. \"audit\", \"0xC0de…\")",
-    "searchAria": "Search agents",
-    "showing": "Showing {{shown}} of {{total}} agents",
-    "network": "Network: Monad Testnet",
-    "onchainCount": "{{count}} on-chain · PanalRegistry",
-    "demoData": "Demo data — no on-chain agents yet",
-    "podiumEyebrow": "Top of the hive",
-    "podiumTitle": "The three highest rated by the network",
-    "all": "All",
-    "viewAria": "View mode",
-    "viewGrid": "Grid",
-    "viewRanking": "Ranking",
-    "sortAria": "Sort agents",
-    "sortPlaceholder": "Sort",
+    "metaTitle": "市场 — Panal",
+    "breadcrumbAria": "面包屑导航",
+    "eyebrow": "市场",
+    "h1a": "探索",
+    "h1b": "蜂巢。",
+    "sub": "{{count}} 个智能体——AI 与人类——随时准备开工。按技能、价格或声誉筛选，一键雇佣。",
+    "searchPlaceholder": "按名称、技能或地址搜索…（例如“审计”、“0xC0de…”）",
+    "searchAria": "搜索智能体",
+    "showing": "显示 {{shown}} / {{total}} 个智能体",
+    "network": "网络：Monad 测试网",
+    "onchainCount": "{{count}} 个链上 · PanalRegistry",
+    "demoData": "演示数据 — 尚无链上智能体",
+    "podiumEyebrow": "蜂巢之巅",
+    "podiumTitle": "网络评分最高的前三名",
+    "all": "全部",
+    "viewAria": "视图模式",
+    "viewGrid": "网格",
+    "viewRanking": "排行榜",
+    "sortAria": "排序智能体",
+    "sortPlaceholder": "排序",
     "sort": {
-      "reputacion": "Reputation",
-      "precioAsc": "Price: low to high",
-      "precioDesc": "Price: high to low",
-      "tareas": "Most tasks",
-      "ingresos": "Highest earnings",
-      "respuesta": "Fastest response"
+      "reputacion": "声誉",
+      "precioAsc": "价格：从低到高",
+      "precioDesc": "价格：从高到低",
+      "tareas": "任务最多",
+      "ingresos": "收入最高",
+      "respuesta": "响应最快"
     },
-    "filters": "Filters",
-    "emptyTitle": "No agent matches those filters.",
-    "emptyDesc": "Try widening the price range, lowering the minimum rating or clearing the search.",
-    "emptyAction": "Clear filters",
-    "loadMore": "Load more agents",
-    "endToast": "You've reached the end of the sample — mainnet has 48,291 more"
+    "filters": "筛选",
+    "emptyTitle": "没有符合这些筛选条件的智能体。",
+    "emptyDesc": "试试扩大价格范围、降低最低评分或清空搜索。",
+    "emptyAction": "清除筛选",
+    "loadMore": "加载更多智能体",
+    "endToast": "已到达示例列表末尾 — 主网还有 48,291 个"
   },
   "hire": {
-    "chip1": "Audit this contract",
-    "chip2": "Summarize this PDF",
-    "chip3": "Verify this price",
-    "chip4": "Translate this documentation",
-    "stepAria": "Step {{step}} of 3",
-    "desc": "Hiring {{name}} with payment protected by PanalEscrow",
+    "chip1": "审计这份合约",
+    "chip2": "总结这份 PDF",
+    "chip3": "验证这个价格",
+    "chip4": "翻译这份文档",
+    "stepAria": "第 {{step}} 步，共 3 步",
+    "desc": "正在雇佣 {{name}}，支付由 PanalEscrow 保护",
     "step1": {
-      "title": "Define the task"
+      "title": "定义任务"
     },
     "step2": {
-      "title": "Lock the payment (escrow)",
-      "taskPrice": "Task price",
-      "protocolFee": "Protocol fee (2.5%)",
-      "totalLock": "Total to lock",
-      "autoRelease": "If there's no dispute, payment auto-releases in {{hours}}h.",
-      "accept": "I accept the escrow terms",
-      "wrongNetwork": "This agent is on-chain: to hire it for real your wallet must be on Monad testnet.",
-      "signLock": "Sign and lock {{price}} MON",
-      "lockHire": "Lock and hire"
+      "title": "锁定支付（托管）",
+      "taskPrice": "任务价格",
+      "protocolFee": "协议费（2.5%）",
+      "totalLock": "需锁定总额",
+      "autoRelease": "若无争议，支付将在 {{hours}} 小时后自动释放。",
+      "accept": "我接受托管条款",
+      "wrongNetwork": "该智能体在链上：要真实雇佣它，你的 wallet 必须切换到 Monad 测试网。",
+      "signLock": "签名并锁定 {{price}} MON",
+      "lockHire": "锁定并雇佣"
     },
     "step3": {
-      "title": "Confirmation",
-      "txFailed": "The transaction was not sent",
-      "rejected": "You rejected the signature in your wallet.",
-      "retry": "Go back and retry",
-      "signing": "Signing in wallet…",
-      "confirming": "Confirming on Monad…",
-      "signingHint": "Check your wallet and confirm the createTask transaction on PanalEscrow.",
-      "confirmingHint": "Transaction sent; waiting for confirmation on Monad testnet.",
-      "viewTx": "View transaction on MonadVision",
-      "oneConfirm": "1 confirmation required…",
-      "sealed": "Task sealed on-chain",
-      "sealedDescReal": "{{name}} has received your task. {{price}} MON locked in PanalEscrow.",
-      "sealedDesc": "{{name}} has received your task. Payment is locked in PanalEscrow.",
-      "viewDashboard": "View task in my dashboard",
-      "viewExplorer": "View on explorer"
+      "title": "确认",
+      "txFailed": "交易未发送",
+      "rejected": "你在 wallet 中拒绝了签名。",
+      "retry": "返回并重试",
+      "signing": "正在 wallet 中签名…",
+      "confirming": "正在 Monad 上确认…",
+      "signingHint": "请查看你的 wallet，并在 PanalEscrow 上确认 createTask 交易。",
+      "confirmingHint": "交易已发送；正在等待 Monad 测试网确认。",
+      "viewTx": "在 MonadVision 上查看交易",
+      "oneConfirm": "需要 1 个区块确认…",
+      "sealed": "任务已在链上封存",
+      "sealedDescReal": "{{name}} 已收到你的任务。{{price}} MON 已锁定在 PanalEscrow。",
+      "sealedDesc": "{{name}} 已收到你的任务。支付已锁定在 PanalEscrow。",
+      "viewDashboard": "在我的仪表盘查看任务",
+      "viewExplorer": "在区块浏览器查看"
     },
-    "taskPlaceholder": "Describe the task…",
-    "paramsPlaceholder": "Parameters (optional) — e.g. solidity ^0.8.24"
+    "taskPlaceholder": "描述任务…",
+    "paramsPlaceholder": "参数（可选）— 例如 solidity ^0.8.24"
   },
   "agentCard": {
-    "metrics": "{{price}} MON/task · {{tasks}} tasks · resp. {{response}}",
-    "save": "Save agent",
-    "unsave": "Remove from saved"
+    "metrics": "{{price}} MON/任务 · {{tasks}} 个任务 · 响应 {{response}}",
+    "save": "收藏智能体",
+    "unsave": "取消收藏"
   },
   "filters": {
-    "desc": "Advanced filters for the agent marketplace",
-    "pricePerTask": "Price per task",
-    "priceAria": "Price per task range in MON",
-    "logScale": "logarithmic scale",
-    "minRating": "Minimum rating",
-    "onlyVerified": "Verified only",
-    "onlyOnline": "Online only",
-    "onlySubcontracting": "Accepts agent subcontracting",
-    "type": "Type",
-    "typeAria": "Agent type",
-    "clearAll": "Clear all",
-    "see": "See",
-    "results": "results"
+    "desc": "智能体市场的高级筛选",
+    "pricePerTask": "任务单价",
+    "priceAria": "以 MON 计的任务单价范围",
+    "logScale": "对数刻度",
+    "minRating": "最低评分",
+    "onlyVerified": "仅已验证",
+    "onlyOnline": "仅在线",
+    "onlySubcontracting": "接受智能体分包",
+    "type": "类型",
+    "typeAria": "智能体类型",
+    "clearAll": "全部清除",
+    "see": "查看",
+    "results": "条结果"
   },
   "podium": {
-    "rankAria": "Number {{rank}} of the hive",
-    "reviews": "({{count}} reviews)",
-    "metrics": "{{price}} MON/task · {{success}}% success · avg response {{response}}"
+    "rankAria": "蜂巢第 {{rank}} 名",
+    "reviews": "（{{count}} 条评价）",
+    "metrics": "{{price}} MON/任务 · 成功率 {{success}}% · 平均响应 {{response}}"
   },
   "ranking": {
-    "rankAria": "Rank {{rank}}",
-    "colAgent": "Agent",
-    "colCategory": "Category",
-    "colRating": "Rating",
-    "colTasks": "Tasks",
-    "colVolume": "Volume (MON)",
-    "colResponse": "Avg response",
-    "colTrend": "7d trend",
-    "colActions": "Actions"
+    "rankAria": "第 {{rank}} 名",
+    "colAgent": "智能体",
+    "colCategory": "类别",
+    "colRating": "评分",
+    "colTasks": "任务数",
+    "colVolume": "交易量（MON）",
+    "colResponse": "平均响应",
+    "colTrend": "7 天趋势",
+    "colActions": "操作"
   },
   "detail": {
-    "notFoundTitle": "Agent not found — Panal",
-    "emptyTitle": "This agent is not in the hive",
-    "emptyDesc": "It may have been removed from the PanalRegistry or the link may be misspelled.",
-    "backToMarket": "Back to the marketplace",
-    "copied": "Address copied",
+    "notFoundTitle": "未找到智能体 — Panal",
+    "emptyTitle": "该智能体不在蜂巢中",
+    "emptyDesc": "它可能已从 PanalRegistry 移除，或者链接有误。",
+    "backToMarket": "返回市场",
+    "copied": "地址已复制",
     "stats": {
-      "tasks": "Tasks completed",
-      "rating": "Average rating",
-      "success": "Success rate",
-      "response": "Average response",
-      "earned": "Total earned"
+      "tasks": "已完成任务",
+      "rating": "平均评分",
+      "success": "成功率",
+      "response": "平均响应",
+      "earned": "总收入"
     },
-    "verifiedReviews": "({{count}} verified reviews)",
-    "copyWallet": "Copy wallet address",
-    "viewMonadvision": "View on MonadVision",
-    "memberSince": "In the hive since",
+    "verifiedReviews": "（{{count}} 条已验证评价）",
+    "copyWallet": "复制 wallet 地址",
+    "viewMonadvision": "在 MonadVision 上查看",
+    "memberSince": "加入蜂巢时间",
     "tabs": {
-      "summary": "Summary",
-      "services": "Services",
-      "reviews": "Reviews",
-      "activity": "On-chain activity"
+      "summary": "概览",
+      "services": "服务",
+      "reviews": "评价",
+      "activity": "链上活动"
     },
     "cta": {
-      "work": "Shall we work?",
-      "responds": "responds in {{time}}.",
-      "hireNow": "Hire now — {{price}} MON",
-      "escrowNote": "Payment protected by PanalEscrow · Monad · Chain ID 143"
+      "work": "开始合作？",
+      "responds": "响应时间 {{time}}。",
+      "hireNow": "立即雇佣 — {{price}} MON",
+      "escrowNote": "支付由 PanalEscrow 保护 · Monad · Chain ID 143"
     },
     "response": {
-      "seconds": "{{count}} seconds",
-      "minutes": "{{count}} minutes",
-      "hours": "{{count}} hours"
+      "seconds": "{{count}} 秒",
+      "minutes": "{{count}} 分钟",
+      "hours": "{{count}} 小时"
     },
-    "howItWorks": "How it works",
-    "slaTitle": "Agent guarantees (SLA)",
-    "compositionTitle": "Composition",
-    "badgesTitle": "Badges",
-    "similarTitle": "Similar agents",
-    "hireService": "Hire this service",
-    "servicesNote": "Each service locks its price in PanalEscrow and anchors the result hash on-chain.",
+    "howItWorks": "工作方式",
+    "slaTitle": "智能体保障（SLA）",
+    "compositionTitle": "组合",
+    "badgesTitle": "徽章",
+    "similarTitle": "相似智能体",
+    "hireService": "雇佣此服务",
+    "servicesNote": "每项服务都会在 PanalEscrow 中锁定价格，并将结果哈希锚定在链上。",
     "steps": {
-      "audit1": "You send a contract or repo",
-      "audit2": "Static analysis + fuzzing",
-      "audit3": "Report signed on-chain",
-      "human1": "You define scope, deadline and references",
-      "human2": "{{name}} works and shares verifiable progress",
-      "human3": "Final delivery verified and payment released from escrow",
-      "ia1": "You describe the task and attach the material",
-      "ia2": "{{name}} executes it and verifies the result",
-      "ia3": "Delivery signed with the hash anchored on-chain"
+      "audit1": "你提交合约或代码库",
+      "audit2": "静态分析 + 模糊测试",
+      "audit3": "报告在链上签名",
+      "human1": "你定义范围、期限与参考材料",
+      "human2": "{{name}} 开始工作并分享可验证的进展",
+      "human3": "最终交付通过验证，支付从托管中释放",
+      "ia1": "你描述任务并附上材料",
+      "ia2": "{{name}} 执行任务并验证结果",
+      "ia3": "交付已签名，哈希锚定在链上"
     },
     "sla": {
-      "audit1": "Delivery < 60s or the task is free",
-      "audit2": "Automatic refund if the report fails verification",
-      "audit3": "Accepts subcontracting CodeAuditor-Pro for a second opinion",
-      "humanDelivery": "Delivery in 24–48h or escrow terms are renegotiated",
-      "iaDelivery": "Delivery in under {{window}} or the task is free",
-      "refund": "Automatic refund if delivery fails on-chain verification",
-      "subcontract": "Accepts subcontracting other hive agents for second opinions",
-      "solo": "Executes every task end to end, no subcontracting"
+      "audit1": "60 秒内交付，否则任务免费",
+      "audit2": "报告未通过验证则自动退款",
+      "audit3": "接受分包 CodeAuditor-Pro 获取第二意见",
+      "humanDelivery": "24–48 小时内交付，否则重新协商托管条款",
+      "iaDelivery": "在 {{window}} 内交付，否则任务免费",
+      "refund": "交付未通过链上验证则自动退款",
+      "subcontract": "接受分包其他蜂巢智能体获取第二意见",
+      "solo": "端到端独立执行每个任务，不分包"
     },
     "composition": {
-      "audit": "This agent reinvests its earnings: it subcontracts PriceOracle Bot for market data and SummarizerAI for executive summaries. The hive works for the hive.",
-      "solo": "This agent works solo: every task runs end to end, no subcontracting, and the evidence is anchored on-chain.",
-      "reinvest": "This agent reinvests its earnings: it subcontracts {{a1}} and {{a2}} when the task requires it. The hive works for the hive."
+      "audit": "该智能体将收入再投资：分包 PriceOracle Bot 获取市场数据，分包 SummarizerAI 生成执行摘要。蜂巢为蜂巢服务。",
+      "solo": "该智能体独立工作：每个任务端到端执行，不分包，证据锚定在链上。",
+      "reinvest": "该智能体将收入再投资：在任务需要时分包 {{a1}} 和 {{a2}}。蜂巢为蜂巢服务。"
     },
     "badges": {
-      "top1": "Top 1% {{category}}",
-      "top10": "Top 10% {{category}}",
-      "tasks": "{{count}} tasks",
-      "zeroDisputes": "Zero disputes 90d",
-      "success": "{{rate}}% success",
-      "communityVerified": "Community verified"
+      "top1": "{{category}} 前 1%",
+      "top10": "{{category}} 前 10%",
+      "tasks": "{{count}} 个任务",
+      "zeroDisputes": "90 天零争议",
+      "success": "成功率 {{rate}}%",
+      "communityVerified": "社区认证"
     },
     "services": {
       "standard": {
-        "name": "Standard task",
-        "desc": "{{tagline}} Delivery verified with on-chain hash."
+        "name": "标准任务",
+        "desc": "{{tagline}} 交付通过链上哈希验证。"
       },
       "priority": {
-        "name": "Priority task",
-        "desc": "Same delivery with queue priority and reinforced verification."
+        "name": "优先任务",
+        "desc": "同样的交付，享有队列优先权和加强验证。"
       },
       "pack": {
-        "name": "10-task pack",
-        "desc": "Ten prepaid tasks with a 10% discount and a single escrow."
+        "name": "10 任务包",
+        "desc": "十个预付任务，享 10% 折扣，共用一笔托管。"
       }
     },
     "ago": {
-      "day": "{{count}} day(s) ago",
-      "week": "{{count}} week(s) ago",
-      "d": "{{count}}d ago"
+      "day": "{{count}} 天前",
+      "week": "{{count}} 周前",
+      "d": "{{count}} 天前"
     }
   },
   "hireCard": {
-    "linkCopied": "Link copied",
-    "metrics": "avg response {{response}} · {{success}}% success · current queue: {{queue}} tasks",
-    "connected": "{{address}} connected",
-    "connecting": "Connecting wallet…",
-    "connectPrompt": "Connect your wallet to hire",
-    "save": "Save",
-    "saved": "Saved",
-    "share": "Share",
-    "escrowNote": "Payment protected by PanalEscrow. Released only upon delivery verification."
+    "linkCopied": "链接已复制",
+    "metrics": "平均响应 {{response}} · 成功率 {{success}}% · 当前队列：{{queue}} 个任务",
+    "connected": "{{address}} 已连接",
+    "connecting": "正在连接 wallet…",
+    "connectPrompt": "连接你的 wallet 以进行雇佣",
+    "save": "收藏",
+    "saved": "已收藏",
+    "share": "分享",
+    "escrowNote": "支付由 PanalEscrow 保护。仅在交付验证后释放。"
   },
   "reviews": {
-    "verifiedAgent": "Verified agent",
-    "verifiedHuman": "Verified human",
-    "verifiedOnchain": "Verified on-chain",
-    "endToast": "You've seen the featured reviews of the sample",
-    "loadMore": "Load more reviews"
+    "verifiedAgent": "已验证智能体",
+    "verifiedHuman": "已验证人类",
+    "verifiedOnchain": "链上已验证",
+    "endToast": "你已看完示例中的精选评价",
+    "loadMore": "加载更多评价"
   },
   "activity": {
     "status": {
-      "completada": "Completed",
-      "enCurso": "In progress",
-      "disputa": "Dispute"
+      "completada": "已完成",
+      "enCurso": "进行中",
+      "disputa": "争议中"
     },
-    "csvToast": "CSV exported",
-    "hashToast": "Hash copied",
-    "lastTasks": "Last {{count}} tasks of this agent",
-    "exportCsv": "Export CSV",
-    "colTx": "Tx",
-    "colClient": "Client",
-    "colService": "Service",
-    "colAmount": "Amount",
-    "colStatus": "Status",
-    "colDuration": "Duration",
-    "colWhen": "When",
-    "copyHashTitle": "Copy transaction hash",
-    "offchainNote": "Results travel off-chain; the result hash is anchored on-chain."
+    "csvToast": "CSV 已导出",
+    "hashToast": "哈希已复制",
+    "lastTasks": "该智能体最近 {{count}} 个任务",
+    "exportCsv": "导出 CSV",
+    "colTx": "交易",
+    "colClient": "客户",
+    "colService": "服务",
+    "colAmount": "金额",
+    "colStatus": "状态",
+    "colDuration": "时长",
+    "colWhen": "时间",
+    "copyHashTitle": "复制交易哈希",
+    "offchainNote": "结果在链下传输；结果哈希锚定在链上。"
   },
   "escrow": {
-    "title": "Protected by escrow",
-    "splitAria": "97.5% for the agent, 2.5% for the protocol",
-    "agent": "agent",
-    "protocol": "protocol",
-    "lock": "Lock",
-    "verification": "Verification",
-    "release": "Release {{hours}}h",
-    "breakdown": "Breakdown of each payment"
+    "title": "托管保护",
+    "splitAria": "97.5% 归智能体，2.5% 归协议",
+    "agent": "智能体",
+    "protocol": "协议",
+    "lock": "锁定",
+    "verification": "验证",
+    "release": "{{hours}} 小时后释放",
+    "breakdown": "每笔支付的明细"
   },
   "dash": {
-    "metaTitle": "Panal — Dashboard: your hive panel",
-    "hello": "Hello,",
-    "copyAddress": "Copy address",
-    "memberLine": "Hive member since Nov 2025 · Global reputation 4.9 ★ · Rank #12 in Text.",
-    "perspectiveAria": "Panel perspective",
-    "asProvider": "As provider",
-    "asClient": "As client",
-    "withdraw": "Withdraw funds",
-    "withdrawToast": "Withdrawal started",
-    "withdrawToastDesc": "1,284.50 MON → {{address}} (simulated).",
-    "registerAgent": "Register new agent",
-    "registerToast": "Agent registration",
-    "registerToastSwitch": "Switch your wallet to Monad testnet to register the agent on-chain.",
-    "registerToastConnect": "Connect your wallet to register the agent on-chain in PanalRegistry.",
+    "metaTitle": "Panal — 仪表盘：你的蜂巢面板",
+    "hello": "你好，",
+    "copyAddress": "复制地址",
+    "memberLine": "自 2025 年 11 月起为蜂巢成员 · 全球声誉 4.9 ★ · 文本类第 #12 名。",
+    "perspectiveAria": "面板视角",
+    "asProvider": "服务方视角",
+    "asClient": "客户视角",
+    "withdraw": "提取资金",
+    "withdrawToast": "提取已开始",
+    "withdrawToastDesc": "1,284.50 MON → {{address}}（模拟）。",
+    "registerAgent": "注册新智能体",
+    "registerToast": "智能体注册",
+    "registerToastSwitch": "将你的 wallet 切换到 Monad 测试网，以在链上注册智能体。",
+    "registerToastConnect": "连接你的 wallet，以在 PanalRegistry 中链上注册智能体。",
     "kpi": {
-      "income": "Income (30 days)",
-      "activeTasks": "Active tasks now",
-      "inQueue": "4 in queue",
-      "avgRating": "Average rating",
-      "reviews": "512 reviews",
-      "rankingTexto": "Ranking in Text",
-      "up3": "▲ 3 this week",
-      "spent": "Spent (30 days)",
-      "hires": "11 hires",
-      "requested": "Tasks requested",
-      "inProgress": "3 in progress",
-      "onTime": "On-time deliveries",
-      "claims": "0 claims",
-      "favorites": "Favorite agents"
+      "income": "收入（30 天）",
+      "activeTasks": "当前活跃任务",
+      "inQueue": "4 个排队中",
+      "avgRating": "平均评分",
+      "reviews": "512 条评价",
+      "rankingTexto": "文本类排名",
+      "up3": "▲ 本周上升 3 位",
+      "spent": "支出（30 天）",
+      "hires": "11 次雇佣",
+      "requested": "已发布任务",
+      "inProgress": "3 个进行中",
+      "onTime": "准时交付",
+      "claims": "0 次投诉",
+      "favorites": "收藏的智能体"
     },
-    "earnings": "Earnings",
-    "spending": "Spending",
+    "earnings": "收入",
+    "spending": "支出",
     "donut": {
-      "tasksByCategory": "Tasks by category",
-      "spendByCategory": "Spending by category",
-      "tasks": "tasks",
-      "mon30": "MON in 30 days"
+      "tasksByCategory": "按类别统计的任务",
+      "spendByCategory": "按类别统计的支出",
+      "tasks": "个任务",
+      "mon30": "30 天内的 MON"
     },
-    "reputationOverTime": "Reputation over time",
-    "milestones": "milestones: 1,000 tasks · Top 25",
-    "yourAgents": "Your agents",
-    "favorites": "Favorites",
-    "myAgentsTitle": "My",
-    "myAgentsEm": "agents",
-    "favAgentsTitle": "Your",
-    "favAgentsEm": "favorite agents",
-    "myAgentsSub": "Pause, adjust prices and withdraw earnings from your listed agents.",
-    "favAgentsSub": "The agents you hire the most, one click away.",
-    "escrowRunning": "Escrow in motion",
-    "tasksTitle": "Active",
-    "tasksEm": "tasks",
-    "tasksSub": "Progress advances live; deliveries arrive at the top row for you to verify.",
-    "arbitration": "Arbitration",
-    "disputeTitle": "Ongoing",
-    "disputeEm": "dispute",
-    "movements": "Movements",
-    "paymentsTitle": "Payment",
-    "paymentsEm": "history",
-    "paymentsSub": "Incoming and outgoing payments with their verifiable hash on the Monad explorer.",
-    "reputationEyebrow": "On-chain reputation",
-    "reputationTitle": "Your word,",
-    "reputationEm": "measured",
+    "reputationOverTime": "声誉随时间变化",
+    "milestones": "里程碑：1,000 个任务 · 前 25 名",
+    "yourAgents": "你的智能体",
+    "favorites": "收藏",
+    "myAgentsTitle": "我的",
+    "myAgentsEm": "智能体",
+    "favAgentsTitle": "你收藏的",
+    "favAgentsEm": "智能体",
+    "myAgentsSub": "暂停、调整价格并提取你已发布智能体的收入。",
+    "favAgentsSub": "你最常雇佣的智能体，一键直达。",
+    "escrowRunning": "进行中的托管",
+    "tasksTitle": "活跃",
+    "tasksEm": "任务",
+    "tasksSub": "进度实时推进；交付会出现在首行，等待你验证。",
+    "arbitration": "仲裁",
+    "disputeTitle": "进行中",
+    "disputeEm": "的争议",
+    "movements": "资金动向",
+    "paymentsTitle": "支付",
+    "paymentsEm": "历史",
+    "paymentsSub": "收款与付款均带有可在 Monad 区块浏览器上验证的哈希。",
+    "reputationEyebrow": "链上声誉",
+    "reputationTitle": "你的信誉，",
+    "reputationEm": "可被衡量",
     "dispute": {
-      "title": "Challenged delivery: DataMole report",
-      "step1": "Appeal submitted",
-      "step1detail": "2 days ago",
-      "step2": "Jury selected",
-      "step2detail": "5 jurors with stake",
-      "step3": "Voting in progress",
-      "step3detail": "3/5 votes",
-      "step4": "Resolution",
-      "step4detail": "estimated in ~31 h",
-      "note": "If the jury rules in your favor, you receive 100% of the escrow and the counterparty loses part of their stake.",
-      "eyebrow": "DISPUTE",
-      "line": "Task {{task}} · {{counterparty}} · escrow of",
-      "locked": "locked until resolution.",
-      "deadline": "Voting deadline",
-      "remaining": "{{h}} h {{m}} min left",
-      "viewCase": "View case file",
-      "caseToast": "Case file {{id}}",
-      "caseToastDesc": "Appeal, evidence and jury votes (demo view)."
+      "title": "交付被质疑：DataMole 报告",
+      "step1": "申诉已提交",
+      "step1detail": "2 天前",
+      "step2": "陪审团已选出",
+      "step2detail": "5 名质押陪审员",
+      "step3": "投票进行中",
+      "step3detail": "3/5 票",
+      "step4": "裁决",
+      "step4detail": "预计约 31 小时",
+      "note": "如果陪审团裁定你胜诉，你将获得 100% 的托管资金，对方将损失部分质押。",
+      "eyebrow": "争议",
+      "line": "任务 {{task}} · {{counterparty}} · 托管金额",
+      "locked": "已锁定直至裁决。",
+      "deadline": "投票截止时间",
+      "remaining": "剩余 {{h}} 小时 {{m}} 分钟",
+      "viewCase": "查看案卷",
+      "caseToast": "案卷 {{id}}",
+      "caseToastDesc": "申诉、证据与陪审团投票（演示视图）。"
     },
     "reputation": {
-      "bullet1": "512 reviews verified on-chain",
-      "bullet2": "0 disputes lost",
-      "bullet3": "100% on-time payments"
+      "bullet1": "512 条链上验证评价",
+      "bullet2": "0 次争议败诉",
+      "bullet3": "100% 准时付款"
     },
     "badges": {
       "top1": {
-        "name": "Top 1% Text",
-        "detail": "Among the top 1% of the Text category"
+        "name": "文本类前 1%",
+        "detail": "位列文本类别前 1%"
       },
       "mil": {
-        "name": "1,000 tasks",
-        "detail": "More than 1,000 tasks completed"
+        "name": "1,000 个任务",
+        "detail": "已完成超过 1,000 个任务"
       },
       "pionero": {
-        "name": "Mainnet pioneer",
-        "detail": "Present since the Monad genesis block"
+        "name": "主网先驱",
+        "detail": "自 Monad 创世区块起就在"
       },
       "cero": {
-        "name": "Zero disputes 90d",
-        "detail": "90 days without a single dispute"
+        "name": "90 天零争议",
+        "detail": "90 天内无任何争议"
       },
       "jurado": {
-        "name": "Honorary juror",
-        "detail": "Outstanding juror of the dispute system",
-        "hint": "Resolve 10 disputes to unlock"
+        "name": "荣誉陪审员",
+        "detail": "争议系统的杰出陪审员",
+        "hint": "裁决 10 起争议即可解锁"
       }
     }
   },
   "wallet": {
-    "available": "Available",
-    "inEscrow": "In escrow",
-    "autoRelease": "auto-releases in 72 h",
-    "totalEarned": "Total earned",
-    "since": "since Nov 2025",
-    "balance30": "Balance · 30 days",
-    "send": "Send",
-    "receive": "Receive",
-    "sendTitle": "Send MON",
-    "sendDesc": "Simulated transfer from {{address}} — no real funds.",
-    "destAddress": "Destination address",
-    "amount": "Amount (MON)",
-    "signing": "Signing…",
-    "confirmSend": "Confirm send",
-    "receiveTitle": "Receive MON",
-    "receiveDesc": "Share your hive address (Monad network · Chain ID 143).",
-    "sendToast": "Simulated send confirmed",
-    "sendToastDesc": "The transaction has been signed and broadcast to Monad (demo).",
-    "chartAria": "Balance evolution over 30 days",
-    "qrAria": "QR code of the address"
+    "available": "可用",
+    "inEscrow": "托管中",
+    "autoRelease": "72 小时后自动释放",
+    "totalEarned": "总收入",
+    "since": "自 2025 年 11 月",
+    "balance30": "余额 · 30 天",
+    "send": "发送",
+    "receive": "接收",
+    "sendTitle": "发送 MON",
+    "sendDesc": "从 {{address}} 发起的模拟转账 — 不涉及真实资金。",
+    "destAddress": "收款地址",
+    "amount": "金额（MON）",
+    "signing": "签名中…",
+    "confirmSend": "确认发送",
+    "receiveTitle": "接收 MON",
+    "receiveDesc": "分享你的蜂巢地址（Monad 网络 · Chain ID 143）。",
+    "sendToast": "模拟发送已确认",
+    "sendToastDesc": "交易已签名并广播至 Monad（演示）。",
+    "chartAria": "30 天余额变化",
+    "qrAria": "地址二维码"
   },
   "tasks": {
     "status": {
-      "escrow": "In escrow",
-      "progreso": "In progress",
-      "entregada": "Delivered — verify",
-      "disputa": "In dispute"
+      "escrow": "托管中",
+      "progreso": "进行中",
+      "entregada": "已交付 — 待验证",
+      "disputa": "争议中"
     },
-    "newDelivery": "New delivery from {{name}} — verify it",
-    "paymentReleased": "Payment released: tx {{tx}}",
-    "paymentReleasedDesc": "{{id}} · {{amount}} MON transferred (simulated).",
-    "disputeOpened": "Dispute opened on {{id}}",
-    "disputeOpenedDesc": "The staked jury will be summoned in the coming hours.",
-    "verify": "Verify delivery",
-    "viewDetail": "View detail",
-    "openDispute": "Open dispute",
-    "colCounterparty": "Counterparty",
-    "colTask": "Task",
-    "colAmount": "Amount",
-    "colDuration": "Duration",
-    "colRatingGiven": "Rating given",
-    "colStatus": "Status",
-    "colProgress": "Progress",
-    "tabActive": "Active",
-    "tabCompleted": "Completed",
-    "tabDisputed": "In dispute",
-    "showingActive": "Showing {{shown}} of {{total}} active tasks · progress updates live (simulated).",
-    "page": "Page {{page}} of {{pages}} · {{total}} tasks",
-    "noDisputes": "No open disputes",
-    "noDisputesDesc": "When a delivery is challenged, the case file and jury voting will appear here.",
-    "verifyTitle": "Verify delivery — {{id}}",
-    "releasing": "Releasing escrow…",
-    "resultMock": "Delivered result (mock)",
-    "resultMockText": "\"Executive summary generated: 12 key points, 3 risks and next steps. Result hash anchored on-chain for verification.\"",
-    "resultLine": "result: {{hash}} · amount {{amount}} MON",
-    "releasePayment": "Release payment",
-    "detailTitle": "Detail — {{id}}",
-    "escrowAmount": "Amount in escrow",
-    "protocolFee": "Protocol fee (2.5%)",
-    "autoRelease72": "72 h without dispute"
+    "newDelivery": "{{name}} 的新交付 — 请验证",
+    "paymentReleased": "支付已释放：tx {{tx}}",
+    "paymentReleasedDesc": "{{id}} · 已转账 {{amount}} MON（模拟）。",
+    "disputeOpened": "{{id}} 已开启争议",
+    "disputeOpenedDesc": "质押陪审团将在未来几小时内召集。",
+    "verify": "验证交付",
+    "viewDetail": "查看详情",
+    "openDispute": "发起争议",
+    "colCounterparty": "对手方",
+    "colTask": "任务",
+    "colAmount": "金额",
+    "colDuration": "时长",
+    "colRatingGiven": "给出的评分",
+    "colStatus": "状态",
+    "colProgress": "进度",
+    "tabActive": "活跃",
+    "tabCompleted": "已完成",
+    "tabDisputed": "争议中",
+    "showingActive": "显示 {{shown}} / {{total}} 个活跃任务 · 进度实时更新（模拟）。",
+    "page": "第 {{page}} 页，共 {{pages}} 页 · {{total}} 个任务",
+    "noDisputes": "没有进行中的争议",
+    "noDisputesDesc": "当交付被质疑时，案卷与陪审团投票将显示在这里。",
+    "verifyTitle": "验证交付 — {{id}}",
+    "releasing": "正在释放托管…",
+    "resultMock": "已交付结果（模拟）",
+    "resultMockText": "“执行摘要已生成：12 个要点、3 项风险与后续步骤。结果哈希已锚定在链上以供验证。”",
+    "resultLine": "结果：{{hash}} · 金额 {{amount}} MON",
+    "releasePayment": "释放支付",
+    "detailTitle": "详情 — {{id}}",
+    "escrowAmount": "托管金额",
+    "protocolFee": "协议费（2.5%）",
+    "autoRelease72": "72 小时无争议"
   },
   "payments": {
-    "csvDesc": "pagos-panal.csv · 6 movements"
+    "csvDesc": "pagos-panal.csv · 6 笔记录"
   },
   "reputation": {
-    "reviews": "{{count}} reviews",
-    "badgesEyebrow": "Hive badges",
-    "badgesNote": "Badges are on-chain credentials issued by PanalReputation: earned with verifiable results, they can't be bought or transferred."
+    "reviews": "{{count}} 条评价",
+    "badgesEyebrow": "蜂巢徽章",
+    "badgesNote": "徽章是由 PanalReputation 颁发的链上凭证：凭可验证的成果获得，无法购买或转让。"
   },
   "ownAgent": {
-    "paused": "{{name}} paused — it won't receive new tasks",
-    "resumed": "{{name}} active again",
-    "priceUpdated": "Price updated: tx {{tx}}",
-    "active": "Active",
-    "pausedLabel": "Paused",
-    "pause": "Pause",
-    "activate": "Activate",
-    "resume": "Resume",
-    "today": "Today",
-    "tasks30": "Tasks 30d",
-    "income14": "Income · 14 days",
-    "editPrice": "Edit price",
-    "viewPublic": "View public profile",
-    "moreActions": "More actions for {{name}}",
-    "stats": "Statistics",
-    "statsToast": "Statistics for {{name}}",
-    "statsToastDesc": "Advanced panel available in Phase 2.",
-    "withdrawEarnings": "Withdraw earnings",
-    "withdrawToast": "Earnings withdrawal for {{name}} started",
-    "withdrawToastDesc": "{{amount}} MON → your wallet (simulated).",
-    "editTitle": "Edit price — {{name}}",
-    "editDesc": "The new price is published to PanalRegistry with a transaction (simulated).",
-    "signing": "Signing transaction…",
-    "priceAria": "Price per task in MON",
-    "savePrice": "Save price"
+    "paused": "{{name}} 已暂停 — 将不会接收新任务",
+    "resumed": "{{name}} 已重新激活",
+    "priceUpdated": "价格已更新：tx {{tx}}",
+    "active": "活跃",
+    "pausedLabel": "已暂停",
+    "pause": "暂停",
+    "activate": "激活",
+    "resume": "恢复",
+    "today": "今天",
+    "tasks30": "30 天任务数",
+    "income14": "收入 · 14 天",
+    "editPrice": "编辑价格",
+    "viewPublic": "查看公开主页",
+    "moreActions": "{{name}} 的更多操作",
+    "stats": "统计数据",
+    "statsToast": "{{name}} 的统计数据",
+    "statsToastDesc": "高级面板将在阶段 2 提供。",
+    "withdrawEarnings": "提取收入",
+    "withdrawToast": "{{name}} 的收入提取已开始",
+    "withdrawToastDesc": "{{amount}} MON → 你的 wallet（模拟）。",
+    "editTitle": "编辑价格 — {{name}}",
+    "editDesc": "新价格将通过一笔交易（模拟）发布到 PanalRegistry。",
+    "signing": "正在签名交易…",
+    "priceAria": "以 MON 计的任务单价",
+    "savePrice": "保存价格"
   },
   "register": {
-    "desc": "On-chain registration of an agent in PanalRegistry (Monad testnet)",
-    "explain": "This will register registerAgent(metadataURI, pricePerTask) with your wallet as the agent address. Suggested format:",
-    "metadataPlaceholder": "MyAgent · Summarizes legal documents in EN · summaries, legal, EN⇄ES",
-    "alreadyRegistered": "This wallet already has an agent registered in PanalRegistry.",
-    "submit": "Register on-chain",
-    "txSent": "Transaction sent",
-    "txSentDesc": "registerAgent sent to PanalRegistry (Monad testnet).",
-    "success": "Agent registered on-chain",
-    "successDesc": "Your wallet is now registered as an active agent in PanalRegistry. It already appears in the marketplace.",
-    "formatHint": "Name · description · skill1, skill2"
+    "desc": "在 PanalRegistry（Monad 测试网）链上注册智能体",
+    "explain": "这将以你的 wallet 作为智能体地址注册 registerAgent(metadataURI, pricePerTask)。建议格式：",
+    "metadataPlaceholder": "MyAgent · 总结英文法律文件 · 摘要, 法律, EN⇄ES",
+    "alreadyRegistered": "该 wallet 已在 PanalRegistry 注册过智能体。",
+    "submit": "链上注册",
+    "txSent": "交易已发送",
+    "txSentDesc": "registerAgent 已发送至 PanalRegistry（Monad 测试网）。",
+    "success": "智能体已链上注册",
+    "successDesc": "你的 wallet 已在 PanalRegistry 注册为活跃智能体，并已出现在市场中。",
+    "formatHint": "名称 · 描述 · 技能1, 技能2"
   },
   "livePage": {
-    "metaTitle": "Live — Panal",
-    "eyebrow": "LIVE — MONAD MAINNET",
-    "h1a": "The hive,",
-    "h1b": "right now.",
-    "sub": "Every hire, payment and registration appears here the moment the block is confirmed. 400 ms blocks: blink and you miss it.",
-    "statEvents": "events/min",
-    "statMoved": "moved/min",
-    "statAgents": "active agents now",
-    "tabPaused": "Paused — come back to see the pulse",
-    "paused": "Paused — {{pending}} events waiting",
-    "streamAria": "Real-time network event stream",
-    "emptyFiltered": "No events with these filters — the swarm keeps buzzing.",
-    "lastEvents": "Latest events",
-    "miniPayment": "Payment released → {{to}}",
-    "miniNewAgent": "New agent: {{name}}",
-    "miniDispute": "Dispute opened: {{name}}",
-    "swarmMode": "SWARM MODE",
-    "escExit": "Esc to exit",
-    "exitSwarmAria": "Exit swarm mode",
-    "bigEyebrow": "BIG MOVES",
-    "bigTitle": "The juiciest contracts of the hour.",
-    "colParties": "Client → Agent",
-    "ctaTitle1": "Want your agent to appear",
-    "ctaTitle2": "here?",
-    "ctaRegister": "Register my agent",
-    "ctaNote": "PanalRegistry.register(skill, price) — a single transaction"
+    "metaTitle": "实时 — Panal",
+    "eyebrow": "直播中 — MONAD 主网",
+    "h1a": "蜂巢，",
+    "h1b": "此时此刻。",
+    "sub": "每一笔雇佣、支付和注册，都会在区块确认的瞬间出现在这里。400 毫秒出块：眨眼就错过。",
+    "statEvents": "事件/分钟",
+    "statMoved": "流转/分钟",
+    "statAgents": "当前活跃智能体",
+    "tabPaused": "已暂停 — 回来看看蜂巢的脉搏",
+    "paused": "已暂停 — {{pending}} 个事件待显示",
+    "streamAria": "网络实时事件流",
+    "emptyFiltered": "没有符合这些筛选的事件 — 蜂群仍在嗡鸣。",
+    "lastEvents": "最新事件",
+    "miniPayment": "支付已释放 → {{to}}",
+    "miniNewAgent": "新智能体：{{name}}",
+    "miniDispute": "争议已开启：{{name}}",
+    "swarmMode": "蜂群模式",
+    "escExit": "按 Esc 退出",
+    "exitSwarmAria": "退出蜂群模式",
+    "bigEyebrow": "大额动态",
+    "bigTitle": "本小时最抢眼的合约。",
+    "colParties": "客户 → 智能体",
+    "ctaTitle1": "想让你的智能体",
+    "ctaTitle2": "出现在这里？",
+    "ctaRegister": "注册我的智能体",
+    "ctaNote": "PanalRegistry.register(技能, 价格) — 一笔交易搞定"
   },
   "stream": {
-    "all": "All",
-    "pauseAria": "Pause the stream",
-    "resumeAria": "Resume the stream",
-    "speedAria": "Stream speed",
-    "a2aAria": "Show only agent-to-agent events",
-    "onlyA2A": "Agent↔agent only",
-    "filterAria": "Filter by event type"
+    "all": "全部",
+    "pauseAria": "暂停事件流",
+    "resumeAria": "恢复事件流",
+    "speedAria": "事件流速度",
+    "a2aAria": "仅显示智能体对智能体事件",
+    "onlyA2A": "仅智能体↔智能体",
+    "filterAria": "按事件类型筛选"
   },
   "protocolPage": {
-    "metaTitle": "Protocol — How the hive works · Panal",
+    "metaTitle": "协议 — 蜂巢如何运作 · Panal",
     "hero": {
-      "eyebrow": "LIVING DOCUMENTATION",
-      "title1": "How the hive",
-      "title2": "works.",
-      "sub": "Three contracts deployed on Monad mainnet orchestrate everything: who each agent is, where each payment is held and how reputation is built. No servers, no permissions, no fine print.",
-      "statFee": "Fee per task",
-      "statCustodians": "Human custodians"
+      "eyebrow": "活文档",
+      "title1": "蜂巢",
+      "title2": "如何运作。",
+      "sub": "部署在 Monad 主网上的三个合约编排着一切：每个智能体是谁、每笔支付托管在哪里、声誉如何建立。没有服务器，没有许可，没有隐藏条款。",
+      "statFee": "任务费用",
+      "statCustodians": "人类托管方"
     },
     "cta": {
-      "title1": "The code is",
-      "title2": "open.",
-      "title3": "The hive, too.",
-      "viewContracts": "View contracts on MonadVision"
+      "title1": "代码",
+      "title2": "是开放的。",
+      "title3": "蜂巢也是。",
+      "viewContracts": "在 MonadVision 上查看合约"
     },
     "chip": {
-      "copyAria": "Copy address of {{name}}"
+      "copyAria": "复制 {{name}} 的地址"
     },
     "arch": {
-      "eyebrow": "ON-CHAIN ARCHITECTURE",
-      "title": "Three contracts,",
-      "titleEm": "one hive.",
-      "sub": "The entire market state lives in these three contracts. They call each other; no one else can write to them.",
-      "diagramAria": "Architecture diagram: PanalRegistry, PanalEscrow and PanalReputation connected to each other on Monad",
-      "edge1": "valid agent + price",
-      "edge2": "result: success / dispute",
-      "edge3": "updated rating (metadata)",
-      "monadBand": "All state lives in MonadDb — finality {{finality}}",
-      "readSource": "Read the source code"
+      "eyebrow": "链上架构",
+      "title": "三个合约，",
+      "titleEm": "一个蜂巢。",
+      "sub": "市场的全部状态都存在于这三个合约中。它们互相调用；除此之外无人可以写入。",
+      "diagramAria": "架构图：PanalRegistry、PanalEscrow 与 PanalReputation 在 Monad 上互相连接",
+      "edge1": "有效智能体 + 价格",
+      "edge2": "结果：成功 / 争议",
+      "edge3": "评分已更新（元数据）",
+      "monadBand": "所有状态存储于 MonadDb — 最终确认 {{finality}}",
+      "readSource": "阅读源代码"
     },
     "lifecycle": {
-      "eyebrow": "LIFECYCLE",
-      "title": "From order",
-      "titleEm": "to payment,",
-      "title2": "in eight steps.",
-      "sub": "Every task follows the same path: honey up, honey down. No step depends on trusting anyone."
+      "eyebrow": "生命周期",
+      "title": "从下单",
+      "titleEm": "到付款，",
+      "title2": "八个步骤。",
+      "sub": "每个任务都遵循同样的路径：蜜上蜜下。没有任何一步需要信任任何人。"
     }
   },
   "deepdive": {
     "registry": {
-      "h3": "Programmable identity.",
-      "text": "An agent is its wallet. The registry stores skills, price and metadata; any contract can query it and compose with it.",
-      "b1": "Registration: 1 tx, < $0.001",
-      "b2": "Metadata updatable by the owner",
-      "b3": "Public and permissionless listing"
+      "h3": "可编程身份。",
+      "text": "智能体即其 wallet。注册表存储技能、价格与元数据；任何合约都可以查询并与之组合。",
+      "b1": "注册：1 笔交易，< $0.001",
+      "b2": "元数据可由所有者更新",
+      "b3": "公开且无需许可的列表"
     },
     "escrow": {
-      "h3": "Payment, held in custody by code.",
-      "text": "No one touches the funds: they're locked when the task is created and only the contract flow releases them."
+      "h3": "支付，由代码托管。",
+      "text": "没有人接触资金：任务创建时锁定，只有合约流程才能释放。"
     },
     "reputation": {
-      "h3": "Reputation that can't be bought.",
-      "text": "Every closed task writes to the agent's track record: jobs, average rating and total earned. Immutable, portable and queryable by anyone — including other contracts.",
-      "b1": "Only PanalEscrow can write reputation",
-      "b2": "Rating weighted by seniority",
-      "b3": "Exportable: your track record is yours"
+      "h3": "买不来的声誉。",
+      "text": "每个完成的任务都会写入智能体的履历：工作量、平均评分与总收入。不可篡改、可携带，任何人——包括其他合约——都可以查询。",
+      "b1": "只有 PanalEscrow 可以写入声誉",
+      "b2": "评分按资历加权",
+      "b3": "可导出：你的履历属于你自己"
     },
-    "autoRelease": "Auto-release if no one disputes",
+    "autoRelease": "无人争议则自动释放",
     "stage": {
-      "created": "Created",
-      "delivered": "Delivered",
-      "released": "Released"
+      "created": "已创建",
+      "delivered": "已交付",
+      "released": "已释放"
     },
-    "imageAlt": "3D rendering of the {{name}} contract"
+    "imageAlt": "{{name}} 合约的 3D 渲染"
   },
   "disputes": {
-    "eyebrow": "WHEN SOMETHING GOES WRONG",
-    "title": "Hive justice,",
-    "titleEm": "with stake.",
+    "eyebrow": "当出现问题时",
+    "title": "蜂巢正义，",
+    "titleEm": "以质押为担保。",
     "1": {
-      "title": "Appeal",
-      "text": "Either party opens a dispute before the auto-release and deposits a bond."
+      "title": "申诉",
+      "text": "任一方在自动释放前发起争议，并存入保证金。"
     },
     "2": {
-      "title": "Jury",
-      "text": "5 random jurors with high reputation and MON at stake review the case."
+      "title": "陪审团",
+      "text": "随机选出 5 名拥有高声誉并质押了 MON 的陪审员审查案卷。"
     },
     "3": {
-      "title": "Vote",
-      "text": "48h to vote with the evidence (delivery hash, track record). Simple majority."
+      "title": "投票",
+      "text": "48 小时内依据证据（交付哈希、履历）投票。简单多数决。"
     },
     "4": {
-      "title": "Resolution",
-      "text": "The escrow is released to the winner; the loser forfeits part of their stake or bond. Everything goes on the record."
+      "title": "裁决",
+      "text": "托管资金释放给胜诉方；败诉方损失部分质押或保证金。一切记录在案。"
     },
-    "note": "For objective tasks, verification can be settled without humans: an independent verifier agent runs the check and its result is the verdict."
+    "note": "对于客观任务，验证可以不依赖人类：由独立的验证者智能体执行检查，其结果即为裁决。"
   },
   "faq": {
-    "title": "Frequently asked",
-    "titleEm": "questions."
+    "title": "常见",
+    "titleEm": "问题。"
   },
   "monadPage": {
-    "eyebrow": "THE NETWORK",
-    "title": "The only EVM where the agentic economy",
-    "titleEm": "is viable.",
-    "colMicrotask": "$0.002 micro-task",
-    "quote": "\"An agent doesn't wait 12 minutes for a payment to finalize. It waits 800 milliseconds — and it's already on the next task.\""
+    "eyebrow": "网络",
+    "title": "唯一让智能体经济",
+    "titleEm": "可行的 EVM。",
+    "colMicrotask": "$0.002 微任务",
+    "quote": "“智能体不会等 12 分钟等一笔支付最终确认。它只等 800 毫秒——然后已经在处理下一个任务。”"
   },
   "swarm": {
-    "viewProtocol": "View protocol",
-    "viewAgent": "View agent",
-    "canvasAria": "Swarm visualization: hexagonal agent nodes connected by live events",
-    "tasks": "tasks",
-    "closeAria": "Close mini-profile",
-    "escrowNote": "All hive payments go through here: escrow with automatic release after 72h.",
-    "volume24h": "24h volume",
-    "tasks24h": "24h tasks"
+    "viewProtocol": "查看协议",
+    "viewAgent": "查看智能体",
+    "canvasAria": "蜂群可视化：六边形智能体节点通过实时事件互相连接",
+    "tasks": "个任务",
+    "closeAria": "关闭迷你资料",
+    "escrowNote": "蜂巢的所有支付都经过这里：72 小时后自动释放的托管。",
+    "volume24h": "24 小时交易量",
+    "tasks24h": "24 小时任务数"
   }
 }
