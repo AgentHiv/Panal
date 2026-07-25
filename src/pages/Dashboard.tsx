@@ -20,6 +20,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
 import { WALLET_USER, WALLET_USER_SHORT } from '@/data/agents';
 import WalletCard from '@/components/dashboard/WalletCard';
+import RegisterAgentDialog from '@/components/dashboard/RegisterAgentDialog';
 import OwnAgentCard from '@/components/dashboard/OwnAgentCard';
 import TasksSection from '@/components/dashboard/TasksSection';
 import DisputeCard from '@/components/dashboard/DisputeCard';
@@ -64,15 +65,31 @@ export default function Dashboard() {
     document.title = 'Panal — Dashboard: tu panel del panal';
   }, []);
 
-  const { addressShort } = useWallet();
+  const { address, addressShort, connected, wrongNetwork } = useWallet();
   const addrShort = addressShort ?? WALLET_USER_SHORT;
+  const addrFull = address ?? WALLET_USER;
   const [perspective, setPerspective] = useState<Perspective>('proveedor');
   const [range, setRange] = useState<RangeKey>('30');
   const [copied, setCopied] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
+
+  /* Alta real de agente: solo con wallet conectada en Monad testnet */
+  const canRegisterOnchain = connected && !wrongNetwork;
+  const onRegisterClick = () => {
+    if (canRegisterOnchain) {
+      setRegisterOpen(true);
+    } else {
+      toast('Registro de agente', {
+        description: connected
+          ? 'Cambia tu wallet a Monad testnet para registrar el agente on-chain.'
+          : 'Conecta tu wallet para registrar el agente on-chain en PanalRegistry.',
+      });
+    }
+  };
 
   const copyAddress = async () => {
     try {
-      await navigator.clipboard.writeText(WALLET_USER);
+      await navigator.clipboard.writeText(addrFull);
     } catch {
       /* portapapeles no disponible */
     }
@@ -96,7 +113,7 @@ export default function Dashboard() {
 
         <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-start gap-5">
-            <HexAvatar seed={WALLET_USER} size={56} className="mt-2 hidden sm:block" />
+            <HexAvatar seed={addrFull} size={56} className="mt-2 hidden sm:block" />
             <div>
               {/* H1 word-reveal */}
               <motion.h1
@@ -185,11 +202,7 @@ export default function Dashboard() {
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  toast('Registro de agente', {
-                    description: 'El alta de nuevos agentes se habilita con PanalRegistry v2 (demo).',
-                  })
-                }
+                onClick={onRegisterClick}
                 className="inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
               >
                 <Plus size={15} />
@@ -319,11 +332,7 @@ export default function Dashboard() {
               perspective === 'proveedor' ? (
                 <button
                   type="button"
-                  onClick={() =>
-                    toast('Registro de agente', {
-                      description: 'El alta de nuevos agentes se habilita con PanalRegistry v2 (demo).',
-                    })
-                  }
+                  onClick={onRegisterClick}
                   className="inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
                 >
                   <Plus size={15} />
@@ -409,6 +418,9 @@ export default function Dashboard() {
           <ReputationSection />
         </div>
       </section>
+
+      {/* Alta on-chain en PanalRegistry (wallet conectada en Monad testnet) */}
+      <RegisterAgentDialog open={registerOpen} onOpenChange={setRegisterOpen} />
     </div>
   );
 }

@@ -1,0 +1,202 @@
+/**
+ * Panal — Alta real de agente en PanalRegistry (Monad testnet).
+ * registerAgent(metadataURI, pricePerTask) con estados de tx:
+ * firmando → confirmando (link al explorador) → éxito con TxHash real.
+ */
+
+import { useState } from 'react';
+import { ExternalLink, Loader2, TriangleAlert } from 'lucide-react';
+import { useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { parseEther } from 'viem';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import TxHash from '@/components/TxHash';
+import { EXPLORER_TX, PANAL_REGISTRY_ADDRESS, monadTestnet } from '@/contracts/config';
+import { panalRegistryAbi } from '@/contracts/abis';
+
+export interface RegisterAgentDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export default function RegisterAgentDialog({ open, onOpenChange }: RegisterAgentDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg border-line bg-paper p-0 sm:rounded-2xl">
+        <RegisterAgentForm onOpenChange={onOpenChange} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => void }) {
+  const [metadata, setMetadata] = useState('');
+  const [price, setPrice] = useState('');
+
+  const {
+    writeContract,
+    data: txHash,
+    isPending: signing,
+    error: writeError,
+    reset: resetWrite,
+  } = useWriteContract();
+  const { isLoading: confirming, isSuccess: mined } = useWaitForTransactionReceipt({ hash: txHash });
+
+  const priceNum = Number(price.replace(',', '.'));
+  const valid = metadata.trim().length > 0 && Number.isFinite(priceNum) && priceNum > 0;
+
+  const submit = () => {
+    writeContract(
+      {
+        address: PANAL_REGISTRY_ADDRESS,
+        abi: panalRegistryAbi,
+        functionName: 'registerAgent',
+        args: [metadata.trim(), parseEther(String(priceNum))],
+        chainId: monadTestnet.id,
+      },
+      {
+        onSuccess: () =>
+          toast('Transacción enviada', {
+            description: 'registerAgent enviado a PanalRegistry (Monad testnet).',
+          }),
+      },
+    );
+  };
+
+  const reset = () => {
+    resetWrite();
+    setMetadata('');
+    setPrice('');
+  };
+
+  return (
+    <div className="px-7 pb-7 pt-6">
+      <DialogTitle className="display-m text-ink">Registrar nuevo agente</DialogTitle>
+      <DialogDescription className="sr-only">
+        Alta on-chain de un agente en PanalRegistry (Monad testnet)
+      </DialogDescription>
+
+      {mined && txHash ? (
+        <div className="mt-6 flex flex-col items-center gap-5 py-2 text-center">
+          <svg viewBox="0 0 96 96" className="h-20 w-20">
+            <polygon
+              points="88,48 68,82.64 28,82.64 8,48 28,13.36 68,13.36"
+              fill="#F7E8CC"
+              stroke="#E29A2E"
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+            />
+            <circle cx="48" cy="48" r="15" fill="#6E7B4E" />
+            <path d="M41 48.5l5 5 9-10" stroke="#FAF7F1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div>
+            <p className="display-m text-ink">Agente registrado on-chain</p>
+            <p className="mt-1 text-[0.875rem] text-ink-2">
+              Tu wallet quedó registrada como agente activo en PanalRegistry. Ya aparece en el mercado.
+            </p>
+          </div>
+          <TxHash hash={txHash} className="rounded-full border border-line bg-cream px-4 py-2" />
+          <div className="flex w-full flex-col gap-2 sm:flex-row">
+            <a
+              href={EXPLORER_TX(txHash)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep"
+            >
+              Ver en el explorador
+              <ExternalLink size={14} />
+            </a>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="flex-1 rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-5 flex flex-col gap-4">
+          <p className="text-[0.8125rem] leading-relaxed text-ink-2">
+            Se registrará <span className="font-mono">registerAgent(metadataURI, pricePerTask)</span> con tu wallet
+            como dirección del agente. Formato sugerido:{' '}
+            <span className="font-mono text-[12px]">Nombre · descripción · skill1, skill2</span>
+          </p>
+          <textarea
+            value={metadata}
+            onChange={(e) => setMetadata(e.target.value)}
+            rows={3}
+            placeholder="MiAgente · Resume documentos legales en ES · resúmenes, legal, ES⇄EN"
+            className="w-full resize-none rounded-xl border border-line bg-paper px-4 py-3 text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
+          />
+          <div className="flex items-center gap-3">
+            <input
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              inputMode="decimal"
+              placeholder="0.05"
+              aria-label="Precio por tarea en MON"
+              className="w-full rounded-xl border border-line bg-paper px-4 py-2.5 font-mono text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
+            />
+            <span className="shrink-0 font-mono text-[0.8125rem] text-ink-2">MON / tarea</span>
+          </div>
+
+          {writeError && (
+            <p className="flex items-start gap-2 rounded-xl border border-terra/40 bg-terra/10 px-4 py-3 text-[0.8125rem] text-terra">
+              <TriangleAlert size={15} className="mt-0.5 shrink-0" />
+              {writeError.message.includes('User rejected')
+                ? 'Has rechazado la firma en tu wallet.'
+                : writeError.message.includes('already registered')
+                  ? 'Esta wallet ya tiene un agente registrado en PanalRegistry.'
+                  : writeError.message.split("\n")[0]}
+            </p>
+          )}
+
+          {txHash && !mined ? (
+            <div className="flex flex-col items-center gap-3 py-2 text-center">
+              <Loader2 size={28} className="animate-spin text-honey-deep" aria-hidden />
+              <p className="text-[0.875rem] font-medium text-ink">Confirmando en Monad…</p>
+              <a
+                href={EXPLORER_TX(txHash)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 font-mono text-[12px] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+              >
+                Ver transacción en MonadVision
+                <ExternalLink size={13} />
+              </a>
+              {confirming && <p className="font-mono text-[11px] text-ink-3">1 confirmación requerida…</p>}
+            </div>
+          ) : (
+            <div className="mt-1 flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  reset();
+                  onOpenChange(false);
+                }}
+                className="rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={submit}
+                disabled={!valid || signing}
+                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-honey px-5 py-3 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper disabled:opacity-40"
+              >
+                {signing && <Loader2 size={15} className="animate-spin" aria-hidden />}
+                {signing ? 'Firmando en wallet…' : 'Registrar on-chain'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

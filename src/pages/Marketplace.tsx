@@ -18,6 +18,7 @@ import { FadeUp, WordReveal } from '@/components/market/motion';
 import { cn } from '@/lib/utils';
 import type { Agent, AgentCategory } from '@/data/agents';
 import { AGENTS, CATEGORY_LABELS, getAgent } from '@/data/agents';
+import { usePanalAgents, isOnchainAgent } from '@/hooks/usePanalAgents';
 
 /* ============================================================
  * Mercado (/mercado) — marketplace.md
@@ -136,6 +137,10 @@ export default function Marketplace() {
   const [scrolled, setScrolled] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
+  /* ---------- agentes on-chain (PanalRegistry · Monad testnet) ---------- */
+  const { agents: onchainAgents, hasOnchain } = usePanalAgents();
+  const allAgents = useMemo<Agent[]>(() => [...onchainAgents, ...AGENTS], [onchainAgents]);
+
   useEffect(() => {
     document.title = 'Mercado — Panal';
   }, []);
@@ -169,7 +174,7 @@ export default function Marketplace() {
 
   /* ---------- filtrado + ordenación en cliente ---------- */
   const filtered = useMemo(() => {
-    const list = AGENTS.filter((a) => {
+    const list = allAgents.filter((a) => {
       if (category !== 'todos' && a.category !== category) return false;
       if (a.pricePerTask < advanced.priceMin || a.pricePerTask > advanced.priceMax) return false;
       if (advanced.minRating > 0 && a.rating < advanced.minRating) return false;
@@ -194,7 +199,7 @@ export default function Marketplace() {
       return true;
     });
     return sortAgents(list, sort);
-  }, [category, advanced, debouncedQuery, sort]);
+  }, [allAgents, category, advanced, debouncedQuery, sort]);
 
   /* carga simulada 400ms con skeletons al cambiar filtros (S5):
    * `loading` se deriva — mientras la clave aplicada no alcance a la visible */
@@ -233,7 +238,7 @@ export default function Marketplace() {
   };
 
   const categoryCount = (c: 'todos' | AgentCategory) =>
-    c === 'todos' ? AGENTS.length : AGENTS.filter((a) => a.category === c).length;
+    c === 'todos' ? allAgents.length : allAgents.filter((a) => a.category === c).length;
 
   const openHire = (a: Agent) => {
     setHireAgent(a);
@@ -296,8 +301,18 @@ export default function Marketplace() {
           </p>
           <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1 font-mono text-[12px] text-ink-2">
             <LiveDot variant="olive" />
-            Red: Monad Mainnet
+            Red: Monad Testnet
           </span>
+          {hasOnchain ? (
+            <span className="inline-flex items-center gap-2 rounded-full bg-olive/10 px-3 py-1 font-mono text-[12px] font-medium text-olive">
+              <LiveDot variant="olive" />
+              {onchainAgents.length} on-chain · PanalRegistry
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 rounded-full bg-sand px-3 py-1 font-mono text-[12px] text-ink-2">
+              Datos demo — sin agentes on-chain todavía
+            </span>
+          )}
         </FadeUp>
       </header>
 
@@ -467,7 +482,15 @@ export default function Marketplace() {
                       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.2 } }}
                       transition={{ layout: { type: 'spring', stiffness: 260, damping: 24 } }}
                     >
-                      <AgentCard agent={agent} />
+                      <div className="relative h-full">
+                        {isOnchainAgent(agent) && (
+                          <span className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-olive px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.06em] text-paper">
+                            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-paper" aria-hidden />
+                            On-chain
+                          </span>
+                        )}
+                        <AgentCard agent={agent} />
+                      </div>
                     </motion.div>
                   ))}
                 </AnimatePresence>

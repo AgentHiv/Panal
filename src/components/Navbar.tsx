@@ -19,7 +19,7 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const { connected, connecting, addressShort, address, connect, disconnect } = useWallet();
+  const { connected, connecting, addressShort, address, connect, disconnect, wrongNetwork, switchToMonad } = useWallet();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -76,10 +76,22 @@ export default function Navbar() {
 
         {/* Derecha: chip de red + wallet */}
         <div className="flex items-center gap-3">
-          <span className="hidden items-center gap-2 rounded-full border border-line bg-cream px-3 py-1.5 font-mono text-[12px] text-ink-2 md:inline-flex">
-            <LiveDot variant="olive" />
-            Monad · 143
-          </span>
+          {connected && wrongNetwork ? (
+            <button
+              type="button"
+              onClick={switchToMonad}
+              title="Cambiar a Monad testnet"
+              className="hidden items-center gap-2 rounded-full border border-terra/40 bg-terra/10 px-3 py-1.5 font-mono text-[12px] font-medium text-terra transition-colors hover:bg-terra/20 md:inline-flex"
+            >
+              <LiveDot variant="terra" />
+              Red incorrecta — cambiar a Monad
+            </button>
+          ) : (
+            <span className="hidden items-center gap-2 rounded-full border border-line bg-cream px-3 py-1.5 font-mono text-[12px] text-ink-2 md:inline-flex">
+              <LiveDot variant="olive" />
+              Monad testnet · 10143
+            </span>
+          )}
 
           {connected ? (
             <button
@@ -136,10 +148,21 @@ export default function Navbar() {
                   ))}
                 </nav>
                 <div className="mt-auto flex flex-col gap-4">
-                  <span className="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-cream px-3 py-1.5 font-mono text-[12px] text-ink-2">
-                    <LiveDot variant="olive" />
-                    Monad · 143
-                  </span>
+                  {connected && wrongNetwork ? (
+                    <button
+                      type="button"
+                      onClick={switchToMonad}
+                      className="inline-flex w-fit items-center gap-2 rounded-full border border-terra/40 bg-terra/10 px-3 py-1.5 font-mono text-[12px] font-medium text-terra"
+                    >
+                      <LiveDot variant="terra" />
+                      Red incorrecta — cambiar a Monad
+                    </button>
+                  ) : (
+                    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-cream px-3 py-1.5 font-mono text-[12px] text-ink-2">
+                      <LiveDot variant="olive" />
+                      Monad testnet · 10143
+                    </span>
+                  )}
                   {connected ? (
                     <button
                       type="button"

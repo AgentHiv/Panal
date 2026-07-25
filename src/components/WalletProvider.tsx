@@ -1,42 +1,52 @@
 /**
- * Panal — Provider del estado global de wallet simulada (0x7A4f…f9B2).
- * La conexión se simula con un pequeño delay de handshake.
+ * Panal — Provider del estado global de wallet REAL (wagmi · injected).
+ * Mantiene la misma API pública que la wallet simulada original y añade
+ * detección de red incorrecta con acción para cambiar a Monad testnet.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { WalletContext } from '@/hooks/useWallet';
+import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
+import { injected } from 'wagmi/connectors';
+import { WalletContext, shortAddress } from '@/hooks/useWallet';
 import type { WalletState } from '@/hooks/useWallet';
-import { WALLET_USER, WALLET_USER_SHORT } from '@/data/agents';
+import { monadTestnet } from '@/contracts/config';
 
 export default function WalletProvider({ children }: { children: ReactNode }) {
-  const [connected, setConnected] = useState(false);
-  const [connecting, setConnecting] = useState(false);
+  const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { connect, isPending: connecting } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { switchChain } = useSwitchChain();
 
-  const connect = useCallback(() => {
-    if (connected || connecting) return;
-    setConnecting(true);
-    window.setTimeout(() => {
-      setConnected(true);
-      setConnecting(false);
-    }, 900);
-  }, [connected, connecting]);
+  const doConnect = useCallback(() => {
+    if (isConnected || connecting) return;
+    connect({ connector: injected() });
+  }, [connect, isConnected, connecting]);
 
-  const disconnect = useCallback(() => {
-    setConnected(false);
-    setConnecting(false);
-  }, []);
+  const doDisconnect = useCallback(() => {
+    disconnect();
+  }, [disconnect]);
+
+  const wrongNetwork = isConnected && chainId !== monadTestnet.id;
+
+  const switchToMonad = useCallback(() => {
+    switchChain({ chainId: monadTestnet.id });
+  }, [switchChain]);
 
   const value = useMemo<WalletState>(
     () => ({
-      connected,
+      connected: isConnected,
       connecting,
-      address: connected ? WALLET_USER : null,
-      addressShort: connected ? WALLET_USER_SHORT : null,
-      connect,
-      disconnect,
+      address: address ?? null,
+      addressShort: address ? shortAddress(address) : null,
+      connect: doConnect,
+      disconnect: doDisconnect,
+      wrongNetwork,
+      switchToMonad,
+      chainId: isConnected ? chainId : null,
     }),
-    [connected, connecting, connect, disconnect],
+    [isConnected, connecting, address, doConnect, doDisconnect, wrongNetwork, switchToMonad, chainId],
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
