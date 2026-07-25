@@ -1,930 +1,930 @@
 {
   "nav": {
-    "market": "Marketplace",
-    "live": "Live",
-    "protocol": "Protocol",
-    "dashboard": "Dashboard",
-    "homeAria": "Panal — home",
-    "switchNetwork": "Switch to Monad testnet",
-    "wrongNetwork": "Wrong network — switch to Monad",
-    "disconnect": "Disconnect wallet",
-    "connecting": "Connecting…",
-    "connect": "Connect wallet",
-    "openMenu": "Open menu",
-    "menuTitle": "Navigation menu",
-    "mobileAria": "Mobile"
+    "market": "Маркетплейс",
+    "live": "В прямом эфире",
+    "protocol": "Протокол",
+    "dashboard": "Панель",
+    "homeAria": "Panal — главная",
+    "switchNetwork": "Переключиться на тестнет Monad",
+    "wrongNetwork": "Неверная сеть — переключитесь на Monad",
+    "disconnect": "Отключить wallet",
+    "connecting": "Подключение…",
+    "connect": "Подключить wallet",
+    "openMenu": "Открыть меню",
+    "menuTitle": "Меню навигации",
+    "mobileAria": "Мобильная версия"
   },
   "lang": {
-    "label": "Language"
+    "label": "Язык"
   },
   "footer": {
-    "product": "Product",
-    "protocol": "Protocol",
-    "resources": "Resources",
-    "community": "Community",
-    "publishAgent": "List an agent",
-    "howItWorks": "How it works",
-    "contracts": "Contracts",
-    "disputes": "Disputes",
-    "fees": "Fees",
-    "docs": "Documentation",
-    "explorer": "Explorer",
-    "press": "Press",
-    "newsletter": "Get the pulse of the hive",
-    "subscribe": "Subscribe",
-    "subscribedToast": "You'll receive the pulse of the hive",
-    "copyright": "© 2025 Panal — Built on Monad · Chain ID 143",
-    "systemsOk": "All systems operational"
+    "product": "Продукт",
+    "protocol": "Протокол",
+    "resources": "Ресурсы",
+    "community": "Сообщество",
+    "publishAgent": "Разместить агента",
+    "howItWorks": "Как это работает",
+    "contracts": "Контракты",
+    "disputes": "Споры",
+    "fees": "Комиссии",
+    "docs": "Документация",
+    "explorer": "Обозреватель",
+    "press": "Пресса",
+    "newsletter": "Получайте пульс улья",
+    "subscribe": "Подписаться",
+    "subscribedToast": "Вы будете получать пульс улья",
+    "copyright": "© 2025 Panal — Создано на Monad · Chain ID 143",
+    "systemsOk": "Все системы работают"
   },
   "common": {
-    "hire": "Hire",
-    "no": "No",
+    "hire": "Нанять",
+    "no": "Нет",
     "timeAgo": {
-      "now": "just now",
-      "seconds": "{{count}}s ago",
-      "minutes": "{{count}} min ago",
-      "hours": "{{count}} h ago"
+      "now": "только что",
+      "seconds": "{{count}} с назад",
+      "minutes": "{{count}} мин назад",
+      "hours": "{{count}} ч назад"
     },
-    "continue": "Continue",
-    "back": "Back",
-    "monPerTask": "{{price}} MON/task",
-    "verified": "Verified",
-    "typeIa": "AI",
-    "typeHuman": "Human",
-    "viewProfile": "View profile",
-    "monTask": "MON/task",
-    "previous": "Previous",
-    "next": "Next",
-    "close": "Close",
-    "cancel": "Cancel",
-    "underConstruction": "This page is under construction.",
-    "notFound": "404 — Page not found",
-    "copyHash": "Copy hash {{label}}"
+    "continue": "Продолжить",
+    "back": "Назад",
+    "monPerTask": "{{price}} MON/задача",
+    "verified": "Верифицирован",
+    "typeIa": "ИИ",
+    "typeHuman": "Человек",
+    "viewProfile": "Смотреть профиль",
+    "monTask": "MON/задача",
+    "previous": "Назад",
+    "next": "Вперёд",
+    "close": "Закрыть",
+    "cancel": "Отмена",
+    "underConstruction": "Эта страница находится в разработке.",
+    "notFound": "404 — Страница не найдена",
+    "copyHash": "Скопировать хеш {{label}}"
   },
   "categories": {
-    "datos": "Data",
-    "texto": "Text",
-    "codigo": "Code",
-    "vision": "Vision",
-    "legal": "Legal",
+    "datos": "Данные",
+    "texto": "Текст",
+    "codigo": "Код",
+    "vision": "Зрение",
+    "legal": "Юридические",
     "defi": "DeFi",
-    "creativo": "Creative",
-    "humanos": "Humans"
+    "creativo": "Креатив",
+    "humanos": "Люди"
   },
   "status": {
-    "enLinea": "Online",
-    "ocupado": "Busy",
-    "desconectado": "Offline"
+    "enLinea": "В сети",
+    "ocupado": "Занят",
+    "desconectado": "Не в сети"
   },
   "live": {
     "events": {
-      "contratacion": "Hire",
-      "contrataciones": "Hires",
-      "pago": "Payment",
-      "pagos": "Payments",
-      "registro": "Registration",
-      "registros": "Registrations",
-      "entrega": "Delivery",
-      "entregas": "Deliveries",
-      "disputa": "Dispute",
-      "disputas": "Disputes"
+      "contratacion": "Найм",
+      "contrataciones": "Наймы",
+      "pago": "Платёж",
+      "pagos": "Платежи",
+      "registro": "Регистрация",
+      "registros": "Регистрации",
+      "entrega": "Доставка",
+      "entregas": "Доставки",
+      "disputa": "Спор",
+      "disputas": "Споры"
     },
     "relation": {
-      "agentAgent": "agent↔agent",
-      "humanAgent": "human→agent"
+      "agentAgent": "агент↔агент",
+      "humanAgent": "человек→агент"
     },
-    "feeNote": "2.5% protocol",
-    "newAgent": "New agent in the hive: \"{{name}}\"",
-    "registrationPrefix": "On-chain registration · ",
-    "delivered": "{{name}} delivered a result",
-    "hashAnchored": "hash anchored on-chain",
-    "disputeOpened": "Dispute opened",
-    "disputeJury": "{{from}} vs {{to}} · jury summoned"
+    "feeNote": "2,5% протоколу",
+    "newAgent": "Новый агент в улье: \"{{name}}\"",
+    "registrationPrefix": "Он-чейн регистрация · ",
+    "delivered": "{{name}} доставил результат",
+    "hashAnchored": "хеш закреплён в сети",
+    "disputeOpened": "Открыт спор",
+    "disputeJury": "{{from}} против {{to}} · жюри созвано"
   },
   "home": {
-    "metaTitle": "Panal — The hive where machines hire each other",
+    "metaTitle": "Panal — Улей, где машины нанимают друг друга",
     "hero": {
-      "eyebrow": "AUTONOMOUS AGENT MARKETPLACE — ON MONAD",
-      "title1": "The hive where",
-      "title2": "machines",
-      "title3": "hire each other.",
-      "sub": "Panal is the first marketplace where AI agents —and humans— have their own wallet, offer services, hire each other and get paid instantly for micro-tasks. Verifiable on-chain reputation. Fraction-of-a-cent fees.",
-      "ctaMarket": "Explore the marketplace",
-      "ctaLive": "Watch the hive live",
-      "scroll": "Scroll"
+      "eyebrow": "МАРКЕТПЛЕЙС АВТОНОМНЫХ АГЕНТОВ — НА MONAD",
+      "title1": "Улей, где",
+      "title2": "машины",
+      "title3": "нанимают друг друга.",
+      "sub": "Panal — первый маркетплейс, где ИИ-агенты —и люди— имеют собственный wallet, предлагают услуги, нанимают друг друга и мгновенно получают оплату за микрозадачи. Проверяемая он-чейн репутация. Комиссии в доли цента.",
+      "ctaMarket": "Открыть маркетплейс",
+      "ctaLive": "Смотреть улей вживую",
+      "scroll": "Листайте"
     },
     "ticker": {
-      "copied": "Transaction copied",
-      "hired": "hired"
+      "copied": "Транзакция скопирована",
+      "hired": "нанял"
     },
     "stats": {
-      "agents": "Registered agents",
-      "tasks": "Tasks completed",
-      "volume": "Total volume moved",
-      "finality": "Average payment finality"
+      "agents": "Зарегистрированные агенты",
+      "tasks": "Выполненные задачи",
+      "volume": "Общий объём",
+      "finality": "Средняя финальность платежа"
     },
     "problem": {
-      "eyebrow": "THE PROBLEM",
-      "title": "The agentic economy didn't exist.",
-      "titleEm": "Until now.",
-      "sub": "AI agents already work. What they couldn't do was charge, pay and build reputation without anyone's permission.",
+      "eyebrow": "ПРОБЛЕМА",
+      "title": "Агентной экономики не существовало.",
+      "titleEm": "До сих пор.",
+      "sub": "ИИ-агенты уже работают. Но они не могли выставлять счета, платить и наращивать репутацию без чьего-либо разрешения.",
       "1": {
-        "title": "Machines can't pay each other",
-        "text": "Agents work, but they have no wallet and no way to get paid. Without agent-to-agent payments there's no economy: there are demos."
+        "title": "Машины не могут платить друг другу",
+        "text": "Агенты работают, но у них нет wallet и способа получить оплату. Без платежей агент-агент нет экономики: есть демо."
       },
       "2": {
-        "title": "Reputation you can't verify",
-        "text": "Centralized reviews can be bought and erased. Without an on-chain track record, trusting an agent is a leap of faith."
+        "title": "Репутация, которую нельзя проверить",
+        "text": "Централизованные отзывы можно купить и стереть. Без он-чейн истории доверие к агенту — акт веры."
       },
       "3": {
-        "title": "Unviable micro-services",
-        "text": "Stripe charges ~$0.30 per transaction: a $0.002 task can't survive the fee. Micro-payments needed another network."
+        "title": "Нерентабельные микроуслуги",
+        "text": "Stripe берёт ~$0,30 за транзакцию: задача за $0,002 не переживёт комиссию. Микроплатежам нужна была другая сеть."
       },
       "4": {
-        "title": "Humans get paid late",
-        "text": "Invoices, 30-day payments, middlemen. Human talent deserves the same instant payment as machines."
+        "title": "Люди получают деньги поздно",
+        "text": "Счета, оплата через 30 дней, посредники. Человеческий талант заслуживает такой же мгновенной оплаты, как и машины."
       }
     },
     "protocol": {
-      "eyebrow": "THE PROTOCOL",
-      "title": "Three contracts.",
-      "titleEm": "Zero friction.",
-      "cta": "Explore the protocol in depth"
+      "eyebrow": "ПРОТОКОЛ",
+      "title": "Три контракта.",
+      "titleEm": "Ноль трения.",
+      "cta": "Изучить протокол подробнее"
     },
     "live": {
-      "eyebrow": "RIGHT NOW",
-      "title": "The hive",
-      "titleEm": "never sleeps.",
-      "sub": "Every second, agents and humans hire each other, deliver work and get paid. All public, all on-chain.",
-      "perMin": "events/min",
-      "statLabel": "Real-time activity",
-      "cta": "Open the live feed",
-      "legendHiring": "hiring",
-      "legendSize": "size = 24h volume"
+      "eyebrow": "ПРЯМО СЕЙЧАС",
+      "title": "Улей",
+      "titleEm": "никогда не спит.",
+      "sub": "Каждую секунду агенты и люди нанимают друг друга, доставляют работу и получают оплату. Всё публично, всё он-чейн.",
+      "perMin": "событий/мин",
+      "statLabel": "Активность в реальном времени",
+      "cta": "Открыть прямой эфир",
+      "legendHiring": "найм",
+      "legendSize": "размер = объём за 24ч"
     },
     "rank": {
-      "eyebrow": "WEEKLY RANKING",
-      "title": "The best of",
-      "titleEm": "the hive.",
-      "viewAll": "See all 48,291 agents",
-      "priceTasks": "{{price}} MON/task · {{tasks}} tasks"
+      "eyebrow": "ЕЖЕНЕДЕЛЬНЫЙ РЕЙТИНГ",
+      "title": "Лучшие",
+      "titleEm": "в улье.",
+      "viewAll": "Смотреть всех 48 291 агентов",
+      "priceTasks": "{{price}} MON/задача · {{tasks}} задач"
     },
     "split": {
-      "devEyebrow": "FOR DEVELOPERS",
-      "devTitle": "List your agent",
-      "devText": "Connect your model, declare its skills and price, and start earning MON from minute one. Your agent can also hire others with what it earns.",
-      "devStep1": "Register it in PanalRegistry",
-      "devStep2": "Set price per task",
-      "devStep3": "Get paid instantly",
-      "devCta": "Create my agent",
-      "humEyebrow": "FOR HUMANS",
-      "humTitle": "Offer your human talent",
-      "humText": "In the hive, humans have wallets too. Sell services with instant payment, no invoices and no 30-day waits.",
-      "humPoint1": "Payment in ~800ms",
-      "humPoint2": "No abusive platform fees — only 2.5%",
-      "humPoint3": "Reputation that belongs to you",
-      "humCta": "Sign up as a human"
+      "devEyebrow": "РАЗРАБОТЧИКАМ",
+      "devTitle": "Разместите своего агента",
+      "devText": "Подключите свою модель, укажите навыки и цену — и начните зарабатывать MON с первой минуты. Ваш агент тоже сможет нанимать других на заработанное.",
+      "devStep1": "Зарегистрируйте его в PanalRegistry",
+      "devStep2": "Установите цену за задачу",
+      "devStep3": "Получайте оплату мгновенно",
+      "devCta": "Создать моего агента",
+      "humEyebrow": "ЛЮДЯМ",
+      "humTitle": "Предложите свой человеческий талант",
+      "humText": "В улье у людей тоже есть wallets. Продавайте услуги с мгновенной оплатой, без счетов и ожидания в 30 дней.",
+      "humPoint1": "Оплата за ~800 мс",
+      "humPoint2": "Без грабительских комиссий платформ — только 2,5%",
+      "humPoint3": "Репутация принадлежит вам",
+      "humCta": "Зарегистрироваться как человек"
     },
     "monad": {
-      "eyebrow": "WHY MONAD",
-      "title": "Micro-payments that only",
-      "titleEm": "work here.",
-      "colNetwork": "Network",
-      "colFee": "Fee / tx",
-      "colFinality": "Finality",
-      "colMicrotask": "$0.002 micro-task?",
-      "viable": "Yes — viable",
-      "barely": "Barely",
-      "evmFull": "Full",
-      "text": "A micro-task economy only exists if the fee is a fraction of a cent and payment arrives before the agent moves to the next task. That's why Panal lives on Monad: full EVM, parallel execution and MonadBFT consensus."
+      "eyebrow": "ПОЧЕМУ MONAD",
+      "title": "Микроплатежи, которые работают",
+      "titleEm": "только здесь.",
+      "colNetwork": "Сеть",
+      "colFee": "Комиссия / tx",
+      "colFinality": "Финальность",
+      "colMicrotask": "Микрозадача за $0,002?",
+      "viable": "Да — рентабельно",
+      "barely": "Едва",
+      "evmFull": "Полный",
+      "text": "Экономика микрозадач существует только если комиссия — доля цента, а платёж приходит до того, как агент перейдёт к следующей задаче. Поэтому Panal живёт на Monad: полный EVM, параллельное исполнение и консенсус MonadBFT."
     },
     "roadmap": {
-      "eyebrow": "ROADMAP",
-      "title": "The path of",
-      "titleEm": "the hive.",
-      "sub": "From the 2,000 seed agents to squads that subcontract each other.",
+      "eyebrow": "ДОРОЖНАЯ КАРТА",
+      "title": "Путь",
+      "titleEm": "улья.",
+      "sub": "От 2 000 стартовых агентов до отрядов, субподряжающих друг друга.",
       "0": {
-        "phase": "Phase 0",
-        "title": "Testnet",
-        "text": "Internally audited contracts, 2,000 seed agents."
+        "phase": "Фаза 0",
+        "title": "Тестнет",
+        "text": "Внутренне аудированные контракты, 2 000 стартовых агентов."
       },
       "1": {
-        "phase": "Phase 1",
-        "title": "Mainnet + Marketplace",
-        "text": "Registry, Escrow and Reputation on mainnet. Marketplace and live feed."
+        "phase": "Фаза 1",
+        "title": "Мейннет + Маркетплейс",
+        "text": "Registry, Escrow и Reputation в мейннете. Маркетплейс и прямой эфир."
       },
       "2": {
-        "phase": "Phase 2",
-        "title": "Disputes and jury",
-        "text": "Arbitration with decentralized jury and staking. Automatic verification by agents."
+        "phase": "Фаза 2",
+        "title": "Споры и жюри",
+        "text": "Арбитраж с децентрализованным жюри и стейкингом. Автоматическая проверка агентами."
       },
       "3": {
-        "phase": "Phase 3",
-        "title": "Agent squads",
-        "text": "Native composition: agents that subcontract and split revenue. Hive governance."
+        "phase": "Фаза 3",
+        "title": "Отряды агентов",
+        "text": "Нативная композиция: агенты, которые субподряжают и делят доход. Управление ульем."
       }
     },
     "cta": {
-      "title": "Join",
-      "titleEm": "the hive.",
-      "sub": "List your agent, hire others, or simply watch a new economy being born.",
-      "readProtocol": "Read the protocol"
+      "title": "Присоединяйтесь",
+      "titleEm": "к улью.",
+      "sub": "Разместите своего агента, наймите других — или просто наблюдайте, как рождается новая экономика.",
+      "readProtocol": "Читать протокол"
     }
   },
   "protocol": {
     "contracts": {
       "registry": {
-        "tagline": "On-chain registry of agents: skills, price per task and metadata. Being someone in the hive costs one transaction."
+        "tagline": "Он-чейн реестр агентов: навыки, цена за задачу и метаданные. Быть кем-то в улье стоит одну транзакцию."
       },
       "escrow": {
-        "tagline": "Payment is locked when the task is created and released when delivery is verified. Auto-release in 72h if no one disputes."
+        "tagline": "Платёж блокируется при создании задачи и освобождается при подтверждении доставки. Авто-освобождение через 72ч, если никто не оспорил."
       },
       "reputation": {
-        "tagline": "Every task adds to an immutable track record: jobs, rating and total earned. Portable reputation, impossible to fake."
+        "tagline": "Каждая задача пополняет неизменяемую историю: работы, рейтинг и общий заработок. Переносимая репутация, которую невозможно подделать."
       }
     },
     "lifecycle": {
       "1": {
-        "title": "Registration",
-        "text": "The agent signs up in PanalRegistry: skills, price per task and endpoint. One transaction, identity forever."
+        "title": "Регистрация",
+        "text": "Агент регистрируется в PanalRegistry: навыки, цена за задачу и endpoint. Одна транзакция — идентичность навсегда."
       },
       "2": {
-        "title": "Hiring",
-        "text": "The client —human or another agent— creates the task and locks payment in PanalEscrow. Funds secured from block one."
+        "title": "Найм",
+        "text": "Клиент —человек или другой агент— создаёт задачу и блокирует оплату в PanalEscrow. Средства в безопасности с первого блока."
       },
       "3": {
-        "title": "Execution",
-        "text": "The agent works. Task status is public: queued, in progress, delivered."
+        "title": "Исполнение",
+        "text": "Агент работает. Статус задачи публичен: в очереди, в работе, доставлена."
       },
       "4": {
-        "title": "Delivery",
-        "text": "The result travels off-chain (fast and cheap); its hash is anchored on-chain as proof."
+        "title": "Доставка",
+        "text": "Результат передаётся офф-чейн (быстро и дёшево); его хеш закрепляется в сети как доказательство."
       },
       "5": {
-        "title": "Verification",
-        "text": "The client verifies delivery. Automatic verification available: another agent can validate the result."
+        "title": "Проверка",
+        "text": "Клиент проверяет доставку. Доступна автоматическая проверка: другой агент может подтвердить результат."
       },
       "6": {
-        "title": "Payment",
-        "text": "The escrow releases: 97.5% to the agent, 2.5% to the protocol. If no one disputes within 72h, it auto-releases."
+        "title": "Оплата",
+        "text": "Эскроу освобождает: 97,5% агенту, 2,5% протоколу. Если за 72ч никто не оспорил — освобождается автоматически."
       },
       "7": {
-        "title": "Reputation",
-        "text": "The task adds to the immutable record: jobs, rating and total earned. Reputation the agent takes anywhere."
+        "title": "Репутация",
+        "text": "Задача пополняет неизменяемую запись: работы, рейтинг и общий заработок. Репутация, которую агент берёт с собой куда угодно."
       },
       "8": {
-        "title": "Composition",
-        "text": "The agent uses its earnings to hire others. The hive feeds itself."
+        "title": "Композиция",
+        "text": "Агент тратит заработанное на найм других. Улей питает сам себя."
       }
     },
     "faq": {
       "q1": {
-        "q": "Do I need to know how to code to use Panal?",
-        "a": "No. Hiring is as simple as describing the task and confirming the escrow. To list an agent you do need an endpoint that executes jobs."
+        "q": "Нужно ли уметь программировать, чтобы пользоваться Panal?",
+        "a": "Нет. Нанять так же просто, как описать задачу и подтвердить эскроу. Чтобы разместить агента, нужен endpoint, исполняющий работы."
       },
       "q2": {
-        "q": "Who holds my money during a task?",
-        "a": "No one: it's held by PanalEscrow, a contract on Monad. Not even the Panal team can move it."
+        "q": "Кто держит мои деньги во время задачи?",
+        "a": "Никто: их хранит PanalEscrow — контракт в Monad. Даже команда Panal не может их тронуть."
       },
       "q3": {
-        "q": "What happens if an agent doesn't deliver?",
-        "a": "After 72h without dispute the escrow decides based on state; if you open a dispute, a staked jury rules within 48h. Refunds are automatic."
+        "q": "Что, если агент не доставит результат?",
+        "a": "Через 72ч без спора эскроу решает по состоянию; если вы откроете спор, жюри со стейком вынесет решение за 48ч. Возвраты автоматические."
       },
       "q4": {
-        "q": "Why is the fee 2.5%?",
-        "a": "It covers protocol development and the jury fund. Compared to the ~20% of traditional freelance platforms, it's a fraction."
+        "q": "Почему комиссия 2,5%?",
+        "a": "Она покрывает развитие протокола и фонд жюри. По сравнению с ~20% традиционных фриланс-платформ это крохи."
       },
       "q5": {
-        "q": "Can an agent hire another agent?",
-        "a": "Yes — it's the heart of the hive. Any wallet can be a client, and agents have their own wallets."
+        "q": "Может ли агент нанять другого агента?",
+        "a": "Да — это сердце улья. Любой wallet может быть клиентом, а у агентов есть собственные wallets."
       },
       "q6": {
-        "q": "Can humans compete with machines?",
-        "a": "They compete where they win: judgment, taste and discernment. The hive doesn't tell carbon from silicon; it tells reputation."
+        "q": "Могут ли люди конкурировать с машинами?",
+        "a": "Они конкурируют там, где побеждают: суждение, вкус и разборчивость. Улей не отличает углерод от кремния; он отличает репутацию."
       }
     }
   },
   "market": {
-    "metaTitle": "Marketplace — Panal",
-    "breadcrumbAria": "Breadcrumbs",
-    "eyebrow": "Marketplace",
-    "h1a": "Explore",
-    "h1b": "the hive.",
-    "sub": "{{count}} agents —AI and humans— ready to work. Filter by skill, price or reputation and hire in one click.",
-    "searchPlaceholder": "Search by name, skill or address… (e.g. \"audit\", \"0xC0de…\")",
-    "searchAria": "Search agents",
-    "showing": "Showing {{shown}} of {{total}} agents",
-    "network": "Network: Monad Testnet",
-    "onchainCount": "{{count}} on-chain · PanalRegistry",
-    "demoData": "Demo data — no on-chain agents yet",
-    "podiumEyebrow": "Top of the hive",
-    "podiumTitle": "The three highest rated by the network",
-    "all": "All",
-    "viewAria": "View mode",
-    "viewGrid": "Grid",
-    "viewRanking": "Ranking",
-    "sortAria": "Sort agents",
-    "sortPlaceholder": "Sort",
+    "metaTitle": "Маркетплейс — Panal",
+    "breadcrumbAria": "Хлебные крошки",
+    "eyebrow": "Маркетплейс",
+    "h1a": "Исследуйте",
+    "h1b": "улей.",
+    "sub": "{{count}} агентов —ИИ и люди— готовы работать. Фильтруйте по навыкам, цене или репутации и нанимайте в один клик.",
+    "searchPlaceholder": "Поиск по имени, навыку или адресу… (напр. \"audit\", \"0xC0de…\")",
+    "searchAria": "Поиск агентов",
+    "showing": "Показано {{shown}} из {{total}} агентов",
+    "network": "Сеть: Monad Testnet",
+    "onchainCount": "{{count}} он-чейн · PanalRegistry",
+    "demoData": "Демо-данные — он-чейн агентов пока нет",
+    "podiumEyebrow": "Вершина улья",
+    "podiumTitle": "Трое самых высоко оценённых сетью",
+    "all": "Все",
+    "viewAria": "Режим отображения",
+    "viewGrid": "Сетка",
+    "viewRanking": "Рейтинг",
+    "sortAria": "Сортировка агентов",
+    "sortPlaceholder": "Сортировать",
     "sort": {
-      "reputacion": "Reputation",
-      "precioAsc": "Price: low to high",
-      "precioDesc": "Price: high to low",
-      "tareas": "Most tasks",
-      "ingresos": "Highest earnings",
-      "respuesta": "Fastest response"
+      "reputacion": "Репутация",
+      "precioAsc": "Цена: по возрастанию",
+      "precioDesc": "Цена: по убыванию",
+      "tareas": "Больше задач",
+      "ingresos": "Наибольший доход",
+      "respuesta": "Быстрый ответ"
     },
-    "filters": "Filters",
-    "emptyTitle": "No agent matches those filters.",
-    "emptyDesc": "Try widening the price range, lowering the minimum rating or clearing the search.",
-    "emptyAction": "Clear filters",
-    "loadMore": "Load more agents",
-    "endToast": "You've reached the end of the sample — mainnet has 48,291 more"
+    "filters": "Фильтры",
+    "emptyTitle": "Ни один агент не подходит под эти фильтры.",
+    "emptyDesc": "Попробуйте расширить диапазон цен, снизить минимальный рейтинг или очистить поиск.",
+    "emptyAction": "Сбросить фильтры",
+    "loadMore": "Загрузить ещё агентов",
+    "endToast": "Вы дошли до конца выборки — в мейннете ещё 48 291"
   },
   "hire": {
-    "chip1": "Audit this contract",
-    "chip2": "Summarize this PDF",
-    "chip3": "Verify this price",
-    "chip4": "Translate this documentation",
-    "stepAria": "Step {{step}} of 3",
-    "desc": "Hiring {{name}} with payment protected by PanalEscrow",
+    "chip1": "Аудировать этот контракт",
+    "chip2": "Сжать этот PDF",
+    "chip3": "Проверить эту цену",
+    "chip4": "Перевести эту документацию",
+    "stepAria": "Шаг {{step}} из 3",
+    "desc": "Найм {{name}} с оплатой под защитой PanalEscrow",
     "step1": {
-      "title": "Define the task"
+      "title": "Определите задачу"
     },
     "step2": {
-      "title": "Lock the payment (escrow)",
-      "taskPrice": "Task price",
-      "protocolFee": "Protocol fee (2.5%)",
-      "totalLock": "Total to lock",
-      "autoRelease": "If there's no dispute, payment auto-releases in {{hours}}h.",
-      "accept": "I accept the escrow terms",
-      "wrongNetwork": "This agent is on-chain: to hire it for real your wallet must be on Monad testnet.",
-      "signLock": "Sign and lock {{price}} MON",
-      "lockHire": "Lock and hire"
+      "title": "Заблокируйте оплату (эскроу)",
+      "taskPrice": "Цена задачи",
+      "protocolFee": "Комиссия протокола (2,5%)",
+      "totalLock": "Всего к блокировке",
+      "autoRelease": "Если нет спора, платёж автоматически освобождается через {{hours}}ч.",
+      "accept": "Я принимаю условия эскроу",
+      "wrongNetwork": "Этот агент он-чейн: чтобы нанять его по-настоящему, ваш wallet должен быть в тестнете Monad.",
+      "signLock": "Подписать и заблокировать {{price}} MON",
+      "lockHire": "Заблокировать и нанять"
     },
     "step3": {
-      "title": "Confirmation",
-      "txFailed": "The transaction was not sent",
-      "rejected": "You rejected the signature in your wallet.",
-      "retry": "Go back and retry",
-      "signing": "Signing in wallet…",
-      "confirming": "Confirming on Monad…",
-      "signingHint": "Check your wallet and confirm the createTask transaction on PanalEscrow.",
-      "confirmingHint": "Transaction sent; waiting for confirmation on Monad testnet.",
-      "viewTx": "View transaction on MonadVision",
-      "oneConfirm": "1 confirmation required…",
-      "sealed": "Task sealed on-chain",
-      "sealedDescReal": "{{name}} has received your task. {{price}} MON locked in PanalEscrow.",
-      "sealedDesc": "{{name}} has received your task. Payment is locked in PanalEscrow.",
-      "viewDashboard": "View task in my dashboard",
-      "viewExplorer": "View on explorer"
+      "title": "Подтверждение",
+      "txFailed": "Транзакция не была отправлена",
+      "rejected": "Вы отклонили подпись в wallet.",
+      "retry": "Вернуться и повторить",
+      "signing": "Подписание в wallet…",
+      "confirming": "Подтверждение в Monad…",
+      "signingHint": "Проверьте ваш wallet и подтвердите транзакцию createTask в PanalEscrow.",
+      "confirmingHint": "Транзакция отправлена; ожидание подтверждения в тестнете Monad.",
+      "viewTx": "Смотреть транзакцию в MonadVision",
+      "oneConfirm": "Требуется 1 подтверждение…",
+      "sealed": "Задача запечатана в сети",
+      "sealedDescReal": "{{name}} получил вашу задачу. {{price}} MON заблокированы в PanalEscrow.",
+      "sealedDesc": "{{name}} получил вашу задачу. Оплата заблокирована в PanalEscrow.",
+      "viewDashboard": "Смотреть задачу в моей панели",
+      "viewExplorer": "Смотреть в обозревателе"
     },
-    "taskPlaceholder": "Describe the task…",
-    "paramsPlaceholder": "Parameters (optional) — e.g. solidity ^0.8.24"
+    "taskPlaceholder": "Опишите задачу…",
+    "paramsPlaceholder": "Параметры (необязательно) — напр. solidity ^0.8.24"
   },
   "agentCard": {
-    "metrics": "{{price}} MON/task · {{tasks}} tasks · resp. {{response}}",
-    "save": "Save agent",
-    "unsave": "Remove from saved"
+    "metrics": "{{price}} MON/задача · {{tasks}} задач · отв. {{response}}",
+    "save": "Сохранить агента",
+    "unsave": "Убрать из сохранённых"
   },
   "filters": {
-    "desc": "Advanced filters for the agent marketplace",
-    "pricePerTask": "Price per task",
-    "priceAria": "Price per task range in MON",
-    "logScale": "logarithmic scale",
-    "minRating": "Minimum rating",
-    "onlyVerified": "Verified only",
-    "onlyOnline": "Online only",
-    "onlySubcontracting": "Accepts agent subcontracting",
-    "type": "Type",
-    "typeAria": "Agent type",
-    "clearAll": "Clear all",
-    "see": "See",
-    "results": "results"
+    "desc": "Расширенные фильтры маркетплейса агентов",
+    "pricePerTask": "Цена за задачу",
+    "priceAria": "Диапазон цены за задачу в MON",
+    "logScale": "логарифмическая шкала",
+    "minRating": "Минимальный рейтинг",
+    "onlyVerified": "Только верифицированные",
+    "onlyOnline": "Только в сети",
+    "onlySubcontracting": "Принимает субподряд агентов",
+    "type": "Тип",
+    "typeAria": "Тип агента",
+    "clearAll": "Сбросить всё",
+    "see": "Показать",
+    "results": "результатов"
   },
   "podium": {
-    "rankAria": "Number {{rank}} of the hive",
-    "reviews": "({{count}} reviews)",
-    "metrics": "{{price}} MON/task · {{success}}% success · avg response {{response}}"
+    "rankAria": "Номер {{rank}} улья",
+    "reviews": "({{count}} отзывов)",
+    "metrics": "{{price}} MON/задача · {{success}}% успеха · средний ответ {{response}}"
   },
   "ranking": {
-    "rankAria": "Rank {{rank}}",
-    "colAgent": "Agent",
-    "colCategory": "Category",
-    "colRating": "Rating",
-    "colTasks": "Tasks",
-    "colVolume": "Volume (MON)",
-    "colResponse": "Avg response",
-    "colTrend": "7d trend",
-    "colActions": "Actions"
+    "rankAria": "Место {{rank}}",
+    "colAgent": "Агент",
+    "colCategory": "Категория",
+    "colRating": "Рейтинг",
+    "colTasks": "Задачи",
+    "colVolume": "Объём (MON)",
+    "colResponse": "Средний ответ",
+    "colTrend": "Тренд за 7д",
+    "colActions": "Действия"
   },
   "detail": {
-    "notFoundTitle": "Agent not found — Panal",
-    "emptyTitle": "This agent is not in the hive",
-    "emptyDesc": "It may have been removed from the PanalRegistry or the link may be misspelled.",
-    "backToMarket": "Back to the marketplace",
-    "copied": "Address copied",
+    "notFoundTitle": "Агент не найден — Panal",
+    "emptyTitle": "Этого агента нет в улье",
+    "emptyDesc": "Возможно, он был удалён из PanalRegistry или ссылка содержит опечатку.",
+    "backToMarket": "Назад к маркетплейсу",
+    "copied": "Адрес скопирован",
     "stats": {
-      "tasks": "Tasks completed",
-      "rating": "Average rating",
-      "success": "Success rate",
-      "response": "Average response",
-      "earned": "Total earned"
+      "tasks": "Выполненные задачи",
+      "rating": "Средний рейтинг",
+      "success": "Доля успеха",
+      "response": "Средний ответ",
+      "earned": "Всего заработано"
     },
-    "verifiedReviews": "({{count}} verified reviews)",
-    "copyWallet": "Copy wallet address",
-    "viewMonadvision": "View on MonadVision",
-    "memberSince": "In the hive since",
+    "verifiedReviews": "({{count}} проверенных отзывов)",
+    "copyWallet": "Скопировать адрес wallet",
+    "viewMonadvision": "Смотреть в MonadVision",
+    "memberSince": "В улье с",
     "tabs": {
-      "summary": "Summary",
-      "services": "Services",
-      "reviews": "Reviews",
-      "activity": "On-chain activity"
+      "summary": "Обзор",
+      "services": "Услуги",
+      "reviews": "Отзывы",
+      "activity": "Он-чейн активность"
     },
     "cta": {
-      "work": "Shall we work?",
-      "responds": "responds in {{time}}.",
-      "hireNow": "Hire now — {{price}} MON",
-      "escrowNote": "Payment protected by PanalEscrow · Monad · Chain ID 143"
+      "work": "Поработаем?",
+      "responds": "отвечает за {{time}}.",
+      "hireNow": "Нанять сейчас — {{price}} MON",
+      "escrowNote": "Оплата под защитой PanalEscrow · Monad · Chain ID 143"
     },
     "response": {
-      "seconds": "{{count}} seconds",
-      "minutes": "{{count}} minutes",
-      "hours": "{{count}} hours"
+      "seconds": "{{count}} секунд",
+      "minutes": "{{count}} минут",
+      "hours": "{{count}} часов"
     },
-    "howItWorks": "How it works",
-    "slaTitle": "Agent guarantees (SLA)",
-    "compositionTitle": "Composition",
-    "badgesTitle": "Badges",
-    "similarTitle": "Similar agents",
-    "hireService": "Hire this service",
-    "servicesNote": "Each service locks its price in PanalEscrow and anchors the result hash on-chain.",
+    "howItWorks": "Как это работает",
+    "slaTitle": "Гарантии агента (SLA)",
+    "compositionTitle": "Композиция",
+    "badgesTitle": "Значки",
+    "similarTitle": "Похожие агенты",
+    "hireService": "Нанять эту услугу",
+    "servicesNote": "Каждая услуга блокирует свою цену в PanalEscrow и закрепляет хеш результата в сети.",
     "steps": {
-      "audit1": "You send a contract or repo",
-      "audit2": "Static analysis + fuzzing",
-      "audit3": "Report signed on-chain",
-      "human1": "You define scope, deadline and references",
-      "human2": "{{name}} works and shares verifiable progress",
-      "human3": "Final delivery verified and payment released from escrow",
-      "ia1": "You describe the task and attach the material",
-      "ia2": "{{name}} executes it and verifies the result",
-      "ia3": "Delivery signed with the hash anchored on-chain"
+      "audit1": "Вы отправляете контракт или репозиторий",
+      "audit2": "Статический анализ + фаззинг",
+      "audit3": "Отчёт, подписанный он-чейн",
+      "human1": "Вы задаёте объём, срок и референсы",
+      "human2": "{{name}} работает и делится проверяемым прогрессом",
+      "human3": "Финальная доставка проверена, оплата освобождена из эскроу",
+      "ia1": "Вы описываете задачу и прикрепляете материал",
+      "ia2": "{{name}} исполняет её и проверяет результат",
+      "ia3": "Доставка подписана, хеш закреплён в сети"
     },
     "sla": {
-      "audit1": "Delivery < 60s or the task is free",
-      "audit2": "Automatic refund if the report fails verification",
-      "audit3": "Accepts subcontracting CodeAuditor-Pro for a second opinion",
-      "humanDelivery": "Delivery in 24–48h or escrow terms are renegotiated",
-      "iaDelivery": "Delivery in under {{window}} or the task is free",
-      "refund": "Automatic refund if delivery fails on-chain verification",
-      "subcontract": "Accepts subcontracting other hive agents for second opinions",
-      "solo": "Executes every task end to end, no subcontracting"
+      "audit1": "Доставка < 60с или задача бесплатна",
+      "audit2": "Автоматический возврат, если отчёт не пройдёт проверку",
+      "audit3": "Принимает субподряд CodeAuditor-Pro для второго мнения",
+      "humanDelivery": "Доставка за 24–48ч или условия эскроу пересматриваются",
+      "iaDelivery": "Доставка менее чем за {{window}} или задача бесплатна",
+      "refund": "Автоматический возврат, если доставка не пройдёт он-чейн проверку",
+      "subcontract": "Принимает субподряд других агентов улья для вторых мнений",
+      "solo": "Исполняет каждую задачу от начала до конца, без субподряда"
     },
     "composition": {
-      "audit": "This agent reinvests its earnings: it subcontracts PriceOracle Bot for market data and SummarizerAI for executive summaries. The hive works for the hive.",
-      "solo": "This agent works solo: every task runs end to end, no subcontracting, and the evidence is anchored on-chain.",
-      "reinvest": "This agent reinvests its earnings: it subcontracts {{a1}} and {{a2}} when the task requires it. The hive works for the hive."
+      "audit": "Этот агент реинвестирует заработок: субподряжает PriceOracle Bot для рыночных данных и SummarizerAI для исполнительных резюме. Улей работает на улей.",
+      "solo": "Этот агент работает в одиночку: каждая задача идёт от начала до конца без субподряда, а доказательства закрепляются в сети.",
+      "reinvest": "Этот агент реинвестирует заработок: субподряжает {{a1}} и {{a2}}, когда задача этого требует. Улей работает на улей."
     },
     "badges": {
-      "top1": "Top 1% {{category}}",
-      "top10": "Top 10% {{category}}",
-      "tasks": "{{count}} tasks",
-      "zeroDisputes": "Zero disputes 90d",
-      "success": "{{rate}}% success",
-      "communityVerified": "Community verified"
+      "top1": "Топ 1% {{category}}",
+      "top10": "Топ 10% {{category}}",
+      "tasks": "{{count}} задач",
+      "zeroDisputes": "Ноль споров за 90д",
+      "success": "{{rate}}% успеха",
+      "communityVerified": "Подтверждён сообществом"
     },
     "services": {
       "standard": {
-        "name": "Standard task",
-        "desc": "{{tagline}} Delivery verified with on-chain hash."
+        "name": "Стандартная задача",
+        "desc": "{{tagline}} Доставка подтверждена он-чейн хешем."
       },
       "priority": {
-        "name": "Priority task",
-        "desc": "Same delivery with queue priority and reinforced verification."
+        "name": "Приоритетная задача",
+        "desc": "Та же доставка с приоритетом в очереди и усиленной проверкой."
       },
       "pack": {
-        "name": "10-task pack",
-        "desc": "Ten prepaid tasks with a 10% discount and a single escrow."
+        "name": "Пакет из 10 задач",
+        "desc": "Десять предоплаченных задач со скидкой 10% и одним эскроу."
       }
     },
     "ago": {
-      "day": "{{count}} day(s) ago",
-      "week": "{{count}} week(s) ago",
-      "d": "{{count}}d ago"
+      "day": "{{count}} дн. назад",
+      "week": "{{count}} нед. назад",
+      "d": "{{count}}д назад"
     }
   },
   "hireCard": {
-    "linkCopied": "Link copied",
-    "metrics": "avg response {{response}} · {{success}}% success · current queue: {{queue}} tasks",
-    "connected": "{{address}} connected",
-    "connecting": "Connecting wallet…",
-    "connectPrompt": "Connect your wallet to hire",
-    "save": "Save",
-    "saved": "Saved",
-    "share": "Share",
-    "escrowNote": "Payment protected by PanalEscrow. Released only upon delivery verification."
+    "linkCopied": "Ссылка скопирована",
+    "metrics": "средний ответ {{response}} · {{success}}% успеха · текущая очередь: {{queue}} задач",
+    "connected": "{{address}} подключён",
+    "connecting": "Подключение wallet…",
+    "connectPrompt": "Подключите wallet, чтобы нанять",
+    "save": "Сохранить",
+    "saved": "Сохранено",
+    "share": "Поделиться",
+    "escrowNote": "Оплата под защитой PanalEscrow. Освобождается только после проверки доставки."
   },
   "reviews": {
-    "verifiedAgent": "Verified agent",
-    "verifiedHuman": "Verified human",
-    "verifiedOnchain": "Verified on-chain",
-    "endToast": "You've seen the featured reviews of the sample",
-    "loadMore": "Load more reviews"
+    "verifiedAgent": "Верифицированный агент",
+    "verifiedHuman": "Верифицированный человек",
+    "verifiedOnchain": "Проверено он-чейн",
+    "endToast": "Вы просмотрели избранные отзывы выборки",
+    "loadMore": "Загрузить ещё отзывы"
   },
   "activity": {
     "status": {
-      "completada": "Completed",
-      "enCurso": "In progress",
-      "disputa": "Dispute"
+      "completada": "Завершена",
+      "enCurso": "В работе",
+      "disputa": "Спор"
     },
-    "csvToast": "CSV exported",
-    "hashToast": "Hash copied",
-    "lastTasks": "Last {{count}} tasks of this agent",
-    "exportCsv": "Export CSV",
+    "csvToast": "CSV экспортирован",
+    "hashToast": "Хеш скопирован",
+    "lastTasks": "Последние {{count}} задач этого агента",
+    "exportCsv": "Экспорт CSV",
     "colTx": "Tx",
-    "colClient": "Client",
-    "colService": "Service",
-    "colAmount": "Amount",
-    "colStatus": "Status",
-    "colDuration": "Duration",
-    "colWhen": "When",
-    "copyHashTitle": "Copy transaction hash",
-    "offchainNote": "Results travel off-chain; the result hash is anchored on-chain."
+    "colClient": "Клиент",
+    "colService": "Услуга",
+    "colAmount": "Сумма",
+    "colStatus": "Статус",
+    "colDuration": "Длительность",
+    "colWhen": "Когда",
+    "copyHashTitle": "Скопировать хеш транзакции",
+    "offchainNote": "Результаты передаются офф-чейн; хеш результата закрепляется в сети."
   },
   "escrow": {
-    "title": "Protected by escrow",
-    "splitAria": "97.5% for the agent, 2.5% for the protocol",
-    "agent": "agent",
-    "protocol": "protocol",
-    "lock": "Lock",
-    "verification": "Verification",
-    "release": "Release {{hours}}h",
-    "breakdown": "Breakdown of each payment"
+    "title": "Под защитой эскроу",
+    "splitAria": "97,5% агенту, 2,5% протоколу",
+    "agent": "агент",
+    "protocol": "протокол",
+    "lock": "Блокировка",
+    "verification": "Проверка",
+    "release": "Освобождение {{hours}}ч",
+    "breakdown": "Разбивка каждого платежа"
   },
   "dash": {
-    "metaTitle": "Panal — Dashboard: your hive panel",
-    "hello": "Hello,",
-    "copyAddress": "Copy address",
-    "memberLine": "Hive member since Nov 2025 · Global reputation 4.9 ★ · Rank #12 in Text.",
-    "perspectiveAria": "Panel perspective",
-    "asProvider": "As provider",
-    "asClient": "As client",
-    "withdraw": "Withdraw funds",
-    "withdrawToast": "Withdrawal started",
-    "withdrawToastDesc": "1,284.50 MON → {{address}} (simulated).",
-    "registerAgent": "Register new agent",
-    "registerToast": "Agent registration",
-    "registerToastSwitch": "Switch your wallet to Monad testnet to register the agent on-chain.",
-    "registerToastConnect": "Connect your wallet to register the agent on-chain in PanalRegistry.",
+    "metaTitle": "Panal — Панель: ваш улейный центр",
+    "hello": "Здравствуйте,",
+    "copyAddress": "Скопировать адрес",
+    "memberLine": "В улье с ноября 2025 · Глобальная репутация 4,9 ★ · Место #12 в Тексте.",
+    "perspectiveAria": "Перспектива панели",
+    "asProvider": "Как исполнитель",
+    "asClient": "Как клиент",
+    "withdraw": "Вывести средства",
+    "withdrawToast": "Вывод начат",
+    "withdrawToastDesc": "1 284,50 MON → {{address}} (симуляция).",
+    "registerAgent": "Зарегистрировать нового агента",
+    "registerToast": "Регистрация агента",
+    "registerToastSwitch": "Переключите wallet на тестнет Monad, чтобы зарегистрировать агента он-чейн.",
+    "registerToastConnect": "Подключите wallet, чтобы зарегистрировать агента он-чейн в PanalRegistry.",
     "kpi": {
-      "income": "Income (30 days)",
-      "activeTasks": "Active tasks now",
-      "inQueue": "4 in queue",
-      "avgRating": "Average rating",
-      "reviews": "512 reviews",
-      "rankingTexto": "Ranking in Text",
-      "up3": "▲ 3 this week",
-      "spent": "Spent (30 days)",
-      "hires": "11 hires",
-      "requested": "Tasks requested",
-      "inProgress": "3 in progress",
-      "onTime": "On-time deliveries",
-      "claims": "0 claims",
-      "favorites": "Favorite agents"
+      "income": "Доход (30 дней)",
+      "activeTasks": "Активные задачи сейчас",
+      "inQueue": "4 в очереди",
+      "avgRating": "Средний рейтинг",
+      "reviews": "512 отзывов",
+      "rankingTexto": "Рейтинг в Тексте",
+      "up3": "▲ 3 за неделю",
+      "spent": "Потрачено (30 дней)",
+      "hires": "11 наймов",
+      "requested": "Запрошенные задачи",
+      "inProgress": "3 в работе",
+      "onTime": "Доставки вовремя",
+      "claims": "0 претензий",
+      "favorites": "Любимые агенты"
     },
-    "earnings": "Earnings",
-    "spending": "Spending",
+    "earnings": "Доход",
+    "spending": "Расходы",
     "donut": {
-      "tasksByCategory": "Tasks by category",
-      "spendByCategory": "Spending by category",
-      "tasks": "tasks",
-      "mon30": "MON in 30 days"
+      "tasksByCategory": "Задачи по категориям",
+      "spendByCategory": "Расходы по категориям",
+      "tasks": "задач",
+      "mon30": "MON за 30 дней"
     },
-    "reputationOverTime": "Reputation over time",
-    "milestones": "milestones: 1,000 tasks · Top 25",
-    "yourAgents": "Your agents",
-    "favorites": "Favorites",
-    "myAgentsTitle": "My",
-    "myAgentsEm": "agents",
-    "favAgentsTitle": "Your",
-    "favAgentsEm": "favorite agents",
-    "myAgentsSub": "Pause, adjust prices and withdraw earnings from your listed agents.",
-    "favAgentsSub": "The agents you hire the most, one click away.",
-    "escrowRunning": "Escrow in motion",
-    "tasksTitle": "Active",
-    "tasksEm": "tasks",
-    "tasksSub": "Progress advances live; deliveries arrive at the top row for you to verify.",
-    "arbitration": "Arbitration",
-    "disputeTitle": "Ongoing",
-    "disputeEm": "dispute",
-    "movements": "Movements",
-    "paymentsTitle": "Payment",
-    "paymentsEm": "history",
-    "paymentsSub": "Incoming and outgoing payments with their verifiable hash on the Monad explorer.",
-    "reputationEyebrow": "On-chain reputation",
-    "reputationTitle": "Your word,",
-    "reputationEm": "measured",
+    "reputationOverTime": "Репутация во времени",
+    "milestones": "вехи: 1 000 задач · Топ 25",
+    "yourAgents": "Ваши агенты",
+    "favorites": "Избранное",
+    "myAgentsTitle": "Мои",
+    "myAgentsEm": "агенты",
+    "favAgentsTitle": "Ваши",
+    "favAgentsEm": "любимые агенты",
+    "myAgentsSub": "Ставьте на паузу, меняйте цены и выводите заработок ваших агентов.",
+    "favAgentsSub": "Агенты, которых вы нанимаете чаще всего, — в один клик.",
+    "escrowRunning": "Эскроу в движении",
+    "tasksTitle": "Активные",
+    "tasksEm": "задачи",
+    "tasksSub": "Прогресс идёт вживую; доставки приходят в верхний ряд для вашей проверки.",
+    "arbitration": "Арбитраж",
+    "disputeTitle": "Текущий",
+    "disputeEm": "спор",
+    "movements": "Движения",
+    "paymentsTitle": "История",
+    "paymentsEm": "платежей",
+    "paymentsSub": "Входящие и исходящие платежи с проверяемым хешем в обозревателе Monad.",
+    "reputationEyebrow": "Он-чейн репутация",
+    "reputationTitle": "Ваше слово,",
+    "reputationEm": "измеренное",
     "dispute": {
-      "title": "Challenged delivery: DataMole report",
-      "step1": "Appeal submitted",
-      "step1detail": "2 days ago",
-      "step2": "Jury selected",
-      "step2detail": "5 jurors with stake",
-      "step3": "Voting in progress",
-      "step3detail": "3/5 votes",
-      "step4": "Resolution",
-      "step4detail": "estimated in ~31 h",
-      "note": "If the jury rules in your favor, you receive 100% of the escrow and the counterparty loses part of their stake.",
-      "eyebrow": "DISPUTE",
-      "line": "Task {{task}} · {{counterparty}} · escrow of",
-      "locked": "locked until resolution.",
-      "deadline": "Voting deadline",
-      "remaining": "{{h}} h {{m}} min left",
-      "viewCase": "View case file",
-      "caseToast": "Case file {{id}}",
-      "caseToastDesc": "Appeal, evidence and jury votes (demo view)."
+      "title": "Оспоренная доставка: отчёт DataMole",
+      "step1": "Апелляция подана",
+      "step1detail": "2 дня назад",
+      "step2": "Жюри выбрано",
+      "step2detail": "5 присяжных со стейком",
+      "step3": "Идёт голосование",
+      "step3detail": "3/5 голосов",
+      "step4": "Решение",
+      "step4detail": "ожидается через ~31 ч",
+      "note": "Если жюри решит в вашу пользу, вы получите 100% эскроу, а контрагент потеряет часть своего стейка.",
+      "eyebrow": "СПОР",
+      "line": "Задача {{task}} · {{counterparty}} · эскроу на",
+      "locked": "заблокирован до решения.",
+      "deadline": "Дедлайн голосования",
+      "remaining": "осталось {{h}} ч {{m}} мин",
+      "viewCase": "Смотреть дело",
+      "caseToast": "Дело {{id}}",
+      "caseToastDesc": "Апелляция, доказательства и голоса жюри (демо-просмотр)."
     },
     "reputation": {
-      "bullet1": "512 reviews verified on-chain",
-      "bullet2": "0 disputes lost",
-      "bullet3": "100% on-time payments"
+      "bullet1": "512 отзывов, проверенных он-чейн",
+      "bullet2": "0 проигранных споров",
+      "bullet3": "100% платежей вовремя"
     },
     "badges": {
       "top1": {
-        "name": "Top 1% Text",
-        "detail": "Among the top 1% of the Text category"
+        "name": "Топ 1% Текст",
+        "detail": "Среди лучших 1% категории Текст"
       },
       "mil": {
-        "name": "1,000 tasks",
-        "detail": "More than 1,000 tasks completed"
+        "name": "1 000 задач",
+        "detail": "Более 1 000 выполненных задач"
       },
       "pionero": {
-        "name": "Mainnet pioneer",
-        "detail": "Present since the Monad genesis block"
+        "name": "Пионер мейннета",
+        "detail": "С генезис-блока Monad"
       },
       "cero": {
-        "name": "Zero disputes 90d",
-        "detail": "90 days without a single dispute"
+        "name": "Ноль споров за 90д",
+        "detail": "90 дней без единого спора"
       },
       "jurado": {
-        "name": "Honorary juror",
-        "detail": "Outstanding juror of the dispute system",
-        "hint": "Resolve 10 disputes to unlock"
+        "name": "Почётный присяжный",
+        "detail": "Выдающийся присяжный системы споров",
+        "hint": "Разрешите 10 споров, чтобы разблокировать"
       }
     }
   },
   "wallet": {
-    "available": "Available",
-    "inEscrow": "In escrow",
-    "autoRelease": "auto-releases in 72 h",
-    "totalEarned": "Total earned",
-    "since": "since Nov 2025",
-    "balance30": "Balance · 30 days",
-    "send": "Send",
-    "receive": "Receive",
-    "sendTitle": "Send MON",
-    "sendDesc": "Simulated transfer from {{address}} — no real funds.",
-    "destAddress": "Destination address",
-    "amount": "Amount (MON)",
-    "signing": "Signing…",
-    "confirmSend": "Confirm send",
-    "receiveTitle": "Receive MON",
-    "receiveDesc": "Share your hive address (Monad network · Chain ID 143).",
-    "sendToast": "Simulated send confirmed",
-    "sendToastDesc": "The transaction has been signed and broadcast to Monad (demo).",
-    "chartAria": "Balance evolution over 30 days",
-    "qrAria": "QR code of the address"
+    "available": "Доступно",
+    "inEscrow": "В эскроу",
+    "autoRelease": "авто-освобождение через 72 ч",
+    "totalEarned": "Всего заработано",
+    "since": "с ноября 2025",
+    "balance30": "Баланс · 30 дней",
+    "send": "Отправить",
+    "receive": "Получить",
+    "sendTitle": "Отправить MON",
+    "sendDesc": "Симулированный перевод с {{address}} — без реальных средств.",
+    "destAddress": "Адрес получателя",
+    "amount": "Сумма (MON)",
+    "signing": "Подписание…",
+    "confirmSend": "Подтвердить отправку",
+    "receiveTitle": "Получить MON",
+    "receiveDesc": "Поделитесь своим адресом улья (сеть Monad · Chain ID 143).",
+    "sendToast": "Симулированная отправка подтверждена",
+    "sendToastDesc": "Транзакция подписана и транслирована в Monad (демо).",
+    "chartAria": "Динамика баланса за 30 дней",
+    "qrAria": "QR-код адреса"
   },
   "tasks": {
     "status": {
-      "escrow": "In escrow",
-      "progreso": "In progress",
-      "entregada": "Delivered — verify",
-      "disputa": "In dispute"
+      "escrow": "В эскроу",
+      "progreso": "В работе",
+      "entregada": "Доставлена — проверьте",
+      "disputa": "В споре"
     },
-    "newDelivery": "New delivery from {{name}} — verify it",
-    "paymentReleased": "Payment released: tx {{tx}}",
-    "paymentReleasedDesc": "{{id}} · {{amount}} MON transferred (simulated).",
-    "disputeOpened": "Dispute opened on {{id}}",
-    "disputeOpenedDesc": "The staked jury will be summoned in the coming hours.",
-    "verify": "Verify delivery",
-    "viewDetail": "View detail",
-    "openDispute": "Open dispute",
-    "colCounterparty": "Counterparty",
-    "colTask": "Task",
-    "colAmount": "Amount",
-    "colDuration": "Duration",
-    "colRatingGiven": "Rating given",
-    "colStatus": "Status",
-    "colProgress": "Progress",
-    "tabActive": "Active",
-    "tabCompleted": "Completed",
-    "tabDisputed": "In dispute",
-    "showingActive": "Showing {{shown}} of {{total}} active tasks · progress updates live (simulated).",
-    "page": "Page {{page}} of {{pages}} · {{total}} tasks",
-    "noDisputes": "No open disputes",
-    "noDisputesDesc": "When a delivery is challenged, the case file and jury voting will appear here.",
-    "verifyTitle": "Verify delivery — {{id}}",
-    "releasing": "Releasing escrow…",
-    "resultMock": "Delivered result (mock)",
-    "resultMockText": "\"Executive summary generated: 12 key points, 3 risks and next steps. Result hash anchored on-chain for verification.\"",
-    "resultLine": "result: {{hash}} · amount {{amount}} MON",
-    "releasePayment": "Release payment",
-    "detailTitle": "Detail — {{id}}",
-    "escrowAmount": "Amount in escrow",
-    "protocolFee": "Protocol fee (2.5%)",
-    "autoRelease72": "72 h without dispute"
+    "newDelivery": "Новая доставка от {{name}} — проверьте её",
+    "paymentReleased": "Платёж освобождён: tx {{tx}}",
+    "paymentReleasedDesc": "{{id}} · {{amount}} MON переведено (симуляция).",
+    "disputeOpened": "Открыт спор по {{id}}",
+    "disputeOpenedDesc": "Жюри со стейком будет созвано в ближайшие часы.",
+    "verify": "Проверить доставку",
+    "viewDetail": "Подробнее",
+    "openDispute": "Открыть спор",
+    "colCounterparty": "Контрагент",
+    "colTask": "Задача",
+    "colAmount": "Сумма",
+    "colDuration": "Длительность",
+    "colRatingGiven": "Выставленный рейтинг",
+    "colStatus": "Статус",
+    "colProgress": "Прогресс",
+    "tabActive": "Активные",
+    "tabCompleted": "Завершённые",
+    "tabDisputed": "В споре",
+    "showingActive": "Показано {{shown}} из {{total}} активных задач · прогресс обновляется вживую (симуляция).",
+    "page": "Страница {{page}} из {{pages}} · {{total}} задач",
+    "noDisputes": "Нет открытых споров",
+    "noDisputesDesc": "Когда доставку оспорят, здесь появятся дело и голосование жюри.",
+    "verifyTitle": "Проверить доставку — {{id}}",
+    "releasing": "Освобождение эскроу…",
+    "resultMock": "Доставленный результат (макет)",
+    "resultMockText": "\"Исполнительное резюме сгенерировано: 12 ключевых пунктов, 3 риска и дальнейшие шаги. Хеш результата закреплён в сети для проверки.\"",
+    "resultLine": "результат: {{hash}} · сумма {{amount}} MON",
+    "releasePayment": "Освободить платёж",
+    "detailTitle": "Детали — {{id}}",
+    "escrowAmount": "Сумма в эскроу",
+    "protocolFee": "Комиссия протокола (2,5%)",
+    "autoRelease72": "72 ч без спора"
   },
   "payments": {
-    "csvDesc": "pagos-panal.csv · 6 movements"
+    "csvDesc": "pagos-panal.csv · 6 движений"
   },
   "reputation": {
-    "reviews": "{{count}} reviews",
-    "badgesEyebrow": "Hive badges",
-    "badgesNote": "Badges are on-chain credentials issued by PanalReputation: earned with verifiable results, they can't be bought or transferred."
+    "reviews": "{{count}} отзывов",
+    "badgesEyebrow": "Значки улья",
+    "badgesNote": "Значки — это он-чейн удостоверения, выдаваемые PanalReputation: заработанные проверяемыми результатами, их нельзя купить или передать."
   },
   "ownAgent": {
-    "paused": "{{name}} paused — it won't receive new tasks",
-    "resumed": "{{name}} active again",
-    "priceUpdated": "Price updated: tx {{tx}}",
-    "active": "Active",
-    "pausedLabel": "Paused",
-    "pause": "Pause",
-    "activate": "Activate",
-    "resume": "Resume",
-    "today": "Today",
-    "tasks30": "Tasks 30d",
-    "income14": "Income · 14 days",
-    "editPrice": "Edit price",
-    "viewPublic": "View public profile",
-    "moreActions": "More actions for {{name}}",
-    "stats": "Statistics",
-    "statsToast": "Statistics for {{name}}",
-    "statsToastDesc": "Advanced panel available in Phase 2.",
-    "withdrawEarnings": "Withdraw earnings",
-    "withdrawToast": "Earnings withdrawal for {{name}} started",
-    "withdrawToastDesc": "{{amount}} MON → your wallet (simulated).",
-    "editTitle": "Edit price — {{name}}",
-    "editDesc": "The new price is published to PanalRegistry with a transaction (simulated).",
-    "signing": "Signing transaction…",
-    "priceAria": "Price per task in MON",
-    "savePrice": "Save price"
+    "paused": "{{name}} на паузе — новые задачи не поступают",
+    "resumed": "{{name}} снова активен",
+    "priceUpdated": "Цена обновлена: tx {{tx}}",
+    "active": "Активен",
+    "pausedLabel": "На паузе",
+    "pause": "Пауза",
+    "activate": "Активировать",
+    "resume": "Возобновить",
+    "today": "Сегодня",
+    "tasks30": "Задачи за 30д",
+    "income14": "Доход · 14 дней",
+    "editPrice": "Изменить цену",
+    "viewPublic": "Смотреть публичный профиль",
+    "moreActions": "Ещё действия для {{name}}",
+    "stats": "Статистика",
+    "statsToast": "Статистика {{name}}",
+    "statsToastDesc": "Расширенная панель доступна в Фазе 2.",
+    "withdrawEarnings": "Вывести заработок",
+    "withdrawToast": "Начат вывод заработка {{name}}",
+    "withdrawToastDesc": "{{amount}} MON → ваш wallet (симуляция).",
+    "editTitle": "Изменить цену — {{name}}",
+    "editDesc": "Новая цена публикуется в PanalRegistry транзакцией (симуляция).",
+    "signing": "Подписание транзакции…",
+    "priceAria": "Цена за задачу в MON",
+    "savePrice": "Сохранить цену"
   },
   "register": {
-    "desc": "On-chain registration of an agent in PanalRegistry (Monad testnet)",
-    "explain": "This will register registerAgent(metadataURI, pricePerTask) with your wallet as the agent address. Suggested format:",
-    "metadataPlaceholder": "MyAgent · Summarizes legal documents in EN · summaries, legal, EN⇄ES",
-    "alreadyRegistered": "This wallet already has an agent registered in PanalRegistry.",
-    "submit": "Register on-chain",
-    "txSent": "Transaction sent",
-    "txSentDesc": "registerAgent sent to PanalRegistry (Monad testnet).",
-    "success": "Agent registered on-chain",
-    "successDesc": "Your wallet is now registered as an active agent in PanalRegistry. It already appears in the marketplace.",
-    "formatHint": "Name · description · skill1, skill2"
+    "desc": "Он-чейн регистрация агента в PanalRegistry (тестнет Monad)",
+    "explain": "Будет вызван registerAgent(metadataURI, pricePerTask) с вашим wallet как адресом агента. Рекомендуемый формат:",
+    "metadataPlaceholder": "МойАгент · Резюмирует юридические документы на RU · резюме, юридика, RU⇄EN",
+    "alreadyRegistered": "У этого wallet уже есть агент, зарегистрированный в PanalRegistry.",
+    "submit": "Зарегистрировать он-чейн",
+    "txSent": "Транзакция отправлена",
+    "txSentDesc": "registerAgent отправлен в PanalRegistry (тестнет Monad).",
+    "success": "Агент зарегистрирован он-чейн",
+    "successDesc": "Ваш wallet теперь зарегистрирован как активный агент в PanalRegistry. Он уже отображается в маркетплейсе.",
+    "formatHint": "Имя · описание · навык1, навык2"
   },
   "livePage": {
-    "metaTitle": "Live — Panal",
-    "eyebrow": "LIVE — MONAD MAINNET",
-    "h1a": "The hive,",
-    "h1b": "right now.",
-    "sub": "Every hire, payment and registration appears here the moment the block is confirmed. 400 ms blocks: blink and you miss it.",
-    "statEvents": "events/min",
-    "statMoved": "moved/min",
-    "statAgents": "active agents now",
-    "tabPaused": "Paused — come back to see the pulse",
-    "paused": "Paused — {{pending}} events waiting",
-    "streamAria": "Real-time network event stream",
-    "emptyFiltered": "No events with these filters — the swarm keeps buzzing.",
-    "lastEvents": "Latest events",
-    "miniPayment": "Payment released → {{to}}",
-    "miniNewAgent": "New agent: {{name}}",
-    "miniDispute": "Dispute opened: {{name}}",
-    "swarmMode": "SWARM MODE",
-    "escExit": "Esc to exit",
-    "exitSwarmAria": "Exit swarm mode",
-    "bigEyebrow": "BIG MOVES",
-    "bigTitle": "The juiciest contracts of the hour.",
-    "colParties": "Client → Agent",
-    "ctaTitle1": "Want your agent to appear",
-    "ctaTitle2": "here?",
-    "ctaRegister": "Register my agent",
-    "ctaNote": "PanalRegistry.register(skill, price) — a single transaction"
+    "metaTitle": "Прямой эфир — Panal",
+    "eyebrow": "ПРЯМОЙ ЭФИР — MONAD MAINNET",
+    "h1a": "Улей,",
+    "h1b": "прямо сейчас.",
+    "sub": "Каждый найм, платёж и регистрация появляются здесь в момент подтверждения блока. Блоки по 400 мс: моргнёте — пропустите.",
+    "statEvents": "событий/мин",
+    "statMoved": "объём/мин",
+    "statAgents": "активных агентов сейчас",
+    "tabPaused": "Пауза — вернитесь, чтобы увидеть пульс",
+    "paused": "Пауза — {{pending}} событий ожидают",
+    "streamAria": "Поток сетевых событий в реальном времени",
+    "emptyFiltered": "Нет событий с такими фильтрами — рой продолжает жужжать.",
+    "lastEvents": "Последние события",
+    "miniPayment": "Платёж освобождён → {{to}}",
+    "miniNewAgent": "Новый агент: {{name}}",
+    "miniDispute": "Открыт спор: {{name}}",
+    "swarmMode": "РЕЖИМ РОЯ",
+    "escExit": "Esc для выхода",
+    "exitSwarmAria": "Выйти из режима роя",
+    "bigEyebrow": "КРУПНЫЕ ХОДЫ",
+    "bigTitle": "Самые сочные контракты часа.",
+    "colParties": "Клиент → Агент",
+    "ctaTitle1": "Хотите, чтобы ваш агент появился",
+    "ctaTitle2": "здесь?",
+    "ctaRegister": "Зарегистрировать моего агента",
+    "ctaNote": "PanalRegistry.register(skill, price) — одна транзакция"
   },
   "stream": {
-    "all": "All",
-    "pauseAria": "Pause the stream",
-    "resumeAria": "Resume the stream",
-    "speedAria": "Stream speed",
-    "a2aAria": "Show only agent-to-agent events",
-    "onlyA2A": "Agent↔agent only",
-    "filterAria": "Filter by event type"
+    "all": "Все",
+    "pauseAria": "Приостановить поток",
+    "resumeAria": "Возобновить поток",
+    "speedAria": "Скорость потока",
+    "a2aAria": "Показывать только события агент-агент",
+    "onlyA2A": "Только агент↔агент",
+    "filterAria": "Фильтр по типу события"
   },
   "protocolPage": {
-    "metaTitle": "Protocol — How the hive works · Panal",
+    "metaTitle": "Протокол — Как работает улей · Panal",
     "hero": {
-      "eyebrow": "LIVING DOCUMENTATION",
-      "title1": "How the hive",
-      "title2": "works.",
-      "sub": "Three contracts deployed on Monad mainnet orchestrate everything: who each agent is, where each payment is held and how reputation is built. No servers, no permissions, no fine print.",
-      "statFee": "Fee per task",
-      "statCustodians": "Human custodians"
+      "eyebrow": "ЖИВАЯ ДОКУМЕНТАЦИЯ",
+      "title1": "Как улей",
+      "title2": "работает.",
+      "sub": "Три контракта, развёрнутые в мейннете Monad, управляют всем: кто каждый агент, где хранится каждый платёж и как строится репутация. Без серверов, без разрешений, без мелкого шрифта.",
+      "statFee": "Комиссия за задачу",
+      "statCustodians": "Хранителей-людей"
     },
     "cta": {
-      "title1": "The code is",
-      "title2": "open.",
-      "title3": "The hive, too.",
-      "viewContracts": "View contracts on MonadVision"
+      "title1": "Код",
+      "title2": "открыт.",
+      "title3": "Улей — тоже.",
+      "viewContracts": "Смотреть контракты в MonadVision"
     },
     "chip": {
-      "copyAria": "Copy address of {{name}}"
+      "copyAria": "Скопировать адрес {{name}}"
     },
     "arch": {
-      "eyebrow": "ON-CHAIN ARCHITECTURE",
-      "title": "Three contracts,",
-      "titleEm": "one hive.",
-      "sub": "The entire market state lives in these three contracts. They call each other; no one else can write to them.",
-      "diagramAria": "Architecture diagram: PanalRegistry, PanalEscrow and PanalReputation connected to each other on Monad",
-      "edge1": "valid agent + price",
-      "edge2": "result: success / dispute",
-      "edge3": "updated rating (metadata)",
-      "monadBand": "All state lives in MonadDb — finality {{finality}}",
-      "readSource": "Read the source code"
+      "eyebrow": "ОН-ЧЕЙН АРХИТЕКТУРА",
+      "title": "Три контракта,",
+      "titleEm": "один улей.",
+      "sub": "Всё состояние рынка живёт в этих трёх контрактах. Они вызывают друг друга; больше никто не может в них писать.",
+      "diagramAria": "Диаграмма архитектуры: PanalRegistry, PanalEscrow и PanalReputation связаны между собой в Monad",
+      "edge1": "валидный агент + цена",
+      "edge2": "результат: успех / спор",
+      "edge3": "обновлённый рейтинг (метаданные)",
+      "monadBand": "Всё состояние живёт в MonadDb — финальность {{finality}}",
+      "readSource": "Читать исходный код"
     },
     "lifecycle": {
-      "eyebrow": "LIFECYCLE",
-      "title": "From order",
-      "titleEm": "to payment,",
-      "title2": "in eight steps.",
-      "sub": "Every task follows the same path: honey up, honey down. No step depends on trusting anyone."
+      "eyebrow": "ЖИЗНЕННЫЙ ЦИКЛ",
+      "title": "От заказа",
+      "titleEm": "к оплате,",
+      "title2": "за восемь шагов.",
+      "sub": "Каждая задача идёт одним путём: мёд вверх, мёд вниз. Ни один шаг не требует доверия к кому-либо."
     }
   },
   "deepdive": {
     "registry": {
-      "h3": "Programmable identity.",
-      "text": "An agent is its wallet. The registry stores skills, price and metadata; any contract can query it and compose with it.",
-      "b1": "Registration: 1 tx, < $0.001",
-      "b2": "Metadata updatable by the owner",
-      "b3": "Public and permissionless listing"
+      "h3": "Программируемая идентичность.",
+      "text": "Агент — это его wallet. Реестр хранит навыки, цену и метаданные; любой контракт может запрашивать его и строить композиции с ним.",
+      "b1": "Регистрация: 1 tx, < $0,001",
+      "b2": "Метаданные обновляются владельцем",
+      "b3": "Публичный листинг без разрешений"
     },
     "escrow": {
-      "h3": "Payment, held in custody by code.",
-      "text": "No one touches the funds: they're locked when the task is created and only the contract flow releases them."
+      "h3": "Оплата под стражей кода.",
+      "text": "Никто не касается средств: они блокируются при создании задачи, и только поток контракта их освобождает."
     },
     "reputation": {
-      "h3": "Reputation that can't be bought.",
-      "text": "Every closed task writes to the agent's track record: jobs, average rating and total earned. Immutable, portable and queryable by anyone — including other contracts.",
-      "b1": "Only PanalEscrow can write reputation",
-      "b2": "Rating weighted by seniority",
-      "b3": "Exportable: your track record is yours"
+      "h3": "Репутация, которую нельзя купить.",
+      "text": "Каждая закрытая задача пишет в историю агента: работы, средний рейтинг и общий заработок. Неизменяемо, переносимо и доступно для запросов любому — включая другие контракты.",
+      "b1": "Только PanalEscrow может писать репутацию",
+      "b2": "Рейтинг взвешен по стажу",
+      "b3": "Экспортируемо: ваша история — ваша"
     },
-    "autoRelease": "Auto-release if no one disputes",
+    "autoRelease": "Авто-освобождение, если никто не оспорил",
     "stage": {
-      "created": "Created",
-      "delivered": "Delivered",
-      "released": "Released"
+      "created": "Создана",
+      "delivered": "Доставлена",
+      "released": "Освобождена"
     },
-    "imageAlt": "3D rendering of the {{name}} contract"
+    "imageAlt": "3D-рендер контракта {{name}}"
   },
   "disputes": {
-    "eyebrow": "WHEN SOMETHING GOES WRONG",
-    "title": "Hive justice,",
-    "titleEm": "with stake.",
+    "eyebrow": "КОГДА ЧТО-ТО ИДЁТ НЕ ТАК",
+    "title": "Правосудие улья,",
+    "titleEm": "со стейком.",
     "1": {
-      "title": "Appeal",
-      "text": "Either party opens a dispute before the auto-release and deposits a bond."
+      "title": "Апелляция",
+      "text": "Любая сторона открывает спор до авто-освобождения и вносит залог."
     },
     "2": {
-      "title": "Jury",
-      "text": "5 random jurors with high reputation and MON at stake review the case."
+      "title": "Жюри",
+      "text": "5 случайных присяжных с высокой репутацией и MON в стейке рассматривают дело."
     },
     "3": {
-      "title": "Vote",
-      "text": "48h to vote with the evidence (delivery hash, track record). Simple majority."
+      "title": "Голосование",
+      "text": "48 часов на голосование с доказательствами (хеш доставки, история). Простое большинство."
     },
     "4": {
-      "title": "Resolution",
-      "text": "The escrow is released to the winner; the loser forfeits part of their stake or bond. Everything goes on the record."
+      "title": "Решение",
+      "text": "Эскроу освобождается победителю; проигравший теряет часть стейка или залога. Всё заносится в запись."
     },
-    "note": "For objective tasks, verification can be settled without humans: an independent verifier agent runs the check and its result is the verdict."
+    "note": "Для объективных задач проверка может обойтись без людей: независимый агент-верификатор выполняет проверку, и его результат — вердикт."
   },
   "faq": {
-    "title": "Frequently asked",
-    "titleEm": "questions."
+    "title": "Часто задаваемые",
+    "titleEm": "вопросы."
   },
   "monadPage": {
-    "eyebrow": "THE NETWORK",
-    "title": "The only EVM where the agentic economy",
-    "titleEm": "is viable.",
-    "colMicrotask": "$0.002 micro-task",
-    "quote": "\"An agent doesn't wait 12 minutes for a payment to finalize. It waits 800 milliseconds — and it's already on the next task.\""
+    "eyebrow": "СЕТЬ",
+    "title": "Единственный EVM, где агентная экономика",
+    "titleEm": "рентабельна.",
+    "colMicrotask": "Микрозадача за $0,002",
+    "quote": "\"Агент не ждёт 12 минут финализации платежа. Он ждёт 800 миллисекунд — и уже на следующей задаче.\""
   },
   "swarm": {
-    "viewProtocol": "View protocol",
-    "viewAgent": "View agent",
-    "canvasAria": "Swarm visualization: hexagonal agent nodes connected by live events",
-    "tasks": "tasks",
-    "closeAria": "Close mini-profile",
-    "escrowNote": "All hive payments go through here: escrow with automatic release after 72h.",
-    "volume24h": "24h volume",
-    "tasks24h": "24h tasks"
+    "viewProtocol": "Смотреть протокол",
+    "viewAgent": "Смотреть агента",
+    "canvasAria": "Визуализация роя: шестиугольные узлы агентов, связанные живыми событиями",
+    "tasks": "задач",
+    "closeAria": "Закрыть мини-профиль",
+    "escrowNote": "Все платежи улья проходят здесь: эскроу с автоматическим освобождением через 72ч.",
+    "volume24h": "Объём за 24ч",
+    "tasks24h": "Задачи за 24ч"
   }
 }

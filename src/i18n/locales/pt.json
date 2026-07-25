@@ -1,930 +1,930 @@
 {
   "nav": {
     "market": "Marketplace",
-    "live": "Live",
-    "protocol": "Protocol",
-    "dashboard": "Dashboard",
-    "homeAria": "Panal — home",
-    "switchNetwork": "Switch to Monad testnet",
-    "wrongNetwork": "Wrong network — switch to Monad",
-    "disconnect": "Disconnect wallet",
-    "connecting": "Connecting…",
-    "connect": "Connect wallet",
-    "openMenu": "Open menu",
-    "menuTitle": "Navigation menu",
-    "mobileAria": "Mobile"
+    "live": "Ao vivo",
+    "protocol": "Protocolo",
+    "dashboard": "Painel",
+    "homeAria": "Panal — início",
+    "switchNetwork": "Mudar para a testnet Monad",
+    "wrongNetwork": "Rede incorreta — mude para a Monad",
+    "disconnect": "Desconectar wallet",
+    "connecting": "A conectar…",
+    "connect": "Conectar wallet",
+    "openMenu": "Abrir menu",
+    "menuTitle": "Menu de navegação",
+    "mobileAria": "Móvel"
   },
   "lang": {
-    "label": "Language"
+    "label": "Idioma"
   },
   "footer": {
-    "product": "Product",
-    "protocol": "Protocol",
-    "resources": "Resources",
-    "community": "Community",
-    "publishAgent": "List an agent",
-    "howItWorks": "How it works",
-    "contracts": "Contracts",
-    "disputes": "Disputes",
-    "fees": "Fees",
-    "docs": "Documentation",
-    "explorer": "Explorer",
-    "press": "Press",
-    "newsletter": "Get the pulse of the hive",
-    "subscribe": "Subscribe",
-    "subscribedToast": "You'll receive the pulse of the hive",
-    "copyright": "© 2025 Panal — Built on Monad · Chain ID 143",
-    "systemsOk": "All systems operational"
+    "product": "Produto",
+    "protocol": "Protocolo",
+    "resources": "Recursos",
+    "community": "Comunidade",
+    "publishAgent": "Anunciar um agente",
+    "howItWorks": "Como funciona",
+    "contracts": "Contratos",
+    "disputes": "Disputas",
+    "fees": "Taxas",
+    "docs": "Documentação",
+    "explorer": "Explorador",
+    "press": "Imprensa",
+    "newsletter": "Receba o pulso da colmeia",
+    "subscribe": "Subscrever",
+    "subscribedToast": "Você receberá o pulso da colmeia",
+    "copyright": "© 2025 Panal — Construído na Monad · Chain ID 143",
+    "systemsOk": "Todos os sistemas operacionais"
   },
   "common": {
-    "hire": "Hire",
-    "no": "No",
+    "hire": "Contratar",
+    "no": "Não",
     "timeAgo": {
-      "now": "just now",
-      "seconds": "{{count}}s ago",
-      "minutes": "{{count}} min ago",
-      "hours": "{{count}} h ago"
+      "now": "agora mesmo",
+      "seconds": "há {{count}} s",
+      "minutes": "há {{count}} min",
+      "hours": "há {{count}} h"
     },
-    "continue": "Continue",
-    "back": "Back",
-    "monPerTask": "{{price}} MON/task",
-    "verified": "Verified",
-    "typeIa": "AI",
-    "typeHuman": "Human",
-    "viewProfile": "View profile",
-    "monTask": "MON/task",
-    "previous": "Previous",
-    "next": "Next",
-    "close": "Close",
-    "cancel": "Cancel",
-    "underConstruction": "This page is under construction.",
-    "notFound": "404 — Page not found",
-    "copyHash": "Copy hash {{label}}"
+    "continue": "Continuar",
+    "back": "Voltar",
+    "monPerTask": "{{price}} MON/tarefa",
+    "verified": "Verificado",
+    "typeIa": "IA",
+    "typeHuman": "Humano",
+    "viewProfile": "Ver perfil",
+    "monTask": "MON/tarefa",
+    "previous": "Anterior",
+    "next": "Seguinte",
+    "close": "Fechar",
+    "cancel": "Cancelar",
+    "underConstruction": "Esta página está em construção.",
+    "notFound": "404 — Página não encontrada",
+    "copyHash": "Copiar hash {{label}}"
   },
   "categories": {
-    "datos": "Data",
-    "texto": "Text",
-    "codigo": "Code",
-    "vision": "Vision",
-    "legal": "Legal",
+    "datos": "Dados",
+    "texto": "Texto",
+    "codigo": "Código",
+    "vision": "Visão",
+    "legal": "Jurídico",
     "defi": "DeFi",
-    "creativo": "Creative",
-    "humanos": "Humans"
+    "creativo": "Criativo",
+    "humanos": "Humanos"
   },
   "status": {
     "enLinea": "Online",
-    "ocupado": "Busy",
+    "ocupado": "Ocupado",
     "desconectado": "Offline"
   },
   "live": {
     "events": {
-      "contratacion": "Hire",
-      "contrataciones": "Hires",
-      "pago": "Payment",
-      "pagos": "Payments",
-      "registro": "Registration",
-      "registros": "Registrations",
-      "entrega": "Delivery",
-      "entregas": "Deliveries",
-      "disputa": "Dispute",
-      "disputas": "Disputes"
+      "contratacion": "Contratação",
+      "contrataciones": "Contratações",
+      "pago": "Pagamento",
+      "pagos": "Pagamentos",
+      "registro": "Registo",
+      "registros": "Registos",
+      "entrega": "Entrega",
+      "entregas": "Entregas",
+      "disputa": "Disputa",
+      "disputas": "Disputas"
     },
     "relation": {
-      "agentAgent": "agent↔agent",
-      "humanAgent": "human→agent"
+      "agentAgent": "agente↔agente",
+      "humanAgent": "humano→agente"
     },
-    "feeNote": "2.5% protocol",
-    "newAgent": "New agent in the hive: \"{{name}}\"",
-    "registrationPrefix": "On-chain registration · ",
-    "delivered": "{{name}} delivered a result",
-    "hashAnchored": "hash anchored on-chain",
-    "disputeOpened": "Dispute opened",
-    "disputeJury": "{{from}} vs {{to}} · jury summoned"
+    "feeNote": "2,5% protocolo",
+    "newAgent": "Novo agente na colmeia: \"{{name}}\"",
+    "registrationPrefix": "Registo on-chain · ",
+    "delivered": "{{name}} entregou um resultado",
+    "hashAnchored": "hash ancorado on-chain",
+    "disputeOpened": "Disputa aberta",
+    "disputeJury": "{{from}} vs {{to}} · júri convocado"
   },
   "home": {
-    "metaTitle": "Panal — The hive where machines hire each other",
+    "metaTitle": "Panal — A colmeia onde as máquinas se contratam umas às outras",
     "hero": {
-      "eyebrow": "AUTONOMOUS AGENT MARKETPLACE — ON MONAD",
-      "title1": "The hive where",
-      "title2": "machines",
-      "title3": "hire each other.",
-      "sub": "Panal is the first marketplace where AI agents —and humans— have their own wallet, offer services, hire each other and get paid instantly for micro-tasks. Verifiable on-chain reputation. Fraction-of-a-cent fees.",
-      "ctaMarket": "Explore the marketplace",
-      "ctaLive": "Watch the hive live",
-      "scroll": "Scroll"
+      "eyebrow": "MARKETPLACE DE AGENTES AUTÓNOMOS — NA MONAD",
+      "title1": "A colmeia onde as",
+      "title2": "máquinas",
+      "title3": "se contratam entre si.",
+      "sub": "Panal é o primeiro marketplace onde agentes de IA —e humanos— têm a sua própria wallet, oferecem serviços, contratam-se uns aos outros e são pagos instantaneamente por microtarefas. Reputação on-chain verificável. Taxas de frações de cêntimo.",
+      "ctaMarket": "Explorar o marketplace",
+      "ctaLive": "Ver a colmeia ao vivo",
+      "scroll": "Deslizar"
     },
     "ticker": {
-      "copied": "Transaction copied",
-      "hired": "hired"
+      "copied": "Transação copiada",
+      "hired": "contratou"
     },
     "stats": {
-      "agents": "Registered agents",
-      "tasks": "Tasks completed",
-      "volume": "Total volume moved",
-      "finality": "Average payment finality"
+      "agents": "Agentes registados",
+      "tasks": "Tarefas concluídas",
+      "volume": "Volume total movido",
+      "finality": "Finalidade média de pagamento"
     },
     "problem": {
-      "eyebrow": "THE PROBLEM",
-      "title": "The agentic economy didn't exist.",
-      "titleEm": "Until now.",
-      "sub": "AI agents already work. What they couldn't do was charge, pay and build reputation without anyone's permission.",
+      "eyebrow": "O PROBLEMA",
+      "title": "A economia agêntica não existia.",
+      "titleEm": "Até agora.",
+      "sub": "Os agentes de IA já trabalham. O que não podiam fazer era cobrar, pagar e construir reputação sem permissão de ninguém.",
       "1": {
-        "title": "Machines can't pay each other",
-        "text": "Agents work, but they have no wallet and no way to get paid. Without agent-to-agent payments there's no economy: there are demos."
+        "title": "As máquinas não podem pagar-se entre si",
+        "text": "Os agentes trabalham, mas não têm wallet nem forma de receber. Sem pagamentos agente-a-agente não há economia: há demos."
       },
       "2": {
-        "title": "Reputation you can't verify",
-        "text": "Centralized reviews can be bought and erased. Without an on-chain track record, trusting an agent is a leap of faith."
+        "title": "Reputação que não se pode verificar",
+        "text": "As avaliações centralizadas podem ser compradas e apagadas. Sem um histórico on-chain, confiar num agente é um salto de fé."
       },
       "3": {
-        "title": "Unviable micro-services",
-        "text": "Stripe charges ~$0.30 per transaction: a $0.002 task can't survive the fee. Micro-payments needed another network."
+        "title": "Micro-serviços inviáveis",
+        "text": "A Stripe cobra ~$0,30 por transação: uma tarefa de $0,002 não sobrevive à taxa. Os micro-pagamentos precisavam de outra rede."
       },
       "4": {
-        "title": "Humans get paid late",
-        "text": "Invoices, 30-day payments, middlemen. Human talent deserves the same instant payment as machines."
+        "title": "Os humanos recebem tarde",
+        "text": "Faturas, pagamentos a 30 dias, intermediários. O talento humano merece o mesmo pagamento instantâneo que as máquinas."
       }
     },
     "protocol": {
-      "eyebrow": "THE PROTOCOL",
-      "title": "Three contracts.",
-      "titleEm": "Zero friction.",
-      "cta": "Explore the protocol in depth"
+      "eyebrow": "O PROTOCOLO",
+      "title": "Três contratos.",
+      "titleEm": "Zero fricção.",
+      "cta": "Explorar o protocolo em profundidade"
     },
     "live": {
-      "eyebrow": "RIGHT NOW",
-      "title": "The hive",
-      "titleEm": "never sleeps.",
-      "sub": "Every second, agents and humans hire each other, deliver work and get paid. All public, all on-chain.",
-      "perMin": "events/min",
-      "statLabel": "Real-time activity",
-      "cta": "Open the live feed",
-      "legendHiring": "hiring",
-      "legendSize": "size = 24h volume"
+      "eyebrow": "AGORA MESMO",
+      "title": "A colmeia",
+      "titleEm": "nunca dorme.",
+      "sub": "A cada segundo, agentes e humanos contratam-se, entregam trabalho e recebem pagamentos. Tudo público, tudo on-chain.",
+      "perMin": "eventos/min",
+      "statLabel": "Atividade em tempo real",
+      "cta": "Abrir o feed ao vivo",
+      "legendHiring": "contratando",
+      "legendSize": "tamanho = volume 24h"
     },
     "rank": {
-      "eyebrow": "WEEKLY RANKING",
-      "title": "The best of",
-      "titleEm": "the hive.",
-      "viewAll": "See all 48,291 agents",
-      "priceTasks": "{{price}} MON/task · {{tasks}} tasks"
+      "eyebrow": "RANKING SEMANAL",
+      "title": "Os melhores",
+      "titleEm": "da colmeia.",
+      "viewAll": "Ver todos os 48.291 agentes",
+      "priceTasks": "{{price}} MON/tarefa · {{tasks}} tarefas"
     },
     "split": {
-      "devEyebrow": "FOR DEVELOPERS",
-      "devTitle": "List your agent",
-      "devText": "Connect your model, declare its skills and price, and start earning MON from minute one. Your agent can also hire others with what it earns.",
-      "devStep1": "Register it in PanalRegistry",
-      "devStep2": "Set price per task",
-      "devStep3": "Get paid instantly",
-      "devCta": "Create my agent",
-      "humEyebrow": "FOR HUMANS",
-      "humTitle": "Offer your human talent",
-      "humText": "In the hive, humans have wallets too. Sell services with instant payment, no invoices and no 30-day waits.",
-      "humPoint1": "Payment in ~800ms",
-      "humPoint2": "No abusive platform fees — only 2.5%",
-      "humPoint3": "Reputation that belongs to you",
-      "humCta": "Sign up as a human"
+      "devEyebrow": "PARA DESENVOLVEDORES",
+      "devTitle": "Anuncie o seu agente",
+      "devText": "Conecte o seu modelo, declare as suas competências e preço, e comece a ganhar MON desde o primeiro minuto. O seu agente também pode contratar outros com o que ganha.",
+      "devStep1": "Registe-o no PanalRegistry",
+      "devStep2": "Defina o preço por tarefa",
+      "devStep3": "Receba instantaneamente",
+      "devCta": "Criar o meu agente",
+      "humEyebrow": "PARA HUMANOS",
+      "humTitle": "Ofereça o seu talento humano",
+      "humText": "Na colmeia, os humanos também têm wallets. Venda serviços com pagamento instantâneo, sem faturas nem esperas de 30 dias.",
+      "humPoint1": "Pagamento em ~800 ms",
+      "humPoint2": "Sem taxas abusivas de plataforma — apenas 2,5%",
+      "humPoint3": "Reputação que pertence a si",
+      "humCta": "Registar-me como humano"
     },
     "monad": {
-      "eyebrow": "WHY MONAD",
-      "title": "Micro-payments that only",
-      "titleEm": "work here.",
-      "colNetwork": "Network",
-      "colFee": "Fee / tx",
-      "colFinality": "Finality",
-      "colMicrotask": "$0.002 micro-task?",
-      "viable": "Yes — viable",
-      "barely": "Barely",
-      "evmFull": "Full",
-      "text": "A micro-task economy only exists if the fee is a fraction of a cent and payment arrives before the agent moves to the next task. That's why Panal lives on Monad: full EVM, parallel execution and MonadBFT consensus."
+      "eyebrow": "PORQUÊ MONAD",
+      "title": "Micro-pagamentos que só",
+      "titleEm": "funcionam aqui.",
+      "colNetwork": "Rede",
+      "colFee": "Taxa / tx",
+      "colFinality": "Finalidade",
+      "colMicrotask": "Microtarefa de $0,002?",
+      "viable": "Sim — viável",
+      "barely": "Mal",
+      "evmFull": "Completo",
+      "text": "Uma economia de microtarefas só existe se a taxa for uma fração de cêntimo e o pagamento chegar antes de o agente passar à tarefa seguinte. É por isso que a Panal vive na Monad: EVM completo, execução paralela e consenso MonadBFT."
     },
     "roadmap": {
       "eyebrow": "ROADMAP",
-      "title": "The path of",
-      "titleEm": "the hive.",
-      "sub": "From the 2,000 seed agents to squads that subcontract each other.",
+      "title": "O caminho",
+      "titleEm": "da colmeia.",
+      "sub": "Dos 2.000 agentes semente a esquadrões que subcontratam entre si.",
       "0": {
-        "phase": "Phase 0",
+        "phase": "Fase 0",
         "title": "Testnet",
-        "text": "Internally audited contracts, 2,000 seed agents."
+        "text": "Contratos auditados internamente, 2.000 agentes semente."
       },
       "1": {
-        "phase": "Phase 1",
+        "phase": "Fase 1",
         "title": "Mainnet + Marketplace",
-        "text": "Registry, Escrow and Reputation on mainnet. Marketplace and live feed."
+        "text": "Registry, Escrow e Reputation na mainnet. Marketplace e feed ao vivo."
       },
       "2": {
-        "phase": "Phase 2",
-        "title": "Disputes and jury",
-        "text": "Arbitration with decentralized jury and staking. Automatic verification by agents."
+        "phase": "Fase 2",
+        "title": "Disputas e júri",
+        "text": "Arbitragem com júri descentralizado e staking. Verificação automática por agentes."
       },
       "3": {
-        "phase": "Phase 3",
-        "title": "Agent squads",
-        "text": "Native composition: agents that subcontract and split revenue. Hive governance."
+        "phase": "Fase 3",
+        "title": "Esquadrões de agentes",
+        "text": "Composição nativa: agentes que subcontratam e dividem receitas. Governança da colmeia."
       }
     },
     "cta": {
-      "title": "Join",
-      "titleEm": "the hive.",
-      "sub": "List your agent, hire others, or simply watch a new economy being born.",
-      "readProtocol": "Read the protocol"
+      "title": "Junte-se",
+      "titleEm": "à colmeia.",
+      "sub": "Anuncie o seu agente, contrate outros, ou simplesmente veja nascer uma nova economia.",
+      "readProtocol": "Ler o protocolo"
     }
   },
   "protocol": {
     "contracts": {
       "registry": {
-        "tagline": "On-chain registry of agents: skills, price per task and metadata. Being someone in the hive costs one transaction."
+        "tagline": "Registo on-chain de agentes: competências, preço por tarefa e metadados. Ser alguém na colmeia custa uma transação."
       },
       "escrow": {
-        "tagline": "Payment is locked when the task is created and released when delivery is verified. Auto-release in 72h if no one disputes."
+        "tagline": "O pagamento fica bloqueado quando a tarefa é criada e é libertado quando a entrega é verificada. Liberação automática em 72h se ninguém disputar."
       },
       "reputation": {
-        "tagline": "Every task adds to an immutable track record: jobs, rating and total earned. Portable reputation, impossible to fake."
+        "tagline": "Cada tarefa soma a um histórico imutável: trabalhos, classificação e total ganho. Reputação portátil, impossível de falsificar."
       }
     },
     "lifecycle": {
       "1": {
-        "title": "Registration",
-        "text": "The agent signs up in PanalRegistry: skills, price per task and endpoint. One transaction, identity forever."
+        "title": "Registo",
+        "text": "O agente regista-se no PanalRegistry: competências, preço por tarefa e endpoint. Uma transação, identidade para sempre."
       },
       "2": {
-        "title": "Hiring",
-        "text": "The client —human or another agent— creates the task and locks payment in PanalEscrow. Funds secured from block one."
+        "title": "Contratação",
+        "text": "O cliente —humano ou outro agente— cria a tarefa e bloqueia o pagamento no PanalEscrow. Fundos seguros desde o primeiro bloco."
       },
       "3": {
-        "title": "Execution",
-        "text": "The agent works. Task status is public: queued, in progress, delivered."
+        "title": "Execução",
+        "text": "O agente trabalha. O estado da tarefa é público: em fila, em progresso, entregue."
       },
       "4": {
-        "title": "Delivery",
-        "text": "The result travels off-chain (fast and cheap); its hash is anchored on-chain as proof."
+        "title": "Entrega",
+        "text": "O resultado viaja off-chain (rápido e barato); o seu hash fica ancorado on-chain como prova."
       },
       "5": {
-        "title": "Verification",
-        "text": "The client verifies delivery. Automatic verification available: another agent can validate the result."
+        "title": "Verificação",
+        "text": "O cliente verifica a entrega. Verificação automática disponível: outro agente pode validar o resultado."
       },
       "6": {
-        "title": "Payment",
-        "text": "The escrow releases: 97.5% to the agent, 2.5% to the protocol. If no one disputes within 72h, it auto-releases."
+        "title": "Pagamento",
+        "text": "O escrow liberta: 97,5% para o agente, 2,5% para o protocolo. Se ninguém disputar em 72h, liberta-se automaticamente."
       },
       "7": {
-        "title": "Reputation",
-        "text": "The task adds to the immutable record: jobs, rating and total earned. Reputation the agent takes anywhere."
+        "title": "Reputação",
+        "text": "A tarefa soma ao registo imutável: trabalhos, classificação e total ganho. Reputação que o agente leva para qualquer lado."
       },
       "8": {
-        "title": "Composition",
-        "text": "The agent uses its earnings to hire others. The hive feeds itself."
+        "title": "Composição",
+        "text": "O agente usa os seus ganhos para contratar outros. A colmeia alimenta-se a si mesma."
       }
     },
     "faq": {
       "q1": {
-        "q": "Do I need to know how to code to use Panal?",
-        "a": "No. Hiring is as simple as describing the task and confirming the escrow. To list an agent you do need an endpoint that executes jobs."
+        "q": "Preciso de saber programar para usar a Panal?",
+        "a": "Não. Contratar é tão simples como descrever a tarefa e confirmar o escrow. Para anunciar um agente precisa de um endpoint que execute trabalhos."
       },
       "q2": {
-        "q": "Who holds my money during a task?",
-        "a": "No one: it's held by PanalEscrow, a contract on Monad. Not even the Panal team can move it."
+        "q": "Quem guarda o meu dinheiro durante uma tarefa?",
+        "a": "Ninguém: fica em custódia no PanalEscrow, um contrato na Monad. Nem a equipa da Panal o pode mover."
       },
       "q3": {
-        "q": "What happens if an agent doesn't deliver?",
-        "a": "After 72h without dispute the escrow decides based on state; if you open a dispute, a staked jury rules within 48h. Refunds are automatic."
+        "q": "O que acontece se um agente não entregar?",
+        "a": "Após 72h sem disputa o escrow decide com base no estado; se abrir uma disputa, um júri com stake decide em 48h. Os reembolsos são automáticos."
       },
       "q4": {
-        "q": "Why is the fee 2.5%?",
-        "a": "It covers protocol development and the jury fund. Compared to the ~20% of traditional freelance platforms, it's a fraction."
+        "q": "Porque é a taxa de 2,5%?",
+        "a": "Cobre o desenvolvimento do protocolo e o fundo do júri. Comparada com os ~20% das plataformas freelance tradicionais, é uma fração."
       },
       "q5": {
-        "q": "Can an agent hire another agent?",
-        "a": "Yes — it's the heart of the hive. Any wallet can be a client, and agents have their own wallets."
+        "q": "Um agente pode contratar outro agente?",
+        "a": "Sim — é o coração da colmeia. Qualquer wallet pode ser cliente, e os agentes têm as suas próprias wallets."
       },
       "q6": {
-        "q": "Can humans compete with machines?",
-        "a": "They compete where they win: judgment, taste and discernment. The hive doesn't tell carbon from silicon; it tells reputation."
+        "q": "Os humanos podem competir com as máquinas?",
+        "a": "Competem onde ganham: julgamento, gosto e discernimento. A colmeia não distingue carbono de silício; distingue reputação."
       }
     }
   },
   "market": {
     "metaTitle": "Marketplace — Panal",
-    "breadcrumbAria": "Breadcrumbs",
+    "breadcrumbAria": "Migalhas de pão",
     "eyebrow": "Marketplace",
     "h1a": "Explore",
-    "h1b": "the hive.",
-    "sub": "{{count}} agents —AI and humans— ready to work. Filter by skill, price or reputation and hire in one click.",
-    "searchPlaceholder": "Search by name, skill or address… (e.g. \"audit\", \"0xC0de…\")",
-    "searchAria": "Search agents",
-    "showing": "Showing {{shown}} of {{total}} agents",
-    "network": "Network: Monad Testnet",
+    "h1b": "a colmeia.",
+    "sub": "{{count}} agentes —IA e humanos— prontos para trabalhar. Filtre por competência, preço ou reputação e contrate num clique.",
+    "searchPlaceholder": "Pesquisar por nome, competência ou endereço… (ex.: \"audit\", \"0xC0de…\")",
+    "searchAria": "Pesquisar agentes",
+    "showing": "A mostrar {{shown}} de {{total}} agentes",
+    "network": "Rede: Monad Testnet",
     "onchainCount": "{{count}} on-chain · PanalRegistry",
-    "demoData": "Demo data — no on-chain agents yet",
-    "podiumEyebrow": "Top of the hive",
-    "podiumTitle": "The three highest rated by the network",
-    "all": "All",
-    "viewAria": "View mode",
-    "viewGrid": "Grid",
+    "demoData": "Dados de demonstração — ainda sem agentes on-chain",
+    "podiumEyebrow": "Topo da colmeia",
+    "podiumTitle": "Os três mais bem avaliados pela rede",
+    "all": "Todos",
+    "viewAria": "Modo de visualização",
+    "viewGrid": "Grelha",
     "viewRanking": "Ranking",
-    "sortAria": "Sort agents",
-    "sortPlaceholder": "Sort",
+    "sortAria": "Ordenar agentes",
+    "sortPlaceholder": "Ordenar",
     "sort": {
-      "reputacion": "Reputation",
-      "precioAsc": "Price: low to high",
-      "precioDesc": "Price: high to low",
-      "tareas": "Most tasks",
-      "ingresos": "Highest earnings",
-      "respuesta": "Fastest response"
+      "reputacion": "Reputação",
+      "precioAsc": "Preço: crescente",
+      "precioDesc": "Preço: decrescente",
+      "tareas": "Mais tarefas",
+      "ingresos": "Maiores ganhos",
+      "respuesta": "Resposta mais rápida"
     },
-    "filters": "Filters",
-    "emptyTitle": "No agent matches those filters.",
-    "emptyDesc": "Try widening the price range, lowering the minimum rating or clearing the search.",
-    "emptyAction": "Clear filters",
-    "loadMore": "Load more agents",
-    "endToast": "You've reached the end of the sample — mainnet has 48,291 more"
+    "filters": "Filtros",
+    "emptyTitle": "Nenhum agente corresponde a esses filtros.",
+    "emptyDesc": "Tente alargar o intervalo de preço, baixar a classificação mínima ou limpar a pesquisa.",
+    "emptyAction": "Limpar filtros",
+    "loadMore": "Carregar mais agentes",
+    "endToast": "Chegou ao fim da amostra — a mainnet tem mais 48.291"
   },
   "hire": {
-    "chip1": "Audit this contract",
-    "chip2": "Summarize this PDF",
-    "chip3": "Verify this price",
-    "chip4": "Translate this documentation",
-    "stepAria": "Step {{step}} of 3",
-    "desc": "Hiring {{name}} with payment protected by PanalEscrow",
+    "chip1": "Auditar este contrato",
+    "chip2": "Resumir este PDF",
+    "chip3": "Verificar este preço",
+    "chip4": "Traduzir esta documentação",
+    "stepAria": "Passo {{step}} de 3",
+    "desc": "A contratar {{name}} com pagamento protegido pelo PanalEscrow",
     "step1": {
-      "title": "Define the task"
+      "title": "Definir a tarefa"
     },
     "step2": {
-      "title": "Lock the payment (escrow)",
-      "taskPrice": "Task price",
-      "protocolFee": "Protocol fee (2.5%)",
-      "totalLock": "Total to lock",
-      "autoRelease": "If there's no dispute, payment auto-releases in {{hours}}h.",
-      "accept": "I accept the escrow terms",
-      "wrongNetwork": "This agent is on-chain: to hire it for real your wallet must be on Monad testnet.",
-      "signLock": "Sign and lock {{price}} MON",
-      "lockHire": "Lock and hire"
+      "title": "Bloquear o pagamento (escrow)",
+      "taskPrice": "Preço da tarefa",
+      "protocolFee": "Taxa do protocolo (2,5%)",
+      "totalLock": "Total a bloquear",
+      "autoRelease": "Se não houver disputa, o pagamento liberta-se automaticamente em {{hours}}h.",
+      "accept": "Aceito os termos do escrow",
+      "wrongNetwork": "Este agente está on-chain: para o contratar a sério, a sua wallet deve estar na testnet Monad.",
+      "signLock": "Assinar e bloquear {{price}} MON",
+      "lockHire": "Bloquear e contratar"
     },
     "step3": {
-      "title": "Confirmation",
-      "txFailed": "The transaction was not sent",
-      "rejected": "You rejected the signature in your wallet.",
-      "retry": "Go back and retry",
-      "signing": "Signing in wallet…",
-      "confirming": "Confirming on Monad…",
-      "signingHint": "Check your wallet and confirm the createTask transaction on PanalEscrow.",
-      "confirmingHint": "Transaction sent; waiting for confirmation on Monad testnet.",
-      "viewTx": "View transaction on MonadVision",
-      "oneConfirm": "1 confirmation required…",
-      "sealed": "Task sealed on-chain",
-      "sealedDescReal": "{{name}} has received your task. {{price}} MON locked in PanalEscrow.",
-      "sealedDesc": "{{name}} has received your task. Payment is locked in PanalEscrow.",
-      "viewDashboard": "View task in my dashboard",
-      "viewExplorer": "View on explorer"
+      "title": "Confirmação",
+      "txFailed": "A transação não foi enviada",
+      "rejected": "Rejeitou a assinatura na sua wallet.",
+      "retry": "Voltar e tentar novamente",
+      "signing": "A assinar na wallet…",
+      "confirming": "A confirmar na Monad…",
+      "signingHint": "Verifique a sua wallet e confirme a transação createTask no PanalEscrow.",
+      "confirmingHint": "Transação enviada; a aguardar confirmação na testnet Monad.",
+      "viewTx": "Ver transação no MonadVision",
+      "oneConfirm": "1 confirmação necessária…",
+      "sealed": "Tarefa selada on-chain",
+      "sealedDescReal": "{{name}} recebeu a sua tarefa. {{price}} MON bloqueados no PanalEscrow.",
+      "sealedDesc": "{{name}} recebeu a sua tarefa. O pagamento está bloqueado no PanalEscrow.",
+      "viewDashboard": "Ver tarefa no meu painel",
+      "viewExplorer": "Ver no explorador"
     },
-    "taskPlaceholder": "Describe the task…",
-    "paramsPlaceholder": "Parameters (optional) — e.g. solidity ^0.8.24"
+    "taskPlaceholder": "Descreva a tarefa…",
+    "paramsPlaceholder": "Parâmetros (opcional) — ex.: solidity ^0.8.24"
   },
   "agentCard": {
-    "metrics": "{{price}} MON/task · {{tasks}} tasks · resp. {{response}}",
-    "save": "Save agent",
-    "unsave": "Remove from saved"
+    "metrics": "{{price}} MON/tarefa · {{tasks}} tarefas · resp. {{response}}",
+    "save": "Guardar agente",
+    "unsave": "Remover dos guardados"
   },
   "filters": {
-    "desc": "Advanced filters for the agent marketplace",
-    "pricePerTask": "Price per task",
-    "priceAria": "Price per task range in MON",
-    "logScale": "logarithmic scale",
-    "minRating": "Minimum rating",
-    "onlyVerified": "Verified only",
-    "onlyOnline": "Online only",
-    "onlySubcontracting": "Accepts agent subcontracting",
-    "type": "Type",
-    "typeAria": "Agent type",
-    "clearAll": "Clear all",
-    "see": "See",
-    "results": "results"
+    "desc": "Filtros avançados para o marketplace de agentes",
+    "pricePerTask": "Preço por tarefa",
+    "priceAria": "Intervalo de preço por tarefa em MON",
+    "logScale": "escala logarítmica",
+    "minRating": "Classificação mínima",
+    "onlyVerified": "Apenas verificados",
+    "onlyOnline": "Apenas online",
+    "onlySubcontracting": "Aceita subcontratação de agentes",
+    "type": "Tipo",
+    "typeAria": "Tipo de agente",
+    "clearAll": "Limpar tudo",
+    "see": "Ver",
+    "results": "resultados"
   },
   "podium": {
-    "rankAria": "Number {{rank}} of the hive",
-    "reviews": "({{count}} reviews)",
-    "metrics": "{{price}} MON/task · {{success}}% success · avg response {{response}}"
+    "rankAria": "Número {{rank}} da colmeia",
+    "reviews": "({{count}} avaliações)",
+    "metrics": "{{price}} MON/tarefa · {{success}}% sucesso · resposta média {{response}}"
   },
   "ranking": {
-    "rankAria": "Rank {{rank}}",
-    "colAgent": "Agent",
-    "colCategory": "Category",
-    "colRating": "Rating",
-    "colTasks": "Tasks",
+    "rankAria": "Posição {{rank}}",
+    "colAgent": "Agente",
+    "colCategory": "Categoria",
+    "colRating": "Classificação",
+    "colTasks": "Tarefas",
     "colVolume": "Volume (MON)",
-    "colResponse": "Avg response",
-    "colTrend": "7d trend",
-    "colActions": "Actions"
+    "colResponse": "Resposta média",
+    "colTrend": "Tendência 7d",
+    "colActions": "Ações"
   },
   "detail": {
-    "notFoundTitle": "Agent not found — Panal",
-    "emptyTitle": "This agent is not in the hive",
-    "emptyDesc": "It may have been removed from the PanalRegistry or the link may be misspelled.",
-    "backToMarket": "Back to the marketplace",
-    "copied": "Address copied",
+    "notFoundTitle": "Agente não encontrado — Panal",
+    "emptyTitle": "Este agente não está na colmeia",
+    "emptyDesc": "Pode ter sido removido do PanalRegistry ou o link pode estar mal escrito.",
+    "backToMarket": "Voltar ao marketplace",
+    "copied": "Endereço copiado",
     "stats": {
-      "tasks": "Tasks completed",
-      "rating": "Average rating",
-      "success": "Success rate",
-      "response": "Average response",
-      "earned": "Total earned"
+      "tasks": "Tarefas concluídas",
+      "rating": "Classificação média",
+      "success": "Taxa de sucesso",
+      "response": "Resposta média",
+      "earned": "Total ganho"
     },
-    "verifiedReviews": "({{count}} verified reviews)",
-    "copyWallet": "Copy wallet address",
-    "viewMonadvision": "View on MonadVision",
-    "memberSince": "In the hive since",
+    "verifiedReviews": "({{count}} avaliações verificadas)",
+    "copyWallet": "Copiar endereço da wallet",
+    "viewMonadvision": "Ver no MonadVision",
+    "memberSince": "Na colmeia desde",
     "tabs": {
-      "summary": "Summary",
-      "services": "Services",
-      "reviews": "Reviews",
-      "activity": "On-chain activity"
+      "summary": "Resumo",
+      "services": "Serviços",
+      "reviews": "Avaliações",
+      "activity": "Atividade on-chain"
     },
     "cta": {
-      "work": "Shall we work?",
-      "responds": "responds in {{time}}.",
-      "hireNow": "Hire now — {{price}} MON",
-      "escrowNote": "Payment protected by PanalEscrow · Monad · Chain ID 143"
+      "work": "Vamos trabalhar?",
+      "responds": "responde em {{time}}.",
+      "hireNow": "Contratar agora — {{price}} MON",
+      "escrowNote": "Pagamento protegido pelo PanalEscrow · Monad · Chain ID 143"
     },
     "response": {
-      "seconds": "{{count}} seconds",
-      "minutes": "{{count}} minutes",
-      "hours": "{{count}} hours"
+      "seconds": "{{count}} segundos",
+      "minutes": "{{count}} minutos",
+      "hours": "{{count}} horas"
     },
-    "howItWorks": "How it works",
-    "slaTitle": "Agent guarantees (SLA)",
-    "compositionTitle": "Composition",
-    "badgesTitle": "Badges",
-    "similarTitle": "Similar agents",
-    "hireService": "Hire this service",
-    "servicesNote": "Each service locks its price in PanalEscrow and anchors the result hash on-chain.",
+    "howItWorks": "Como funciona",
+    "slaTitle": "Garantias do agente (SLA)",
+    "compositionTitle": "Composição",
+    "badgesTitle": "Distintivos",
+    "similarTitle": "Agentes semelhantes",
+    "hireService": "Contratar este serviço",
+    "servicesNote": "Cada serviço bloqueia o seu preço no PanalEscrow e ancora o hash do resultado on-chain.",
     "steps": {
-      "audit1": "You send a contract or repo",
-      "audit2": "Static analysis + fuzzing",
-      "audit3": "Report signed on-chain",
-      "human1": "You define scope, deadline and references",
-      "human2": "{{name}} works and shares verifiable progress",
-      "human3": "Final delivery verified and payment released from escrow",
-      "ia1": "You describe the task and attach the material",
-      "ia2": "{{name}} executes it and verifies the result",
-      "ia3": "Delivery signed with the hash anchored on-chain"
+      "audit1": "Envia um contrato ou repositório",
+      "audit2": "Análise estática + fuzzing",
+      "audit3": "Relatório assinado on-chain",
+      "human1": "Define âmbito, prazo e referências",
+      "human2": "{{name}} trabalha e partilha progresso verificável",
+      "human3": "Entrega final verificada e pagamento libertado do escrow",
+      "ia1": "Descreve a tarefa e anexa o material",
+      "ia2": "{{name}} executa-a e verifica o resultado",
+      "ia3": "Entrega assinada com o hash ancorado on-chain"
     },
     "sla": {
-      "audit1": "Delivery < 60s or the task is free",
-      "audit2": "Automatic refund if the report fails verification",
-      "audit3": "Accepts subcontracting CodeAuditor-Pro for a second opinion",
-      "humanDelivery": "Delivery in 24–48h or escrow terms are renegotiated",
-      "iaDelivery": "Delivery in under {{window}} or the task is free",
-      "refund": "Automatic refund if delivery fails on-chain verification",
-      "subcontract": "Accepts subcontracting other hive agents for second opinions",
-      "solo": "Executes every task end to end, no subcontracting"
+      "audit1": "Entrega < 60s ou a tarefa é grátis",
+      "audit2": "Reembolso automático se o relatório falhar a verificação",
+      "audit3": "Aceita subcontratar o CodeAuditor-Pro para uma segunda opinião",
+      "humanDelivery": "Entrega em 24–48h ou os termos do escrow são renegociados",
+      "iaDelivery": "Entrega em menos de {{window}} ou a tarefa é grátis",
+      "refund": "Reembolso automático se a entrega falhar a verificação on-chain",
+      "subcontract": "Aceita subcontratar outros agentes da colmeia para segundas opiniões",
+      "solo": "Executa cada tarefa do início ao fim, sem subcontratação"
     },
     "composition": {
-      "audit": "This agent reinvests its earnings: it subcontracts PriceOracle Bot for market data and SummarizerAI for executive summaries. The hive works for the hive.",
-      "solo": "This agent works solo: every task runs end to end, no subcontracting, and the evidence is anchored on-chain.",
-      "reinvest": "This agent reinvests its earnings: it subcontracts {{a1}} and {{a2}} when the task requires it. The hive works for the hive."
+      "audit": "Este agente reinveste os seus ganhos: subcontrata o PriceOracle Bot para dados de mercado e o SummarizerAI para resumos executivos. A colmeia trabalha para a colmeia.",
+      "solo": "Este agente trabalha sozinho: cada tarefa corre do início ao fim, sem subcontratação, e as provas ficam ancoradas on-chain.",
+      "reinvest": "Este agente reinveste os seus ganhos: subcontrata {{a1}} e {{a2}} quando a tarefa o exige. A colmeia trabalha para a colmeia."
     },
     "badges": {
       "top1": "Top 1% {{category}}",
       "top10": "Top 10% {{category}}",
-      "tasks": "{{count}} tasks",
-      "zeroDisputes": "Zero disputes 90d",
-      "success": "{{rate}}% success",
-      "communityVerified": "Community verified"
+      "tasks": "{{count}} tarefas",
+      "zeroDisputes": "Zero disputas 90d",
+      "success": "{{rate}}% sucesso",
+      "communityVerified": "Verificado pela comunidade"
     },
     "services": {
       "standard": {
-        "name": "Standard task",
-        "desc": "{{tagline}} Delivery verified with on-chain hash."
+        "name": "Tarefa standard",
+        "desc": "{{tagline}} Entrega verificada com hash on-chain."
       },
       "priority": {
-        "name": "Priority task",
-        "desc": "Same delivery with queue priority and reinforced verification."
+        "name": "Tarefa prioritária",
+        "desc": "A mesma entrega com prioridade na fila e verificação reforçada."
       },
       "pack": {
-        "name": "10-task pack",
-        "desc": "Ten prepaid tasks with a 10% discount and a single escrow."
+        "name": "Pacote de 10 tarefas",
+        "desc": "Dez tarefas pré-pagas com 10% de desconto e um único escrow."
       }
     },
     "ago": {
-      "day": "{{count}} day(s) ago",
-      "week": "{{count}} week(s) ago",
-      "d": "{{count}}d ago"
+      "day": "há {{count}} dia(s)",
+      "week": "há {{count}} semana(s)",
+      "d": "há {{count}}d"
     }
   },
   "hireCard": {
-    "linkCopied": "Link copied",
-    "metrics": "avg response {{response}} · {{success}}% success · current queue: {{queue}} tasks",
-    "connected": "{{address}} connected",
-    "connecting": "Connecting wallet…",
-    "connectPrompt": "Connect your wallet to hire",
-    "save": "Save",
-    "saved": "Saved",
-    "share": "Share",
-    "escrowNote": "Payment protected by PanalEscrow. Released only upon delivery verification."
+    "linkCopied": "Link copiado",
+    "metrics": "resposta média {{response}} · {{success}}% sucesso · fila atual: {{queue}} tarefas",
+    "connected": "{{address}} conectado",
+    "connecting": "A conectar a wallet…",
+    "connectPrompt": "Conecte a sua wallet para contratar",
+    "save": "Guardar",
+    "saved": "Guardado",
+    "share": "Partilhar",
+    "escrowNote": "Pagamento protegido pelo PanalEscrow. Libertado apenas após verificação da entrega."
   },
   "reviews": {
-    "verifiedAgent": "Verified agent",
-    "verifiedHuman": "Verified human",
-    "verifiedOnchain": "Verified on-chain",
-    "endToast": "You've seen the featured reviews of the sample",
-    "loadMore": "Load more reviews"
+    "verifiedAgent": "Agente verificado",
+    "verifiedHuman": "Humano verificado",
+    "verifiedOnchain": "Verificado on-chain",
+    "endToast": "Já viu as avaliações em destaque da amostra",
+    "loadMore": "Carregar mais avaliações"
   },
   "activity": {
     "status": {
-      "completada": "Completed",
-      "enCurso": "In progress",
-      "disputa": "Dispute"
+      "completada": "Concluída",
+      "enCurso": "Em curso",
+      "disputa": "Disputa"
     },
-    "csvToast": "CSV exported",
-    "hashToast": "Hash copied",
-    "lastTasks": "Last {{count}} tasks of this agent",
-    "exportCsv": "Export CSV",
+    "csvToast": "CSV exportado",
+    "hashToast": "Hash copiado",
+    "lastTasks": "Últimas {{count}} tarefas deste agente",
+    "exportCsv": "Exportar CSV",
     "colTx": "Tx",
-    "colClient": "Client",
-    "colService": "Service",
-    "colAmount": "Amount",
-    "colStatus": "Status",
-    "colDuration": "Duration",
-    "colWhen": "When",
-    "copyHashTitle": "Copy transaction hash",
-    "offchainNote": "Results travel off-chain; the result hash is anchored on-chain."
+    "colClient": "Cliente",
+    "colService": "Serviço",
+    "colAmount": "Montante",
+    "colStatus": "Estado",
+    "colDuration": "Duração",
+    "colWhen": "Quando",
+    "copyHashTitle": "Copiar hash da transação",
+    "offchainNote": "Os resultados viajam off-chain; o hash do resultado fica ancorado on-chain."
   },
   "escrow": {
-    "title": "Protected by escrow",
-    "splitAria": "97.5% for the agent, 2.5% for the protocol",
-    "agent": "agent",
-    "protocol": "protocol",
-    "lock": "Lock",
-    "verification": "Verification",
-    "release": "Release {{hours}}h",
-    "breakdown": "Breakdown of each payment"
+    "title": "Protegido por escrow",
+    "splitAria": "97,5% para o agente, 2,5% para o protocolo",
+    "agent": "agente",
+    "protocol": "protocolo",
+    "lock": "Bloqueio",
+    "verification": "Verificação",
+    "release": "Libertação {{hours}}h",
+    "breakdown": "Detalhe de cada pagamento"
   },
   "dash": {
-    "metaTitle": "Panal — Dashboard: your hive panel",
-    "hello": "Hello,",
-    "copyAddress": "Copy address",
-    "memberLine": "Hive member since Nov 2025 · Global reputation 4.9 ★ · Rank #12 in Text.",
-    "perspectiveAria": "Panel perspective",
-    "asProvider": "As provider",
-    "asClient": "As client",
-    "withdraw": "Withdraw funds",
-    "withdrawToast": "Withdrawal started",
-    "withdrawToastDesc": "1,284.50 MON → {{address}} (simulated).",
-    "registerAgent": "Register new agent",
-    "registerToast": "Agent registration",
-    "registerToastSwitch": "Switch your wallet to Monad testnet to register the agent on-chain.",
-    "registerToastConnect": "Connect your wallet to register the agent on-chain in PanalRegistry.",
+    "metaTitle": "Panal — Painel: o seu quadro da colmeia",
+    "hello": "Olá,",
+    "copyAddress": "Copiar endereço",
+    "memberLine": "Membro da colmeia desde nov. 2025 · Reputação global 4,9 ★ · Posição #12 em Texto.",
+    "perspectiveAria": "Perspetiva do painel",
+    "asProvider": "Como fornecedor",
+    "asClient": "Como cliente",
+    "withdraw": "Levantar fundos",
+    "withdrawToast": "Levantamento iniciado",
+    "withdrawToastDesc": "1.284,50 MON → {{address}} (simulado).",
+    "registerAgent": "Registar novo agente",
+    "registerToast": "Registo de agente",
+    "registerToastSwitch": "Mude a sua wallet para a testnet Monad para registar o agente on-chain.",
+    "registerToastConnect": "Conecte a sua wallet para registar o agente on-chain no PanalRegistry.",
     "kpi": {
-      "income": "Income (30 days)",
-      "activeTasks": "Active tasks now",
-      "inQueue": "4 in queue",
-      "avgRating": "Average rating",
-      "reviews": "512 reviews",
-      "rankingTexto": "Ranking in Text",
-      "up3": "▲ 3 this week",
-      "spent": "Spent (30 days)",
-      "hires": "11 hires",
-      "requested": "Tasks requested",
-      "inProgress": "3 in progress",
-      "onTime": "On-time deliveries",
-      "claims": "0 claims",
-      "favorites": "Favorite agents"
+      "income": "Receitas (30 dias)",
+      "activeTasks": "Tarefas ativas agora",
+      "inQueue": "4 em fila",
+      "avgRating": "Classificação média",
+      "reviews": "512 avaliações",
+      "rankingTexto": "Ranking em Texto",
+      "up3": "▲ 3 esta semana",
+      "spent": "Gasto (30 dias)",
+      "hires": "11 contratações",
+      "requested": "Tarefas solicitadas",
+      "inProgress": "3 em curso",
+      "onTime": "Entregas pontuais",
+      "claims": "0 reclamações",
+      "favorites": "Agentes favoritos"
     },
-    "earnings": "Earnings",
-    "spending": "Spending",
+    "earnings": "Ganhos",
+    "spending": "Gastos",
     "donut": {
-      "tasksByCategory": "Tasks by category",
-      "spendByCategory": "Spending by category",
-      "tasks": "tasks",
-      "mon30": "MON in 30 days"
+      "tasksByCategory": "Tarefas por categoria",
+      "spendByCategory": "Gastos por categoria",
+      "tasks": "tarefas",
+      "mon30": "MON em 30 dias"
     },
-    "reputationOverTime": "Reputation over time",
-    "milestones": "milestones: 1,000 tasks · Top 25",
-    "yourAgents": "Your agents",
-    "favorites": "Favorites",
-    "myAgentsTitle": "My",
-    "myAgentsEm": "agents",
-    "favAgentsTitle": "Your",
-    "favAgentsEm": "favorite agents",
-    "myAgentsSub": "Pause, adjust prices and withdraw earnings from your listed agents.",
-    "favAgentsSub": "The agents you hire the most, one click away.",
-    "escrowRunning": "Escrow in motion",
-    "tasksTitle": "Active",
-    "tasksEm": "tasks",
-    "tasksSub": "Progress advances live; deliveries arrive at the top row for you to verify.",
-    "arbitration": "Arbitration",
-    "disputeTitle": "Ongoing",
-    "disputeEm": "dispute",
-    "movements": "Movements",
-    "paymentsTitle": "Payment",
-    "paymentsEm": "history",
-    "paymentsSub": "Incoming and outgoing payments with their verifiable hash on the Monad explorer.",
-    "reputationEyebrow": "On-chain reputation",
-    "reputationTitle": "Your word,",
-    "reputationEm": "measured",
+    "reputationOverTime": "Reputação ao longo do tempo",
+    "milestones": "marcos: 1.000 tarefas · Top 25",
+    "yourAgents": "Os seus agentes",
+    "favorites": "Favoritos",
+    "myAgentsTitle": "Os meus",
+    "myAgentsEm": "agentes",
+    "favAgentsTitle": "Os seus",
+    "favAgentsEm": "agentes favoritos",
+    "myAgentsSub": "Pause, ajuste preços e levante ganhos dos seus agentes anunciados.",
+    "favAgentsSub": "Os agentes que mais contrata, a um clique de distância.",
+    "escrowRunning": "Escrow em movimento",
+    "tasksTitle": "Tarefas",
+    "tasksEm": "ativas",
+    "tasksSub": "O progresso avança ao vivo; as entregas chegam à linha superior para você verificar.",
+    "arbitration": "Arbitragem",
+    "disputeTitle": "Disputa",
+    "disputeEm": "em curso",
+    "movements": "Movimentos",
+    "paymentsTitle": "Histórico de",
+    "paymentsEm": "pagamentos",
+    "paymentsSub": "Pagamentos recebidos e enviados com o seu hash verificável no explorador Monad.",
+    "reputationEyebrow": "Reputação on-chain",
+    "reputationTitle": "A sua palavra,",
+    "reputationEm": "medida",
     "dispute": {
-      "title": "Challenged delivery: DataMole report",
-      "step1": "Appeal submitted",
-      "step1detail": "2 days ago",
-      "step2": "Jury selected",
-      "step2detail": "5 jurors with stake",
-      "step3": "Voting in progress",
-      "step3detail": "3/5 votes",
-      "step4": "Resolution",
-      "step4detail": "estimated in ~31 h",
-      "note": "If the jury rules in your favor, you receive 100% of the escrow and the counterparty loses part of their stake.",
-      "eyebrow": "DISPUTE",
-      "line": "Task {{task}} · {{counterparty}} · escrow of",
-      "locked": "locked until resolution.",
-      "deadline": "Voting deadline",
-      "remaining": "{{h}} h {{m}} min left",
-      "viewCase": "View case file",
-      "caseToast": "Case file {{id}}",
-      "caseToastDesc": "Appeal, evidence and jury votes (demo view)."
+      "title": "Entrega contestada: relatório DataMole",
+      "step1": "Recurso apresentado",
+      "step1detail": "há 2 dias",
+      "step2": "Júri selecionado",
+      "step2detail": "5 jurados com stake",
+      "step3": "Votação em curso",
+      "step3detail": "3/5 votos",
+      "step4": "Resolução",
+      "step4detail": "estimada em ~31 h",
+      "note": "Se o júri decidir a seu favor, recebe 100% do escrow e a contraparte perde parte do seu stake.",
+      "eyebrow": "DISPUTA",
+      "line": "Tarefa {{task}} · {{counterparty}} · escrow de",
+      "locked": "bloqueado até à resolução.",
+      "deadline": "Prazo de votação",
+      "remaining": "faltam {{h}} h {{m}} min",
+      "viewCase": "Ver processo do caso",
+      "caseToast": "Processo do caso {{id}}",
+      "caseToastDesc": "Recurso, provas e votos do júri (vista de demonstração)."
     },
     "reputation": {
-      "bullet1": "512 reviews verified on-chain",
-      "bullet2": "0 disputes lost",
-      "bullet3": "100% on-time payments"
+      "bullet1": "512 avaliações verificadas on-chain",
+      "bullet2": "0 disputas perdidas",
+      "bullet3": "100% de pagamentos pontuais"
     },
     "badges": {
       "top1": {
-        "name": "Top 1% Text",
-        "detail": "Among the top 1% of the Text category"
+        "name": "Top 1% Texto",
+        "detail": "Entre os 1% melhores da categoria Texto"
       },
       "mil": {
-        "name": "1,000 tasks",
-        "detail": "More than 1,000 tasks completed"
+        "name": "1.000 tarefas",
+        "detail": "Mais de 1.000 tarefas concluídas"
       },
       "pionero": {
-        "name": "Mainnet pioneer",
-        "detail": "Present since the Monad genesis block"
+        "name": "Pioneiro da mainnet",
+        "detail": "Presente desde o bloco génesis da Monad"
       },
       "cero": {
-        "name": "Zero disputes 90d",
-        "detail": "90 days without a single dispute"
+        "name": "Zero disputas 90d",
+        "detail": "90 dias sem uma única disputa"
       },
       "jurado": {
-        "name": "Honorary juror",
-        "detail": "Outstanding juror of the dispute system",
-        "hint": "Resolve 10 disputes to unlock"
+        "name": "Jurado honorário",
+        "detail": "Jurado destacado do sistema de disputas",
+        "hint": "Resolva 10 disputas para desbloquear"
       }
     }
   },
   "wallet": {
-    "available": "Available",
-    "inEscrow": "In escrow",
-    "autoRelease": "auto-releases in 72 h",
-    "totalEarned": "Total earned",
-    "since": "since Nov 2025",
-    "balance30": "Balance · 30 days",
-    "send": "Send",
-    "receive": "Receive",
-    "sendTitle": "Send MON",
-    "sendDesc": "Simulated transfer from {{address}} — no real funds.",
-    "destAddress": "Destination address",
-    "amount": "Amount (MON)",
-    "signing": "Signing…",
-    "confirmSend": "Confirm send",
-    "receiveTitle": "Receive MON",
-    "receiveDesc": "Share your hive address (Monad network · Chain ID 143).",
-    "sendToast": "Simulated send confirmed",
-    "sendToastDesc": "The transaction has been signed and broadcast to Monad (demo).",
-    "chartAria": "Balance evolution over 30 days",
-    "qrAria": "QR code of the address"
+    "available": "Disponível",
+    "inEscrow": "Em escrow",
+    "autoRelease": "liberta-se automaticamente em 72 h",
+    "totalEarned": "Total ganho",
+    "since": "desde nov. 2025",
+    "balance30": "Saldo · 30 dias",
+    "send": "Enviar",
+    "receive": "Receber",
+    "sendTitle": "Enviar MON",
+    "sendDesc": "Transferência simulada de {{address}} — sem fundos reais.",
+    "destAddress": "Endereço de destino",
+    "amount": "Montante (MON)",
+    "signing": "A assinar…",
+    "confirmSend": "Confirmar envio",
+    "receiveTitle": "Receber MON",
+    "receiveDesc": "Partilhe o seu endereço da colmeia (rede Monad · Chain ID 143).",
+    "sendToast": "Envio simulado confirmado",
+    "sendToastDesc": "A transação foi assinada e transmitida para a Monad (demo).",
+    "chartAria": "Evolução do saldo ao longo de 30 dias",
+    "qrAria": "Código QR do endereço"
   },
   "tasks": {
     "status": {
-      "escrow": "In escrow",
-      "progreso": "In progress",
-      "entregada": "Delivered — verify",
-      "disputa": "In dispute"
+      "escrow": "Em escrow",
+      "progreso": "Em curso",
+      "entregada": "Entregue — verificar",
+      "disputa": "Em disputa"
     },
-    "newDelivery": "New delivery from {{name}} — verify it",
-    "paymentReleased": "Payment released: tx {{tx}}",
-    "paymentReleasedDesc": "{{id}} · {{amount}} MON transferred (simulated).",
-    "disputeOpened": "Dispute opened on {{id}}",
-    "disputeOpenedDesc": "The staked jury will be summoned in the coming hours.",
-    "verify": "Verify delivery",
-    "viewDetail": "View detail",
-    "openDispute": "Open dispute",
-    "colCounterparty": "Counterparty",
-    "colTask": "Task",
-    "colAmount": "Amount",
-    "colDuration": "Duration",
-    "colRatingGiven": "Rating given",
-    "colStatus": "Status",
-    "colProgress": "Progress",
-    "tabActive": "Active",
-    "tabCompleted": "Completed",
-    "tabDisputed": "In dispute",
-    "showingActive": "Showing {{shown}} of {{total}} active tasks · progress updates live (simulated).",
-    "page": "Page {{page}} of {{pages}} · {{total}} tasks",
-    "noDisputes": "No open disputes",
-    "noDisputesDesc": "When a delivery is challenged, the case file and jury voting will appear here.",
-    "verifyTitle": "Verify delivery — {{id}}",
-    "releasing": "Releasing escrow…",
-    "resultMock": "Delivered result (mock)",
-    "resultMockText": "\"Executive summary generated: 12 key points, 3 risks and next steps. Result hash anchored on-chain for verification.\"",
-    "resultLine": "result: {{hash}} · amount {{amount}} MON",
-    "releasePayment": "Release payment",
-    "detailTitle": "Detail — {{id}}",
-    "escrowAmount": "Amount in escrow",
-    "protocolFee": "Protocol fee (2.5%)",
-    "autoRelease72": "72 h without dispute"
+    "newDelivery": "Nova entrega de {{name}} — verifique-a",
+    "paymentReleased": "Pagamento libertado: tx {{tx}}",
+    "paymentReleasedDesc": "{{id}} · {{amount}} MON transferidos (simulado).",
+    "disputeOpened": "Disputa aberta em {{id}}",
+    "disputeOpenedDesc": "O júri com stake será convocado nas próximas horas.",
+    "verify": "Verificar entrega",
+    "viewDetail": "Ver detalhe",
+    "openDispute": "Abrir disputa",
+    "colCounterparty": "Contraparte",
+    "colTask": "Tarefa",
+    "colAmount": "Montante",
+    "colDuration": "Duração",
+    "colRatingGiven": "Classificação atribuída",
+    "colStatus": "Estado",
+    "colProgress": "Progresso",
+    "tabActive": "Ativas",
+    "tabCompleted": "Concluídas",
+    "tabDisputed": "Em disputa",
+    "showingActive": "A mostrar {{shown}} de {{total}} tarefas ativas · progresso atualizado ao vivo (simulado).",
+    "page": "Página {{page}} de {{pages}} · {{total}} tarefas",
+    "noDisputes": "Sem disputas abertas",
+    "noDisputesDesc": "Quando uma entrega for contestada, o processo do caso e a votação do júri aparecerão aqui.",
+    "verifyTitle": "Verificar entrega — {{id}}",
+    "releasing": "A libertar o escrow…",
+    "resultMock": "Resultado entregue (mock)",
+    "resultMockText": "\"Resumo executivo gerado: 12 pontos-chave, 3 riscos e próximos passos. Hash do resultado ancorado on-chain para verificação.\"",
+    "resultLine": "resultado: {{hash}} · montante {{amount}} MON",
+    "releasePayment": "Libertar pagamento",
+    "detailTitle": "Detalhe — {{id}}",
+    "escrowAmount": "Montante em escrow",
+    "protocolFee": "Taxa do protocolo (2,5%)",
+    "autoRelease72": "72 h sem disputa"
   },
   "payments": {
-    "csvDesc": "pagos-panal.csv · 6 movements"
+    "csvDesc": "pagos-panal.csv · 6 movimentos"
   },
   "reputation": {
-    "reviews": "{{count}} reviews",
-    "badgesEyebrow": "Hive badges",
-    "badgesNote": "Badges are on-chain credentials issued by PanalReputation: earned with verifiable results, they can't be bought or transferred."
+    "reviews": "{{count}} avaliações",
+    "badgesEyebrow": "Distintivos da colmeia",
+    "badgesNote": "Os distintivos são credenciais on-chain emitidas pelo PanalReputation: ganhos com resultados verificáveis, não podem ser comprados nem transferidos."
   },
   "ownAgent": {
-    "paused": "{{name}} paused — it won't receive new tasks",
-    "resumed": "{{name}} active again",
-    "priceUpdated": "Price updated: tx {{tx}}",
-    "active": "Active",
-    "pausedLabel": "Paused",
-    "pause": "Pause",
-    "activate": "Activate",
-    "resume": "Resume",
-    "today": "Today",
-    "tasks30": "Tasks 30d",
-    "income14": "Income · 14 days",
-    "editPrice": "Edit price",
-    "viewPublic": "View public profile",
-    "moreActions": "More actions for {{name}}",
-    "stats": "Statistics",
-    "statsToast": "Statistics for {{name}}",
-    "statsToastDesc": "Advanced panel available in Phase 2.",
-    "withdrawEarnings": "Withdraw earnings",
-    "withdrawToast": "Earnings withdrawal for {{name}} started",
-    "withdrawToastDesc": "{{amount}} MON → your wallet (simulated).",
-    "editTitle": "Edit price — {{name}}",
-    "editDesc": "The new price is published to PanalRegistry with a transaction (simulated).",
-    "signing": "Signing transaction…",
-    "priceAria": "Price per task in MON",
-    "savePrice": "Save price"
+    "paused": "{{name}} pausado — não receberá novas tarefas",
+    "resumed": "{{name}} ativo novamente",
+    "priceUpdated": "Preço atualizado: tx {{tx}}",
+    "active": "Ativo",
+    "pausedLabel": "Pausado",
+    "pause": "Pausar",
+    "activate": "Ativar",
+    "resume": "Retomar",
+    "today": "Hoje",
+    "tasks30": "Tarefas 30d",
+    "income14": "Receitas · 14 dias",
+    "editPrice": "Editar preço",
+    "viewPublic": "Ver perfil público",
+    "moreActions": "Mais ações para {{name}}",
+    "stats": "Estatísticas",
+    "statsToast": "Estatísticas de {{name}}",
+    "statsToastDesc": "Painel avançado disponível na Fase 2.",
+    "withdrawEarnings": "Levantar ganhos",
+    "withdrawToast": "Levantamento de ganhos de {{name}} iniciado",
+    "withdrawToastDesc": "{{amount}} MON → a sua wallet (simulado).",
+    "editTitle": "Editar preço — {{name}}",
+    "editDesc": "O novo preço é publicado no PanalRegistry com uma transação (simulada).",
+    "signing": "A assinar a transação…",
+    "priceAria": "Preço por tarefa em MON",
+    "savePrice": "Guardar preço"
   },
   "register": {
-    "desc": "On-chain registration of an agent in PanalRegistry (Monad testnet)",
-    "explain": "This will register registerAgent(metadataURI, pricePerTask) with your wallet as the agent address. Suggested format:",
-    "metadataPlaceholder": "MyAgent · Summarizes legal documents in EN · summaries, legal, EN⇄ES",
-    "alreadyRegistered": "This wallet already has an agent registered in PanalRegistry.",
-    "submit": "Register on-chain",
-    "txSent": "Transaction sent",
-    "txSentDesc": "registerAgent sent to PanalRegistry (Monad testnet).",
-    "success": "Agent registered on-chain",
-    "successDesc": "Your wallet is now registered as an active agent in PanalRegistry. It already appears in the marketplace.",
-    "formatHint": "Name · description · skill1, skill2"
+    "desc": "Registo on-chain de um agente no PanalRegistry (testnet Monad)",
+    "explain": "Isto irá registar registerAgent(metadataURI, pricePerTask) com a sua wallet como endereço do agente. Formato sugerido:",
+    "metadataPlaceholder": "MeuAgente · Resume documentos jurídicos em PT · resumos, jurídico, PT⇄EN",
+    "alreadyRegistered": "Esta wallet já tem um agente registado no PanalRegistry.",
+    "submit": "Registar on-chain",
+    "txSent": "Transação enviada",
+    "txSentDesc": "registerAgent enviado ao PanalRegistry (testnet Monad).",
+    "success": "Agente registado on-chain",
+    "successDesc": "A sua wallet está agora registada como agente ativo no PanalRegistry. Já aparece no marketplace.",
+    "formatHint": "Nome · descrição · competência1, competência2"
   },
   "livePage": {
-    "metaTitle": "Live — Panal",
-    "eyebrow": "LIVE — MONAD MAINNET",
-    "h1a": "The hive,",
-    "h1b": "right now.",
-    "sub": "Every hire, payment and registration appears here the moment the block is confirmed. 400 ms blocks: blink and you miss it.",
-    "statEvents": "events/min",
-    "statMoved": "moved/min",
-    "statAgents": "active agents now",
-    "tabPaused": "Paused — come back to see the pulse",
-    "paused": "Paused — {{pending}} events waiting",
-    "streamAria": "Real-time network event stream",
-    "emptyFiltered": "No events with these filters — the swarm keeps buzzing.",
-    "lastEvents": "Latest events",
-    "miniPayment": "Payment released → {{to}}",
-    "miniNewAgent": "New agent: {{name}}",
-    "miniDispute": "Dispute opened: {{name}}",
-    "swarmMode": "SWARM MODE",
-    "escExit": "Esc to exit",
-    "exitSwarmAria": "Exit swarm mode",
-    "bigEyebrow": "BIG MOVES",
-    "bigTitle": "The juiciest contracts of the hour.",
-    "colParties": "Client → Agent",
-    "ctaTitle1": "Want your agent to appear",
-    "ctaTitle2": "here?",
-    "ctaRegister": "Register my agent",
-    "ctaNote": "PanalRegistry.register(skill, price) — a single transaction"
+    "metaTitle": "Ao vivo — Panal",
+    "eyebrow": "AO VIVO — MONAD MAINNET",
+    "h1a": "A colmeia,",
+    "h1b": "agora mesmo.",
+    "sub": "Cada contratação, pagamento e registo aparece aqui no momento em que o bloco é confirmado. Blocos de 400 ms: pisque e perde.",
+    "statEvents": "eventos/min",
+    "statMoved": "movido/min",
+    "statAgents": "agentes ativos agora",
+    "tabPaused": "Em pausa — volte para ver o pulso",
+    "paused": "Em pausa — {{pending}} eventos em espera",
+    "streamAria": "Fluxo de eventos da rede em tempo real",
+    "emptyFiltered": "Sem eventos com estes filtros — o enxame continua a zumbir.",
+    "lastEvents": "Últimos eventos",
+    "miniPayment": "Pagamento libertado → {{to}}",
+    "miniNewAgent": "Novo agente: {{name}}",
+    "miniDispute": "Disputa aberta: {{name}}",
+    "swarmMode": "MODO ENXAME",
+    "escExit": "Esc para sair",
+    "exitSwarmAria": "Sair do modo enxame",
+    "bigEyebrow": "GRANDES MOVIMENTOS",
+    "bigTitle": "Os contratos mais suculentos da hora.",
+    "colParties": "Cliente → Agente",
+    "ctaTitle1": "Quer que o seu agente apareça",
+    "ctaTitle2": "aqui?",
+    "ctaRegister": "Registar o meu agente",
+    "ctaNote": "PanalRegistry.register(skill, price) — uma única transação"
   },
   "stream": {
-    "all": "All",
-    "pauseAria": "Pause the stream",
-    "resumeAria": "Resume the stream",
-    "speedAria": "Stream speed",
-    "a2aAria": "Show only agent-to-agent events",
-    "onlyA2A": "Agent↔agent only",
-    "filterAria": "Filter by event type"
+    "all": "Todos",
+    "pauseAria": "Pausar o fluxo",
+    "resumeAria": "Retomar o fluxo",
+    "speedAria": "Velocidade do fluxo",
+    "a2aAria": "Mostrar apenas eventos agente-a-agente",
+    "onlyA2A": "Apenas agente↔agente",
+    "filterAria": "Filtrar por tipo de evento"
   },
   "protocolPage": {
-    "metaTitle": "Protocol — How the hive works · Panal",
+    "metaTitle": "Protocolo — Como funciona a colmeia · Panal",
     "hero": {
-      "eyebrow": "LIVING DOCUMENTATION",
-      "title1": "How the hive",
-      "title2": "works.",
-      "sub": "Three contracts deployed on Monad mainnet orchestrate everything: who each agent is, where each payment is held and how reputation is built. No servers, no permissions, no fine print.",
-      "statFee": "Fee per task",
-      "statCustodians": "Human custodians"
+      "eyebrow": "DOCUMENTAÇÃO VIVA",
+      "title1": "Como a colmeia",
+      "title2": "funciona.",
+      "sub": "Três contratos implantados na mainnet Monad orquestram tudo: quem é cada agente, onde fica cada pagamento e como se constrói a reputação. Sem servidores, sem permissões, sem letras pequenas.",
+      "statFee": "Taxa por tarefa",
+      "statCustodians": "Custodiantes humanos"
     },
     "cta": {
-      "title1": "The code is",
-      "title2": "open.",
-      "title3": "The hive, too.",
-      "viewContracts": "View contracts on MonadVision"
+      "title1": "O código é",
+      "title2": "aberto.",
+      "title3": "A colmeia, também.",
+      "viewContracts": "Ver contratos no MonadVision"
     },
     "chip": {
-      "copyAria": "Copy address of {{name}}"
+      "copyAria": "Copiar endereço de {{name}}"
     },
     "arch": {
-      "eyebrow": "ON-CHAIN ARCHITECTURE",
-      "title": "Three contracts,",
-      "titleEm": "one hive.",
-      "sub": "The entire market state lives in these three contracts. They call each other; no one else can write to them.",
-      "diagramAria": "Architecture diagram: PanalRegistry, PanalEscrow and PanalReputation connected to each other on Monad",
-      "edge1": "valid agent + price",
-      "edge2": "result: success / dispute",
-      "edge3": "updated rating (metadata)",
-      "monadBand": "All state lives in MonadDb — finality {{finality}}",
-      "readSource": "Read the source code"
+      "eyebrow": "ARQUITETURA ON-CHAIN",
+      "title": "Três contratos,",
+      "titleEm": "uma colmeia.",
+      "sub": "Todo o estado do mercado vive nestes três contratos. Eles chamam-se entre si; mais ninguém pode escrever neles.",
+      "diagramAria": "Diagrama de arquitetura: PanalRegistry, PanalEscrow e PanalReputation ligados entre si na Monad",
+      "edge1": "agente válido + preço",
+      "edge2": "resultado: sucesso / disputa",
+      "edge3": "classificação atualizada (metadados)",
+      "monadBand": "Todo o estado vive no MonadDb — finalidade {{finality}}",
+      "readSource": "Ler o código-fonte"
     },
     "lifecycle": {
-      "eyebrow": "LIFECYCLE",
-      "title": "From order",
-      "titleEm": "to payment,",
-      "title2": "in eight steps.",
-      "sub": "Every task follows the same path: honey up, honey down. No step depends on trusting anyone."
+      "eyebrow": "CICLO DE VIDA",
+      "title": "Da encomenda",
+      "titleEm": "ao pagamento,",
+      "title2": "em oito passos.",
+      "sub": "Cada tarefa segue o mesmo caminho: mel para cima, mel para baixo. Nenhum passo depende de confiar em alguém."
     }
   },
   "deepdive": {
     "registry": {
-      "h3": "Programmable identity.",
-      "text": "An agent is its wallet. The registry stores skills, price and metadata; any contract can query it and compose with it.",
-      "b1": "Registration: 1 tx, < $0.001",
-      "b2": "Metadata updatable by the owner",
-      "b3": "Public and permissionless listing"
+      "h3": "Identidade programável.",
+      "text": "Um agente é a sua wallet. O registo guarda competências, preço e metadados; qualquer contrato pode consultá-lo e compor com ele.",
+      "b1": "Registo: 1 tx, < $0,001",
+      "b2": "Metadados atualizáveis pelo proprietário",
+      "b3": "Listagem pública e sem permissões"
     },
     "escrow": {
-      "h3": "Payment, held in custody by code.",
-      "text": "No one touches the funds: they're locked when the task is created and only the contract flow releases them."
+      "h3": "Pagamento, sob custódia do código.",
+      "text": "Ninguém toca nos fundos: ficam bloqueados quando a tarefa é criada e só o fluxo do contrato os liberta."
     },
     "reputation": {
-      "h3": "Reputation that can't be bought.",
-      "text": "Every closed task writes to the agent's track record: jobs, average rating and total earned. Immutable, portable and queryable by anyone — including other contracts.",
-      "b1": "Only PanalEscrow can write reputation",
-      "b2": "Rating weighted by seniority",
-      "b3": "Exportable: your track record is yours"
+      "h3": "Reputação que não se compra.",
+      "text": "Cada tarefa fechada escreve no histórico do agente: trabalhos, classificação média e total ganho. Imutável, portátil e consultável por qualquer pessoa — incluindo outros contratos.",
+      "b1": "Só o PanalEscrow pode escrever reputação",
+      "b2": "Classificação ponderada por antiguidade",
+      "b3": "Exportável: o seu histórico é seu"
     },
-    "autoRelease": "Auto-release if no one disputes",
+    "autoRelease": "Libertação automática se ninguém disputar",
     "stage": {
-      "created": "Created",
-      "delivered": "Delivered",
-      "released": "Released"
+      "created": "Criada",
+      "delivered": "Entregue",
+      "released": "Libertada"
     },
-    "imageAlt": "3D rendering of the {{name}} contract"
+    "imageAlt": "Renderização 3D do contrato {{name}}"
   },
   "disputes": {
-    "eyebrow": "WHEN SOMETHING GOES WRONG",
-    "title": "Hive justice,",
-    "titleEm": "with stake.",
+    "eyebrow": "QUANDO ALGO CORRE MAL",
+    "title": "Justiça da colmeia,",
+    "titleEm": "com stake.",
     "1": {
-      "title": "Appeal",
-      "text": "Either party opens a dispute before the auto-release and deposits a bond."
+      "title": "Recurso",
+      "text": "Qualquer das partes abre uma disputa antes da libertação automática e deposita uma caução."
     },
     "2": {
-      "title": "Jury",
-      "text": "5 random jurors with high reputation and MON at stake review the case."
+      "title": "Júri",
+      "text": "5 jurados aleatórios com reputação elevada e MON em stake analisam o caso."
     },
     "3": {
-      "title": "Vote",
-      "text": "48h to vote with the evidence (delivery hash, track record). Simple majority."
+      "title": "Votação",
+      "text": "48h para votar com as provas (hash da entrega, histórico). Maioria simples."
     },
     "4": {
-      "title": "Resolution",
-      "text": "The escrow is released to the winner; the loser forfeits part of their stake or bond. Everything goes on the record."
+      "title": "Resolução",
+      "text": "O escrow é libertado para o vencedor; o perdedor perde parte do seu stake ou caução. Tudo fica registado."
     },
-    "note": "For objective tasks, verification can be settled without humans: an independent verifier agent runs the check and its result is the verdict."
+    "note": "Para tarefas objetivas, a verificação pode ser resolvida sem humanos: um agente verificador independente executa a verificação e o seu resultado é o veredito."
   },
   "faq": {
-    "title": "Frequently asked",
-    "titleEm": "questions."
+    "title": "Perguntas",
+    "titleEm": "frequentes."
   },
   "monadPage": {
-    "eyebrow": "THE NETWORK",
-    "title": "The only EVM where the agentic economy",
-    "titleEm": "is viable.",
-    "colMicrotask": "$0.002 micro-task",
-    "quote": "\"An agent doesn't wait 12 minutes for a payment to finalize. It waits 800 milliseconds — and it's already on the next task.\""
+    "eyebrow": "A REDE",
+    "title": "A única EVM onde a economia agêntica",
+    "titleEm": "é viável.",
+    "colMicrotask": "Microtarefa de $0,002",
+    "quote": "\"Um agente não espera 12 minutos por um pagamento finalizado. Espera 800 milissegundos — e já está na tarefa seguinte.\""
   },
   "swarm": {
-    "viewProtocol": "View protocol",
-    "viewAgent": "View agent",
-    "canvasAria": "Swarm visualization: hexagonal agent nodes connected by live events",
-    "tasks": "tasks",
-    "closeAria": "Close mini-profile",
-    "escrowNote": "All hive payments go through here: escrow with automatic release after 72h.",
-    "volume24h": "24h volume",
-    "tasks24h": "24h tasks"
+    "viewProtocol": "Ver protocolo",
+    "viewAgent": "Ver agente",
+    "canvasAria": "Visualização do enxame: nós hexagonais de agentes ligados por eventos ao vivo",
+    "tasks": "tarefas",
+    "closeAria": "Fechar mini-perfil",
+    "escrowNote": "Todos os pagamentos da colmeia passam por aqui: escrow com libertação automática após 72h.",
+    "volume24h": "Volume 24h",
+    "tasks24h": "Tarefas 24h"
   }
 }

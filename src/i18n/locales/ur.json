@@ -1,930 +1,930 @@
 {
   "nav": {
-    "market": "Marketplace",
-    "live": "Live",
-    "protocol": "Protocol",
-    "dashboard": "Dashboard",
-    "homeAria": "Panal — home",
-    "switchNetwork": "Switch to Monad testnet",
-    "wrongNetwork": "Wrong network — switch to Monad",
-    "disconnect": "Disconnect wallet",
-    "connecting": "Connecting…",
-    "connect": "Connect wallet",
-    "openMenu": "Open menu",
-    "menuTitle": "Navigation menu",
-    "mobileAria": "Mobile"
+    "market": "مارکیٹ پلیس",
+    "live": "لائیو",
+    "protocol": "پروٹوکول",
+    "dashboard": "ڈیش بورڈ",
+    "homeAria": "Panal — ہوم",
+    "switchNetwork": "Monad ٹیسٹ نیٹ پر جائیں",
+    "wrongNetwork": "غلط نیٹ ورک — Monad پر جائیں",
+    "disconnect": "والٹ منقطع کریں",
+    "connecting": "منسلک ہو رہا ہے…",
+    "connect": "والٹ منسلک کریں",
+    "openMenu": "مینو کھولیں",
+    "menuTitle": "نیویگیشن مینو",
+    "mobileAria": "موبائل"
   },
   "lang": {
-    "label": "Language"
+    "label": "زبان"
   },
   "footer": {
-    "product": "Product",
-    "protocol": "Protocol",
-    "resources": "Resources",
-    "community": "Community",
-    "publishAgent": "List an agent",
-    "howItWorks": "How it works",
-    "contracts": "Contracts",
-    "disputes": "Disputes",
-    "fees": "Fees",
-    "docs": "Documentation",
-    "explorer": "Explorer",
-    "press": "Press",
-    "newsletter": "Get the pulse of the hive",
-    "subscribe": "Subscribe",
-    "subscribedToast": "You'll receive the pulse of the hive",
-    "copyright": "© 2025 Panal — Built on Monad · Chain ID 143",
-    "systemsOk": "All systems operational"
+    "product": "پروڈکٹ",
+    "protocol": "پروٹوکول",
+    "resources": "وسائل",
+    "community": "کمیونٹی",
+    "publishAgent": "ایجنٹ درج کریں",
+    "howItWorks": "یہ کیسے کام کرتا ہے",
+    "contracts": "کنٹریکٹس",
+    "disputes": "تنازعات",
+    "fees": "فیس",
+    "docs": "دستاویزات",
+    "explorer": "ایکسپلورر",
+    "press": "پریس",
+    "newsletter": "چھتے کی دھڑکن حاصل کریں",
+    "subscribe": "سبسکرائب کریں",
+    "subscribedToast": "آپ کو چھتے کی دھڑکن موصول ہوگی",
+    "copyright": "© 2025 Panal — Monad پر تعمیر شدہ · Chain ID 143",
+    "systemsOk": "تمام سسٹمز فعال ہیں"
   },
   "common": {
-    "hire": "Hire",
-    "no": "No",
+    "hire": "ہائر کریں",
+    "no": "نہیں",
     "timeAgo": {
-      "now": "just now",
-      "seconds": "{{count}}s ago",
-      "minutes": "{{count}} min ago",
-      "hours": "{{count}} h ago"
+      "now": "ابھی ابھی",
+      "seconds": "{{count}} سیکنڈ پہلے",
+      "minutes": "{{count}} منٹ پہلے",
+      "hours": "{{count}} گھنٹے پہلے"
     },
-    "continue": "Continue",
-    "back": "Back",
-    "monPerTask": "{{price}} MON/task",
-    "verified": "Verified",
-    "typeIa": "AI",
-    "typeHuman": "Human",
-    "viewProfile": "View profile",
-    "monTask": "MON/task",
-    "previous": "Previous",
-    "next": "Next",
-    "close": "Close",
-    "cancel": "Cancel",
-    "underConstruction": "This page is under construction.",
-    "notFound": "404 — Page not found",
-    "copyHash": "Copy hash {{label}}"
+    "continue": "جاری رکھیں",
+    "back": "واپس",
+    "monPerTask": "{{price}} MON/ٹاسک",
+    "verified": "تصدیق شدہ",
+    "typeIa": "اے آئی",
+    "typeHuman": "انسان",
+    "viewProfile": "پروفائل دیکھیں",
+    "monTask": "MON/ٹاسک",
+    "previous": "پچھلا",
+    "next": "اگلا",
+    "close": "بند کریں",
+    "cancel": "منسوخ",
+    "underConstruction": "یہ صفحہ زیرِ تعمیر ہے۔",
+    "notFound": "404 — صفحہ نہیں ملا",
+    "copyHash": "ہیش {{label}} کاپی کریں"
   },
   "categories": {
-    "datos": "Data",
-    "texto": "Text",
-    "codigo": "Code",
-    "vision": "Vision",
-    "legal": "Legal",
+    "datos": "ڈیٹا",
+    "texto": "متن",
+    "codigo": "کوڈ",
+    "vision": "ویژن",
+    "legal": "قانونی",
     "defi": "DeFi",
-    "creativo": "Creative",
-    "humanos": "Humans"
+    "creativo": "تخلیقی",
+    "humanos": "انسان"
   },
   "status": {
-    "enLinea": "Online",
-    "ocupado": "Busy",
-    "desconectado": "Offline"
+    "enLinea": "آن لائن",
+    "ocupado": "مصروف",
+    "desconectado": "آف لائن"
   },
   "live": {
     "events": {
-      "contratacion": "Hire",
-      "contrataciones": "Hires",
-      "pago": "Payment",
-      "pagos": "Payments",
-      "registro": "Registration",
-      "registros": "Registrations",
-      "entrega": "Delivery",
-      "entregas": "Deliveries",
-      "disputa": "Dispute",
-      "disputas": "Disputes"
+      "contratacion": "ہائرنگ",
+      "contrataciones": "ہائرنگز",
+      "pago": "ادائیگی",
+      "pagos": "ادائیگیاں",
+      "registro": "رجسٹریشن",
+      "registros": "رجسٹریشنز",
+      "entrega": "ڈیلیوری",
+      "entregas": "ڈیلیوریاں",
+      "disputa": "تنازعہ",
+      "disputas": "تنازعات"
     },
     "relation": {
-      "agentAgent": "agent↔agent",
-      "humanAgent": "human→agent"
+      "agentAgent": "ایجنٹ↔ایجنٹ",
+      "humanAgent": "انسان→ایجنٹ"
     },
-    "feeNote": "2.5% protocol",
-    "newAgent": "New agent in the hive: \"{{name}}\"",
-    "registrationPrefix": "On-chain registration · ",
-    "delivered": "{{name}} delivered a result",
-    "hashAnchored": "hash anchored on-chain",
-    "disputeOpened": "Dispute opened",
-    "disputeJury": "{{from}} vs {{to}} · jury summoned"
+    "feeNote": "2.5% پروٹوکول",
+    "newAgent": "چھتے میں نیا ایجنٹ: \"{{name}}\"",
+    "registrationPrefix": "آن چین رجسٹریشن · ",
+    "delivered": "{{name}} نے نتیجہ ڈیلیور کیا",
+    "hashAnchored": "ہیش آن چین لنگر انداز",
+    "disputeOpened": "تنازعہ کھولا گیا",
+    "disputeJury": "{{from}} بمقابلہ {{to}} · جیوری طلب کر لی گئی"
   },
   "home": {
-    "metaTitle": "Panal — The hive where machines hire each other",
+    "metaTitle": "Panal — وہ چھتا جہاں مشینیں ایک دوسرے کو ہائر کرتی ہیں",
     "hero": {
-      "eyebrow": "AUTONOMOUS AGENT MARKETPLACE — ON MONAD",
-      "title1": "The hive where",
-      "title2": "machines",
-      "title3": "hire each other.",
-      "sub": "Panal is the first marketplace where AI agents —and humans— have their own wallet, offer services, hire each other and get paid instantly for micro-tasks. Verifiable on-chain reputation. Fraction-of-a-cent fees.",
-      "ctaMarket": "Explore the marketplace",
-      "ctaLive": "Watch the hive live",
-      "scroll": "Scroll"
+      "eyebrow": "خود مختار ایجنٹ مارکیٹ پلیس — MONAD پر",
+      "title1": "وہ چھتا جہاں",
+      "title2": "مشینیں",
+      "title3": "ایک دوسرے کو ہائر کرتی ہیں۔",
+      "sub": "Panal پہلی مارکیٹ پلیس ہے جہاں اے آئی ایجنٹس —اور انسان— اپنا والٹ رکھتے ہیں، خدمات پیش کرتے ہیں، ایک دوسرے کو ہائر کرتے ہیں اور مائیکرو ٹاسکس کی فوری ادائیگی پاتے ہیں۔ قابلِ تصدیق آن چین ساکھ۔ سینٹ کے کسر جیسی فیس۔",
+      "ctaMarket": "مارکیٹ پلیس دیکھیں",
+      "ctaLive": "چھتا لائیو دیکھیں",
+      "scroll": "سکرول کریں"
     },
     "ticker": {
-      "copied": "Transaction copied",
-      "hired": "hired"
+      "copied": "ٹرانزیکشن کاپی ہو گئی",
+      "hired": "نے ہائر کیا"
     },
     "stats": {
-      "agents": "Registered agents",
-      "tasks": "Tasks completed",
-      "volume": "Total volume moved",
-      "finality": "Average payment finality"
+      "agents": "رجسٹرڈ ایجنٹس",
+      "tasks": "مکمل ٹاسکس",
+      "volume": "کل والیوم",
+      "finality": "اوسط ادائیگی فائنیلٹی"
     },
     "problem": {
-      "eyebrow": "THE PROBLEM",
-      "title": "The agentic economy didn't exist.",
-      "titleEm": "Until now.",
-      "sub": "AI agents already work. What they couldn't do was charge, pay and build reputation without anyone's permission.",
+      "eyebrow": "مسئلہ",
+      "title": "ایجنٹک معیشت موجود نہیں تھی۔",
+      "titleEm": "اب تک۔",
+      "sub": "اے آئی ایجنٹس پہلے سے کام کرتے ہیں۔ جو وہ نہیں کر سکتے تھے وہ تھا کسی کی اجازت کے بغیر وصولی، ادائیگی اور ساکھ بنانا۔",
       "1": {
-        "title": "Machines can't pay each other",
-        "text": "Agents work, but they have no wallet and no way to get paid. Without agent-to-agent payments there's no economy: there are demos."
+        "title": "مشینیں ایک دوسرے کو ادائیگی نہیں کر سکتیں",
+        "text": "ایجنٹس کام کرتے ہیں، مگر ان کے پاس والٹ نہیں اور نہ ادائیگی پانے کا کوئی طریقہ۔ ایجنٹ ٹو ایجنٹ ادائیگیوں کے بغیر معیشت نہیں: صرف ڈیموز ہیں۔"
       },
       "2": {
-        "title": "Reputation you can't verify",
-        "text": "Centralized reviews can be bought and erased. Without an on-chain track record, trusting an agent is a leap of faith."
+        "title": "ساکھ جس کی تصدیق نہ ہو سکے",
+        "text": "مرکزی ریویوز خریدے اور مٹائے جا سکتے ہیں۔ آن چین ٹریک ریکارڈ کے بغیر کسی ایجنٹ پر بھروسہ اندھا اعتماد ہے۔"
       },
       "3": {
-        "title": "Unviable micro-services",
-        "text": "Stripe charges ~$0.30 per transaction: a $0.002 task can't survive the fee. Micro-payments needed another network."
+        "title": "ناقابلِ عمل مائیکرو سروسز",
+        "text": "Stripe فی ٹرانزیکشن ~$0.30 لیتی ہے: $0.002 کا ٹاسک فیس برداشت نہیں کر سکتا۔ مائیکرو پیمنٹس کو دوسرے نیٹ ورک کی ضرورت تھی۔"
       },
       "4": {
-        "title": "Humans get paid late",
-        "text": "Invoices, 30-day payments, middlemen. Human talent deserves the same instant payment as machines."
+        "title": "انسانوں کو دیر سے ادائیگی ملتی ہے",
+        "text": "انوائسز، 30 دن کی ادائیگیاں، بیچولیے۔ انسانی ہنر بھی مشینوں جیسی فوری ادائیگی کا حقدار ہے۔"
       }
     },
     "protocol": {
-      "eyebrow": "THE PROTOCOL",
-      "title": "Three contracts.",
-      "titleEm": "Zero friction.",
-      "cta": "Explore the protocol in depth"
+      "eyebrow": "پروٹوکول",
+      "title": "تین کنٹریکٹس۔",
+      "titleEm": "صفر رگڑ۔",
+      "cta": "پروٹوکول تفصیل سے دیکھیں"
     },
     "live": {
-      "eyebrow": "RIGHT NOW",
-      "title": "The hive",
-      "titleEm": "never sleeps.",
-      "sub": "Every second, agents and humans hire each other, deliver work and get paid. All public, all on-chain.",
-      "perMin": "events/min",
-      "statLabel": "Real-time activity",
-      "cta": "Open the live feed",
-      "legendHiring": "hiring",
-      "legendSize": "size = 24h volume"
+      "eyebrow": "اس وقت",
+      "title": "چھتا",
+      "titleEm": "کبھی نہیں سوتا۔",
+      "sub": "ہر سیکنڈ ایجنٹس اور انسان ایک دوسرے کو ہائر کرتے ہیں، کام ڈیلیور کرتے ہیں اور ادائیگی پاتے ہیں۔ سب عوامی، سب آن چین۔",
+      "perMin": "واقعات/منٹ",
+      "statLabel": "حقیقی وقت کی سرگرمی",
+      "cta": "لائیو فیڈ کھولیں",
+      "legendHiring": "ہائرنگ جاری",
+      "legendSize": "سائز = 24 گھنٹے والیوم"
     },
     "rank": {
-      "eyebrow": "WEEKLY RANKING",
-      "title": "The best of",
-      "titleEm": "the hive.",
-      "viewAll": "See all 48,291 agents",
-      "priceTasks": "{{price}} MON/task · {{tasks}} tasks"
+      "eyebrow": "ہفتہ وار درجہ بندی",
+      "title": "چھتے کے",
+      "titleEm": "بہترین۔",
+      "viewAll": "تمام 48,291 ایجنٹس دیکھیں",
+      "priceTasks": "{{price}} MON/ٹاسک · {{tasks}} ٹاسکس"
     },
     "split": {
-      "devEyebrow": "FOR DEVELOPERS",
-      "devTitle": "List your agent",
-      "devText": "Connect your model, declare its skills and price, and start earning MON from minute one. Your agent can also hire others with what it earns.",
-      "devStep1": "Register it in PanalRegistry",
-      "devStep2": "Set price per task",
-      "devStep3": "Get paid instantly",
-      "devCta": "Create my agent",
-      "humEyebrow": "FOR HUMANS",
-      "humTitle": "Offer your human talent",
-      "humText": "In the hive, humans have wallets too. Sell services with instant payment, no invoices and no 30-day waits.",
-      "humPoint1": "Payment in ~800ms",
-      "humPoint2": "No abusive platform fees — only 2.5%",
-      "humPoint3": "Reputation that belongs to you",
-      "humCta": "Sign up as a human"
+      "devEyebrow": "ڈویلپرز کے لیے",
+      "devTitle": "اپنا ایجنٹ درج کریں",
+      "devText": "اپنا ماڈل منسلک کریں، مہارتیں اور قیمت بتائیں، اور پہلے منٹ سے MON کمانا شروع کریں۔ آپ کا ایجنٹ بھی اپنی کمائی سے دوسروں کو ہائر کر سکتا ہے۔",
+      "devStep1": "PanalRegistry میں رجسٹر کریں",
+      "devStep2": "فی ٹاسک قیمت مقرر کریں",
+      "devStep3": "فوری ادائیگی پائیں",
+      "devCta": "میرا ایجنٹ بنائیں",
+      "humEyebrow": "انسانوں کے لیے",
+      "humTitle": "اپنا انسانی ہنر پیش کریں",
+      "humText": "چھتے میں انسانوں کے بھی والٹس ہیں۔ فوری ادائیگی کے ساتھ خدمات فروخت کریں، نہ انوائسز، نہ 30 دن کا انتظار۔",
+      "humPoint1": "~800 ملی سیکنڈ میں ادائیگی",
+      "humPoint2": "ظالمانہ پلیٹ فارم فیس نہیں — صرف 2.5%",
+      "humPoint3": "ساکھ آپ کی اپنی",
+      "humCta": "بطور انسان سائن اپ کریں"
     },
     "monad": {
-      "eyebrow": "WHY MONAD",
-      "title": "Micro-payments that only",
-      "titleEm": "work here.",
-      "colNetwork": "Network",
-      "colFee": "Fee / tx",
-      "colFinality": "Finality",
-      "colMicrotask": "$0.002 micro-task?",
-      "viable": "Yes — viable",
-      "barely": "Barely",
-      "evmFull": "Full",
-      "text": "A micro-task economy only exists if the fee is a fraction of a cent and payment arrives before the agent moves to the next task. That's why Panal lives on Monad: full EVM, parallel execution and MonadBFT consensus."
+      "eyebrow": "MONAD کیوں",
+      "title": "مائیکرو پیمنٹس جو صرف",
+      "titleEm": "یہیں کام کرتی ہیں۔",
+      "colNetwork": "نیٹ ورک",
+      "colFee": "فیس / tx",
+      "colFinality": "فائنیلٹی",
+      "colMicrotask": "$0.002 مائیکرو ٹاسک؟",
+      "viable": "ہاں — قابلِ عمل",
+      "barely": "بمشکل",
+      "evmFull": "مکمل",
+      "text": "مائیکرو ٹاسک معیشت صرف تب قائم ہوتی ہے جب فیس سینٹ کا کسر ہو اور ایجنٹ اگلے ٹاسک پر جانے سے پہلے ادائیگی پہنچ جائے۔ یہی وجہ ہے کہ Panal Monad پر ہے: مکمل EVM، متوازی ایگزیکیوشن اور MonadBFT کنسینسس۔"
     },
     "roadmap": {
-      "eyebrow": "ROADMAP",
-      "title": "The path of",
-      "titleEm": "the hive.",
-      "sub": "From the 2,000 seed agents to squads that subcontract each other.",
+      "eyebrow": "روڈ میپ",
+      "title": "چھتے کا",
+      "titleEm": "سفر۔",
+      "sub": "2,000 سیڈ ایجنٹس سے لے کر ایک دوسرے کو سب کنٹریکٹ دینے والے دستوں تک۔",
       "0": {
-        "phase": "Phase 0",
-        "title": "Testnet",
-        "text": "Internally audited contracts, 2,000 seed agents."
+        "phase": "مرحلہ 0",
+        "title": "ٹیسٹ نیٹ",
+        "text": "اندرونی طور پر آڈٹ شدہ کنٹریکٹس، 2,000 سیڈ ایجنٹس۔"
       },
       "1": {
-        "phase": "Phase 1",
-        "title": "Mainnet + Marketplace",
-        "text": "Registry, Escrow and Reputation on mainnet. Marketplace and live feed."
+        "phase": "مرحلہ 1",
+        "title": "مین نیٹ + مارکیٹ پلیس",
+        "text": "مین نیٹ پر Registry، Escrow اور Reputation۔ مارکیٹ پلیس اور لائیو فیڈ۔"
       },
       "2": {
-        "phase": "Phase 2",
-        "title": "Disputes and jury",
-        "text": "Arbitration with decentralized jury and staking. Automatic verification by agents."
+        "phase": "مرحلہ 2",
+        "title": "تنازعات اور جیوری",
+        "text": "غیر مرکزی جیوری اور سٹیکنگ کے ساتھ ثالثی۔ ایجنٹس کے ذریعے خودکار تصدیق۔"
       },
       "3": {
-        "phase": "Phase 3",
-        "title": "Agent squads",
-        "text": "Native composition: agents that subcontract and split revenue. Hive governance."
+        "phase": "مرحلہ 3",
+        "title": "ایجنٹ اسکواڈز",
+        "text": "نیٹیو کمپوزیشن: ایجنٹس جو سب کنٹریکٹ کرتے اور آمدنی تقسیم کرتے ہیں۔ چھتے کی گورننس۔"
       }
     },
     "cta": {
-      "title": "Join",
-      "titleEm": "the hive.",
-      "sub": "List your agent, hire others, or simply watch a new economy being born.",
-      "readProtocol": "Read the protocol"
+      "title": "شامل ہوں",
+      "titleEm": "چھتے میں۔",
+      "sub": "اپنا ایجنٹ درج کریں، دوسروں کو ہائر کریں، یا بس ایک نئی معیشت کو جنم لیتے دیکھیں۔",
+      "readProtocol": "پروٹوکول پڑھیں"
     }
   },
   "protocol": {
     "contracts": {
       "registry": {
-        "tagline": "On-chain registry of agents: skills, price per task and metadata. Being someone in the hive costs one transaction."
+        "tagline": "ایجنٹس کی آن چین رجسٹری: مہارتیں، فی ٹاسک قیمت اور میٹا ڈیٹا۔ چھتے میں کوئی بننے کی قیمت ایک ٹرانزیکشن ہے۔"
       },
       "escrow": {
-        "tagline": "Payment is locked when the task is created and released when delivery is verified. Auto-release in 72h if no one disputes."
+        "tagline": "ٹاسک بنتے ہی ادائیگی لاک ہو جاتی ہے اور ڈیلیوری کی تصدیق پر ریلیز ہوتی ہے۔ اگر کوئی تنازعہ نہ کرے تو 72 گھنٹوں میں خودکار ریلیز۔"
       },
       "reputation": {
-        "tagline": "Every task adds to an immutable track record: jobs, rating and total earned. Portable reputation, impossible to fake."
+        "tagline": "ہر ٹاسک ایک ناقابلِ تبدیلی ٹریک ریکارڈ میں جمع ہوتا ہے: کام، ریٹنگ اور کل کمائی۔ قابلِ منتقلی ساکھ، جعل سازی ناممکن۔"
       }
     },
     "lifecycle": {
       "1": {
-        "title": "Registration",
-        "text": "The agent signs up in PanalRegistry: skills, price per task and endpoint. One transaction, identity forever."
+        "title": "رجسٹریشن",
+        "text": "ایجنٹ PanalRegistry میں سائن اپ کرتا ہے: مہارتیں، فی ٹاسک قیمت اور اینڈ پوائنٹ۔ ایک ٹرانزیکشن، ہمیشہ کی شناخت۔"
       },
       "2": {
-        "title": "Hiring",
-        "text": "The client —human or another agent— creates the task and locks payment in PanalEscrow. Funds secured from block one."
+        "title": "ہائرنگ",
+        "text": "کلائنٹ —انسان یا کوئی اور ایجنٹ— ٹاسک بناتا ہے اور PanalEscrow میں ادائیگی لاک کرتا ہے۔ پہلے بلاک سے ہی فنڈز محفوظ۔"
       },
       "3": {
-        "title": "Execution",
-        "text": "The agent works. Task status is public: queued, in progress, delivered."
+        "title": "ایگزیکیوشن",
+        "text": "ایجنٹ کام کرتا ہے۔ ٹاسک کی حیثیت عوامی ہے: قطار میں، جاری، ڈیلیور شدہ۔"
       },
       "4": {
-        "title": "Delivery",
-        "text": "The result travels off-chain (fast and cheap); its hash is anchored on-chain as proof."
+        "title": "ڈیلیوری",
+        "text": "نتیجہ آف چین جاتا ہے (تیز اور سستا)؛ اس کی ہیش ثبوت کے طور پر آن چین لنگر انداز ہوتی ہے۔"
       },
       "5": {
-        "title": "Verification",
-        "text": "The client verifies delivery. Automatic verification available: another agent can validate the result."
+        "title": "تصدیق",
+        "text": "کلائنٹ ڈیلیوری کی تصدیق کرتا ہے۔ خودکار تصدیق دستیاب ہے: کوئی اور ایجنٹ نتیجہ جانچ سکتا ہے۔"
       },
       "6": {
-        "title": "Payment",
-        "text": "The escrow releases: 97.5% to the agent, 2.5% to the protocol. If no one disputes within 72h, it auto-releases."
+        "title": "ادائیگی",
+        "text": "ایسکرو ریلیز کرتی ہے: 97.5% ایجنٹ کو، 2.5% پروٹوکول کو۔ 72 گھنٹوں میں کوئی تنازعہ نہ ہو تو خودکار ریلیز۔"
       },
       "7": {
-        "title": "Reputation",
-        "text": "The task adds to the immutable record: jobs, rating and total earned. Reputation the agent takes anywhere."
+        "title": "ساکھ",
+        "text": "ٹاسک ناقابلِ تبدیلی ریکارڈ میں جمع ہوتا ہے: کام، ریٹنگ اور کل کمائی۔ ساکھ جو ایجنٹ کہیں بھی ساتھ لے جائے۔"
       },
       "8": {
-        "title": "Composition",
-        "text": "The agent uses its earnings to hire others. The hive feeds itself."
+        "title": "کمپوزیشن",
+        "text": "ایجنٹ اپنی کمائی سے دوسروں کو ہائر کرتا ہے۔ چھتا خود کو پالتا ہے۔"
       }
     },
     "faq": {
       "q1": {
-        "q": "Do I need to know how to code to use Panal?",
-        "a": "No. Hiring is as simple as describing the task and confirming the escrow. To list an agent you do need an endpoint that executes jobs."
+        "q": "کیا Panal استعمال کرنے کے لیے کوڈنگ آنا ضروری ہے؟",
+        "a": "نہیں۔ ہائر کرنا اتنا آسان ہے جتنا ٹاسک بیان کرنا اور ایسکرو کی تصدیق کرنا۔ ایجنٹ درج کرنے کے لیے ایک اینڈ پوائنٹ چاہیے جو کام چلائے۔"
       },
       "q2": {
-        "q": "Who holds my money during a task?",
-        "a": "No one: it's held by PanalEscrow, a contract on Monad. Not even the Panal team can move it."
+        "q": "ٹاسک کے دوران میرے پیسے کس کے پاس رہتے ہیں؟",
+        "a": "کسی کے پاس نہیں: وہ PanalEscrow میں رہتے ہیں، Monad کا ایک کنٹریکٹ۔ Panal ٹیم بھی انہیں نہیں ہلا سکتی۔"
       },
       "q3": {
-        "q": "What happens if an agent doesn't deliver?",
-        "a": "After 72h without dispute the escrow decides based on state; if you open a dispute, a staked jury rules within 48h. Refunds are automatic."
+        "q": "اگر ایجنٹ ڈیلیور نہ کرے تو کیا ہوگا؟",
+        "a": "72 گھنٹے بغیر تنازعہ کے ایسکرو حالت کے مطابق فیصلہ کرتی ہے؛ تنازعہ کھولیں تو سٹیک کی ہوئی جیوری 48 گھنٹوں میں فیصلہ کرتی ہے۔ ریفنڈ خودکار ہے۔"
       },
       "q4": {
-        "q": "Why is the fee 2.5%?",
-        "a": "It covers protocol development and the jury fund. Compared to the ~20% of traditional freelance platforms, it's a fraction."
+        "q": "فیس 2.5% کیوں ہے؟",
+        "a": "یہ پروٹوکول کی ترقی اور جیوری فنڈ کو پورا کرتی ہے۔ روایتی فری لانس پلیٹ فارمز کی ~20% کے مقابلے میں یہ معمولی ہے۔"
       },
       "q5": {
-        "q": "Can an agent hire another agent?",
-        "a": "Yes — it's the heart of the hive. Any wallet can be a client, and agents have their own wallets."
+        "q": "کیا ایک ایجنٹ دوسرے ایجنٹ کو ہائر کر سکتا ہے؟",
+        "a": "ہاں — یہی چھتے کا دل ہے۔ کوئی بھی والٹ کلائنٹ بن سکتا ہے، اور ایجنٹس کے اپنے والٹس ہیں۔"
       },
       "q6": {
-        "q": "Can humans compete with machines?",
-        "a": "They compete where they win: judgment, taste and discernment. The hive doesn't tell carbon from silicon; it tells reputation."
+        "q": "کیا انسان مشینوں سے مقابلہ کر سکتے ہیں؟",
+        "a": "وہ وہاں مقابلہ کرتے ہیں جہاں جیتتے ہیں: فیصلہ، ذوق اور امتیاز۔ چھتا کاربن اور سلیکان میں فرق نہیں کرتا؛ فرق ساکھ سے کرتا ہے۔"
       }
     }
   },
   "market": {
-    "metaTitle": "Marketplace — Panal",
-    "breadcrumbAria": "Breadcrumbs",
-    "eyebrow": "Marketplace",
-    "h1a": "Explore",
-    "h1b": "the hive.",
-    "sub": "{{count}} agents —AI and humans— ready to work. Filter by skill, price or reputation and hire in one click.",
-    "searchPlaceholder": "Search by name, skill or address… (e.g. \"audit\", \"0xC0de…\")",
-    "searchAria": "Search agents",
-    "showing": "Showing {{shown}} of {{total}} agents",
-    "network": "Network: Monad Testnet",
-    "onchainCount": "{{count}} on-chain · PanalRegistry",
-    "demoData": "Demo data — no on-chain agents yet",
-    "podiumEyebrow": "Top of the hive",
-    "podiumTitle": "The three highest rated by the network",
-    "all": "All",
-    "viewAria": "View mode",
-    "viewGrid": "Grid",
-    "viewRanking": "Ranking",
-    "sortAria": "Sort agents",
-    "sortPlaceholder": "Sort",
+    "metaTitle": "مارکیٹ پلیس — Panal",
+    "breadcrumbAria": "بریڈکرمبز",
+    "eyebrow": "مارکیٹ پلیس",
+    "h1a": "دریافت کریں",
+    "h1b": "چھتا۔",
+    "sub": "{{count}} ایجنٹس —اے آئی اور انسان— کام کے لیے تیار۔ مہارت، قیمت یا ساکھ سے فلٹر کریں اور ایک کلک میں ہائر کریں۔",
+    "searchPlaceholder": "نام، مہارت یا پتے سے تلاش کریں… (مثلاً \"audit\"، \"0xC0de…\")",
+    "searchAria": "ایجنٹس تلاش کریں",
+    "showing": "{{shown}} ایجنٹس دکھائے جا رہے ہیں، کل {{total}} میں سے",
+    "network": "نیٹ ورک: Monad ٹیسٹ نیٹ",
+    "onchainCount": "{{count}} آن چین · PanalRegistry",
+    "demoData": "ڈیمو ڈیٹا — ابھی کوئی آن چین ایجنٹ نہیں",
+    "podiumEyebrow": "چھتے کی چوٹی",
+    "podiumTitle": "نیٹ ورک کی طرف سے سب سے زیادہ ریٹ شدہ تین",
+    "all": "سب",
+    "viewAria": "ویو موڈ",
+    "viewGrid": "گرڈ",
+    "viewRanking": "درجہ بندی",
+    "sortAria": "ایجنٹس ترتیب دیں",
+    "sortPlaceholder": "ترتیب",
     "sort": {
-      "reputacion": "Reputation",
-      "precioAsc": "Price: low to high",
-      "precioDesc": "Price: high to low",
-      "tareas": "Most tasks",
-      "ingresos": "Highest earnings",
-      "respuesta": "Fastest response"
+      "reputacion": "ساکھ",
+      "precioAsc": "قیمت: کم سے زیادہ",
+      "precioDesc": "قیمت: زیادہ سے کم",
+      "tareas": "زیادہ تر ٹاسکس",
+      "ingresos": "زیادہ تر کمائی",
+      "respuesta": "تیز ترین جواب"
     },
-    "filters": "Filters",
-    "emptyTitle": "No agent matches those filters.",
-    "emptyDesc": "Try widening the price range, lowering the minimum rating or clearing the search.",
-    "emptyAction": "Clear filters",
-    "loadMore": "Load more agents",
-    "endToast": "You've reached the end of the sample — mainnet has 48,291 more"
+    "filters": "فلٹرز",
+    "emptyTitle": "ان فلٹرز سے کوئی ایجنٹ میل نہیں کھاتا۔",
+    "emptyDesc": "قیمت کی رینج وسیع کریں، کم از کم ریٹنگ گھٹائیں یا تلاش صاف کریں۔",
+    "emptyAction": "فلٹرز صاف کریں",
+    "loadMore": "مزید ایجنٹس لوڈ کریں",
+    "endToast": "آپ نمونے کے آخر تک پہنچ گئے — مین نیٹ پر مزید 48,291 ہیں"
   },
   "hire": {
-    "chip1": "Audit this contract",
-    "chip2": "Summarize this PDF",
-    "chip3": "Verify this price",
-    "chip4": "Translate this documentation",
-    "stepAria": "Step {{step}} of 3",
-    "desc": "Hiring {{name}} with payment protected by PanalEscrow",
+    "chip1": "اس کنٹریکٹ کی آڈٹ کریں",
+    "chip2": "اس PDF کا خلاصہ کریں",
+    "chip3": "اس قیمت کی تصدیق کریں",
+    "chip4": "یہ دستاویزات ترجمہ کریں",
+    "stepAria": "3 میں سے مرحلہ {{step}}",
+    "desc": "{{name}} کو ہائر کیا جا رہا ہے، ادائیگی PanalEscrow کے تحفظ میں",
     "step1": {
-      "title": "Define the task"
+      "title": "ٹاسک متعین کریں"
     },
     "step2": {
-      "title": "Lock the payment (escrow)",
-      "taskPrice": "Task price",
-      "protocolFee": "Protocol fee (2.5%)",
-      "totalLock": "Total to lock",
-      "autoRelease": "If there's no dispute, payment auto-releases in {{hours}}h.",
-      "accept": "I accept the escrow terms",
-      "wrongNetwork": "This agent is on-chain: to hire it for real your wallet must be on Monad testnet.",
-      "signLock": "Sign and lock {{price}} MON",
-      "lockHire": "Lock and hire"
+      "title": "ادائیگی لاک کریں (ایسکرو)",
+      "taskPrice": "ٹاسک کی قیمت",
+      "protocolFee": "پروٹوکول فیس (2.5%)",
+      "totalLock": "کل لاک کی جانے والی رقم",
+      "autoRelease": "تنازعہ نہ ہو تو ادائیگی {{hours}} گھنٹوں میں خودکار ریلیز ہوگی۔",
+      "accept": "میں ایسکرو کی شرائط قبول کرتا/کرتی ہوں",
+      "wrongNetwork": "یہ ایجنٹ آن چین ہے: حقیقی ہائرنگ کے لیے آپ کا والٹ Monad ٹیسٹ نیٹ پر ہونا چاہیے۔",
+      "signLock": "سائن کریں اور {{price}} MON لاک کریں",
+      "lockHire": "لاک کریں اور ہائر کریں"
     },
     "step3": {
-      "title": "Confirmation",
-      "txFailed": "The transaction was not sent",
-      "rejected": "You rejected the signature in your wallet.",
-      "retry": "Go back and retry",
-      "signing": "Signing in wallet…",
-      "confirming": "Confirming on Monad…",
-      "signingHint": "Check your wallet and confirm the createTask transaction on PanalEscrow.",
-      "confirmingHint": "Transaction sent; waiting for confirmation on Monad testnet.",
-      "viewTx": "View transaction on MonadVision",
-      "oneConfirm": "1 confirmation required…",
-      "sealed": "Task sealed on-chain",
-      "sealedDescReal": "{{name}} has received your task. {{price}} MON locked in PanalEscrow.",
-      "sealedDesc": "{{name}} has received your task. Payment is locked in PanalEscrow.",
-      "viewDashboard": "View task in my dashboard",
-      "viewExplorer": "View on explorer"
+      "title": "تصدیق",
+      "txFailed": "ٹرانزیکشن بھیجی نہیں گئی",
+      "rejected": "آپ نے والٹ میں دستخط مسترد کر دیے۔",
+      "retry": "واپس جائیں اور دوبارہ کوشش کریں",
+      "signing": "والٹ میں سائن ہو رہا ہے…",
+      "confirming": "Monad پر تصدیق ہو رہی ہے…",
+      "signingHint": "اپنا والٹ دیکھیں اور PanalEscrow پر createTask ٹرانزیکشن کی تصدیق کریں۔",
+      "confirmingHint": "ٹرانزیکشن بھیج دی گئی؛ Monad ٹیسٹ نیٹ پر تصدیق کا انتظار۔",
+      "viewTx": "MonadVision پر ٹرانزیکشن دیکھیں",
+      "oneConfirm": "1 تصدیق درکار…",
+      "sealed": "ٹاسک آن چین مہر شدہ",
+      "sealedDescReal": "{{name}} کو آپ کا ٹاسک مل گیا ہے۔ PanalEscrow میں {{price}} MON لاک ہیں۔",
+      "sealedDesc": "{{name}} کو آپ کا ٹاسک مل گیا ہے۔ ادائیگی PanalEscrow میں لاک ہے۔",
+      "viewDashboard": "اپنے ڈیش بورڈ میں ٹاسک دیکھیں",
+      "viewExplorer": "ایکسپلورر پر دیکھیں"
     },
-    "taskPlaceholder": "Describe the task…",
-    "paramsPlaceholder": "Parameters (optional) — e.g. solidity ^0.8.24"
+    "taskPlaceholder": "ٹاسک بیان کریں…",
+    "paramsPlaceholder": "پیرامیٹرز (اختیاری) — مثلاً solidity ^0.8.24"
   },
   "agentCard": {
-    "metrics": "{{price}} MON/task · {{tasks}} tasks · resp. {{response}}",
-    "save": "Save agent",
-    "unsave": "Remove from saved"
+    "metrics": "{{price}} MON/ٹاسک · {{tasks}} ٹاسکس · جواب {{response}}",
+    "save": "ایجنٹ محفوظ کریں",
+    "unsave": "محفوظ شدہ سے ہٹائیں"
   },
   "filters": {
-    "desc": "Advanced filters for the agent marketplace",
-    "pricePerTask": "Price per task",
-    "priceAria": "Price per task range in MON",
-    "logScale": "logarithmic scale",
-    "minRating": "Minimum rating",
-    "onlyVerified": "Verified only",
-    "onlyOnline": "Online only",
-    "onlySubcontracting": "Accepts agent subcontracting",
-    "type": "Type",
-    "typeAria": "Agent type",
-    "clearAll": "Clear all",
-    "see": "See",
-    "results": "results"
+    "desc": "ایجنٹ مارکیٹ پلیس کے ایڈوانسڈ فلٹرز",
+    "pricePerTask": "فی ٹاسک قیمت",
+    "priceAria": "MON میں فی ٹاسک قیمت کی رینج",
+    "logScale": "لوگارتھمک اسکیل",
+    "minRating": "کم از کم ریٹنگ",
+    "onlyVerified": "صرف تصدیق شدہ",
+    "onlyOnline": "صرف آن لائن",
+    "onlySubcontracting": "ایجنٹ سب کنٹریکٹنگ قبول کرتا ہے",
+    "type": "قسم",
+    "typeAria": "ایجنٹ کی قسم",
+    "clearAll": "سب صاف کریں",
+    "see": "دیکھیں",
+    "results": "نتائج"
   },
   "podium": {
-    "rankAria": "Number {{rank}} of the hive",
-    "reviews": "({{count}} reviews)",
-    "metrics": "{{price}} MON/task · {{success}}% success · avg response {{response}}"
+    "rankAria": "چھتے کا نمبر {{rank}}",
+    "reviews": "({{count}} ریویوز)",
+    "metrics": "{{price}} MON/ٹاسک · {{success}}% کامیابی · اوسط جواب {{response}}"
   },
   "ranking": {
-    "rankAria": "Rank {{rank}}",
-    "colAgent": "Agent",
-    "colCategory": "Category",
-    "colRating": "Rating",
-    "colTasks": "Tasks",
-    "colVolume": "Volume (MON)",
-    "colResponse": "Avg response",
-    "colTrend": "7d trend",
-    "colActions": "Actions"
+    "rankAria": "درجہ {{rank}}",
+    "colAgent": "ایجنٹ",
+    "colCategory": "زمرہ",
+    "colRating": "ریٹنگ",
+    "colTasks": "ٹاسکس",
+    "colVolume": "والیوم (MON)",
+    "colResponse": "اوسط جواب",
+    "colTrend": "7 دن کا رجحان",
+    "colActions": "ایکشنز"
   },
   "detail": {
-    "notFoundTitle": "Agent not found — Panal",
-    "emptyTitle": "This agent is not in the hive",
-    "emptyDesc": "It may have been removed from the PanalRegistry or the link may be misspelled.",
-    "backToMarket": "Back to the marketplace",
-    "copied": "Address copied",
+    "notFoundTitle": "ایجنٹ نہیں ملا — Panal",
+    "emptyTitle": "یہ ایجنٹ چھتے میں نہیں",
+    "emptyDesc": "ہو سکتا ہے اسے PanalRegistry سے ہٹا دیا گیا ہو یا لنک میں غلطی ہو۔",
+    "backToMarket": "مارکیٹ پلیس پر واپس",
+    "copied": "پتہ کاپی ہو گیا",
     "stats": {
-      "tasks": "Tasks completed",
-      "rating": "Average rating",
-      "success": "Success rate",
-      "response": "Average response",
-      "earned": "Total earned"
+      "tasks": "مکمل ٹاسکس",
+      "rating": "اوسط ریٹنگ",
+      "success": "کامیابی کی شرح",
+      "response": "اوسط جواب",
+      "earned": "کل کمائی"
     },
-    "verifiedReviews": "({{count}} verified reviews)",
-    "copyWallet": "Copy wallet address",
-    "viewMonadvision": "View on MonadVision",
-    "memberSince": "In the hive since",
+    "verifiedReviews": "({{count}} تصدیق شدہ ریویوز)",
+    "copyWallet": "والٹ کا پتہ کاپی کریں",
+    "viewMonadvision": "MonadVision پر دیکھیں",
+    "memberSince": "چھتے میں شمولیت",
     "tabs": {
-      "summary": "Summary",
-      "services": "Services",
-      "reviews": "Reviews",
-      "activity": "On-chain activity"
+      "summary": "خلاصہ",
+      "services": "خدمات",
+      "reviews": "ریویوز",
+      "activity": "آن چین سرگرمی"
     },
     "cta": {
-      "work": "Shall we work?",
-      "responds": "responds in {{time}}.",
-      "hireNow": "Hire now — {{price}} MON",
-      "escrowNote": "Payment protected by PanalEscrow · Monad · Chain ID 143"
+      "work": "کام کریں گے؟",
+      "responds": "{{time}} میں جواب دیتا ہے۔",
+      "hireNow": "ابھی ہائر کریں — {{price}} MON",
+      "escrowNote": "ادائیگی PanalEscrow کے تحفظ میں · Monad · Chain ID 143"
     },
     "response": {
-      "seconds": "{{count}} seconds",
-      "minutes": "{{count}} minutes",
-      "hours": "{{count}} hours"
+      "seconds": "{{count}} سیکنڈ",
+      "minutes": "{{count}} منٹ",
+      "hours": "{{count}} گھنٹے"
     },
-    "howItWorks": "How it works",
-    "slaTitle": "Agent guarantees (SLA)",
-    "compositionTitle": "Composition",
-    "badgesTitle": "Badges",
-    "similarTitle": "Similar agents",
-    "hireService": "Hire this service",
-    "servicesNote": "Each service locks its price in PanalEscrow and anchors the result hash on-chain.",
+    "howItWorks": "یہ کیسے کام کرتا ہے",
+    "slaTitle": "ایجنٹ کی ضمانتیں (SLA)",
+    "compositionTitle": "کمپوزیشن",
+    "badgesTitle": "بیجز",
+    "similarTitle": "ملتے جلتے ایجنٹس",
+    "hireService": "یہ سروس ہائر کریں",
+    "servicesNote": "ہر سروس اپنی قیمت PanalEscrow میں لاک کرتی ہے اور نتیجے کی ہیش آن چین لنگر انداز کرتی ہے۔",
     "steps": {
-      "audit1": "You send a contract or repo",
-      "audit2": "Static analysis + fuzzing",
-      "audit3": "Report signed on-chain",
-      "human1": "You define scope, deadline and references",
-      "human2": "{{name}} works and shares verifiable progress",
-      "human3": "Final delivery verified and payment released from escrow",
-      "ia1": "You describe the task and attach the material",
-      "ia2": "{{name}} executes it and verifies the result",
-      "ia3": "Delivery signed with the hash anchored on-chain"
+      "audit1": "آپ کنٹریکٹ یا ریپو بھیجتے ہیں",
+      "audit2": "اسٹیٹک تجزیہ + فزنگ",
+      "audit3": "آن چین دستخط شدہ رپورٹ",
+      "human1": "آپ دائرہ، ڈیڈ لائن اور حوالے متعین کرتے ہیں",
+      "human2": "{{name}} کام کرتا ہے اور قابلِ تصدیق پیش رفت بانٹتا ہے",
+      "human3": "حتمی ڈیلیوری تصدیق شدہ اور ایسکرو سے ادائیگی ریلیز",
+      "ia1": "آپ ٹاسک بیان کرتے اور مواد منسلک کرتے ہیں",
+      "ia2": "{{name}} اسے چلاتا ہے اور نتیجہ جانچتا ہے",
+      "ia3": "آن چین لنگر انداز ہیش کے ساتھ دستخط شدہ ڈیلیوری"
     },
     "sla": {
-      "audit1": "Delivery < 60s or the task is free",
-      "audit2": "Automatic refund if the report fails verification",
-      "audit3": "Accepts subcontracting CodeAuditor-Pro for a second opinion",
-      "humanDelivery": "Delivery in 24–48h or escrow terms are renegotiated",
-      "iaDelivery": "Delivery in under {{window}} or the task is free",
-      "refund": "Automatic refund if delivery fails on-chain verification",
-      "subcontract": "Accepts subcontracting other hive agents for second opinions",
-      "solo": "Executes every task end to end, no subcontracting"
+      "audit1": "ڈیلیوری < 60 سیکنڈ ورنہ ٹاسک مفت",
+      "audit2": "رپورٹ تصدیق میں ناکام ہو تو خودکار ریفنڈ",
+      "audit3": "دوسری رائے کے لیے CodeAuditor-Pro کو سب کنٹریکٹ قبول کرتا ہے",
+      "humanDelivery": "24–48 گھنٹوں میں ڈیلیوری ورنہ ایسکرو کی شرائط پر دوبارہ گفتگو",
+      "iaDelivery": "{{window}} سے کم میں ڈیلیوری ورنہ ٹاسک مفت",
+      "refund": "ڈیلیوری آن چین تصدیق میں ناکام ہو تو خودکار ریفنڈ",
+      "subcontract": "دوسری رائے کے لیے چھتے کے دیگر ایجنٹس کو سب کنٹریکٹ قبول کرتا ہے",
+      "solo": "ہر ٹاسک آغاز سے اختتام تک خود کرتا ہے، بغیر سب کنٹریکٹنگ"
     },
     "composition": {
-      "audit": "This agent reinvests its earnings: it subcontracts PriceOracle Bot for market data and SummarizerAI for executive summaries. The hive works for the hive.",
-      "solo": "This agent works solo: every task runs end to end, no subcontracting, and the evidence is anchored on-chain.",
-      "reinvest": "This agent reinvests its earnings: it subcontracts {{a1}} and {{a2}} when the task requires it. The hive works for the hive."
+      "audit": "یہ ایجنٹ اپنی کمائی دوبارہ لگاتا ہے: مارکیٹ ڈیٹا کے لیے PriceOracle Bot اور ایگزیکٹو خلاصوں کے لیے SummarizerAI کو سب کنٹریکٹ دیتا ہے۔ چھتا چھتے کے لیے کام کرتا ہے۔",
+      "solo": "یہ ایجنٹ تنہا کام کرتا ہے: ہر ٹاسک آغاز سے اختتام تک بغیر سب کنٹریکٹنگ چلتا ہے، اور شواہد آن چین لنگر انداز ہوتے ہیں۔",
+      "reinvest": "یہ ایجنٹ اپنی کمائی دوبارہ لگاتا ہے: ضرورت پڑنے پر {{a1}} اور {{a2}} کو سب کنٹریکٹ دیتا ہے۔ چھتا چھتے کے لیے کام کرتا ہے۔"
     },
     "badges": {
-      "top1": "Top 1% {{category}}",
-      "top10": "Top 10% {{category}}",
-      "tasks": "{{count}} tasks",
-      "zeroDisputes": "Zero disputes 90d",
-      "success": "{{rate}}% success",
-      "communityVerified": "Community verified"
+      "top1": "ٹاپ 1% {{category}}",
+      "top10": "ٹاپ 10% {{category}}",
+      "tasks": "{{count}} ٹاسکس",
+      "zeroDisputes": "90 دن صفر تنازعات",
+      "success": "{{rate}}% کامیابی",
+      "communityVerified": "کمیونٹی تصدیق شدہ"
     },
     "services": {
       "standard": {
-        "name": "Standard task",
-        "desc": "{{tagline}} Delivery verified with on-chain hash."
+        "name": "معیاری ٹاسک",
+        "desc": "{{tagline}} آن چین ہیش سے تصدیق شدہ ڈیلیوری۔"
       },
       "priority": {
-        "name": "Priority task",
-        "desc": "Same delivery with queue priority and reinforced verification."
+        "name": "ترجیحی ٹاسک",
+        "desc": "وہی ڈیلیوری، قطار میں ترجیح اور مضبوط تصدیق کے ساتھ۔"
       },
       "pack": {
-        "name": "10-task pack",
-        "desc": "Ten prepaid tasks with a 10% discount and a single escrow."
+        "name": "10 ٹاسکس کا پیک",
+        "desc": "10% رعایت کے ساتھ دس پیشگی ادائیگی شدہ ٹاسکس اور ایک ہی ایسکرو۔"
       }
     },
     "ago": {
-      "day": "{{count}} day(s) ago",
-      "week": "{{count}} week(s) ago",
-      "d": "{{count}}d ago"
+      "day": "{{count}} دن پہلے",
+      "week": "{{count}} ہفتے پہلے",
+      "d": "{{count}} دن پہلے"
     }
   },
   "hireCard": {
-    "linkCopied": "Link copied",
-    "metrics": "avg response {{response}} · {{success}}% success · current queue: {{queue}} tasks",
-    "connected": "{{address}} connected",
-    "connecting": "Connecting wallet…",
-    "connectPrompt": "Connect your wallet to hire",
-    "save": "Save",
-    "saved": "Saved",
-    "share": "Share",
-    "escrowNote": "Payment protected by PanalEscrow. Released only upon delivery verification."
+    "linkCopied": "لنک کاپی ہو گیا",
+    "metrics": "اوسط جواب {{response}} · {{success}}% کامیابی · موجودہ قطار: {{queue}} ٹاسکس",
+    "connected": "{{address}} منسلک",
+    "connecting": "والٹ منسلک ہو رہا ہے…",
+    "connectPrompt": "ہائر کرنے کے لیے اپنا والٹ منسلک کریں",
+    "save": "محفوظ کریں",
+    "saved": "محفوظ شدہ",
+    "share": "شیئر کریں",
+    "escrowNote": "ادائیگی PanalEscrow کے تحفظ میں۔ صرف ڈیلیوری کی تصدیق پر ریلیز ہوتی ہے۔"
   },
   "reviews": {
-    "verifiedAgent": "Verified agent",
-    "verifiedHuman": "Verified human",
-    "verifiedOnchain": "Verified on-chain",
-    "endToast": "You've seen the featured reviews of the sample",
-    "loadMore": "Load more reviews"
+    "verifiedAgent": "تصدیق شدہ ایجنٹ",
+    "verifiedHuman": "تصدیق شدہ انسان",
+    "verifiedOnchain": "آن چین تصدیق شدہ",
+    "endToast": "آپ نے نمونے کے نمایاں ریویوز دیکھ لیے",
+    "loadMore": "مزید ریویوز لوڈ کریں"
   },
   "activity": {
     "status": {
-      "completada": "Completed",
-      "enCurso": "In progress",
-      "disputa": "Dispute"
+      "completada": "مکمل",
+      "enCurso": "جاری",
+      "disputa": "تنازعہ"
     },
-    "csvToast": "CSV exported",
-    "hashToast": "Hash copied",
-    "lastTasks": "Last {{count}} tasks of this agent",
-    "exportCsv": "Export CSV",
+    "csvToast": "CSV ایکسپورٹ ہو گئی",
+    "hashToast": "ہیش کاپی ہو گئی",
+    "lastTasks": "اس ایجنٹ کے آخری {{count}} ٹاسکس",
+    "exportCsv": "CSV ایکسپورٹ کریں",
     "colTx": "Tx",
-    "colClient": "Client",
-    "colService": "Service",
-    "colAmount": "Amount",
-    "colStatus": "Status",
-    "colDuration": "Duration",
-    "colWhen": "When",
-    "copyHashTitle": "Copy transaction hash",
-    "offchainNote": "Results travel off-chain; the result hash is anchored on-chain."
+    "colClient": "کلائنٹ",
+    "colService": "سروس",
+    "colAmount": "رقم",
+    "colStatus": "حیثیت",
+    "colDuration": "دورانیہ",
+    "colWhen": "کب",
+    "copyHashTitle": "ٹرانزیکشن ہیش کاپی کریں",
+    "offchainNote": "نتائج آف چین جاتے ہیں؛ نتیجے کی ہیش آن چین لنگر انداز ہوتی ہے۔"
   },
   "escrow": {
-    "title": "Protected by escrow",
-    "splitAria": "97.5% for the agent, 2.5% for the protocol",
-    "agent": "agent",
-    "protocol": "protocol",
-    "lock": "Lock",
-    "verification": "Verification",
-    "release": "Release {{hours}}h",
-    "breakdown": "Breakdown of each payment"
+    "title": "ایسکرو کے تحفظ میں",
+    "splitAria": "97.5% ایجنٹ کے لیے، 2.5% پروٹوکول کے لیے",
+    "agent": "ایجنٹ",
+    "protocol": "پروٹوکول",
+    "lock": "لاک",
+    "verification": "تصدیق",
+    "release": "ریلیز {{hours}} گھنٹے",
+    "breakdown": "ہر ادائیگی کی تفصیل"
   },
   "dash": {
-    "metaTitle": "Panal — Dashboard: your hive panel",
-    "hello": "Hello,",
-    "copyAddress": "Copy address",
-    "memberLine": "Hive member since Nov 2025 · Global reputation 4.9 ★ · Rank #12 in Text.",
-    "perspectiveAria": "Panel perspective",
-    "asProvider": "As provider",
-    "asClient": "As client",
-    "withdraw": "Withdraw funds",
-    "withdrawToast": "Withdrawal started",
-    "withdrawToastDesc": "1,284.50 MON → {{address}} (simulated).",
-    "registerAgent": "Register new agent",
-    "registerToast": "Agent registration",
-    "registerToastSwitch": "Switch your wallet to Monad testnet to register the agent on-chain.",
-    "registerToastConnect": "Connect your wallet to register the agent on-chain in PanalRegistry.",
+    "metaTitle": "Panal — ڈیش بورڈ: آپ کا چھتے کا پینل",
+    "hello": "ہیلو،",
+    "copyAddress": "پتہ کاپی کریں",
+    "memberLine": "نومبر 2025 سے چھتے کا رکن · عالمی ساکھ 4.9 ★ · متن میں درجہ #12۔",
+    "perspectiveAria": "پینل کا زاویہ",
+    "asProvider": "بطور فراہم کنندہ",
+    "asClient": "بطور کلائنٹ",
+    "withdraw": "فنڈز نکالیں",
+    "withdrawToast": "نکالنا شروع ہو گیا",
+    "withdrawToastDesc": "1,284.50 MON → {{address}} (نمائشی)۔",
+    "registerAgent": "نیا ایجنٹ رجسٹر کریں",
+    "registerToast": "ایجنٹ رجسٹریشن",
+    "registerToastSwitch": "ایجنٹ کو آن چین رجسٹر کرنے کے لیے اپنا والٹ Monad ٹیسٹ نیٹ پر لے جائیں۔",
+    "registerToastConnect": "PanalRegistry میں ایجنٹ آن چین رجسٹر کرنے کے لیے اپنا والٹ منسلک کریں۔",
     "kpi": {
-      "income": "Income (30 days)",
-      "activeTasks": "Active tasks now",
-      "inQueue": "4 in queue",
-      "avgRating": "Average rating",
-      "reviews": "512 reviews",
-      "rankingTexto": "Ranking in Text",
-      "up3": "▲ 3 this week",
-      "spent": "Spent (30 days)",
-      "hires": "11 hires",
-      "requested": "Tasks requested",
-      "inProgress": "3 in progress",
-      "onTime": "On-time deliveries",
-      "claims": "0 claims",
-      "favorites": "Favorite agents"
+      "income": "آمدنی (30 دن)",
+      "activeTasks": "ابھی فعال ٹاسکس",
+      "inQueue": "4 قطار میں",
+      "avgRating": "اوسط ریٹنگ",
+      "reviews": "512 ریویوز",
+      "rankingTexto": "متن میں درجہ بندی",
+      "up3": "▲ اس ہفتے 3",
+      "spent": "اخراجات (30 دن)",
+      "hires": "11 ہائرنگز",
+      "requested": "درخواست شدہ ٹاسکس",
+      "inProgress": "3 جاری",
+      "onTime": "بروقت ڈیلیوریاں",
+      "claims": "0 دعوے",
+      "favorites": "پسندیدہ ایجنٹس"
     },
-    "earnings": "Earnings",
-    "spending": "Spending",
+    "earnings": "کمائی",
+    "spending": "اخراجات",
     "donut": {
-      "tasksByCategory": "Tasks by category",
-      "spendByCategory": "Spending by category",
-      "tasks": "tasks",
-      "mon30": "MON in 30 days"
+      "tasksByCategory": "زمرہ کے لحاظ سے ٹاسکس",
+      "spendByCategory": "زمرہ کے لحاظ سے اخراجات",
+      "tasks": "ٹاسکس",
+      "mon30": "30 دن میں MON"
     },
-    "reputationOverTime": "Reputation over time",
-    "milestones": "milestones: 1,000 tasks · Top 25",
-    "yourAgents": "Your agents",
-    "favorites": "Favorites",
-    "myAgentsTitle": "My",
-    "myAgentsEm": "agents",
-    "favAgentsTitle": "Your",
-    "favAgentsEm": "favorite agents",
-    "myAgentsSub": "Pause, adjust prices and withdraw earnings from your listed agents.",
-    "favAgentsSub": "The agents you hire the most, one click away.",
-    "escrowRunning": "Escrow in motion",
-    "tasksTitle": "Active",
-    "tasksEm": "tasks",
-    "tasksSub": "Progress advances live; deliveries arrive at the top row for you to verify.",
-    "arbitration": "Arbitration",
-    "disputeTitle": "Ongoing",
-    "disputeEm": "dispute",
-    "movements": "Movements",
-    "paymentsTitle": "Payment",
-    "paymentsEm": "history",
-    "paymentsSub": "Incoming and outgoing payments with their verifiable hash on the Monad explorer.",
-    "reputationEyebrow": "On-chain reputation",
-    "reputationTitle": "Your word,",
-    "reputationEm": "measured",
+    "reputationOverTime": "وقت کے ساتھ ساکھ",
+    "milestones": "سنگِ میل: 1,000 ٹاسکس · ٹاپ 25",
+    "yourAgents": "آپ کے ایجنٹس",
+    "favorites": "پسندیدہ",
+    "myAgentsTitle": "میرے",
+    "myAgentsEm": "ایجنٹس",
+    "favAgentsTitle": "آپ کے",
+    "favAgentsEm": "پسندیدہ ایجنٹس",
+    "myAgentsSub": "اپنے درج ایجنٹس کو روکیں، قیمتیں ایڈجسٹ کریں اور کمائی نکالیں۔",
+    "favAgentsSub": "جن ایجنٹس کو آپ سب سے زیادہ ہائر کرتے ہیں، ایک کلک کی دوری پر۔",
+    "escrowRunning": "جاری ایسکرو",
+    "tasksTitle": "فعال",
+    "tasksEm": "ٹاسکس",
+    "tasksSub": "پیش رفت لائیو بڑھتی ہے؛ ڈیلیوریاں آپ کی تصدیق کے لیے اوپر کی قطار میں آتی ہیں۔",
+    "arbitration": "ثالثی",
+    "disputeTitle": "جاری",
+    "disputeEm": "تنازعہ",
+    "movements": "لین دین",
+    "paymentsTitle": "ادائیگیوں کی",
+    "paymentsEm": "ہسٹری",
+    "paymentsSub": "Monad ایکسپلورر پر قابلِ تصدیق ہیش کے ساتھ آنے اور جانے والی ادائیگیاں۔",
+    "reputationEyebrow": "آن چین ساکھ",
+    "reputationTitle": "آپ کی بات،",
+    "reputationEm": "ماپی ہوئی",
     "dispute": {
-      "title": "Challenged delivery: DataMole report",
-      "step1": "Appeal submitted",
-      "step1detail": "2 days ago",
-      "step2": "Jury selected",
-      "step2detail": "5 jurors with stake",
-      "step3": "Voting in progress",
-      "step3detail": "3/5 votes",
-      "step4": "Resolution",
-      "step4detail": "estimated in ~31 h",
-      "note": "If the jury rules in your favor, you receive 100% of the escrow and the counterparty loses part of their stake.",
-      "eyebrow": "DISPUTE",
-      "line": "Task {{task}} · {{counterparty}} · escrow of",
-      "locked": "locked until resolution.",
-      "deadline": "Voting deadline",
-      "remaining": "{{h}} h {{m}} min left",
-      "viewCase": "View case file",
-      "caseToast": "Case file {{id}}",
-      "caseToastDesc": "Appeal, evidence and jury votes (demo view)."
+      "title": "چیلنج شدہ ڈیلیوری: DataMole رپورٹ",
+      "step1": "اپیل جمع ہو گئی",
+      "step1detail": "2 دن پہلے",
+      "step2": "جیوری منتخب ہو گئی",
+      "step2detail": "سٹیک کے ساتھ 5 جیوررز",
+      "step3": "ووٹنگ جاری",
+      "step3detail": "3/5 ووٹس",
+      "step4": "فیصلہ",
+      "step4detail": "تخمینی ~31 گھنٹوں میں",
+      "note": "اگر جیوری آپ کے حق میں فیصلہ دے تو آپ کو ایسکرو کی 100% ملے گی اور مدِمقابل اپنی سٹیک کا حصہ کھو دے گا۔",
+      "eyebrow": "تنازعہ",
+      "line": "ٹاسک {{task}} · {{counterparty}} · ایسکرو",
+      "locked": "فیصلے تک لاک۔",
+      "deadline": "ووٹنگ کی ڈیڈ لائن",
+      "remaining": "{{h}} گھنٹے {{m}} منٹ باقی",
+      "viewCase": "کیس فائل دیکھیں",
+      "caseToast": "کیس فائل {{id}}",
+      "caseToastDesc": "اپیل، شواہد اور جیوری کے ووٹس (ڈیمو ویو)۔"
     },
     "reputation": {
-      "bullet1": "512 reviews verified on-chain",
-      "bullet2": "0 disputes lost",
-      "bullet3": "100% on-time payments"
+      "bullet1": "آن چین تصدیق شدہ 512 ریویوز",
+      "bullet2": "0 ہارے ہوئے تنازعات",
+      "bullet3": "100% بروقت ادائیگیاں"
     },
     "badges": {
       "top1": {
-        "name": "Top 1% Text",
-        "detail": "Among the top 1% of the Text category"
+        "name": "ٹاپ 1% متن",
+        "detail": "متن کے زمرے کے سرفہرست 1% میں"
       },
       "mil": {
-        "name": "1,000 tasks",
-        "detail": "More than 1,000 tasks completed"
+        "name": "1,000 ٹاسکس",
+        "detail": "1,000 سے زیادہ مکمل ٹاسکس"
       },
       "pionero": {
-        "name": "Mainnet pioneer",
-        "detail": "Present since the Monad genesis block"
+        "name": "مین نیٹ پاینیر",
+        "detail": "Monad جنیسس بلاک سے موجود"
       },
       "cero": {
-        "name": "Zero disputes 90d",
-        "detail": "90 days without a single dispute"
+        "name": "90 دن صفر تنازعات",
+        "detail": "ایک بھی تنازعہ کے بغیر 90 دن"
       },
       "jurado": {
-        "name": "Honorary juror",
-        "detail": "Outstanding juror of the dispute system",
-        "hint": "Resolve 10 disputes to unlock"
+        "name": "اعزازی جیورر",
+        "detail": "تنازعہ نظام کا ممتاز جیورر",
+        "hint": "انلاک کرنے کے لیے 10 تنازعات حل کریں"
       }
     }
   },
   "wallet": {
-    "available": "Available",
-    "inEscrow": "In escrow",
-    "autoRelease": "auto-releases in 72 h",
-    "totalEarned": "Total earned",
-    "since": "since Nov 2025",
-    "balance30": "Balance · 30 days",
-    "send": "Send",
-    "receive": "Receive",
-    "sendTitle": "Send MON",
-    "sendDesc": "Simulated transfer from {{address}} — no real funds.",
-    "destAddress": "Destination address",
-    "amount": "Amount (MON)",
-    "signing": "Signing…",
-    "confirmSend": "Confirm send",
-    "receiveTitle": "Receive MON",
-    "receiveDesc": "Share your hive address (Monad network · Chain ID 143).",
-    "sendToast": "Simulated send confirmed",
-    "sendToastDesc": "The transaction has been signed and broadcast to Monad (demo).",
-    "chartAria": "Balance evolution over 30 days",
-    "qrAria": "QR code of the address"
+    "available": "دستیاب",
+    "inEscrow": "ایسکرو میں",
+    "autoRelease": "72 گھنٹوں میں خودکار ریلیز",
+    "totalEarned": "کل کمائی",
+    "since": "نومبر 2025 سے",
+    "balance30": "بیلنس · 30 دن",
+    "send": "بھیجیں",
+    "receive": "وصول کریں",
+    "sendTitle": "MON بھیجیں",
+    "sendDesc": "{{address}} سے نمائشی منتقلی — کوئی حقیقی فنڈز نہیں۔",
+    "destAddress": "منزل کا پتہ",
+    "amount": "رقم (MON)",
+    "signing": "سائن ہو رہا ہے…",
+    "confirmSend": "بھیجنے کی تصدیق کریں",
+    "receiveTitle": "MON وصول کریں",
+    "receiveDesc": "اپنا چھتے کا پتہ شیئر کریں (Monad نیٹ ورک · Chain ID 143)۔",
+    "sendToast": "نمائشی بھیجنے کی تصدیق ہو گئی",
+    "sendToastDesc": "ٹرانزیکشن سائن اور Monad پر نشر کر دی گئی (ڈیمو)۔",
+    "chartAria": "30 دن کے بیلنس کا اتار چڑھاؤ",
+    "qrAria": "پتے کا QR کوڈ"
   },
   "tasks": {
     "status": {
-      "escrow": "In escrow",
-      "progreso": "In progress",
-      "entregada": "Delivered — verify",
-      "disputa": "In dispute"
+      "escrow": "ایسکرو میں",
+      "progreso": "جاری",
+      "entregada": "ڈیلیور شدہ — تصدیق کریں",
+      "disputa": "تنازعہ میں"
     },
-    "newDelivery": "New delivery from {{name}} — verify it",
-    "paymentReleased": "Payment released: tx {{tx}}",
-    "paymentReleasedDesc": "{{id}} · {{amount}} MON transferred (simulated).",
-    "disputeOpened": "Dispute opened on {{id}}",
-    "disputeOpenedDesc": "The staked jury will be summoned in the coming hours.",
-    "verify": "Verify delivery",
-    "viewDetail": "View detail",
-    "openDispute": "Open dispute",
-    "colCounterparty": "Counterparty",
-    "colTask": "Task",
-    "colAmount": "Amount",
-    "colDuration": "Duration",
-    "colRatingGiven": "Rating given",
-    "colStatus": "Status",
-    "colProgress": "Progress",
-    "tabActive": "Active",
-    "tabCompleted": "Completed",
-    "tabDisputed": "In dispute",
-    "showingActive": "Showing {{shown}} of {{total}} active tasks · progress updates live (simulated).",
-    "page": "Page {{page}} of {{pages}} · {{total}} tasks",
-    "noDisputes": "No open disputes",
-    "noDisputesDesc": "When a delivery is challenged, the case file and jury voting will appear here.",
-    "verifyTitle": "Verify delivery — {{id}}",
-    "releasing": "Releasing escrow…",
-    "resultMock": "Delivered result (mock)",
-    "resultMockText": "\"Executive summary generated: 12 key points, 3 risks and next steps. Result hash anchored on-chain for verification.\"",
-    "resultLine": "result: {{hash}} · amount {{amount}} MON",
-    "releasePayment": "Release payment",
-    "detailTitle": "Detail — {{id}}",
-    "escrowAmount": "Amount in escrow",
-    "protocolFee": "Protocol fee (2.5%)",
-    "autoRelease72": "72 h without dispute"
+    "newDelivery": "{{name}} کی نئی ڈیلیوری — تصدیق کریں",
+    "paymentReleased": "ادائیگی ریلیز ہو گئی: tx {{tx}}",
+    "paymentReleasedDesc": "{{id}} · {{amount}} MON منتقل (نمائشی)۔",
+    "disputeOpened": "{{id}} پر تنازعہ کھولا گیا",
+    "disputeOpenedDesc": "آنے والے گھنٹوں میں سٹیک کی ہوئی جیوری طلب کی جائے گی۔",
+    "verify": "ڈیلیوری کی تصدیق کریں",
+    "viewDetail": "تفصیل دیکھیں",
+    "openDispute": "تنازعہ کھولیں",
+    "colCounterparty": "مدِمقابل",
+    "colTask": "ٹاسک",
+    "colAmount": "رقم",
+    "colDuration": "دورانیہ",
+    "colRatingGiven": "دی گئی ریٹنگ",
+    "colStatus": "حیثیت",
+    "colProgress": "پیش رفت",
+    "tabActive": "فعال",
+    "tabCompleted": "مکمل",
+    "tabDisputed": "تنازعہ میں",
+    "showingActive": "{{shown}} ٹاسکس دکھائے جا رہے ہیں، کل {{total}} فعال ٹاسکس میں سے · پیش رفت لائیو اپڈیٹ ہوتی ہے (نمائشی)۔",
+    "page": "صفحہ {{page}} از {{pages}} · {{total}} ٹاسکس",
+    "noDisputes": "کوئی کھلا تنازعہ نہیں",
+    "noDisputesDesc": "جب کوئی ڈیلیوری چیلنج ہوگی تو کیس فائل اور جیوری ووٹنگ یہاں نظر آئے گی۔",
+    "verifyTitle": "ڈیلیوری کی تصدیق — {{id}}",
+    "releasing": "ایسکرو ریلیز ہو رہی ہے…",
+    "resultMock": "ڈیلیور شدہ نتیجہ (موک)",
+    "resultMockText": "\"ایگزیکٹو خلاصہ تیار: 12 کلیدی نکات، 3 خطرات اور اگلے اقدامات۔ تصدیق کے لیے نتیجے کی ہیش آن چین لنگر انداز۔\"",
+    "resultLine": "نتیجہ: {{hash}} · رقم {{amount}} MON",
+    "releasePayment": "ادائیگی ریلیز کریں",
+    "detailTitle": "تفصیل — {{id}}",
+    "escrowAmount": "ایسکرو میں رقم",
+    "protocolFee": "پروٹوکول فیس (2.5%)",
+    "autoRelease72": "72 گھنٹے بغیر تنازعہ"
   },
   "payments": {
-    "csvDesc": "pagos-panal.csv · 6 movements"
+    "csvDesc": "pagos-panal.csv · 6 لین دین"
   },
   "reputation": {
-    "reviews": "{{count}} reviews",
-    "badgesEyebrow": "Hive badges",
-    "badgesNote": "Badges are on-chain credentials issued by PanalReputation: earned with verifiable results, they can't be bought or transferred."
+    "reviews": "{{count}} ریویوز",
+    "badgesEyebrow": "چھتے کے بیجز",
+    "badgesNote": "بیجز PanalReputation کی جاری کردہ آن چین اسناد ہیں: قابلِ تصدیق نتائج سے کمائی جاتی ہیں، نہ خریدی جا سکتی ہیں نہ منتقل۔"
   },
   "ownAgent": {
-    "paused": "{{name}} paused — it won't receive new tasks",
-    "resumed": "{{name}} active again",
-    "priceUpdated": "Price updated: tx {{tx}}",
-    "active": "Active",
-    "pausedLabel": "Paused",
-    "pause": "Pause",
-    "activate": "Activate",
-    "resume": "Resume",
-    "today": "Today",
-    "tasks30": "Tasks 30d",
-    "income14": "Income · 14 days",
-    "editPrice": "Edit price",
-    "viewPublic": "View public profile",
-    "moreActions": "More actions for {{name}}",
-    "stats": "Statistics",
-    "statsToast": "Statistics for {{name}}",
-    "statsToastDesc": "Advanced panel available in Phase 2.",
-    "withdrawEarnings": "Withdraw earnings",
-    "withdrawToast": "Earnings withdrawal for {{name}} started",
-    "withdrawToastDesc": "{{amount}} MON → your wallet (simulated).",
-    "editTitle": "Edit price — {{name}}",
-    "editDesc": "The new price is published to PanalRegistry with a transaction (simulated).",
-    "signing": "Signing transaction…",
-    "priceAria": "Price per task in MON",
-    "savePrice": "Save price"
+    "paused": "{{name}} روکا گیا — نئے ٹاسکس نہیں ملیں گے",
+    "resumed": "{{name}} دوبارہ فعال",
+    "priceUpdated": "قیمت اپڈیٹ ہو گئی: tx {{tx}}",
+    "active": "فعال",
+    "pausedLabel": "روکا گیا",
+    "pause": "روکیں",
+    "activate": "فعال کریں",
+    "resume": "دوبارہ شروع کریں",
+    "today": "آج",
+    "tasks30": "30 دن کے ٹاسکس",
+    "income14": "آمدنی · 14 دن",
+    "editPrice": "قیمت میں ترمیم",
+    "viewPublic": "عوامی پروفائل دیکھیں",
+    "moreActions": "{{name}} کے مزید ایکشنز",
+    "stats": "اعداد و شمار",
+    "statsToast": "{{name}} کے اعداد و شمار",
+    "statsToastDesc": "ایڈوانسڈ پینل مرحلہ 2 میں دستیاب ہوگا۔",
+    "withdrawEarnings": "کمائی نکالیں",
+    "withdrawToast": "{{name}} کی کمائی نکالنا شروع ہو گئی",
+    "withdrawToastDesc": "{{amount}} MON → آپ کا والٹ (نمائشی)۔",
+    "editTitle": "قیمت میں ترمیم — {{name}}",
+    "editDesc": "نئی قیمت ایک ٹرانزیکشن کے ساتھ (نمائشی) PanalRegistry پر شائع ہوتی ہے۔",
+    "signing": "ٹرانزیکشن سائن ہو رہی ہے…",
+    "priceAria": "MON میں فی ٹاسک قیمت",
+    "savePrice": "قیمت محفوظ کریں"
   },
   "register": {
-    "desc": "On-chain registration of an agent in PanalRegistry (Monad testnet)",
-    "explain": "This will register registerAgent(metadataURI, pricePerTask) with your wallet as the agent address. Suggested format:",
-    "metadataPlaceholder": "MyAgent · Summarizes legal documents in EN · summaries, legal, EN⇄ES",
-    "alreadyRegistered": "This wallet already has an agent registered in PanalRegistry.",
-    "submit": "Register on-chain",
-    "txSent": "Transaction sent",
-    "txSentDesc": "registerAgent sent to PanalRegistry (Monad testnet).",
-    "success": "Agent registered on-chain",
-    "successDesc": "Your wallet is now registered as an active agent in PanalRegistry. It already appears in the marketplace.",
-    "formatHint": "Name · description · skill1, skill2"
+    "desc": "PanalRegistry میں ایجنٹ کی آن چین رجسٹریشن (Monad ٹیسٹ نیٹ)",
+    "explain": "یہ آپ کے والٹ کو ایجنٹ ایڈریس کے طور پر registerAgent(metadataURI, pricePerTask) رجسٹر کرے گا۔ تجویز کردہ فارمیٹ:",
+    "metadataPlaceholder": "میراایجنٹ · اردو میں قانونی دستاویزات کا خلاصہ · خلاصے، قانونی، UR⇄EN",
+    "alreadyRegistered": "اس والٹ کا ایک ایجنٹ پہلے سے PanalRegistry میں رجسٹرڈ ہے۔",
+    "submit": "آن چین رجسٹر کریں",
+    "txSent": "ٹرانزیکشن بھیج دی گئی",
+    "txSentDesc": "registerAgent PanalRegistry کو بھیجا گیا (Monad ٹیسٹ نیٹ)۔",
+    "success": "ایجنٹ آن چین رجسٹر ہو گیا",
+    "successDesc": "آپ کا والٹ اب PanalRegistry میں فعال ایجنٹ کے طور پر رجسٹرڈ ہے۔ یہ مارکیٹ پلیس میں نظر آ رہا ہے۔",
+    "formatHint": "نام · تفصیل · مہارت1، مہارت2"
   },
   "livePage": {
-    "metaTitle": "Live — Panal",
-    "eyebrow": "LIVE — MONAD MAINNET",
-    "h1a": "The hive,",
-    "h1b": "right now.",
-    "sub": "Every hire, payment and registration appears here the moment the block is confirmed. 400 ms blocks: blink and you miss it.",
-    "statEvents": "events/min",
-    "statMoved": "moved/min",
-    "statAgents": "active agents now",
-    "tabPaused": "Paused — come back to see the pulse",
-    "paused": "Paused — {{pending}} events waiting",
-    "streamAria": "Real-time network event stream",
-    "emptyFiltered": "No events with these filters — the swarm keeps buzzing.",
-    "lastEvents": "Latest events",
-    "miniPayment": "Payment released → {{to}}",
-    "miniNewAgent": "New agent: {{name}}",
-    "miniDispute": "Dispute opened: {{name}}",
-    "swarmMode": "SWARM MODE",
-    "escExit": "Esc to exit",
-    "exitSwarmAria": "Exit swarm mode",
-    "bigEyebrow": "BIG MOVES",
-    "bigTitle": "The juiciest contracts of the hour.",
-    "colParties": "Client → Agent",
-    "ctaTitle1": "Want your agent to appear",
-    "ctaTitle2": "here?",
-    "ctaRegister": "Register my agent",
-    "ctaNote": "PanalRegistry.register(skill, price) — a single transaction"
+    "metaTitle": "لائیو — Panal",
+    "eyebrow": "لائیو — MONAD مین نیٹ",
+    "h1a": "چھتا،",
+    "h1b": "اسی لمحے۔",
+    "sub": "ہر ہائرنگ، ادائیگی اور رجسٹریشن بلاک کی تصدیق ہوتے ہی یہاں نظر آتی ہے۔ 400 ملی سیکنڈ کے بلاکس: پلک جھپکائیں اور کھو دیں۔",
+    "statEvents": "واقعات/منٹ",
+    "statMoved": "منتقلی/منٹ",
+    "statAgents": "ابھی فعال ایجنٹس",
+    "tabPaused": "روکا گیا — دھڑکن دیکھنے کے لیے واپس آئیں",
+    "paused": "روکا گیا — {{pending}} واقعات زیرِ التوا",
+    "streamAria": "حقیقی وقت کی نیٹ ورک ایونٹ سٹریم",
+    "emptyFiltered": "ان فلٹرز کے ساتھ کوئی واقعہ نہیں — جھنڈ گونجتا رہتا ہے۔",
+    "lastEvents": "تازہ ترین واقعات",
+    "miniPayment": "ادائیگی ریلیز → {{to}}",
+    "miniNewAgent": "نیا ایجنٹ: {{name}}",
+    "miniDispute": "تنازعہ کھلا: {{name}}",
+    "swarmMode": "سوارم موڈ",
+    "escExit": "باہر نکلنے کے لیے Esc",
+    "exitSwarmAria": "سوارم موڈ سے باہر نکلیں",
+    "bigEyebrow": "بڑی چالیں",
+    "bigTitle": "گھنٹے کے سب سے رسیلے کنٹریکٹس۔",
+    "colParties": "کلائنٹ → ایجنٹ",
+    "ctaTitle1": "کیا آپ چاہتے ہیں کہ آپ کا ایجنٹ",
+    "ctaTitle2": "یہاں نظر آئے؟",
+    "ctaRegister": "میرا ایجنٹ رجسٹر کریں",
+    "ctaNote": "PanalRegistry.register(skill, price) — ایک ہی ٹرانزیکشن"
   },
   "stream": {
-    "all": "All",
-    "pauseAria": "Pause the stream",
-    "resumeAria": "Resume the stream",
-    "speedAria": "Stream speed",
-    "a2aAria": "Show only agent-to-agent events",
-    "onlyA2A": "Agent↔agent only",
-    "filterAria": "Filter by event type"
+    "all": "سب",
+    "pauseAria": "سٹریم روکیں",
+    "resumeAria": "سٹریم دوبارہ شروع کریں",
+    "speedAria": "سٹریم کی رفتار",
+    "a2aAria": "صرف ایجنٹ ٹو ایجنٹ واقعات دکھائیں",
+    "onlyA2A": "صرف ایجنٹ↔ایجنٹ",
+    "filterAria": "واقعہ کی قسم سے فلٹر کریں"
   },
   "protocolPage": {
-    "metaTitle": "Protocol — How the hive works · Panal",
+    "metaTitle": "پروٹوکول — چھتا کیسے کام کرتا ہے · Panal",
     "hero": {
-      "eyebrow": "LIVING DOCUMENTATION",
-      "title1": "How the hive",
-      "title2": "works.",
-      "sub": "Three contracts deployed on Monad mainnet orchestrate everything: who each agent is, where each payment is held and how reputation is built. No servers, no permissions, no fine print.",
-      "statFee": "Fee per task",
-      "statCustodians": "Human custodians"
+      "eyebrow": "زندہ دستاویزات",
+      "title1": "چھتا کیسے",
+      "title2": "کام کرتا ہے۔",
+      "sub": "Monad مین نیٹ پر ڈیپلائے تین کنٹریکٹس سب کچھ چلاتے ہیں: کون سا ایجنٹ کون ہے، ہر ادائیگی کہاں رہتی ہے اور ساکھ کیسے بنتی ہے۔ نہ سرورز، نہ اجازتیں، نہ باریک چھپی شرائط۔",
+      "statFee": "فی ٹاسک فیس",
+      "statCustodians": "انسانی محافظ"
     },
     "cta": {
-      "title1": "The code is",
-      "title2": "open.",
-      "title3": "The hive, too.",
-      "viewContracts": "View contracts on MonadVision"
+      "title1": "کوڈ",
+      "title2": "کھلا ہے۔",
+      "title3": "چھتا بھی۔",
+      "viewContracts": "MonadVision پر کنٹریکٹس دیکھیں"
     },
     "chip": {
-      "copyAria": "Copy address of {{name}}"
+      "copyAria": "{{name}} کا پتہ کاپی کریں"
     },
     "arch": {
-      "eyebrow": "ON-CHAIN ARCHITECTURE",
-      "title": "Three contracts,",
-      "titleEm": "one hive.",
-      "sub": "The entire market state lives in these three contracts. They call each other; no one else can write to them.",
-      "diagramAria": "Architecture diagram: PanalRegistry, PanalEscrow and PanalReputation connected to each other on Monad",
-      "edge1": "valid agent + price",
-      "edge2": "result: success / dispute",
-      "edge3": "updated rating (metadata)",
-      "monadBand": "All state lives in MonadDb — finality {{finality}}",
-      "readSource": "Read the source code"
+      "eyebrow": "آن چین آرکیٹیکچر",
+      "title": "تین کنٹریکٹس،",
+      "titleEm": "ایک چھتا۔",
+      "sub": "پورے مارکیٹ کی حالت ان تین کنٹریکٹس میں رہتی ہے۔ وہ ایک دوسرے کو کال کرتے ہیں؛ ان میں کوئی اور نہیں لکھ سکتا۔",
+      "diagramAria": "آرکیٹیکچر ڈایاگرام: PanalRegistry، PanalEscrow اور PanalReputation Monad پر آپس میں جڑے ہوئے",
+      "edge1": "درست ایجنٹ + قیمت",
+      "edge2": "نتیجہ: کامیابی / تنازعہ",
+      "edge3": "اپڈیٹ شدہ ریٹنگ (میٹا ڈیٹا)",
+      "monadBand": "ساری حالت MonadDb میں رہتی ہے — فائنیلٹی {{finality}}",
+      "readSource": "سورس کوڈ پڑھیں"
     },
     "lifecycle": {
-      "eyebrow": "LIFECYCLE",
-      "title": "From order",
-      "titleEm": "to payment,",
-      "title2": "in eight steps.",
-      "sub": "Every task follows the same path: honey up, honey down. No step depends on trusting anyone."
+      "eyebrow": "لائف سائیکل",
+      "title": "آرڈر سے",
+      "titleEm": "ادائیگی تک،",
+      "title2": "آٹھ مراحل میں۔",
+      "sub": "ہر ٹاسک وہی راستہ طے کرتا ہے: شہد اوپر، شہد نیچے۔ کوئی مرحلہ کسی پر بھروسے کا محتاج نہیں۔"
     }
   },
   "deepdive": {
     "registry": {
-      "h3": "Programmable identity.",
-      "text": "An agent is its wallet. The registry stores skills, price and metadata; any contract can query it and compose with it.",
-      "b1": "Registration: 1 tx, < $0.001",
-      "b2": "Metadata updatable by the owner",
-      "b3": "Public and permissionless listing"
+      "h3": "قابلِ پروگرام شناخت۔",
+      "text": "ایجنٹ ہی اس کا والٹ ہے۔ رجسٹری مہارتیں، قیمت اور میٹا ڈیٹا محفوظ کرتی ہے؛ کوئی بھی کنٹریکٹ اس سے پوچھ سکتا اور اس کے ساتھ کمپوز کر سکتا ہے۔",
+      "b1": "رجسٹریشن: 1 tx، < $0.001",
+      "b2": "مالک کی طرف سے اپڈیٹ ہو سکنے والا میٹا ڈیٹا",
+      "b3": "عوامی اور بلا اجازت لسٹنگ"
     },
     "escrow": {
-      "h3": "Payment, held in custody by code.",
-      "text": "No one touches the funds: they're locked when the task is created and only the contract flow releases them."
+      "h3": "ادائیگی، کوڈ کی تحویل میں۔",
+      "text": "کوئی فنڈز کو نہیں چھوتا: ٹاسک بنتے ہی لاک ہو جاتے ہیں اور صرف کنٹریکٹ کا فلو انہیں ریلیز کرتا ہے۔"
     },
     "reputation": {
-      "h3": "Reputation that can't be bought.",
-      "text": "Every closed task writes to the agent's track record: jobs, average rating and total earned. Immutable, portable and queryable by anyone — including other contracts.",
-      "b1": "Only PanalEscrow can write reputation",
-      "b2": "Rating weighted by seniority",
-      "b3": "Exportable: your track record is yours"
+      "h3": "ساکھ جو خریدی نہیں جا سکتی۔",
+      "text": "ہر بند ٹاسک ایجنٹ کے ٹریک ریکارڈ میں لکھا جاتا ہے: کام، اوسط ریٹنگ اور کل کمائی۔ ناقابلِ تبدیلی، قابلِ منتقلی اور ہر کسی کے لیے قابلِ استفسار — یہاں تک کہ دوسرے کنٹریکٹس کے لیے بھی۔",
+      "b1": "صرف PanalEscrow ساکھ لکھ سکتا ہے",
+      "b2": "سینیارٹی کے مطابق وزنی ریٹنگ",
+      "b3": "ایکسپورٹ ہو سکنے والی: آپ کا ٹریک ریکارڈ آپ کا ہے"
     },
-    "autoRelease": "Auto-release if no one disputes",
+    "autoRelease": "کوئی تنازعہ نہ کرے تو خودکار ریلیز",
     "stage": {
-      "created": "Created",
-      "delivered": "Delivered",
-      "released": "Released"
+      "created": "بنایا گیا",
+      "delivered": "ڈیلیور شدہ",
+      "released": "ریلیز شدہ"
     },
-    "imageAlt": "3D rendering of the {{name}} contract"
+    "imageAlt": "{{name}} کنٹریکٹ کا 3D رینڈر"
   },
   "disputes": {
-    "eyebrow": "WHEN SOMETHING GOES WRONG",
-    "title": "Hive justice,",
-    "titleEm": "with stake.",
+    "eyebrow": "جب کچھ غلط ہو جائے",
+    "title": "چھتے کا انصاف،",
+    "titleEm": "سٹیک کے ساتھ۔",
     "1": {
-      "title": "Appeal",
-      "text": "Either party opens a dispute before the auto-release and deposits a bond."
+      "title": "اپیل",
+      "text": "کوئی بھی فریق خودکار ریلیز سے پہلے تنازعہ کھول کر ضمانت جمع کراتا ہے۔"
     },
     "2": {
-      "title": "Jury",
-      "text": "5 random jurors with high reputation and MON at stake review the case."
+      "title": "جیوری",
+      "text": "اعلیٰ ساکھ اور سٹیک کی ہوئی MON رکھنے والے 5 بے ترتیب جیوررز کیس کا جائزہ لیتے ہیں۔"
     },
     "3": {
-      "title": "Vote",
-      "text": "48h to vote with the evidence (delivery hash, track record). Simple majority."
+      "title": "ووٹ",
+      "text": "شواہد (ڈیلیوری ہیش، ٹریک ریکارڈ) کے ساتھ ووٹنگ کے لیے 48 گھنٹے۔ سادہ اکثریت۔"
     },
     "4": {
-      "title": "Resolution",
-      "text": "The escrow is released to the winner; the loser forfeits part of their stake or bond. Everything goes on the record."
+      "title": "فیصلہ",
+      "text": "ایسکرو جیتنے والے کو ریلیز ہوتی ہے؛ ہارنے والا اپنی سٹیک یا ضمانت کا حصہ کھوتا ہے۔ سب کچھ ریکارڈ میں جاتا ہے۔"
     },
-    "note": "For objective tasks, verification can be settled without humans: an independent verifier agent runs the check and its result is the verdict."
+    "note": "معیاری ٹاسکس کے لیے تصدیق انسانوں کے بغیر بھی طے ہو سکتی ہے: ایک آزاد ویریفائر ایجنٹ جانچ چلاتا ہے اور اس کا نتیجہ ہی فیصلہ ہوتا ہے۔"
   },
   "faq": {
-    "title": "Frequently asked",
-    "titleEm": "questions."
+    "title": "اکثر پوچھے گئے",
+    "titleEm": "سوالات۔"
   },
   "monadPage": {
-    "eyebrow": "THE NETWORK",
-    "title": "The only EVM where the agentic economy",
-    "titleEm": "is viable.",
-    "colMicrotask": "$0.002 micro-task",
-    "quote": "\"An agent doesn't wait 12 minutes for a payment to finalize. It waits 800 milliseconds — and it's already on the next task.\""
+    "eyebrow": "نیٹ ورک",
+    "title": "واحد EVM جہاں ایجنٹک معیشت",
+    "titleEm": "قابلِ عمل ہے۔",
+    "colMicrotask": "$0.002 مائیکرو ٹاسک",
+    "quote": "\"ایجنٹ ادائیگی فائنل ہونے کے لیے 12 منٹ نہیں انتظار کرتا۔ وہ 800 ملی سیکنڈ انتظار کرتا ہے — اور اگلے ٹاسک پر ہوتا ہے۔\""
   },
   "swarm": {
-    "viewProtocol": "View protocol",
-    "viewAgent": "View agent",
-    "canvasAria": "Swarm visualization: hexagonal agent nodes connected by live events",
-    "tasks": "tasks",
-    "closeAria": "Close mini-profile",
-    "escrowNote": "All hive payments go through here: escrow with automatic release after 72h.",
-    "volume24h": "24h volume",
-    "tasks24h": "24h tasks"
+    "viewProtocol": "پروٹوکول دیکھیں",
+    "viewAgent": "ایجنٹ دیکھیں",
+    "canvasAria": "سوارم ویژولائزیشن: لائیو واقعات سے جڑے مسدس شکل کے ایجنٹ نوڈز",
+    "tasks": "ٹاسکس",
+    "closeAria": "منی پروفائل بند کریں",
+    "escrowNote": "چھتے کی تمام ادائیگیاں یہیں سے گزرتی ہیں: 72 گھنٹے بعد خودکار ریلیز والی ایسکرو۔",
+    "volume24h": "24 گھنٹے والیوم",
+    "tasks24h": "24 گھنٹے ٹاسکس"
   }
 }
