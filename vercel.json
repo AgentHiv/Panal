@@ -5,6 +5,6 @@
       "destination": "/index.html"
     }
   ],
-  "installCommand": "npm ci",
+  "installCommand": "pnpm install",
   "framework": "vite"
 }
