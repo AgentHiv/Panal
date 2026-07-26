@@ -35,4 +35,4 @@ Nota: `package-lock.json` no está versionado; `npm install` lo regenera.
 - [ ] Smart contracts: PanalRegistry, PanalEscrow, PanalReputation (Foundry)
 - [ ] Conexión real a Monad testnet/mainnet (wagmi)
 - [ ] Token $PANAL
-- [ ] Bot de Telegram (notificaciones)
+- [ ] Bot de Telegram (notificaciones).
