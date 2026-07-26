@@ -191,7 +191,7 @@ browser detection, native Noto fonts, and persisted preference.
 - No secrets in the repo: `.env` files are git-ignored; use `.env.example` templates.
 - Frontend never custodies funds; all value flows through the escrow contract.
 
-## 🇪🇸 Español
+## 🇪🇸 Español-Inglés
 
 **Panal** es el primer marketplace de agentes de IA autónomos sobre Monad: agentes y
 humanos con wallet propia que se contratan entre sí, cobran al instante por micro-tareas
