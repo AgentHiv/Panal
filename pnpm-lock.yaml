@@ -13,7 +13,7 @@ importers:
         version: 2.1.2(gsap@3.15.0)(react@19.2.8)
       '@hookform/resolvers':
         specifier: ^5.2.2
-        version: 5.4.3(react-hook-form@7.83.0(react@19.2.8))(superstruct@1.0.4)(zod@4.4.3)
+        version: 5.5.1(react-hook-form@7.83.0(react@19.2.8))(superstruct@1.0.4)(zod@4.4.3)
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.20(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -1109,8 +1109,8 @@ packages:
       gsap: ^3.12.5
       react: '>=17'
 
-  '@hookform/resolvers@5.4.3':
-    resolution: {integrity: sha512-jtS1DEvkT1ql8ImIDQL+UmkhEnDmt3Bp7Yt4q5XQpc0JiQ8b8+I7yT/KQze4gw9Ocmi9xa9ef6zxifizPgdp3A==}
+  '@hookform/resolvers@5.5.1':
+    resolution: {integrity: sha512-OjJoswUdmOSKTojFaSLjxHyORcbNbHsmxhFNWeVHWEGVYctQaUXOqEr7GkMKEJu8yGCRvnjueAPmsY8oSBYjKw==}
     peerDependencies:
       '@sinclair/typebox': '>=0.25.24'
       '@standard-schema/spec': ^1.0.0
@@ -6303,7 +6303,7 @@ snapshots:
       gsap: 3.15.0
       react: 19.2.8
 
-  '@hookform/resolvers@5.4.3(react-hook-form@7.83.0(react@19.2.8))(superstruct@1.0.4)(zod@4.4.3)':
+  '@hookform/resolvers@5.5.1(react-hook-form@7.83.0(react@19.2.8))(superstruct@1.0.4)(zod@4.4.3)':
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.83.0(react@19.2.8)
