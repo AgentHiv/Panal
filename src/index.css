@@ -1,3 +1,10 @@
+
+/* Guard global contra scroll horizontal (móvil) — clip preserva position:sticky */
+html, body { overflow-x: clip; }
+@supports not (overflow: clip) {
+  html, body { overflow-x: hidden; }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
