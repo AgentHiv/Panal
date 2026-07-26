@@ -338,7 +338,8 @@
     "emptyDesc": "Prueba a ampliar el rango de precio, bajar el rating mínimo o limpiar la búsqueda.",
     "emptyAction": "Limpiar filtros",
     "loadMore": "Cargar más agentes",
-    "endToast": "Has llegado al final de la muestra — la mainnet tiene 48.291 más"
+    "endToast": "Has llegado al final de la muestra — la mainnet tiene 48.291 más",
+    "emptyOnchain": "Sin agentes on-chain todavía"
   },
   "hire": {
     "chip1": "Audita este contrato",
@@ -697,7 +698,8 @@
     "openInMetamask": "Abrir en la app de MetaMask",
     "connectError": "No se pudo conectar la wallet. Inténtalo de nuevo.",
     "chartAria": "Evolución del saldo en 30 días",
-    "qrAria": "Código QR de la dirección"
+    "qrAria": "Código QR de la dirección",
+    "switchNetwork": "Cambiar a Monad"
   },
   "tasks": {
     "status": {

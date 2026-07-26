@@ -13,7 +13,7 @@ import { injected } from 'wagmi/connectors';
 import { WalletContext, shortAddress } from '@/hooks/useWallet';
 import type { WalletState } from '@/hooks/useWallet';
 import InstallWalletDialog from '@/components/InstallWalletDialog';
-import { monadTestnet } from '@/contracts/config';
+import { activeChain } from '@/contracts/config';
 
 export default function WalletProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
@@ -44,10 +44,10 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
     disconnect();
   }, [disconnect]);
 
-  const wrongNetwork = isConnected && chainId !== monadTestnet.id;
+  const wrongNetwork = isConnected && chainId !== activeChain.id;
 
   const switchToMonad = useCallback(() => {
-    switchChain({ chainId: monadTestnet.id });
+    switchChain({ chainId: activeChain.id });
   }, [switchChain]);
 
   const value = useMemo<WalletState>(

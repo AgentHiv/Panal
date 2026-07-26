@@ -692,7 +692,8 @@
     "sendToast": "نمائشی بھیجنے کی تصدیق ہو گئی",
     "sendToastDesc": "ٹرانزیکشن سائن اور Monad پر نشر کر دی گئی (ڈیمو)۔",
     "chartAria": "30 دن کے بیلنس کا اتار چڑھاؤ",
-    "qrAria": "پتے کا QR کوڈ"
+    "qrAria": "پتے کا QR کوڈ",
+    "switchNetwork": "Monad پر جائیں"
   },
   "tasks": {
     "status": {

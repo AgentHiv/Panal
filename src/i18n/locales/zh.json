@@ -692,7 +692,8 @@
     "sendToast": "模拟发送已确认",
     "sendToastDesc": "交易已签名并广播至 Monad（演示）。",
     "chartAria": "30 天余额变化",
-    "qrAria": "地址二维码"
+    "qrAria": "地址二维码",
+    "switchNetwork": "切换到 Monad"
   },
   "tasks": {
     "status": {

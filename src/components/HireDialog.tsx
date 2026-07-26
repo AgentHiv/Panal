@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ExternalLink, Hexagon, Loader2, Timer, TriangleAlert } from 'lucide-react';
@@ -21,8 +22,8 @@ import { PROTOCOL_FEE, ESCROW_AUTO_RELEASE_H } from '@/data/protocol';
 import { randomTxHash } from '@/data/events';
 import { useWallet } from '@/hooks/useWallet';
 import { isOnchainAgent } from '@/hooks/usePanalAgents';
-import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, monadTestnet } from '@/contracts/config';
-import { panalEscrowAbi } from '@/contracts/abis';
+import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, PANAL_REGISTRY_ADDRESS, activeChain, publicClient } from '@/contracts/config';
+import { panalEscrowAbi, panalRegistryAbi } from '@/contracts/abis';
 
 export interface HireDialogProps {
   agent: Agent | null;
@@ -70,9 +71,26 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   } = useWriteContract();
   const { isLoading: confirming, isSuccess: mined } = useWaitForTransactionReceipt({ hash: realTxHash });
 
-  const hireOnchain = () => {
+  const hireOnchain = async () => {
     if (!isOnchainAgent(agent)) return;
-    const taskHash = keccak256(toBytes(taskText.trim()));
+    // Revalidar el precio on-chain justo antes de firmar: el agente puede
+    // haberlo cambiado desde que se cargó la lista (protección económica).
+    try {
+      const fresh = await publicClient.readContract({
+        address: PANAL_REGISTRY_ADDRESS,
+        abi: panalRegistryAbi,
+        functionName: 'getAgent',
+        args: [agent.workerAddress],
+      });
+      if (fresh.pricePerTask !== agent.priceWei) {
+        toast.error(t('wallet.txError'));
+        return;
+      }
+    } catch {
+      // si el RPC falla, seguimos con el precio cacheado (misma fuente)
+    }
+    const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
+    const taskHash = keccak256(toBytes(brief));
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 3 * 24 * 60 * 60);
     writeContract({
       address: PANAL_ESCROW_ADDRESS,
@@ -80,14 +98,16 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
       functionName: 'createTask',
       args: [agent.workerAddress, taskHash, deadline],
       value: agent.priceWei,
-      chainId: monadTestnet.id,
+      chainId: activeChain.id,
     });
     setStep(2);
   };
 
   const price = agent.pricePerTask;
   const fee = price * PROTOCOL_FEE;
-  const total = price + fee;
+  // Lo que bloquea/firma el cliente es exactamente `price`; el fee del 2,5 %
+  // se descuenta del pago al agente al liberar el escrow (ver contrato).
+  const total = price;
 
   const confetti = useMemo(
     () =>
@@ -167,7 +187,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                       <button
                         key={chip}
                         type="button"
-                        onClick={() => setTaskText(chip)}
+                        onClick={() => setTaskText(t(chip))}
                         className="rounded-full bg-sand px-3 py-1.5 text-[0.8125rem] text-ink-2 transition-colors hover:bg-honey-soft hover:text-honey-deep"
                       >
                         {t(chip)}

@@ -19,6 +19,7 @@ import { FadeUp, WordReveal } from '@/components/market/motion';
 import { cn } from '@/lib/utils';
 import type { Agent, AgentCategory } from '@/data/agents';
 import { AGENTS, CATEGORY_LABELS, getAgent } from '@/data/agents';
+import { IS_MAINNET } from '@/contracts/config';
 import { usePanalAgents, isOnchainAgent } from '@/hooks/usePanalAgents';
 
 /* ============================================================
@@ -142,7 +143,12 @@ export default function Marketplace() {
 
   /* ---------- agentes on-chain (PanalRegistry · Monad testnet) ---------- */
   const { agents: onchainAgents, hasOnchain } = usePanalAgents();
-  const allAgents = useMemo<Agent[]>(() => [...onchainAgents, ...AGENTS], [onchainAgents]);
+  // En mainnet no hay fallback a datos demo: un agente mock mostraría un
+  // TxHash simulado como si la contratación hubiera ocurrido (auditoría ALTO-2).
+  const allAgents = useMemo<Agent[]>(
+    () => (IS_MAINNET ? onchainAgents : [...onchainAgents, ...AGENTS]),
+    [onchainAgents],
+  );
 
   useEffect(() => {
     document.title = t('market.metaTitle');
@@ -313,7 +319,7 @@ export default function Marketplace() {
             </span>
           ) : (
             <span className="inline-flex items-center gap-2 rounded-full bg-sand px-3 py-1 font-mono text-[12px] text-ink-2">
-              {t('market.demoData')}
+              {IS_MAINNET ? t('market.emptyOnchain') : t('market.demoData')}
             </span>
           )}
         </FadeUp>

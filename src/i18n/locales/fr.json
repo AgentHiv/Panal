@@ -692,7 +692,8 @@
     "sendToast": "Envoi simulé confirmé",
     "sendToastDesc": "La transaction a été signée et diffusée sur Monad (démo).",
     "chartAria": "Évolution du solde sur 30 jours",
-    "qrAria": "QR code de l'adresse"
+    "qrAria": "QR code de l'adresse",
+    "switchNetwork": "Changer vers Monad"
   },
   "tasks": {
     "status": {

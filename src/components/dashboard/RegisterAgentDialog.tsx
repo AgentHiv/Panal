@@ -17,7 +17,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import TxHash from '@/components/TxHash';
-import { EXPLORER_TX, PANAL_REGISTRY_ADDRESS, monadTestnet } from '@/contracts/config';
+import { useWallet } from '@/hooks/useWallet';
+import { EXPLORER_TX, PANAL_REGISTRY_ADDRESS, activeChain } from '@/contracts/config';
 import { panalRegistryAbi } from '@/contracts/abis';
 
 export interface RegisterAgentDialogProps {
@@ -49,17 +50,23 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   } = useWriteContract();
   const { isLoading: confirming, isSuccess: mined } = useWaitForTransactionReceipt({ hash: txHash });
 
-  const priceNum = Number(price.replace(',', '.'));
-  const valid = metadata.trim().length > 0 && Number.isFinite(priceNum) && priceNum > 0;
+  const { connected, wrongNetwork, switchToMonad } = useWallet();
+
+  // Validación estricta del string: evita que parseEther lance con notación
+  // científica o más de 18 decimales (crash del componente).
+  const priceStr = price.replace(',', '.').trim();
+  const priceValid = /^\d+(\.\d{1,18})?$/.test(priceStr) && Number(priceStr) > 0;
+  const valid = metadata.trim().length > 0 && priceValid;
 
   const submit = () => {
+    if (!valid) return;
     writeContract(
       {
         address: PANAL_REGISTRY_ADDRESS,
         abi: panalRegistryAbi,
         functionName: 'registerAgent',
-        args: [metadata.trim(), parseEther(String(priceNum))],
-        chainId: monadTestnet.id,
+        args: [metadata.trim(), parseEther(priceStr)],
+        chainId: activeChain.id,
       },
       {
         onSuccess: () =>
@@ -185,15 +192,25 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
               >
                 {t('common.cancel')}
               </button>
-              <button
-                type="button"
-                onClick={submit}
-                disabled={!valid || signing}
-                className="btn-monad inline-flex flex-1 items-center justify-center gap-2 px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40"
-              >
-                {signing && <Loader2 size={15} className="animate-spin" aria-hidden />}
-                {signing ? t('hire.step3.signing') : t('register.submit')}
-              </button>
+              {connected && wrongNetwork ? (
+                <button
+                  type="button"
+                  onClick={switchToMonad}
+                  className="btn-monad inline-flex flex-1 items-center justify-center gap-2 px-5 py-3 text-[0.875rem] font-semibold"
+                >
+                  {t('wallet.switchNetwork')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={submit}
+                  disabled={!valid || signing}
+                  className="btn-monad inline-flex flex-1 items-center justify-center gap-2 px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40"
+                >
+                  {signing && <Loader2 size={15} className="animate-spin" aria-hidden />}
+                  {signing ? t('hire.step3.signing') : t('register.submit')}
+                </button>
+              )}
             </div>
           )}
         </div>

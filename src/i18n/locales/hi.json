@@ -692,7 +692,8 @@
     "sendToast": "सिम्युलेटेड भेजना कन्फ़र्म हुआ",
     "sendToastDesc": "ट्रांज़ैक्शन साइन होकर Monad पर प्रसारित हुआ (डेमो)।",
     "chartAria": "30 दिनों का बैलेंस रुझान",
-    "qrAria": "पते का QR कोड"
+    "qrAria": "पते का QR कोड",
+    "switchNetwork": "Monad पर बदलें"
   },
   "tasks": {
     "status": {

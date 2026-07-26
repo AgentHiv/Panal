@@ -22,6 +22,8 @@ contract PanalEscrow {
 
     uint256 public constant FEE_BPS = 250;        // 2.5%
     uint256 public constant AUTO_RELEASE = 3 days;
+    uint256 public constant DISPUTE_TIMEOUT = 14 days;
+    uint256 public constant MIN_TASK_AMOUNT = 0.001 ether;
 
     PanalRegistry public immutable registry;
     PanalReputation public immutable reputation;
@@ -32,6 +34,8 @@ contract PanalEscrow {
 
     Task[] public tasks;
     mapping(uint256 => uint256) public deliveredAt;
+    mapping(uint256 => uint256) public disputedAt;
+    mapping(address => uint256) public pendingWithdrawals;
 
     uint256 private _locked = 1;
 
@@ -45,6 +49,7 @@ contract PanalEscrow {
     event TreasuryUpdated(address indexed newTreasury);
     event ArbitratorTransferred(address indexed previousArbitrator, address indexed newArbitrator);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event Withdrawal(address indexed to, uint256 amount);
 
     modifier nonReentrant() {
         require(_locked == 1, "PanalEscrow: reentrant call");
@@ -62,6 +67,7 @@ contract PanalEscrow {
         require(_registry != address(0) && _reputation != address(0), "PanalEscrow: zero address");
         require(_treasury != address(0), "PanalEscrow: zero treasury");
         require(_arbitrator != address(0), "PanalEscrow: zero arbitrator");
+        require(_registry.code.length > 0 && _reputation.code.length > 0, "PanalEscrow: not contracts");
         registry = PanalRegistry(_registry);
         reputation = PanalReputation(_reputation);
         treasury = _treasury;
@@ -77,6 +83,7 @@ contract PanalEscrow {
         returns (uint256 taskId)
     {
         require(msg.value > 0, "PanalEscrow: no funds");
+        require(msg.value >= MIN_TASK_AMOUNT, "PanalEscrow: below minimum");
         require(deadline > block.timestamp, "PanalEscrow: invalid deadline");
         if (worker != address(0)) {
             require(registry.isActiveAgent(worker), "PanalEscrow: worker not active agent");
@@ -141,7 +148,18 @@ contract PanalEscrow {
         require(msg.sender == task.client || msg.sender == task.worker, "PanalEscrow: not party");
         require(task.status == Status.Open || task.status == Status.Delivered, "PanalEscrow: invalid status");
         task.status = Status.Disputed;
+        disputedAt[taskId] = block.timestamp;
         emit TaskDisputed(taskId, msg.sender);
+    }
+
+    /// @notice Si el arbitrator no resuelve en DISPUTE_TIMEOUT, cualquiera puede reembolsar al cliente.
+    function resolveStuckDispute(uint256 taskId) external nonReentrant {
+        Task storage task = _getTask(taskId);
+        require(task.status == Status.Disputed, "PanalEscrow: not disputed");
+        require(block.timestamp >= disputedAt[taskId] + DISPUTE_TIMEOUT, "PanalEscrow: not stuck");
+        task.status = Status.Cancelled;
+        _credit(task.client, task.amount);
+        emit TaskCancelled(taskId);
     }
 
     /// @notice El arbitrator resuelve: workerShareBps del monto al worker (con fee), resto al client.
@@ -150,6 +168,7 @@ contract PanalEscrow {
         require(msg.sender == arbitrator, "PanalEscrow: not arbitrator");
         require(task.status == Status.Disputed, "PanalEscrow: not disputed");
         require(workerShareBps <= 10_000, "PanalEscrow: invalid share");
+        require(rating >= 1 && rating <= 5, "PanalEscrow: invalid rating");
 
         uint256 amount = task.amount;
         uint256 workerGross = (amount * workerShareBps) / 10_000;
@@ -160,15 +179,15 @@ contract PanalEscrow {
         uint256 workerPaid;
         uint256 fee;
         if (workerGross > 0) {
+            require(task.worker != address(0), "PanalEscrow: no worker to pay");
             fee = (workerGross * FEE_BPS) / 10_000;
             workerPaid = workerGross - fee;
-            _send(treasury, fee);
-            _send(task.worker, workerPaid);
-            require(rating >= 1 && rating <= 5, "PanalEscrow: invalid rating");
+            _credit(treasury, fee);
+            _credit(task.worker, workerPaid);
             reputation.recordCompletion(task.worker, rating, workerPaid);
         }
         if (clientRefund > 0) {
-            _send(task.client, clientRefund);
+            _credit(task.client, clientRefund);
         }
         emit DisputeResolved(taskId, workerPaid, clientRefund, rating);
     }
@@ -184,7 +203,7 @@ contract PanalEscrow {
         );
         task.status = Status.Cancelled;
         uint256 amount = task.amount;
-        _send(task.client, amount);
+        _credit(task.client, amount);
         emit TaskCancelled(taskId);
     }
 
@@ -195,8 +214,8 @@ contract PanalEscrow {
     }
 
     function transferArbitrator(address newArbitrator) external {
-        require(msg.sender == arbitrator, "PanalEscrow: not arbitrator");
-        require(newArbitrator != address(0), "PanalEscrow: zero address");
+        require(msg.sender == arbitrator || msg.sender == owner, "PanalEscrow: not authorized");
+        require(newArbitrator != address(0), "PanalEscrow: zero arbitrator");
         emit ArbitratorTransferred(arbitrator, newArbitrator);
         arbitrator = newArbitrator;
     }
@@ -223,16 +242,25 @@ contract PanalEscrow {
 
         task.status = Status.Completed;
 
-        _send(treasury, fee);
-        _send(task.worker, workerPaid);
+        _credit(treasury, fee);
+        _credit(task.worker, workerPaid);
 
         reputation.recordCompletion(task.worker, rating, workerPaid);
 
         emit TaskCompleted(taskId, task.worker, workerPaid, fee, rating);
     }
 
-    function _send(address to, uint256 amount) internal {
-        (bool ok, ) = to.call{value: amount}("");
+    function _credit(address to, uint256 amount) internal {
+        if (amount > 0) pendingWithdrawals[to] += amount;
+    }
+
+    /// @notice Retira los fondos acreditados (patron pull payment).
+    function withdraw() external nonReentrant {
+        uint256 amount = pendingWithdrawals[msg.sender];
+        require(amount > 0, "PanalEscrow: nothing to withdraw");
+        pendingWithdrawals[msg.sender] = 0;
+        (bool ok, ) = msg.sender.call{value: amount}("");
         require(ok, "PanalEscrow: transfer failed");
+        emit Withdrawal(msg.sender, amount);
     }
 }

@@ -216,4 +216,55 @@ export const panalEscrowAbi = [
       { name: 'amount', type: 'uint256', indexed: false },
     ],
   },
+  // ---- hardening mainnet (auditoría 2026-07): pagos pull + timeout de disputas ----
+  {
+    type: 'function',
+    name: 'withdraw',
+    stateMutability: 'nonpayable',
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'pendingWithdrawals',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'resolveStuckDispute',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'disputedAt',
+    stateMutability: 'view',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'DISPUTE_TIMEOUT',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'MIN_TASK_AMOUNT',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'event',
+    name: 'Withdrawal',
+    inputs: [
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+  },
 ] as const;

@@ -36,7 +36,7 @@ export const monadMainnet = defineChain({
   },
 });
 
-const IS_MAINNET = import.meta.env.VITE_CHAIN === 'mainnet';
+export const IS_MAINNET = import.meta.env.VITE_CHAIN === 'mainnet';
 
 /** Red activa de la dApp. */
 export const activeChain = IS_MAINNET ? monadMainnet : monadTestnet;
@@ -56,6 +56,15 @@ const MAINNET_ADDRESSES = {
 } as const;
 
 const ADDR = IS_MAINNET ? MAINNET_ADDRESSES : TESTNET_ADDRESSES;
+
+// Fail-closed: un build mainnet con direcciones placeholder quemaría fondos
+// (un CALL con valor a 0x0 tiene éxito aparente). Mejor romper el arranque.
+if (IS_MAINNET && Object.values(ADDR).some((a) => a === '0x0000000000000000000000000000000000000000')) {
+  throw new Error(
+    '[Panal] Build mainnet sin direcciones de contratos reales. ' +
+      'Rellena MAINNET_ADDRESSES en src/contracts/config.ts (ver MAINNET.md).',
+  );
+}
 
 export const PANAL_REGISTRY_ADDRESS = ADDR.registry;
 export const PANAL_REPUTATION_ADDRESS = ADDR.reputation;

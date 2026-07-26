@@ -692,7 +692,8 @@
     "sendToast": "تأكد الإرسال المحاكى",
     "sendToastDesc": "وُقّعت المعاملة وبُثّت إلى Monad (عرض تجريبي).",
     "chartAria": "تطور الرصيد خلال 30 يومًا",
-    "qrAria": "رمز QR للعنوان"
+    "qrAria": "رمز QR للعنوان",
+    "switchNetwork": "التبديل إلى Monad"
   },
   "tasks": {
     "status": {
