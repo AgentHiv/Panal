@@ -52,7 +52,7 @@ function Hero() {
       if (REDUCED()) return;
 
       // Entrada: eyebrow → H1 char-level → sub y CTAs → confianza → ticker
-      const split = new SplitText('.hero-h1-line', { type: 'chars' });
+      const split = new SplitText('.hero-h1-line', { type: 'words,chars' });
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
       tl.fromTo(
         '.hero-eyebrow',
@@ -107,6 +107,9 @@ function Hero() {
         <Suspense fallback={null}>
           <HeroSwarm onReady={() => setSwarmReady(true)} />
         </Suspense>
+        {/* halo púrpura Monad ambiental */}
+        <div className="glow-monad right-[-10%] top-[-15%] h-[70vh] w-[60vw]" aria-hidden />
+        <div className="glow-monad-soft bottom-[5%] left-[30%] h-[50vh] w-[40vw]" aria-hidden />
         {/* veladura para legibilidad del texto a la izquierda */}
         <div className="absolute inset-0 bg-gradient-to-r from-coal via-coal/55 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-coal to-transparent" />
@@ -115,13 +118,13 @@ function Hero() {
       {/* Contenido */}
       <div className="container-hive relative z-10 flex flex-1 items-center pb-48 pt-32">
         <div ref={contentRef} className="max-w-3xl will-change-transform">
-          <p className="hero-eyebrow eyebrow flex items-center gap-2 text-honey">
-            <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
+          <p className="hero-eyebrow eyebrow flex items-center gap-2 text-monad-mist">
+            <Hexagon size={12} className="fill-monad text-monad" aria-hidden />
             {t('home.hero.eyebrow')}
           </p>
           <h1 className="display-xl mt-6 text-coal-text">
             <span className="hero-h1-line block">{t('home.hero.title1')}</span>
-            <span className="hero-h1-line serif-accent block text-honey">{t('home.hero.title2')}</span>
+            <span className="hero-h1-line serif-accent block text-gradient-hive">{t('home.hero.title2')}</span>
             <span className="hero-h1-line block">{t('home.hero.title3')}</span>
           </h1>
           <p className="hero-sub mt-7 max-w-xl text-[1.125rem] leading-[1.65] text-coal-mute">
@@ -131,7 +134,7 @@ function Hero() {
             <Magnetic>
               <Link
                 to="/mercado"
-                className="group inline-flex items-center gap-2 rounded-full bg-honey px-6 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
+                className="btn-monad group inline-flex px-6 py-3.5 text-[0.9375rem] font-semibold"
               >
                 {t('home.hero.ctaMarket')}
                 <ArrowRight size={17} className="transition-transform duration-200 group-hover:translate-x-1" />
@@ -140,15 +143,15 @@ function Hero() {
             <Magnetic>
               <Link
                 to="/en-vivo"
-                className="inline-flex items-center gap-2.5 rounded-full border border-coal-line px-6 py-3.5 text-[0.9375rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
+                className="inline-flex items-center gap-2.5 rounded-full border border-coal-line px-6 py-3.5 text-[0.9375rem] font-medium text-coal-text transition-colors hover:border-monad hover:text-monad-mist"
               >
-                <LiveDot variant="honey" />
+                <LiveDot variant="monad" />
                 {t('home.hero.ctaLive')}
               </Link>
             </Magnetic>
           </div>
           <p className="hero-trust mt-10 font-mono text-[12px] text-coal-mute">
-            Chain ID 143 · RPC rpc.monad.xyz · Finalidad ~800ms · &lt;$0.001 por tx
+            <span className="text-monad-mist">Monad testnet</span> · Chain ID 10143 · Finalidad ~800ms · &lt;$0.001 por tx
           </p>
         </div>
       </div>
@@ -353,6 +356,7 @@ function LiveSection() {
   return (
     <section className="relative overflow-hidden bg-coal py-24 text-coal-text md:py-32">
       <div className="grain-overlay-dark absolute inset-0" aria-hidden />
+      <div className="glow-monad right-[-12%] top-[-20%] h-[55vh] w-[45vw]" aria-hidden />
       <div className="container-hive relative grid items-center gap-12 md:grid-cols-12">
         <div className="md:col-span-5">
           <p className="eyebrow flex items-center gap-2 text-honey">
@@ -626,7 +630,7 @@ function SplitSection() {
           <div>
             <Link
               to="/dashboard"
-              className="group inline-flex items-center gap-2 rounded-full bg-honey px-6 py-3 text-[0.9375rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
+              className="btn-monad group inline-flex px-6 py-3 text-[0.9375rem] font-semibold"
             >
               {t('home.split.devCta')}
               <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
@@ -839,6 +843,7 @@ function FinalCta() {
 
   return (
     <section ref={sectionRef} className="relative flex min-h-[80vh] items-center overflow-hidden bg-coal">
+      <div className="glow-monad left-[-10%] top-[10%] z-[1] h-[60vh] w-[45vw]" aria-hidden />
       <motion.img
         src="/cta-honeycomb.webp"
         alt=""

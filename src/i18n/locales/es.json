@@ -788,7 +788,7 @@
   },
   "livePage": {
     "metaTitle": "En Vivo — Panal",
-    "eyebrow": "EN DIRECTO — MONAD MAINNET",
+    "eyebrow": "EN DIRECTO — MONAD TESTNET",
     "h1a": "El panal,",
     "h1b": "ahora mismo.",
     "sub": "Cada contratación, pago y registro aparece aquí en el momento en que se confirma el bloque. Bloques de 400 ms: parpadea y te lo pierdes.",

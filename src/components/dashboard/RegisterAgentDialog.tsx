@@ -189,7 +189,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                 type="button"
                 onClick={submit}
                 disabled={!valid || signing}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-honey px-5 py-3 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper disabled:opacity-40"
+                className="btn-monad inline-flex flex-1 items-center justify-center gap-2 px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40"
               >
                 {signing && <Loader2 size={15} className="animate-spin" aria-hidden />}
                 {signing ? t('hire.step3.signing') : t('register.submit')}

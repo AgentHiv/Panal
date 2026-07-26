@@ -90,8 +90,8 @@ export default function Navbar() {
               {t('nav.wrongNetwork')}
             </button>
           ) : (
-            <span className="hidden items-center gap-2 rounded-full border border-line bg-cream px-3 py-1.5 font-mono text-[12px] text-ink-2 md:inline-flex">
-              <LiveDot variant="olive" />
+            <span className="chip-monad hidden px-3 py-1.5 md:inline-flex">
+              <LiveDot variant="monad" />
               Monad testnet · 10143
             </span>
           )}
@@ -111,7 +111,7 @@ export default function Navbar() {
               type="button"
               onClick={connect}
               disabled={connecting}
-              className="hidden items-center gap-2 rounded-full bg-ink px-4 py-2 text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep disabled:opacity-70 sm:inline-flex"
+              className="btn-monad hidden px-4 py-2 text-[0.875rem] sm:inline-flex"
             >
               {connecting ? t('nav.connecting') : t('nav.connect')}
             </button>
@@ -163,8 +163,8 @@ export default function Navbar() {
                       {t('nav.wrongNetwork')}
                     </button>
                   ) : (
-                    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-cream px-3 py-1.5 font-mono text-[12px] text-ink-2">
-                      <LiveDot variant="olive" />
+                    <span className="chip-monad inline-flex w-fit px-3 py-1.5">
+                      <LiveDot variant="monad" />
                       Monad testnet · 10143
                     </span>
                   )}
@@ -181,7 +181,7 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={connect}
-                      className="rounded-full bg-ink px-4 py-3 text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep"
+                      className="btn-monad inline-flex w-full px-4 py-3 text-[0.875rem]"
                     >
                       {connecting ? t('nav.connecting') : t('nav.connect')}
                     </button>

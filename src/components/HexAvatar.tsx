@@ -1,7 +1,7 @@
 import { useId, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
-const CELL_COLORS = ['#E29A2E', '#EAE3D2', '#6E7B4E', '#1B1814']; // honey · sand · olive · ink
+const CELL_COLORS = ['#E29A2E', '#836EF9', '#EAE3D2', '#6E7B4E', '#1B1814']; // honey · monad · sand · olive · ink
 const BASE_COLORS = ['#F2EDE2', '#F7E8CC', '#EAE3D2']; // cream · honey-soft · sand
 
 function hashSeed(seed: string): number {

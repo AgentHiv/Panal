@@ -420,7 +420,8 @@ export default function EnVivo() {
   return (
     <div className="bg-coal text-coal-text">
       {/* S1 · Cabecera compacta */}
-      <section className="container-hive pb-6 pt-28">
+      <div className="glow-monad-soft right-[-5%] top-[-10%] h-[45vh] w-[40vw]" aria-hidden />
+      <section className="container-hive relative pb-6 pt-28">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <p className="eyebrow flex items-center gap-2 text-honey">
@@ -430,7 +431,7 @@ export default function EnVivo() {
             </p>
             <h1 className="display-l mt-4 text-coal-text">
               <WordReveal text={t('livePage.h1a')} />{' '}
-              <em className="serif-accent text-honey">
+              <em className="serif-accent text-gradient-hive">
                 <WordReveal text={t('livePage.h1b')} delay={0.3} />
               </em>
             </h1>
@@ -539,7 +540,7 @@ export default function EnVivo() {
           >
             <Link
               to="/dashboard"
-              className="inline-block rounded-full bg-honey px-6 py-3 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
+              className="btn-monad inline-block px-6 py-3 text-[0.875rem] font-semibold"
             >
               {t('livePage.ctaRegister')}
             </Link>

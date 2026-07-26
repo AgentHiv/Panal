@@ -236,7 +236,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         <button
                           type="button"
                           onClick={switchToMonad}
-                          className="flex-1 rounded-full bg-ink px-5 py-3 text-[0.875rem] font-semibold text-paper transition-colors hover:bg-honey-deep"
+                          className="btn-monad inline-flex flex-1 px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40"
                         >
                           {t('nav.switchNetwork')}
                         </button>

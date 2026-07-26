@@ -54,8 +54,9 @@ export default function Footer() {
 
   return (
     <footer className="relative overflow-hidden border-t border-coal-line bg-coal text-coal-text">
-      {/* patrón honeycomb sutil */}
+      {/* patrón honeycomb sutil + halo Monad */}
       <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-[0.06]" aria-hidden />
+      <div className="glow-monad-soft left-[-8%] top-[-30%] h-[420px] w-[520px]" aria-hidden />
 
       <div className="container-hive relative flex flex-col gap-14 py-16 md:py-20">
         {/* Fila superior: wordmark + newsletter */}

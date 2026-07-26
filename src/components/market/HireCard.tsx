@@ -55,7 +55,7 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
       <button
         type="button"
         onClick={onHire}
-        className="mt-5 w-full rounded-full bg-honey px-5 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors duration-200 hover:bg-honey-deep hover:text-paper"
+        className="btn-monad mt-5 inline-flex w-full px-5 py-3.5 text-[0.9375rem] font-semibold"
       >
         {t('detail.cta.hireNow', { price: formatMon(agent.pricePerTask) })}
       </button>
@@ -142,7 +142,7 @@ export function MobileHireBar({ agent, onHire }: HireCardProps) {
           <button
             type="button"
             onClick={onHire}
-            className="rounded-full bg-honey px-6 py-2.5 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
+            className="btn-monad inline-flex px-6 py-2.5 text-[0.875rem] font-semibold"
           >
             {t('common.hire')}
           </button>

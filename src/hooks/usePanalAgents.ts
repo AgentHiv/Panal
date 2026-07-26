@@ -62,63 +62,72 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
     args: [0n, 50n],
   })) as Address[];
 
-  const agents = await Promise.all(
-    addresses.map(async (addr): Promise<OnchainAgent | null> => {
-      const [data, score] = await Promise.all([
-        publicClient.readContract({
-          address: PANAL_REGISTRY_ADDRESS,
-          abi: panalRegistryAbi,
-          functionName: 'getAgent',
-          args: [addr],
-        }),
-        publicClient.readContract({
-          address: PANAL_REPUTATION_ADDRESS,
-          abi: panalReputationAbi,
-          functionName: 'getScore',
-          args: [addr],
-        }).catch(() => 0n),
-      ]);
+  // El RPC público limita a ~15 req/s (HTTP 429): leemos en lotes de 4
+  // agentes con pausa entre lotes en vez de un Promise.all masivo.
+  const BATCH = 4;
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const readOne = async (addr: Address): Promise<OnchainAgent | null> => {
+    const [data, score] = await Promise.all([
+      publicClient.readContract({
+        address: PANAL_REGISTRY_ADDRESS,
+        abi: panalRegistryAbi,
+        functionName: 'getAgent',
+        args: [addr],
+      }),
+      publicClient.readContract({
+        address: PANAL_REPUTATION_ADDRESS,
+        abi: panalReputationAbi,
+        functionName: 'getScore',
+        args: [addr],
+      }).catch(() => 0n),
+    ]);
 
-      const meta = parseMetadata(data.metadataURI, addr);
-      const priceWei = data.pricePerTask;
-      const priceMon = Number(formatEther(priceWei));
-      const rating = Number(score) / 100; // score x100 → estrellas
+    const meta = parseMetadata(data.metadataURI, addr);
+    const priceWei = data.pricePerTask;
+    const priceMon = Number(formatEther(priceWei));
+    const rating = Number(score) / 100; // score x100 → estrellas
 
-      return {
-        id: `onchain-${addr.toLowerCase()}`,
-        name: meta.name,
-        category: 'codigo',
-        type: 'ia',
-        tagline: meta.tagline || 'Agente registrado on-chain en PanalRegistry.',
-        description:
-          meta.tagline ||
-          'Agente registrado directamente en PanalRegistry (Monad testnet). La reputación mostrada proviene de PanalReputation.',
-        pricePerTask: priceMon,
-        rating: rating > 0 ? Math.min(5, rating) : 0,
-        reviews: 0,
-        tasksCompleted: 0,
-        avgResponse: '—',
-        avgResponseSec: Number.MAX_SAFE_INTEGER,
-        successRate: 100,
-        status: data.active ? 'en-linea' : 'desconectado',
-        verified: false,
-        acceptsSubcontracting: false,
-        wallet: addr,
-        walletShort: short(addr),
-        skills: meta.skills,
-        totalEarned: 0,
-        memberSince: new Date(Number(data.registeredAt) * 1000).toLocaleDateString('es-ES', {
-          month: 'short',
-          year: 'numeric',
-        }),
-        volume24h: 0,
-        trend7d: [0, 0, 0, 0, 0, 0, 0],
-        onchain: true,
-        workerAddress: addr,
-        priceWei,
-      };
-    }),
-  );
+    return {
+      id: `onchain-${addr.toLowerCase()}`,
+      name: meta.name,
+      category: 'codigo',
+      type: 'ia',
+      tagline: meta.tagline || 'Agente registrado on-chain en PanalRegistry.',
+      description:
+        meta.tagline ||
+        'Agente registrado directamente en PanalRegistry (Monad testnet). La reputación mostrada proviene de PanalReputation.',
+      pricePerTask: priceMon,
+      rating: rating > 0 ? Math.min(5, rating) : 0,
+      reviews: 0,
+      tasksCompleted: 0,
+      avgResponse: '—',
+      avgResponseSec: Number.MAX_SAFE_INTEGER,
+      successRate: 100,
+      status: data.active ? 'en-linea' : 'desconectado',
+      verified: false,
+      acceptsSubcontracting: false,
+      wallet: addr,
+      walletShort: short(addr),
+      skills: meta.skills,
+      totalEarned: 0,
+      memberSince: new Date(Number(data.registeredAt) * 1000).toLocaleDateString('es-ES', {
+        month: 'short',
+        year: 'numeric',
+      }),
+      volume24h: 0,
+      trend7d: [0, 0, 0, 0, 0, 0, 0],
+      onchain: true,
+      workerAddress: addr,
+      priceWei,
+    };
+  };
+
+  const agents: Array<OnchainAgent | null> = [];
+  for (let i = 0; i < addresses.length; i += BATCH) {
+    const chunk = await Promise.all(addresses.slice(i, i + BATCH).map(readOne));
+    agents.push(...chunk);
+    if (i + BATCH < addresses.length) await sleep(350);
+  }
 
   return agents.filter((a): a is OnchainAgent => a !== null && a.status === 'en-linea');
 }
@@ -128,7 +137,8 @@ export function usePanalAgents() {
     queryKey: ['panal-agents'],
     queryFn: fetchOnchainAgents,
     staleTime: 30_000,
-    retry: 1,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 10_000),
   });
 
   return {

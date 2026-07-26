@@ -65,12 +65,12 @@ html, body { overflow-x: clip; }
   }
 
   ::selection {
-    background: #e29a2e;
-    color: #1b1814;
+    background: #836ef9;
+    color: #ffffff;
   }
 
   :focus-visible {
-    outline: 2px solid #e29a2e;
+    outline: 2px solid #836ef9;
     outline-offset: 2px;
     border-radius: 2px;
   }
@@ -88,7 +88,7 @@ html, body { overflow-x: clip; }
     border: 2px solid #f2ede2;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #e29a2e;
+    background: #836ef9;
   }
 }
 
@@ -171,6 +171,80 @@ html, body { overflow-x: clip; }
   }
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* ============ Panal × Monad — púrpura de marca ============ */
+
+  /* Halo ambiental púrpura (secciones oscuras y hero) */
+  .glow-monad {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 9999px;
+    background: radial-gradient(closest-side, rgba(131, 110, 249, 0.34), rgba(131, 110, 249, 0.12) 55%, transparent 72%);
+    filter: blur(48px);
+  }
+  .glow-monad-soft {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 9999px;
+    background: radial-gradient(closest-side, rgba(131, 110, 249, 0.16), transparent 70%);
+    filter: blur(64px);
+  }
+
+  /* Texto con gradiente miel → púrpura Monad (acentos serif/display).
+     Los selectores descendientes son necesarios porque GSAP SplitText/WordReveal
+     mueven el texto a spans hijos: sin ellos el texto quedaría invisible. */
+  .text-gradient-hive,
+  .text-gradient-hive * {
+    background: linear-gradient(100deg, #e29a2e 8%, #c98ef7 52%, #836ef9 92%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .text-gradient-monad,
+  .text-gradient-monad * {
+    background: linear-gradient(100deg, #b7a8fc 0%, #836ef9 55%, #6a4ff0 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Botón primario Monad — púrpura con brillo y elevación en hover */
+  .btn-monad {
+    /* sin display: el markup decide (inline-flex/flex/hidden) para no romper
+       las utilidades responsivas hidden sm:inline-flex */
+    @apply items-center justify-center gap-2 rounded-full font-medium text-white transition-all duration-300;
+    background: linear-gradient(120deg, #836ef9 0%, #6a4ff0 55%, #5b3de8 100%);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset, 0 8px 24px -8px rgba(131, 110, 249, 0.55);
+  }
+  .btn-monad:hover {
+    background: linear-gradient(120deg, #917ffb 0%, #7a5df5 55%, #6a4ff0 100%);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.28) inset, 0 12px 32px -8px rgba(131, 110, 249, 0.75);
+    transform: translateY(-1px);
+  }
+  .btn-monad:active {
+    transform: translateY(0);
+  }
+  .btn-monad:disabled {
+    opacity: 0.7;
+    transform: none;
+  }
+
+  /* Anillo luminoso púrpura en hover (tarjetas destacadas) */
+  .ring-glow-monad {
+    transition: box-shadow 0.35s ease, border-color 0.35s ease;
+  }
+  .ring-glow-monad:hover {
+    border-color: rgba(131, 110, 249, 0.55);
+    box-shadow: 0 0 0 1px rgba(131, 110, 249, 0.35), 0 16px 40px -16px rgba(131, 110, 249, 0.45);
+  }
+
+  /* Chip de red con acento Monad */
+  .chip-monad {
+    @apply items-center gap-2 rounded-full border font-mono text-[12px];
+    border-color: rgba(131, 110, 249, 0.4);
+    background: rgba(131, 110, 249, 0.08);
+    color: #6a4ff0;
   }
 }
 

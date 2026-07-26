@@ -29,6 +29,14 @@ module.exports = {
           text: "#EFE9DC",
           mute: "#A89F8E",
         },
+        // Monad — púrpura de marca oficial (#836EF9, brand kit monad.xyz)
+        monad: {
+          DEFAULT: "#836EF9",
+          deep: "#6A4FF0",
+          dusk: "#4A2FC7",
+          mist: "#B7A8FC",
+          soft: "#E9E4FF",
+        },
         // shadcn semantic tokens (mapeados a la paleta cálida en index.css)
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

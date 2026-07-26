@@ -5,6 +5,7 @@ const COLORS = {
   honey: 'bg-honey',
   ink: 'bg-ink-3',
   terra: 'bg-terra',
+  monad: 'bg-monad',
 } as const;
 
 export interface LiveDotProps {
