@@ -34,7 +34,9 @@ export default function LanguageSwitcher({ className }: { className?: string }) 
   const meta = LANG_META[active];
 
   return (
-    <DropdownMenu>
+    // modal={false}: evita el scroll-lock de Radix, que combinado con Lenis
+    // posicionaba el menú fuera de pantalla al estar la página scrolleada.
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"

@@ -382,7 +382,7 @@ function LiveSection() {
                   className="flex items-center justify-between gap-3 rounded-xl border border-coal-line bg-coal-2 px-4 py-3"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-[0.875rem] text-coal-text">
+                    <p className="text-[0.875rem] leading-snug text-coal-text break-words sm:truncate">
                       <span className="font-medium">{ev.from}</span>
                       {ev.to && (
                         <>
@@ -411,11 +411,11 @@ function LiveSection() {
             </AnimatePresence>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-6">
+          <div className="mt-8 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:gap-6">
             <StatBlock dark value={312} suffix={t('home.live.perMin')} label={t('home.live.statLabel')} />
             <Link
               to="/en-vivo"
-              className="group inline-flex items-center gap-2 rounded-full border border-coal-line px-5 py-2.5 text-[0.875rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
+              className="group inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-coal-line px-5 py-2.5 text-center text-[0.875rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
             >
               {t('home.live.cta')}
               <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-1" />
