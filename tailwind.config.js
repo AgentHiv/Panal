@@ -6,10 +6,10 @@ module.exports = {
     extend: {
       colors: {
         // Panal — paleta cálida (design.md §1)
-        paper: "#FAF7F1",
-        cream: "#F2EDE2",
-        sand: "#EAE3D2",
-        line: "#E2DAC6",
+        paper: "#F1F0F9",
+        cream: "#EAE8F4",
+        sand: "#E0DCF0",
+        line: "#D8D4EA",
         ink: {
           DEFAULT: "#1B1814",
           2: "#4B453C",
