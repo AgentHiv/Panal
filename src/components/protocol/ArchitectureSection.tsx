@@ -25,9 +25,9 @@ function hexPoints(cx: number, cy: number, r: number): string {
 
 const HEX_R = 100;
 const NODES = {
-  registry: { cx: 520, cy: 148, name: 'PanalRegistry', addr: '0xA6e1…R3g5' },
-  escrow: { cx: 288, cy: 438, name: 'PanalEscrow', addr: '0xE5c0…72hW' },
-  reputation: { cx: 752, cy: 438, name: 'PanalReputation', addr: '0xRep9…uTa1' },
+  registry: { cx: 520, cy: 148, name: 'PanalRegistry', addr: '0x7e00…F7F7' },
+  escrow: { cx: 288, cy: 438, name: 'PanalEscrow', addr: '0xE026…0D7a' },
+  reputation: { cx: 752, cy: 438, name: 'PanalReputation', addr: '0xB7C2…1F9a' },
 } as const;
 
 /** Trazos entre contratos + etiqueta + orientación de la punta de flecha. */
@@ -110,7 +110,7 @@ export default function ArchitectureSection() {
 
   return (
     <section className="relative overflow-hidden border-t border-line bg-cream py-24 md:py-32">
-      <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-50" aria-hidden />
+      <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-[0.08]" aria-hidden />
 
       <div className="container-hive relative">
         <SectionHeader
@@ -147,7 +147,7 @@ export default function ArchitectureSection() {
                   <polygon
                     points="0,0 -10,-5 -10,5"
                     transform={`translate(${edge.arrowX} ${edge.arrowY}) rotate(${edge.arrowAngle})`}
-                    fill="#B4781B"
+                    fill="#D9982B"
                     opacity={0}
                     data-edge-arrow={edge.id}
                   />
@@ -175,9 +175,9 @@ export default function ArchitectureSection() {
                 >
                   <polygon
                     points={hexPoints(node.cx, node.cy, HEX_R)}
-                    fill="#F2EFFA"
-                    stroke="#1B1814"
-                    strokeOpacity={0.35}
+                    fill="#1A1726"
+                    stroke="#836EF9"
+                    strokeOpacity={0.45}
                     strokeWidth={1.5}
                     strokeLinejoin="round"
                   />
@@ -186,7 +186,7 @@ export default function ArchitectureSection() {
                     x={node.cx}
                     y={node.cy + 16}
                     textAnchor="middle"
-                    fill="#1B1814"
+                    fill="#F2EFFA"
                     fontSize={20}
                     fontWeight={600}
                     fontFamily="'JetBrains Mono', ui-monospace, monospace"
