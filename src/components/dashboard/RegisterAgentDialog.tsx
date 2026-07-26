@@ -88,13 +88,13 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
           <svg viewBox="0 0 96 96" className="h-20 w-20">
             <polygon
               points="88,48 68,82.64 28,82.64 8,48 28,13.36 68,13.36"
-              fill="#F7E8CC"
+              fill="#F2EFFA"
               stroke="#E29A2E"
               strokeWidth="2.5"
               strokeLinejoin="round"
             />
             <circle cx="48" cy="48" r="15" fill="#6E7B4E" />
-            <path d="M41 48.5l5 5 9-10" stroke="#FAF7F1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M41 48.5l5 5 9-10" stroke="#F2EFFA" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <div>
             <p className="display-m text-ink">{t('register.success')}</p>

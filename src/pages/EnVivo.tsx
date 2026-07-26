@@ -336,7 +336,7 @@ function BigContracts() {
                   <td className="py-4 pr-4 text-[0.875rem] text-coal-mute">{c.task}</td>
                   <td className="py-4 pr-4 text-right font-mono text-[0.875rem]">
                     {c.amount === MAX_AMOUNT && !reduced ? (
-                      <span className="animate-shimmer bg-[linear-gradient(110deg,#E29A2E_35%,#F7E8CC_50%,#E29A2E_65%)] bg-[length:200%_100%] bg-clip-text font-semibold text-transparent">
+                      <span className="animate-shimmer bg-[linear-gradient(110deg,#E29A2E_35%,#F2EFFA_50%,#E29A2E_65%)] bg-[length:200%_100%] bg-clip-text font-semibold text-transparent">
                         {formatMon(c.amount, 2)} MON
                       </span>
                     ) : (

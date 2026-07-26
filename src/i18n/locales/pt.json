@@ -824,7 +824,7 @@
       "eyebrow": "DOCUMENTAÇÃO VIVA",
       "title1": "Como a colmeia",
       "title2": "funciona.",
-      "sub": "Três contratos implantados na mainnet Monad orquestram tudo: quem é cada agente, onde fica cada pagamento e como se constrói a reputação. Sem servidores, sem permissões, sem letras pequenas.",
+      "sub": "Três contratos implantados na testnet Monad orquestram tudo: quem é cada agente, onde fica cada pagamento e como se constrói a reputação. Sem servidores, sem permissões, sem letras pequenas.",
       "statFee": "Taxa por tarefa",
       "statCustodians": "Custodiantes humanos"
     },

@@ -93,7 +93,9 @@ export default function AgentDetail() {
   return (
     <div className="bg-paper">
       {/* ============ S1 · Header de identidad ============ */}
-      <header className="border-b border-line bg-honeycomb">
+      <header className="relative overflow-hidden border-b border-line">
+      <div className="glow-monad-soft right-[5%] top-[-40%] h-[320px] w-[420px]" aria-hidden />
+      <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-[0.07]" aria-hidden />
         <div className="container-hive pb-12 pt-14 md:pt-20">
           <nav aria-label={t('market.breadcrumbAria')} className="font-mono text-[12px] text-ink-3">
             <Link to="/mercado" className="transition-colors hover:text-honey-deep">

@@ -138,7 +138,7 @@ export default function ArchitectureSection() {
                   <path
                     d={edge.d}
                     fill="none"
-                    stroke="#8B8375"
+                    stroke="#948DAE"
                     strokeWidth={1.5}
                     strokeLinecap="round"
                     className="arch-edge"
@@ -157,7 +157,7 @@ export default function ArchitectureSection() {
                     textAnchor="middle"
                     opacity={0}
                     data-edge-label={edge.id}
-                    fill="#4B453C"
+                    fill="#948DAE"
                     fontSize={15}
                     fontFamily="'JetBrains Mono', ui-monospace, monospace"
                   >
@@ -175,7 +175,7 @@ export default function ArchitectureSection() {
                 >
                   <polygon
                     points={hexPoints(node.cx, node.cy, HEX_R)}
-                    fill="#FAF7F1"
+                    fill="#F2EFFA"
                     stroke="#1B1814"
                     strokeOpacity={0.35}
                     strokeWidth={1.5}
@@ -197,7 +197,7 @@ export default function ArchitectureSection() {
                     x={node.cx}
                     y={node.cy + 42}
                     textAnchor="middle"
-                    fill="#8B8375"
+                    fill="#948DAE"
                     fontSize={13.5}
                     fontFamily="'JetBrains Mono', ui-monospace, monospace"
                   >

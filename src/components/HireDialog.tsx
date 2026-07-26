@@ -115,7 +115,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                   )}
                   style={{
                     clipPath: 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)',
-                    backgroundColor: i < step ? '#E29A2E' : i === step ? '#F7E8CC' : '#EAE3D2',
+                    backgroundColor: i < step ? '#E29A2E' : i === step ? '#F2EFFA' : '#C8C3DC',
                   }}
                 >
                   {i < step ? <Check size={14} strokeWidth={3} /> : <span className="font-mono text-[12px] font-semibold">{i + 1}</span>}
@@ -323,7 +323,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         <svg viewBox="0 0 96 96" className="h-24 w-24">
                           <motion.polygon
                             points="88,48 68,82.64 28,82.64 8,48 28,13.36 68,13.36"
-                            fill="#F7E8CC"
+                            fill="#F2EFFA"
                             stroke="#E29A2E"
                             strokeWidth="2.5"
                             strokeLinejoin="round"
@@ -338,7 +338,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                             style={{ transformOrigin: '48px 48px' }}
                           >
                             <circle cx="48" cy="48" r="15" fill="#6E7B4E" />
-                            <path d="M41 48.5l5 5 9-10" stroke="#FAF7F1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M41 48.5l5 5 9-10" stroke="#F2EFFA" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                           </motion.g>
                         </svg>
                       </div>
@@ -381,7 +381,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                     <svg viewBox="0 0 96 96" className="h-24 w-24">
                       <motion.polygon
                         points="88,48 68,82.64 28,82.64 8,48 28,13.36 68,13.36"
-                        fill="#F7E8CC"
+                        fill="#F2EFFA"
                         stroke="#E29A2E"
                         strokeWidth="2.5"
                         strokeLinejoin="round"
@@ -396,7 +396,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         style={{ transformOrigin: '48px 48px' }}
                       >
                         <circle cx="48" cy="48" r="15" fill="#6E7B4E" />
-                        <path d="M41 48.5l5 5 9-10" stroke="#FAF7F1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M41 48.5l5 5 9-10" stroke="#F2EFFA" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                       </motion.g>
                     </svg>
                     {/* micro-confetti de hexágonos */}

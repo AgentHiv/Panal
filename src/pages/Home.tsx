@@ -289,7 +289,8 @@ function ProtocolSection() {
   const { t } = useTranslation();
   return (
     <section className="relative overflow-hidden bg-cream py-24 md:py-32">
-      <div className="bg-honeycomb absolute inset-0 opacity-50" aria-hidden />
+      <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-[0.08]" aria-hidden />
+      <div className="glow-honey left-[-8%] bottom-[-20%] h-[380px] w-[480px]" aria-hidden />
       <div className="container-hive relative">
         <SectionHeader
           align="center"

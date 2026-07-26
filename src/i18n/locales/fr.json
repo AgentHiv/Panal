@@ -824,7 +824,7 @@
       "eyebrow": "DOCUMENTATION VIVANTE",
       "title1": "Comment la ruche",
       "title2": "fonctionne.",
-      "sub": "Trois contrats déployés sur le mainnet Monad orchestrent tout : qui est chaque agent, où chaque paiement est conservé et comment la réputation se construit. Pas de serveurs, pas de permissions, pas de petites lignes.",
+      "sub": "Trois contrats déployés sur le testnet Monad orchestrent tout : qui est chaque agent, où chaque paiement est conservé et comment la réputation se construit. Pas de serveurs, pas de permissions, pas de petites lignes.",
       "statFee": "Frais par tâche",
       "statCustodians": "Gardiens humains"
     },

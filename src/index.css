@@ -12,34 +12,35 @@ html, body { overflow-x: clip; }
 @layer base {
   :root {
     /* Panal — shadcn vars mapeadas a la paleta cálida (design.md §1) */
-    --background: 248 38% 96%;      /* paper lavanda */
-    --foreground: 34 15% 9%;         /* ink */
-    --card: 248 38% 96%;
-    --card-foreground: 34 15% 9%;
-    --popover: 248 38% 96%;
-    --popover-foreground: 34 15% 9%;
-    --primary: 34 15% 9%;            /* ink */
-    --primary-foreground: 40 47% 96%;
-    --secondary: 248 30% 93%;       /* cream lavanda */
-    --secondary-foreground: 34 15% 9%;
-    --muted: 250 28% 90%;          /* sand lavanda */
-    --muted-foreground: 38 9% 50%;   /* ink-3 */
-    --accent: 39 73% 88%;            /* honey-soft */
-    --accent-foreground: 36 74% 41%; /* honey-deep */
-    --destructive: 18 59% 44%;       /* terra */
-    --destructive-foreground: 40 47% 96%;
-    --border: 250 24% 87%;         /* line lavanda */
-    --input: 250 24% 87%;
-    --ring: 36 76% 53%;              /* honey */
+    /* Modo oscuro total (v2) — carbón-violeta */
+    --background: 252 22% 8%;        /* paper oscuro */
+    --foreground: 252 33% 96%;       /* ink claro */
+    --card: 252 21% 12%;
+    --card-foreground: 252 33% 96%;
+    --popover: 252 21% 12%;
+    --popover-foreground: 252 33% 96%;
+    --primary: 252 33% 96%;
+    --primary-foreground: 252 22% 8%;
+    --secondary: 252 20% 16%;        /* cream oscuro */
+    --secondary-foreground: 252 33% 96%;
+    --muted: 252 19% 20%;            /* sand oscuro */
+    --muted-foreground: 255 12% 64%; /* ink-3 */
+    --accent: 38 55% 12%;            /* honey-soft oscuro */
+    --accent-foreground: 38 80% 58%; /* honey */
+    --destructive: 15 60% 50%;       /* terra */
+    --destructive-foreground: 252 33% 96%;
+    --border: 254 22% 23%;           /* line oscuro */
+    --input: 254 22% 23%;
+    --ring: 258 90% 70%;             /* monad */
     --radius: 0.75rem;
-    --sidebar-background: 248 38% 96%;
-    --sidebar-foreground: 36 11% 26%;
-    --sidebar-primary: 34 15% 9%;
-    --sidebar-primary-foreground: 40 47% 96%;
-    --sidebar-accent: 41 38% 92%;
-    --sidebar-accent-foreground: 34 15% 9%;
-    --sidebar-border: 43 33% 83%;
-    --sidebar-ring: 36 76% 53%;
+    --sidebar-background: 252 22% 8%;
+    --sidebar-foreground: 255 12% 64%;
+    --sidebar-primary: 252 33% 96%;
+    --sidebar-primary-foreground: 252 22% 8%;
+    --sidebar-accent: 252 20% 16%;
+    --sidebar-accent-foreground: 252 33% 96%;
+    --sidebar-border: 254 22% 23%;
+    --sidebar-ring: 258 90% 70%;
   }
 
   * {
@@ -80,12 +81,12 @@ html, body { overflow-x: clip; }
     height: 10px;
   }
   ::-webkit-scrollbar-track {
-    background: #eae8f4;
+    background: #121019;
   }
   ::-webkit-scrollbar-thumb {
-    background: #d8d4ea;
+    background: #342e4a;
     border-radius: 8px;
-    border: 2px solid #eae8f4;
+    border: 2px solid #121019;
   }
   ::-webkit-scrollbar-thumb:hover {
     background: #836ef9;
@@ -144,8 +145,8 @@ html, body { overflow-x: clip; }
     background-image: url("/grain.webp");
     background-repeat: repeat;
     background-size: 256px 256px;
-    opacity: 0.05;
-    mix-blend-mode: multiply;
+    opacity: 0.06;
+    mix-blend-mode: soft-light;
     pointer-events: none;
   }
   .grain-overlay-dark {
@@ -175,6 +176,17 @@ html, body { overflow-x: clip; }
 
   /* ============ Panal × Monad — púrpura de marca ============ */
 
+  /* Halos ambientales animados — deriva lenta y respiración */
+  @keyframes orb-drift {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    33% { transform: translate3d(4%, -6%, 0) scale(1.08); }
+    66% { transform: translate3d(-5%, 4%, 0) scale(0.94); }
+  }
+  @keyframes orb-breathe {
+    0%, 100% { opacity: 0.85; }
+    50% { opacity: 0.55; }
+  }
+
   /* Halo ambiental púrpura (secciones oscuras y hero) */
   .glow-monad {
     position: absolute;
@@ -182,6 +194,8 @@ html, body { overflow-x: clip; }
     border-radius: 9999px;
     background: radial-gradient(closest-side, rgba(131, 110, 249, 0.34), rgba(131, 110, 249, 0.12) 55%, transparent 72%);
     filter: blur(48px);
+    animation: orb-drift 26s ease-in-out infinite;
+    will-change: transform;
   }
   .glow-monad-soft {
     position: absolute;
@@ -189,6 +203,22 @@ html, body { overflow-x: clip; }
     border-radius: 9999px;
     background: radial-gradient(closest-side, rgba(131, 110, 249, 0.16), transparent 70%);
     filter: blur(64px);
+    animation: orb-drift 34s ease-in-out infinite reverse, orb-breathe 12s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+  /* Halo ambiental miel — contrapunto cálido */
+  .glow-honey {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 9999px;
+    background: radial-gradient(closest-side, rgba(226, 154, 46, 0.22), rgba(226, 154, 46, 0.07) 55%, transparent 72%);
+    filter: blur(56px);
+    animation: orb-drift 30s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .glow-monad, .glow-monad-soft, .glow-honey { animation: none; }
   }
 
   /* Texto con gradiente miel → púrpura Monad (acentos serif/display).

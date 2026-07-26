@@ -6,28 +6,29 @@ module.exports = {
     extend: {
       colors: {
         // Panal — paleta cálida (design.md §1)
-        paper: "#F1F0F9",
-        cream: "#EAE8F4",
-        sand: "#E0DCF0",
-        line: "#D8D4EA",
+        // Modo oscuro total (v2) — escala carbón-violeta
+        paper: "#121019",
+        cream: "#1A1726",
+        sand: "#232035",
+        line: "#342E4A",
         ink: {
-          DEFAULT: "#1B1814",
-          2: "#4B453C",
-          3: "#8B8375",
+          DEFAULT: "#F2EFFA",
+          2: "#C8C3DC",
+          3: "#948DAE",
         },
         honey: {
           DEFAULT: "#E29A2E",
-          deep: "#B4781B",
-          soft: "#F7E8CC",
+          deep: "#D9982B",
+          soft: "#2E2510",
         },
-        olive: "#6E7B4E",
-        terra: "#B2562E",
+        olive: "#92A268",
+        terra: "#C9653B",
         coal: {
-          DEFAULT: "#161310",
-          2: "#221D17",
-          line: "#3A332A",
-          text: "#EFE9DC",
-          mute: "#A89F8E",
+          DEFAULT: "#0C0A12",
+          2: "#14111E",
+          line: "#2B2540",
+          text: "#EFEAF8",
+          mute: "#9A93B5",
         },
         // Monad — púrpura de marca oficial (#836EF9, brand kit monad.xyz)
         monad: {
@@ -97,9 +98,9 @@ module.exports = {
       },
       boxShadow: {
         xs: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-        card: "0 1px 2px rgba(27,24,20,.05), 0 12px 32px -12px rgba(27,24,20,.12)",
-        "card-hover": "0 1px 2px rgba(27,24,20,.06), 0 20px 44px -12px rgba(27,24,20,.2)",
-        warm: "0 8px 30px -8px rgba(180,120,27,.35)",
+        card: "0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.5)",
+        "card-hover": "0 1px 2px rgba(0,0,0,.45), 0 20px 48px -12px rgba(131,110,249,.28)",
+        warm: "0 8px 30px -8px rgba(226,154,46,.4)",
       },
       keyframes: {
         "accordion-down": {

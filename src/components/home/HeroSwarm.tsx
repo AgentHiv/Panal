@@ -12,7 +12,7 @@ import * as THREE from 'three';
 const IS_MOBILE =
   typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
 const COUNT = IS_MOBILE ? 1200 : 2500;
-const PALETTE = ['#E29A2E', '#836EF9', '#F7E8CC', '#8B6B2E', '#B7A8FC', '#FFD68C']; // miel + púrpura Monad
+const PALETTE = ['#E29A2E', '#836EF9', '#F2EFFA', '#8B6B2E', '#B7A8FC', '#FFD68C']; // miel + púrpura Monad
 const HEX_CX = 2.05;
 const HEX_CY = 0.05;
 const HEX_R = 2.45;

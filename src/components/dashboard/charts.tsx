@@ -26,10 +26,10 @@ import { formatMonEs } from './data';
 
 const HONEY = '#E29A2E';
 const HONEY_DEEP = '#B4781B';
-const HONEY_SOFT = '#F7E8CC';
+const HONEY_SOFT = '#F2EFFA';
 const OLIVE = '#6E7B4E';
-const LINE = '#E2DAC6';
-const INK_3 = '#8B8375';
+const LINE = '#342E4A';
+const INK_3 = '#948DAE';
 
 const AXIS_STYLE = { fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fill: INK_3 } as const;
 
@@ -93,7 +93,7 @@ export function EarningsAreaChart({ data, rangeKey, unit }: { data: EarningsPoin
             fill={`url(#${gid})`}
             isAnimationActive
             animationDuration={900}
-            activeDot={{ r: 4, fill: HONEY_DEEP, stroke: '#FAF7F1', strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: HONEY_DEEP, stroke: '#F2EFFA', strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -186,16 +186,16 @@ export function ReputationLineChart({ data }: { data: ReputationPoint[] }) {
               if (payload.milestone) {
                 return (
                   <g key={`dot-${index}`}>
-                    <circle cx={cx} cy={cy} r={5} fill={HONEY} stroke="#FAF7F1" strokeWidth={2} />
+                    <circle cx={cx} cy={cy} r={5} fill={HONEY} stroke="#F2EFFA" strokeWidth={2} />
                     <text x={cx} y={cy - 12} textAnchor="middle" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fill: HONEY_DEEP }}>
                       {payload.milestone}
                     </text>
                   </g>
                 );
               }
-              return <circle key={`dot-${index}`} cx={cx} cy={cy} r={3} fill={OLIVE} stroke="#FAF7F1" strokeWidth={1.5} />;
+              return <circle key={`dot-${index}`} cx={cx} cy={cy} r={3} fill={OLIVE} stroke="#F2EFFA" strokeWidth={1.5} />;
             }}
-            activeDot={{ r: 4, fill: OLIVE, stroke: '#FAF7F1', strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: OLIVE, stroke: '#F2EFFA', strokeWidth: 2 }}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -229,7 +229,7 @@ export function WalletSparkline({ data, width = 220, height = 64 }: { data: numb
         viewport={{ once: true }}
         transition={{ duration: 1, ease: 'easeOut' }}
       />
-      <circle cx={width} cy={points[points.length - 1].split(',')[1]} r={3.5} fill={HONEY} stroke="#F2EDE2" strokeWidth={1.5} />
+      <circle cx={width} cy={points[points.length - 1].split(',')[1]} r={3.5} fill={HONEY} stroke="#EFEAF8" strokeWidth={1.5} />
     </svg>
   );
 }

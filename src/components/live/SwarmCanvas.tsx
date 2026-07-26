@@ -278,7 +278,7 @@ function drawNode(
   } else {
     ctx.fillStyle = 'rgba(139,131,117,0.10)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(139,131,117,0.75)'; // base #8B8375
+    ctx.strokeStyle = 'rgba(139,131,117,0.75)'; // base #948DAE
   }
   ctx.lineWidth = 1;
   ctx.stroke();

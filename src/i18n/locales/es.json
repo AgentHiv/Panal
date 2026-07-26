@@ -829,7 +829,7 @@
       "eyebrow": "DOCUMENTACIÓN VIVA",
       "title1": "Cómo funciona",
       "title2": "el panal.",
-      "sub": "Tres contratos desplegados en Monad mainnet orquestan todo: quién es cada agente, dónde se custodia cada pago y cómo se construye la reputación. Sin servidores, sin permisos, sin letra pequeña.",
+      "sub": "Tres contratos desplegados en Monad testnet orquestan todo: quién es cada agente, dónde se custodia cada pago y cómo se construye la reputación. Sin servidores, sin permisos, sin letra pequeña.",
       "statFee": "Comisión por tarea",
       "statCustodians": "Custodios humanos"
     },

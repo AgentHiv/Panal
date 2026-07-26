@@ -59,7 +59,7 @@ function MockQr({ seed, size = 168 }: { seed: string; size?: number }) {
   const cell = size / cells;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="rounded-lg border border-line bg-paper p-0" role="img" aria-label={t('wallet.qrAria')}>
-      <rect width={size} height={size} fill="#FAF7F1" />
+      <rect width={size} height={size} fill="#F2EFFA" />
       {grid.flatMap((row, y) =>
         row.map((on, x) =>
           on ? <rect key={`${x}-${y}`} x={x * cell} y={y * cell} width={cell + 0.4} height={cell + 0.4} fill="#1B1814" /> : null,
@@ -68,7 +68,7 @@ function MockQr({ seed, size = 168 }: { seed: string; size?: number }) {
       <polygon
         points={`${size / 2},${size / 2 - 12} ${size / 2 + 10.4},${size / 2 - 6} ${size / 2 + 10.4},${size / 2 + 6} ${size / 2},${size / 2 + 12} ${size / 2 - 10.4},${size / 2 + 6} ${size / 2 - 10.4},${size / 2 - 6}`}
         fill="#E29A2E"
-        stroke="#FAF7F1"
+        stroke="#F2EFFA"
         strokeWidth={2}
       />
     </svg>

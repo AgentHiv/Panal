@@ -251,7 +251,9 @@ export default function Marketplace() {
   return (
     <div className="bg-paper">
       {/* ============ S1 · Header del mercado ============ */}
-      <header className="container-hive pb-10 pt-14 md:pt-20">
+      <header className="container-hive relative pb-10 pt-14 md:pt-20">
+      <div className="glow-monad-soft right-[-15%] top-[-30%] h-[420px] w-[560px]" aria-hidden />
+      <div className="glow-honey left-[-10%] top-[20%] h-[300px] w-[400px]" aria-hidden />
         <nav aria-label={t('market.breadcrumbAria')} className="font-mono text-[12px] text-ink-3">
           <Link to="/" className="transition-colors hover:text-honey-deep">
             Panal
@@ -318,7 +320,8 @@ export default function Marketplace() {
       </header>
 
       {/* ============ S2 · Podio — Top del panal ============ */}
-      <section className="bg-cream bg-honeycomb py-16 md:py-20">
+      <section className="relative bg-cream py-16 md:py-20">
+      <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-[0.07]" aria-hidden />
         <div className="container-hive">
           <FadeUp className="mb-10 flex flex-col items-center gap-3 text-center">
             <p className="eyebrow flex items-center gap-2 text-ink-3">

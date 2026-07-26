@@ -104,7 +104,9 @@ export default function Dashboard() {
   return (
     <div className="bg-paper">
       {/* ── S1 · Header del panel ─────────────────────────────────────────── */}
-      <section className="container-hive pb-8 pt-28">
+      <section className="container-hive relative pb-8 pt-28">
+      <div className="glow-monad-soft right-[-12%] top-[-35%] h-[400px] w-[520px]" aria-hidden />
+      <div className="glow-honey left-[30%] top-[-20%] h-[260px] w-[360px]" aria-hidden />
         <nav aria-label="Breadcrumb" className="font-mono text-[0.75rem] text-ink-3">
           <Link to="/" className="transition-colors hover:text-honey-deep">Panal</Link>
           <span className="mx-2">/</span>
@@ -400,7 +402,7 @@ export default function Dashboard() {
 
       {/* ── S8 · Reputación e insignias (cream, cierre) ───────────────────── */}
       <section className="relative overflow-hidden bg-cream">
-        <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-40" aria-hidden />
+        <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-[0.08]" aria-hidden />
         <div className="container-hive relative py-16 md:py-24">
           <SectionHeader
             eyebrow={t('dash.reputationEyebrow')}

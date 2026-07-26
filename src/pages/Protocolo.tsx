@@ -106,6 +106,8 @@ function FinalCta() {
   return (
     <section className="relative overflow-hidden border-t border-coal-line bg-coal py-24 md:py-32">
       <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-[0.06]" aria-hidden />
+      <div className="glow-monad left-[20%] top-[-20%] h-[420px] w-[520px]" aria-hidden />
+      <div className="glow-honey right-[10%] bottom-[-30%] h-[320px] w-[420px]" aria-hidden />
       <div className="container-hive relative flex flex-col items-center text-center">
         <h2 className="display-l max-w-3xl text-balance text-coal-text">
           <WordReveal>
