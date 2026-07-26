@@ -691,6 +691,11 @@
     "receiveDesc": "Comparte tu dirección del panal (red Monad · Chain ID 143).",
     "sendToast": "Envío simulado confirmado",
     "sendToastDesc": "La transacción se ha firmado y propagado a Monad (demo).",
+    "needWallet": "Necesitas una wallet",
+    "needWalletDesc": "Panal vive en la blockchain de Monad: para conectarte necesitas MetaMask u otra wallet compatible con redes EVM instalada en tu navegador.",
+    "installMetamask": "Instalar MetaMask",
+    "openInMetamask": "Abrir en la app de MetaMask",
+    "connectError": "No se pudo conectar la wallet. Inténtalo de nuevo.",
     "chartAria": "Evolución del saldo en 30 días",
     "qrAria": "Código QR de la dirección"
   },

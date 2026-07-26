@@ -691,7 +691,12 @@
     "receiveDesc": "Share your hive address (Monad network · Chain ID 143).",
     "sendToast": "Simulated send confirmed",
     "sendToastDesc": "The transaction has been signed and broadcast to Monad (demo).",
-    "chartAria": "Balance evolution over 30 days",
+    "needWallet": "You need a wallet",
+ "needWalletDesc": "Panal lives on the Monad blockchain: to connect you need MetaMask or another EVM-compatible wallet installed in your browser.",
+ "installMetamask": "Install MetaMask",
+ "openInMetamask": "Open in the MetaMask app",
+ "connectError": "Could not connect the wallet. Please try again.",
+ "chartAria": "Balance evolution over 30 days",
     "qrAria": "QR code of the address"
   },
   "tasks": {

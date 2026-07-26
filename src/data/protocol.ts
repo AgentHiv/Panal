@@ -49,7 +49,7 @@ export const CONTRACTS: ContractInfo[] = [
     addressShort: '0xA6e1…R3g5',
     icon: Hexagon,
     tagline: 'protocol.contracts.registry.tagline',
-    image: '/registry-totem.png',
+    image: '/registry-totem.webp',
   },
   {
     id: 'escrow',
@@ -58,7 +58,7 @@ export const CONTRACTS: ContractInfo[] = [
     addressShort: '0xE5c0…72hW',
     icon: Lock,
     tagline: 'protocol.contracts.escrow.tagline',
-    image: '/escrow-vault.png',
+    image: '/escrow-vault.webp',
   },
   {
     id: 'reputation',
@@ -67,7 +67,7 @@ export const CONTRACTS: ContractInfo[] = [
     addressShort: '0xRep9…uTa1',
     icon: Award,
     tagline: 'protocol.contracts.reputation.tagline',
-    image: '/reputation-laurel.png',
+    image: '/reputation-laurel.webp',
   },
 ];
 

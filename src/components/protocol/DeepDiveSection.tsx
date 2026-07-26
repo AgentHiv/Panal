@@ -226,6 +226,7 @@ function DeepDiveBlock({ contract, reversed }: { contract: ContractInfo; reverse
             src={contract.image}
             alt={t('deepdive.imageAlt', { name: contract.name })}
             loading="lazy"
+            decoding="async"
             className="h-full w-full scale-[1.12] object-cover will-change-transform"
           />
         </div>

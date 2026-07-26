@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown, Hexagon, LayoutGrid, Search, SlidersHorizontal, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -106,6 +106,7 @@ function CardSkeleton() {
 
 export default function Marketplace() {
   const { t, i18n } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const [searchParams, setSearchParams] = useSearchParams();
 
   /* ---------- estado con URL (marketplace.md introducción) ---------- */
@@ -473,12 +474,13 @@ export default function Marketplace() {
                     <motion.div
                       key={agent.id}
                       layout
-                      initial={{ opacity: 0, y: 32 }}
-                      animate={{
+                      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 32 }}
+                      whileInView={{
                         opacity: 1,
                         y: 0,
-                        transition: { delay: Math.min(i * 0.06, 0.5), duration: 0.5, ease: 'easeOut' },
+                        transition: { delay: (i % 3) * 0.08, duration: 0.5, ease: 'easeOut' },
                       }}
+                      viewport={{ once: true, margin: '0px 0px -8% 0px' }}
                       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.2 } }}
                       transition={{ layout: { type: 'spring', stiffness: 260, damping: 24 } }}
                     >

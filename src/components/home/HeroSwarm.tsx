@@ -9,7 +9,9 @@ import * as THREE from 'three';
  * pixelRatio cap 1.75, pausa fuera de viewport.
  */
 
-const COUNT = 2500;
+const IS_MOBILE =
+  typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
+const COUNT = IS_MOBILE ? 1200 : 2500;
 const PALETTE = ['#E29A2E', '#F7E8CC', '#8B6B2E', '#FFD68C'];
 const HEX_CX = 2.05;
 const HEX_CY = 0.05;
@@ -230,7 +232,7 @@ export default function HeroSwarm({ onReady }: { onReady?: () => void }) {
   return (
     <div ref={wrapRef} className="absolute inset-0" aria-hidden>
       <Canvas
-        dpr={[1, 1.75]}
+        dpr={IS_MOBILE ? [1, 1.5] : [1, 1.75]}
         camera={{ position: [0, 0, 10], fov: 50 }}
         frameloop={inView ? 'always' : 'never'}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}

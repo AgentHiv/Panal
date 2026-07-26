@@ -22,6 +22,7 @@ import LiveDot from '@/components/LiveDot';
 import RatingStars from '@/components/RatingStars';
 import HexAvatar from '@/components/HexAvatar';
 import HireDialog from '@/components/HireDialog';
+import Magnetic from '@/components/Magnetic';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
 import { getAgent, formatInt, formatMon, formatRating, CATEGORY_LABELS } from '@/data/agents';
@@ -95,8 +96,9 @@ function Hero() {
       {/* Canvas 3D + fallback */}
       <div ref={canvasRef} className="absolute inset-0">
         <img
-          src="/hero-swarm-fallback.png"
+          src="/hero-swarm-fallback.webp"
           alt=""
+          decoding="async"
           className={cn(
             'absolute inset-0 h-full w-full object-cover transition-opacity duration-1000',
             swarmReady ? 'opacity-0' : 'opacity-100',
@@ -126,20 +128,24 @@ function Hero() {
             {t('home.hero.sub')}
           </p>
           <div className="hero-ctas mt-9 flex flex-wrap items-center gap-4">
-            <Link
-              to="/mercado"
-              className="group inline-flex items-center gap-2 rounded-full bg-honey px-6 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
-            >
-              {t('home.hero.ctaMarket')}
-              <ArrowRight size={17} className="transition-transform duration-200 group-hover:translate-x-1" />
-            </Link>
-            <Link
-              to="/en-vivo"
-              className="inline-flex items-center gap-2.5 rounded-full border border-coal-line px-6 py-3.5 text-[0.9375rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
-            >
-              <LiveDot variant="honey" />
-              {t('home.hero.ctaLive')}
-            </Link>
+            <Magnetic>
+              <Link
+                to="/mercado"
+                className="group inline-flex items-center gap-2 rounded-full bg-honey px-6 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
+              >
+                {t('home.hero.ctaMarket')}
+                <ArrowRight size={17} className="transition-transform duration-200 group-hover:translate-x-1" />
+              </Link>
+            </Magnetic>
+            <Magnetic>
+              <Link
+                to="/en-vivo"
+                className="inline-flex items-center gap-2.5 rounded-full border border-coal-line px-6 py-3.5 text-[0.9375rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
+              >
+                <LiveDot variant="honey" />
+                {t('home.hero.ctaLive')}
+              </Link>
+            </Magnetic>
           </div>
           <p className="hero-trust mt-10 font-mono text-[12px] text-coal-mute">
             Chain ID 143 · RPC rpc.monad.xyz · Finalidad ~800ms · &lt;$0.001 por tx
@@ -834,8 +840,10 @@ function FinalCta() {
   return (
     <section ref={sectionRef} className="relative flex min-h-[80vh] items-center overflow-hidden bg-coal">
       <motion.img
-        src="/cta-honeycomb.png"
+        src="/cta-honeycomb.webp"
         alt=""
+        loading="lazy"
+        decoding="async"
         style={{ y: bgY }}
         className="absolute inset-0 h-[112%] w-full object-cover"
       />
@@ -854,18 +862,22 @@ function FinalCta() {
           {t('home.cta.sub')}
         </p>
         <div className="mt-2 flex flex-wrap items-center justify-center gap-4">
-          <Link
-            to="/mercado"
-            className="rounded-full bg-honey px-7 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
-          >
-            {t('home.hero.ctaMarket')}
-          </Link>
-          <Link
-            to="/protocolo"
-            className="rounded-full border border-coal-text/30 px-7 py-3.5 text-[0.9375rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
-          >
-            {t('home.cta.readProtocol')}
-          </Link>
+          <Magnetic>
+            <Link
+              to="/mercado"
+              className="inline-block rounded-full bg-honey px-7 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
+            >
+              {t('home.hero.ctaMarket')}
+            </Link>
+          </Magnetic>
+          <Magnetic>
+            <Link
+              to="/protocolo"
+              className="inline-block rounded-full border border-coal-text/30 px-7 py-3.5 text-[0.9375rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
+            >
+              {t('home.cta.readProtocol')}
+            </Link>
+          </Magnetic>
         </div>
         <p className="mt-6 font-mono text-[12px] text-coal-mute">
           PanalRegistry · 0xA6e1…R3g5 · Monad Mainnet

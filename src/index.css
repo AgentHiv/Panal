@@ -134,7 +134,7 @@
 @layer utilities {
   /* Overlay global de grano (design.md §1) */
   .grain-overlay {
-    background-image: url("/grain.png");
+    background-image: url("/grain.webp");
     background-repeat: repeat;
     background-size: 256px 256px;
     opacity: 0.05;
@@ -142,7 +142,7 @@
     pointer-events: none;
   }
   .grain-overlay-dark {
-    background-image: url("/grain.png");
+    background-image: url("/grain.webp");
     background-repeat: repeat;
     background-size: 256px 256px;
     opacity: 0.05;

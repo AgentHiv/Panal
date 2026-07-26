@@ -20,6 +20,10 @@ export interface WalletState {
   /** pide a la wallet cambiar (o añadir) Monad testnet */
   switchToMonad: () => void;
   chainId: number | null;
+  /** true mientras el diálogo "instala una wallet" está abierto */
+  installOpen: boolean;
+  /** abre el diálogo de instalación de wallet (sin wallet inyectada) */
+  openInstallDialog: () => void;
 }
 
 export const WalletContext = createContext<WalletState>({
@@ -32,6 +36,8 @@ export const WalletContext = createContext<WalletState>({
   wrongNetwork: false,
   switchToMonad: () => {},
   chainId: null,
+  installOpen: false,
+  openInstallDialog: () => {},
 });
 
 export function useWallet(): WalletState {
