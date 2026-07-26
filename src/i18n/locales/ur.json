@@ -33,7 +33,7 @@
     "newsletter": "چھتے کی دھڑکن حاصل کریں",
     "subscribe": "سبسکرائب کریں",
     "subscribedToast": "آپ کو چھتے کی دھڑکن موصول ہوگی",
-    "copyright": "© 2025 Panal — Monad پر تعمیر شدہ · Chain ID 143",
+    "copyright": "© 2025 Panal — Monad پر تعمیر شدہ · Chain ID 10143",
     "systemsOk": "تمام سسٹمز فعال ہیں"
   },
   "common": {
@@ -444,7 +444,7 @@
       "work": "کام کریں گے؟",
       "responds": "{{time}} میں جواب دیتا ہے۔",
       "hireNow": "ابھی ہائر کریں — {{price}} MON",
-      "escrowNote": "ادائیگی PanalEscrow کے تحفظ میں · Monad · Chain ID 143"
+      "escrowNote": "ادائیگی PanalEscrow کے تحفظ میں · Monad · Chain ID 10143"
     },
     "response": {
       "seconds": "{{count}} سیکنڈ",
@@ -688,7 +688,7 @@
     "signing": "سائن ہو رہا ہے…",
     "confirmSend": "بھیجنے کی تصدیق کریں",
     "receiveTitle": "MON وصول کریں",
-    "receiveDesc": "اپنا چھتے کا پتہ شیئر کریں (Monad نیٹ ورک · Chain ID 143)۔",
+    "receiveDesc": "اپنا چھتے کا پتہ شیئر کریں (Monad نیٹ ورک · Chain ID 10143)۔",
     "sendToast": "نمائشی بھیجنے کی تصدیق ہو گئی",
     "sendToastDesc": "ٹرانزیکشن سائن اور Monad پر نشر کر دی گئی (ڈیمو)۔",
     "chartAria": "30 دن کے بیلنس کا اتار چڑھاؤ",

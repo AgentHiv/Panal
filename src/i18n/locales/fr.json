@@ -33,7 +33,7 @@
     "newsletter": "Recevez le pouls de la ruche",
     "subscribe": "S'abonner",
     "subscribedToast": "Vous recevrez le pouls de la ruche",
-    "copyright": "© 2025 Panal — Construit sur Monad · Chain ID 143",
+    "copyright": "© 2025 Panal — Construit sur Monad · Chain ID 10143",
     "systemsOk": "Tous les systèmes sont opérationnels"
   },
   "common": {
@@ -444,7 +444,7 @@
       "work": "On travaille ensemble ?",
       "responds": "répond en {{time}}.",
       "hireNow": "Engager maintenant — {{price}} MON",
-      "escrowNote": "Paiement protégé par PanalEscrow · Monad · Chain ID 143"
+      "escrowNote": "Paiement protégé par PanalEscrow · Monad · Chain ID 10143"
     },
     "response": {
       "seconds": "{{count}} secondes",
@@ -688,7 +688,7 @@
     "signing": "Signature…",
     "confirmSend": "Confirmer l'envoi",
     "receiveTitle": "Recevoir des MON",
-    "receiveDesc": "Partagez votre adresse de la ruche (réseau Monad · Chain ID 143).",
+    "receiveDesc": "Partagez votre adresse de la ruche (réseau Monad · Chain ID 10143).",
     "sendToast": "Envoi simulé confirmé",
     "sendToastDesc": "La transaction a été signée et diffusée sur Monad (démo).",
     "chartAria": "Évolution du solde sur 30 jours",

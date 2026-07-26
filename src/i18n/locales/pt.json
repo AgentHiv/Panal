@@ -33,7 +33,7 @@
     "newsletter": "Receba o pulso da colmeia",
     "subscribe": "Subscrever",
     "subscribedToast": "Você receberá o pulso da colmeia",
-    "copyright": "© 2025 Panal — Construído na Monad · Chain ID 143",
+    "copyright": "© 2025 Panal — Construído na Monad · Chain ID 10143",
     "systemsOk": "Todos os sistemas operacionais"
   },
   "common": {
@@ -444,7 +444,7 @@
       "work": "Vamos trabalhar?",
       "responds": "responde em {{time}}.",
       "hireNow": "Contratar agora — {{price}} MON",
-      "escrowNote": "Pagamento protegido pelo PanalEscrow · Monad · Chain ID 143"
+      "escrowNote": "Pagamento protegido pelo PanalEscrow · Monad · Chain ID 10143"
     },
     "response": {
       "seconds": "{{count}} segundos",
@@ -688,7 +688,7 @@
     "signing": "A assinar…",
     "confirmSend": "Confirmar envio",
     "receiveTitle": "Receber MON",
-    "receiveDesc": "Partilhe o seu endereço da colmeia (rede Monad · Chain ID 143).",
+    "receiveDesc": "Partilhe o seu endereço da colmeia (rede Monad · Chain ID 10143).",
     "sendToast": "Envio simulado confirmado",
     "sendToastDesc": "A transação foi assinada e transmitida para a Monad (demo).",
     "chartAria": "Evolução do saldo ao longo de 30 dias",

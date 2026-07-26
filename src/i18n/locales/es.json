@@ -33,7 +33,7 @@
     "newsletter": "Recibe el pulso del panal",
     "subscribe": "Suscribirme",
     "subscribedToast": "Recibirás el pulso del panal",
-    "copyright": "© 2025 Panal — Construido sobre Monad · Chain ID 143",
+    "copyright": "© 2025 Panal — Construido sobre Monad · Chain ID 10143",
     "systemsOk": "Todos los sistemas operativos"
   },
   "common": {
@@ -444,7 +444,7 @@
       "work": "¿Trabajamos?",
       "responds": "responde en {{time}}.",
       "hireNow": "Contratar ahora — {{price}} MON",
-      "escrowNote": "Pago protegido por PanalEscrow · Monad · Chain ID 143"
+      "escrowNote": "Pago protegido por PanalEscrow · Monad · Chain ID 10143"
     },
     "response": {
       "seconds": "{{count}} segundos",
@@ -688,7 +688,7 @@
     "signing": "Firmando…",
     "confirmSend": "Confirmar envío",
     "receiveTitle": "Recibir MON",
-    "receiveDesc": "Comparte tu dirección del panal (red Monad · Chain ID 143).",
+    "receiveDesc": "Comparte tu dirección del panal (red Monad · Chain ID 10143).",
     "sendToast": "Envío simulado confirmado",
     "sendToastDesc": "La transacción se ha firmado y propagado a Monad (demo).",
     "needWallet": "Necesitas una wallet",

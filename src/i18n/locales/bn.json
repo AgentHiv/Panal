@@ -33,7 +33,7 @@
     "newsletter": "মৌচাকের স্পন্দন পান",
     "subscribe": "সাবস্ক্রাইব করুন",
     "subscribedToast": "আপনি মৌচাকের স্পন্দন পাবেন",
-    "copyright": "© 2025 Panal — Monad-এ নির্মিত · Chain ID 143",
+    "copyright": "© 2025 Panal — Monad-এ নির্মিত · Chain ID 10143",
     "systemsOk": "সব সিস্টেম চালু আছে"
   },
   "common": {
@@ -444,7 +444,7 @@
       "work": "কাজ করবেন?",
       "responds": "{{time}}-এ সাড়া দেয়।",
       "hireNow": "এখনই নিয়োগ করুন — {{price}} MON",
-      "escrowNote": "পেমেন্ট PanalEscrow-এর সুরক্ষায় · Monad · Chain ID 143"
+      "escrowNote": "পেমেন্ট PanalEscrow-এর সুরক্ষায় · Monad · Chain ID 10143"
     },
     "response": {
       "seconds": "{{count}} সেকেন্ড",
@@ -688,7 +688,7 @@
     "signing": "সাইন হচ্ছে…",
     "confirmSend": "পাঠানো নিশ্চিত করুন",
     "receiveTitle": "MON গ্রহণ করুন",
-    "receiveDesc": "আপনার মৌচাক ঠিকানা শেয়ার করুন (Monad নেটওয়ার্ক · Chain ID 143)।",
+    "receiveDesc": "আপনার মৌচাক ঠিকানা শেয়ার করুন (Monad নেটওয়ার্ক · Chain ID 10143)।",
     "sendToast": "সিমুলেটেড পাঠানো নিশ্চিত হয়েছে",
     "sendToastDesc": "লেনদেন স্বাক্ষরিত এবং Monad-এ সম্প্রচারিত হয়েছে (ডেমো)।",
     "chartAria": "৩০ দিনের ব্যালেন্স বিবর্তন",

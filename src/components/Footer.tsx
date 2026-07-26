@@ -6,6 +6,7 @@ import LiveDot from '@/components/LiveDot';
 import TxHash from '@/components/TxHash';
 import { CONTRACTS } from '@/data/protocol';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import SocialIcons, { SOCIALS } from '@/components/SocialIcons';
 
 const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string }> }> = [
   {
@@ -37,7 +38,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string 
   },
   {
     title: 'footer.community',
-    links: [{ label: 'X' }, { label: 'Discord' }, { label: 'GitHub' }, { label: 'Telegram' }],
+    links: [],
   },
 ];
 
@@ -59,15 +60,18 @@ export default function Footer() {
       <div className="container-hive relative flex flex-col gap-14 py-16 md:py-20">
         {/* Fila superior: wordmark + newsletter */}
         <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
-          <Link to="/" className="flex items-center gap-4" aria-label="Panal — inicio">
-            <svg viewBox="0 0 64 64" className="h-11 w-11" aria-hidden>
-              <polygon points="60,32 46,56.25 18,56.25 4,32 18,7.75 46,7.75" fill="none" stroke="#E29A2E" strokeWidth="3.5" strokeLinejoin="round" />
-              <polygon points="44.5,33.5 39.75,41.72 24.25,41.72 19.5,33.5 24.25,25.28 39.75,25.28" fill="#E29A2E" />
-            </svg>
-            <span className="font-display font-bold tracking-[-0.02em] text-coal-text" style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', lineHeight: 1 }}>
-              Panal
-            </span>
-          </Link>
+          <div className="flex flex-col gap-5">
+            <Link to="/" className="flex items-center gap-4" aria-label="Panal — inicio">
+              <svg viewBox="0 0 64 64" className="h-11 w-11" aria-hidden>
+                <polygon points="60,32 46,56.25 18,56.25 4,32 18,7.75 46,7.75" fill="none" stroke="#E29A2E" strokeWidth="3.5" strokeLinejoin="round" />
+                <polygon points="44.5,33.5 39.75,41.72 24.25,41.72 19.5,33.5 24.25,25.28 39.75,25.28" fill="#E29A2E" />
+              </svg>
+              <span className="font-display font-bold tracking-[-0.02em] text-coal-text" style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', lineHeight: 1 }}>
+                Panal
+              </span>
+            </Link>
+            <SocialIcons />
+          </div>
           <form onSubmit={onSubscribe} className="flex w-full max-w-md flex-col gap-3">
             <label htmlFor="footer-newsletter" className="text-[0.875rem] font-medium text-coal-mute">
               {t('footer.newsletter')}
@@ -95,6 +99,18 @@ export default function Footer() {
           {COLUMNS.map((col) => (
             <div key={col.title} className="flex flex-col gap-3">
               <p className="eyebrow text-coal-mute">{t(col.title)}</p>
+              {col.title === 'footer.community' &&
+                SOCIALS.map((s) => (
+                  <a
+                    key={s.id}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[0.875rem] text-coal-text/80 transition-colors hover:text-honey"
+                  >
+                    {s.label}
+                  </a>
+                ))}
               {col.links.map((link) =>
                 link.to ? (
                   <Link

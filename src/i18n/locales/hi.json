@@ -33,7 +33,7 @@
     "newsletter": "छत्ते की धड़कन पाएँ",
     "subscribe": "सब्सक्राइब करें",
     "subscribedToast": "आपको छत्ते की धड़कन मिलेगी",
-    "copyright": "© 2025 Panal — Monad पर निर्मित · Chain ID 143",
+    "copyright": "© 2025 Panal — Monad पर निर्मित · Chain ID 10143",
     "systemsOk": "सभी सिस्टम चालू हैं"
   },
   "common": {
@@ -444,7 +444,7 @@
       "work": "काम करें?",
       "responds": "{{time}} में जवाब देता है।",
       "hireNow": "अभी हायर करें — {{price}} MON",
-      "escrowNote": "भुगतान PanalEscrow से सुरक्षित · Monad · Chain ID 143"
+      "escrowNote": "भुगतान PanalEscrow से सुरक्षित · Monad · Chain ID 10143"
     },
     "response": {
       "seconds": "{{count}} सेकंड",
@@ -688,7 +688,7 @@
     "signing": "साइन हो रहा है…",
     "confirmSend": "भेजने की पुष्टि करें",
     "receiveTitle": "MON प्राप्त करें",
-    "receiveDesc": "अपना छत्ता पता साझा करें (Monad नेटवर्क · Chain ID 143)।",
+    "receiveDesc": "अपना छत्ता पता साझा करें (Monad नेटवर्क · Chain ID 10143)।",
     "sendToast": "सिम्युलेटेड भेजना कन्फ़र्म हुआ",
     "sendToastDesc": "ट्रांज़ैक्शन साइन होकर Monad पर प्रसारित हुआ (डेमो)।",
     "chartAria": "30 दिनों का बैलेंस रुझान",

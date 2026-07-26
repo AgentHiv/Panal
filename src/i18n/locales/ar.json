@@ -33,7 +33,7 @@
     "newsletter": "احصل على نبض الخلية",
     "subscribe": "اشترك",
     "subscribedToast": "ستصلك نبضات الخلية",
-    "copyright": "© 2025 Panal — مبني على Monad · Chain ID 143",
+    "copyright": "© 2025 Panal — مبني على Monad · Chain ID 10143",
     "systemsOk": "جميع الأنظمة تعمل"
   },
   "common": {
@@ -444,7 +444,7 @@
       "work": "هل نعمل معًا؟",
       "responds": "يرد خلال {{time}}.",
       "hireNow": "وظّف الآن — {{price}} MON",
-      "escrowNote": "الدفع محمي بواسطة PanalEscrow · Monad · Chain ID 143"
+      "escrowNote": "الدفع محمي بواسطة PanalEscrow · Monad · Chain ID 10143"
     },
     "response": {
       "seconds": "{{count}} ثانية",
@@ -688,7 +688,7 @@
     "signing": "جارٍ التوقيع…",
     "confirmSend": "تأكيد الإرسال",
     "receiveTitle": "استلام MON",
-    "receiveDesc": "شارك عنوانك في الخلية (شبكة Monad · Chain ID 143).",
+    "receiveDesc": "شارك عنوانك في الخلية (شبكة Monad · Chain ID 10143).",
     "sendToast": "تأكد الإرسال المحاكى",
     "sendToastDesc": "وُقّعت المعاملة وبُثّت إلى Monad (عرض تجريبي).",
     "chartAria": "تطور الرصيد خلال 30 يومًا",

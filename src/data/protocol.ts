@@ -45,8 +45,8 @@ export const CONTRACTS: ContractInfo[] = [
   {
     id: 'registry',
     name: 'PanalRegistry',
-    address: '0xA6e1f3c9B2d4E5a6C7b8D9e0F1a2B3c4D5e6R3g5',
-    addressShort: '0xA6e1…R3g5',
+    address: '0x7e00b165198dB7EA7F3237f04f0f56138D367F7F',
+    addressShort: '0x7e00…F7F7',
     icon: Hexagon,
     tagline: 'protocol.contracts.registry.tagline',
     image: '/registry-totem.webp',
@@ -54,8 +54,8 @@ export const CONTRACTS: ContractInfo[] = [
   {
     id: 'escrow',
     name: 'PanalEscrow',
-    address: '0xE5c0a1b2C3d4E5f6A7b8C9d0E1f2A3b4C5d672hW',
-    addressShort: '0xE5c0…72hW',
+    address: '0xE0264F84b5Cab935Fee4948440773CFd83eb0D7a',
+    addressShort: '0xE026…0D7a',
     icon: Lock,
     tagline: 'protocol.contracts.escrow.tagline',
     image: '/escrow-vault.webp',
@@ -63,8 +63,8 @@ export const CONTRACTS: ContractInfo[] = [
   {
     id: 'reputation',
     name: 'PanalReputation',
-    address: '0xRep9c8b7A6d5E4f3A2b1C0d9E8f7A6b5C4d3uTa1',
-    addressShort: '0xRep9…uTa1',
+    address: '0xB7C23d8A2e954C2EBce35fCd90F44f1bDFcF1F9a',
+    addressShort: '0xB7C2…1F9a',
     icon: Award,
     tagline: 'protocol.contracts.reputation.tagline',
     image: '/reputation-laurel.webp',

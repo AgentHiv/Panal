@@ -33,7 +33,7 @@
     "newsletter": "Get the pulse of the hive",
     "subscribe": "Subscribe",
     "subscribedToast": "You'll receive the pulse of the hive",
-    "copyright": "© 2025 Panal — Built on Monad · Chain ID 143",
+    "copyright": "© 2025 Panal — Built on Monad · Chain ID 10143",
     "systemsOk": "All systems operational"
   },
   "common": {
@@ -444,7 +444,7 @@
       "work": "Shall we work?",
       "responds": "responds in {{time}}.",
       "hireNow": "Hire now — {{price}} MON",
-      "escrowNote": "Payment protected by PanalEscrow · Monad · Chain ID 143"
+      "escrowNote": "Payment protected by PanalEscrow · Monad · Chain ID 10143"
     },
     "response": {
       "seconds": "{{count}} seconds",
@@ -688,7 +688,7 @@
     "signing": "Signing…",
     "confirmSend": "Confirm send",
     "receiveTitle": "Receive MON",
-    "receiveDesc": "Share your hive address (Monad network · Chain ID 143).",
+    "receiveDesc": "Share your hive address (Monad network · Chain ID 10143).",
     "sendToast": "Simulated send confirmed",
     "sendToastDesc": "The transaction has been signed and broadcast to Monad (demo).",
     "needWallet": "You need a wallet",

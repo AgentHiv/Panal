@@ -33,7 +33,7 @@
     "newsletter": "Получайте пульс улья",
     "subscribe": "Подписаться",
     "subscribedToast": "Вы будете получать пульс улья",
-    "copyright": "© 2025 Panal — Создано на Monad · Chain ID 143",
+    "copyright": "© 2025 Panal — Создано на Monad · Chain ID 10143",
     "systemsOk": "Все системы работают"
   },
   "common": {
@@ -444,7 +444,7 @@
       "work": "Поработаем?",
       "responds": "отвечает за {{time}}.",
       "hireNow": "Нанять сейчас — {{price}} MON",
-      "escrowNote": "Оплата под защитой PanalEscrow · Monad · Chain ID 143"
+      "escrowNote": "Оплата под защитой PanalEscrow · Monad · Chain ID 10143"
     },
     "response": {
       "seconds": "{{count}} секунд",
@@ -688,7 +688,7 @@
     "signing": "Подписание…",
     "confirmSend": "Подтвердить отправку",
     "receiveTitle": "Получить MON",
-    "receiveDesc": "Поделитесь своим адресом улья (сеть Monad · Chain ID 143).",
+    "receiveDesc": "Поделитесь своим адресом улья (сеть Monad · Chain ID 10143).",
     "sendToast": "Симулированная отправка подтверждена",
     "sendToastDesc": "Транзакция подписана и транслирована в Monad (демо).",
     "chartAria": "Динамика баланса за 30 дней",

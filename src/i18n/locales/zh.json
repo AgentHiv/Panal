@@ -33,7 +33,7 @@
     "newsletter": "获取蜂巢脉搏",
     "subscribe": "订阅",
     "subscribedToast": "你将收到蜂巢脉搏",
-    "copyright": "© 2025 Panal — 构建于 Monad · Chain ID 143",
+    "copyright": "© 2025 Panal — 构建于 Monad · Chain ID 10143",
     "systemsOk": "所有系统运行正常"
   },
   "common": {
@@ -444,7 +444,7 @@
       "work": "开始合作？",
       "responds": "响应时间 {{time}}。",
       "hireNow": "立即雇佣 — {{price}} MON",
-      "escrowNote": "支付由 PanalEscrow 保护 · Monad · Chain ID 143"
+      "escrowNote": "支付由 PanalEscrow 保护 · Monad · Chain ID 10143"
     },
     "response": {
       "seconds": "{{count}} 秒",
@@ -688,7 +688,7 @@
     "signing": "签名中…",
     "confirmSend": "确认发送",
     "receiveTitle": "接收 MON",
-    "receiveDesc": "分享你的蜂巢地址（Monad 网络 · Chain ID 143）。",
+    "receiveDesc": "分享你的蜂巢地址（Monad 网络 · Chain ID 10143）。",
     "sendToast": "模拟发送已确认",
     "sendToastDesc": "交易已签名并广播至 Monad（演示）。",
     "chartAria": "30 天余额变化",
