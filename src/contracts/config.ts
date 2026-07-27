@@ -49,17 +49,19 @@ const TESTNET_ADDRESSES = {
 
 // TODO(mainnet): sustituir por las direcciones reales tras desplegar
 // con `forge script script/Deploy.s.sol --rpc-url https://rpc.monad.xyz` (ver MAINNET.md).
+// Desplegados en Monad mainnet el 2026-07-27 (versión hardenida post-auditoría).
 const MAINNET_ADDRESSES = {
-  registry: '0x0000000000000000000000000000000000000000',
-  reputation: '0x0000000000000000000000000000000000000000',
-  escrow: '0x0000000000000000000000000000000000000000',
+  registry: '0xe13C7d97e1EBc13A296e725DA90Bf3B04fDBf496',
+  reputation: '0xadAd5582B2023aAE7a89d42d6aF0B530c6C3e4D6',
+  escrow: '0x80db3eD4e50e3405B7F1b9e4a0bD5c0a901e4D2d',
 } as const;
 
 const ADDR = IS_MAINNET ? MAINNET_ADDRESSES : TESTNET_ADDRESSES;
 
 // Fail-closed: un build mainnet con direcciones placeholder quemaría fondos
 // (un CALL con valor a 0x0 tiene éxito aparente). Mejor romper el arranque.
-if (IS_MAINNET && Object.values(ADDR).some((a) => a === '0x0000000000000000000000000000000000000000')) {
+const ZERO_ADDRESS: string = '0x0000000000000000000000000000000000000000';
+if (IS_MAINNET && Object.values(ADDR).some((a) => a === ZERO_ADDRESS)) {
   throw new Error(
     '[Panal] Build mainnet sin direcciones de contratos reales. ' +
       'Rellena MAINNET_ADDRESSES en src/contracts/config.ts (ver MAINNET.md).',

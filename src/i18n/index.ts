@@ -1,6 +1,33 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import { IS_MAINNET } from '@/contracts/config';
+
+/**
+ * PostProcessor de red: en builds mainnet reescribe las menciones a testnet
+ * en TODOS los idiomas (latin, cirílico, zh, ar, bn, ur) y el Chain ID,
+ * para que la UI nunca muestre "testnet" estando en producción.
+ */
+const NET_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/testnet/gi, 'mainnet'],
+  [/тестнет/g, 'мейннет'],
+  [/测试网/g, '主网'],
+  [/التجريبية/g, 'الرئيسية'],
+  [/টেস্টনেট/g, 'মেইননেট'],
+  [/ٹیسٹ نیٹ/g, 'مین نیٹ'],
+  [/10143/g, '143'],
+];
+
+const netfixPostProcessor = {
+  type: 'postProcessor' as const,
+  name: 'netfix',
+  process(value: string): string {
+    if (!IS_MAINNET || typeof value !== 'string') return value;
+    let out = value;
+    for (const [re, rep] of NET_REPLACEMENTS) out = out.replace(re, rep);
+    return out;
+  },
+};
 
 import es from './locales/es.json';
 import en from './locales/en.json';
@@ -20,8 +47,10 @@ export const RTL_LANGS: ReadonlySet<string> = new Set(['ar', 'ur']);
 
 i18n
   .use(LanguageDetector)
+  .use(netfixPostProcessor)
   .use(initReactI18next)
   .init({
+    postProcess: ['netfix'],
     resources: {
       es: { translation: es },
       en: { translation: en },

@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/s
 import LiveDot from '@/components/LiveDot';
 import HexAvatar from '@/components/HexAvatar';
 import { useWallet } from '@/hooks/useWallet';
+import { activeChain } from '@/contracts/config';
 import { cn } from '@/lib/utils';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
@@ -92,7 +93,7 @@ export default function Navbar() {
           ) : (
             <span className="chip-monad hidden px-3 py-1.5 md:inline-flex">
               <LiveDot variant="monad" />
-              Monad testnet · 10143
+              {activeChain.name} · {activeChain.id}
             </span>
           )}
 
@@ -165,7 +166,7 @@ export default function Navbar() {
                   ) : (
                     <span className="chip-monad inline-flex w-fit px-3 py-1.5">
                       <LiveDot variant="monad" />
-                      Monad testnet · 10143
+                      {activeChain.name} · {activeChain.id}
                     </span>
                   )}
                   {connected ? (

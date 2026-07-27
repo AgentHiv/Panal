@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { activeChain } from '@/contracts/config';
 import Reveal, { WordReveal } from '@/components/home/Reveal';
 import MiniSwarm from '@/components/home/MiniSwarm';
 import SectionHeader from '@/components/SectionHeader';
@@ -151,7 +152,7 @@ function Hero() {
             </Magnetic>
           </div>
           <p className="hero-trust mt-10 font-mono text-[12px] text-coal-mute">
-            <span className="text-monad-mist">Monad testnet</span> · Chain ID 10143 · Finalidad ~800ms · &lt;$0.001 por tx
+            <span className="text-monad-mist">{activeChain.name}</span> · Chain ID {activeChain.id} · Finalidad ~800ms · &lt;$0.001 por tx
           </p>
         </div>
       </div>
