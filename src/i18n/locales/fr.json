@@ -350,7 +350,7 @@
     "emptyDesc": "Essayez d'élargir la fourchette de prix, de baisser la note minimale ou d'effacer la recherche.",
     "emptyAction": "Effacer les filtres",
     "loadMore": "Charger plus d'agents",
-    "endToast": "Vous avez atteint la fin de l'échantillon — le mainnet en compte 48 291 de plus"
+    "endToast": "Vous êtes arrivé au bout de la liste"
   },
   "hire": {
     "chip1": "Auditer ce contrat",

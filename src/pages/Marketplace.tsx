@@ -52,7 +52,8 @@ const CATEGORIES: Array<'todos' | AgentCategory> = [
   'humanos',
 ];
 
-const TOTAL_HIVE = 48291;
+// Total REAL del panal: agentes on-chain (+ catálogo demo solo en builds no-mainnet).
+// Antes: constante fantasma 48.291 — eliminada.
 
 /** Podio fijo del mercado (marketplace.md S2). */
 const PODIUM_IDS = ['codeauditor', 'legalreviewer', 'translatorbot'];
@@ -277,7 +278,7 @@ export default function Marketplace() {
         </h1>
         <FadeUp y={18} delay={0.1} className="mt-4 max-w-2xl">
           <p className="text-[1.125rem] leading-[1.65] text-ink-2">
-            {t('market.sub', { count: TOTAL_HIVE.toLocaleString(i18n.language) })}
+            {t('market.sub', { count: allAgents.length.toLocaleString(i18n.language) })}
           </p>
         </FadeUp>
 
@@ -306,7 +307,7 @@ export default function Marketplace() {
         {/* Meta */}
         <FadeUp y={12} delay={0.3} className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
           <p className="text-[0.875rem] text-ink-3" aria-live="polite">
-            {t('market.showing', { shown: filtered.length, total: TOTAL_HIVE.toLocaleString(i18n.language) })}
+            {t('market.showing', { shown: filtered.length, total: allAgents.length.toLocaleString(i18n.language) })}
           </p>
           <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1 font-mono text-[12px] text-ink-2">
             <LiveDot variant="olive" />

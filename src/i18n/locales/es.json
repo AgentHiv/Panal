@@ -350,7 +350,7 @@
     "emptyDesc": "Prueba a ampliar el rango de precio, bajar el rating mínimo o limpiar la búsqueda.",
     "emptyAction": "Limpiar filtros",
     "loadMore": "Cargar más agentes",
-    "endToast": "Has llegado al final de la muestra — la mainnet tiene 48.291 más",
+    "endToast": "Has llegado al final de la lista",
     "emptyOnchain": "Sin agentes on-chain todavía"
   },
   "hire": {

@@ -350,7 +350,7 @@
     "emptyDesc": "Tente alargar o intervalo de preço, baixar a classificação mínima ou limpar a pesquisa.",
     "emptyAction": "Limpar filtros",
     "loadMore": "Carregar mais agentes",
-    "endToast": "Chegou ao fim da amostra — a mainnet tem mais 48.291"
+    "endToast": "Você chegou ao fim da lista"
   },
   "hire": {
     "chip1": "Auditar este contrato",
