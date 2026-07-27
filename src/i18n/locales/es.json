@@ -602,7 +602,12 @@
       "inProgress": "3 en curso",
       "onTime": "Entregas a tiempo",
       "claims": "0 reclamaciones",
-      "favorites": "Agentes favoritos"
+      "favorites": "Agentes favoritos",
+      "incomeTotal": "Ingresos totales",
+      "spentTotal": "Gastado en total",
+      "completed": "Completadas",
+      "inProgressNow": "En curso",
+      "reviewsCount": "{{count}} reseñas"
     },
     "earnings": "Ganancias",
     "spending": "Gasto",
@@ -683,7 +688,17 @@
         "detail": "Jurado destacado del sistema de disputas",
         "hint": "Resuelve 10 disputas para desbloquear"
       }
-    }
+    },
+    "connectTitle": "Tu panel del panal",
+    "connectDesc": "Conecta tu wallet para ver tus tareas, pagos y reputación reales on-chain en Monad.",
+    "memberSince": "Miembro del panal desde {{date}}",
+    "memberRating": "Reputación global {{rating}} ★ ({{count}} reseñas)",
+    "tasksSubReal": "Tus tareas reales del escrow: estados, plazos y acciones on-chain.",
+    "chartEmpty": "Sin datos todavía",
+    "chartProviderEmpty": "Los ingresos por día no son computables on-chain (no hay timestamps de cobro). Tu total ganado está en los KPIs y en la sección de pagos.",
+    "chartClientEmpty": "Aún no has pedido ninguna tarea: contrata un agente del marketplace y tu gasto acumulado aparecerá aquí.",
+    "chartDonutEmpty": "Las categorías no se registran on-chain, así que no hay desglose real por categoría.",
+    "chartReputationEmpty": "El historial de rating no es computable on-chain: solo existe el promedio actual, visible abajo en tu reputación."
   },
   "wallet": {
     "available": "Disponible",
@@ -727,7 +742,10 @@
       "escrow": "En escrow",
       "progreso": "En progreso",
       "entregada": "Entregada — verificar",
-      "disputa": "En disputa"
+      "disputa": "En disputa",
+      "open": "Abierta",
+      "completed": "Completada",
+      "cancelled": "Cancelada"
     },
     "newDelivery": "Nueva entrega de {{name}} — verifícala",
     "paymentReleased": "Pago liberado: tx {{tx}}",
@@ -760,15 +778,95 @@
     "detailTitle": "Detalle — {{id}}",
     "escrowAmount": "Monto en escrow",
     "protocolFee": "Fee protocolo (2,5%)",
-    "autoRelease72": "72 h sin disputa"
+    "autoRelease72": "72 h sin disputa",
+    "colDeadline": "Fecha límite",
+    "unassigned": "Sin asignar",
+    "loading": "Leyendo tareas on-chain…",
+    "loadError": "No se pudieron leer las tareas del escrow. Comprueba tu conexión y reintenta.",
+    "retry": "Reintentar",
+    "noActive": "Sin tareas activas",
+    "noActiveDesc": "Cuando contrates un agente o te asignen una tarea, aparecerá aquí con sus acciones on-chain.",
+    "noCompleted": "Sin tareas completadas",
+    "noCompletedDesc": "Las tareas completadas o canceladas se listarán aquí.",
+    "claim": "Reclamar",
+    "deliver": "Entregar",
+    "approve": "Aprobar y liberar",
+    "autoReleaseBtn": "Liberar fondos",
+    "cancelTask": "Cancelar",
+    "dialog": {
+      "claim": {
+        "title": "Reclamar tarea {{id}}",
+        "desc": "La tarea está abierta sin worker asignado: al reclamarla quedas registrado como worker on-chain.",
+        "confirm": "Firmar claimTask"
+      },
+      "deliver": {
+        "title": "Entregar resultado — {{id}}",
+        "desc": "Escribe el resultado: se ancla on-chain su hash keccak256 (no el texto).",
+        "placeholder": "Resumen del resultado entregado…",
+        "confirm": "Firmar entrega"
+      },
+      "approve": {
+        "title": "Aprobar y liberar — {{id}}",
+        "desc": "Al aprobar, el pago se libera al worker y tu valoración queda registrada en PanalReputation.",
+        "ratingLabel": "Tu valoración (1–5)",
+        "confirm": "Firmar y liberar pago"
+      },
+      "dispute": {
+        "title": "Abrir disputa — {{id}}",
+        "desc": "El monto queda bloqueado hasta la resolución. Úsalo solo si la entrega no es aceptable.",
+        "confirm": "Firmar openDispute"
+      },
+      "cancel": {
+        "title": "Cancelar tarea {{id}}",
+        "desc": "La tarea aún no se ha entregado: al cancelarla se te devuelve el monto del escrow.",
+        "confirm": "Firmar cancelación"
+      },
+      "autoRelease": {
+        "title": "Liberar fondos — {{id}}",
+        "desc": "El plazo de auto-liberación ha pasado sin disputa: el pago se libera al worker sin valoración.",
+        "confirm": "Firmar autoRelease"
+      }
+    }
   },
   "payments": {
-    "csvDesc": "pagos-panal.csv · 6 movimientos"
+    "csvDesc": "pagos-panal.csv · 6 movimientos",
+    "pending": "Pendiente de retiro",
+    "pendingHint": "Fondos liberados por el escrow, listos para pasar a tu wallet.",
+    "withdraw": "Retirar",
+    "nothingToWithdraw": "Nada pendiente ahora mismo",
+    "withdrawalRow": "Retiro del escrow",
+    "emptyHistory": "Aún no hay retiros recientes de esta wallet."
   },
   "reputation": {
     "reviews": "{{count}} reseñas",
     "badgesEyebrow": "Insignias del panal",
-    "badgesNote": "Las insignias son credenciales on-chain emitidas por PanalReputation: se ganan con resultados verificables y no se pueden comprar ni transferir."
+    "badgesNote": "Las insignias son credenciales on-chain emitidas por PanalReputation: se ganan con resultados verificables y no se pueden comprar ni transferir.",
+    "bulletTasks": "{{count}} tareas completadas on-chain",
+    "bulletEarned": "{{amount}} MON ganados en total",
+    "bulletNoDisputes": "Sin disputas abiertas",
+    "bulletDisputes": "{{count}} disputas abiertas",
+    "noRatings": "Aún no tienes valoraciones: completa tareas para recibir tu primera nota.",
+    "badgesNoteReal": "Las insignias se derivan de reglas públicas sobre tus datos on-chain: se ganan con resultados verificables y no se pueden comprar ni transferir.",
+    "badgePioneer": {
+      "name": "Pionero",
+      "detail": "Agente registrado en PanalRegistry"
+    },
+    "badgeTasks10": {
+      "name": "10+ tareas",
+      "detail": "Al menos 10 tareas completadas on-chain"
+    },
+    "badgeElite": {
+      "name": "Rating elite",
+      "detail": "Rating ≥ 4,5 con al menos 5 reseñas"
+    },
+    "badgeNoDisputes": {
+      "name": "Cero disputas",
+      "detail": "Tareas completadas sin ninguna disputa abierta"
+    },
+    "badgeJuror": {
+      "name": "Jurado de honor",
+      "detail": "El sistema de arbitraje aún no es legible on-chain; esta insignia se activará con las disputas resueltas."
+    }
   },
   "ownAgent": {
     "paused": "{{name}} pausado — no recibirá tareas nuevas",
@@ -795,7 +893,11 @@
     "editDesc": "El nuevo precio se publica en PanalRegistry con una transacción (simulada).",
     "signing": "Firmando transacción…",
     "priceAria": "Precio por tarea en MON",
-    "savePrice": "Guardar precio"
+    "savePrice": "Guardar precio",
+    "ctaTitle": "Publica tu agente",
+    "ctaDesc": "Aún no eres agente registrado. Date de alta en PanalRegistry con tu precio por tarea y empieza a recibir trabajos con pago en escrow.",
+    "fallbackName": "Mi agente",
+    "editDescReal": "El nuevo precio se publica en PanalRegistry con una transacción real firmada por tu wallet."
   },
   "register": {
     "desc": "Alta on-chain de un agente en PanalRegistry (Monad testnet)",
@@ -954,5 +1056,18 @@
     "escrowNote": "Todos los pagos del panal pasan por aquí: escrow con liberación automática a las 72 h.",
     "volume24h": "Volumen 24h",
     "tasks24h": "Tareas 24h"
+  },
+  "dashReal": {
+    "txConfirmed": "Transacción confirmada en Monad",
+    "txFailed": "La transacción no se envió",
+    "dispute": {
+      "title": "Entrega impugnada",
+      "openedAt": "Abierta el {{date}}",
+      "timeoutLabel": "Plazo de resolución",
+      "daysLeft": "quedan {{days}} días",
+      "timeoutPassed": "Plazo superado",
+      "resolve": "Resolver disputa",
+      "note": "Pasado el plazo sin resolución del jurado, cualquiera de las partes puede ejecutar la resolución automática del escrow."
+    }
   }
 }

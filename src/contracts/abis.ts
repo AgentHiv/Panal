@@ -192,6 +192,37 @@ export const panalEscrowAbi = [
     inputs: [],
     outputs: [{ name: '', type: 'uint256' }],
   },
+  /** Getter público del mapping `tasks` (tupla completa). Status: 0 Open, 1 Delivered, 2 Completed, 3 Disputed, 4 Cancelled. */
+  {
+    type: 'function',
+    name: 'tasks',
+    stateMutability: 'view',
+    inputs: [{ name: '', type: 'uint256' }],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          { name: 'client', type: 'address' },
+          { name: 'worker', type: 'address' },
+          { name: 'amount', type: 'uint256' },
+          { name: 'taskHash', type: 'bytes32' },
+          { name: 'resultHash', type: 'bytes32' },
+          { name: 'deadline', type: 'uint256' },
+          { name: 'createdAt', type: 'uint256' },
+          { name: 'status', type: 'uint8' },
+        ],
+      },
+    ],
+  },
+  /** Timestamp de entrega (solo tareas en estado Delivered). */
+  {
+    type: 'function',
+    name: 'deliveredAt',
+    stateMutability: 'view',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
   {
     type: 'function',
     name: 'FEE_BPS',

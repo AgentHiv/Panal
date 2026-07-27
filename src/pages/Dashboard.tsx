@@ -1,25 +1,24 @@
 /**
- * Panal — Dashboard (`/dashboard`, dashboard.md).
- * Panel del usuario con doble perspectiva (Como proveedor / Como cliente):
- * header con toggle segmentado, KPIs + wallet, gráficas recharts, mis agentes,
- * tareas activas con estados vivos, disputa en curso, historial de pagos y
- * reputación con insignias. Al cambiar el toggle las tarjetas hacen flip
- * (rotateX 8°→0, opacity, .35s, stagger .05) y los datos se intercambian.
+ * Panal — Dashboard (`/dashboard`), 100% datos on-chain.
+ * Sin mocks: header con la wallet real, KPIs calculados de PanalEscrow +
+ * PanalReputation, serie acumulada real de gasto (cliente) a partir de
+ * createdAt de las tareas, agente propio real (PanalRegistry), tareas,
+ * disputa, pagos y reputación reales. Sin wallet conectada muestra el
+ * estado "conecta tu wallet". Conserva el flip de perspectiva.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowDownToLine, Check, Copy, Plus, TrendingUp } from 'lucide-react';
+import { Check, Copy, Hexagon, Plus, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import AgentCard from '@/components/AgentCard';
+import { formatEther } from 'viem';
 import HexAvatar from '@/components/HexAvatar';
 import SectionHeader from '@/components/SectionHeader';
 import StatBlock from '@/components/StatBlock';
 import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
-import { WALLET_USER, WALLET_USER_SHORT } from '@/data/agents';
 import WalletCard from '@/components/dashboard/WalletCard';
 import RegisterAgentDialog from '@/components/dashboard/RegisterAgentDialog';
 import OwnAgentCard from '@/components/dashboard/OwnAgentCard';
@@ -27,16 +26,12 @@ import TasksSection from '@/components/dashboard/TasksSection';
 import DisputeCard from '@/components/dashboard/DisputeCard';
 import PaymentsSection from '@/components/dashboard/PaymentsSection';
 import ReputationSection from '@/components/dashboard/ReputationSection';
-import { CategoryDonut, EarningsAreaChart, ReputationLineChart } from '@/components/dashboard/charts';
-import type { Perspective } from '@/components/dashboard/data';
-import {
-  CATEGORY_SPLIT,
-  EARNINGS,
-  FAVORITE_AGENTS,
-  KPIS,
-  OWN_AGENTS,
-  REPUTATION_TIMELINE,
-} from '@/components/dashboard/data';
+import { EarningsAreaChart } from '@/components/dashboard/charts';
+import type { EarningsPoint, Perspective } from '@/components/dashboard/data';
+import { formatRatingEs } from '@/components/dashboard/data';
+import { TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
+import type { RealTask } from '@/hooks/useMyTasks';
+import { avgRating, useMyAgentProfile } from '@/hooks/useMyAgentProfile';
 
 type RangeKey = '7' | '30' | '90';
 
@@ -45,6 +40,8 @@ const RANGE_LABELS: { key: RangeKey; label: string }[] = [
   { key: '30', label: '30D' },
   { key: '90', label: '90D' },
 ];
+
+const RANGE_DAYS: Record<RangeKey, number> = { '7': 7, '30': 30, '90': 90 };
 
 /* Flip al cambiar de perspectiva (dashboard.md S1 · Interacción clave) */
 const flipContainer = {
@@ -61,35 +58,86 @@ const flipItem = {
   },
 };
 
+/** Serie REAL acumulada por día a partir de createdAt de las tareas (gasto del cliente). */
+function buildCumulativeSeries(tasks: RealTask[], days: number): EarningsPoint[] {
+  const DAY = 86_400;
+  const now = Math.floor(Date.now() / 1000);
+  const end = now - (now % DAY) + DAY; // final del día actual
+  const start = end - days * DAY;
+  const amounts = tasks.map((tk) => ({
+    t: Number(tk.createdAt),
+    mon: Number(formatEther(tk.amountWei)),
+  }));
+  const out: EarningsPoint[] = [];
+  let acc = amounts.filter((a) => a.t < start).reduce((s, a) => s + a.mon, 0);
+  for (let d = 0; d < days; d++) {
+    const dayStart = start + d * DAY;
+    const dayEnd = dayStart + DAY;
+    const dayTasks = amounts.filter((a) => a.t >= dayStart && a.t < dayEnd);
+    acc += dayTasks.reduce((s, a) => s + a.mon, 0);
+    out.push({
+      label: new Date(dayStart * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
+      mon: Math.round(acc * 1e6) / 1e6,
+      tareas: dayTasks.length,
+    });
+  }
+  return out;
+}
+
+interface KpiCard {
+  id: string;
+  label: string;
+  /** valor numérico (StatBlock con count-up) o texto crudo (p. ej. "—") */
+  value?: number;
+  rawText?: string;
+  decimals?: number;
+  prefix?: string;
+  suffix?: string;
+  sub?: string;
+}
+
+function EmptyChart({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="flex h-[280px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line px-6 text-center">
+      <Hexagon size={36} className="text-line" strokeWidth={1.25} aria-hidden />
+      <p className="font-display text-[1rem] font-semibold text-ink">{title}</p>
+      <p className="max-w-sm text-[0.8125rem] leading-relaxed text-ink-3">{text}</p>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { t, i18n } = useTranslation();
   useEffect(() => {
     document.title = t('dash.metaTitle');
   }, [t, i18n.language]);
 
-  const { address, addressShort, connected, wrongNetwork } = useWallet();
-  const addrShort = addressShort ?? WALLET_USER_SHORT;
-  const addrFull = address ?? WALLET_USER;
+  const { address, addressShort, connected, connect } = useWallet();
   const [perspective, setPerspective] = useState<Perspective>('proveedor');
   const [range, setRange] = useState<RangeKey>('30');
   const [copied, setCopied] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
 
-  /* Alta real de agente: solo con wallet conectada en Monad testnet */
-  const canRegisterOnchain = connected && !wrongNetwork;
-  const onRegisterClick = () => {
-    if (canRegisterOnchain) {
-      setRegisterOpen(true);
-    } else {
-      toast(t('dash.registerToast'), {
-        description: connected ? t('dash.registerToastSwitch') : t('dash.registerToastConnect'),
-      });
-    }
-  };
+  /* ---------- Datos reales on-chain ---------- */
+  const { tasks, refetch: refetchTasks } = useMyTasks();
+  const profile = useMyAgentProfile();
+
+  const workerTasks = useMemo(() => tasks.filter((tk) => tk.role === 'worker'), [tasks]);
+  const clientTasks = useMemo(() => tasks.filter((tk) => tk.role === 'client'), [tasks]);
+  const disputedTasks = useMemo(
+    () => tasks.filter((tk) => tk.status === TASK_STATUS.Disputed),
+    [tasks],
+  );
+  const isLive = (tk: RealTask) =>
+    tk.status === TASK_STATUS.Open || tk.status === TASK_STATUS.Delivered;
+
+  const rep = profile.reputation;
+  const rating = avgRating(rep);
 
   const copyAddress = async () => {
+    if (!address) return;
     try {
-      await navigator.clipboard.writeText(addrFull);
+      await navigator.clipboard.writeText(address);
     } catch {
       /* portapapeles no disponible */
     }
@@ -98,8 +146,106 @@ export default function Dashboard() {
     window.setTimeout(() => setCopied(false), 1600);
   };
 
-  const earnings = EARNINGS[perspective][range];
-  const donut = CATEGORY_SPLIT[perspective];
+  /* ---------- KPIs reales (sin deltas inventados) ---------- */
+  const kpis: KpiCard[] = useMemo(() => {
+    if (perspective === 'proveedor') {
+      return [
+        {
+          id: 'ingresos',
+          label: t('dash.kpi.incomeTotal'),
+          value: Number(formatEther(rep.totalEarned)),
+          decimals: 2,
+          suffix: 'MON',
+        },
+        {
+          id: 'activas',
+          label: t('dash.kpi.activeTasks'),
+          value: workerTasks.filter(isLive).length,
+        },
+        {
+          id: 'rating',
+          label: t('dash.kpi.avgRating'),
+          ...(rating !== null
+            ? { value: rating, decimals: 1, suffix: '★' }
+            : { rawText: '—' }),
+          sub: t('dash.kpi.reviewsCount', { count: Number(rep.ratingCount) }),
+        },
+        {
+          id: 'completadas',
+          label: t('dash.kpi.completed'),
+          value: Number(rep.tasksCompleted),
+        },
+      ];
+    }
+    const spent = clientTasks.reduce((s, tk) => s + tk.amountWei, 0n);
+    return [
+      {
+        id: 'gastado',
+        label: t('dash.kpi.spentTotal'),
+        value: Number(formatEther(spent)),
+        decimals: 2,
+        suffix: 'MON',
+      },
+      { id: 'pedidas', label: t('dash.kpi.requested'), value: clientTasks.length },
+      {
+        id: 'encurso',
+        label: t('dash.kpi.inProgressNow'),
+        value: clientTasks.filter(isLive).length,
+      },
+      {
+        id: 'completadas',
+        label: t('dash.kpi.completed'),
+        value: clientTasks.filter((tk) => tk.status === TASK_STATUS.Completed).length,
+      },
+    ];
+  }, [perspective, rep, rating, workerTasks, clientTasks, t]);
+
+  /* ---------- Serie real de gasto (cliente) ---------- */
+  const spendSeries = useMemo(
+    () =>
+      perspective === 'cliente' && clientTasks.length > 0
+        ? buildCumulativeSeries(clientTasks, RANGE_DAYS[range])
+        : null,
+    [perspective, clientTasks, range],
+  );
+
+  const memberSince = profile.agent
+    ? new Date(Number(profile.agent.registeredAt) * 1000).toLocaleDateString(i18n.language, {
+        month: 'short',
+        year: 'numeric',
+      })
+    : null;
+
+  /* ---------- Estado sin wallet ---------- */
+  if (!connected || !address) {
+    return (
+      <div className="bg-paper">
+        <section className="container-hive relative pb-10 pt-28">
+          <div className="glow-monad-soft right-[-12%] top-[-35%] h-[400px] w-[520px]" aria-hidden />
+          <nav aria-label="Breadcrumb" className="font-mono text-[0.75rem] text-ink-3">
+            <Link to="/" className="transition-colors hover:text-honey-deep">Panal</Link>
+            <span className="mx-2">/</span>
+            <span className="text-ink-2">Dashboard</span>
+          </nav>
+          <h1 className="display-l mt-6 text-ink">{t('dash.connectTitle')}</h1>
+          <div className="mt-8 flex flex-col items-center gap-4 rounded-2xl border border-line bg-paper py-12 text-center shadow-card">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-line bg-cream">
+              <Wallet size={24} className="text-honey" aria-hidden />
+            </div>
+            <p className="max-w-sm text-[0.9375rem] leading-relaxed text-ink-2">
+              {t('dash.connectDesc')}
+            </p>
+            <button type="button" onClick={connect} className="btn-monad px-6 py-3 text-[0.9375rem] font-semibold">
+              {t('nav.connect')}
+            </button>
+          </div>
+          <div className="mt-6">
+            <WalletCard />
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-paper">
@@ -115,7 +261,7 @@ export default function Dashboard() {
 
         <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-start gap-5">
-            <HexAvatar seed={addrFull} size={56} className="mt-2 hidden sm:block" />
+            <HexAvatar seed={address} size={56} className="mt-2 hidden sm:block" />
             <div>
               {/* H1 word-reveal */}
               <motion.h1
@@ -137,7 +283,7 @@ export default function Dashboard() {
                   className="serif-accent inline-flex items-center gap-2 text-honey-deep"
                   variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: 'easeOut' } } }}
                 >
-                  {addrShort}
+                  {addressShort}
                   <button
                     type="button"
                     onClick={copyAddress}
@@ -148,9 +294,17 @@ export default function Dashboard() {
                   </button>
                 </motion.span>
               </motion.h1>
-              <p className="mt-3 text-[1.0625rem] text-ink-2">
-                {t('dash.memberLine')}
-              </p>
+              {/* Miembro desde / reputación global: solo si la wallet es agente real */}
+              {memberSince && (
+                <p className="mt-3 text-[1.0625rem] text-ink-2">
+                  {t('dash.memberSince', { date: memberSince })}
+                  {rating !== null &&
+                    ` · ${t('dash.memberRating', {
+                      rating: formatRatingEs(rating),
+                      count: Number(rep.ratingCount),
+                    })}`}
+                </p>
+              )}
             </div>
           </div>
 
@@ -187,28 +341,14 @@ export default function Dashboard() {
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  toast(t('dash.withdrawToast'), {
-                    icon: <ArrowDownToLine size={14} className="text-honey-deep" />,
-                    description: t('dash.withdrawToastDesc', { address: addrShort }),
-                  })
-                }
-                className="rounded-full border border-line px-4 py-2 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
-              >
-                {t('dash.withdraw')}
-              </button>
-              <button
-                type="button"
-                onClick={onRegisterClick}
-                className="inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
-              >
-                <Plus size={15} />
-                {t('dash.registerAgent')}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setRegisterOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-[#1B1814] transition-colors hover:bg-honey-deep"
+            >
+              <Plus size={15} />
+              {t('dash.registerAgent')}
+            </button>
           </motion.div>
         </div>
       </section>
@@ -225,29 +365,30 @@ export default function Dashboard() {
         <motion.section variants={flipItem} className="bg-cream">
           <div className="container-hive py-10 md:py-12">
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              {KPIS[perspective].map((kpi) => (
+              {kpis.map((kpi) => (
                 <div key={kpi.id} className="rounded-2xl border border-line bg-paper p-5 shadow-card">
-                  <StatBlock
-                    value={kpi.value}
-                    decimals={kpi.decimals}
-                    prefix={kpi.prefix}
-                    suffix={kpi.suffix ? ` ${kpi.suffix}` : undefined}
-                    label={t(kpi.label)}
-                  />
-                  {(kpi.delta || kpi.sub) && (
+                  {kpi.rawText !== undefined ? (
+                    <div className="flex flex-col gap-2">
+                      <span className="stat-number text-ink">{kpi.rawText}</span>
+                      <span className="eyebrow text-ink-3">{kpi.label}</span>
+                    </div>
+                  ) : (
+                    <StatBlock
+                      value={kpi.value ?? 0}
+                      decimals={kpi.decimals}
+                      prefix={kpi.prefix}
+                      suffix={kpi.suffix ? ` ${kpi.suffix}` : undefined}
+                      label={kpi.label}
+                    />
+                  )}
+                  {kpi.sub && (
                     <motion.p
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.6, duration: 0.3 }}
-                      className="mt-3 flex items-center gap-1.5 text-[0.8125rem]"
+                      className="mt-3 text-[0.8125rem] text-ink-3"
                     >
-                      {kpi.delta && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-olive/10 px-2 py-0.5 font-mono text-[0.75rem] font-medium text-olive">
-                          {kpi.deltaIcon === 'up' && <TrendingUp size={12} />}
-                          {kpi.delta?.startsWith('dash.') ? t(kpi.delta) : kpi.delta}
-                        </span>
-                      )}
-                      {kpi.sub && <span className="text-ink-3">{kpi.sub.startsWith('dash.') ? t(kpi.sub) : kpi.sub}</span>}
+                      {kpi.sub}
                     </motion.p>
                   )}
                 </div>
@@ -259,103 +400,82 @@ export default function Dashboard() {
           </div>
         </motion.section>
 
-        {/* ── S3 · Gráficas ──────────────────────────────────────────────── */}
+        {/* ── S3 · Gráficas (solo series computables de datos reales) ────── */}
         <motion.section variants={flipItem} className="container-hive py-14 md:py-20">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            {/* Ganancias / Gasto */}
+            {/* Gasto acumulado (cliente, real) / no computable (proveedor) */}
             <div className="rounded-2xl border border-line bg-paper p-6 shadow-card lg:col-span-8">
-              <div className="mb-5 flex items-center justify-between gap-4">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
                 <h3 className="font-display text-[1.125rem] font-semibold tracking-[-0.015em] text-ink">
                   {perspective === 'proveedor' ? t('dash.earnings') : t('dash.spending')}
                 </h3>
-                <div className="flex gap-1 rounded-full border border-line bg-cream p-0.5">
-                  {RANGE_LABELS.map((r) => (
-                    <button
-                      key={r.key}
-                      type="button"
-                      onClick={() => setRange(r.key)}
-                      className={cn(
-                        'rounded-full px-3 py-1 font-mono text-[0.75rem] transition-colors',
-                        range === r.key ? 'bg-paper text-ink shadow-sm' : 'text-ink-3 hover:text-ink-2',
-                      )}
-                    >
-                      {r.label}
-                    </button>
-                  ))}
-                </div>
+                {spendSeries && (
+                  <div className="flex gap-1 rounded-full border border-line bg-cream p-0.5">
+                    {RANGE_LABELS.map((r) => (
+                      <button
+                        key={r.key}
+                        type="button"
+                        onClick={() => setRange(r.key)}
+                        className={cn(
+                          'rounded-full px-3 py-1 font-mono text-[0.75rem] transition-colors',
+                          range === r.key ? 'bg-paper text-ink shadow-sm' : 'text-ink-3 hover:text-ink-2',
+                        )}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <EarningsAreaChart data={earnings} rangeKey={`${perspective}-${range}`} />
+              {perspective === 'proveedor' ? (
+                <EmptyChart title={t('dash.chartEmpty')} text={t('dash.chartProviderEmpty')} />
+              ) : spendSeries ? (
+                <EarningsAreaChart data={spendSeries} rangeKey={`cliente-${range}`} />
+              ) : (
+                <EmptyChart title={t('dash.chartEmpty')} text={t('dash.chartClientEmpty')} />
+              )}
             </div>
 
-            {/* Donut por categoría */}
+            {/* Donut por categoría: sin categorías on-chain → empty state honesto */}
             <div className="rounded-2xl border border-line bg-paper p-6 shadow-card lg:col-span-4">
               <h3 className="mb-5 font-display text-[1.125rem] font-semibold tracking-[-0.015em] text-ink">
-                {t(donut.title)}
+                {t(perspective === 'proveedor' ? 'dash.donut.tasksByCategory' : 'dash.donut.spendByCategory')}
               </h3>
-              <CategoryDonut slices={donut.slices.map((s) => ({ ...s, name: t(s.name) }))} center={donut.center} centerLabel={t(donut.centerLabel)} />
+              <EmptyChart title={t('dash.chartEmpty')} text={t('dash.chartDonutEmpty')} />
             </div>
 
-            {/* Reputación en el tiempo */}
+            {/* Reputación en el tiempo: sin historial de rating on-chain → empty state */}
             <div className="rounded-2xl border border-line bg-paper p-6 shadow-card lg:col-span-12">
               <div className="mb-4 flex items-baseline justify-between gap-4">
                 <h3 className="font-display text-[1.125rem] font-semibold tracking-[-0.015em] text-ink">
                   {t('dash.reputationOverTime')}
                 </h3>
-                <p className="font-mono text-[0.75rem] text-ink-3">{t('dash.milestones')}</p>
               </div>
-              <ReputationLineChart data={REPUTATION_TIMELINE} />
+              <EmptyChart title={t('dash.chartEmpty')} text={t('dash.chartReputationEmpty')} />
             </div>
           </div>
         </motion.section>
 
-        {/* ── S4 · Mis agentes / Favoritos ───────────────────────────────── */}
-        <motion.section variants={flipItem} className="container-hive pb-14 md:pb-20">
-          <SectionHeader
-            eyebrow={perspective === 'proveedor' ? t('dash.yourAgents') : t('dash.favorites')}
-            title={
-              perspective === 'proveedor' ? (
+        {/* ── S4 · Mi agente (solo perspectiva proveedor) ────────────────── */}
+        {perspective === 'proveedor' && (
+          <motion.section variants={flipItem} className="container-hive pb-14 md:pb-20">
+            <SectionHeader
+              eyebrow={t('dash.yourAgents')}
+              title={
                 <>
                   {t('dash.myAgentsTitle')} <em className="serif-accent text-honey-deep">{t('dash.myAgentsEm')}</em>
                 </>
-              ) : (
-                <>
-                  {t('dash.favAgentsTitle')} <em className="serif-accent text-honey-deep">{t('dash.favAgentsEm')}</em>
-                </>
-              )
-            }
-            sub={
-              perspective === 'proveedor' ? t('dash.myAgentsSub') : t('dash.favAgentsSub')
-            }
-            action={
-              perspective === 'proveedor' ? (
-                <button
-                  type="button"
-                  onClick={onRegisterClick}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
-                >
-                  <Plus size={15} />
-                  Registrar nuevo agente
-                </button>
-              ) : undefined
-            }
-            className="mb-8"
-          />
-          {perspective === 'proveedor' ? (
+              }
+              sub={t('dash.myAgentsSub')}
+              className="mb-8"
+            />
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {OWN_AGENTS.map((a) => (
-                <OwnAgentCard key={a.id} agent={a} />
-              ))}
+              <OwnAgentCard onRegister={() => setRegisterOpen(true)} />
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              {FAVORITE_AGENTS.map((a) => (
-                <AgentCard key={a.id} agent={a} />
-              ))}
-            </div>
-          )}
-        </motion.section>
+          </motion.section>
+        )}
 
-        {/* ── S5 · Tareas activas ────────────────────────────────────────── */}
+        {/* ── S5 · Tareas reales ─────────────────────────────────────────── */}
         <motion.section variants={flipItem} className="container-hive pb-14 md:pb-20">
           <SectionHeader
             eyebrow={t('dash.escrowRunning')}
@@ -364,28 +484,30 @@ export default function Dashboard() {
                 {t('dash.tasksTitle')} <em className="serif-accent text-honey-deep">{t('dash.tasksEm')}</em>
               </>
             }
-            sub={t('dash.tasksSub')}
+            sub={t('dash.tasksSubReal')}
             className="mb-8"
           />
           <TasksSection perspective={perspective} />
         </motion.section>
       </motion.div>
 
-      {/* ── S6 · Disputa en curso ─────────────────────────────────────────── */}
-      <section className="container-hive pb-14 md:pb-20">
-        <SectionHeader
-          eyebrow={t('dash.arbitration')}
-          title={
-            <>
-              {t('dash.disputeTitle')} <em className="serif-accent text-honey-deep">{t('dash.disputeEm')}</em>
-            </>
-          }
-          className="mb-8"
-        />
-        <DisputeCard />
-      </section>
+      {/* ── S6 · Disputa en curso (solo si hay alguna real) ─────────────── */}
+      {disputedTasks.length > 0 && (
+        <section className="container-hive pb-14 md:pb-20">
+          <SectionHeader
+            eyebrow={t('dash.arbitration')}
+            title={
+              <>
+                {t('dash.disputeTitle')} <em className="serif-accent text-honey-deep">{t('dash.disputeEm')}</em>
+              </>
+            }
+            className="mb-8"
+          />
+          <DisputeCard tasks={disputedTasks} onResolved={refetchTasks} />
+        </section>
+      )}
 
-      {/* ── S7 · Historial de pagos ───────────────────────────────────────── */}
+      {/* ── S7 · Pagos reales ───────────────────────────────────────────── */}
       <section className="container-hive pb-14 md:pb-20">
         <SectionHeader
           eyebrow={t('dash.movements')}
@@ -400,7 +522,7 @@ export default function Dashboard() {
         <PaymentsSection />
       </section>
 
-      {/* ── S8 · Reputación e insignias (cream, cierre) ───────────────────── */}
+      {/* ── S8 · Reputación real (cream, cierre) ────────────────────────── */}
       <section className="relative overflow-hidden bg-cream">
         <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-[0.08]" aria-hidden />
         <div className="container-hive relative py-16 md:py-24">
@@ -417,7 +539,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Alta on-chain en PanalRegistry (wallet conectada en Monad testnet) */}
+      {/* Alta on-chain en PanalRegistry */}
       <RegisterAgentDialog open={registerOpen} onOpenChange={setRegisterOpen} />
     </div>
   );

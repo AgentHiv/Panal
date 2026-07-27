@@ -1,18 +1,23 @@
 /**
- * Panal — Tareas activas del dashboard (dashboard.md S5).
- * Tabs Activas/Completadas/En disputa, estados vivos (el progreso avanza en
- * cliente +1%/2s; cada ~15s una tarea pasa a "Entregada — verificar", parpadea
- * honey-soft y sube al principio), verificación con liberación de pago
- * simulada y apertura de disputa.
+ * Panal — Tareas REALES del dashboard (PanalEscrow).
+ * Tabs Activas (Open/Delivered) / Completadas (Completed/Cancelled) /
+ * En disputa (Disputed) con counts reales y acciones on-chain por rol:
+ * - Worker: claimTask (Open sin worker) y deliverResult (Open asignada,
+ *   resultado → keccak256(toBytes(texto))).
+ * - Cliente: approveAndRelease (Delivered, rating 1–5), openDispute,
+ *   cancelTask (Open) y autoRelease (Delivered y plazo AUTO_RELEASE pasado).
+ * Todas pasan por el patrón de escritura obligatorio (useContractAction) y
+ * tras minarse la tx se hace refetch de las tareas.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Check, Eye, FileCheck, Hexagon } from 'lucide-react';
-import { toast } from 'sonner';
+import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { AlertTriangle, ExternalLink, Hexagon, Loader2, RefreshCw, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { formatEther, keccak256, toBytes } from 'viem';
+import type { Address } from 'viem';
+import { useReadContract } from 'wagmi';
 import HexAvatar from '@/components/HexAvatar';
-import RatingStars from '@/components/RatingStars';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
@@ -21,23 +26,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { formatMon } from '@/data/agents';
-import { randomTxHash, truncateHash } from '@/data/events';
-import type { DashTask, Perspective, TaskStatus } from './data';
-import { ACTIVE_TASKS, COMPLETED_TASKS, TASK_COUNTS } from './data';
+import { useWallet } from '@/hooks/useWallet';
+import { TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
+import type { RealTask } from '@/hooks/useMyTasks';
+import { usePanalAgents } from '@/hooks/usePanalAgents';
+import { useContractAction } from '@/hooks/useContractAction';
+import type { ContractActionRequest } from '@/hooks/useContractAction';
+import { shortAddress } from '@/hooks/useWallet';
+import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, activeChain } from '@/contracts/config';
+import { panalEscrowAbi } from '@/contracts/abis';
+import type { Perspective } from './data';
+import { formatMonEs } from './data';
 
-const STATUS_META: Record<TaskStatus, { label: string; className: string; pulse?: boolean }> = {
-  escrow: { label: 'tasks.status.escrow', className: 'bg-sand text-ink-2' },
-  progreso: { label: 'tasks.status.progreso', className: 'bg-honey-soft text-honey-deep' },
-  entregada: { label: 'tasks.status.entregada', className: 'bg-olive/10 text-olive', pulse: true },
-  disputa: { label: 'tasks.status.disputa', className: 'bg-terra/10 text-terra' },
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+const STATUS_META: Record<number, { label: string; className: string; pulse?: boolean }> = {
+  [TASK_STATUS.Open]: { label: 'tasks.status.open', className: 'bg-honey-soft text-honey-deep' },
+  [TASK_STATUS.Delivered]: { label: 'tasks.status.entregada', className: 'bg-olive/10 text-olive', pulse: true },
+  [TASK_STATUS.Completed]: { label: 'tasks.status.completed', className: 'bg-olive/10 text-olive' },
+  [TASK_STATUS.Disputed]: { label: 'tasks.status.disputa', className: 'bg-terra/10 text-terra' },
+  [TASK_STATUS.Cancelled]: { label: 'tasks.status.cancelled', className: 'bg-sand text-ink-3' },
 };
 
-function StatusBadge({ status }: { status: TaskStatus }) {
+function StatusBadge({ status }: { status: number }) {
   const { t } = useTranslation();
-  const meta = STATUS_META[status];
+  const meta = STATUS_META[status] ?? STATUS_META[TASK_STATUS.Open];
   return (
     <span
       className={cn(
@@ -46,199 +60,295 @@ function StatusBadge({ status }: { status: TaskStatus }) {
         meta.pulse && 'animate-pulse',
       )}
     >
-      {status === 'disputa' && <AlertTriangle size={12} />}
+      {status === TASK_STATUS.Disputed && <AlertTriangle size={12} />}
       {t(meta.label)}
     </span>
   );
 }
 
-function ProgressCell({ task }: { task: DashTask }) {
-  return (
-    <div className="flex min-w-[110px] items-center gap-2">
-      <div className="h-1 flex-1 overflow-hidden rounded-full bg-sand">
-        <div
-          className={cn('h-full rounded-full transition-[width] duration-700', task.status === 'disputa' ? 'bg-terra' : 'bg-honey')}
-          style={{ width: `${task.progress}%` }}
-        />
+/* ---------- Diálogos de acción ---------- */
+
+type DialogKind = 'deliver' | 'approve' | 'dispute' | 'cancel' | 'autoRelease' | 'claim';
+
+interface ActionDialogState {
+  kind: DialogKind;
+  task: RealTask;
+}
+
+/** Vista de progreso/éxito de tx dentro de los diálogos. */
+function TxProgress({
+  action,
+  onClose,
+}: {
+  action: ReturnType<typeof useContractAction>;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  if (action.mined && action.txHash) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-4 text-center">
+        <p className="font-display text-ink">{t('dashReal.txConfirmed')}</p>
+        <a
+          href={EXPLORER_TX(action.txHash)}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 font-mono text-[12px] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+        >
+          {t('hire.step3.viewTx')}
+          <ExternalLink size={13} />
+        </a>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
+        >
+          {t('common.close')}
+        </button>
       </div>
-      <span className="w-9 text-right font-mono text-[0.75rem] text-ink-3">{task.progress}%</span>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center gap-3 py-6 text-center">
+      <Loader2 size={28} className="animate-spin text-honey-deep" aria-hidden />
+      <p className="text-[0.875rem] font-medium text-ink">
+        {action.signing ? t('hire.step3.signing') : t('hire.step3.confirming')}
+      </p>
+      {action.txHash && (
+        <a
+          href={EXPLORER_TX(action.txHash)}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 font-mono text-[12px] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+        >
+          {t('hire.step3.viewTx')}
+          <ExternalLink size={13} />
+        </a>
+      )}
     </div>
   );
 }
 
-const PAGE_SIZE = 6;
+function EmptyTab({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line bg-paper px-6 py-16 text-center">
+      <Hexagon size={40} className="text-line" strokeWidth={1.25} />
+      <p className="font-display text-[1.05rem] font-semibold text-ink">{title}</p>
+      <p className="max-w-sm text-[0.875rem] text-ink-2">{desc}</p>
+    </div>
+  );
+}
 
 export default function TasksSection({ perspective }: { perspective: Perspective }) {
-  const { t } = useTranslation();
-  const [tasks, setTasks] = useState<DashTask[]>(() => ACTIVE_TASKS[perspective].map((t) => ({ ...t })));
-  const [flashId, setFlashId] = useState<string | null>(null);
-  const [verifyTask, setVerifyTask] = useState<DashTask | null>(null);
-  const [detailTask, setDetailTask] = useState<DashTask | null>(null);
-  const [releasing, setReleasing] = useState(false);
-  const [page, setPage] = useState(0);
-  const tasksRef = useRef(tasks);
-  useEffect(() => {
-    tasksRef.current = tasks;
-  }, [tasks]);
+  const { t, i18n } = useTranslation();
+  const { address } = useWallet();
+  const { tasks, loading, error, refetch } = useMyTasks();
+  const { agents } = usePanalAgents();
+  const action = useContractAction({ onMined: refetch });
 
-  // Hash del resultado entregado: estable por tarea (no se regenera por render)
-  const resultHash = useMemo(
-    () => (verifyTask ? truncateHash(randomTxHash()) : ''),
-    [verifyTask],
+  const { data: autoReleaseSec } = useReadContract({
+    address: PANAL_ESCROW_ADDRESS,
+    abi: panalEscrowAbi,
+    functionName: 'AUTO_RELEASE',
+    chainId: activeChain.id,
+    query: { staleTime: 300_000, retry: 1 },
+  });
+
+  const [dialog, setDialog] = useState<ActionDialogState | null>(null);
+  const [deliverText, setDeliverText] = useState('');
+  const [rating, setRating] = useState(5);
+
+  const nameOf = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const a of agents) map.set(a.workerAddress.toLowerCase(), a.name);
+    return (addr: string) => map.get(addr.toLowerCase()) ?? shortAddress(addr);
+  }, [agents]);
+
+  const meLc = address?.toLowerCase();
+  const mine = useMemo(
+    () => tasks.filter((tk) => (perspective === 'proveedor' ? tk.role === 'worker' : tk.role === 'client')),
+    [tasks, perspective],
   );
+  const active = mine.filter((tk) => tk.status === TASK_STATUS.Open || tk.status === TASK_STATUS.Delivered);
+  const completed = mine.filter((tk) => tk.status === TASK_STATUS.Completed || tk.status === TASK_STATUS.Cancelled);
+  const disputed = mine.filter((tk) => tk.status === TASK_STATUS.Disputed);
 
-  // Nota: el contenedor padre usa key={perspective}, así que esta sección se
-  // remonta al cambiar de perspectiva y el estado vivo se reinicia solo.
+  const nowSec = Math.floor(Date.now() / 1000);
 
-  // Progreso en vivo: +1% cada ~2s en tareas "En progreso" (tope 95%)
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.status === 'progreso' && t.progress < 95 ? { ...t, progress: t.progress + 1 } : t,
-        ),
-      );
-    }, 2000);
-    return () => window.clearInterval(id);
-  }, []);
+  /* ---------- Acciones por rol ---------- */
 
-  // Entrega simulada: cada ~15s una tarea "En progreso" → "Entregada — verificar"
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      const candidates = tasksRef.current.filter((t) => t.status === 'progreso');
-      if (candidates.length === 0) return;
-      const next = candidates.reduce((a, b) => (a.progress >= b.progress ? a : b));
-      setTasks((prev) => {
-        const updated = prev.map((t) =>
-          t.id === next.id ? { ...t, status: 'entregada' as TaskStatus, progress: 100 } : t,
-        );
-        const moved = updated.find((t) => t.id === next.id)!;
-        return [moved, ...updated.filter((t) => t.id !== next.id)];
-      });
-      setFlashId(next.id);
-      window.setTimeout(() => setFlashId((f) => (f === next.id ? null : f)), 2400);
-      toast(t('tasks.newDelivery', { name: next.counterparty }), {
-        icon: <FileCheck size={15} className="text-olive" />,
-      });
-    }, 15000);
-    return () => window.clearInterval(id);
-  }, [t]);
-
-  const liberarPago = () => {
-    if (!verifyTask) return;
-    setReleasing(true);
-    window.setTimeout(() => {
-      const tx = randomTxHash();
-      setTasks((prev) => prev.filter((t) => t.id !== verifyTask.id));
-      setReleasing(false);
-      setVerifyTask(null);
-      toast(t('tasks.paymentReleased', { tx: truncateHash(tx) }), {
-        icon: <Check size={14} className="text-olive" />,
-        description: t('tasks.paymentReleasedDesc', { id: verifyTask.id, amount: formatMon(verifyTask.amount) }),
-      });
-    }, 1200);
+  const requestFor = (kind: DialogKind, task: RealTask, extra?: { text?: string; rating?: number }): ContractActionRequest => {
+    const base = { address: PANAL_ESCROW_ADDRESS as Address, abi: panalEscrowAbi };
+    switch (kind) {
+      case 'claim':
+        return { ...base, functionName: 'claimTask', args: [task.id] };
+      case 'deliver':
+        return { ...base, functionName: 'deliverResult', args: [task.id, keccak256(toBytes(extra?.text ?? ''))] };
+      case 'approve':
+        return { ...base, functionName: 'approveAndRelease', args: [task.id, extra?.rating ?? 5] };
+      case 'dispute':
+        return { ...base, functionName: 'openDispute', args: [task.id] };
+      case 'cancel':
+        return { ...base, functionName: 'cancelTask', args: [task.id] };
+      case 'autoRelease':
+        return { ...base, functionName: 'autoRelease', args: [task.id] };
+    }
   };
 
-  const abrirDisputa = (task: DashTask) => {
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: 'disputa' as TaskStatus } : t)));
-    setVerifyTask(null);
-    toast(t('tasks.disputeOpened', { id: task.id }), {
-      icon: <AlertTriangle size={14} className="text-terra" />,
-      description: t('tasks.disputeOpenedDesc'),
-    });
+  const openDialog = (kind: DialogKind, task: RealTask) => {
+    action.reset();
+    setDeliverText('');
+    setRating(5);
+    setDialog({ kind, task });
   };
 
-  const active = tasks.filter((t) => t.status !== 'disputa');
-  const disputed = tasks.filter((t) => t.status === 'disputa');
-  const completed = COMPLETED_TASKS[perspective];
-  const counts = TASK_COUNTS[perspective];
-  const pages = Math.max(1, Math.ceil(completed.length / PAGE_SIZE));
-  const completedPage = completed.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  const closeDialog = () => {
+    setDialog(null);
+    action.reset();
+  };
 
-  const renderRows = (rows: DashTask[], withActions: boolean) =>
-    rows.map((task, i) => (
-      <motion.tr
-        key={task.id}
-        layout="position"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: Math.min(i * 0.04, 0.4), layout: { type: 'spring', stiffness: 300, damping: 30 } }}
-        className={cn(
-          'border-b border-line last:border-0 hover:bg-cream/70',
-          flashId === task.id && 'bg-honey-soft/70',
-        )}
-      >
-        <td className="whitespace-nowrap py-3.5 pl-5 pr-3 font-mono text-[0.8125rem] text-ink-2">{task.id}</td>
-        <td className="px-3 py-3.5">
-          <span className="flex items-center gap-2">
-            <HexAvatar seed={task.counterpartyWallet} size={32} />
-            <span className="max-w-[130px] truncate text-[0.875rem] font-medium text-ink">{task.counterparty}</span>
-          </span>
-        </td>
-        <td className="max-w-[240px] px-3 py-3.5">
-          <span className="block truncate text-[0.875rem] text-ink-2">{task.task}</span>
-        </td>
-        <td className="whitespace-nowrap px-3 py-3.5 font-mono text-[0.8125rem] text-ink">{formatMon(task.amount)} MON</td>
-        <td className="px-3 py-3.5"><StatusBadge status={task.status} /></td>
-        <td className="px-3 py-3.5"><ProgressCell task={task} /></td>
-        {withActions && (
-          <td className="whitespace-nowrap py-3.5 pl-3 pr-5">
-            <div className="flex items-center justify-end gap-1.5">
-              {task.status === 'entregada' && (
-                <button
-                  type="button"
-                  onClick={() => setVerifyTask(task)}
-                  className="rounded-full bg-olive px-3 py-1.5 text-[0.75rem] font-semibold text-paper transition-opacity hover:opacity-85"
-                >
-                  {t('tasks.verify')}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setDetailTask(task)}
-                className="rounded-full border border-line px-3 py-1.5 text-[0.75rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
-              >
-                {t('tasks.viewDetail')}
-              </button>
-              {task.status !== 'disputa' && (
-                <button
-                  type="button"
-                  onClick={() => abrirDisputa(task)}
-                  className="rounded-full border border-terra/30 px-3 py-1.5 text-[0.75rem] font-medium text-terra transition-colors hover:bg-terra/10"
-                >
-                  {t('tasks.openDispute')}
-                </button>
-              )}
-            </div>
+  const submitDialog = () => {
+    if (!dialog) return;
+    void action.run(requestFor(dialog.kind, dialog.task, { text: deliverText, rating }));
+  };
+
+  /** Botones de acción disponibles para una tarea (según rol y estado real). */
+  const actionsFor = (task: RealTask) => {
+    const out: { kind: DialogKind; label: string; className: string }[] = [];
+    const workerZero = task.worker.toLowerCase() === ZERO_ADDRESS;
+    if (task.role === 'worker') {
+      if (task.status === TASK_STATUS.Open && workerZero) {
+        out.push({ kind: 'claim', label: t('tasks.claim'), className: 'bg-honey text-[#1B1814] hover:bg-honey-deep' });
+      }
+      if (task.status === TASK_STATUS.Open && meLc && task.worker.toLowerCase() === meLc) {
+        out.push({ kind: 'deliver', label: t('tasks.deliver'), className: 'bg-honey text-[#1B1814] hover:bg-honey-deep' });
+      }
+    } else {
+      if (task.status === TASK_STATUS.Delivered) {
+        out.push({ kind: 'approve', label: t('tasks.approve'), className: 'bg-olive text-paper hover:opacity-85' });
+        out.push({ kind: 'dispute', label: t('tasks.openDispute'), className: 'border border-terra/30 text-terra hover:bg-terra/10' });
+        const canAuto =
+          task.deliveredAt !== undefined &&
+          autoReleaseSec !== undefined &&
+          Number(task.deliveredAt) + Number(autoReleaseSec) <= nowSec;
+        if (canAuto) {
+          out.push({ kind: 'autoRelease', label: t('tasks.autoReleaseBtn'), className: 'border border-honey text-honey-deep hover:bg-honey-soft' });
+        }
+      }
+      if (task.status === TASK_STATUS.Open) {
+        out.push({ kind: 'cancel', label: t('tasks.cancelTask'), className: 'border border-line text-ink-2 hover:border-terra hover:text-terra' });
+      }
+    }
+    return out;
+  };
+
+  const fmtDate = (ts: bigint) =>
+    ts === 0n
+      ? '—'
+      : new Date(Number(ts) * 1000).toLocaleString(i18n.language, {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+  const renderRows = (rows: RealTask[], withActions: boolean) =>
+    rows.map((task, i) => {
+      const counterparty = task.role === 'worker' ? task.client : task.worker;
+      const counterpartyZero = counterparty.toLowerCase() === ZERO_ADDRESS;
+      const acts = withActions ? actionsFor(task) : [];
+      return (
+        <motion.tr
+          key={task.id.toString()}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: Math.min(i * 0.04, 0.4) }}
+          className="border-b border-line last:border-0 hover:bg-cream/70"
+        >
+          <td className="whitespace-nowrap py-3.5 pl-5 pr-3 font-mono text-[0.8125rem] text-ink-2">
+            #{task.id.toString()}
           </td>
-        )}
-      </motion.tr>
-    ));
+          <td className="px-3 py-3.5">
+            <span className="flex items-center gap-2">
+              <HexAvatar seed={counterparty} size={32} />
+              <span className="max-w-[130px] truncate text-[0.875rem] font-medium text-ink">
+                {counterpartyZero ? t('tasks.unassigned') : nameOf(counterparty)}
+              </span>
+            </span>
+          </td>
+          <td className="whitespace-nowrap px-3 py-3.5 font-mono text-[0.8125rem] text-ink">
+            {formatMonEs(Number(formatEther(task.amountWei)))} MON
+          </td>
+          <td className="px-3 py-3.5"><StatusBadge status={task.status} /></td>
+          <td className="hidden whitespace-nowrap px-3 py-3.5 font-mono text-[0.75rem] text-ink-3 sm:table-cell">
+            {fmtDate(task.deadline)}
+          </td>
+          {withActions && (
+            <td className="whitespace-nowrap py-3.5 pl-3 pr-5">
+              <div className="flex items-center justify-end gap-1.5">
+                {acts.length === 0 && <span className="font-mono text-[0.75rem] text-ink-3">—</span>}
+                {acts.map((a) => (
+                  <button
+                    key={a.kind}
+                    type="button"
+                    onClick={() => openDialog(a.kind, task)}
+                    className={cn('rounded-full px-3 py-1.5 text-[0.75rem] font-semibold transition-colors', a.className)}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            </td>
+          )}
+        </motion.tr>
+      );
+    });
 
-  const tableHead = (withActions: boolean, completedView = false) => (
+  const tableHead = (withActions: boolean) => (
     <thead>
       <tr className="border-b border-line text-left">
         <th className="py-3 pl-5 pr-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">ID</th>
         <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colCounterparty')}</th>
-        <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colTask')}</th>
         <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colAmount')}</th>
-        {completedView ? (
-          <>
-            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colDuration')}</th>
-            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colRatingGiven')}</th>
-          </>
-        ) : (
-          <>
-            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colStatus')}</th>
-            <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colProgress')}</th>
-          </>
-        )}
-        {withActions && !completedView && (
+        <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colStatus')}</th>
+        <th className="hidden px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3 sm:table-cell">{t('tasks.colDeadline')}</th>
+        {withActions && (
           <th className="py-3 pl-3 pr-5 text-right text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('ranking.colActions')}</th>
         )}
       </tr>
     </thead>
   );
+
+  const renderTable = (rows: RealTask[], withActions: boolean) => (
+    <div className="overflow-x-auto rounded-2xl border border-line bg-paper shadow-card">
+      <table className="w-full min-w-[640px] border-collapse">
+        {tableHead(withActions)}
+        <tbody>{renderRows(rows, withActions)}</tbody>
+      </table>
+    </div>
+  );
+
+  /* ---------- Estados de carga / error ---------- */
+  if (error) {
+    return (
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-terra/40 bg-terra/5 px-6 py-14 text-center">
+        <AlertTriangle size={28} className="text-terra" />
+        <p className="text-[0.875rem] text-ink-2">{t('tasks.loadError')}</p>
+        <button
+          type="button"
+          onClick={refetch}
+          className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+        >
+          <RefreshCw size={13} /> {t('tasks.retry')}
+        </button>
+      </div>
+    );
+  }
+
+  const dialogTitle = dialog
+    ? t(`tasks.dialog.${dialog.kind}.title`, { id: `#${dialog.task.id.toString()}` })
+    : '';
+  const dialogDesc = dialog ? t(`tasks.dialog.${dialog.kind}.desc`) : '';
+  const dialogConfirm = dialog ? t(`tasks.dialog.${dialog.kind}.confirm`) : '';
 
   return (
     <div>
@@ -248,13 +358,15 @@ export default function TasksSection({ perspective }: { perspective: Perspective
             value="activas"
             className="rounded-full px-4 py-2 text-[0.8125rem] data-[state=active]:bg-paper data-[state=active]:text-ink data-[state=active]:shadow-sm"
           >
-            {t('tasks.tabActive')} <span className="ml-1.5 rounded-full bg-honey-soft px-1.5 py-0.5 font-mono text-[0.6875rem] text-honey-deep">{counts.activas}</span>
+            {t('tasks.tabActive')}
+            <span className="ml-1.5 rounded-full bg-honey-soft px-1.5 py-0.5 font-mono text-[0.6875rem] text-honey-deep">{active.length}</span>
           </TabsTrigger>
           <TabsTrigger
             value="completadas"
             className="rounded-full px-4 py-2 text-[0.8125rem] data-[state=active]:bg-paper data-[state=active]:text-ink data-[state=active]:shadow-sm"
           >
             {t('tasks.tabCompleted')}
+            <span className="ml-1.5 rounded-full bg-sand px-1.5 py-0.5 font-mono text-[0.6875rem] text-ink-2">{completed.length}</span>
           </TabsTrigger>
           <TabsTrigger
             value="disputa"
@@ -268,165 +380,118 @@ export default function TasksSection({ perspective }: { perspective: Perspective
         </TabsList>
 
         <TabsContent value="activas" className="mt-6">
-          <div className="overflow-x-auto rounded-2xl border border-line bg-paper shadow-card">
-            <table className="w-full min-w-[900px] border-collapse">
-              {tableHead(true)}
-              <tbody>{renderRows(active, true)}</tbody>
-            </table>
-          </div>
-          <p className="mt-3 text-[0.8125rem] text-ink-3">
-            {t('tasks.showingActive', { shown: active.length, total: counts.activas })}
-          </p>
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 rounded-2xl border border-line bg-paper py-14 text-ink-3">
+              <Loader2 size={18} className="animate-spin" /> {t('tasks.loading')}
+            </div>
+          ) : active.length > 0 ? (
+            renderTable(active, true)
+          ) : (
+            <EmptyTab title={t('tasks.noActive')} desc={t('tasks.noActiveDesc')} />
+          )}
         </TabsContent>
 
         <TabsContent value="completadas" className="mt-6">
-          <div className="overflow-x-auto rounded-2xl border border-line bg-paper shadow-card">
-            <table className="w-full min-w-[820px] border-collapse">
-              {tableHead(false, true)}
-              <tbody>
-                <AnimatePresence initial={false}>
-                  {completedPage.map((t, i) => (
-                    <motion.tr
-                      key={t.id}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.3, delay: i * 0.04 }}
-                      className="border-b border-line last:border-0 hover:bg-cream/70"
-                    >
-                      <td className="whitespace-nowrap py-3.5 pl-5 pr-3 font-mono text-[0.8125rem] text-ink-2">{t.id}</td>
-                      <td className="px-3 py-3.5">
-                        <span className="flex items-center gap-2">
-                          <HexAvatar seed={t.counterpartyWallet} size={32} />
-                          <span className="max-w-[130px] truncate text-[0.875rem] font-medium text-ink">{t.counterparty}</span>
-                        </span>
-                      </td>
-                      <td className="max-w-[260px] px-3 py-3.5">
-                        <span className="block truncate text-[0.875rem] text-ink-2">{t.task}</span>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-3.5 font-mono text-[0.8125rem] text-ink">{formatMon(t.amount)} MON</td>
-                      <td className="whitespace-nowrap px-3 py-3.5 font-mono text-[0.8125rem] text-ink-2">{t.duration}</td>
-                      <td className="px-3 py-3.5"><RatingStars rating={t.ratingGiven ?? 5} size={12} /></td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
-              </tbody>
-            </table>
-          </div>
-          {/* Paginación simple */}
-          <div className="mt-4 flex items-center justify-between">
-            <p className="font-mono text-[0.75rem] text-ink-3">
-              {t('tasks.page', { page: page + 1, pages, total: completed.length })}
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded-full border-line bg-transparent hover:bg-cream">
-                {t('common.previous')}
-              </Button>
-              <Button variant="outline" size="sm" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)} className="rounded-full border-line bg-transparent hover:bg-cream">
-                {t('common.next')}
-              </Button>
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 rounded-2xl border border-line bg-paper py-14 text-ink-3">
+              <Loader2 size={18} className="animate-spin" /> {t('tasks.loading')}
             </div>
-          </div>
+          ) : completed.length > 0 ? (
+            renderTable(completed, false)
+          ) : (
+            <EmptyTab title={t('tasks.noCompleted')} desc={t('tasks.noCompletedDesc')} />
+          )}
         </TabsContent>
 
         <TabsContent value="disputa" className="mt-6">
-          {disputed.length > 0 ? (
-            <div className="overflow-x-auto rounded-2xl border border-line bg-paper shadow-card">
-              <table className="w-full min-w-[900px] border-collapse">
-                {tableHead(true)}
-                <tbody>{renderRows(disputed, true)}</tbody>
-              </table>
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 rounded-2xl border border-line bg-paper py-14 text-ink-3">
+              <Loader2 size={18} className="animate-spin" /> {t('tasks.loading')}
             </div>
+          ) : disputed.length > 0 ? (
+            renderTable(disputed, false)
           ) : (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line bg-paper px-6 py-16 text-center">
-              <Hexagon size={40} className="text-line" strokeWidth={1.25} />
-              <p className="font-display text-[1.05rem] font-semibold text-ink">{t('tasks.noDisputes')}</p>
-              <p className="max-w-sm text-[0.875rem] text-ink-2">
-                {t('tasks.noDisputesDesc')}
-              </p>
-            </div>
+            <EmptyTab title={t('tasks.noDisputes')} desc={t('tasks.noDisputesDesc')} />
           )}
         </TabsContent>
       </Tabs>
 
-      {/* Dialog: verificar entrega */}
-      <Dialog open={verifyTask !== null} onOpenChange={(o) => !o && !releasing && setVerifyTask(null)}>
+      {/* Diálogo de acción (deliver / approve / confirmaciones) */}
+      <Dialog open={dialog !== null} onOpenChange={(o) => !o && !action.busy && closeDialog()}>
         <DialogContent className="border-line bg-paper sm:max-w-lg">
-          {verifyTask && (
+          {dialog && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-display text-ink">{t('tasks.verifyTitle', { id: verifyTask.id })}</DialogTitle>
-                <DialogDescription className="text-ink-2">
-                  {verifyTask.task} · {verifyTask.counterparty}
-                </DialogDescription>
+                <DialogTitle className="font-display text-ink">{dialogTitle}</DialogTitle>
+                <DialogDescription className="text-ink-2">{dialogDesc}</DialogDescription>
               </DialogHeader>
-              {releasing ? (
-                <div className="flex flex-col items-center gap-4 py-8">
-                  <Hexagon size={44} className="animate-spin-slow text-honey" strokeWidth={1.5} />
-                  <p className="font-mono text-[0.8125rem] text-ink-2">{t('tasks.releasing')}</p>
-                </div>
+
+              {action.busy || action.txHash ? (
+                <TxProgress action={action} onClose={closeDialog} />
               ) : (
                 <div className="flex flex-col gap-4">
-                  <div className="rounded-xl border border-line bg-cream p-4">
-                    <p className="eyebrow mb-2 text-ink-3">{t('tasks.resultMock')}</p>
-                    <p className="text-[0.875rem] leading-relaxed text-ink-2">
-                      {t('tasks.resultMockText')}
-                    </p>
-                    <p className="mt-3 font-mono text-[0.75rem] text-ink-3">
-                      {t('tasks.resultLine', { hash: resultHash, amount: formatMon(verifyTask.amount) })}
-                    </p>
+                  <div className="rounded-xl border border-line bg-cream p-4 font-mono text-[0.8125rem] text-ink-2">
+                    {t('tasks.escrowAmount')}: {formatMonEs(Number(formatEther(dialog.task.amountWei)))} MON
                   </div>
+
+                  {dialog.kind === 'deliver' && (
+                    <textarea
+                      value={deliverText}
+                      onChange={(e) => setDeliverText(e.target.value)}
+                      rows={4}
+                      placeholder={t('tasks.dialog.deliver.placeholder')}
+                      className="w-full resize-none rounded-xl border border-line bg-paper px-4 py-3 text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
+                    />
+                  )}
+
+                  {dialog.kind === 'approve' && (
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[0.8125rem] font-medium text-ink-2">{t('tasks.dialog.approve.ratingLabel')}</span>
+                      <div className="flex gap-1" role="radiogroup" aria-label={t('tasks.dialog.approve.ratingLabel')}>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            role="radio"
+                            aria-checked={rating === n}
+                            onClick={() => setRating(n)}
+                            className="rounded-full p-1 transition-transform hover:scale-110"
+                          >
+                            <Star
+                              size={26}
+                              className={n <= rating ? 'fill-honey text-honey' : 'fill-sand text-sand'}
+                              strokeWidth={0}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <button
                       type="button"
-                      onClick={liberarPago}
-                      className="flex-1 rounded-full bg-honey px-4 py-2.5 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
+                      onClick={closeDialog}
+                      className="flex-1 rounded-full border border-line px-4 py-2.5 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
                     >
-                      {t('tasks.releasePayment')}
+                      {t('common.cancel')}
                     </button>
                     <button
                       type="button"
-                      onClick={() => abrirDisputa(verifyTask)}
-                      className="flex-1 rounded-full border border-terra/40 px-4 py-2.5 text-[0.875rem] font-semibold text-terra transition-colors hover:bg-terra/10"
+                      onClick={submitDialog}
+                      disabled={dialog.kind === 'deliver' && deliverText.trim().length === 0}
+                      className={cn(
+                        'inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-[0.875rem] font-semibold disabled:opacity-40',
+                        dialog.kind === 'dispute' || dialog.kind === 'cancel'
+                          ? 'border border-terra/50 bg-terra/10 text-terra transition-colors hover:bg-terra/20'
+                          : 'btn-monad',
+                      )}
                     >
-                      {t('tasks.openDispute')}
+                      {dialogConfirm}
                     </button>
                   </div>
                 </div>
               )}
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: detalle de tarea */}
-      <Dialog open={detailTask !== null} onOpenChange={(o) => !o && setDetailTask(null)}>
-        <DialogContent className="border-line bg-paper sm:max-w-md">
-          {detailTask && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="font-display text-ink">{t('tasks.detailTitle', { id: detailTask.id })}</DialogTitle>
-                <DialogDescription className="text-ink-2">{detailTask.task}</DialogDescription>
-              </DialogHeader>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-line bg-cream p-4 text-[0.875rem]">
-                <dt className="text-ink-3">{t('tasks.colCounterparty')}</dt>
-                <dd className="text-right font-medium text-ink">{detailTask.counterparty}</dd>
-                <dt className="text-ink-3">{t('tasks.escrowAmount')}</dt>
-                <dd className="text-right font-mono text-ink">{formatMon(detailTask.amount)} MON</dd>
-                <dt className="text-ink-3">{t('tasks.protocolFee')}</dt>
-                <dd className="text-right font-mono text-ink">{formatMon(detailTask.amount * 0.025, 5)} MON</dd>
-                <dt className="text-ink-3">{t('tasks.colStatus')}</dt>
-                <dd className="text-right"><StatusBadge status={detailTask.status} /></dd>
-                <dt className="text-ink-3">Auto-release</dt>
-                <dd className="text-right font-mono text-ink-2">{t('tasks.autoRelease72')}</dd>
-              </dl>
-              <Button
-                variant="outline"
-                className="rounded-full border-line bg-transparent hover:bg-cream"
-                onClick={() => setDetailTask(null)}
-              >
-                <Eye size={14} className="mr-1.5" /> {t('common.close')}
-              </Button>
             </>
           )}
         </DialogContent>

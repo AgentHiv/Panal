@@ -601,7 +601,12 @@
       "inProgress": "3 个进行中",
       "onTime": "准时交付",
       "claims": "0 次投诉",
-      "favorites": "收藏的智能体"
+      "favorites": "收藏的智能体",
+      "incomeTotal": "总收入",
+      "spentTotal": "总支出",
+      "completed": "已完成",
+      "inProgressNow": "进行中",
+      "reviewsCount": "{{count}} 条评价"
     },
     "earnings": "收入",
     "spending": "支出",
@@ -682,7 +687,17 @@
         "detail": "争议系统的杰出陪审员",
         "hint": "裁决 10 起争议即可解锁"
       }
-    }
+    },
+    "connectTitle": "你的蜂巢面板",
+    "connectDesc": "连接你的钱包，查看你在 Monad 上真实的链上任务、付款和声誉。",
+    "memberSince": "自 {{date}} 起加入蜂巢",
+    "memberRating": "全球声誉 {{rating}} ★（{{count}} 条评价）",
+    "tasksSubReal": "你在托管中的真实任务：状态、期限和链上操作。",
+    "chartEmpty": "暂无数据",
+    "chartProviderEmpty": "每日收入无法从链上计算（没有付款时间戳）。你的总收入请查看 KPI 和付款部分。",
+    "chartClientEmpty": "你还没有发布过任务：从市场雇佣一个代理，你的累计支出将显示在这里。",
+    "chartDonutEmpty": "类别不会记录在链上，因此没有真实的分类明细。",
+    "chartReputationEmpty": "评分历史无法从链上计算：只有当前平均分，显示在下方你的声誉中。"
   },
   "wallet": {
     "available": "可用",
@@ -721,7 +736,10 @@
       "escrow": "托管中",
       "progreso": "进行中",
       "entregada": "已交付 — 待验证",
-      "disputa": "争议中"
+      "disputa": "争议中",
+      "open": "开放",
+      "completed": "已完成",
+      "cancelled": "已取消"
     },
     "newDelivery": "{{name}} 的新交付 — 请验证",
     "paymentReleased": "支付已释放：tx {{tx}}",
@@ -754,15 +772,95 @@
     "detailTitle": "详情 — {{id}}",
     "escrowAmount": "托管金额",
     "protocolFee": "协议费（2.5%）",
-    "autoRelease72": "72 小时无争议"
+    "autoRelease72": "72 小时无争议",
+    "colDeadline": "截止时间",
+    "unassigned": "未分配",
+    "loading": "正在读取链上任务…",
+    "loadError": "无法读取托管任务。请检查连接后重试。",
+    "retry": "重试",
+    "noActive": "没有进行中的任务",
+    "noActiveDesc": "当你雇佣代理或被分配任务时，任务及其链上操作会显示在这里。",
+    "noCompleted": "没有已完成的任务",
+    "noCompletedDesc": "已完成或已取消的任务将列在这里。",
+    "claim": "认领",
+    "deliver": "交付",
+    "approve": "批准并放款",
+    "autoReleaseBtn": "释放资金",
+    "cancelTask": "取消",
+    "dialog": {
+      "claim": {
+        "title": "认领任务 {{id}}",
+        "desc": "该任务处于开放状态且未分配执行者：认领后你将在链上成为其执行者。",
+        "confirm": "签名 claimTask"
+      },
+      "deliver": {
+        "title": "交付结果 — {{id}}",
+        "desc": "填写结果：链上只锚定其 keccak256 哈希（而非文本）。",
+        "placeholder": "交付结果摘要…",
+        "confirm": "签名交付"
+      },
+      "approve": {
+        "title": "批准并放款 — {{id}}",
+        "desc": "批准后，款项将支付给执行者，你的评分将记录在 PanalReputation 中。",
+        "ratingLabel": "你的评分（1–5）",
+        "confirm": "签名并放款"
+      },
+      "dispute": {
+        "title": "发起争议 — {{id}}",
+        "desc": "在争议解决前，款项将保持锁定。仅在交付不可接受时使用。",
+        "confirm": "签名 openDispute"
+      },
+      "cancel": {
+        "title": "取消任务 {{id}}",
+        "desc": "该任务尚未交付：取消后托管款项将退还给你。",
+        "confirm": "签名取消"
+      },
+      "autoRelease": {
+        "title": "释放资金 — {{id}}",
+        "desc": "自动释放期限已过且无争议：款项将支付给执行者，不含评分。",
+        "confirm": "签名 autoRelease"
+      }
+    }
   },
   "payments": {
-    "csvDesc": "pagos-panal.csv · 6 笔记录"
+    "csvDesc": "pagos-panal.csv · 6 笔记录",
+    "pending": "待提取",
+    "pendingHint": "托管已释放的资金，可随时转入你的钱包。",
+    "withdraw": "提取",
+    "nothingToWithdraw": "当前没有待提取资金",
+    "withdrawalRow": "托管提取",
+    "emptyHistory": "该钱包最近还没有提取记录。"
   },
   "reputation": {
     "reviews": "{{count}} 条评价",
     "badgesEyebrow": "蜂巢徽章",
-    "badgesNote": "徽章是由 PanalReputation 颁发的链上凭证：凭可验证的成果获得，无法购买或转让。"
+    "badgesNote": "徽章是由 PanalReputation 颁发的链上凭证：凭可验证的成果获得，无法购买或转让。",
+    "bulletTasks": "链上已完成 {{count}} 个任务",
+    "bulletEarned": "总共赚取 {{amount}} MON",
+    "bulletNoDisputes": "没有未解决的争议",
+    "bulletDisputes": "{{count}} 个未解决的争议",
+    "noRatings": "你还没有评分：完成任务即可获得第一个评分。",
+    "badgesNoteReal": "徽章根据链上数据的公开规则授予：只能通过可验证的成果获得，不可购买或转让。",
+    "badgePioneer": {
+      "name": "先锋",
+      "detail": "已在 PanalRegistry 注册代理"
+    },
+    "badgeTasks10": {
+      "name": "10+ 任务",
+      "detail": "链上完成至少 10 个任务"
+    },
+    "badgeElite": {
+      "name": "精英评分",
+      "detail": "评分 ≥ 4.5 且至少 5 条评价"
+    },
+    "badgeNoDisputes": {
+      "name": "零争议",
+      "detail": "已完成任务且没有未解决的争议"
+    },
+    "badgeJuror": {
+      "name": "荣誉陪审员",
+      "detail": "仲裁系统尚无法从链上读取；该徽章将随争议解决而解锁。"
+    }
   },
   "ownAgent": {
     "paused": "{{name}} 已暂停 — 将不会接收新任务",
@@ -789,7 +887,11 @@
     "editDesc": "新价格将通过一笔交易（模拟）发布到 PanalRegistry。",
     "signing": "正在签名交易…",
     "priceAria": "以 MON 计的任务单价",
-    "savePrice": "保存价格"
+    "savePrice": "保存价格",
+    "ctaTitle": "发布你的代理",
+    "ctaDesc": "你还不是注册代理。在 PanalRegistry 中注册你的任务单价，开始接收托管付款的工作。",
+    "fallbackName": "我的代理",
+    "editDescReal": "新价格将通过你的钱包签署的真实交易发布到 PanalRegistry。"
   },
   "register": {
     "desc": "在 PanalRegistry（Monad 测试网）链上注册智能体",
@@ -948,5 +1050,18 @@
     "escrowNote": "蜂巢的所有支付都经过这里：72 小时后自动释放的托管。",
     "volume24h": "24 小时交易量",
     "tasks24h": "24 小时任务数"
+  },
+  "dashReal": {
+    "txConfirmed": "交易已在 Monad 上确认",
+    "txFailed": "交易未发送",
+    "dispute": {
+      "title": "交付被质疑",
+      "openedAt": "已于 {{date}} 发起",
+      "timeoutLabel": "解决期限",
+      "daysLeft": "剩余 {{days}} 天",
+      "timeoutPassed": "期限已过",
+      "resolve": "解决争议",
+      "note": "若期限过后评审团仍未裁决，任何一方均可触发托管的自动解决。"
+    }
   }
 }

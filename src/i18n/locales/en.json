@@ -602,7 +602,12 @@
       "inProgress": "3 in progress",
       "onTime": "On-time deliveries",
       "claims": "0 claims",
-      "favorites": "Favorite agents"
+      "favorites": "Favorite agents",
+      "incomeTotal": "Total earnings",
+      "spentTotal": "Total spent",
+      "completed": "Completed",
+      "inProgressNow": "In progress",
+      "reviewsCount": "{{count}} reviews"
     },
     "earnings": "Earnings",
     "spending": "Spending",
@@ -683,7 +688,17 @@
         "detail": "Outstanding juror of the dispute system",
         "hint": "Resolve 10 disputes to unlock"
       }
-    }
+    },
+    "connectTitle": "Your hive dashboard",
+    "connectDesc": "Connect your wallet to see your real on-chain tasks, payments and reputation on Monad.",
+    "memberSince": "Hive member since {{date}}",
+    "memberRating": "Global reputation {{rating}} ★ ({{count}} reviews)",
+    "tasksSubReal": "Your real escrow tasks: statuses, deadlines and on-chain actions.",
+    "chartEmpty": "No data yet",
+    "chartProviderEmpty": "Daily earnings are not computable on-chain (no payout timestamps). Your total earned is in the KPIs and the payments section.",
+    "chartClientEmpty": "You haven’t requested any task yet: hire an agent from the marketplace and your cumulative spend will appear here.",
+    "chartDonutEmpty": "Categories are not recorded on-chain, so there is no real per-category breakdown.",
+    "chartReputationEmpty": "Rating history is not computable on-chain: only the current average exists, shown below in your reputation."
   },
   "wallet": {
     "available": "Available",
@@ -727,7 +742,10 @@
       "escrow": "In escrow",
       "progreso": "In progress",
       "entregada": "Delivered — verify",
-      "disputa": "In dispute"
+      "disputa": "In dispute",
+      "open": "Open",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
     },
     "newDelivery": "New delivery from {{name}} — verify it",
     "paymentReleased": "Payment released: tx {{tx}}",
@@ -760,15 +778,95 @@
     "detailTitle": "Detail — {{id}}",
     "escrowAmount": "Amount in escrow",
     "protocolFee": "Protocol fee (2.5%)",
-    "autoRelease72": "72 h without dispute"
+    "autoRelease72": "72 h without dispute",
+    "colDeadline": "Deadline",
+    "unassigned": "Unassigned",
+    "loading": "Reading on-chain tasks…",
+    "loadError": "Could not read escrow tasks. Check your connection and retry.",
+    "retry": "Retry",
+    "noActive": "No active tasks",
+    "noActiveDesc": "When you hire an agent or get assigned a task, it will show up here with its on-chain actions.",
+    "noCompleted": "No completed tasks",
+    "noCompletedDesc": "Completed or cancelled tasks will be listed here.",
+    "claim": "Claim",
+    "deliver": "Deliver",
+    "approve": "Approve & release",
+    "autoReleaseBtn": "Release funds",
+    "cancelTask": "Cancel",
+    "dialog": {
+      "claim": {
+        "title": "Claim task {{id}}",
+        "desc": "The task is open with no assigned worker: claiming registers you as its worker on-chain.",
+        "confirm": "Sign claimTask"
+      },
+      "deliver": {
+        "title": "Deliver result — {{id}}",
+        "desc": "Write the result: its keccak256 hash is anchored on-chain (not the text).",
+        "placeholder": "Summary of the delivered result…",
+        "confirm": "Sign delivery"
+      },
+      "approve": {
+        "title": "Approve & release — {{id}}",
+        "desc": "Approving releases the payment to the worker and records your rating in PanalReputation.",
+        "ratingLabel": "Your rating (1–5)",
+        "confirm": "Sign & release payment"
+      },
+      "dispute": {
+        "title": "Open dispute — {{id}}",
+        "desc": "The amount stays locked until resolution. Use only if the delivery is not acceptable.",
+        "confirm": "Sign openDispute"
+      },
+      "cancel": {
+        "title": "Cancel task {{id}}",
+        "desc": "The task has not been delivered yet: cancelling returns the escrow amount to you.",
+        "confirm": "Sign cancellation"
+      },
+      "autoRelease": {
+        "title": "Release funds — {{id}}",
+        "desc": "The auto-release window has passed with no dispute: the payment goes to the worker without a rating.",
+        "confirm": "Sign autoRelease"
+      }
+    }
   },
   "payments": {
-    "csvDesc": "pagos-panal.csv · 6 movements"
+    "csvDesc": "pagos-panal.csv · 6 movements",
+    "pending": "Pending withdrawal",
+    "pendingHint": "Funds released by the escrow, ready to move to your wallet.",
+    "withdraw": "Withdraw",
+    "nothingToWithdraw": "Nothing pending right now",
+    "withdrawalRow": "Escrow withdrawal",
+    "emptyHistory": "No recent withdrawals from this wallet yet."
   },
   "reputation": {
     "reviews": "{{count}} reviews",
     "badgesEyebrow": "Hive badges",
-    "badgesNote": "Badges are on-chain credentials issued by PanalReputation: earned with verifiable results, they can't be bought or transferred."
+    "badgesNote": "Badges are on-chain credentials issued by PanalReputation: earned with verifiable results, they can't be bought or transferred.",
+    "bulletTasks": "{{count}} tasks completed on-chain",
+    "bulletEarned": "{{amount}} MON earned in total",
+    "bulletNoDisputes": "No open disputes",
+    "bulletDisputes": "{{count}} open disputes",
+    "noRatings": "You have no ratings yet: complete tasks to receive your first one.",
+    "badgesNoteReal": "Badges are derived from public rules over your on-chain data: they are earned with verifiable results and cannot be bought or transferred.",
+    "badgePioneer": {
+      "name": "Pioneer",
+      "detail": "Agent registered in PanalRegistry"
+    },
+    "badgeTasks10": {
+      "name": "10+ tasks",
+      "detail": "At least 10 tasks completed on-chain"
+    },
+    "badgeElite": {
+      "name": "Elite rating",
+      "detail": "Rating ≥ 4.5 with at least 5 reviews"
+    },
+    "badgeNoDisputes": {
+      "name": "Zero disputes",
+      "detail": "Completed tasks with no open dispute"
+    },
+    "badgeJuror": {
+      "name": "Honor juror",
+      "detail": "The arbitration system is not readable on-chain yet; this badge will unlock with resolved disputes."
+    }
   },
   "ownAgent": {
     "paused": "{{name}} paused — it won't receive new tasks",
@@ -795,7 +893,11 @@
     "editDesc": "The new price is published to PanalRegistry with a transaction (simulated).",
     "signing": "Signing transaction…",
     "priceAria": "Price per task in MON",
-    "savePrice": "Save price"
+    "savePrice": "Save price",
+    "ctaTitle": "Publish your agent",
+    "ctaDesc": "You are not a registered agent yet. Sign up in PanalRegistry with your price per task and start receiving escrow-paid work.",
+    "fallbackName": "My agent",
+    "editDescReal": "The new price is published to PanalRegistry with a real transaction signed by your wallet."
   },
   "register": {
     "desc": "On-chain registration of an agent in PanalRegistry (Monad testnet)",
@@ -954,5 +1056,18 @@
     "escrowNote": "All hive payments go through here: escrow with automatic release after 72h.",
     "volume24h": "24h volume",
     "tasks24h": "24h tasks"
+  },
+  "dashReal": {
+    "txConfirmed": "Transaction confirmed on Monad",
+    "txFailed": "The transaction was not sent",
+    "dispute": {
+      "title": "Challenged delivery",
+      "openedAt": "Opened on {{date}}",
+      "timeoutLabel": "Resolution deadline",
+      "daysLeft": "{{days}} days left",
+      "timeoutPassed": "Deadline passed",
+      "resolve": "Resolve dispute",
+      "note": "Once the deadline passes without a jury ruling, either party can trigger the escrow’s automatic resolution."
+    }
   }
 }

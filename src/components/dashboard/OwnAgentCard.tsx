@@ -1,18 +1,18 @@
 /**
- * Panal — Card de agente propio (dashboard.md S4).
- * Switch Activo/Pausado (atenua la card + toast), métricas mono, mini área 14d,
- * edición de precio con tx simulada (1.2s, spinner hexagonal) y menú de acciones.
+ * Panal — Card del agente propio, 100% on-chain (PanalRegistry).
+ * Si la wallet es agente: datos reales (nombre desde metadataURI, precio,
+ * estado activo), "Editar precio" firma updatePrice(parseEther) y el switch
+ * firma setActive(bool) — ambos con el patrón de escritura obligatorio.
+ * Si no es agente: CTA que abre RegisterAgentDialog (prop onRegister).
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, Coins, Hexagon, MoreHorizontal, PauseCircle, PlayCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { ExternalLink, Loader2, Plus, TriangleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { formatEther, parseEther } from 'viem';
 import HexAvatar from '@/components/HexAvatar';
 import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
 import {
   Dialog,
   DialogContent,
@@ -20,61 +20,83 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import TxHash from '@/components/TxHash';
 import { cn } from '@/lib/utils';
-import { CATEGORY_LABELS, formatInt, formatMon } from '@/data/agents';
-import { randomTxHash, truncateHash } from '@/data/events';
-import { MiniAreaChart } from './charts';
-import type { OwnAgent } from './data';
+import { useWallet } from '@/hooks/useWallet';
+import { useMyAgentProfile } from '@/hooks/useMyAgentProfile';
+import { useContractAction } from '@/hooks/useContractAction';
+import { EXPLORER_TX, PANAL_REGISTRY_ADDRESS } from '@/contracts/config';
+import { panalRegistryAbi } from '@/contracts/abis';
 import { formatMonEs, formatRatingEs } from './data';
 
-/** Spinner hexagonal para el guardado de precio (tx simulada). */
-function HexSpinner({ size = 44 }: { size?: number }) {
-  return (
-    <span className="relative inline-flex" style={{ width: size, height: size }}>
-      <Hexagon size={size} className="animate-spin-slow text-honey" strokeWidth={1.5} />
-      <Hexagon size={size * 0.45} className="absolute inset-0 m-auto fill-honey-soft text-honey-deep" strokeWidth={1.5} />
-    </span>
-  );
+/** metadataURI "Nombre · descripción · skills" → nombre. */
+function agentName(metadataURI: string, fallback: string): string {
+  const first = metadataURI.split('·')[0]?.trim();
+  return first || fallback;
 }
 
-export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; className?: string }) {
+export default function OwnAgentCard({ onRegister }: { onRegister: () => void }) {
   const { t } = useTranslation();
-  const [active, setActive] = useState(true);
-  const [price, setPrice] = useState(agent.pricePerTask);
-  const [draft, setDraft] = useState(agent.pricePerTask);
+  const { address, addressShort } = useWallet();
+  const profile = useMyAgentProfile();
+  const action = useContractAction({ onMined: () => profile.refetch() });
+
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [priceInput, setPriceInput] = useState('');
+
+  const priceStr = priceInput.replace(',', '.').trim();
+  const priceValid = /^\d+(\.\d{1,18})?$/.test(priceStr) && Number(priceStr) > 0;
+
+  /* ── No es agente → CTA de registro real ─────────────────────────────── */
+  if (!profile.loading && !profile.isAgent) {
+    return (
+      <motion.div
+        whileHover={{ y: -4 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+        className="flex h-full flex-col items-start gap-4 rounded-2xl border border-dashed border-line bg-paper p-6 shadow-card md:col-span-2"
+      >
+        <h3 className="font-display text-[1.05rem] font-semibold tracking-[-0.015em] text-ink">
+          {t('ownAgent.ctaTitle')}
+        </h3>
+        <p className="max-w-lg text-[0.875rem] leading-relaxed text-ink-2">{t('ownAgent.ctaDesc')}</p>
+        <button
+          type="button"
+          onClick={onRegister}
+          className="mt-auto inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-[#1B1814] transition-colors hover:bg-honey-deep"
+        >
+          <Plus size={15} />
+          {t('dash.registerAgent')}
+        </button>
+      </motion.div>
+    );
+  }
+
+  const agent = profile.agent;
+  const rep = profile.reputation;
+  const name = agent
+    ? agentName(agent.metadataURI, addressShort ?? t('ownAgent.fallbackName'))
+    : (addressShort ?? '…');
+  const active = agent?.active ?? false;
+  const rating =
+    rep.ratingCount > 0n ? Number(rep.ratingSum) / Number(rep.ratingCount) : null;
 
   const toggleActive = (next: boolean) => {
-    setActive(next);
-    if (!next) {
-      toast(t('ownAgent.paused', { name: agent.name }), {
-        icon: <PauseCircle size={15} className="text-honey-deep" />,
-      });
-    } else {
-      toast(t('ownAgent.resumed', { name: agent.name }), {
-        icon: <PlayCircle size={15} className="text-olive" />,
-      });
-    }
+    void action.run({
+      address: PANAL_REGISTRY_ADDRESS,
+      abi: panalRegistryAbi,
+      functionName: 'setActive',
+      args: [next],
+    });
   };
 
   const savePrice = () => {
-    setSaving(true);
-    window.setTimeout(() => {
-      const tx = randomTxHash();
-      setPrice(draft);
-      setSaving(false);
-      setDialogOpen(false);
-      toast(t('ownAgent.priceUpdated', { tx: truncateHash(tx) }), {
-        icon: <Hexagon size={14} className="fill-honey-soft text-honey-deep" />,
-      });
-    }, 1200);
+    if (!priceValid) return;
+    void action.run({
+      address: PANAL_REGISTRY_ADDRESS,
+      abi: panalRegistryAbi,
+      functionName: 'updatePrice',
+      args: [parseEther(priceStr)],
+    });
   };
 
   return (
@@ -82,25 +104,26 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
       whileHover={{ y: -4 }}
       transition={{ type: 'spring', stiffness: 260, damping: 24 }}
       className={cn(
-        'flex h-full flex-col gap-5 rounded-2xl border border-line bg-paper p-5 shadow-card transition-[opacity,border-color,box-shadow] duration-300 hover:border-honey hover:shadow-card-hover',
-        !active && 'opacity-55',
-        className,
+        'flex h-full flex-col gap-5 rounded-2xl border border-line bg-paper p-5 shadow-card transition-[opacity,border-color,box-shadow] duration-300 hover:border-honey hover:shadow-card-hover md:col-span-2',
+        !active && 'opacity-70',
       )}
     >
-      {/* Fila: avatar + nombre + chip + switch */}
+      {/* Fila: avatar + nombre + chips + switch */}
       <div className="flex items-start gap-3">
-        <HexAvatar seed={agent.wallet} size={56} />
+        <HexAvatar seed={address ?? name} size={56} />
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-display text-[1.05rem] font-semibold tracking-[-0.015em] text-ink">
-            {agent.name}
+            {profile.loading ? '…' : name}
           </h3>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span className="rounded-full bg-honey-soft px-2.5 py-0.5 text-[0.75rem] font-medium text-honey-deep">
-              {t(CATEGORY_LABELS[agent.category])}
-            </span>
             <span className="rounded-full bg-sand px-2.5 py-0.5 font-mono text-[0.75rem] text-ink-2">
-              {t('common.monPerTask', { price: formatMon(price) })}
+              {addressShort}
             </span>
+            {agent && (
+              <span className="rounded-full bg-honey-soft px-2.5 py-0.5 font-mono text-[0.75rem] text-honey-deep">
+                {t('common.monPerTask', { price: formatMonEs(Number(formatEther(agent.pricePerTask))) })}
+              </span>
+            )}
           </div>
         </div>
         <label className="flex shrink-0 items-center gap-2">
@@ -109,35 +132,30 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
           </span>
           <Switch
             checked={active}
+            disabled={!agent || action.busy}
             onCheckedChange={toggleActive}
-            aria-label={`${active ? t('ownAgent.pause') : t('ownAgent.activate')} ${agent.name}`}
+            aria-label={`${active ? t('ownAgent.pause') : t('ownAgent.activate')} ${name}`}
             className="data-[state=checked]:bg-honey"
           />
         </label>
       </div>
 
-      {/* Métricas mono en 3 columnas */}
+      {/* Métricas reales (PanalReputation) */}
       <div className="grid grid-cols-3 gap-3 border-y border-line py-3">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">{t('ownAgent.today')}</span>
-          <span className="font-mono text-[0.875rem] font-medium text-ink">{formatMonEs(agent.todayMon)} MON</span>
+          <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">{t('dash.kpi.completed')}</span>
+          <span className="font-mono text-[0.875rem] font-medium text-ink">{rep.tasksCompleted.toString()}</span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">{t('ownAgent.tasks30')}</span>
-          <span className="font-mono text-[0.875rem] font-medium text-ink">{formatInt(agent.tasks30d)}</span>
+          <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">{t('dash.kpi.incomeTotal')}</span>
+          <span className="font-mono text-[0.875rem] font-medium text-ink">{formatMonEs(Number(formatEther(rep.totalEarned)))} MON</span>
         </div>
         <div className="flex flex-col gap-0.5">
           <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">Rating</span>
-          <span className="font-mono text-[0.875rem] font-medium text-ink">{formatRatingEs(agent.rating)} ★</span>
+          <span className="font-mono text-[0.875rem] font-medium text-ink">
+            {rating !== null ? `${formatRatingEs(rating)} ★` : '—'}
+          </span>
         </div>
-      </div>
-
-      {/* Mini área de ingresos 14d */}
-      <div>
-        <span className="mb-1 block text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">
-          {t('ownAgent.income14')}
-        </span>
-        <MiniAreaChart data={agent.trend14d} />
       </div>
 
       {/* Footer de acciones */}
@@ -145,96 +163,94 @@ export default function OwnAgentCard({ agent, className }: { agent: OwnAgent; cl
         <button
           type="button"
           onClick={() => {
-            setDraft(price);
+            setPriceInput(agent ? formatEther(agent.pricePerTask) : '');
             setDialogOpen(true);
           }}
-          className="rounded-full bg-ink px-3.5 py-1.5 text-[0.8125rem] font-medium text-paper transition-colors hover:bg-honey-deep"
+          disabled={!agent}
+          className="rounded-full border border-line bg-transparent px-3.5 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep disabled:opacity-40"
         >
           {t('ownAgent.editPrice')}
         </button>
-        <Link
-          to={`/agente/${agent.id}`}
-          className="rounded-full border border-line px-3.5 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
-        >
-          {t('ownAgent.viewPublic')}
-        </Link>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label={t('ownAgent.moreActions', { name: agent.name })}
-              className="ml-auto rounded-full p-2 text-ink-3 transition-colors hover:bg-cream hover:text-ink"
-            >
-              <MoreHorizontal size={16} />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="border-line bg-paper">
-            <DropdownMenuItem onSelect={() => toggleActive(!active)} className="gap-2 text-ink-2">
-              {active ? <PauseCircle size={14} /> : <PlayCircle size={14} />}
-              {active ? t('ownAgent.pause') : t('ownAgent.resume')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => toast(t('ownAgent.statsToast', { name: agent.name }), { description: t('ownAgent.statsToastDesc') })}
-              className="gap-2 text-ink-2"
-            >
-              <BarChart3 size={14} /> {t('ownAgent.stats')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() =>
-                toast(t('ownAgent.withdrawToast', { name: agent.name }), {
-                  icon: <Coins size={14} className="text-honey-deep" />,
-                  description: t('ownAgent.withdrawToastDesc', { amount: formatMonEs(agent.todayMon) }),
-                })
-              }
-              className="gap-2 text-ink-2"
-            >
-              <Coins size={14} /> {t('ownAgent.withdrawEarnings')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {action.busy && (
+          <span className="inline-flex items-center gap-1.5 font-mono text-[0.75rem] text-ink-3">
+            <Loader2 size={13} className="animate-spin" aria-hidden />
+            {action.signing ? t('hire.step3.signing') : t('hire.step3.confirming')}
+          </span>
+        )}
+        {action.txHash && !action.busy && action.mined && (
+          <a
+            href={EXPLORER_TX(action.txHash)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 font-mono text-[0.75rem] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+          >
+            {t('hire.step3.viewTx')}
+            <ExternalLink size={12} />
+          </a>
+        )}
       </div>
 
-      {/* Dialog de edición de precio */}
-      <Dialog open={dialogOpen} onOpenChange={(o) => !saving && setDialogOpen(o)}>
+      {/* Dialog de edición de precio (tx real updatePrice) */}
+      <Dialog open={dialogOpen} onOpenChange={(o) => !action.busy && setDialogOpen(o)}>
         <DialogContent className="border-line bg-paper sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display text-ink">{t('ownAgent.editTitle', { name: agent.name })}</DialogTitle>
-            <DialogDescription className="text-ink-2">
-              {t('ownAgent.editDesc')}
-            </DialogDescription>
+            <DialogTitle className="font-display text-ink">{t('ownAgent.editTitle', { name })}</DialogTitle>
+            <DialogDescription className="text-ink-2">{t('ownAgent.editDescReal')}</DialogDescription>
           </DialogHeader>
 
-          {saving ? (
-            <div className="flex flex-col items-center gap-4 py-8">
-              <HexSpinner />
-              <p className="font-mono text-[0.8125rem] text-ink-2">{t('ownAgent.signing')}</p>
+          {action.mined && action.txHash ? (
+            <div className="flex flex-col items-center gap-4 py-4 text-center">
+              <p className="font-display text-ink">{t('dashReal.txConfirmed')}</p>
+              <TxHash hash={action.txHash} className="rounded-full border border-line bg-cream px-4 py-2" />
+              <button
+                type="button"
+                onClick={() => setDialogOpen(false)}
+                className="w-full rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
+              >
+                {t('common.close')}
+              </button>
+            </div>
+          ) : action.txHash ? (
+            <div className="flex flex-col items-center gap-3 py-4 text-center">
+              <Loader2 size={28} className="animate-spin text-honey-deep" aria-hidden />
+              <p className="text-[0.875rem] font-medium text-ink">{t('hire.step3.confirming')}</p>
+              <a
+                href={EXPLORER_TX(action.txHash)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 font-mono text-[12px] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+              >
+                {t('hire.step3.viewTx')}
+                <ExternalLink size={13} />
+              </a>
             </div>
           ) : (
-            <div className="flex flex-col gap-5 py-2">
-              <div className="flex items-baseline justify-between">
-                <span className="font-mono text-[2rem] font-medium leading-none text-ink">
-                  {formatMon(draft, 4)}
-                </span>
-                <span className="text-[0.875rem] text-ink-3">{t('common.monTask')}</span>
+            <div className="flex flex-col gap-4 py-2">
+              <div className="flex items-center gap-3">
+                <input
+                  value={priceInput}
+                  onChange={(e) => setPriceInput(e.target.value)}
+                  inputMode="decimal"
+                  placeholder="0.01"
+                  aria-label={t('ownAgent.priceAria')}
+                  className="w-full rounded-xl border border-line bg-paper px-4 py-2.5 font-mono text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
+                />
+                <span className="shrink-0 font-mono text-[0.8125rem] text-ink-2">{t('common.monTask')}</span>
               </div>
-              <Slider
-                value={[draft]}
-                min={0.001}
-                max={0.05}
-                step={0.001}
-                onValueChange={([v]) => setDraft(v)}
-                aria-label={t('ownAgent.priceAria')}
-              />
-              <div className="flex justify-between font-mono text-[0.6875rem] text-ink-3">
-                <span>0.001</span>
-                <span>0.050</span>
-              </div>
+              {priceStr.length > 0 && !priceValid && (
+                <p className="flex items-center gap-1.5 text-[0.75rem] text-terra">
+                  <TriangleAlert size={12} aria-hidden />
+                  {t('wallet.invalidAmount')}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={savePrice}
-                className="rounded-full bg-honey px-4 py-2.5 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
+                disabled={!priceValid || action.busy}
+                className="btn-monad inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-[0.875rem] font-semibold disabled:opacity-40"
               >
-                {t('ownAgent.savePrice')}
+                {action.signing && <Loader2 size={15} className="animate-spin" aria-hidden />}
+                {action.signing ? t('hire.step3.signing') : t('ownAgent.savePrice')}
               </button>
             </div>
           )}

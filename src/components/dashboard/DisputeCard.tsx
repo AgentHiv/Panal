@@ -1,34 +1,57 @@
 /**
- * Panal — Disputa en curso (dashboard.md S6).
- * Card con borde terra y fondo terra diluido, timeline de 4 pasos del jurado
- * con línea de progreso animada (scaleX), plazo mono con tick cada minuto,
- * CTA "Ver expediente" y nota de resolución.
+ * Panal — Disputa real en curso (PanalEscrow).
+ * Solo se renderiza cuando la wallet tiene tareas en estado Disputed:
+ * taskId, contraparte, monto bloqueado y cuenta atrás real
+ * (`disputedAt(taskId)` + `DISPUTE_TIMEOUT()`). Cuando el plazo ha pasado
+ * aparece el botón real `resolveStuckDispute(taskId)` con el patrón de
+ * escritura obligatorio; al minarse, refetch de las tareas.
  */
 
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Check, Gavel, Hexagon, Scale, Users } from 'lucide-react';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { DISPUTE } from './data';
+import { AlertTriangle, ExternalLink, Gavel, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatEther } from 'viem';
+import { useReadContract } from 'wagmi';
+import HexAvatar from '@/components/HexAvatar';
+import { useWallet, shortAddress } from '@/hooks/useWallet';
+import type { RealTask } from '@/hooks/useMyTasks';
+import { usePanalAgents } from '@/hooks/usePanalAgents';
+import { useContractAction } from '@/hooks/useContractAction';
+import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, activeChain } from '@/contracts/config';
+import { panalEscrowAbi } from '@/contracts/abis';
+import { formatMonEs } from './data';
 
-/** Contador de plazo: tick a la baja cada minuto (mono). */
-function useDeadline(initialMin: number): { h: number; m: number } {
-  const [minutes, setMinutes] = useState(initialMin);
-  useEffect(() => {
-    const id = window.setInterval(() => setMinutes((m) => Math.max(0, m - 1)), 60_000);
-    return () => window.clearInterval(id);
-  }, []);
-  return { h: Math.floor(minutes / 60), m: minutes % 60 };
-}
+function DisputeEntry({
+  task,
+  timeoutSec,
+  nameOf,
+  onResolved,
+}: {
+  task: RealTask;
+  timeoutSec: bigint | undefined;
+  nameOf: (addr: string) => string;
+  onResolved: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const action = useContractAction({ onMined: onResolved });
 
-export default function DisputeCard() {
-  const { t } = useTranslation();
-  const deadline = useDeadline(DISPUTE.deadlineMin);
-  const doneCount = DISPUTE.steps.filter((s) => s.done).length;
-  // progreso de la línea: pasos completos + mitad del paso en curso
-  const progress = (doneCount + 0.5) / DISPUTE.steps.length;
+  const { data: disputedAt } = useReadContract({
+    address: PANAL_ESCROW_ADDRESS,
+    abi: panalEscrowAbi,
+    functionName: 'disputedAt',
+    args: [task.id],
+    chainId: activeChain.id,
+    query: { refetchInterval: 60_000, retry: 1 },
+  });
+
+  const counterparty = task.role === 'worker' ? task.client : task.worker;
+  const nowSec = Math.floor(Date.now() / 1000);
+  const resolvableAt =
+    disputedAt !== undefined && timeoutSec !== undefined
+      ? Number(disputedAt) + Number(timeoutSec)
+      : null;
+  const passed = resolvableAt !== null && resolvableAt <= nowSec;
+  const daysLeft = resolvableAt !== null ? Math.max(0, (resolvableAt - nowSec) / 86_400) : null;
 
   return (
     <motion.div
@@ -38,89 +61,133 @@ export default function DisputeCard() {
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       className="rounded-2xl border border-terra bg-[#B2562E0D] p-6 shadow-card md:p-8"
     >
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="max-w-2xl flex-1">
           <p className="eyebrow flex items-center gap-2 text-terra">
-            <Hexagon size={12} className="fill-terra/20 text-terra" aria-hidden />
-            {t('dash.dispute.eyebrow')} {DISPUTE.id}
+            <AlertTriangle size={13} aria-hidden />
+            {t('dash.dispute.eyebrow')} #{task.id.toString()}
           </p>
-          <h3 className="display-m mt-3 text-ink">{t(DISPUTE.title)}</h3>
-          <p className="mt-2 text-[0.9375rem] text-ink-2">
-            {t('dash.dispute.line', { task: DISPUTE.taskId, counterparty: DISPUTE.counterparty })}{' '}
-            <span className="font-mono">{DISPUTE.amount.toFixed(3)} MON</span> {t('dash.dispute.locked')}
+          <h3 className="display-m mt-3 text-ink">{t('dashReal.dispute.title')}</h3>
+          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.9375rem] text-ink-2">
+            <span className="inline-flex items-center gap-2">
+              <HexAvatar seed={counterparty} size={24} />
+              <span className="font-medium text-ink">{nameOf(counterparty)}</span>
+            </span>
+            ·
+            <span className="font-mono">{formatMonEs(Number(formatEther(task.amountWei)))} MON</span>
+            {t('dash.dispute.locked')}
           </p>
-
-          {/* Timeline del jurado */}
-          <div className="mt-8">
-            <div className="relative">
-              {/* raíl + progreso */}
-              <div className="absolute left-0 right-0 top-[13px] h-0.5 rounded bg-terra/15" aria-hidden />
-              <motion.div
-                className="absolute left-0 top-[13px] h-0.5 rounded bg-terra"
-                style={{ transformOrigin: 'left center', width: `${progress * 100}%` }}
-                initial={{ scaleX: 0 }}
-                whileInView={{ scaleX: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
-                aria-hidden
-              />
-              <ol className="relative grid grid-cols-4 gap-2">
-                {DISPUTE.steps.map((step, i) => (
-                  <li key={step.title} className="flex flex-col items-start gap-2">
-                    <span
-                      className={cn(
-                        'flex h-7 w-7 items-center justify-center rounded-full border text-[0.75rem] font-semibold',
-                        step.done
-                          ? 'border-terra bg-terra text-paper'
-                          : step.current
-                            ? 'border-terra bg-paper text-terra'
-                            : 'border-terra/30 bg-paper text-ink-3',
-                      )}
-                    >
-                      {step.done ? <Check size={13} /> : i + 1}
-                    </span>
-                    <div>
-                      <p className={cn('text-[0.8125rem] font-semibold leading-tight', step.current ? 'text-terra' : step.done ? 'text-ink' : 'text-ink-3')}>
-                        {t(step.title)}
-                      </p>
-                      {step.detail && (
-                        <p className="mt-0.5 flex items-center gap-1 font-mono text-[0.6875rem] text-ink-3">
-                          {step.title === 'dash.dispute.step2' && <Users size={10} />}
-                          {step.title === 'dash.dispute.step3' && <Gavel size={10} />}
-                          {t(step.detail)}
-                        </p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
+          {disputedAt !== undefined && disputedAt > 0n && (
+            <p className="mt-2 font-mono text-[0.75rem] text-ink-3">
+              {t('dashReal.dispute.openedAt', {
+                date: new Date(Number(disputedAt) * 1000).toLocaleString(i18n.language, {
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+              })}
+            </p>
+          )}
         </div>
 
-        {/* Plazo + CTA */}
+        {/* Plazo real + acción */}
         <div className="flex shrink-0 flex-col items-start gap-4 lg:items-end">
           <div className="rounded-xl border border-terra/30 bg-paper px-4 py-3">
-            <p className="eyebrow text-ink-3">{t('dash.dispute.deadline')}</p>
+            <p className="eyebrow text-ink-3">{t('dashReal.dispute.timeoutLabel')}</p>
             <p className="mt-1 font-mono text-[1.125rem] font-medium text-terra">
-              {t('dash.dispute.remaining', { h: deadline.h, m: String(deadline.m).padStart(2, '0') })}
+              {daysLeft === null
+                ? '…'
+                : passed
+                  ? t('dashReal.dispute.timeoutPassed')
+                  : t('dashReal.dispute.daysLeft', { days: daysLeft.toFixed(1) })}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() =>
-              toast(t('dash.dispute.caseToast', { id: DISPUTE.id }), {
-                icon: <Scale size={14} className="text-terra" />,
-                description: t('dash.dispute.caseToastDesc'),
-              })
-            }
-            className="rounded-full border border-terra/50 px-4 py-2 text-[0.875rem] font-semibold text-terra transition-colors hover:bg-terra/10"
-          >
-            {t('dash.dispute.viewCase')}
-          </button>
-          <p className="max-w-[260px] text-[0.8125rem] leading-relaxed text-ink-2 lg:text-right">{t(DISPUTE.note)}</p>
+          {passed &&
+            (action.busy || action.txHash ? (
+              <span className="inline-flex items-center gap-2 font-mono text-[0.8125rem] text-ink-2">
+                {action.mined && action.txHash ? (
+                  <a
+                    href={EXPLORER_TX(action.txHash)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 transition-colors hover:border-honey hover:text-honey-deep"
+                  >
+                    {t('hire.step3.viewTx')}
+                    <ExternalLink size={13} />
+                  </a>
+                ) : (
+                  <>
+                    <Loader2 size={14} className="animate-spin" aria-hidden />
+                    {action.signing ? t('hire.step3.signing') : t('hire.step3.confirming')}
+                  </>
+                )}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() =>
+                  void action.run({
+                    address: PANAL_ESCROW_ADDRESS,
+                    abi: panalEscrowAbi,
+                    functionName: 'resolveStuckDispute',
+                    args: [task.id],
+                  })
+                }
+                className="inline-flex items-center gap-2 rounded-full border border-terra/50 px-4 py-2 text-[0.875rem] font-semibold text-terra transition-colors hover:bg-terra/10"
+              >
+                <Gavel size={14} />
+                {t('dashReal.dispute.resolve')}
+              </button>
+            ))}
+          <p className="max-w-[260px] text-[0.8125rem] leading-relaxed text-ink-2 lg:text-right">
+            {t('dashReal.dispute.note')}
+          </p>
         </div>
       </div>
     </motion.div>
+  );
+}
+
+export default function DisputeCard({
+  tasks,
+  onResolved,
+}: {
+  tasks: RealTask[];
+  onResolved: () => void;
+}) {
+  const { address } = useWallet();
+  const { agents } = usePanalAgents();
+  const { data: timeoutSec } = useReadContract({
+    address: PANAL_ESCROW_ADDRESS,
+    abi: panalEscrowAbi,
+    functionName: 'DISPUTE_TIMEOUT',
+    chainId: activeChain.id,
+    query: { staleTime: 300_000, retry: 1 },
+  });
+
+  if (tasks.length === 0) return null;
+
+  const meLc = address?.toLowerCase();
+  const nameOf = (addr: string) => {
+    if (addr.toLowerCase() === meLc) return shortAddress(addr);
+    return (
+      agents.find((a) => a.workerAddress.toLowerCase() === addr.toLowerCase())?.name ??
+      shortAddress(addr)
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      {tasks.map((task) => (
+        <DisputeEntry
+          key={task.id.toString()}
+          task={task}
+          timeoutSec={timeoutSec}
+          nameOf={nameOf}
+          onResolved={onResolved}
+        />
+      ))}
+    </div>
   );
 }
