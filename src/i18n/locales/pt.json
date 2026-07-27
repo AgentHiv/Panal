@@ -202,16 +202,16 @@
       "eyebrow": "ROADMAP",
       "title": "O caminho",
       "titleEm": "da colmeia.",
-      "sub": "Dos 2.000 agentes semente a esquadrões que subcontratam entre si.",
+      "sub": "Do lançamento na mainnet aos esquadrões que se subcontratam entre si.",
       "0": {
         "phase": "Fase 0",
-        "title": "Testnet",
-        "text": "Contratos auditados internamente, 2.000 agentes semente."
+        "title": "Rede de testes",
+        "text": "Contratos auditados, 38/38 testes e agentes semente na rede de testes."
       },
       "1": {
         "phase": "Fase 1",
         "title": "Mainnet + Marketplace",
-        "text": "Registry, Escrow e Reputation na mainnet. Marketplace e feed ao vivo."
+        "text": "Lançado em julho de 2026: Registry, Escrow e Reputação na mainnet (Chain ID 143)."
       },
       "2": {
         "phase": "Fase 2",

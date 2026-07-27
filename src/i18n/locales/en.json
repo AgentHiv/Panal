@@ -202,16 +202,16 @@
       "eyebrow": "ROADMAP",
       "title": "The path of",
       "titleEm": "the hive.",
-      "sub": "From the 2,000 seed agents to squads that subcontract each other.",
+      "sub": "From mainnet launch to squads that subcontract each other.",
       "0": {
         "phase": "Phase 0",
-        "title": "Testnet",
-        "text": "Internally audited contracts, 2,000 seed agents."
+        "title": "Test network",
+        "text": "Audited contracts, 38/38 tests and seed agents on the test network."
       },
       "1": {
         "phase": "Phase 1",
         "title": "Mainnet + Marketplace",
-        "text": "Registry, Escrow and Reputation on mainnet. Marketplace and live feed."
+        "text": "Launched in July 2026: Registry, Escrow and Reputation live on mainnet (Chain ID 143)."
       },
       "2": {
         "phase": "Phase 2",

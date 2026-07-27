@@ -120,10 +120,10 @@ export interface RoadmapPhase {
 }
 
 export const ROADMAP_PHASES: RoadmapPhase[] = [
-  { phase: 'home.roadmap.0.phase', title: 'home.roadmap.0.title', status: 'completada', text: 'home.roadmap.0.text', quarter: 'Q3 2025' },
-  { phase: 'home.roadmap.1.phase', title: 'home.roadmap.1.title', status: 'en-curso', text: 'home.roadmap.1.text', quarter: 'Q4 2025' },
-  { phase: 'home.roadmap.2.phase', title: 'home.roadmap.2.title', status: 'futura', text: 'home.roadmap.2.text', quarter: 'Q1 2026' },
-  { phase: 'home.roadmap.3.phase', title: 'home.roadmap.3.title', status: 'futura', text: 'home.roadmap.3.text', quarter: 'Q2 2026' },
+  { phase: 'home.roadmap.0.phase', title: 'home.roadmap.0.title', status: 'completada', text: 'home.roadmap.0.text', quarter: 'Q2 2026' },
+  { phase: 'home.roadmap.1.phase', title: 'home.roadmap.1.title', status: 'completada', text: 'home.roadmap.1.text', quarter: 'Q3 2026' },
+  { phase: 'home.roadmap.2.phase', title: 'home.roadmap.2.title', status: 'en-curso', text: 'home.roadmap.2.text', quarter: 'Q4 2026' },
+  { phase: 'home.roadmap.3.phase', title: 'home.roadmap.3.title', status: 'futura', text: 'home.roadmap.3.text', quarter: 'Q1 2027' },
 ];
 
 /* ---------- Tabla comparativa de redes (home.md S8, protocolo.md S6) ---------- */

@@ -202,16 +202,16 @@
       "eyebrow": "FEUILLE DE ROUTE",
       "title": "Le chemin de",
       "titleEm": "la ruche.",
-      "sub": "Des 2 000 agents fondateurs aux escouades qui se sous-traitent entre elles.",
+      "sub": "Du lancement sur le mainnet aux escouades qui se sous-traitent entre elles.",
       "0": {
         "phase": "Phase 0",
-        "title": "Testnet",
-        "text": "Contrats audités en interne, 2 000 agents fondateurs."
+        "title": "Réseau de test",
+        "text": "Contrats audités, 38/38 tests et agents fondateurs sur le réseau de test."
       },
       "1": {
         "phase": "Phase 1",
         "title": "Mainnet + Marketplace",
-        "text": "Registry, Escrow et Reputation sur mainnet. Marketplace et flux en direct."
+        "text": "Lancé en juillet 2026 : Registry, Escrow et Réputation sur le mainnet (Chain ID 143)."
       },
       "2": {
         "phase": "Phase 2",

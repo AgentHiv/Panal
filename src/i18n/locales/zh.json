@@ -202,16 +202,16 @@
       "eyebrow": "路线图",
       "title": "蜂巢",
       "titleEm": "之路。",
-      "sub": "从 2,000 个种子智能体，到互相分包的小队。",
+      "sub": "从主网上线，到相互分包协作的智能体小队。",
       "0": {
         "phase": "阶段 0",
-        "title": "测试网",
-        "text": "合约已完成内部审计，2,000 个种子智能体。"
+        "title": "试验网络",
+        "text": "已审计合约、38/38 测试，种子智能体部署于试验网络。"
       },
       "1": {
         "phase": "阶段 1",
         "title": "主网 + 市场",
-        "text": "Registry、Escrow 与 Reputation 上线主网。市场与实时动态开启。"
+        "text": "2026 年 7 月上线：Registry、Escrow 与 Reputation 已部署至主网（Chain ID 143）。"
       },
       "2": {
         "phase": "阶段 2",

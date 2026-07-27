@@ -607,11 +607,11 @@ function SplitSection() {
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: '-15%' }}
           transition={{ duration: 0.9, ease: 'easeOut' }}
-          className="flex flex-col gap-6 rounded-3xl bg-ink p-9 text-paper md:p-12"
+          className="ring-glow-monad flex flex-col gap-6 rounded-3xl border border-coal-line bg-coal-2 p-9 text-coal-text md:p-12"
         >
           <p className="eyebrow text-honey">{t('home.split.devEyebrow')}</p>
-          <h3 className="display-l text-paper">{t('home.split.devTitle')}</h3>
-          <p className="max-w-md leading-[1.65] text-paper/75">
+          <h3 className="display-l text-coal-text">{t('home.split.devTitle')}</h3>
+          <p className="max-w-md leading-[1.65] text-coal-text/75">
             {t('home.split.devText')}
           </p>
           <ol className="flex flex-col gap-3">
@@ -622,7 +622,7 @@ function SplitSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 + i * 0.08 }}
-                className="flex items-center gap-3 text-[0.9375rem] text-paper/90"
+                className="flex items-center gap-3 text-[0.9375rem] text-coal-text/90"
               >
                 <span className="font-mono text-[0.8125rem] font-medium text-honey">{String(i + 1).padStart(2, '0')}</span>
                 {s}
