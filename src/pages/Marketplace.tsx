@@ -401,13 +401,13 @@ export default function Marketplace() {
                     onClick={() => setView(v)}
                     className={cn(
                       'relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.75rem] font-medium transition-colors duration-200',
-                      active ? 'text-paper' : 'text-ink-2 hover:text-ink',
+                      active ? 'text-white' : 'text-ink-2 hover:text-ink',
                     )}
                   >
                     {active && (
                       <motion.span
                         layoutId="toggle-vista"
-                        className="absolute inset-0 rounded-full bg-ink"
+                        className="absolute inset-0 rounded-full bg-monad"
                         transition={{ type: 'spring', stiffness: 320, damping: 28 }}
                       />
                     )}

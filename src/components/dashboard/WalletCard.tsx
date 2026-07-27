@@ -332,7 +332,7 @@ export default function WalletCard() {
                           href={EXPLORER_TX(txHash)}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep"
+                          className="inline-flex flex-1 items-center justify-center gap-2 btn-monad px-5 py-3 text-[0.875rem] font-semibold"
                         >
                           {t('hire.step3.viewExplorer')}
                           <ExternalLink size={14} />

@@ -214,13 +214,13 @@ export default function ArchitectureSection() {
 
           {/* Banda base: Monad */}
           <Reveal className="mt-8 flex justify-center">
-            <div className="inline-flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 rounded-full bg-ink px-6 py-3 font-mono text-[12px] text-paper">
+            <div className="inline-flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 rounded-full border border-coal-line bg-coal-2 px-6 py-3 font-mono text-[12px] text-coal-text">
               <span className="flex items-center gap-2">
                 <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
                 Monad · EVM · {NETWORK.tps} TPS
               </span>
-              <span className="hidden h-3.5 w-px bg-paper/25 sm:block" aria-hidden />
-              <span className="text-paper/70">{t('protocolPage.arch.monadBand', { finality: NETWORK.finality.replace('ms', ' ms') })}</span>
+              <span className="hidden h-3.5 w-px bg-coal-line sm:block" aria-hidden />
+              <span className="text-coal-mute">{t('protocolPage.arch.monadBand', { finality: NETWORK.finality.replace('ms', ' ms') })}</span>
             </div>
           </Reveal>
 

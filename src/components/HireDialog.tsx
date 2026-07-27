@@ -217,7 +217,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                     type="button"
                     onClick={() => setStep(1)}
                     disabled={taskText.trim().length === 0}
-                    className="mt-2 rounded-full bg-ink px-5 py-3 text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep disabled:opacity-40"
+                    className="mt-2 btn-monad px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40"
                   >
                     {t('common.continue')}
                   </button>
@@ -319,7 +319,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                             resetWrite();
                             setStep(1);
                           }}
-                          className="flex-1 rounded-full bg-ink px-5 py-3 text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep"
+                          className="flex-1 btn-monad px-5 py-3 text-[0.875rem] font-semibold"
                         >
                           {t('hire.step3.retry')}
                         </button>
@@ -386,7 +386,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         <Link
                           to="/dashboard"
                           onClick={() => onOpenChange(false)}
-                          className="flex-1 rounded-full bg-ink px-5 py-3 text-center text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep"
+                          className="flex-1 btn-monad px-5 py-3 text-center text-[0.875rem] font-semibold"
                         >
                           {t('hire.step3.viewDashboard')}
                         </Link>
@@ -456,7 +456,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                     <Link
                       to="/dashboard"
                       onClick={() => onOpenChange(false)}
-                      className="flex-1 rounded-full bg-ink px-5 py-3 text-center text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep"
+                      className="flex-1 btn-monad px-5 py-3 text-center text-[0.875rem] font-semibold"
                     >
                       {t('hire.step3.viewDashboard')}
                     </Link>
