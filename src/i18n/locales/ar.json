@@ -682,7 +682,7 @@
     "send": "إرسال",
     "receive": "استلام",
     "sendTitle": "إرسال MON",
-    "sendDesc": "تحويل محاكى من {{address}} — لا أموال حقيقية.",
+    "sendDesc": "تحويل حقيقي من {{address}} — يُوقَّع بمحفظتك.",
     "destAddress": "عنوان الوجهة",
     "amount": "المبلغ (MON)",
     "signing": "جارٍ التوقيع…",
@@ -693,7 +693,13 @@
     "sendToastDesc": "وُقّعت المعاملة وبُثّت إلى Monad (عرض تجريبي).",
     "chartAria": "تطور الرصيد خلال 30 يومًا",
     "qrAria": "رمز QR للعنوان",
-    "switchNetwork": "التبديل إلى Monad"
+    "switchNetwork": "التبديل إلى Monad",
+    "connectPrompt": "صِل محفظتك لعرض أرصدتك الحقيقية على Monad وإرسال أو استقبال MON.",
+    "sendSuccess": "تم تأكيد الإرسال",
+    "sendFailed": "تعذّر إتمام الإرسال",
+    "invalidAddress": "أدخل عنوانًا صالحًا (0x…).",
+    "invalidAmount": "أدخل مبلغًا صالحًا أكبر من 0.",
+    "noWithdrawals": "لا توجد سحوبات بعد"
   },
   "tasks": {
     "status": {

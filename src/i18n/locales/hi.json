@@ -682,7 +682,7 @@
     "send": "भेजें",
     "receive": "प्राप्त करें",
     "sendTitle": "MON भेजें",
-    "sendDesc": "{{address}} से सिम्युलेटेड ट्रांसफ़र — कोई वास्तविक फंड नहीं।",
+    "sendDesc": "{{address}} से वास्तविक स्थानांतरण — आपके वॉलेट से हस्ताक्षरित।",
     "destAddress": "गंतव्य पता",
     "amount": "राशि (MON)",
     "signing": "साइन हो रहा है…",
@@ -693,7 +693,13 @@
     "sendToastDesc": "ट्रांज़ैक्शन साइन होकर Monad पर प्रसारित हुआ (डेमो)।",
     "chartAria": "30 दिनों का बैलेंस रुझान",
     "qrAria": "पते का QR कोड",
-    "switchNetwork": "Monad पर बदलें"
+    "switchNetwork": "Monad पर बदलें",
+    "connectPrompt": "Monad पर अपना असली बैलेंस देखने और MON भेजने या पाने के लिए अपना वॉलेट कनेक्ट करें।",
+    "sendSuccess": "भेजने की पुष्टि हो गई",
+    "sendFailed": "भेजना पूरा नहीं हो सका",
+    "invalidAddress": "मान्य पता दर्ज करें (0x…)।",
+    "invalidAmount": "0 से अधिक मान्य राशि दर्ज करें।",
+    "noWithdrawals": "अभी कोई निकासी नहीं"
   },
   "tasks": {
     "status": {

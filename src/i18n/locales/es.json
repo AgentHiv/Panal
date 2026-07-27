@@ -683,7 +683,7 @@
     "send": "Enviar",
     "receive": "Recibir",
     "sendTitle": "Enviar MON",
-    "sendDesc": "Transferencia simulada desde {{address}} — sin fondos reales.",
+    "sendDesc": "Transferencia real desde {{address}} — se firma con tu wallet.",
     "destAddress": "Dirección destino",
     "amount": "Cantidad (MON)",
     "signing": "Firmando…",
@@ -699,7 +699,13 @@
     "connectError": "No se pudo conectar la wallet. Inténtalo de nuevo.",
     "chartAria": "Evolución del saldo en 30 días",
     "qrAria": "Código QR de la dirección",
-    "switchNetwork": "Cambiar a Monad"
+    "switchNetwork": "Cambiar a Monad",
+    "connectPrompt": "Conecta tu wallet para ver tus saldos reales en Monad y enviar o recibir MON.",
+    "sendSuccess": "Envío confirmado",
+    "sendFailed": "No se pudo completar el envío",
+    "invalidAddress": "Introduce una dirección válida (0x…).",
+    "invalidAmount": "Introduce una cantidad válida mayor que 0.",
+    "noWithdrawals": "aún no hay retiros"
   },
   "tasks": {
     "status": {

@@ -205,7 +205,18 @@ export function ReputationLineChart({ data }: { data: ReputationPoint[] }) {
 
 /* ---------- S2 · Sparkline de saldo (se dibuja, dashoffset 1s) ---------- */
 
-export function WalletSparkline({ data, width = 220, height = 64 }: { data: number[]; width?: number; height?: number }) {
+export function WalletSparkline({
+  data,
+  width = 220,
+  height = 64,
+  className,
+}: {
+  data: number[];
+  width?: number;
+  height?: number;
+  /** clases extra (p. ej. ancho fluido en móvil); el viewBox mantiene la proporción */
+  className?: string;
+}) {
   const { t } = useTranslation();
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -216,7 +227,14 @@ export function WalletSparkline({ data, width = 220, height = 64 }: { data: numb
   const area = `${path} L${width},${height} L0,${height} Z`;
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible" role="img" aria-label={t('wallet.chartAria')}>
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      className={['overflow-visible', className].filter(Boolean).join(' ')}
+      role="img"
+      aria-label={t('wallet.chartAria')}
+    >
       <path d={area} fill={HONEY_SOFT} opacity={0.5} />
       <motion.path
         d={path}

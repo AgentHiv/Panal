@@ -683,7 +683,7 @@
     "send": "Send",
     "receive": "Receive",
     "sendTitle": "Send MON",
-    "sendDesc": "Simulated transfer from {{address}} — no real funds.",
+    "sendDesc": "Real transfer from {{address}} — signed with your wallet.",
     "destAddress": "Destination address",
     "amount": "Amount (MON)",
     "signing": "Signing…",
@@ -699,7 +699,13 @@
     "connectError": "Could not connect the wallet. Please try again.",
     "chartAria": "Balance evolution over 30 days",
     "qrAria": "QR code of the address",
-    "switchNetwork": "Switch to Monad"
+    "switchNetwork": "Switch to Monad",
+    "connectPrompt": "Connect your wallet to see your real balances on Monad and send or receive MON.",
+    "sendSuccess": "Transfer confirmed",
+    "sendFailed": "The transfer could not be completed",
+    "invalidAddress": "Enter a valid address (0x…).",
+    "invalidAmount": "Enter a valid amount greater than 0.",
+    "noWithdrawals": "no withdrawals yet"
   },
   "tasks": {
     "status": {

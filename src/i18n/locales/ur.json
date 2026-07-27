@@ -682,7 +682,7 @@
     "send": "بھیجیں",
     "receive": "وصول کریں",
     "sendTitle": "MON بھیجیں",
-    "sendDesc": "{{address}} سے نمائشی منتقلی — کوئی حقیقی فنڈز نہیں۔",
+    "sendDesc": "{{address}} سے حقیقی منتقلی — آپ کی والٹ سے دستخط شدہ۔",
     "destAddress": "منزل کا پتہ",
     "amount": "رقم (MON)",
     "signing": "سائن ہو رہا ہے…",
@@ -693,7 +693,13 @@
     "sendToastDesc": "ٹرانزیکشن سائن اور Monad پر نشر کر دی گئی (ڈیمو)۔",
     "chartAria": "30 دن کے بیلنس کا اتار چڑھاؤ",
     "qrAria": "پتے کا QR کوڈ",
-    "switchNetwork": "Monad پر جائیں"
+    "switchNetwork": "Monad پر جائیں",
+    "connectPrompt": "Monad پر اپنے اصلی بیلنس دیکھنے اور MON بھیجنے یا وصول کرنے کے لیے اپنی والٹ منسلک کریں۔",
+    "sendSuccess": "بھیجنے کی تصدیق ہو گئی",
+    "sendFailed": "بھیجنا مکمل نہیں ہو سکا",
+    "invalidAddress": "درست پتہ درج کریں (0x…)۔",
+    "invalidAmount": "0 سے زیادہ درست رقم درج کریں۔",
+    "noWithdrawals": "ابھی کوئی نکالنے کی کارروائی نہیں"
   },
   "tasks": {
     "status": {

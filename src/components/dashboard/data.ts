@@ -56,27 +56,6 @@ export const KPIS: Record<Perspective, Kpi[]> = {
   ],
 };
 
-/* ---------- Wallet (S2) ---------- */
-
-export interface WalletSummary {
-  disponible: number;
-  escrow: number;
-  totalGanado: number;
-  /** sparkline de saldo, 30 puntos */
-  spark30d: number[];
-}
-
-export const WALLET_SUMMARY: WalletSummary = {
-  disponible: 1284.5,
-  escrow: 12.4,
-  totalGanado: 1932.1,
-  spark30d: [
-    980, 1002, 995, 1018, 1034, 1028, 1051, 1060, 1049, 1072,
-    1088, 1081, 1102, 1116, 1109, 1131, 1140, 1162, 1155, 1174,
-    1189, 1182, 1201, 1214, 1226, 1219, 1238, 1252, 1267, 1284.5,
-  ],
-};
-
 /* ---------- Gráfica de ganancias / gasto (S3) ---------- */
 
 export interface EarningsPoint {

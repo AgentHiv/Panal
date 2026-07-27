@@ -1,13 +1,20 @@
 /**
- * Panal — Card de wallet del dashboard (dashboard.md S2).
- * 3 bloques mono (Disponible / En escrow / Total ganado) + sparkline 30d +
- * botones "Enviar" / "Recibir" (Recibir abre Dialog con QR mock y copia).
+ * Panal — Card de wallet del dashboard (dashboard.md S2), 100% on-chain.
+ * Disponible (balance nativo), En escrow (pendingWithdrawals del escrow) y
+ * Total ganado (suma de eventos Withdrawal) se leen de Monad en tiempo real
+ * (react-query, refetch 15–30 s). Enviar firma una transferencia real;
+ * Recibir muestra un QR real de la address. Sin mocks ni address de ejemplo.
+ * Móvil: bloques en columna y botones Enviar/Recibir a ancho completo.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowDownLeft, ArrowUpRight, Check, Copy } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import QRCode from 'qrcode';
+import { ArrowDownLeft, ArrowUpRight, Check, Copy, ExternalLink, Loader2, TriangleAlert, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
+import { useBalance, useReadContract, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
+import { formatEther, formatUnits, isAddress, parseAbiItem, parseEther } from 'viem';
 import {
   Dialog,
   DialogContent,
@@ -18,61 +25,104 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import TxHash from '@/components/TxHash';
 import { useWallet } from '@/hooks/useWallet';
+import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, activeChain, publicClient } from '@/contracts/config';
+import { panalEscrowAbi } from '@/contracts/abis';
 import { WalletSparkline } from './charts';
-import { WALLET_SUMMARY, formatMonEs } from './data';
+import { formatMonEs } from './data';
 
-/** QR mock determinista a partir de la dirección (sin dependencias extra). */
-function MockQr({ seed, size = 168 }: { seed: string; size?: number }) {
-  const { t } = useTranslation();
-  const cells = 21;
-  const grid = useMemo(() => {
-    let h = 2166136261;
-    const next = () => {
-      h ^= h << 13;
-      h ^= h >>> 17;
-      h ^= h << 5;
-      return (h >>> 0) / 4294967295;
-    };
-    for (let i = 0; i < seed.length; i++) h = (h ^ seed.charCodeAt(i)) >>> 0;
-    const g: boolean[][] = [];
-    for (let y = 0; y < cells; y++) {
-      const row: boolean[] = [];
-      for (let x = 0; x < cells; x++) row.push(next() > 0.52);
-      g.push(row);
+/** 12.345678 → "12,3457" (es-ES, 4 decimales máx — saldo disponible). */
+const nfES4 = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+
+function formatMon4(n: number): string {
+  return nfES4.format(n);
+}
+
+/** Evento Withdrawal del escrow (espejo de panalEscrowAbi, tipado por parseAbiItem). */
+const WITHDRAWAL_EVENT = parseAbiItem('event Withdrawal(address indexed to, uint256 amount)');
+
+interface WithdrawalPoint {
+  blockNumber: bigint;
+  amount: bigint;
+}
+
+interface WithdrawalEvent {
+  /** timestamp del bloque (s) */
+  t: number;
+  /** MON retirados (number para la sparkline) */
+  amount: number;
+}
+
+interface WithdrawalsData {
+  total: bigint;
+  events: WithdrawalEvent[];
+}
+
+const LOG_WINDOW = 100_000n;
+/** Ventanas máx. hacia atrás si el RPC rechaza el rango completo (rate limit ~15 req/s). */
+const MAX_LOG_WINDOWS = 80;
+
+/** Lee los Withdrawal del usuario; si el RPC rechaza fromBlock 0, ventanas de 100k bloques. */
+async function fetchWithdrawalPoints(addr: `0x${string}`): Promise<WithdrawalPoint[]> {
+  const filter = { address: PANAL_ESCROW_ADDRESS, event: WITHDRAWAL_EVENT, args: { to: addr } } as const;
+  const map = (logs: readonly { blockNumber: bigint; args: { amount?: bigint } }[]): WithdrawalPoint[] =>
+    logs.map((l) => ({ blockNumber: l.blockNumber, amount: l.args.amount ?? 0n }));
+
+  try {
+    return map(await publicClient.getLogs({ ...filter, fromBlock: 0n }));
+  } catch {
+    /* rango amplio rechazado: ventanas hacia atrás */
+  }
+
+  const latest = await publicClient.getBlockNumber();
+  const out: WithdrawalPoint[] = [];
+  let to = latest;
+  for (let i = 0; i < MAX_LOG_WINDOWS && to >= 0n; i++) {
+    const from = to > LOG_WINDOW ? to - LOG_WINDOW + 1n : 0n;
+    let chunk;
+    try {
+      chunk = await publicClient.getLogs({ ...filter, fromBlock: from, toBlock: to });
+    } catch {
+      break; // RPC saturado: devolvemos lo acumulado (react-query reintentará)
     }
-    // esquinas de anclaje estilo QR
-    const anchor = (ox: number, oy: number) => {
-      for (let y = 0; y < 7; y++)
-        for (let x = 0; x < 7; x++) {
-          const edge = x === 0 || x === 6 || y === 0 || y === 6;
-          const core = x >= 2 && x <= 4 && y >= 2 && y <= 4;
-          g[oy + y][ox + x] = edge || core;
-        }
-    };
-    anchor(0, 0);
-    anchor(cells - 7, 0);
-    anchor(0, cells - 7);
-    return g;
-  }, [seed]);
+    out.push(...map(chunk));
+    if (from === 0n) break;
+    if (chunk.length === 0 && out.length > 0) break; // ya hay eventos y la ventana anterior está vacía
+    to = from - 1n;
+  }
+  return out.sort((a, b) => (a.blockNumber < b.blockNumber ? -1 : 1));
+}
 
-  const cell = size / cells;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="rounded-lg border border-line bg-paper p-0" role="img" aria-label={t('wallet.qrAria')}>
-      <rect width={size} height={size} fill="#F2EFFA" />
-      {grid.flatMap((row, y) =>
-        row.map((on, x) =>
-          on ? <rect key={`${x}-${y}`} x={x * cell} y={y * cell} width={cell + 0.4} height={cell + 0.4} fill="#1B1814" /> : null,
-        ),
-      )}
-      <polygon
-        points={`${size / 2},${size / 2 - 12} ${size / 2 + 10.4},${size / 2 - 6} ${size / 2 + 10.4},${size / 2 + 6} ${size / 2},${size / 2 + 12} ${size / 2 - 10.4},${size / 2 + 6} ${size / 2 - 10.4},${size / 2 - 6}`}
-        fill="#E29A2E"
-        stroke="#F2EFFA"
-        strokeWidth={2}
-      />
-    </svg>
-  );
+/** Resuelve timestamps de bloque solo para los bloques con retiros (pocos). */
+async function fetchWithdrawals(addr: `0x${string}`): Promise<WithdrawalsData> {
+  const points = await fetchWithdrawalPoints(addr);
+  const total = points.reduce((acc, p) => acc + p.amount, 0n);
+  if (points.length === 0) return { total, events: [] };
+
+  const unique = [...new Set(points.map((p) => p.blockNumber))];
+  const blocks = await Promise.all(unique.map((n) => publicClient.getBlock({ blockNumber: n })));
+  const ts = new Map(unique.map((n, i) => [n.toString(), Number(blocks[i].timestamp)]));
+
+  const events = points
+    .map((p) => ({ t: ts.get(p.blockNumber.toString()) ?? 0, amount: Number(formatEther(p.amount)) }))
+    .filter((e) => e.t > 0)
+    .sort((a, b) => a.t - b.t);
+  return { total, events };
+}
+
+/** Acumulado de MON ganados por día (30 puntos) a partir de los retiros reales. */
+function buildSparkline30d(events: WithdrawalEvent[]): number[] {
+  const DAY = 86_400;
+  const now = Math.floor(Date.now() / 1000);
+  const start = now - 29 * DAY;
+  const out: number[] = [];
+  for (let d = 0; d < 30; d++) {
+    const dayEnd = start + (d + 1) * DAY;
+    const acc = events.reduce((sum, e) => (e.t < dayEnd ? sum + e.amount : sum), 0);
+    out.push(acc);
+  }
+  return out;
 }
 
 function WalletBlock({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -90,14 +140,76 @@ function WalletBlock({ label, value, hint }: { label: string; value: string; hin
 
 export default function WalletCard() {
   const { t } = useTranslation();
-  const { address, addressShort } = useWallet();
-  const addr = address ?? '0x7A4f9e2B8c3D5a7F1b6E4d8C2a0F9e3B7c5Df9B2';
-  const addrShort = addressShort ?? '0x7A4f…f9B2';
+  const { connected, address, addressShort, wrongNetwork, switchToMonad, connect } = useWallet();
+  const addr = (address ?? null) as `0x${string}` | null;
+
+  /* ---------- Datos on-chain ---------- */
+
+  const { data: balance, isLoading: balanceLoading, isError: balanceError } = useBalance({
+    address: addr ?? undefined,
+    chainId: activeChain.id,
+    query: { enabled: !!addr, refetchInterval: 15_000, retry: 1 },
+  });
+
+  const { data: pendingEscrow, isLoading: escrowLoading, isError: escrowError } = useReadContract({
+    address: PANAL_ESCROW_ADDRESS,
+    abi: panalEscrowAbi,
+    functionName: 'pendingWithdrawals',
+    args: addr ? [addr] : undefined,
+    chainId: activeChain.id,
+    query: { enabled: !!addr, refetchInterval: 15_000, retry: 1 },
+  });
+
+  const { data: withdrawals, isLoading: withdrawalsLoading, isError: withdrawalsError } = useQuery({
+    queryKey: ['panal-withdrawals', activeChain.id, addr],
+    enabled: !!addr,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+    retry: 1,
+    queryFn: () => fetchWithdrawals(addr as `0x${string}`),
+  });
+
+  const availableStr = balanceLoading ? '…' : balanceError ? '—' : formatMon4(balance ? Number(formatEther(balance.value)) : 0);
+  const escrowStr = escrowLoading
+    ? '…'
+    : escrowError || pendingEscrow === undefined
+      ? '—' // lectura revertida (p. ej. despliegue antiguo sin pendingWithdrawals)
+      : formatMonEs(Number(formatUnits(pendingEscrow, 18)));
+  const totalStr = withdrawalsLoading
+    ? '…'
+    : withdrawalsError || !withdrawals
+      ? '—'
+      : formatMonEs(Number(formatUnits(withdrawals.total, 18)));
+  const totalEarned = withdrawals?.total ?? 0n;
+  const spark30d = useMemo(
+    () => (withdrawals && withdrawals.events.length >= 2 ? buildSparkline30d(withdrawals.events) : null),
+    [withdrawals],
+  );
+
+  /* ---------- Estado local (copiar / diálogos / QR) ---------- */
+
   const [copied, setCopied] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [dest, setDest] = useState('');
+  const [amount, setAmount] = useState('');
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!addr) {
+      setQrUrl(null);
+      return;
+    }
+    let alive = true;
+    QRCode.toDataURL(addr, { margin: 1, width: 320, color: { dark: '#1B1814', light: '#E9E4FF' } })
+      .then((url) => alive && setQrUrl(url))
+      .catch(() => alive && setQrUrl(null));
+    return () => {
+      alive = false;
+    };
+  }, [addr]);
 
   const copyAddress = async () => {
+    if (!addr) return;
     try {
       await navigator.clipboard.writeText(addr);
     } catch {
@@ -108,97 +220,250 @@ export default function WalletCard() {
     window.setTimeout(() => setCopied(false), 1600);
   };
 
-  const fakeSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSending(true);
-    window.setTimeout(() => {
-      setSending(false);
-      setSendOpen(false);
-      toast(t('wallet.sendToast'), {
-        description: t('wallet.sendToastDesc'),
+  /* ---------- Envío real ---------- */
+
+  const { sendTransaction, data: txHash, isPending: signing, reset: resetSend } = useSendTransaction();
+  const { isLoading: confirming, isSuccess: mined } = useWaitForTransactionReceipt({ hash: txHash });
+  const toastedHash = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (mined && txHash && toastedHash.current !== txHash) {
+      toastedHash.current = txHash;
+      toast(t('wallet.sendSuccess'), {
+        description: <TxHash hash={txHash} className="text-[0.75rem]" />,
       });
-    }, 1200);
+    }
+  }, [mined, txHash, t]);
+
+  const destTrim = dest.trim();
+  const amountStr = amount.replace(',', '.').trim();
+  const destValid = isAddress(destTrim);
+  const amountValid = /^\d+(\.\d{1,18})?$/.test(amountStr) && Number(amountStr) > 0;
+  const sendValid = destValid && amountValid;
+
+  const submitSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sendValid || !addr || wrongNetwork) return;
+    sendTransaction(
+      { to: destTrim as `0x${string}`, value: parseEther(amountStr), chainId: activeChain.id },
+      {
+        onError: (err) =>
+          toast(t('wallet.sendFailed'), {
+            description: err.message.includes('User rejected') ? t('hire.step3.rejected') : err.message.split('\n')[0],
+          }),
+      },
+    );
   };
 
+  const closeSend = (open: boolean) => {
+    setSendOpen(open);
+    if (!open) {
+      resetSend();
+      setDest('');
+      setAmount('');
+      toastedHash.current = null;
+    }
+  };
+
+  /* ---------- Render ---------- */
+
   return (
-    <div className="rounded-2xl border border-line bg-paper p-6 shadow-card md:p-7">
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-        {/* 3 bloques mono */}
-        <div className="grid flex-1 grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
-          <WalletBlock label={t('wallet.available')} value={formatMonEs(WALLET_SUMMARY.disponible)} />
-          <WalletBlock label={t('wallet.inEscrow')} value={formatMonEs(WALLET_SUMMARY.escrow)} hint={t('wallet.autoRelease')} />
-          <WalletBlock label={t('wallet.totalEarned')} value={formatMonEs(WALLET_SUMMARY.totalGanado)} hint={t('wallet.since')} />
-        </div>
-
-        {/* Sparkline + acciones */}
-        <div className="flex items-center gap-6">
-          <div className="flex flex-col items-end gap-1">
-            <span className="eyebrow text-ink-3">{t('wallet.balance30')}</span>
-            <WalletSparkline data={WALLET_SUMMARY.spark30d} />
+    <div className="rounded-2xl border border-line bg-paper p-5 shadow-card md:p-7">
+      {!connected || !addr ? (
+        <div className="flex flex-col items-center gap-4 py-8 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full border border-line bg-cream">
+            <Wallet size={24} className="text-honey" aria-hidden />
           </div>
-          <div className="flex flex-col gap-2">
-            {/* Enviar */}
-            <Dialog open={sendOpen} onOpenChange={setSendOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded-full border-line bg-transparent font-mono text-[0.8125rem] hover:bg-cream">
-                  <ArrowUpRight size={14} className="mr-1.5" />
-                  {t('wallet.send')}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="border-line bg-paper sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="font-display text-ink">{t('wallet.sendTitle')}</DialogTitle>
-                  <DialogDescription className="text-ink-2">
-                    {t('wallet.sendDesc', { address: addrShort })}
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={fakeSend} className="flex flex-col gap-4">
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-[0.8125rem] font-medium text-ink-2">{t('wallet.destAddress')}</span>
-                    <Input required placeholder="0x…" className="rounded-xl border-line bg-paper font-mono text-[0.8125rem]" />
-                  </label>
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-[0.8125rem] font-medium text-ink-2">{t('wallet.amount')}</span>
-                    <Input required type="number" min="0.001" step="0.001" placeholder="0.010" className="rounded-xl border-line bg-paper font-mono text-[0.8125rem]" />
-                  </label>
-                  <Button type="submit" disabled={sending} className="rounded-full bg-ink text-paper hover:bg-honey-deep">
-                    {sending ? t('wallet.signing') : t('wallet.confirmSend')}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
+          <p className="max-w-sm text-[0.9375rem] leading-relaxed text-ink-2">{t('wallet.connectPrompt')}</p>
+          <button type="button" onClick={connect} className="btn-monad px-6 py-3 text-[0.9375rem] font-semibold">
+            {t('nav.connect')}
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+          {/* 3 bloques mono (columna en móvil) */}
+          <div className="grid flex-1 grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-8">
+            <WalletBlock label={t('wallet.available')} value={availableStr} />
+            <WalletBlock label={t('wallet.inEscrow')} value={escrowStr} hint={t('wallet.autoRelease')} />
+            <WalletBlock
+              label={t('wallet.totalEarned')}
+              value={totalStr}
+              hint={withdrawals && totalEarned === 0n ? t('wallet.noWithdrawals') : undefined}
+            />
+          </div>
 
-            {/* Recibir → QR mock + copia */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded-full border-line bg-transparent font-mono text-[0.8125rem] hover:bg-cream">
-                  <ArrowDownLeft size={14} className="mr-1.5" />
-                  {t('wallet.receive')}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="border-line bg-paper sm:max-w-sm">
-                <DialogHeader>
-                  <DialogTitle className="font-display text-ink">{t('wallet.receiveTitle')}</DialogTitle>
-                  <DialogDescription className="text-ink-2">
-                    {t('wallet.receiveDesc')}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="flex flex-col items-center gap-4 py-2">
-                  <MockQr seed={addr} />
-                  <button
-                    type="button"
-                    onClick={copyAddress}
-                    className="group inline-flex max-w-full items-center gap-2 rounded-full border border-line bg-cream px-4 py-2 font-mono text-[0.75rem] text-ink-2 transition-colors hover:border-honey hover:text-ink"
+          {/* Sparkline (solo con datos reales suficientes) + acciones */}
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-6">
+            {spark30d && (
+              <div className="flex flex-col gap-1 lg:items-end">
+                <span className="eyebrow text-ink-3">{t('wallet.balance30')}</span>
+                <WalletSparkline data={spark30d} className="h-16 w-full max-w-[260px] lg:w-[220px]" />
+              </div>
+            )}
+            <div className="grid w-full grid-cols-2 gap-3 lg:flex lg:w-auto lg:flex-col lg:gap-2">
+              {/* Enviar (real) */}
+              <Dialog open={sendOpen} onOpenChange={closeSend}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-auto w-full rounded-full border-line bg-transparent px-4 py-3 font-mono text-[0.9375rem] hover:bg-cream lg:w-auto lg:py-2 lg:text-[0.8125rem]"
                   >
-                    <span className="truncate">{addr}</span>
-                    {copied ? <Check size={13} className="shrink-0 text-olive" /> : <Copy size={13} className="shrink-0 opacity-50 group-hover:opacity-100" />}
-                  </button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                    <ArrowUpRight size={15} className="mr-1.5" />
+                    {t('wallet.send')}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="w-[calc(100vw-2rem)] border-line bg-paper sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="font-display text-ink">{t('wallet.sendTitle')}</DialogTitle>
+                    <DialogDescription className="text-ink-2">
+                      {t('wallet.sendDesc', { address: addressShort })}
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  {mined && txHash ? (
+                    <div className="flex flex-col items-center gap-4 py-2 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-olive/50 bg-olive/10">
+                        <Check size={22} className="text-olive" aria-hidden />
+                      </div>
+                      <p className="font-display text-ink">{t('wallet.sendSuccess')}</p>
+                      <TxHash hash={txHash} className="rounded-full border border-line bg-cream px-4 py-2" />
+                      <div className="flex w-full flex-col gap-2 sm:flex-row">
+                        <a
+                          href={EXPLORER_TX(txHash)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-[0.875rem] font-medium text-paper transition-colors hover:bg-honey-deep"
+                        >
+                          {t('hire.step3.viewExplorer')}
+                          <ExternalLink size={14} />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => closeSend(false)}
+                          className="flex-1 rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
+                        >
+                          {t('common.close')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : txHash ? (
+                    <div className="flex flex-col items-center gap-3 py-2 text-center">
+                      <Loader2 size={28} className="animate-spin text-honey-deep" aria-hidden />
+                      <p className="text-[0.875rem] font-medium text-ink">{t('hire.step3.confirming')}</p>
+                      <a
+                        href={EXPLORER_TX(txHash)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 font-mono text-[12px] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+                      >
+                        {t('hire.step3.viewTx')}
+                        <ExternalLink size={13} />
+                      </a>
+                      {confirming && <p className="font-mono text-[11px] text-ink-3">{t('hire.step3.oneConfirm')}</p>}
+                    </div>
+                  ) : (
+                    <form onSubmit={submitSend} className="flex flex-col gap-4">
+                      <label className="flex flex-col gap-1.5">
+                        <span className="text-[0.8125rem] font-medium text-ink-2">{t('wallet.destAddress')}</span>
+                        <Input
+                          value={dest}
+                          onChange={(e) => setDest(e.target.value)}
+                          required
+                          placeholder="0x…"
+                          className="rounded-xl border-line bg-paper font-mono text-[0.8125rem]"
+                        />
+                        {destTrim.length > 0 && !destValid && (
+                          <span className="flex items-center gap-1.5 text-[0.75rem] text-terra">
+                            <TriangleAlert size={12} aria-hidden />
+                            {t('wallet.invalidAddress')}
+                          </span>
+                        )}
+                      </label>
+                      <label className="flex flex-col gap-1.5">
+                        <span className="text-[0.8125rem] font-medium text-ink-2">{t('wallet.amount')}</span>
+                        <Input
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                          required
+                          inputMode="decimal"
+                          placeholder="0.010"
+                          className="rounded-xl border-line bg-paper font-mono text-[0.8125rem]"
+                        />
+                        {amountStr.length > 0 && !amountValid && (
+                          <span className="flex items-center gap-1.5 text-[0.75rem] text-terra">
+                            <TriangleAlert size={12} aria-hidden />
+                            {t('wallet.invalidAmount')}
+                          </span>
+                        )}
+                      </label>
+                      {wrongNetwork ? (
+                        <button
+                          type="button"
+                          onClick={switchToMonad}
+                          className="btn-monad inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-[0.875rem] font-semibold"
+                        >
+                          {t('wallet.switchNetwork')}
+                        </button>
+                      ) : (
+                        <button
+                          type="submit"
+                          disabled={!sendValid || signing}
+                          className="btn-monad inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40"
+                        >
+                          {signing && <Loader2 size={15} className="animate-spin" aria-hidden />}
+                          {signing ? t('wallet.signing') : t('wallet.confirmSend')}
+                        </button>
+                      )}
+                    </form>
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              {/* Recibir → QR real + copia */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-auto w-full rounded-full border-line bg-transparent px-4 py-3 font-mono text-[0.9375rem] hover:bg-cream lg:w-auto lg:py-2 lg:text-[0.8125rem]"
+                  >
+                    <ArrowDownLeft size={15} className="mr-1.5" />
+                    {t('wallet.receive')}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="w-[calc(100vw-2rem)] border-line bg-paper sm:max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle className="font-display text-ink">{t('wallet.receiveTitle')}</DialogTitle>
+                    <DialogDescription className="text-ink-2">{t('wallet.receiveDesc')}</DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-col items-center gap-4 py-2">
+                    <div className="rounded-xl bg-monad-soft p-3">
+                      {qrUrl ? (
+                        <img src={qrUrl} width={168} height={168} alt={t('wallet.qrAria')} className="block" />
+                      ) : (
+                        <div className="flex h-[168px] w-[168px] items-center justify-center">
+                          <Loader2 size={22} className="animate-spin text-ink-3" aria-hidden />
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={copyAddress}
+                      className="group inline-flex max-w-full items-center gap-2 rounded-full border border-line bg-cream px-4 py-2 font-mono text-[0.75rem] text-ink-2 transition-colors hover:border-honey hover:text-ink"
+                    >
+                      <span className="truncate">{addr}</span>
+                      {copied ? (
+                        <Check size={13} className="shrink-0 text-olive" />
+                      ) : (
+                        <Copy size={13} className="shrink-0 opacity-50 group-hover:opacity-100" />
+                      )}
+                    </button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

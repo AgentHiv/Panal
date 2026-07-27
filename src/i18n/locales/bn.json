@@ -682,7 +682,7 @@
     "send": "পাঠান",
     "receive": "গ্রহণ করুন",
     "sendTitle": "MON পাঠান",
-    "sendDesc": "{{address}} থেকে সিমুলেটেড ট্রান্সফার — কোনো বাস্তব তহবিল নয়।",
+    "sendDesc": "{{address}} থেকে প্রকৃত স্থানান্তর — আপনার ওয়ালেটে স্বাক্ষরিত।",
     "destAddress": "গন্তব্য ঠিকানা",
     "amount": "পরিমাণ (MON)",
     "signing": "সাইন হচ্ছে…",
@@ -693,7 +693,13 @@
     "sendToastDesc": "লেনদেন স্বাক্ষরিত এবং Monad-এ সম্প্রচারিত হয়েছে (ডেমো)।",
     "chartAria": "৩০ দিনের ব্যালেন্স বিবর্তন",
     "qrAria": "ঠিকানার QR কোড",
-    "switchNetwork": "Monad-এ যান"
+    "switchNetwork": "Monad-এ যান",
+    "connectPrompt": "Monad-এ আপনার আসল ব্যালেন্স দেখতে এবং MON পাঠাতে বা গ্রহণ করতে ওয়ালেট সংযুক্ত করুন।",
+    "sendSuccess": "পাঠানো নিশ্চিত হয়েছে",
+    "sendFailed": "পাঠানো সম্পন্ন করা যায়নি",
+    "invalidAddress": "একটি বৈধ ঠিকানা দিন (0x…)।",
+    "invalidAmount": "০-এর বেশি বৈধ পরিমাণ দিন।",
+    "noWithdrawals": "এখনও কোনো উত্তোলন নেই"
   },
   "tasks": {
     "status": {

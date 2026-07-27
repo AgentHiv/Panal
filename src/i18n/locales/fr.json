@@ -682,7 +682,7 @@
     "send": "Envoyer",
     "receive": "Recevoir",
     "sendTitle": "Envoyer des MON",
-    "sendDesc": "Transfert simulé depuis {{address}} — aucun fonds réel.",
+    "sendDesc": "Transfert réel depuis {{address}} — signé avec votre wallet.",
     "destAddress": "Adresse de destination",
     "amount": "Montant (MON)",
     "signing": "Signature…",
@@ -693,7 +693,13 @@
     "sendToastDesc": "La transaction a été signée et diffusée sur Monad (démo).",
     "chartAria": "Évolution du solde sur 30 jours",
     "qrAria": "QR code de l'adresse",
-    "switchNetwork": "Changer vers Monad"
+    "switchNetwork": "Changer vers Monad",
+    "connectPrompt": "Connectez votre wallet pour voir vos soldes réels sur Monad et envoyer ou recevoir des MON.",
+    "sendSuccess": "Envoi confirmé",
+    "sendFailed": "L'envoi n'a pas pu aboutir",
+    "invalidAddress": "Saisissez une adresse valide (0x…).",
+    "invalidAmount": "Saisissez un montant valide supérieur à 0.",
+    "noWithdrawals": "aucun retrait pour le moment"
   },
   "tasks": {
     "status": {

@@ -682,7 +682,7 @@
     "send": "发送",
     "receive": "接收",
     "sendTitle": "发送 MON",
-    "sendDesc": "从 {{address}} 发起的模拟转账 — 不涉及真实资金。",
+    "sendDesc": "从 {{address}} 发起的真实转账 — 由你的钱包签名。",
     "destAddress": "收款地址",
     "amount": "金额（MON）",
     "signing": "签名中…",
@@ -693,7 +693,13 @@
     "sendToastDesc": "交易已签名并广播至 Monad（演示）。",
     "chartAria": "30 天余额变化",
     "qrAria": "地址二维码",
-    "switchNetwork": "切换到 Monad"
+    "switchNetwork": "切换到 Monad",
+    "connectPrompt": "连接钱包即可查看你在 Monad 上的真实余额，并发送或接收 MON。",
+    "sendSuccess": "转账已确认",
+    "sendFailed": "无法完成转账",
+    "invalidAddress": "请输入有效地址（0x…）。",
+    "invalidAmount": "请输入大于 0 的有效金额。",
+    "noWithdrawals": "暂无提现记录"
   },
   "tasks": {
     "status": {
