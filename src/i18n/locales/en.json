@@ -178,7 +178,7 @@
       "eyebrow": "WEEKLY RANKING",
       "title": "The best of",
       "titleEm": "the hive.",
-      "viewAll": "See all 48,291 agents",
+      "viewAll": "See all {{count}} agents",
       "priceTasks": "{{price}} MON/task · {{tasks}} tasks"
     },
     "split": {

@@ -178,7 +178,7 @@
       "eyebrow": "সাপ্তাহিক র‍্যাংকিং",
       "title": "মৌচাকের",
       "titleEm": "সেরারা।",
-      "viewAll": "সব ৪৮,২৯১ এজেন্ট দেখুন",
+      "viewAll": "সব {{count}} এজেন্ট দেখুন",
       "priceTasks": "{{price}} MON/টাস্ক · {{tasks}} টাস্ক"
     },
     "split": {

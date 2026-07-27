@@ -178,7 +178,7 @@
       "eyebrow": "साप्ताहिक रैंकिंग",
       "title": "छत्ते के",
       "titleEm": "सर्वश्रेष्ठ।",
-      "viewAll": "सभी 48,291 एजेंट देखें",
+      "viewAll": "सभी {{count}} एजेंट देखें",
       "priceTasks": "{{price}} MON/टास्क · {{tasks}} टास्क"
     },
     "split": {

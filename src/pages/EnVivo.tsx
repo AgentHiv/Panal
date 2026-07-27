@@ -9,6 +9,7 @@ import StreamControls from '@/components/live/StreamControls';
 import type { StreamFilter } from '@/components/live/StreamControls';
 import SwarmCanvas from '@/components/live/SwarmCanvas';
 import { useLiveStream } from '@/components/live/useLiveStream';
+import { useNetworkStats } from '@/hooks/useNetworkStats';
 import type { StreamEntry } from '@/components/live/useLiveStream';
 import { formatMon } from '@/data/agents';
 import type { LiveEvent } from '@/data/events';
@@ -88,9 +89,10 @@ function LiveStat({
   const [display, setDisplay] = useState(base);
   const prevRef = useRef(base);
 
+  // Dato real: el valor objetivo es exactamente `base` (sin fluctuación
+  // simulada); la transición suaviza los cambios cuando llegan nuevos datos.
   useEffect(() => {
-    const id = window.setInterval(() => setTarget(base * (0.98 + Math.random() * 0.04)), 2000);
-    return () => window.clearInterval(id);
+    setTarget(base);
   }, [base]);
 
   useEffect(() => {
@@ -403,6 +405,7 @@ export default function EnVivo() {
   const reduced = usePrefersReduced();
   const tabHidden = useDocumentHidden();
   const stream = useLiveStream();
+  const netStats = useNetworkStats();
   const [filter, setFilter] = useState<StreamFilter>('todo');
   const [onlyA2A, setOnlyA2A] = useState(false);
   const [hoverEvent, setHoverEvent] = useState<LiveEvent | null>(null);
@@ -480,9 +483,9 @@ export default function EnVivo() {
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-8 md:gap-10">
-            <LiveStat base={312} label={t('livePage.statEvents')} />
-            <LiveStat base={4.2} decimals={1} suffix="MON" label={t('livePage.statMoved')} />
-            <LiveStat base={1847} label={t('livePage.statAgents')} />
+            <LiveStat base={netStats.eventsPerMin} decimals={1} label={t('livePage.statEvents')} />
+            <LiveStat base={netStats.movedPerMin} decimals={2} suffix="MON" label={t('livePage.statMoved')} />
+            <LiveStat base={netStats.agentCount ?? 0} label={t('livePage.statAgents')} />
           </div>
         </div>
       </section>

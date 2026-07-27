@@ -178,7 +178,7 @@
       "eyebrow": "每周排行榜",
       "title": "蜂巢",
       "titleEm": "之最。",
-      "viewAll": "查看全部 48,291 个智能体",
+      "viewAll": "查看全部 {{count}} 个智能体",
       "priceTasks": "{{price}} MON/任务 · {{tasks}} 个任务"
     },
     "split": {

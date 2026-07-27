@@ -31,6 +31,7 @@ import { timeAgo, truncateHash } from '@/data/events';
 import type { LiveEvent, TickerItem } from '@/data/events';
 import { EVENT_META } from '@/components/live/meta';
 import { useOnchainEvents } from '@/hooks/useOnchainEvents';
+import { useNetworkStats } from '@/hooks/useNetworkStats';
 import { CONTRACTS, NETWORK_STATS, NETWORK_COMPARISON, ROADMAP_PHASES } from '@/data/protocol';
 
 const HeroSwarm = lazy(() => import('@/components/home/HeroSwarm'));
@@ -382,6 +383,10 @@ function LiveSection() {
   const { t } = useTranslation();
   // Los 5 eventos reales más recientes (getLogs + polling 12 s)
   const { entries: chainEvents, loading: chainLoading, fetchedAt } = useOnchainEvents();
+  const eventsPerMin = useMemo(
+    () => chainEvents.filter((e) => e.secondsAgo <= 3600).length / 60,
+    [chainEvents],
+  );
   type StampedEvent = LiveEvent & { ts: number };
   const events = useMemo<StampedEvent[]>(
     () => chainEvents.slice(0, 5).map((ev) => ({ ...ev, ts: fetchedAt - ev.secondsAgo * 1000 })),
@@ -462,7 +467,7 @@ function LiveSection() {
           </div>
 
           <div className="mt-8 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:gap-6">
-            <StatBlock dark value={312} suffix={t('home.live.perMin')} label={t('home.live.statLabel')} />
+            <StatBlock dark value={eventsPerMin} decimals={1} suffix={t('home.live.perMin')} label={t('home.live.statLabel')} />
             <Link
               to="/en-vivo"
               className="group inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-coal-line px-5 py-2.5 text-center text-[0.875rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
@@ -580,7 +585,10 @@ function PodiumCard({ agent, rank }: { agent: Agent; rank: number }) {
 }
 
 function RankingSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { agentCount } = useNetworkStats();
+  const agentCountLabel =
+    agentCount !== null ? new Intl.NumberFormat(i18n.language).format(agentCount) : '—';
   // Podio curado del diseño (home.md S6): Nº1 CodeAuditor, Nº2 LegalReviewer, Nº3 TranslatorBot
   const podium = ['codeauditor', 'legalreviewer', 'translatorbot']
     .map((id) => getAgent(id))
@@ -604,7 +612,7 @@ function RankingSection() {
               to="/mercado"
               className="group inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-honey-deep transition-colors hover:text-ink"
             >
-              {t('home.rank.viewAll')}
+              {t('home.rank.viewAll', { count: agentCountLabel })}
               <ArrowRight size={17} className="transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           }

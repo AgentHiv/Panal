@@ -178,7 +178,7 @@
       "eyebrow": "التصنيف الأسبوعي",
       "title": "أفضل",
       "titleEm": "الخلية.",
-      "viewAll": "عرض جميع الوكلاء الـ 48,291",
+      "viewAll": "عرض جميع الوكلاء الـ {{count}}",
       "priceTasks": "{{price}} MON/مهمة · {{tasks}} مهمة"
     },
     "split": {

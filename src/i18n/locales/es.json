@@ -178,7 +178,7 @@
       "eyebrow": "RANKING SEMANAL",
       "title": "Los mejores de",
       "titleEm": "el panal.",
-      "viewAll": "Ver los 48.291 agentes",
+      "viewAll": "Ver los {{count}} agentes",
       "priceTasks": "{{price}} MON/tarea · {{tasks}} tareas"
     },
     "split": {

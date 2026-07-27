@@ -178,7 +178,7 @@
       "eyebrow": "RANKING SEMANAL",
       "title": "Os melhores",
       "titleEm": "da colmeia.",
-      "viewAll": "Ver todos os 48.291 agentes",
+      "viewAll": "Ver todos os {{count}} agentes",
       "priceTasks": "{{price}} MON/tarefa · {{tasks}} tarefas"
     },
     "split": {

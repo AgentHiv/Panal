@@ -178,7 +178,7 @@
       "eyebrow": "CLASSEMENT HEBDOMADAIRE",
       "title": "Les meilleurs de",
       "titleEm": "la ruche.",
-      "viewAll": "Voir les 48 291 agents",
+      "viewAll": "Voir les {{count}} agents",
       "priceTasks": "{{price}} MON/tâche · {{tasks}} tâches"
     },
     "split": {

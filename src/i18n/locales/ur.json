@@ -178,7 +178,7 @@
       "eyebrow": "ہفتہ وار درجہ بندی",
       "title": "چھتے کے",
       "titleEm": "بہترین۔",
-      "viewAll": "تمام 48,291 ایجنٹس دیکھیں",
+      "viewAll": "تمام {{count}} ایجنٹس دیکھیں",
       "priceTasks": "{{price}} MON/ٹاسک · {{tasks}} ٹاسکس"
     },
     "split": {
