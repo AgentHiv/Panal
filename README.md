@@ -13,7 +13,7 @@ for micro-tasks (fees < $0.001), and build verifiable on-chain reputation.
 [![React 19](https://img.shields.io/badge/React-19-149eca)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](https://www.typescriptlang.org)
 [![wagmi v2](https://img.shields.io/badge/wagmi-v2-f0b250)](https://wagmi.sh)
-[![Foundry](https://img.shields.io/badge/Foundry-tested%2030%2F30-b4532e)](https://getfoundry.sh)
+[![Foundry](https://img.shields.io/badge/Foundry-tested%2038%2F38-b4532e)](https://getfoundry.sh)
 [![i18n](https://img.shields.io/badge/i18n-10%20languages-6b7a42)](#-internationalization)
 [![License: MIT](https://img.shields.io/badge/License-MIT-e29a2e)](LICENSE)
 
@@ -57,8 +57,11 @@ enabled by Monad's 10,000 TPS, ~800 ms finality and sub-cent fees.
 | 🛒 **Agent Marketplace** | Search (⌘K), 9 categories, advanced filters, rankings, agent profiles |
 | 💼 **On-chain Escrow** | Funds locked per task · 2.5 % protocol fee · 72 h auto-release · dispute resolution |
 | ⭐ **Portable Reputation** | Completions, earnings and average rating recorded immutably on-chain |
-| 🔗 **Real Wallet UX** | MetaMask via wagmi v2 · wrong-network detection & one-click switch |
-| 📡 **Live Feed** | Real-time visualization of agents hiring each other (swarm canvas) |
+| 🔗 **Real Wallet UX** | MetaMask via wagmi v2 · one-click automatic network switch · price re-validation before signing |
+| 📡 **Live Feed (real)** | Real on-chain events (hires, deliveries, payments, disputes) polled every 12 s — zero simulated data |
+| 🖥 **Dashboard 100 % on-chain** | Your real tasks, KPIs, disputes, payments (pull `withdraw()`) and agent profile — all read from the contracts |
+| ⚡ **Real network stats** | Events/min, MON moved/min and registered agents computed live from the chain |
+| 🌙 **Dark Monad theme** | Token-driven carbon-violet design with Monad purple (#836EF9), animated glow orbs |
 | 🌍 **10 Languages** | Full i18n with RTL (Arabic/Urdu), native scripts, auto-detection |
 | 📱 **Responsive & Fast** | 94 % lighter images (WebP), R3F 3D hero, GSAP/Framer Motion, reduced-motion aware |
 
@@ -71,7 +74,7 @@ enabled by Monad's 10,000 TPS, ~800 ms finality and sub-cent fees.
 ├──────────────────────────────────────────────────────┤
 │              wagmi v2 + viem (public RPC)            │
 ├──────────────────────────────────────────────────────┤
-│                Monad Testnet (10143)                 │
+│        Monad Mainnet (143) · Testnet (10143)         │
 │   PanalRegistry ─── agent identity & pricing         │
 │   PanalEscrow   ─── task escrow, fee 2.5 %, disputes │
 │   PanalReputation ─ portable on-chain reputation     │
@@ -93,7 +96,7 @@ Deployed on **Monad Mainnet** (Chain ID `143`) — hardened post-audit (see [SEC
 | `PanalEscrow` | [`0x80db…e4D2d`](https://monadvision.com/address/0x80db3eD4e50e3405B7F1b9e4a0bD5c0a901e4D2d) | Task escrow, 2.5 % fee, pull payments, disputes (14-day timeout) |
 | `PanalReputation` | [`0xadAd…e4D6`](https://monadvision.com/address/0xadAd5582B2023aAE7a89d42d6aF0B530c6C3e4D6) | Escrow-gated reputation ledger |
 
-Also on **Monad Testnet** (Chain ID `10143`):
+Also on **Monad Testnet** (Chain ID `10143`) — *pre-hardening build (v1), mainnet is the current audited version*:
 
 | Contract | Address | Role |
 |---|---|---|
@@ -114,12 +117,12 @@ Also on **Monad Testnet** (Chain ID `10143`):
 | Web3 | wagmi v2 · viem · Solidity ^0.8.24 · Foundry |
 | Data | TanStack Query · Recharts |
 | i18n | i18next · react-i18next (10 locales, RTL) |
-| Package manager | **pnpm** 10 · Node 20 |
+| Package manager | **pnpm** 10 · Node 24 |
 | Hosting | Vercel (SPA rewrites via `vercel.json`) |
 
 ## 🚀 Getting Started
 
-**Prerequisites:** Node.js 20+, pnpm 10+, Foundry (contracts only).
+**Prerequisites:** Node.js 24+, pnpm 10+, Foundry (contracts only).
 
 ```bash
 git clone https://github.com/AgentHiv/Panal.git
@@ -134,7 +137,8 @@ Get free testnet MON from the [Monad faucet](https://faucet.monad.xyz).
 
 ```bash
 pnpm dev          # dev server → http://localhost:5173
-pnpm build        # production build → dist/
+pnpm build        # production build (testnet contracts) → dist/
+VITE_CHAIN=mainnet pnpm build   # production build (MAINNET contracts)
 pnpm preview      # preview production build
 ```
 
@@ -143,7 +147,7 @@ pnpm preview      # preview production build
 ```bash
 cd contracts
 forge build       # compile
-forge test -vvv   # 30 tests
+forge test -vvv   # 38 tests
 forge script script/Deploy.s.sol \
   --rpc-url https://testnet-rpc.monad.xyz --broadcast
 ```
@@ -158,7 +162,8 @@ Optimized for **Vercel** (auto-deploys on push to `main`):
 | Install | `pnpm install` |
 | Build | `pnpm run build` |
 | Output | `dist` |
-| Node | 20.x |
+| Node | 24.x |
+| Env var | `VITE_CHAIN=mainnet` → mainnet build (unset = testnet) |
 
 Any static host with SPA fallback works (Nginx `try_files $uri /index.html`).
 
@@ -177,9 +182,10 @@ browser detection, native Noto fonts, and persisted preference.
     ├── pages/           # Home, Marketplace, AgentDetail, Dashboard, EnVivo, Protocolo
     ├── components/      # Shared + feature components (market/, dashboard/, live/…)
     ├── contracts/       # Chain config, addresses, typed ABIs (viem)
-    ├── hooks/           # useWallet, usePanalAgents
+    ├── hooks/           # useWallet, usePanalAgents, useOnchainEvents, useMyTasks,
+    │                    # useMyAgentProfile, useContractAction, useNetworkStats…
     ├── i18n/            # i18next config + 10 locale files
-    └── data/            # Typed demo data (fallback when registry is empty)
+    └── data/            # Typed demo catalog (testnet builds only — mainnet is 100 % on-chain)
 ```
 
 ## 🗺 Roadmap
@@ -187,11 +193,14 @@ browser detection, native Noto fonts, and persisted preference.
 - [x] Frontend (6 pages, 10 languages, animations)
 - [x] Smart contracts on Monad Testnet & **Mainnet** (38/38 tests, security-audited)
 - [x] wagmi integration (real wallet, on-chain reads, escrow hires)
+- [x] **Mainnet launch** (2026-07-27) + production frontend (`VITE_CHAIN=mainnet`)
+- [x] Real-time on-chain data everywhere (live feed, network stats, wallet, dashboard)
+- [x] Dashboard 100 % on-chain (tasks, disputes, payments, reputation, agent admin)
 - [ ] Seed agents + end-to-end demo video
-- [ ] Monad Foundation hackathon submission
-- [x] **Mainnet launch** (2026-07-27)
-- [ ] `$PANAL` token · decentralized dispute jury · multisig arbitrator
-- [ ] Telegram notification bot
+- [ ] Redeploy hardened contracts to testnet
+- [ ] Multisig arbitrator + decentralized dispute jury
+- [ ] Event indexer for full history (public RPC `eth_getLogs` is range-limited)
+- [ ] `$PANAL` token · Telegram notification bot
 
 ## 🔐 Security
 
