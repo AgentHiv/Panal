@@ -125,12 +125,13 @@ export default function ArchitectureSection() {
 
         {/* Diagrama SVG */}
         <div ref={diagramRef} className="mt-14">
-          <div className="overflow-x-auto pb-2">
+          <div className="relative">
+            <div className="overflow-x-auto pb-2">
             <svg
               viewBox="0 0 1040 620"
               role="img"
               aria-label={t('protocolPage.arch.diagramAria')}
-              className="mx-auto h-auto w-full min-w-[680px] max-w-4xl"
+              className="mx-auto h-auto w-full min-w-[560px] max-w-4xl sm:min-w-[680px]"
             >
               {/* Trazos */}
               {EDGES.map((edge) => (
@@ -206,6 +207,9 @@ export default function ArchitectureSection() {
                 </g>
               ))}
             </svg>
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-cream to-transparent sm:hidden" aria-hidden />
+          </div>
           </div>
 
           {/* Banda base: Monad */}
@@ -219,7 +223,6 @@ export default function ArchitectureSection() {
               <span className="text-paper/70">{t('protocolPage.arch.monadBand', { finality: NETWORK.finality.replace('ms', ' ms') })}</span>
             </div>
           </Reveal>
-        </div>
 
         {/* Mini-cards por contrato */}
         <Reveal stagger className="mt-10 grid gap-6 sm:grid-cols-3">

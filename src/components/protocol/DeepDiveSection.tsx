@@ -216,7 +216,7 @@ function DeepDiveBlock({ contract, reversed }: { contract: ContractInfo; reverse
   return (
     <article className="grid items-center gap-10 lg:grid-cols-12 lg:gap-6">
       {/* Imagen 3D */}
-      <div className={cn('lg:col-span-6', reversed && 'lg:order-2')}>
+      <div className={cn('min-w-0 lg:col-span-6', reversed && 'lg:order-2')}>
         <div
           ref={frameRef}
           className="aspect-[4/3] overflow-hidden rounded-2xl border border-coal-line bg-coal-2"
@@ -233,7 +233,7 @@ function DeepDiveBlock({ contract, reversed }: { contract: ContractInfo; reverse
       </div>
 
       {/* Texto */}
-      <Reveal stagger className={cn('lg:col-span-6', reversed && 'lg:order-1')}>
+      <Reveal stagger className={cn('min-w-0 lg:col-span-6', reversed && 'lg:order-1')}>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <p className="eyebrow flex items-center gap-2 text-honey">
             <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
@@ -262,7 +262,7 @@ function DeepDiveBlock({ contract, reversed }: { contract: ContractInfo; reverse
           </>
         )}
 
-        <CodeSnippet code={copy.snippet} className="mt-8 max-w-xl" />
+        <CodeSnippet code={copy.snippet} className="mt-8 w-full max-w-xl" />
       </Reveal>
     </article>
   );
