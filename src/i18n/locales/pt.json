@@ -699,7 +699,10 @@
     "sendFailed": "Não foi possível concluir o envio",
     "invalidAddress": "Insira um endereço válido (0x…).",
     "invalidAmount": "Insira um valor válido maior que 0.",
-    "noWithdrawals": "ainda sem retiradas"
+    "noWithdrawals": "ainda sem retiradas",
+    "wrongChainToast": "Rede incorreta",
+    "wrongChainToastDesc": "Sua carteira está em outra rede. Pedimos a troca para {{network}} — tente novamente.",
+    "chainMismatch": "A carteira está em outra rede. Mude para a Monad e tente de novo."
   },
   "tasks": {
     "status": {

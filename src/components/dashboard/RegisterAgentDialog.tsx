@@ -50,7 +50,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   } = useWriteContract();
   const { isLoading: confirming, isSuccess: mined } = useWaitForTransactionReceipt({ hash: txHash });
 
-  const { connected, wrongNetwork, switchToMonad } = useWallet();
+  const { connected, wrongNetwork, switchToMonad, chainId } = useWallet();
 
   // Validación estricta del string: evita que parseEther lance con notación
   // científica o más de 18 decimales (crash del componente).
@@ -60,6 +60,15 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
 
   const submit = () => {
     if (!valid) return;
+    // Guarda de red: nunca dejar que viem lance el error crudo de chain
+    // mismatch — pedir el cambio de red y que el usuario reintente.
+    if (connected && chainId !== activeChain.id) {
+      toast(t('wallet.wrongChainToast'), {
+        description: t('wallet.wrongChainToastDesc', { network: activeChain.name }),
+      });
+      switchToMonad();
+      return;
+    }
     writeContract(
       {
         address: PANAL_REGISTRY_ADDRESS,
@@ -161,7 +170,9 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                 ? t('hire.step3.rejected')
                 : writeError.message.includes('already registered')
                   ? t('register.alreadyRegistered')
-                  : writeError.message.split("\n")[0]}
+                  : writeError.message.includes('does not match the target chain')
+                    ? t('wallet.chainMismatch')
+                    : writeError.message.split("\n")[0]}
             </p>
           )}
 

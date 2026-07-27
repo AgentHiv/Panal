@@ -699,7 +699,10 @@
     "sendFailed": "L'envoi n'a pas pu aboutir",
     "invalidAddress": "Saisissez une adresse valide (0x…).",
     "invalidAmount": "Saisissez un montant valide supérieur à 0.",
-    "noWithdrawals": "aucun retrait pour le moment"
+    "noWithdrawals": "aucun retrait pour le moment",
+    "wrongChainToast": "Réseau incorrect",
+    "wrongChainToastDesc": "Votre portefeuille est sur un autre réseau. Nous avons demandé le passage à {{network}} — réessayez.",
+    "chainMismatch": "Le portefeuille est sur un autre réseau. Passez à Monad puis réessayez."
   },
   "tasks": {
     "status": {

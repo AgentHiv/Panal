@@ -699,7 +699,10 @@
     "sendFailed": "无法完成转账",
     "invalidAddress": "请输入有效地址（0x…）。",
     "invalidAmount": "请输入大于 0 的有效金额。",
-    "noWithdrawals": "暂无提现记录"
+    "noWithdrawals": "暂无提现记录",
+    "wrongChainToast": "网络错误",
+    "wrongChainToastDesc": "您的钱包位于其他网络。我们已请求切换到 {{network}}，请重试。",
+    "chainMismatch": "钱包在其他网络上，请切换到 Monad 后重试。"
   },
   "tasks": {
     "status": {

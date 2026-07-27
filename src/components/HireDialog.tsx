@@ -59,7 +59,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   const [txHash] = useState(() => randomTxHash());
 
   /* ---------- contratación real (PanalEscrow · Monad testnet) ---------- */
-  const { connected, wrongNetwork, switchToMonad } = useWallet();
+  const { connected, wrongNetwork, switchToMonad, chainId } = useWallet();
   const onchain = isOnchainAgent(agent);
   const realMode = onchain && connected && !wrongNetwork;
   const {
@@ -73,6 +73,15 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
 
   const hireOnchain = async () => {
     if (!isOnchainAgent(agent)) return;
+    // Guarda de red: pedir cambio a la chain activa en vez de fallar con
+    // el error crudo de viem (chain de la wallet != chain objetivo).
+    if (connected && chainId !== activeChain.id) {
+      toast(t('wallet.wrongChainToast'), {
+        description: t('wallet.wrongChainToastDesc', { network: activeChain.name }),
+      });
+      switchToMonad();
+      return;
+    }
     // Revalidar el precio on-chain justo antes de firmar: el agente puede
     // haberlo cambiado desde que se cargó la lista (protección económica).
     try {

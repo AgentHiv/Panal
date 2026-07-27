@@ -699,7 +699,10 @@
     "sendFailed": "تعذّر إتمام الإرسال",
     "invalidAddress": "أدخل عنوانًا صالحًا (0x…).",
     "invalidAmount": "أدخل مبلغًا صالحًا أكبر من 0.",
-    "noWithdrawals": "لا توجد سحوبات بعد"
+    "noWithdrawals": "لا توجد سحوبات بعد",
+    "wrongChainToast": "شبكة غير صحيحة",
+    "wrongChainToastDesc": "محفظتك على شبكة أخرى. طلبنا التبديل إلى {{network}} — حاول مجددًا.",
+    "chainMismatch": "المحفظة على شبكة مختلفة. بدّل إلى Monad ثم أعد المحاولة."
   },
   "tasks": {
     "status": {

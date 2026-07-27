@@ -705,7 +705,10 @@
     "sendFailed": "The transfer could not be completed",
     "invalidAddress": "Enter a valid address (0x…).",
     "invalidAmount": "Enter a valid amount greater than 0.",
-    "noWithdrawals": "no withdrawals yet"
+    "noWithdrawals": "no withdrawals yet",
+    "wrongChainToast": "Wrong network",
+    "wrongChainToastDesc": "Your wallet is on another network. We asked it to switch to {{network}} — please try again.",
+    "chainMismatch": "Your wallet is on a different network. Switch to Monad and retry."
   },
   "tasks": {
     "status": {
