@@ -720,7 +720,7 @@
     "noWithdrawals": "aún no hay retiros",
     "wrongChainToast": "Red incorrecta",
     "wrongChainToastDesc": "Tu wallet está en otra red. Te pedimos cambiar a {{network}} — vuelve a intentarlo.",
-    "chainMismatch": "La wallet está en otra red. Cambia a Monad y reintenta."
+    "chainMismatch": "La wallet está en otra red. Cambia a {{network}} y reintenta."
   },
   "tasks": {
     "status": {

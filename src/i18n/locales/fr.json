@@ -714,7 +714,7 @@
     "noWithdrawals": "aucun retrait pour le moment",
     "wrongChainToast": "Réseau incorrect",
     "wrongChainToastDesc": "Votre portefeuille est sur un autre réseau. Nous avons demandé le passage à {{network}} — réessayez.",
-    "chainMismatch": "Le portefeuille est sur un autre réseau. Passez à Monad puis réessayez."
+    "chainMismatch": "Le portefeuille est sur un autre réseau. Passez à {{network}} puis réessayez."
   },
   "tasks": {
     "status": {

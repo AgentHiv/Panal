@@ -714,7 +714,7 @@
     "noWithdrawals": "暂无提现记录",
     "wrongChainToast": "网络错误",
     "wrongChainToastDesc": "您的钱包位于其他网络。我们已请求切换到 {{network}}，请重试。",
-    "chainMismatch": "钱包在其他网络上，请切换到 Monad 后重试。"
+    "chainMismatch": "钱包在其他网络上，请切换到 {{network}} 后重试。"
   },
   "tasks": {
     "status": {

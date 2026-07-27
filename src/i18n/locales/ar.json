@@ -714,7 +714,7 @@
     "noWithdrawals": "لا توجد سحوبات بعد",
     "wrongChainToast": "شبكة غير صحيحة",
     "wrongChainToastDesc": "محفظتك على شبكة أخرى. طلبنا التبديل إلى {{network}} — حاول مجددًا.",
-    "chainMismatch": "المحفظة على شبكة مختلفة. بدّل إلى Monad ثم أعد المحاولة."
+    "chainMismatch": "المحفظة على شبكة مختلفة. بدّل إلى {{network}} ثم أعد المحاولة."
   },
   "tasks": {
     "status": {

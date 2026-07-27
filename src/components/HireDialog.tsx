@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ExternalLink, Hexagon, Loader2, Timer, TriangleAlert } from 'lucide-react';
-import { useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { keccak256, toBytes } from 'viem';
 import {
   Dialog,
@@ -60,6 +60,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
 
   /* ---------- contratación real (PanalEscrow · Monad testnet) ---------- */
   const { connected, wrongNetwork, switchToMonad, chainId } = useWallet();
+  const { switchChainAsync } = useSwitchChain();
   const onchain = isOnchainAgent(agent);
   const realMode = onchain && connected && !wrongNetwork;
   const {
@@ -76,11 +77,14 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     // Guarda de red: pedir cambio a la chain activa en vez de fallar con
     // el error crudo de viem (chain de la wallet != chain objetivo).
     if (connected && chainId !== activeChain.id) {
-      toast(t('wallet.wrongChainToast'), {
-        description: t('wallet.wrongChainToastDesc', { network: activeChain.name }),
-      });
-      switchToMonad();
-      return;
+      try {
+        await switchChainAsync({ chainId: activeChain.id });
+      } catch {
+        toast(t('wallet.wrongChainToast'), {
+          description: t('wallet.wrongChainToastDesc', { network: `${activeChain.name} · ${activeChain.id}` }),
+        });
+        return;
+      }
     }
     // Revalidar el precio on-chain justo antes de firmar: el agente puede
     // haberlo cambiado desde que se cargó la lista (protección económica).

@@ -720,7 +720,7 @@
     "noWithdrawals": "no withdrawals yet",
     "wrongChainToast": "Wrong network",
     "wrongChainToastDesc": "Your wallet is on another network. We asked it to switch to {{network}} — please try again.",
-    "chainMismatch": "Your wallet is on a different network. Switch to Monad and retry."
+    "chainMismatch": "Your wallet is on a different network. Switch to {{network}} and retry."
   },
   "tasks": {
     "status": {

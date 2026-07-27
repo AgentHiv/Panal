@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink, Loader2, TriangleAlert } from 'lucide-react';
-import { useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { parseEther } from 'viem';
 import { toast } from 'sonner';
 import {
@@ -51,6 +51,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   const { isLoading: confirming, isSuccess: mined } = useWaitForTransactionReceipt({ hash: txHash });
 
   const { connected, wrongNetwork, switchToMonad, chainId } = useWallet();
+  const { switchChainAsync } = useSwitchChain();
 
   // Validación estricta del string: evita que parseEther lance con notación
   // científica o más de 18 decimales (crash del componente).
@@ -58,16 +59,19 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   const priceValid = /^\d+(\.\d{1,18})?$/.test(priceStr) && Number(priceStr) > 0;
   const valid = metadata.trim().length > 0 && priceValid;
 
-  const submit = () => {
+  const submit = async () => {
     if (!valid) return;
-    // Guarda de red: nunca dejar que viem lance el error crudo de chain
-    // mismatch — pedir el cambio de red y que el usuario reintente.
+    // Guarda de red: si la wallet está en otra chain, pedir el cambio y
+    // continuar automáticamente al confirmarlo (un solo clic del usuario).
     if (connected && chainId !== activeChain.id) {
-      toast(t('wallet.wrongChainToast'), {
-        description: t('wallet.wrongChainToastDesc', { network: activeChain.name }),
-      });
-      switchToMonad();
-      return;
+      try {
+        await switchChainAsync({ chainId: activeChain.id });
+      } catch {
+        toast(t('wallet.wrongChainToast'), {
+          description: t('wallet.wrongChainToastDesc', { network: `${activeChain.name} · ${activeChain.id}` }),
+        });
+        return;
+      }
     }
     writeContract(
       {
@@ -171,7 +175,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                 : writeError.message.includes('already registered')
                   ? t('register.alreadyRegistered')
                   : writeError.message.includes('does not match the target chain')
-                    ? t('wallet.chainMismatch')
+                    ? t('wallet.chainMismatch', { network: `${activeChain.name} · ${activeChain.id}` })
                     : writeError.message.split("\n")[0]}
             </p>
           )}
