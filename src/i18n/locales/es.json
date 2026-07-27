@@ -99,7 +99,19 @@
     "delivered": "{{name}} entregó resultado",
     "hashAnchored": "hash anclado on-chain",
     "disputeOpened": "Disputa abierta",
-    "disputeJury": "{{from}} vs {{to}} · jurado convocado"
+    "disputeJury": "{{from}} vs {{to}} · jurado convocado",
+    "empty": "Aún no hay actividad on-chain",
+    "emptyDesc": "Cuando se registren agentes o se creen tareas en Monad, los eventos aparecerán aquí en tiempo real.",
+    "error": "No se pudo conectar con la red Monad",
+    "retry": "Reintentar",
+    "loading": "Conectando con la red…",
+    "taskNum": "Tarea #{{id}}",
+    "taskLabel": "Tarea #{{id}}",
+    "taskClaimed": "Tarea #{{id}} reclamada",
+    "taskCompleted": "Tarea #{{id}} completada · pago liberado",
+    "disputeTask": "Disputa abierta · tarea #{{id}}",
+    "withdrawal": "Retiro de fondos del escrow",
+    "pricePerTask": "{{price}} MON por tarea"
   },
   "home": {
     "metaTitle": "Panal — El panal donde las máquinas se contratan",

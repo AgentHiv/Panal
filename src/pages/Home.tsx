@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -27,8 +27,10 @@ import Magnetic from '@/components/Magnetic';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
 import { getAgent, formatInt, formatMon, formatRating, CATEGORY_LABELS } from '@/data/agents';
-import { TICKER_ITEMS, MINI_FEED_SEED, generateLiveEvent, timeAgo } from '@/data/events';
-import type { LiveEvent } from '@/data/events';
+import { timeAgo, truncateHash } from '@/data/events';
+import type { LiveEvent, TickerItem } from '@/data/events';
+import { EVENT_META } from '@/components/live/meta';
+import { useOnchainEvents } from '@/hooks/useOnchainEvents';
 import { CONTRACTS, NETWORK_STATS, NETWORK_COMPARISON, ROADMAP_PHASES } from '@/data/protocol';
 
 const HeroSwarm = lazy(() => import('@/components/home/HeroSwarm'));
@@ -171,7 +173,43 @@ function Hero() {
 
 function HeroTicker() {
   const { t } = useTranslation();
-  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  const { entries, fetchedAt } = useOnchainEvents();
+  const [now, setNow] = useState(() => Date.now());
+
+  // Envejecido de los timestamps entre polls (12 s)
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 5000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // Los 10 eventos reales más recientes con monto; si no hay, el ticker se oculta
+  const items = useMemo<(TickerItem & { secondsAgo: number })[]>(
+    () =>
+      entries
+        .filter((ev) => ev.amount !== undefined)
+        .slice(0, 10)
+        .map((ev) => ({
+          hash: ev.txHash,
+          actor: ev.from,
+          target: ev.to ?? '',
+          task: t(EVENT_META[ev.type].label),
+          amount: `${formatMon(ev.amount as number, 5)} MON`,
+          time: '',
+          secondsAgo: ev.secondsAgo,
+        })),
+    [entries, t],
+  );
+
+  // El tiempo envejece en vivo desde el sello del último fetch
+  const aged = useMemo<TickerItem[]>(
+    () =>
+      items.map(({ secondsAgo, ...item }) => ({
+        ...item,
+        time: timeAgo(secondsAgo + Math.max(0, (now - fetchedAt) / 1000), t),
+      })),
+    [items, now, fetchedAt, t],
+  );
+
   const copyTx = async (hash: string) => {
     try {
       await navigator.clipboard.writeText(hash);
@@ -180,10 +218,15 @@ function HeroTicker() {
     }
     toast(t('home.ticker.copied'), { icon: <Check size={14} className="text-olive" /> });
   };
+
+  // Sin eventos reales todavía: no mostrar hashes falsos — ticker oculto
+  if (aged.length === 0) return null;
+
+  const loop = [...aged, ...aged];
   return (
     <div className="hero-ticker marquee relative z-10 overflow-hidden border-t border-coal-line bg-coal/90 py-3.5 backdrop-blur-sm">
       <div className="marquee-track flex w-max animate-marquee items-center">
-        {items.map((item, i) => (
+        {loop.map((item, i) => (
           <button
             key={i}
             type="button"
@@ -191,6 +234,7 @@ function HeroTicker() {
             className="flex items-center gap-3 whitespace-nowrap px-5 font-mono text-[13px] text-coal-mute transition-colors hover:text-honey"
           >
             <span>
+              <span className="text-coal-mute/70">{truncateHash(item.hash)}</span>{' '}
               <span className="text-coal-text/80">{item.actor}</span> {t('home.ticker.hired')}{' '}
               <span className="text-coal-text/80">{item.target}</span> · {item.task} ·{' '}
               <span className="text-honey">{item.amount}</span> · <span className="text-olive">✓</span>{' '}
@@ -336,23 +380,18 @@ function ProtocolSection() {
  * ============================================================ */
 function LiveSection() {
   const { t } = useTranslation();
+  // Los 5 eventos reales más recientes (getLogs + polling 12 s)
+  const { entries: chainEvents, loading: chainLoading, fetchedAt } = useOnchainEvents();
   type StampedEvent = LiveEvent & { ts: number };
-  const [events, setEvents] = useState<StampedEvent[]>(() => {
-    const seedTimes = [4000, 9000, 14000, 21000, 33000];
-    const t0 = Date.now();
-    return MINI_FEED_SEED.map((e, i) => ({ ...e, ts: t0 - seedTimes[i] }));
-  });
+  const events = useMemo<StampedEvent[]>(
+    () => chainEvents.slice(0, 5).map((ev) => ({ ...ev, ts: fetchedAt - ev.secondsAgo * 1000 })),
+    [chainEvents, fetchedAt],
+  );
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const rotate = window.setInterval(() => {
-      setEvents((prev) => [{ ...generateLiveEvent(), ts: Date.now() }, ...prev].slice(0, 5));
-    }, 3000);
     const tick = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => {
-      window.clearInterval(rotate);
-      window.clearInterval(tick);
-    };
+    return () => window.clearInterval(tick);
   }, []);
 
   return (
@@ -374,8 +413,13 @@ function LiveSection() {
             {t('home.live.sub')}
           </p>
 
-          {/* Mini-feed rotativo */}
+          {/* Mini-feed de actividad real on-chain */}
           <div className="mt-8 flex flex-col gap-2.5">
+            {events.length === 0 && !chainLoading && (
+              <p className="rounded-xl border border-dashed border-coal-line px-4 py-3 text-[0.8125rem] text-coal-mute">
+                {t('live.empty')}
+              </p>
+            )}
             <AnimatePresence initial={false} mode="popLayout">
               {events.map((ev) => (
                 <motion.div
@@ -396,7 +440,7 @@ function LiveSection() {
                           <span className="font-medium">{ev.to}</span>
                         </>
                       )}
-                      <span className="text-coal-mute"> · {ev.task}</span>
+                      {ev.task && <span className="text-coal-mute"> · {ev.task}</span>}
                     </p>
                     <p className="mt-0.5 font-mono text-[11px] text-coal-mute">
                       {timeAgo((now - ev.ts) / 1000, t)}

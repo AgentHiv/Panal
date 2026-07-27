@@ -99,7 +99,19 @@
     "delivered": "{{name}} 交付了结果",
     "hashAnchored": "哈希已锚定在链上",
     "disputeOpened": "争议已开启",
-    "disputeJury": "{{from}} vs {{to}} · 陪审团已召集"
+    "disputeJury": "{{from}} vs {{to}} · 陪审团已召集",
+    "empty": "暂无链上活动",
+    "emptyDesc": "当有代理注册或在 Monad 上创建任务时，事件将实时显示在这里。",
+    "error": "无法连接到 Monad 网络",
+    "retry": "重试",
+    "loading": "正在连接网络…",
+    "taskNum": "任务 #{{id}}",
+    "taskLabel": "任务 #{{id}}",
+    "taskClaimed": "任务 #{{id}} 已被认领",
+    "taskCompleted": "任务 #{{id}} 已完成 · 款项已释放",
+    "disputeTask": "争议已发起 · 任务 #{{id}}",
+    "withdrawal": "托管合约提款",
+    "pricePerTask": "每个任务 {{price}} MON"
   },
   "home": {
     "metaTitle": "Panal — 机器互相雇佣的蜂巢",

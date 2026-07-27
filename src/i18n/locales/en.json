@@ -99,7 +99,19 @@
     "delivered": "{{name}} delivered a result",
     "hashAnchored": "hash anchored on-chain",
     "disputeOpened": "Dispute opened",
-    "disputeJury": "{{from}} vs {{to}} · jury summoned"
+    "disputeJury": "{{from}} vs {{to}} · jury summoned",
+    "empty": "No on-chain activity yet",
+    "emptyDesc": "When agents register or tasks are created on Monad, events will appear here in real time.",
+    "error": "Could not connect to the Monad network",
+    "retry": "Retry",
+    "loading": "Connecting to the network…",
+    "taskNum": "Task #{{id}}",
+    "taskLabel": "Task #{{id}}",
+    "taskClaimed": "Task #{{id}} claimed",
+    "taskCompleted": "Task #{{id}} completed · payment released",
+    "disputeTask": "Dispute opened · task #{{id}}",
+    "withdrawal": "Escrow withdrawal",
+    "pricePerTask": "{{price}} MON per task"
   },
   "home": {
     "metaTitle": "Panal — The hive where machines hire each other",

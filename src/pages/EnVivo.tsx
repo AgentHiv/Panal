@@ -137,9 +137,25 @@ interface StreamListProps {
   tabHidden: boolean;
   onResume: () => void;
   onHover: (ev: LiveEvent | null) => void;
+  loading: boolean;
+  error: Error | null;
+  onRetry: () => void;
+  /** true si el feed on-chain está vacío (vs. vacío por filtros) */
+  sourceEmpty: boolean;
 }
 
-function StreamList({ entries, pending, paused, tabHidden, onResume, onHover }: StreamListProps) {
+function StreamList({
+  entries,
+  pending,
+  paused,
+  tabHidden,
+  onResume,
+  onHover,
+  loading,
+  error,
+  onRetry,
+  sourceEmpty,
+}: StreamListProps) {
   const { t } = useTranslation();
   const reduced = usePrefersReduced();
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -205,7 +221,31 @@ function StreamList({ entries, pending, paused, tabHidden, onResume, onHover }: 
             </motion.div>
           ))}
         </AnimatePresence>
-        {entries.length === 0 && (
+        {entries.length === 0 && error && (
+          <div className="rounded-xl border border-terra/40 bg-coal-2 p-6 text-center">
+            <p className="text-[0.875rem] font-medium text-terra">{t('live.error')}</p>
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-4 inline-flex items-center gap-2 rounded-full border border-coal-line px-4 py-2 text-[0.8125rem] font-medium text-coal-text transition-colors hover:border-honey hover:text-honey"
+            >
+              {t('live.retry')}
+            </button>
+          </div>
+        )}
+        {entries.length === 0 && !error && loading && (
+          <p className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-coal-line p-6 text-center text-[0.875rem] text-coal-mute">
+            <LiveDot variant="honey" />
+            {t('live.loading')}
+          </p>
+        )}
+        {entries.length === 0 && !error && !loading && sourceEmpty && (
+          <div className="rounded-xl border border-dashed border-coal-line p-8 text-center">
+            <p className="text-[0.9375rem] font-medium text-coal-text">{t('live.empty')}</p>
+            <p className="mt-2 text-[0.8125rem] leading-relaxed text-coal-mute">{t('live.emptyDesc')}</p>
+          </div>
+        )}
+        {entries.length === 0 && !error && !loading && !sourceEmpty && (
           <p className="rounded-xl border border-dashed border-coal-line p-6 text-center text-[0.875rem] text-coal-mute">
             {t('livePage.emptyFiltered')}
           </p>
@@ -298,14 +338,14 @@ function BigContracts() {
         <h3 className="display-m mt-3 text-coal-text">{t('livePage.bigTitle')}</h3>
 
         <div className="mt-8 overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-left">
+          <table className="w-full border-collapse text-left sm:min-w-[640px]">
             <thead>
               <tr className="border-b border-coal-line text-[11px] uppercase tracking-[0.14em] text-coal-mute">
                 <th className="py-3 pr-4 font-medium">#</th>
                 <th className="py-3 pr-4 font-medium">{t('livePage.colParties')}</th>
-                <th className="py-3 pr-4 font-medium">{t('tasks.colTask')}</th>
+                <th className="hidden py-3 pr-4 font-medium sm:table-cell">{t('tasks.colTask')}</th>
                 <th className="py-3 pr-4 text-right font-medium">{t('tasks.colAmount')}</th>
-                <th className="py-3 text-right font-medium">{t('activity.colWhen')}</th>
+                <th className="hidden py-3 text-right font-medium sm:table-cell">{t('activity.colWhen')}</th>
               </tr>
             </thead>
             <tbody>
@@ -333,7 +373,7 @@ function BigContracts() {
                       )}
                     </span>
                   </td>
-                  <td className="py-4 pr-4 text-[0.875rem] text-coal-mute">{c.task}</td>
+                  <td className="hidden py-4 pr-4 text-[0.875rem] text-coal-mute sm:table-cell">{c.task}</td>
                   <td className="py-4 pr-4 text-right font-mono text-[0.875rem]">
                     {c.amount === MAX_AMOUNT && !reduced ? (
                       <span className="animate-shimmer bg-[linear-gradient(110deg,#E29A2E_35%,#F2EFFA_50%,#E29A2E_65%)] bg-[length:200%_100%] bg-clip-text font-semibold text-transparent">
@@ -343,7 +383,7 @@ function BigContracts() {
                       <span className="text-honey">{formatMon(c.amount, 2)} MON</span>
                     )}
                   </td>
-                  <td className="py-4 text-right font-mono text-[11px] text-coal-mute">{t('common.timeAgo.minutes', { count: c.agoMin })}</td>
+                  <td className="hidden py-4 text-right font-mono text-[11px] text-coal-mute sm:table-cell">{t('common.timeAgo.minutes', { count: c.agoMin })}</td>
                 </motion.tr>
               ))}
             </tbody>
@@ -418,7 +458,7 @@ export default function EnVivo() {
   );
 
   return (
-    <div className="bg-coal text-coal-text">
+    <div className="relative overflow-x-clip bg-coal text-coal-text">
       {/* S1 · Cabecera compacta */}
       <div className="glow-monad-soft right-[-5%] top-[-10%] h-[45vh] w-[40vw]" aria-hidden />
       <section className="container-hive relative pb-6 pt-28">
@@ -499,8 +539,6 @@ export default function EnVivo() {
             <StreamControls
               paused={stream.paused}
               onTogglePause={stream.togglePause}
-              speed={stream.speed}
-              onSpeed={stream.setSpeed}
               filter={filter}
               onFilter={setFilter}
               counts={counts}
@@ -515,6 +553,10 @@ export default function EnVivo() {
               tabHidden={tabHidden && !stream.paused}
               onResume={stream.togglePause}
               onHover={setHoverEvent}
+              loading={stream.loading}
+              error={stream.error}
+              onRetry={stream.refetch}
+              sourceEmpty={stream.entries.length === 0}
             />
           </div>
         </div>

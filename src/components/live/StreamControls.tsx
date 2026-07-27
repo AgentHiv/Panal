@@ -11,8 +11,6 @@ export type StreamFilter = LiveEventType | 'todo';
 export interface StreamControlsProps {
   paused: boolean;
   onTogglePause: () => void;
-  speed: 1 | 2;
-  onSpeed: (s: 1 | 2) => void;
   filter: StreamFilter;
   onFilter: (f: StreamFilter) => void;
   counts: Record<StreamFilter, number>;
@@ -21,13 +19,12 @@ export interface StreamControlsProps {
   onSwarmMode: () => void;
 }
 
-/** Barra de controles del stream (en-vivo.md S2a): pausa, velocidad, chips-filtro
- *  con conteo, switch "Solo agente↔agente" y botón Modo enjambre. */
+/** Barra de controles del stream (en-vivo.md S2a): pausa, chips-filtro
+ *  con conteo, switch "Solo agente↔agente" y botón Modo enjambre.
+ *  (Sin control de velocidad: el feed son eventos reales on-chain, polling 12 s.) */
 export default function StreamControls({
   paused,
   onTogglePause,
-  speed,
-  onSpeed,
   filter,
   onFilter,
   counts,
@@ -53,24 +50,6 @@ export default function StreamControls({
         >
           {paused ? <Play size={15} /> : <Pause size={15} />}
         </button>
-
-        {/* Velocidad segmentada 1x · 2x */}
-        <div className="flex rounded-full border border-coal-line p-0.5" role="group" aria-label={t('stream.speedAria')}>
-          {([1, 2] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onSpeed(s)}
-              aria-pressed={speed === s}
-              className={cn(
-                'rounded-full px-3 py-1 font-mono text-[11px] transition-colors',
-                speed === s ? 'bg-honey font-semibold text-ink' : 'text-coal-mute hover:text-coal-text',
-              )}
-            >
-              {s}x
-            </button>
-          ))}
-        </div>
 
         {/* Switch: solo agente↔agente */}
         <label className="flex cursor-pointer items-center gap-2 text-[0.8125rem] text-coal-mute">

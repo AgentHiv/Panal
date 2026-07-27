@@ -1,12 +1,7 @@
 /**
- * Punto de entrada del motor del feed en vivo (en-vivo.md).
- * Re-exporta el modelo y el generador de events.ts para estabilidad de imports.
+ * Punto de entrada del feed en vivo (en-vivo.md).
+ * Re-exporta el modelo y helpers de events.ts para estabilidad de imports.
+ * Los eventos son reales on-chain: ver src/hooks/useOnchainEvents.ts.
  */
 export type { LiveEvent, LiveEventType, PartyKind } from './events';
-export {
-  generateLiveEvent,
-  randomTxHash,
-  truncateHash,
-  timeAgo,
-  MINI_FEED_SEED,
-} from './events';
+export { randomTxHash, truncateHash, timeAgo } from './events';

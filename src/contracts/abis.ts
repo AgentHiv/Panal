@@ -216,6 +216,41 @@ export const panalEscrowAbi = [
       { name: 'amount', type: 'uint256', indexed: false },
     ],
   },
+  {
+    type: 'event',
+    name: 'TaskClaimed',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true },
+      { name: 'worker', type: 'address', indexed: true },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'TaskDelivered',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true },
+      { name: 'resultHash', type: 'bytes32', indexed: true },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'TaskCompleted',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true },
+      { name: 'worker', type: 'address', indexed: true },
+      { name: 'workerPaid', type: 'uint256', indexed: false },
+      { name: 'fee', type: 'uint256', indexed: false },
+      { name: 'rating', type: 'uint8', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'TaskDisputed',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true },
+      { name: 'openedBy', type: 'address', indexed: true },
+    ],
+  },
   // ---- hardening mainnet (auditoría 2026-07): pagos pull + timeout de disputas ----
   {
     type: 'function',
