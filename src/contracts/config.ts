@@ -83,10 +83,11 @@ export const PANAL_ESCROW_ADDRESS = ADDR.escrow;
  * Fail-closed: con direcciones en cero V2_ENABLED es false y toda la UI
  * sigue el comportamiento v1 (sin selector de moneda ni flujo approve).
  */
+// Desplegados en Monad mainnet el 2026-07-29 (v2 auditado, 112/112 tests).
 export const V2_ADDRESSES = {
-  registry: ZERO_ADDRESS,
-  reputation: ZERO_ADDRESS,
-  escrow: ZERO_ADDRESS,
+  registry: '0x89a812BFb1c35fc814ef25a3E6Ca75068B16Ac51',
+  reputation: '0xAa15923A93B7A2261D051F9F4302ca05e9a16701',
+  escrow: '0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9',
 } as const;
 
 /** true solo en mainnet Y con las tres direcciones v2 rellenadas. */

@@ -88,7 +88,17 @@ enabled by Monad's 10,000 TPS, ~800 ms finality and sub-cent fees.
 
 ## 📜 Smart Contracts
 
-Deployed on **Monad Mainnet** (Chain ID `143`) — hardened post-audit (see [SECURITY.md](SECURITY.md)):
+### v2 (actual) — dual currency MON + $PANAL
+
+Deployed on **Monad Mainnet** (Chain ID `143`) on 2026-07-29 — audited (2 independent reviews, 10 findings fixed, **112/112 tests**):
+
+| Contract | Mainnet address | Role |
+|---|---|---|
+| `PanalRegistryV2` | [`0x89a8…Ac51`](https://monadvision.com/address/0x89a812BFb1c35fc814ef25a3E6Ca75068B16Ac51) | Agents with price + currency (MON or $PANAL) |
+| `PanalEscrowV2` | [`0xe138…bCe9`](https://monadvision.com/address/0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9) | Dual-currency escrow: native MON + ERC-20 $PANAL (approve→createTask), 2.5 % fee per currency, pull payments per token |
+| `PanalReputation` (v2) | [`0xAa15…6701`](https://monadvision.com/address/0xAa15923A93B7A2261D051F9F4302ca05e9a16701) | Escrow-gated reputation ledger |
+
+### v1 (legacy, MON-only)
 
 | Contract | Mainnet address | Role |
 |---|---|---|
@@ -115,7 +125,7 @@ Official ERC-20 token, live on **Monad Mainnet** (EIP-1167 proxy, verified on-ch
 | Decimals | 18 |
 | Total supply | 1,000,000,000 PANAL |
 
-- **Tests:** `38/38` passing (`forge test`)
+- **Tests:** `112/112` passing (`forge test`) — 63 v2 + 38 v1 regression + 11 audit-fix
 - Source in [`contracts/`](contracts/) · spec-driven, zero external dependencies
 
 ## 🧰 Tech Stack
@@ -212,6 +222,7 @@ browser detection, native Noto fonts, and persisted preference.
 - [ ] Multisig arbitrator + decentralized dispute jury
 - [ ] Event indexer for full history (public RPC `eth_getLogs` is range-limited)
 - [x] **`$PANAL` token launched on mainnet** (`0x2e2e…7777`, 1 B supply)
+- [x] **Escrow v2 dual MON + $PANAL** (audited, 112/112 tests, deployed 2026-07-29) — agents can charge in $PANAL
 - [ ] Telegram notification bot
 
 ## 🔐 Security
