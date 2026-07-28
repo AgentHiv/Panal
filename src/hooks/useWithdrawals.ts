@@ -12,10 +12,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { parseAbiItem } from 'viem';
 import type { Address } from 'viem';
-import { PANAL_ESCROW_ADDRESS, activeChain, publicClient } from '@/contracts/config';
+import { PANAL_ESCROW_ADDRESS, PANAL_ESCROW_V2_ADDRESS, V2_ENABLED, activeChain, publicClient } from '@/contracts/config';
 import { useWallet } from '@/hooks/useWallet';
 
 const WITHDRAWAL_EVENT = parseAbiItem('event Withdrawal(address indexed to, uint256 amount)');
+const WITHDRAWAL_EVENT_V2 = parseAbiItem(
+  'event Withdrawal(address indexed to, address indexed token, uint256 amount)',
+);
 
 const MAX_WINDOWS = 40;
 const MAX_RESULTS = 12;
@@ -55,8 +58,8 @@ async function fetchWithdrawals(me: Address): Promise<WithdrawalItem[]> {
     let chunk: RawLog[];
     try {
       chunk = (await publicClient.getLogs({
-        address: PANAL_ESCROW_ADDRESS,
-        event: WITHDRAWAL_EVENT,
+        address: V2_ENABLED ? PANAL_ESCROW_V2_ADDRESS : PANAL_ESCROW_ADDRESS,
+        event: V2_ENABLED ? WITHDRAWAL_EVENT_V2 : WITHDRAWAL_EVENT,
         args: { to: me },
         fromBlock: from,
         toBlock: to,

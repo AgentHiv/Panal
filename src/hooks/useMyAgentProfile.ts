@@ -14,11 +14,19 @@ import { useQuery } from '@tanstack/react-query';
 import type { Address } from 'viem';
 import {
   PANAL_REGISTRY_ADDRESS,
+  PANAL_REGISTRY_V2_ADDRESS,
   PANAL_REPUTATION_ADDRESS,
+  PANAL_REPUTATION_V2_ADDRESS,
+  V2_ENABLED,
   activeChain,
   publicClient,
 } from '@/contracts/config';
-import { panalRegistryAbi, panalReputationAbi } from '@/contracts/abis';
+import { panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
+
+/** Registry/reputation activos: v2 cuando esté desplegado, v1 mientras tanto. */
+const REGISTRY = V2_ENABLED ? PANAL_REGISTRY_V2_ADDRESS : PANAL_REGISTRY_ADDRESS;
+const REPUTATION = V2_ENABLED ? PANAL_REPUTATION_V2_ADDRESS : PANAL_REPUTATION_ADDRESS;
+const REGISTRY_ABI = V2_ENABLED ? panalRegistryV2Abi : panalRegistryAbi;
 import { useWallet } from '@/hooks/useWallet';
 
 export interface MyAgentData {
@@ -27,6 +35,8 @@ export interface MyAgentData {
   pricePerTask: bigint;
   active: boolean;
   registeredAt: bigint;
+  /** v2: moneda de cobro (address(0) = MON). Ausente en v1. */
+  currency?: Address;
 }
 
 export interface MyReputation {
@@ -62,23 +72,23 @@ async function fetchProfile(me: Address): Promise<{
   const [agent, isActive, reputation] = await Promise.all([
     publicClient
       .readContract({
-        address: PANAL_REGISTRY_ADDRESS,
-        abi: panalRegistryAbi,
+        address: REGISTRY,
+        abi: REGISTRY_ABI,
         functionName: 'getAgent',
         args: [me],
       })
       .catch(() => null) as Promise<MyAgentData | null>,
     publicClient
       .readContract({
-        address: PANAL_REGISTRY_ADDRESS,
-        abi: panalRegistryAbi,
+        address: REGISTRY,
+        abi: REGISTRY_ABI,
         functionName: 'isActiveAgent',
         args: [me],
       })
       .catch(() => false) as Promise<boolean>,
     publicClient
       .readContract({
-        address: PANAL_REPUTATION_ADDRESS,
+        address: REPUTATION,
         abi: panalReputationAbi,
         functionName: 'getReputation',
         args: [me],

@@ -25,8 +25,15 @@ import { cn } from '@/lib/utils';
 import { useWallet } from '@/hooks/useWallet';
 import { useMyAgentProfile } from '@/hooks/useMyAgentProfile';
 import { useContractAction } from '@/hooks/useContractAction';
-import { EXPLORER_TX, PANAL_REGISTRY_ADDRESS } from '@/contracts/config';
-import { panalRegistryAbi } from '@/contracts/abis';
+import {
+  EXPLORER_TX,
+  NATIVE_CURRENCY,
+  PANAL_REGISTRY_ADDRESS,
+  PANAL_REGISTRY_V2_ADDRESS,
+  V2_ENABLED,
+  currencySymbol,
+} from '@/contracts/config';
+import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
 import { formatMonEs, formatRatingEs } from './data';
 
 /** metadataURI "Nombre · descripción · skills" → nombre. */
@@ -82,8 +89,8 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
 
   const toggleActive = (next: boolean) => {
     void action.run({
-      address: PANAL_REGISTRY_ADDRESS,
-      abi: panalRegistryAbi,
+      address: V2_ENABLED ? PANAL_REGISTRY_V2_ADDRESS : PANAL_REGISTRY_ADDRESS,
+      abi: V2_ENABLED ? panalRegistryV2Abi : panalRegistryAbi,
       functionName: 'setActive',
       args: [next],
     });
@@ -91,12 +98,22 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
 
   const savePrice = () => {
     if (!priceValid) return;
-    void action.run({
-      address: PANAL_REGISTRY_ADDRESS,
-      abi: panalRegistryAbi,
-      functionName: 'updatePrice',
-      args: [parseEther(priceStr)],
-    });
+    // v2: updatePrice lleva la moneda del agente; v1: solo el precio.
+    void action.run(
+      V2_ENABLED
+        ? {
+            address: PANAL_REGISTRY_V2_ADDRESS,
+            abi: panalRegistryV2Abi,
+            functionName: 'updatePrice',
+            args: [parseEther(priceStr), agent?.currency ?? NATIVE_CURRENCY],
+          }
+        : {
+            address: PANAL_REGISTRY_ADDRESS,
+            abi: panalRegistryAbi,
+            functionName: 'updatePrice',
+            args: [parseEther(priceStr)],
+          },
+    );
   };
 
   return (
@@ -121,7 +138,9 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
             </span>
             {agent && (
               <span className="rounded-full bg-honey-soft px-2.5 py-0.5 font-mono text-[0.75rem] text-honey-deep">
-                {t('common.monPerTask', { price: formatMonEs(Number(formatEther(agent.pricePerTask))) })}
+                {agent.currency && agent.currency !== NATIVE_CURRENCY
+                  ? `${formatMonEs(Number(formatEther(agent.pricePerTask)))} ${currencySymbol(agent.currency)}/task`
+                  : t('common.monPerTask', { price: formatMonEs(Number(formatEther(agent.pricePerTask))) })}
               </span>
             )}
           </div>
