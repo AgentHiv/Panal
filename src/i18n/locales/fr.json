@@ -729,7 +729,8 @@
     "noWithdrawals": "aucun retrait pour le moment",
     "wrongChainToast": "Réseau incorrect",
     "wrongChainToastDesc": "Votre portefeuille est sur un autre réseau. Nous avons demandé le passage à {{network}} — réessayez.",
-    "chainMismatch": "Le portefeuille est sur un autre réseau. Passez à {{network}} puis réessayez."
+    "chainMismatch": "Le portefeuille est sur un autre réseau. Passez à {{network}} puis réessayez.",
+    "tokenOfficial": "token officiel"
   },
   "tasks": {
     "status": {
@@ -1063,5 +1064,13 @@
       "resolve": "Résoudre le litige",
       "note": "Passé le délai sans décision du jury, chaque partie peut déclencher la résolution automatique de l’escrow."
     }
+  },
+  "token": {
+    "official": "token officiel",
+    "supply": "Offre",
+    "yourBalance": "votre solde",
+    "addToWallet": "Ajouter $PANAL à MetaMask",
+    "addedToast": "$PANAL ajouté à votre portefeuille",
+    "copy": "Copier le contrat"
   }
 }

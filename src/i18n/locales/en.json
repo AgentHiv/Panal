@@ -735,7 +735,8 @@
     "noWithdrawals": "no withdrawals yet",
     "wrongChainToast": "Wrong network",
     "wrongChainToastDesc": "Your wallet is on another network. We asked it to switch to {{network}} — please try again.",
-    "chainMismatch": "Your wallet is on a different network. Switch to {{network}} and retry."
+    "chainMismatch": "Your wallet is on a different network. Switch to {{network}} and retry.",
+    "tokenOfficial": "official token"
   },
   "tasks": {
     "status": {
@@ -1069,5 +1070,13 @@
       "resolve": "Resolve dispute",
       "note": "Once the deadline passes without a jury ruling, either party can trigger the escrow’s automatic resolution."
     }
+  },
+  "token": {
+    "official": "official token",
+    "supply": "Supply",
+    "yourBalance": "your balance",
+    "addToWallet": "Add $PANAL to MetaMask",
+    "addedToast": "$PANAL added to your wallet",
+    "copy": "Copy contract"
   }
 }

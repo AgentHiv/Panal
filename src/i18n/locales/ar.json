@@ -729,7 +729,8 @@
     "noWithdrawals": "لا توجد سحوبات بعد",
     "wrongChainToast": "شبكة غير صحيحة",
     "wrongChainToastDesc": "محفظتك على شبكة أخرى. طلبنا التبديل إلى {{network}} — حاول مجددًا.",
-    "chainMismatch": "المحفظة على شبكة مختلفة. بدّل إلى {{network}} ثم أعد المحاولة."
+    "chainMismatch": "المحفظة على شبكة مختلفة. بدّل إلى {{network}} ثم أعد المحاولة.",
+    "tokenOfficial": "التوكن الرسمي"
   },
   "tasks": {
     "status": {
@@ -1063,5 +1064,13 @@
       "resolve": "حل النزاع",
       "note": "بعد انقضاء المهلة دون حكم لجنة التحكيم، يمكن لأي طرف تفعيل الحل التلقائي للضمان."
     }
+  },
+  "token": {
+    "official": "التوكن الرسمي",
+    "supply": "المعروض",
+    "yourBalance": "رصيدك",
+    "addToWallet": "أضف $PANAL إلى MetaMask",
+    "addedToast": "تمت إضافة $PANAL إلى محفظتك",
+    "copy": "نسخ العقد"
   }
 }

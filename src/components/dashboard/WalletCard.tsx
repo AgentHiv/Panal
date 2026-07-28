@@ -14,6 +14,7 @@ import QRCode from 'qrcode';
 import { ArrowDownLeft, ArrowUpRight, Check, Copy, ExternalLink, Loader2, TriangleAlert, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBalance, useReadContract, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
+import { panalTokenAbi } from '@/contracts/abis';
 import { formatEther, formatUnits, isAddress, parseAbiItem, parseEther } from 'viem';
 import {
   Dialog,
@@ -27,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TxHash from '@/components/TxHash';
 import { useWallet } from '@/hooks/useWallet';
-import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, activeChain, publicClient } from '@/contracts/config';
+import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, activeChain, publicClient , IS_MAINNET, PANAL_TOKEN_ADDRESS } from '@/contracts/config';
 import { panalEscrowAbi } from '@/contracts/abis';
 import { WalletSparkline } from './charts';
 import { formatMonEs } from './data';
@@ -38,6 +39,10 @@ const nfES4 = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 0, maximum
 function formatMon4(n: number): string {
   return nfES4.format(n);
 }
+
+/** Formato compacto para cantidades grandes de token (1,2 M, 3,4 K…). */
+const formatCompact = (n: number) =>
+  new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 2 }).format(n);
 
 /** Evento Withdrawal del escrow (espejo de panalEscrowAbi, tipado por parseAbiItem). */
 const WITHDRAWAL_EVENT = parseAbiItem('event Withdrawal(address indexed to, uint256 amount)');
@@ -125,13 +130,13 @@ function buildSparkline30d(events: WithdrawalEvent[]): number[] {
   return out;
 }
 
-function WalletBlock({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function WalletBlock({ label, value, hint, suffix = 'MON' }: { label: string; value: string; hint?: string; suffix?: string }) {
   return (
     <div className="flex flex-col gap-1">
       <span className="eyebrow text-ink-3">{label}</span>
       <span className="font-mono text-[1.35rem] font-medium leading-tight text-ink md:text-[1.6rem]">
         {value}
-        <span className="ml-1.5 text-[0.6em] text-ink-3">MON</span>
+        <span className="ml-1.5 text-[0.6em] text-ink-3">{suffix}</span>
       </span>
       {hint && <span className="text-[0.8125rem] text-ink-3">{hint}</span>}
     </div>
@@ -160,6 +165,15 @@ export default function WalletCard() {
     query: { enabled: !!addr, refetchInterval: 15_000, retry: 1 },
   });
 
+  const { data: panalBal, isLoading: panalLoading, isError: panalError } = useReadContract({
+    address: PANAL_TOKEN_ADDRESS,
+    abi: panalTokenAbi,
+    functionName: 'balanceOf',
+    args: addr ? [addr] : undefined,
+    chainId: activeChain.id,
+    query: { enabled: IS_MAINNET && !!addr, refetchInterval: 15_000, retry: 1 },
+  });
+
   const { data: withdrawals, isLoading: withdrawalsLoading, isError: withdrawalsError } = useQuery({
     queryKey: ['panal-withdrawals', activeChain.id, addr],
     enabled: !!addr,
@@ -181,6 +195,11 @@ export default function WalletCard() {
       ? '—'
       : formatMonEs(Number(formatUnits(withdrawals.total, 18)));
   const totalEarned = withdrawals?.total ?? 0n;
+  const panalStr = panalLoading
+    ? '…'
+    : panalError || panalBal === undefined
+      ? '—'
+      : formatCompact(Number(formatUnits(panalBal, 18)));
   const spark30d = useMemo(
     () => (withdrawals && withdrawals.events.length >= 2 ? buildSparkline30d(withdrawals.events) : null),
     [withdrawals],
@@ -282,7 +301,7 @@ export default function WalletCard() {
       ) : (
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
           {/* 3 bloques mono (columna en móvil) */}
-          <div className="grid flex-1 grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-8">
+          <div className={`grid flex-1 grid-cols-1 gap-5 sm:gap-8 ${IS_MAINNET ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
             <WalletBlock label={t('wallet.available')} value={availableStr} />
             <WalletBlock label={t('wallet.inEscrow')} value={escrowStr} hint={t('wallet.autoRelease')} />
             <WalletBlock
@@ -290,6 +309,9 @@ export default function WalletCard() {
               value={totalStr}
               hint={withdrawals && totalEarned === 0n ? t('wallet.noWithdrawals') : undefined}
             />
+            {IS_MAINNET && (
+              <WalletBlock label="$PANAL" value={panalStr} hint={t('wallet.tokenOfficial')} suffix="PANAL" />
+            )}
           </div>
 
           {/* Sparkline (solo con datos reales suficientes) + acciones */}

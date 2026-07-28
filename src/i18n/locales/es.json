@@ -735,7 +735,8 @@
     "noWithdrawals": "aún no hay retiros",
     "wrongChainToast": "Red incorrecta",
     "wrongChainToastDesc": "Tu wallet está en otra red. Te pedimos cambiar a {{network}} — vuelve a intentarlo.",
-    "chainMismatch": "La wallet está en otra red. Cambia a {{network}} y reintenta."
+    "chainMismatch": "La wallet está en otra red. Cambia a {{network}} y reintenta.",
+    "tokenOfficial": "token oficial"
   },
   "tasks": {
     "status": {
@@ -1069,5 +1070,13 @@
       "resolve": "Resolver disputa",
       "note": "Pasado el plazo sin resolución del jurado, cualquiera de las partes puede ejecutar la resolución automática del escrow."
     }
+  },
+  "token": {
+    "official": "token oficial",
+    "supply": "Supply",
+    "yourBalance": "tu balance",
+    "addToWallet": "Añadir $PANAL a MetaMask",
+    "addedToast": "$PANAL añadido a tu wallet",
+    "copy": "Copiar contrato"
   }
 }

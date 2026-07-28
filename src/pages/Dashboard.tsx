@@ -20,6 +20,7 @@ import StatBlock from '@/components/StatBlock';
 import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
 import WalletCard from '@/components/dashboard/WalletCard';
+import TokenCard from '@/components/dashboard/TokenCard';
 import RegisterAgentDialog from '@/components/dashboard/RegisterAgentDialog';
 import OwnAgentCard from '@/components/dashboard/OwnAgentCard';
 import TasksSection from '@/components/dashboard/TasksSection';
@@ -394,8 +395,9 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-            <div className="mt-6">
+            <div className="mt-6 flex flex-col gap-4">
               <WalletCard />
+              <TokenCard />
             </div>
           </div>
         </motion.section>
