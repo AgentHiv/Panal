@@ -59,7 +59,9 @@
     "cancel": "Cancelar",
     "underConstruction": "Esta página está em construção.",
     "notFound": "404 — Página não encontrada",
-    "copyHash": "Copiar hash {{label}}"
+    "copyHash": "Copiar hash {{label}}",
+    "tokenTask": "$PANAL/tarefa",
+    "tokenPerTask": "{{price}} $PANAL/tarefa"
   },
   "categories": {
     "datos": "Dados",
@@ -371,7 +373,8 @@
       "accept": "Aceito os termos do escrow",
       "wrongNetwork": "Este agente está on-chain: para o contratar a sério, a sua wallet deve estar na testnet Monad.",
       "signLock": "Assinar e bloquear {{price}} MON",
-      "lockHire": "Bloquear e contratar"
+      "lockHire": "Bloquear e contratar",
+      "signLockToken": "Aprovar e bloquear {{price}} $PANAL"
     },
     "step3": {
       "title": "Confirmação",
@@ -388,15 +391,24 @@
       "sealedDescReal": "{{name}} recebeu a sua tarefa. {{price}} MON bloqueados no PanalEscrow.",
       "sealedDesc": "{{name}} recebeu a sua tarefa. O pagamento está bloqueado no PanalEscrow.",
       "viewDashboard": "Ver tarefa no meu painel",
-      "viewExplorer": "Ver no explorador"
+      "viewExplorer": "Ver no explorador",
+      "sealedDescRealToken": "{{name}} recebeu a sua tarefa. {{price}} $PANAL bloqueados no PanalEscrow."
     },
     "taskPlaceholder": "Descreva a tarefa…",
-    "paramsPlaceholder": "Parâmetros (opcional) — ex.: solidity ^0.8.24"
+    "paramsPlaceholder": "Parâmetros (opcional) — ex.: solidity ^0.8.24",
+    "approve": {
+      "title": "Aprovando $PANAL",
+      "desc": "Passo 1 de 2 — autorize o escrow a usar seus $PANAL.",
+      "signing": "Assine a aprovação na sua carteira…",
+      "confirming": "Confirmando a aprovação na Monad…",
+      "done": "Aprovação confirmada — agora assine a tarefa."
+    }
   },
   "agentCard": {
     "metrics": "{{price}} MON/tarefa · {{tasks}} tarefas · resp. {{response}}",
     "save": "Guardar agente",
-    "unsave": "Remover dos guardados"
+    "unsave": "Remover dos guardados",
+    "metricsToken": "{{price}} $PANAL/tarefa · {{tasks}} tarefas · resp. {{response}}"
   },
   "filters": {
     "desc": "Filtros avançados para o marketplace de agentes",
@@ -456,7 +468,8 @@
       "work": "Vamos trabalhar?",
       "responds": "responde em {{time}}.",
       "hireNow": "Contratar agora — {{price}} MON",
-      "escrowNote": "Pagamento protegido pelo PanalEscrow · Monad · Chain ID 10143"
+      "escrowNote": "Pagamento protegido pelo PanalEscrow · Monad · Chain ID 10143",
+      "hireNowToken": "Contratar agora — {{price}} $PANAL"
     },
     "response": {
       "seconds": "{{count}} segundos",
@@ -830,7 +843,9 @@
     "withdraw": "Sacar",
     "nothingToWithdraw": "Nada pendente no momento",
     "withdrawalRow": "Saque do escrow",
-    "emptyHistory": "Ainda não há saques recentes desta carteira."
+    "emptyHistory": "Ainda não há saques recentes desta carteira.",
+    "rowNative": "Pendente em MON (nativo)",
+    "rowToken": "Pendente em $PANAL (token)"
   },
   "reputation": {
     "reviews": "{{count}} avaliações",
@@ -904,7 +919,12 @@
     "txSentDesc": "registerAgent enviado ao PanalRegistry (testnet Monad).",
     "success": "Agente registado on-chain",
     "successDesc": "A sua wallet está agora registada como agente ativo no PanalRegistry. Já aparece no marketplace.",
-    "formatHint": "Nome · descrição · competência1, competência2"
+    "formatHint": "Nome · descrição · competência1, competência2",
+    "currencyLabel": "Moeda do preço",
+    "currencyNative": "MON (nativo)",
+    "currencyToken": "$PANAL (token)",
+    "currencyNativeHint": "As tarefas deste agente serão pagas em MON nativo.",
+    "currencyTokenHint": "Os clientes aprovarão e pagarão com o token $PANAL."
   },
   "livePage": {
     "metaTitle": "Ao vivo — Panal",

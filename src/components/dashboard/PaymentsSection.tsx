@@ -10,14 +10,104 @@ import { motion } from 'framer-motion';
 import { ArrowDownLeft, ExternalLink, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatEther } from 'viem';
+import type { Address } from 'viem';
 import { useReadContract } from 'wagmi';
 import TxHash from '@/components/TxHash';
 import { useWallet } from '@/hooks/useWallet';
 import { useContractAction } from '@/hooks/useContractAction';
 import { useWithdrawals } from '@/hooks/useWithdrawals';
-import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, activeChain } from '@/contracts/config';
-import { panalEscrowAbi } from '@/contracts/abis';
+import {
+  EXPLORER_TX,
+  NATIVE_CURRENCY,
+  PANAL_ESCROW_ADDRESS,
+  PANAL_ESCROW_V2_ADDRESS,
+  PANAL_TOKEN_ADDRESS,
+  V2_ENABLED,
+  activeChain,
+} from '@/contracts/config';
+import { panalEscrowAbi, panalEscrowV2Abi } from '@/contracts/abis';
 import { formatMonEs } from './data';
+
+/**
+ * Fila de pendiente por moneda (escrow v2): pendingWithdrawals(token, me) y
+ * botón withdraw(token) con el patrón de escritura obligatorio.
+ */
+function PendingRowV2({ token, symbol, labelKey }: { token: Address; symbol: string; labelKey: string }) {
+  const { t } = useTranslation();
+  const { address } = useWallet();
+  const addr = (address ?? null) as `0x${string}` | null;
+
+  const { data: pending, refetch: refetchPending } = useReadContract({
+    address: PANAL_ESCROW_V2_ADDRESS,
+    abi: panalEscrowV2Abi,
+    functionName: 'pendingWithdrawals',
+    args: addr ? [token, addr] : undefined,
+    chainId: activeChain.id,
+    query: { enabled: !!addr, refetchInterval: 15_000, retry: 1 },
+  });
+
+  const action = useContractAction({ onMined: () => void refetchPending() });
+
+  const pendingNum = pending !== undefined ? Number(formatEther(pending)) : null;
+  const canWithdraw = pending !== undefined && pending > 0n && !action.busy;
+
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-line bg-paper p-6 shadow-card sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="eyebrow text-ink-3">{t(labelKey)}</p>
+        <p className="mt-1 font-mono text-[2rem] font-medium leading-none text-ink">
+          {pendingNum === null ? '…' : formatMonEs(pendingNum)}
+          <span className="ml-1.5 text-[0.5em] text-ink-3">{symbol}</span>
+        </p>
+        <p className="mt-2 text-[0.8125rem] text-ink-3">{t('payments.pendingHint')}</p>
+      </div>
+      <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+        {action.txHash && !action.mined ? (
+          <a
+            href={EXPLORER_TX(action.txHash)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 font-mono text-[12px] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+          >
+            <Loader2 size={13} className="animate-spin" aria-hidden />
+            {t('hire.step3.confirming')}
+            <ExternalLink size={12} />
+          </a>
+        ) : action.mined && action.txHash ? (
+          <a
+            href={EXPLORER_TX(action.txHash)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-olive/40 bg-olive/10 px-4 py-2 font-mono text-[12px] text-olive transition-colors hover:border-olive"
+          >
+            {t('dashReal.txConfirmed')}
+            <ExternalLink size={12} />
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={() =>
+              void action.run({
+                address: PANAL_ESCROW_V2_ADDRESS,
+                abi: panalEscrowV2Abi,
+                functionName: 'withdraw',
+                args: [token],
+              })
+            }
+            disabled={!canWithdraw}
+            className="btn-monad inline-flex items-center gap-2 px-6 py-3 text-[0.9375rem] font-semibold disabled:opacity-40"
+          >
+            {action.signing && <Loader2 size={15} className="animate-spin" aria-hidden />}
+            {action.signing ? t('hire.step3.signing') : t('payments.withdraw')}
+          </button>
+        )}
+        {pending !== undefined && pending === 0n && (
+          <span className="text-[0.75rem] text-ink-3">{t('payments.nothingToWithdraw')}</span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function PaymentsSection() {
   const { t, i18n } = useTranslation();
@@ -56,7 +146,14 @@ export default function PaymentsSection() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Pendiente de retiro + Withdraw real */}
+      {/* Pendiente de retiro + Withdraw real (v2: una fila por moneda) */}
+      {V2_ENABLED && (
+        <>
+          <PendingRowV2 token={NATIVE_CURRENCY} symbol="MON" labelKey="payments.rowNative" />
+          <PendingRowV2 token={PANAL_TOKEN_ADDRESS as Address} symbol="$PANAL" labelKey="payments.rowToken" />
+        </>
+      )}
+      {!V2_ENABLED && (
       <div className="flex flex-col gap-5 rounded-2xl border border-line bg-paper p-6 shadow-card sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="eyebrow text-ink-3">{t('payments.pending')}</p>
@@ -104,6 +201,7 @@ export default function PaymentsSection() {
           )}
         </div>
       </div>
+      )}
 
       {/* Historial real de retiros */}
       {withdrawals.loading ? (

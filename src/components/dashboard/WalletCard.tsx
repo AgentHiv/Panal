@@ -14,7 +14,7 @@ import QRCode from 'qrcode';
 import { ArrowDownLeft, ArrowUpRight, Check, Copy, ExternalLink, Loader2, TriangleAlert, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBalance, useReadContract, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
-import { panalTokenAbi } from '@/contracts/abis';
+import { panalEscrowV2Abi, panalTokenAbi } from '@/contracts/abis';
 import { formatEther, formatUnits, isAddress, parseAbiItem, parseEther } from 'viem';
 import {
   Dialog,
@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TxHash from '@/components/TxHash';
 import { useWallet } from '@/hooks/useWallet';
-import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, activeChain, publicClient , IS_MAINNET, PANAL_TOKEN_ADDRESS } from '@/contracts/config';
+import { EXPLORER_TX, NATIVE_CURRENCY, PANAL_ESCROW_ADDRESS, PANAL_ESCROW_V2_ADDRESS, activeChain, publicClient , IS_MAINNET, PANAL_TOKEN_ADDRESS, V2_ENABLED } from '@/contracts/config';
 import { panalEscrowAbi } from '@/contracts/abis';
 import { WalletSparkline } from './charts';
 import { formatMonEs } from './data';
@@ -156,14 +156,38 @@ export default function WalletCard() {
     query: { enabled: !!addr, refetchInterval: 15_000, retry: 1 },
   });
 
-  const { data: pendingEscrow, isLoading: escrowLoading, isError: escrowError } = useReadContract({
+  // v1: pendingWithdrawals(me) — se mantiene mientras !V2_ENABLED.
+  const { data: pendingEscrowV1, isLoading: escrowLoadingV1, isError: escrowErrorV1 } = useReadContract({
     address: PANAL_ESCROW_ADDRESS,
     abi: panalEscrowAbi,
     functionName: 'pendingWithdrawals',
     args: addr ? [addr] : undefined,
     chainId: activeChain.id,
-    query: { enabled: !!addr, refetchInterval: 15_000, retry: 1 },
+    query: { enabled: !!addr && !V2_ENABLED, refetchInterval: 15_000, retry: 1 },
   });
+
+  // v2: pendingWithdrawals(token, me) por moneda — MON nativo y $PANAL.
+  const { data: pendingEscrowNative, isLoading: escrowLoadingNative, isError: escrowErrorNative } = useReadContract({
+    address: PANAL_ESCROW_V2_ADDRESS,
+    abi: panalEscrowV2Abi,
+    functionName: 'pendingWithdrawals',
+    args: addr ? [NATIVE_CURRENCY, addr] : undefined,
+    chainId: activeChain.id,
+    query: { enabled: V2_ENABLED && !!addr, refetchInterval: 15_000, retry: 1 },
+  });
+
+  const { data: pendingEscrowToken, isError: escrowErrorToken } = useReadContract({
+    address: PANAL_ESCROW_V2_ADDRESS,
+    abi: panalEscrowV2Abi,
+    functionName: 'pendingWithdrawals',
+    args: addr ? [PANAL_TOKEN_ADDRESS, addr] : undefined,
+    chainId: activeChain.id,
+    query: { enabled: V2_ENABLED && !!addr, refetchInterval: 15_000, retry: 1 },
+  });
+
+  const pendingEscrow = V2_ENABLED ? pendingEscrowNative : pendingEscrowV1;
+  const escrowLoading = V2_ENABLED ? escrowLoadingNative : escrowLoadingV1;
+  const escrowError = V2_ENABLED ? escrowErrorNative : escrowErrorV1;
 
   const { data: panalBal, isLoading: panalLoading, isError: panalError } = useReadContract({
     address: PANAL_TOKEN_ADDRESS,
@@ -204,6 +228,13 @@ export default function WalletCard() {
     () => (withdrawals && withdrawals.events.length >= 2 ? buildSparkline30d(withdrawals.events) : null),
     [withdrawals],
   );
+
+  // Con V2_ENABLED el hint de "En escrow" incluye la parte en $PANAL.
+  const escrowHint = V2_ENABLED
+    ? pendingEscrowToken !== undefined && !escrowErrorToken
+      ? `${formatMonEs(Number(formatUnits(pendingEscrowToken, 18)))} $PANAL · ${t('wallet.autoRelease')}`
+      : t('wallet.autoRelease')
+    : t('wallet.autoRelease');
 
   /* ---------- Estado local (copiar / diálogos / QR) ---------- */
 
@@ -303,7 +334,7 @@ export default function WalletCard() {
           {/* 3 bloques mono (columna en móvil) */}
           <div className={`grid flex-1 grid-cols-1 gap-5 sm:gap-8 ${IS_MAINNET ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
             <WalletBlock label={t('wallet.available')} value={availableStr} />
-            <WalletBlock label={t('wallet.inEscrow')} value={escrowStr} hint={t('wallet.autoRelease')} />
+            <WalletBlock label={t('wallet.inEscrow')} value={escrowStr} hint={escrowHint} />
             <WalletBlock
               label={t('wallet.totalEarned')}
               value={totalStr}

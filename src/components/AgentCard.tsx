@@ -8,6 +8,8 @@ import LiveDot from '@/components/LiveDot';
 import RatingStars from '@/components/RatingStars';
 import HireDialog from '@/components/HireDialog';
 import { cn } from '@/lib/utils';
+import { currencySymbol } from '@/contracts/config';
+import { isOnchainAgent } from '@/hooks/usePanalAgents';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 
@@ -32,6 +34,8 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
   const [hireOpen, setHireOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const offline = agent.status === 'desconectado';
+  /** Símbolo del precio: MON por defecto, $PANAL si el agente v2 lo fijó en token. */
+  const priceSymbol = isOnchainAgent(agent) ? currencySymbol(agent.currency) : 'MON';
 
   return (
     <>
@@ -77,7 +81,7 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
 
           {/* Métricas mono */}
           <p className="font-mono text-[12px] text-ink-2">
-            {t('agentCard.metrics', { price: formatMon(agent.pricePerTask), tasks: formatInt(agent.tasksCompleted), response: agent.avgResponse })}
+            {t(priceSymbol === '$PANAL' ? 'agentCard.metricsToken' : 'agentCard.metrics', { price: formatMon(agent.pricePerTask), tasks: formatInt(agent.tasksCompleted), response: agent.avgResponse })}
           </p>
 
           {/* Footer */}

@@ -59,7 +59,9 @@
     "cancel": "বাতিল",
     "underConstruction": "এই পৃষ্ঠাটি নির্মাণাধীন।",
     "notFound": "404 — পৃষ্ঠা পাওয়া যায়নি",
-    "copyHash": "হ্যাশ {{label}} কপি করুন"
+    "copyHash": "হ্যাশ {{label}} কপি করুন",
+    "tokenTask": "$PANAL/টাস্ক",
+    "tokenPerTask": "{{price}} $PANAL/টাস্ক"
   },
   "categories": {
     "datos": "ডেটা",
@@ -371,7 +373,8 @@
       "accept": "আমি এসক্রো শর্তাবলী মেনে নিচ্ছি",
       "wrongNetwork": "এই এজেন্ট অন-চেইনে: সত্যিকারভাবে নিয়োগ করতে আপনার ওয়ালেটকে Monad টেস্টনেটে থাকতে হবে।",
       "signLock": "সাইন করে {{price}} MON লক করুন",
-      "lockHire": "লক করে নিয়োগ করুন"
+      "lockHire": "লক করে নিয়োগ করুন",
+      "signLockToken": "{{price}} $PANAL অনুমোদন ও লক করুন"
     },
     "step3": {
       "title": "নিশ্চিতকরণ",
@@ -388,15 +391,24 @@
       "sealedDescReal": "{{name}} আপনার টাস্ক পেয়েছে। PanalEscrow-তে {{price}} MON লক করা আছে।",
       "sealedDesc": "{{name}} আপনার টাস্ক পেয়েছে। পেমেন্ট PanalEscrow-তে লক করা আছে।",
       "viewDashboard": "আমার ড্যাশবোর্ডে টাস্ক দেখুন",
-      "viewExplorer": "এক্সপ্লোরারে দেখুন"
+      "viewExplorer": "এক্সপ্লোরারে দেখুন",
+      "sealedDescRealToken": "{{name}} আপনার টাস্ক পেয়েছে। PanalEscrow-তে {{price}} $PANAL লক করা আছে।"
     },
     "taskPlaceholder": "টাস্কটি বর্ণনা করুন…",
-    "paramsPlaceholder": "প্যারামিটার (ঐচ্ছিক) — যেমন solidity ^0.8.24"
+    "paramsPlaceholder": "প্যারামিটার (ঐচ্ছিক) — যেমন solidity ^0.8.24",
+    "approve": {
+      "title": "$PANAL অনুমোদন হচ্ছে",
+      "desc": "ধাপ ১/২ — এসক্রোকে আপনার $PANAL ব্যয়ের অনুমতি দিন।",
+      "signing": "আপনার ওয়ালেটে অনুমোদন স্বাক্ষর করুন…",
+      "confirming": "Monad-এ অনুমোদন নিশ্চিত হচ্ছে…",
+      "done": "অনুমোদন নিশ্চিত — এখন কাজটি স্বাক্ষর করুন।"
+    }
   },
   "agentCard": {
     "metrics": "{{price}} MON/টাস্ক · {{tasks}} টাস্ক · সাড়া {{response}}",
     "save": "এজেন্ট সংরক্ষণ করুন",
-    "unsave": "সংরক্ষিত থেকে সরান"
+    "unsave": "সংরক্ষিত থেকে সরান",
+    "metricsToken": "{{price}} $PANAL/টাস্ক · {{tasks}} টাস্ক · সাড়া {{response}}"
   },
   "filters": {
     "desc": "এজেন্ট মার্কেটপ্লেসের উন্নত ফিল্টার",
@@ -456,7 +468,8 @@
       "work": "কাজ করবেন?",
       "responds": "{{time}}-এ সাড়া দেয়।",
       "hireNow": "এখনই নিয়োগ করুন — {{price}} MON",
-      "escrowNote": "পেমেন্ট PanalEscrow-এর সুরক্ষায় · Monad · Chain ID 10143"
+      "escrowNote": "পেমেন্ট PanalEscrow-এর সুরক্ষায় · Monad · Chain ID 10143",
+      "hireNowToken": "এখনই নিয়োগ করুন — {{price}} $PANAL"
     },
     "response": {
       "seconds": "{{count}} সেকেন্ড",
@@ -830,7 +843,9 @@
     "withdraw": "তুলুন",
     "nothingToWithdraw": "এই মুহূর্তে কিছু বাকি নেই",
     "withdrawalRow": "এসক্রো উত্তোলন",
-    "emptyHistory": "এই ওয়ালেট থেকে এখনো সাম্প্রতিক উত্তোলন নেই।"
+    "emptyHistory": "এই ওয়ালেট থেকে এখনো সাম্প্রতিক উত্তোলন নেই।",
+    "rowNative": "MON (নেটিভ)-এ অপেক্ষমাণ",
+    "rowToken": "$PANAL (টোকেন)-এ অপেক্ষমাণ"
   },
   "reputation": {
     "reviews": "{{count}} রিভিউ",
@@ -904,7 +919,12 @@
     "txSentDesc": "registerAgent PanalRegistry-তে পাঠানো হয়েছে (Monad টেস্টনেট)।",
     "success": "এজেন্ট অন-চেইনে নিবন্ধিত",
     "successDesc": "আপনার ওয়ালেট এখন PanalRegistry-তে সক্রিয় এজেন্ট হিসেবে নিবন্ধিত। এটি ইতিমধ্যে মার্কেটপ্লেসে দেখা যাচ্ছে।",
-    "formatHint": "নাম · বিবরণ · দক্ষতা১, দক্ষতা২"
+    "formatHint": "নাম · বিবরণ · দক্ষতা১, দক্ষতা২",
+    "currencyLabel": "মূল্যের মুদ্রা",
+    "currencyNative": "MON (নেটিভ)",
+    "currencyToken": "$PANAL (টোকেন)",
+    "currencyNativeHint": "এই এজেন্টের কাজ নেটিভ MON-এ পরিশোধ করা হবে।",
+    "currencyTokenHint": "ক্লায়েন্টরা $PANAL টোকেনে অনুমোদন ও পেমেন্ট করবে।"
   },
   "livePage": {
     "metaTitle": "লাইভ — Panal",

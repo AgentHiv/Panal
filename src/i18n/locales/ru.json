@@ -59,7 +59,9 @@
     "cancel": "Отмена",
     "underConstruction": "Эта страница находится в разработке.",
     "notFound": "404 — Страница не найдена",
-    "copyHash": "Скопировать хеш {{label}}"
+    "copyHash": "Скопировать хеш {{label}}",
+    "tokenTask": "$PANAL/задача",
+    "tokenPerTask": "{{price}} $PANAL/задача"
   },
   "categories": {
     "datos": "Данные",
@@ -371,7 +373,8 @@
       "accept": "Я принимаю условия эскроу",
       "wrongNetwork": "Этот агент он-чейн: чтобы нанять его по-настоящему, ваш wallet должен быть в тестнете Monad.",
       "signLock": "Подписать и заблокировать {{price}} MON",
-      "lockHire": "Заблокировать и нанять"
+      "lockHire": "Заблокировать и нанять",
+      "signLockToken": "Одобрить и заблокировать {{price}} $PANAL"
     },
     "step3": {
       "title": "Подтверждение",
@@ -388,15 +391,24 @@
       "sealedDescReal": "{{name}} получил вашу задачу. {{price}} MON заблокированы в PanalEscrow.",
       "sealedDesc": "{{name}} получил вашу задачу. Оплата заблокирована в PanalEscrow.",
       "viewDashboard": "Смотреть задачу в моей панели",
-      "viewExplorer": "Смотреть в обозревателе"
+      "viewExplorer": "Смотреть в обозревателе",
+      "sealedDescRealToken": "{{name}} получил вашу задачу. {{price}} $PANAL заблокированы в PanalEscrow."
     },
     "taskPlaceholder": "Опишите задачу…",
-    "paramsPlaceholder": "Параметры (необязательно) — напр. solidity ^0.8.24"
+    "paramsPlaceholder": "Параметры (необязательно) — напр. solidity ^0.8.24",
+    "approve": {
+      "title": "Одобрение $PANAL",
+      "desc": "Шаг 1 из 2 — разрешите эскроу использовать ваши $PANAL.",
+      "signing": "Подпишите разрешение в кошельке…",
+      "confirming": "Подтверждение разрешения в Monad…",
+      "done": "Разрешение подтверждено — теперь подпишите задачу."
+    }
   },
   "agentCard": {
     "metrics": "{{price}} MON/задача · {{tasks}} задач · отв. {{response}}",
     "save": "Сохранить агента",
-    "unsave": "Убрать из сохранённых"
+    "unsave": "Убрать из сохранённых",
+    "metricsToken": "{{price}} $PANAL/задача · {{tasks}} задач · отв. {{response}}"
   },
   "filters": {
     "desc": "Расширенные фильтры маркетплейса агентов",
@@ -456,7 +468,8 @@
       "work": "Поработаем?",
       "responds": "отвечает за {{time}}.",
       "hireNow": "Нанять сейчас — {{price}} MON",
-      "escrowNote": "Оплата под защитой PanalEscrow · Monad · Chain ID 10143"
+      "escrowNote": "Оплата под защитой PanalEscrow · Monad · Chain ID 10143",
+      "hireNowToken": "Нанять сейчас — {{price}} $PANAL"
     },
     "response": {
       "seconds": "{{count}} секунд",
@@ -830,7 +843,9 @@
     "withdraw": "Вывести",
     "nothingToWithdraw": "Сейчас нечего выводить",
     "withdrawalRow": "Вывод из эскроу",
-    "emptyHistory": "Недавних выводов с этого кошелька пока нет."
+    "emptyHistory": "Недавних выводов с этого кошелька пока нет.",
+    "rowNative": "Ожидается в MON (нативный)",
+    "rowToken": "Ожидается в $PANAL (токен)"
   },
   "reputation": {
     "reviews": "{{count}} отзывов",
@@ -904,7 +919,12 @@
     "txSentDesc": "registerAgent отправлен в PanalRegistry (тестнет Monad).",
     "success": "Агент зарегистрирован он-чейн",
     "successDesc": "Ваш wallet теперь зарегистрирован как активный агент в PanalRegistry. Он уже отображается в маркетплейсе.",
-    "formatHint": "Имя · описание · навык1, навык2"
+    "formatHint": "Имя · описание · навык1, навык2",
+    "currencyLabel": "Валюта цены",
+    "currencyNative": "MON (нативный)",
+    "currencyToken": "$PANAL (токен)",
+    "currencyNativeHint": "Задачи этого агента будут оплачиваться в нативных MON.",
+    "currencyTokenHint": "Клиенты будут подтверждать и оплачивать токеном $PANAL."
   },
   "livePage": {
     "metaTitle": "Прямой эфир — Panal",

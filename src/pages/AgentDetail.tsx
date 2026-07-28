@@ -20,6 +20,8 @@ import ActivityTab from '@/components/market/ActivityTab';
 import { FadeUp, WordReveal } from '@/components/market/motion';
 import { responseInWords } from '@/components/market/detail-data';
 import { cn } from '@/lib/utils';
+import { currencySymbol } from '@/contracts/config';
+import { isOnchainAgent } from '@/hooks/usePanalAgents';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating, getAgent } from '@/data/agents';
 
 /* ============================================================
@@ -339,7 +341,7 @@ export default function AgentDetail() {
               transition={{ duration: 0.4, ease: 'easeOut' }}
               className="rounded-full bg-honey px-7 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors duration-200 hover:bg-paper"
             >
-              {t('detail.cta.hireNow', { price: formatMon(agent.pricePerTask) })}
+              {t(isOnchainAgent(agent) && currencySymbol(agent.currency) === '$PANAL' ? 'detail.cta.hireNowToken' : 'detail.cta.hireNow', { price: formatMon(agent.pricePerTask) })}
             </motion.button>
             <Link
               to="/mercado"

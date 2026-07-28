@@ -58,10 +58,14 @@ const MAINNET_ADDRESSES = {
 
 const ADDR = IS_MAINNET ? MAINNET_ADDRESSES : TESTNET_ADDRESSES;
 
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
+
+/** Moneda nativa (MON) codificada como address(0) en los contratos v2. */
+export const NATIVE_CURRENCY: `0x${string}` = ZERO_ADDRESS;
+
 // Fail-closed: un build mainnet con direcciones placeholder quemaría fondos
 // (un CALL con valor a 0x0 tiene éxito aparente). Mejor romper el arranque.
-const ZERO_ADDRESS: string = '0x0000000000000000000000000000000000000000';
-if (IS_MAINNET && Object.values(ADDR).some((a) => a === ZERO_ADDRESS)) {
+if (IS_MAINNET && Object.values(ADDR).some((a) => a === (ZERO_ADDRESS as string))) {
   throw new Error(
     '[Panal] Build mainnet sin direcciones de contratos reales. ' +
       'Rellena MAINNET_ADDRESSES en src/contracts/config.ts (ver MAINNET.md).',
@@ -71,6 +75,27 @@ if (IS_MAINNET && Object.values(ADDR).some((a) => a === ZERO_ADDRESS)) {
 export const PANAL_REGISTRY_ADDRESS = ADDR.registry;
 export const PANAL_REPUTATION_ADDRESS = ADDR.reputation;
 export const PANAL_ESCROW_ADDRESS = ADDR.escrow;
+
+/**
+ * Contratos v2 (dual-moneda MON + $PANAL) — fuente auditada en
+ * contracts/src/v2/. AÚN NO desplegados.
+ * TODO(deploy v2): rellenar tras `forge script script/DeployV2.s.sol`.
+ * Fail-closed: con direcciones en cero V2_ENABLED es false y toda la UI
+ * sigue el comportamiento v1 (sin selector de moneda ni flujo approve).
+ */
+export const V2_ADDRESSES = {
+  registry: ZERO_ADDRESS,
+  reputation: ZERO_ADDRESS,
+  escrow: ZERO_ADDRESS,
+} as const;
+
+/** true solo en mainnet Y con las tres direcciones v2 rellenadas. */
+export const V2_ENABLED =
+  IS_MAINNET && !(Object.values(V2_ADDRESSES) as string[]).includes(ZERO_ADDRESS);
+
+export const PANAL_REGISTRY_V2_ADDRESS = V2_ADDRESSES.registry as `0x${string}`;
+export const PANAL_REPUTATION_V2_ADDRESS = V2_ADDRESSES.reputation as `0x${string}`;
+export const PANAL_ESCROW_V2_ADDRESS = V2_ADDRESSES.escrow as `0x${string}`;
 
 const EXPLORER_BASE = IS_MAINNET ? 'https://monadvision.com' : 'https://testnet.monadvision.com';
 export const EXPLORER_TX = (hash: string) => `${EXPLORER_BASE}/tx/${hash}`;
@@ -82,6 +107,11 @@ export const EXPLORER_ADDRESS = (addr: string) => `${EXPLORER_BASE}/address/${ad
  * supply total 1.000.000.000. Solo existe en mainnet.
  */
 export const PANAL_TOKEN_ADDRESS = '0x2e2e44e7fa6178822d4397299f719e89d1a67777' as const;
+
+/** Símbolo de UI para una `currency` on-chain: address(0) = MON, PANAL_TOKEN = $PANAL. */
+export function currencySymbol(currency?: string | null): 'MON' | '$PANAL' {
+  return currency && currency.toLowerCase() === PANAL_TOKEN_ADDRESS.toLowerCase() ? '$PANAL' : 'MON';
+}
 
 export const wagmiConfig = createConfig({
   chains: [activeChain],

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -22,8 +22,20 @@ import { PROTOCOL_FEE, ESCROW_AUTO_RELEASE_H } from '@/data/protocol';
 import { randomTxHash } from '@/data/events';
 import { useWallet } from '@/hooks/useWallet';
 import { isOnchainAgent } from '@/hooks/usePanalAgents';
-import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, PANAL_REGISTRY_ADDRESS, activeChain, publicClient } from '@/contracts/config';
-import { panalEscrowAbi, panalRegistryAbi } from '@/contracts/abis';
+import {
+  EXPLORER_TX,
+  NATIVE_CURRENCY,
+  PANAL_ESCROW_ADDRESS,
+  PANAL_ESCROW_V2_ADDRESS,
+  PANAL_REGISTRY_ADDRESS,
+  PANAL_REGISTRY_V2_ADDRESS,
+  PANAL_TOKEN_ADDRESS,
+  V2_ENABLED,
+  activeChain,
+  currencySymbol,
+  publicClient,
+} from '@/contracts/config';
+import { panalEscrowAbi, panalEscrowV2Abi, panalRegistryAbi, panalRegistryV2Abi, panalTokenAbi } from '@/contracts/abis';
 
 export interface HireDialogProps {
   agent: Agent | null;
@@ -58,11 +70,15 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   const [accepted, setAccepted] = useState(false);
   const [txHash] = useState(() => randomTxHash());
 
-  /* ---------- contratación real (PanalEscrow · Monad testnet) ---------- */
+  /* ---------- contratación real (PanalEscrow) ---------- */
   const { connected, wrongNetwork, switchToMonad, chainId } = useWallet();
   const { switchChainAsync } = useSwitchChain();
   const onchain = isOnchainAgent(agent);
   const realMode = onchain && connected && !wrongNetwork;
+  /** Moneda del agente (v2): address(0) = MON, PANAL_TOKEN = $PANAL. */
+  const agentCurrency = onchain ? agent.currency : NATIVE_CURRENCY;
+  const isPanal = V2_ENABLED && agentCurrency.toLowerCase() === PANAL_TOKEN_ADDRESS.toLowerCase();
+  const symbol = currencySymbol(agentCurrency);
   const {
     writeContract,
     data: realTxHash,
@@ -71,6 +87,19 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     reset: resetWrite,
   } = useWriteContract();
   const { isLoading: confirming, isSuccess: mined } = useWaitForTransactionReceipt({ hash: realTxHash });
+
+  /* Paso approve previo (solo agentes en $PANAL): approve(escrowV2, price) */
+  const [approvePhase, setApprovePhase] = useState<'idle' | 'approving' | 'approved'>('idle');
+  const {
+    writeContract: writeApprove,
+    data: approveTxHash,
+    isPending: approveSigning,
+    error: approveError,
+    reset: resetApprove,
+  } = useWriteContract();
+  const { isLoading: approveConfirming, isSuccess: approveMined } = useWaitForTransactionReceipt({
+    hash: approveTxHash,
+  });
 
   const hireOnchain = async () => {
     if (!isOnchainAgent(agent)) return;
@@ -89,13 +118,13 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     // Revalidar el precio on-chain justo antes de firmar: el agente puede
     // haberlo cambiado desde que se cargó la lista (protección económica).
     try {
-      const fresh = await publicClient.readContract({
-        address: PANAL_REGISTRY_ADDRESS,
-        abi: panalRegistryAbi,
+      const fresh = (await publicClient.readContract({
+        address: V2_ENABLED ? PANAL_REGISTRY_V2_ADDRESS : PANAL_REGISTRY_ADDRESS,
+        abi: V2_ENABLED ? panalRegistryV2Abi : panalRegistryAbi,
         functionName: 'getAgent',
         args: [agent.workerAddress],
-      });
-      if (fresh.pricePerTask !== agent.priceWei) {
+      })) as { pricePerTask: bigint; currency?: string };
+      if (fresh.pricePerTask !== agent.priceWei || (V2_ENABLED && fresh.currency !== undefined && fresh.currency.toLowerCase() !== agentCurrency.toLowerCase())) {
         toast.error(t('wallet.txError'));
         return;
       }
@@ -105,16 +134,58 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
     const taskHash = keccak256(toBytes(brief));
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 3 * 24 * 60 * 60);
-    writeContract({
-      address: PANAL_ESCROW_ADDRESS,
-      abi: panalEscrowAbi,
-      functionName: 'createTask',
-      args: [agent.workerAddress, taskHash, deadline],
-      value: agent.priceWei,
-      chainId: activeChain.id,
-    });
+    if (!V2_ENABLED) {
+      // v1: createTask(worker, taskHash, deadline) con value = precio.
+      writeContract({
+        address: PANAL_ESCROW_ADDRESS,
+        abi: panalEscrowAbi,
+        functionName: 'createTask',
+        args: [agent.workerAddress, taskHash, deadline],
+        value: agent.priceWei,
+        chainId: activeChain.id,
+      });
+    } else if (!isPanal) {
+      // v2 MON: currency = address(0), amount == msg.value.
+      writeContract({
+        address: PANAL_ESCROW_V2_ADDRESS,
+        abi: panalEscrowV2Abi,
+        functionName: 'createTask',
+        args: [agent.workerAddress, taskHash, deadline, NATIVE_CURRENCY, agent.priceWei],
+        value: agent.priceWei,
+        chainId: activeChain.id,
+      });
+    } else {
+      // v2 $PANAL: primero approve(escrowV2, price); createTask se dispara
+      // al minarse el approve (useEffect de abajo), con msg.value = 0.
+      setApprovePhase('approving');
+      writeApprove({
+        address: PANAL_TOKEN_ADDRESS,
+        abi: panalTokenAbi,
+        functionName: 'approve',
+        args: [PANAL_ESCROW_V2_ADDRESS, agent.priceWei],
+        chainId: activeChain.id,
+      });
+    }
     setStep(2);
   };
+
+  // Encadenar createTask tras el approve minado (flujo $PANAL).
+  useEffect(() => {
+    if (!isPanal || approvePhase !== 'approving' || !approveMined || !isOnchainAgent(agent)) return;
+    setApprovePhase('approved');
+    const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
+    const taskHash = keccak256(toBytes(brief));
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 3 * 24 * 60 * 60);
+    writeContract({
+      address: PANAL_ESCROW_V2_ADDRESS,
+      abi: panalEscrowV2Abi,
+      functionName: 'createTask',
+      args: [agent.workerAddress, taskHash, deadline, PANAL_TOKEN_ADDRESS, agent.priceWei],
+      value: 0n,
+      chainId: activeChain.id,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [approveMined, approvePhase, isPanal]);
 
   const price = agent.pricePerTask;
   const fee = price * PROTOCOL_FEE;
@@ -185,7 +256,11 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                     <HexAvatar seed={agent.wallet} size={40} />
                     <div className="flex-1">
                       <p className="text-[0.875rem] font-semibold text-ink">{agent.name}</p>
-                      <p className="font-mono text-[12px] text-ink-3">{t('common.monPerTask', { price: formatMon(price) })}</p>
+                      <p className="font-mono text-[12px] text-ink-3">
+                        {symbol === '$PANAL'
+                          ? t('common.tokenPerTask', { price: formatMon(price) })
+                          : t('common.monPerTask', { price: formatMon(price) })}
+                      </p>
                     </div>
                   </div>
                   <textarea
@@ -229,15 +304,15 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                   <div className="flex flex-col gap-2 rounded-xl border border-line bg-cream px-5 py-4 font-mono text-[0.875rem]">
                     <div className="flex justify-between">
                       <span className="text-ink-2">{t('hire.step2.taskPrice')}</span>
-                      <span className="text-ink">{price.toFixed(3)} MON</span>
+                      <span className="text-ink">{price.toFixed(3)} {symbol}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-ink-2">{t('hire.step2.protocolFee')}</span>
-                      <span className="text-ink">{formatMon(fee, 5)} MON</span>
+                      <span className="text-ink">{formatMon(fee, 5)} {symbol}</span>
                     </div>
                     <div className="mt-1 flex justify-between border-t border-line pt-2 font-semibold">
                       <span className="text-ink">{t('hire.step2.totalLock')}</span>
-                      <span className="text-honey-deep">{formatMon(total, 5)} MON</span>
+                      <span className="text-honey-deep">{formatMon(total, 5)} {symbol}</span>
                     </div>
                   </div>
                   <p className="flex items-start gap-2 text-[0.8125rem] text-ink-2">
@@ -287,10 +362,14 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                       <button
                         type="button"
                         onClick={() => (realMode ? hireOnchain() : setStep(2))}
-                        disabled={!accepted || signing}
+                        disabled={!accepted || signing || approveSigning}
                         className="flex-1 rounded-full bg-honey px-5 py-3 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper disabled:opacity-40"
                       >
-                        {realMode ? t('hire.step2.signLock', { price: formatMon(price) }) : t('hire.step2.lockHire')}
+                        {realMode
+                          ? isPanal
+                            ? t('hire.step2.signLockToken', { price: formatMon(price) })
+                            : t('hire.step2.signLock', { price: formatMon(price) })
+                          : t('hire.step2.lockHire')}
                       </button>
                     </div>
                   )}
@@ -299,7 +378,34 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
 
               {step === 2 && realMode && (
                 <div className="relative flex flex-col items-center gap-5 py-2 text-center">
-                  {writeError ? (
+                  {approveError && approvePhase === 'approving' ? (
+                    <>
+                      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-terra/10 text-terra">
+                        <TriangleAlert size={28} />
+                      </span>
+                      <div>
+                        <p className="display-m text-ink">{t('hire.step3.txFailed')}</p>
+                        <p className="mt-1 max-w-sm text-[0.875rem] text-ink-2">
+                          {approveError.message.includes('User rejected')
+                            ? t('hire.step3.rejected')
+                            : approveError.message.split("\n")[0]}
+                        </p>
+                      </div>
+                      <div className="flex w-full flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            resetApprove();
+                            setApprovePhase('idle');
+                            setStep(1);
+                          }}
+                          className="flex-1 btn-monad px-5 py-3 text-[0.875rem] font-semibold"
+                        >
+                          {t('hire.step3.retry')}
+                        </button>
+                      </div>
+                    </>
+                  ) : writeError ? (
                     <>
                       <span className="flex h-16 w-16 items-center justify-center rounded-full bg-terra/10 text-terra">
                         <TriangleAlert size={28} />
@@ -325,10 +431,35 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         </button>
                       </div>
                     </>
+                  ) : approvePhase === 'approving' ? (
+                    <>
+                      {/* Paso 1/2 del flujo $PANAL: approve(escrow, precio) */}
+                      <Loader2 size={40} className="animate-spin text-honey-deep" aria-hidden />
+                      <div>
+                        <p className="display-m text-ink">{t('hire.approve.title')}</p>
+                        <p className="mt-1 max-w-sm text-[0.875rem] text-ink-2">
+                          {!approveTxHash ? t('hire.approve.signing') : t('hire.approve.confirming')}
+                        </p>
+                        <p className="mt-1 font-mono text-[11px] text-ink-3">{t('hire.approve.desc')}</p>
+                      </div>
+                      {approveTxHash && (
+                        <a
+                          href={EXPLORER_TX(approveTxHash)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 font-mono text-[12px] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+                        >
+                          {t('hire.step3.viewTx')}
+                          <ExternalLink size={13} />
+                        </a>
+                      )}
+                      {approveConfirming && <p className="font-mono text-[11px] text-ink-3">{t('hire.step3.oneConfirm')}</p>}
+                    </>
                   ) : !mined ? (
                     <>
                       <Loader2 size={40} className="animate-spin text-honey-deep" aria-hidden />
                       <div>
+                        {isPanal && <p className="mb-1 font-mono text-[11px] text-olive">{t('hire.approve.done')}</p>}
                         <p className="display-m text-ink">
                           {!realTxHash ? t('hire.step3.signing') : t('hire.step3.confirming')}
                         </p>
@@ -378,7 +509,9 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                       <div>
                         <p className="display-m text-ink">{t('hire.step3.sealed')}</p>
                         <p className="mt-1 text-[0.875rem] text-ink-2">
-                          {t('hire.step3.sealedDescReal', { name: agent.name, price: formatMon(price) })}
+                          {isPanal
+                            ? t('hire.step3.sealedDescRealToken', { name: agent.name, price: formatMon(price) })
+                            : t('hire.step3.sealedDescReal', { name: agent.name, price: formatMon(price) })}
                         </p>
                       </div>
                       {realTxHash && <TxHash hash={realTxHash} className="rounded-full border border-line bg-cream px-4 py-2" />}

@@ -336,6 +336,392 @@ export const panalEscrowAbi = [
 ] as const;
 
 /**
+ * ── ABIs v2 (dual-moneda MON + $PANAL) ────────────────────────────────────
+ * Derivadas de contracts/src/v2/PanalRegistryV2.sol y PanalEscrowV2.sol
+ * (auditados, 112/112 tests). Cambios vs v1:
+ * - Registry: registerAgent/updatePrice con `currency` (address(0) = MON),
+ *   getAgent devuelve la tupla v1 + `currency` AL FINAL, PANAL_TOKEN() y
+ *   eventos con currency.
+ * - Escrow: createTask(worker, taskHash, deadline, currency, amount)
+ *   (MON: currency=0 y msg.value == amount; PANAL: currency=PANAL_TOKEN,
+ *   msg.value=0 y approve previo), tasks(i) con currency al final,
+ *   pendingWithdrawals(token, user) — 2 args —, withdraw(token) — 1 arg —,
+ *   MIN_TASK_AMOUNT_TOKEN y eventos con currency/token.
+ * Las tuplas mantienen el orden v1 y añaden `currency` al final
+ * (ABI-compatible hacia atrás).
+ */
+export const panalRegistryV2Abi = [
+  {
+    type: 'function',
+    name: 'registerAgent',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'metadataURI', type: 'string' },
+      { name: 'pricePerTask', type: 'uint256' },
+      { name: 'currency', type: 'address' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'updatePrice',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'newPrice', type: 'uint256' },
+      { name: 'currency', type: 'address' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'updateMetadata',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'newMetadataURI', type: 'string' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'setActive',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'active', type: 'bool' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'getAgent',
+    stateMutability: 'view',
+    inputs: [{ name: 'agent', type: 'address' }],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          { name: 'owner', type: 'address' },
+          { name: 'metadataURI', type: 'string' },
+          { name: 'pricePerTask', type: 'uint256' },
+          { name: 'active', type: 'bool' },
+          { name: 'registeredAt', type: 'uint256' },
+          { name: 'currency', type: 'address' },
+        ],
+      },
+    ],
+  },
+  {
+    type: 'function',
+    name: 'getAgentCount',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'getAgents',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'offset', type: 'uint256' },
+      { name: 'limit', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'address[]' }],
+  },
+  {
+    type: 'function',
+    name: 'isActiveAgent',
+    stateMutability: 'view',
+    inputs: [{ name: 'agent', type: 'address' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'PANAL_TOKEN',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    type: 'event',
+    name: 'AgentRegistered',
+    inputs: [
+      { name: 'agent', type: 'address', indexed: true },
+      { name: 'owner', type: 'address', indexed: true },
+      { name: 'pricePerTask', type: 'uint256', indexed: false },
+      { name: 'currency', type: 'address', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'PriceUpdated',
+    inputs: [
+      { name: 'agent', type: 'address', indexed: true },
+      { name: 'newPrice', type: 'uint256', indexed: false },
+      { name: 'currency', type: 'address', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'MetadataUpdated',
+    inputs: [
+      { name: 'agent', type: 'address', indexed: true },
+      { name: 'newMetadataURI', type: 'string', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'ActiveUpdated',
+    inputs: [
+      { name: 'agent', type: 'address', indexed: true },
+      { name: 'active', type: 'bool', indexed: false },
+    ],
+  },
+] as const;
+
+export const panalEscrowV2Abi = [
+  {
+    type: 'function',
+    name: 'createTask',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'worker', type: 'address' },
+      { name: 'taskHash', type: 'bytes32' },
+      { name: 'deadline', type: 'uint256' },
+      { name: 'currency', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: 'taskId', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'claimTask',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'deliverResult',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'taskId', type: 'uint256' },
+      { name: 'resultHash', type: 'bytes32' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'approveAndRelease',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'taskId', type: 'uint256' },
+      { name: 'rating', type: 'uint8' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'autoRelease',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'openDispute',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'cancelTask',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'getTaskCount',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  /** Getter público del mapping `tasks` (tupla v1 + currency al final). Status: 0 Open, 1 Delivered, 2 Completed, 3 Disputed, 4 Cancelled. */
+  {
+    type: 'function',
+    name: 'tasks',
+    stateMutability: 'view',
+    inputs: [{ name: '', type: 'uint256' }],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          { name: 'client', type: 'address' },
+          { name: 'worker', type: 'address' },
+          { name: 'amount', type: 'uint256' },
+          { name: 'taskHash', type: 'bytes32' },
+          { name: 'resultHash', type: 'bytes32' },
+          { name: 'deadline', type: 'uint256' },
+          { name: 'createdAt', type: 'uint256' },
+          { name: 'status', type: 'uint8' },
+          { name: 'currency', type: 'address' },
+        ],
+      },
+    ],
+  },
+  {
+    type: 'function',
+    name: 'deliveredAt',
+    stateMutability: 'view',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'FEE_BPS',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'AUTO_RELEASE',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  /** Retiro pull payment por moneda: token = address(0) (MON) o ERC-20 ($PANAL). */
+  {
+    type: 'function',
+    name: 'withdraw',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'token', type: 'address' }],
+    outputs: [],
+  },
+  /** Saldos pull payment por moneda: pendingWithdrawals(token, user). */
+  {
+    type: 'function',
+    name: 'pendingWithdrawals',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'token', type: 'address' },
+      { name: 'account', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'resolveStuckDispute',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'disputedAt',
+    stateMutability: 'view',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'DISPUTE_TIMEOUT',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'MIN_TASK_AMOUNT_NATIVE',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'MIN_TASK_AMOUNT_TOKEN',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'PANAL_TOKEN',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    type: 'event',
+    name: 'TaskCreated',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true },
+      { name: 'client', type: 'address', indexed: true },
+      { name: 'worker', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+      { name: 'currency', type: 'address', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'TaskClaimed',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true },
+      { name: 'worker', type: 'address', indexed: true },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'TaskDelivered',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true },
+      { name: 'resultHash', type: 'bytes32', indexed: true },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'TaskCompleted',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true },
+      { name: 'worker', type: 'address', indexed: true },
+      { name: 'workerPaid', type: 'uint256', indexed: false },
+      { name: 'fee', type: 'uint256', indexed: false },
+      { name: 'rating', type: 'uint8', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'TaskDisputed',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true },
+      { name: 'openedBy', type: 'address', indexed: true },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'DisputeResolved',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true },
+      { name: 'workerPaid', type: 'uint256', indexed: false },
+      { name: 'clientRefunded', type: 'uint256', indexed: false },
+      { name: 'rating', type: 'uint8', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'TaskCancelled',
+    inputs: [{ name: 'taskId', type: 'uint256', indexed: true }],
+  },
+  {
+    type: 'event',
+    name: 'Withdrawal',
+    inputs: [
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'token', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+  },
+] as const;
+
+/**
  * Token oficial $PANAL (ERC-20 mínimo para lecturas de UI).
  * Proxy EIP-1167 en mainnet — ver config.PANAL_TOKEN_ADDRESS.
  */
@@ -352,6 +738,27 @@ export const panalTokenAbi = [
     name: 'totalSupply',
     stateMutability: 'view',
     inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  /** approve(spender, amount) — paso previo a createTask en $PANAL (escrow v2). */
+  {
+    type: 'function',
+    name: 'approve',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'allowance',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
     outputs: [{ name: '', type: 'uint256' }],
   },
 ] as const;

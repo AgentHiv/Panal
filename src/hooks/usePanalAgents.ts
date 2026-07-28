@@ -8,8 +8,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { formatEther } from 'viem';
 import type { Address } from 'viem';
-import { PANAL_REGISTRY_ADDRESS, PANAL_REPUTATION_ADDRESS, publicClient } from '@/contracts/config';
-import { panalRegistryAbi, panalReputationAbi } from '@/contracts/abis';
+import {
+  NATIVE_CURRENCY,
+  PANAL_REGISTRY_ADDRESS,
+  PANAL_REGISTRY_V2_ADDRESS,
+  PANAL_REPUTATION_ADDRESS,
+  PANAL_REPUTATION_V2_ADDRESS,
+  V2_ENABLED,
+  publicClient,
+} from '@/contracts/config';
+import { panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
 import type { Agent } from '@/data/agents';
 
 /** Agent del mercado enriquecido con datos reales on-chain. */
@@ -17,8 +25,10 @@ export interface OnchainAgent extends Agent {
   onchain: true;
   /** dirección real del agente (worker en PanalEscrow) */
   workerAddress: Address;
-  /** precio exacto en wei (para el value de createTask) */
+  /** precio exacto en wei (para el value/amount de createTask) */
   priceWei: bigint;
+  /** moneda del precio: address(0) = MON (v1 siempre), PANAL_TOKEN = $PANAL (solo v2) */
+  currency: Address;
 }
 
 export function isOnchainAgent(agent: Agent): agent is OnchainAgent {
@@ -46,18 +56,33 @@ function parseMetadata(uri: string, addr: Address): { name: string; tagline: str
   return { ...fallback, tagline: text };
 }
 
+interface RawAgentTuple {
+  owner: Address;
+  metadataURI: string;
+  pricePerTask: bigint;
+  active: boolean;
+  registeredAt: bigint;
+  /** solo registry v2 (ausente en v1) */
+  currency?: Address;
+}
+
 async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
+  // Con V2_ENABLED se lee del registry v2 (mismo formato + currency al final).
+  const registryAddr = V2_ENABLED ? PANAL_REGISTRY_V2_ADDRESS : PANAL_REGISTRY_ADDRESS;
+  const reputationAddr = V2_ENABLED ? PANAL_REPUTATION_V2_ADDRESS : PANAL_REPUTATION_ADDRESS;
+  const registryAbi = V2_ENABLED ? panalRegistryV2Abi : panalRegistryAbi;
+
   const count = (await publicClient.readContract({
-    address: PANAL_REGISTRY_ADDRESS,
-    abi: panalRegistryAbi,
+    address: registryAddr,
+    abi: registryAbi,
     functionName: 'getAgentCount',
   })) as bigint;
 
   if (count === 0n) return [];
 
   const addresses = (await publicClient.readContract({
-    address: PANAL_REGISTRY_ADDRESS,
-    abi: panalRegistryAbi,
+    address: registryAddr,
+    abi: registryAbi,
     functionName: 'getAgents',
     args: [0n, 50n],
   })) as Address[];
@@ -69,13 +94,13 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
   const readOne = async (addr: Address): Promise<OnchainAgent | null> => {
     const [data, score] = await Promise.all([
       publicClient.readContract({
-        address: PANAL_REGISTRY_ADDRESS,
-        abi: panalRegistryAbi,
+        address: registryAddr,
+        abi: registryAbi,
         functionName: 'getAgent',
         args: [addr],
-      }),
+      }) as Promise<RawAgentTuple>,
       publicClient.readContract({
-        address: PANAL_REPUTATION_ADDRESS,
+        address: reputationAddr,
         abi: panalReputationAbi,
         functionName: 'getScore',
         args: [addr],
@@ -119,6 +144,7 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       onchain: true,
       workerAddress: addr,
       priceWei,
+      currency: data.currency ?? NATIVE_CURRENCY,
     };
   };
 
@@ -134,7 +160,7 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
 
 export function usePanalAgents() {
   const query = useQuery({
-    queryKey: ['panal-agents'],
+    queryKey: ['panal-agents', V2_ENABLED],
     queryFn: fetchOnchainAgents,
     staleTime: 30_000,
     retry: 3,

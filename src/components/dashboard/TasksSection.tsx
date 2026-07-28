@@ -28,14 +28,13 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useWallet } from '@/hooks/useWallet';
-import { TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
+import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
 import { useContractAction } from '@/hooks/useContractAction';
 import type { ContractActionRequest } from '@/hooks/useContractAction';
 import { shortAddress } from '@/hooks/useWallet';
-import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, activeChain } from '@/contracts/config';
-import { panalEscrowAbi } from '@/contracts/abis';
+import { EXPLORER_TX, activeChain, currencySymbol } from '@/contracts/config';
 import type { Perspective } from './data';
 import { formatMonEs } from './data';
 
@@ -146,8 +145,8 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   const action = useContractAction({ onMined: refetch });
 
   const { data: autoReleaseSec } = useReadContract({
-    address: PANAL_ESCROW_ADDRESS,
-    abi: panalEscrowAbi,
+    address: ACTIVE_ESCROW_ADDRESS,
+    abi: ACTIVE_ESCROW_ABI,
     functionName: 'AUTO_RELEASE',
     chainId: activeChain.id,
     query: { staleTime: 300_000, retry: 1 },
@@ -177,7 +176,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   /* ---------- Acciones por rol ---------- */
 
   const requestFor = (kind: DialogKind, task: RealTask, extra?: { text?: string; rating?: number }): ContractActionRequest => {
-    const base = { address: PANAL_ESCROW_ADDRESS as Address, abi: panalEscrowAbi };
+    const base = { address: ACTIVE_ESCROW_ADDRESS as Address, abi: ACTIVE_ESCROW_ABI };
     switch (kind) {
       case 'claim':
         return { ...base, functionName: 'claimTask', args: [task.id] };
@@ -276,7 +275,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
             </span>
           </td>
           <td className="whitespace-nowrap px-3 py-3.5 font-mono text-[0.8125rem] text-ink">
-            {formatMonEs(Number(formatEther(task.amountWei)))} MON
+            {formatMonEs(Number(formatEther(task.amountWei)))} {currencySymbol(task.currency)}
           </td>
           <td className="px-3 py-3.5"><StatusBadge status={task.status} /></td>
           <td className="hidden whitespace-nowrap px-3 py-3.5 font-mono text-[0.75rem] text-ink-3 sm:table-cell">
@@ -431,7 +430,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
               ) : (
                 <div className="flex flex-col gap-4">
                   <div className="rounded-xl border border-line bg-cream p-4 font-mono text-[0.8125rem] text-ink-2">
-                    {t('tasks.escrowAmount')}: {formatMonEs(Number(formatEther(dialog.task.amountWei)))} MON
+                    {t('tasks.escrowAmount')}: {formatMonEs(Number(formatEther(dialog.task.amountWei)))} {currencySymbol(dialog.task.currency)}
                   </div>
 
                   {dialog.kind === 'deliver' && (

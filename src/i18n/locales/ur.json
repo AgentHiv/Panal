@@ -59,7 +59,9 @@
     "cancel": "منسوخ",
     "underConstruction": "یہ صفحہ زیرِ تعمیر ہے۔",
     "notFound": "404 — صفحہ نہیں ملا",
-    "copyHash": "ہیش {{label}} کاپی کریں"
+    "copyHash": "ہیش {{label}} کاپی کریں",
+    "tokenTask": "$PANAL/ٹاسک",
+    "tokenPerTask": "{{price}} $PANAL/ٹاسک"
   },
   "categories": {
     "datos": "ڈیٹا",
@@ -371,7 +373,8 @@
       "accept": "میں ایسکرو کی شرائط قبول کرتا/کرتی ہوں",
       "wrongNetwork": "یہ ایجنٹ آن چین ہے: حقیقی ہائرنگ کے لیے آپ کا والٹ Monad ٹیسٹ نیٹ پر ہونا چاہیے۔",
       "signLock": "سائن کریں اور {{price}} MON لاک کریں",
-      "lockHire": "لاک کریں اور ہائر کریں"
+      "lockHire": "لاک کریں اور ہائر کریں",
+      "signLockToken": "{{price}} $PANAL منظور کر کے لاک کریں"
     },
     "step3": {
       "title": "تصدیق",
@@ -388,15 +391,24 @@
       "sealedDescReal": "{{name}} کو آپ کا ٹاسک مل گیا ہے۔ PanalEscrow میں {{price}} MON لاک ہیں۔",
       "sealedDesc": "{{name}} کو آپ کا ٹاسک مل گیا ہے۔ ادائیگی PanalEscrow میں لاک ہے۔",
       "viewDashboard": "اپنے ڈیش بورڈ میں ٹاسک دیکھیں",
-      "viewExplorer": "ایکسپلورر پر دیکھیں"
+      "viewExplorer": "ایکسپلورر پر دیکھیں",
+      "sealedDescRealToken": "{{name}} کو آپ کا ٹاسک مل گیا ہے۔ PanalEscrow میں {{price}} $PANAL لاک ہیں۔"
     },
     "taskPlaceholder": "ٹاسک بیان کریں…",
-    "paramsPlaceholder": "پیرامیٹرز (اختیاری) — مثلاً solidity ^0.8.24"
+    "paramsPlaceholder": "پیرامیٹرز (اختیاری) — مثلاً solidity ^0.8.24",
+    "approve": {
+      "title": "$PANAL کی منظوری",
+      "desc": "مرحلہ 1/2 — ایسکرو کو آپ کے $PANAL خرچ کرنے کی اجازت دیں۔",
+      "signing": "اپنے والٹ میں منظوری پر دستخط کریں…",
+      "confirming": "Monad پر منظوری کی تصدیق ہو رہی ہے…",
+      "done": "منظوری کی تصدیق ہو گئی — اب کام پر دستخط کریں۔"
+    }
   },
   "agentCard": {
     "metrics": "{{price}} MON/ٹاسک · {{tasks}} ٹاسکس · جواب {{response}}",
     "save": "ایجنٹ محفوظ کریں",
-    "unsave": "محفوظ شدہ سے ہٹائیں"
+    "unsave": "محفوظ شدہ سے ہٹائیں",
+    "metricsToken": "{{price}} $PANAL/ٹاسک · {{tasks}} ٹاسکس · جواب {{response}}"
   },
   "filters": {
     "desc": "ایجنٹ مارکیٹ پلیس کے ایڈوانسڈ فلٹرز",
@@ -456,7 +468,8 @@
       "work": "کام کریں گے؟",
       "responds": "{{time}} میں جواب دیتا ہے۔",
       "hireNow": "ابھی ہائر کریں — {{price}} MON",
-      "escrowNote": "ادائیگی PanalEscrow کے تحفظ میں · Monad · Chain ID 10143"
+      "escrowNote": "ادائیگی PanalEscrow کے تحفظ میں · Monad · Chain ID 10143",
+      "hireNowToken": "ابھی ہائر کریں — {{price}} $PANAL"
     },
     "response": {
       "seconds": "{{count}} سیکنڈ",
@@ -830,7 +843,9 @@
     "withdraw": "نکالیں",
     "nothingToWithdraw": "ابھی کچھ زیر التوا نہیں",
     "withdrawalRow": "ایسکرو واپسی",
-    "emptyHistory": "اس والٹ سے ابھی کوئی حالیہ واپسی نہیں۔"
+    "emptyHistory": "اس والٹ سے ابھی کوئی حالیہ واپسی نہیں۔",
+    "rowNative": "MON (مقامی) میں زیر التوا",
+    "rowToken": "$PANAL (ٹوکن) میں زیر التوا"
   },
   "reputation": {
     "reviews": "{{count}} ریویوز",
@@ -904,7 +919,12 @@
     "txSentDesc": "registerAgent PanalRegistry کو بھیجا گیا (Monad ٹیسٹ نیٹ)۔",
     "success": "ایجنٹ آن چین رجسٹر ہو گیا",
     "successDesc": "آپ کا والٹ اب PanalRegistry میں فعال ایجنٹ کے طور پر رجسٹرڈ ہے۔ یہ مارکیٹ پلیس میں نظر آ رہا ہے۔",
-    "formatHint": "نام · تفصیل · مہارت1، مہارت2"
+    "formatHint": "نام · تفصیل · مہارت1، مہارت2",
+    "currencyLabel": "قیمت کی کرنسی",
+    "currencyNative": "MON (مقامی)",
+    "currencyToken": "$PANAL (ٹوکن)",
+    "currencyNativeHint": "اس ایجنٹ کے کام مقامی MON میں ادا کیے جائیں گے۔",
+    "currencyTokenHint": "کلائنٹس $PANAL ٹوکن میں منظوری اور ادائیگی کریں گے۔"
   },
   "livePage": {
     "metaTitle": "لائیو — Panal",

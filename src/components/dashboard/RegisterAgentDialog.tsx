@@ -17,9 +17,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import TxHash from '@/components/TxHash';
+import { cn } from '@/lib/utils';
 import { useWallet } from '@/hooks/useWallet';
-import { EXPLORER_TX, PANAL_REGISTRY_ADDRESS, activeChain } from '@/contracts/config';
-import { panalRegistryAbi } from '@/contracts/abis';
+import {
+  EXPLORER_TX,
+  NATIVE_CURRENCY,
+  PANAL_REGISTRY_ADDRESS,
+  PANAL_REGISTRY_V2_ADDRESS,
+  PANAL_TOKEN_ADDRESS,
+  V2_ENABLED,
+  activeChain,
+} from '@/contracts/config';
+import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
 
 export interface RegisterAgentDialogProps {
   open: boolean;
@@ -40,6 +49,8 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   const { t } = useTranslation();
   const [metadata, setMetadata] = useState('');
   const [price, setPrice] = useState('');
+  /** Moneda del precio (solo con V2_ENABLED): 'MON' nativo o '$PANAL' token. */
+  const [currency, setCurrency] = useState<'MON' | '$PANAL'>('MON');
 
   const {
     writeContract,
@@ -73,27 +84,45 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
         return;
       }
     }
-    writeContract(
-      {
-        address: PANAL_REGISTRY_ADDRESS,
-        abi: panalRegistryAbi,
-        functionName: 'registerAgent',
-        args: [metadata.trim(), parseEther(priceStr)],
-        chainId: activeChain.id,
-      },
-      {
-        onSuccess: () =>
-          toast(t('register.txSent'), {
-            description: t('register.txSentDesc'),
-          }),
-      },
-    );
+    // v2: registerAgent(metadataURI, pricePerTask, currency) en registry v2;
+    // v1: registerAgent(metadataURI, pricePerTask) en el registry clásico.
+    const onSent = {
+      onSuccess: () =>
+        toast(t('register.txSent'), {
+          description: t('register.txSentDesc'),
+        }),
+    };
+    if (V2_ENABLED) {
+      const currencyAddr = currency === '$PANAL' ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY;
+      writeContract(
+        {
+          address: PANAL_REGISTRY_V2_ADDRESS,
+          abi: panalRegistryV2Abi,
+          functionName: 'registerAgent',
+          args: [metadata.trim(), parseEther(priceStr), currencyAddr],
+          chainId: activeChain.id,
+        },
+        onSent,
+      );
+    } else {
+      writeContract(
+        {
+          address: PANAL_REGISTRY_ADDRESS,
+          abi: panalRegistryAbi,
+          functionName: 'registerAgent',
+          args: [metadata.trim(), parseEther(priceStr)],
+          chainId: activeChain.id,
+        },
+        onSent,
+      );
+    }
   };
 
   const reset = () => {
     resetWrite();
     setMetadata('');
     setPrice('');
+    setCurrency('MON');
   };
 
   return (
@@ -164,8 +193,39 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
               aria-label={t('ownAgent.priceAria')}
               className="w-full rounded-xl border border-line bg-paper px-4 py-2.5 font-mono text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
             />
-            <span className="shrink-0 font-mono text-[0.8125rem] text-ink-2">{t('common.monTask')}</span>
+            <span className="shrink-0 font-mono text-[0.8125rem] text-ink-2">
+              {currency === '$PANAL' ? t('common.tokenTask') : t('common.monTask')}
+            </span>
           </div>
+
+          {/* Selector de moneda (solo contratos v2 desplegados) */}
+          {V2_ENABLED && (
+            <div className="flex flex-col gap-2">
+              <span className="text-[0.8125rem] font-medium text-ink-2">{t('register.currencyLabel')}</span>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('register.currencyLabel')}>
+                {(['MON', '$PANAL'] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    role="radio"
+                    aria-checked={currency === c}
+                    onClick={() => setCurrency(c)}
+                    className={cn(
+                      'rounded-full border px-4 py-2.5 font-mono text-[0.8125rem] font-medium transition-colors',
+                      currency === c
+                        ? 'border-honey bg-honey-soft text-honey-deep'
+                        : 'border-line text-ink-2 hover:border-honey',
+                    )}
+                  >
+                    {c === 'MON' ? t('register.currencyNative') : t('register.currencyToken')}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[0.75rem] leading-relaxed text-ink-3">
+                {currency === '$PANAL' ? t('register.currencyTokenHint') : t('register.currencyNativeHint')}
+              </p>
+            </div>
+          )}
 
           {writeError && (
             <p className="flex items-start gap-2 rounded-xl border border-terra/40 bg-terra/10 px-4 py-3 text-[0.8125rem] text-terra">

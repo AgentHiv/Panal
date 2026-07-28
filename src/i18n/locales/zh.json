@@ -59,7 +59,9 @@
     "cancel": "取消",
     "underConstruction": "此页面正在建设中。",
     "notFound": "404 — 页面未找到",
-    "copyHash": "复制 {{label}} 的哈希"
+    "copyHash": "复制 {{label}} 的哈希",
+    "tokenTask": "$PANAL/任务",
+    "tokenPerTask": "{{price}} $PANAL/任务"
   },
   "categories": {
     "datos": "数据",
@@ -371,7 +373,8 @@
       "accept": "我接受托管条款",
       "wrongNetwork": "该智能体在链上：要真实雇佣它，你的 wallet 必须切换到 Monad 测试网。",
       "signLock": "签名并锁定 {{price}} MON",
-      "lockHire": "锁定并雇佣"
+      "lockHire": "锁定并雇佣",
+      "signLockToken": "授权并锁定 {{price}} $PANAL"
     },
     "step3": {
       "title": "确认",
@@ -388,15 +391,24 @@
       "sealedDescReal": "{{name}} 已收到你的任务。{{price}} MON 已锁定在 PanalEscrow。",
       "sealedDesc": "{{name}} 已收到你的任务。支付已锁定在 PanalEscrow。",
       "viewDashboard": "在我的仪表盘查看任务",
-      "viewExplorer": "在区块浏览器查看"
+      "viewExplorer": "在区块浏览器查看",
+      "sealedDescRealToken": "{{name}} 已收到你的任务。{{price}} $PANAL 已锁定在 PanalEscrow。"
     },
     "taskPlaceholder": "描述任务…",
-    "paramsPlaceholder": "参数（可选）— 例如 solidity ^0.8.24"
+    "paramsPlaceholder": "参数（可选）— 例如 solidity ^0.8.24",
+    "approve": {
+      "title": "授权 $PANAL",
+      "desc": "第 1 步（共 2 步）— 授权托管合约使用您的 $PANAL。",
+      "signing": "在钱包中签署授权…",
+      "confirming": "正在 Monad 上确认授权…",
+      "done": "授权已确认 — 现在签署任务。"
+    }
   },
   "agentCard": {
     "metrics": "{{price}} MON/任务 · {{tasks}} 个任务 · 响应 {{response}}",
     "save": "收藏智能体",
-    "unsave": "取消收藏"
+    "unsave": "取消收藏",
+    "metricsToken": "{{price}} $PANAL/任务 · {{tasks}} 个任务 · 响应 {{response}}"
   },
   "filters": {
     "desc": "智能体市场的高级筛选",
@@ -456,7 +468,8 @@
       "work": "开始合作？",
       "responds": "响应时间 {{time}}。",
       "hireNow": "立即雇佣 — {{price}} MON",
-      "escrowNote": "支付由 PanalEscrow 保护 · Monad · Chain ID 10143"
+      "escrowNote": "支付由 PanalEscrow 保护 · Monad · Chain ID 10143",
+      "hireNowToken": "立即雇佣 — {{price}} $PANAL"
     },
     "response": {
       "seconds": "{{count}} 秒",
@@ -830,7 +843,9 @@
     "withdraw": "提取",
     "nothingToWithdraw": "当前没有待提取资金",
     "withdrawalRow": "托管提取",
-    "emptyHistory": "该钱包最近还没有提取记录。"
+    "emptyHistory": "该钱包最近还没有提取记录。",
+    "rowNative": "MON（原生）待提取",
+    "rowToken": "$PANAL（代币）待提取"
   },
   "reputation": {
     "reviews": "{{count}} 条评价",
@@ -904,7 +919,12 @@
     "txSentDesc": "registerAgent 已发送至 PanalRegistry（Monad 测试网）。",
     "success": "智能体已链上注册",
     "successDesc": "你的 wallet 已在 PanalRegistry 注册为活跃智能体，并已出现在市场中。",
-    "formatHint": "名称 · 描述 · 技能1, 技能2"
+    "formatHint": "名称 · 描述 · 技能1, 技能2",
+    "currencyLabel": "价格货币",
+    "currencyNative": "MON（原生）",
+    "currencyToken": "$PANAL（代币）",
+    "currencyNativeHint": "该代理的任务将以原生 MON 支付。",
+    "currencyTokenHint": "客户将使用 $PANAL 代币进行授权和支付。"
   },
   "livePage": {
     "metaTitle": "实时 — Panal",

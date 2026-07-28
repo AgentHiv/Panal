@@ -59,7 +59,9 @@
     "cancel": "إلغاء",
     "underConstruction": "هذه الصفحة قيد الإنشاء.",
     "notFound": "404 — الصفحة غير موجودة",
-    "copyHash": "نسخ هاش {{label}}"
+    "copyHash": "نسخ هاش {{label}}",
+    "tokenTask": "$PANAL/مهمة",
+    "tokenPerTask": "{{price}} $PANAL/مهمة"
   },
   "categories": {
     "datos": "بيانات",
@@ -371,7 +373,8 @@
       "accept": "أوافق على شروط الضمان",
       "wrongNetwork": "هذا الوكيل على السلسلة: لتوظيفه فعليًا يجب أن يكون wallet الخاص بك على شبكة Monad التجريبية.",
       "signLock": "وقّع واقفل {{price}} MON",
-      "lockHire": "اقفل ووظّف"
+      "lockHire": "اقفل ووظّف",
+      "signLockToken": "الموافقة وقفل {{price}} $PANAL"
     },
     "step3": {
       "title": "التأكيد",
@@ -388,15 +391,24 @@
       "sealedDescReal": "استلم {{name}} مهمتك. {{price}} MON مقفلة في PanalEscrow.",
       "sealedDesc": "استلم {{name}} مهمتك. الدفع مقفل في PanalEscrow.",
       "viewDashboard": "عرض المهمة في لوحة التحكم",
-      "viewExplorer": "عرض على المستكشف"
+      "viewExplorer": "عرض على المستكشف",
+      "sealedDescRealToken": "استلم {{name}} مهمتك. {{price}} $PANAL مقفلة في PanalEscrow."
     },
     "taskPlaceholder": "صف المهمة…",
-    "paramsPlaceholder": "المعاملات (اختياري) — مثل solidity ^0.8.24"
+    "paramsPlaceholder": "المعاملات (اختياري) — مثل solidity ^0.8.24",
+    "approve": {
+      "title": "الموافقة على $PANAL",
+      "desc": "الخطوة 1 من 2 — اسمح للضمان باستخدام رموز $PANAL الخاصة بك.",
+      "signing": "وقّع الموافقة في محفظتك…",
+      "confirming": "جارٍ تأكيد الموافقة على Monad…",
+      "done": "تم تأكيد الموافقة — وقّع المهمة الآن."
+    }
   },
   "agentCard": {
     "metrics": "{{price}} MON/مهمة · {{tasks}} مهمة · استجابة {{response}}",
     "save": "حفظ الوكيل",
-    "unsave": "إزالة من المحفوظات"
+    "unsave": "إزالة من المحفوظات",
+    "metricsToken": "{{price}} $PANAL/مهمة · {{tasks}} مهمة · استجابة {{response}}"
   },
   "filters": {
     "desc": "مرشحات متقدمة لسوق الوكلاء",
@@ -456,7 +468,8 @@
       "work": "هل نعمل معًا؟",
       "responds": "يرد خلال {{time}}.",
       "hireNow": "وظّف الآن — {{price}} MON",
-      "escrowNote": "الدفع محمي بواسطة PanalEscrow · Monad · Chain ID 10143"
+      "escrowNote": "الدفع محمي بواسطة PanalEscrow · Monad · Chain ID 10143",
+      "hireNowToken": "وظّف الآن — {{price}} $PANAL"
     },
     "response": {
       "seconds": "{{count}} ثانية",
@@ -830,7 +843,9 @@
     "withdraw": "سحب",
     "nothingToWithdraw": "لا شيء معلّق حاليًا",
     "withdrawalRow": "سحب من الضمان",
-    "emptyHistory": "لا توجد سحوبات حديثة من هذه المحفظة بعد."
+    "emptyHistory": "لا توجد سحوبات حديثة من هذه المحفظة بعد.",
+    "rowNative": "معلّق بعملة MON (الأصلية)",
+    "rowToken": "معلّق برمز $PANAL"
   },
   "reputation": {
     "reviews": "{{count}} تقييم",
@@ -904,7 +919,12 @@
     "txSentDesc": "أُرسل registerAgent إلى PanalRegistry (شبكة Monad التجريبية).",
     "success": "وكيل مسجل على السلسلة",
     "successDesc": "أصبح wallet الخاص بك مسجلًا كوكيل نشط في PanalRegistry. ويظهر الآن في السوق.",
-    "formatHint": "الاسم · الوصف · مهارة1، مهارة2"
+    "formatHint": "الاسم · الوصف · مهارة1، مهارة2",
+    "currencyLabel": "عملة السعر",
+    "currencyNative": "MON (الأصلية)",
+    "currencyToken": "$PANAL (رمز)",
+    "currencyNativeHint": "ستُدفع مهام هذا الوكيل بعملة MON الأصلية.",
+    "currencyTokenHint": "سيوافق العملاء ويدفعون برمز $PANAL."
   },
   "livePage": {
     "metaTitle": "مباشر — Panal",

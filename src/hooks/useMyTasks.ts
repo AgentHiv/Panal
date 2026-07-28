@@ -18,9 +18,20 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { Address, Hex } from 'viem';
-import { PANAL_ESCROW_ADDRESS, activeChain, publicClient } from '@/contracts/config';
-import { panalEscrowAbi } from '@/contracts/abis';
+import {
+  NATIVE_CURRENCY,
+  PANAL_ESCROW_ADDRESS,
+  PANAL_ESCROW_V2_ADDRESS,
+  V2_ENABLED,
+  activeChain,
+  publicClient,
+} from '@/contracts/config';
+import { panalEscrowAbi, panalEscrowV2Abi } from '@/contracts/abis';
 import { useWallet } from '@/hooks/useWallet';
+
+/** Escrow y ABI activos (v2 dual-moneda cuando V2_ENABLED). */
+export const ACTIVE_ESCROW_ADDRESS = V2_ENABLED ? PANAL_ESCROW_V2_ADDRESS : PANAL_ESCROW_ADDRESS;
+export const ACTIVE_ESCROW_ABI = V2_ENABLED ? panalEscrowV2Abi : panalEscrowAbi;
 
 /** Status del enum on-chain. */
 export const TASK_STATUS = {
@@ -41,6 +52,8 @@ export interface RealTask {
   deadline: bigint;
   createdAt: bigint;
   status: number;
+  /** moneda de la tarea: address(0) = MON (v1 siempre), PANAL_TOKEN = $PANAL (solo v2) */
+  currency: Address;
   /** timestamp de entrega (solo si status === Delivered) */
   deliveredAt?: bigint;
   role: 'client' | 'worker';
@@ -62,12 +75,14 @@ interface RawTaskTuple {
   deadline: bigint;
   createdAt: bigint;
   status: number;
+  /** solo escrow v2 (ausente en v1) */
+  currency?: Address;
 }
 
 async function fetchMyTasks(me: Address): Promise<RealTask[]> {
   const count = (await publicClient.readContract({
-    address: PANAL_ESCROW_ADDRESS,
-    abi: panalEscrowAbi,
+    address: ACTIVE_ESCROW_ADDRESS,
+    abi: ACTIVE_ESCROW_ABI,
     functionName: 'getTaskCount',
   })) as bigint;
 
@@ -88,8 +103,8 @@ async function fetchMyTasks(me: Address): Promise<RealTask[]> {
       chunk.map(
         (id) =>
           publicClient.readContract({
-            address: PANAL_ESCROW_ADDRESS,
-            abi: panalEscrowAbi,
+            address: ACTIVE_ESCROW_ADDRESS,
+            abi: ACTIVE_ESCROW_ABI,
             functionName: 'tasks',
             args: [id],
           }) as Promise<RawTaskTuple>,
@@ -109,6 +124,7 @@ async function fetchMyTasks(me: Address): Promise<RealTask[]> {
         deadline: row.deadline,
         createdAt: row.createdAt,
         status: Number(row.status),
+        currency: row.currency ?? NATIVE_CURRENCY,
         role: isClient ? 'client' : 'worker',
       });
     });
@@ -124,8 +140,8 @@ async function fetchMyTasks(me: Address): Promise<RealTask[]> {
         (tk) =>
           publicClient
             .readContract({
-              address: PANAL_ESCROW_ADDRESS,
-              abi: panalEscrowAbi,
+              address: ACTIVE_ESCROW_ADDRESS,
+              abi: ACTIVE_ESCROW_ABI,
               functionName: 'deliveredAt',
               args: [tk.id],
             })
@@ -154,7 +170,7 @@ export function useMyTasks(): MyTasks {
   const addr = (connected && address ? address : null) as Address | null;
 
   const query = useQuery({
-    queryKey: ['my-tasks', activeChain.id, addr],
+    queryKey: ['my-tasks', activeChain.id, V2_ENABLED, addr],
     enabled: !!addr,
     queryFn: () => fetchMyTasks(addr as Address),
     staleTime: 10_000,
