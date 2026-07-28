@@ -7,6 +7,8 @@ import TxHash from '@/components/TxHash';
 import { CONTRACTS } from '@/data/protocol';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import SocialIcons, { SOCIALS } from '@/components/SocialIcons';
+import { Hexagon } from 'lucide-react';
+import { EXPLORER_ADDRESS, IS_MAINNET, PANAL_TOKEN_ADDRESS } from '@/contracts/config';
 
 const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string }> }> = [
   {
@@ -72,6 +74,17 @@ export default function Footer() {
               </span>
             </Link>
             <SocialIcons />
+            {IS_MAINNET && (
+              <a
+                href={EXPLORER_ADDRESS(PANAL_TOKEN_ADDRESS)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-fit items-center gap-2 rounded-full border border-monad/40 bg-monad/10 px-4 py-2 text-[0.8125rem] font-semibold text-monad-mist transition-colors hover:border-monad hover:text-monad-soft"
+              >
+                <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
+                $PANAL · token oficial
+              </a>
+            )}
           </div>
           <form onSubmit={onSubscribe} className="flex w-full max-w-md flex-col gap-3">
             <label htmlFor="footer-newsletter" className="text-[0.875rem] font-medium text-coal-mute">
@@ -87,7 +100,7 @@ export default function Footer() {
               />
               <button
                 type="submit"
-                className="h-11 shrink-0 rounded-full bg-honey px-5 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper"
+                className="h-11 shrink-0 rounded-full bg-honey px-5 text-[0.875rem] font-semibold text-[#1B1814] transition-colors hover:bg-honey-deep"
               >
                 {t('footer.subscribe')}
               </button>

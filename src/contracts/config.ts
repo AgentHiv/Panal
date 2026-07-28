@@ -74,6 +74,14 @@ export const PANAL_ESCROW_ADDRESS = ADDR.escrow;
 
 const EXPLORER_BASE = IS_MAINNET ? 'https://monadvision.com' : 'https://testnet.monadvision.com';
 export const EXPLORER_TX = (hash: string) => `${EXPLORER_BASE}/tx/${hash}`;
+export const EXPLORER_ADDRESS = (addr: string) => `${EXPLORER_BASE}/address/${addr}`;
+
+/**
+ * Token oficial $PANAL (ERC-20, EIP-1167 proxy) — lanzado en Monad mainnet.
+ * Verificado on-chain: name "PANAL", symbol "PANAL", 18 decimales,
+ * supply total 1.000.000.000. Solo existe en mainnet.
+ */
+export const PANAL_TOKEN_ADDRESS = '0x2e2e44e7fa6178822d4397299f719e89d1a67777' as const;
 
 export const wagmiConfig = createConfig({
   chains: [activeChain],

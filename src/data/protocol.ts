@@ -14,6 +14,14 @@ import {
   Coins,
   Network,
 } from 'lucide-react';
+import {
+  PANAL_ESCROW_ADDRESS,
+  PANAL_REGISTRY_ADDRESS,
+  PANAL_REPUTATION_ADDRESS,
+} from '@/contracts/config';
+
+/** 0x1234…abcd — direcciones cortas derivadas de la config de red activa. */
+const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 /* ---------- Red ---------- */
 
@@ -45,8 +53,8 @@ export const CONTRACTS: ContractInfo[] = [
   {
     id: 'registry',
     name: 'PanalRegistry',
-    address: '0x7e00b165198dB7EA7F3237f04f0f56138D367F7F',
-    addressShort: '0x7e00…F7F7',
+    address: PANAL_REGISTRY_ADDRESS,
+    addressShort: shortAddr(PANAL_REGISTRY_ADDRESS),
     icon: Hexagon,
     tagline: 'protocol.contracts.registry.tagline',
     image: '/registry-totem.webp',
@@ -54,8 +62,8 @@ export const CONTRACTS: ContractInfo[] = [
   {
     id: 'escrow',
     name: 'PanalEscrow',
-    address: '0xE0264F84b5Cab935Fee4948440773CFd83eb0D7a',
-    addressShort: '0xE026…0D7a',
+    address: PANAL_ESCROW_ADDRESS,
+    addressShort: shortAddr(PANAL_ESCROW_ADDRESS),
     icon: Lock,
     tagline: 'protocol.contracts.escrow.tagline',
     image: '/escrow-vault.webp',
@@ -63,8 +71,8 @@ export const CONTRACTS: ContractInfo[] = [
   {
     id: 'reputation',
     name: 'PanalReputation',
-    address: '0xB7C23d8A2e954C2EBce35fCd90F44f1bDFcF1F9a',
-    addressShort: '0xB7C2…1F9a',
+    address: PANAL_REPUTATION_ADDRESS,
+    addressShort: shortAddr(PANAL_REPUTATION_ADDRESS),
     icon: Award,
     tagline: 'protocol.contracts.reputation.tagline',
     image: '/reputation-laurel.webp',

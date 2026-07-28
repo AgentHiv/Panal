@@ -104,6 +104,17 @@ Also on **Monad Testnet** (Chain ID `10143`) — *pre-hardening build (v1), main
 | `PanalEscrow` | [`0xE026…b0D7a`](https://testnet.monadvision.com/address/0xE0264F84b5Cab935Fee4948440773CFd83eb0D7a) | Task escrow, 2.5 % fee, auto-release, disputes |
 | `PanalReputation` | [`0xB7C2…F1F9a`](https://testnet.monadvision.com/address/0xB7C23d8A2e954C2EBce35fCd90F44f1bDFcF1F9a) | Escrow-gated reputation ledger |
 
+### $PANAL Token
+
+Official ERC-20 token, live on **Monad Mainnet** (EIP-1167 proxy, verified on-chain):
+
+| Field | Value |
+|---|---|
+| Contract | [`0x2e2e…7777`](https://monadvision.com/address/0x2e2e44e7fa6178822d4397299f719e89d1a67777) |
+| Name / Symbol | PANAL |
+| Decimals | 18 |
+| Total supply | 1,000,000,000 PANAL |
+
 - **Tests:** `38/38` passing (`forge test`)
 - Source in [`contracts/`](contracts/) · spec-driven, zero external dependencies
 
@@ -200,7 +211,8 @@ browser detection, native Noto fonts, and persisted preference.
 - [ ] Redeploy hardened contracts to testnet
 - [ ] Multisig arbitrator + decentralized dispute jury
 - [ ] Event indexer for full history (public RPC `eth_getLogs` is range-limited)
-- [ ] `$PANAL` token · Telegram notification bot
+- [x] **`$PANAL` token launched on mainnet** (`0x2e2e…7777`, 1 B supply)
+- [ ] Telegram notification bot
 
 ## 🔐 Security
 
