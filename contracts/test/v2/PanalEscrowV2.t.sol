@@ -272,7 +272,7 @@ contract PanalEscrowV2Test is Test {
     }
 
     function test_OpenDisputeAccess() public {
-        uint256 taskId = _createAssigned();
+        uint256 taskId = _createDelivered();
         vm.prank(rando);
         vm.expectRevert("PanalEscrow: not party");
         escrow.openDispute(taskId);
@@ -371,20 +371,37 @@ contract PanalEscrowV2Test is Test {
         assertEq(escrow.pendingWithdrawals(NATIVE, worker), 0);
     }
 
-    function test_ResolveDisputeNoWorkerReverts() public {
-        // tarea Open sin worker (abierta a cualquiera), el client abre disputa
+    function test_OpenDisputeBeforeDeliveredReverts() public {
+        // FIX LOG-06: openDispute solo desde Delivered. Pre-entrega el cliente
+        // tiene cancelTask y el worker no tiene nada que disputar.
+        uint256 taskId = _createAssigned();
+
         vm.prank(client);
-        uint256 taskId = escrow.createTask{value: PRICE}(address(0), TASK_HASH, block.timestamp + 1 days, NATIVE, PRICE);
-        vm.prank(client);
+        vm.expectRevert("PanalEscrow: not delivered");
         escrow.openDispute(taskId);
 
-        vm.prank(arbitrator);
-        vm.expectRevert("PanalEscrow: no worker to pay");
-        escrow.resolveDispute(taskId, 5_000, 3);
+        vm.prank(worker);
+        vm.expectRevert("PanalEscrow: not delivered");
+        escrow.openDispute(taskId);
 
-        // con workerShareBps == 0 si resuelve: reembolso completo al cliente
-        vm.prank(arbitrator);
-        escrow.resolveDispute(taskId, 0, 1);
+        // tarea abierta sin worker: tampoco se puede disputar
+        vm.prank(client);
+        uint256 openId = escrow.createTask{value: PRICE}(address(0), TASK_HASH, block.timestamp + 1 days, NATIVE, PRICE);
+        vm.prank(client);
+        vm.expectRevert("PanalEscrow: not delivered");
+        escrow.openDispute(openId);
+
+        // claim + disputa instantanea (griefing LOG-06) ya no es posible
+        vm.prank(worker);
+        escrow.claimTask(openId);
+        vm.prank(worker);
+        vm.expectRevert("PanalEscrow: not delivered");
+        escrow.openDispute(openId);
+
+        // y el cliente conserva la salida pre-entrega: cancelar tras deadline
+        vm.warp(block.timestamp + 2 days);
+        vm.prank(client);
+        escrow.cancelTask(openId);
         assertEq(escrow.pendingWithdrawals(NATIVE, client), PRICE);
     }
 

@@ -8,6 +8,13 @@ import "../PanalReputation.sol";
 interface IERC20 {
     function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
+}
+
+/// @notice Vista minima de PanalReputation v1 para validar que su slot de escrow
+///         (one-shot) aun no fue consumido por otro escrow.
+interface PanalReputationV1Like {
+    function escrow() external view returns (address);
 }
 
 /// @title PanalEscrowV2
@@ -87,6 +94,9 @@ contract PanalEscrowV2 {
             require(_panalToken.code.length > 0, "PanalEscrow: token not contract");
         }
         require(PanalRegistryV2(_registry).PANAL_TOKEN() == _panalToken, "PanalEscrow: token mismatch");
+        // La reputation debe estar fresca: si su one-shot setEscrow ya fue consumido por
+        // otro escrow, este escrow quedaria huerfano (recordCompletion revertiria siempre).
+        require(PanalReputationV1Like(_reputation).escrow() == address(0), "reputation already consumed");
         registry = PanalRegistryV2(_registry);
         reputation = PanalReputation(_reputation);
         PANAL_TOKEN = _panalToken;
@@ -100,13 +110,16 @@ contract PanalEscrowV2 {
     /// @param currency address(0) = MON nativo (amount debe ser == msg.value), o PANAL_TOKEN
     ///        (msg.value debe ser 0 y el cliente debe haber aprobado `amount` a este contrato).
     /// @param amount monto bloqueado en unidades de `currency` (== msg.value para tareas en MON).
+    ///        Para tokens con fee-on-transfer se contabiliza lo realmente recibido.
     function createTask(address worker, bytes32 taskHash, uint256 deadline, address currency, uint256 amount)
         external
         payable
+        nonReentrant
         returns (uint256 taskId)
     {
         require(currency == address(0) || currency == PANAL_TOKEN, "PanalEscrow: unsupported currency");
         require(deadline > block.timestamp, "PanalEscrow: invalid deadline");
+        require(worker != msg.sender, "no self-task");
         if (worker != address(0)) {
             require(registry.isActiveAgent(worker), "PanalEscrow: worker not active agent");
         }
@@ -118,7 +131,11 @@ contract PanalEscrowV2 {
         } else {
             require(msg.value == 0, "PanalEscrow: unexpected native value");
             require(amount >= MIN_TASK_AMOUNT_TOKEN, "PanalEscrow: below minimum");
+            // Defensa fee-on-transfer: contabilizar el recibido real, no el declarado.
+            uint256 balanceBefore = IERC20(PANAL_TOKEN).balanceOf(address(this));
             _safeTransferFrom(PANAL_TOKEN, msg.sender, address(this), amount);
+            amount = IERC20(PANAL_TOKEN).balanceOf(address(this)) - balanceBefore;
+            require(amount >= MIN_TASK_AMOUNT_TOKEN, "PanalEscrow: below minimum received");
         }
 
         taskId = tasks.length;
@@ -141,6 +158,7 @@ contract PanalEscrowV2 {
         Task storage task = _getTask(taskId);
         require(task.status == Status.Open, "PanalEscrow: not open");
         require(task.worker == address(0), "PanalEscrow: task already assigned");
+        require(msg.sender != task.client, "no self-task");
         require(registry.isActiveAgent(msg.sender), "PanalEscrow: not active agent");
         task.worker = msg.sender;
         emit TaskClaimed(taskId, msg.sender);
@@ -176,11 +194,12 @@ contract PanalEscrowV2 {
         _complete(taskId, task, 5);
     }
 
-    /// @notice Client o worker abren disputa.
+    /// @notice Client o worker abren disputa. Solo tras la entrega (Delivered): el cliente
+    ///         pre-entrega ya tiene cancelTask y el worker pre-entrega no tiene nada que disputar.
     function openDispute(uint256 taskId) external {
         Task storage task = _getTask(taskId);
         require(msg.sender == task.client || msg.sender == task.worker, "PanalEscrow: not party");
-        require(task.status == Status.Open || task.status == Status.Delivered, "PanalEscrow: invalid status");
+        require(task.status == Status.Delivered, "PanalEscrow: not delivered");
         task.status = Status.Disputed;
         disputedAt[taskId] = block.timestamp;
         emit TaskDisputed(taskId, msg.sender);

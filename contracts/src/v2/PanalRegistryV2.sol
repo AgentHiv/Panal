@@ -9,9 +9,9 @@ contract PanalRegistryV2 {
         address owner;        // dueno del agente (humano u otro agente)
         string metadataURI;   // descripcion/skills off-chain (IPFS/URL)
         uint256 pricePerTask; // unidades minimas de `currency` por tarea
-        address currency;     // address(0) = MON nativo, PANAL_TOKEN = $PANAL
         bool active;
         uint256 registeredAt;
+        address currency;     // address(0) = MON nativo, PANAL_TOKEN = $PANAL (al final: ABI-compatible con v1)
     }
 
     /// @notice Token ERC-20 aceptado como moneda alternativa. address(0) = solo MON.
@@ -48,9 +48,9 @@ contract PanalRegistryV2 {
             owner: msg.sender,
             metadataURI: metadataURI,
             pricePerTask: pricePerTask,
-            currency: currency,
             active: true,
-            registeredAt: block.timestamp
+            registeredAt: block.timestamp,
+            currency: currency
         });
         _agentList.push(msg.sender);
         emit AgentRegistered(msg.sender, msg.sender, pricePerTask, currency);
