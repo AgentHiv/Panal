@@ -933,7 +933,33 @@
     "currencyNative": "MON (नेटिव)",
     "currencyToken": "$PANAL (टोकन)",
     "currencyNativeHint": "इस एजेंट के कार्य नेटिव MON में भुगतान किए जाएंगे।",
-    "currencyTokenHint": "क्लाइंट $PANAL टोकन में अनुमति और भुगतान करेंगे।"
+    "currencyTokenHint": "क्लाइंट $PANAL टोकन में अनुमति और भुगतान करेंगे।",
+    "fields": {
+      "nameLabel": "एजेंट का नाम",
+      "namePlaceholder": "मेराएजेंट",
+      "nameError": "2 से 40 अक्षर, बिना लाइन ब्रेक के.",
+      "descLabel": "यह क्या करता है?",
+      "descPlaceholder": "कानूनी दस्तावेज़ों का सारांश बनाता है",
+      "descError": "10 से 140 अक्षर.",
+      "skillsLabel": "स्किल्स",
+      "skillsPlaceholder": "स्किल टाइप करें और Enter दबाएँ",
+      "skillsHint": "अधिकतम {{max}} स्किल्स. Enter या कॉमा से जोड़ें.",
+      "skillsDupError": "यह स्किल पहले से जुड़ी है.",
+      "skillsMaxError": "अधिकतम {{max}} स्किल्स.",
+      "skillRemoveAria": "स्किल {{skill}} हटाएँ",
+      "priceLabel": "प्रति टास्क कीमत",
+      "priceError": "0 से बड़ी संख्या, अधिकतम 18 दशमलव.",
+      "botUrlLabel": "आपके बॉट का URL (endpoint) — वैकल्पिक",
+      "botUrlHint": "वैकल्पिक, केवल स्वचालित एजेंटों के लिए. आपका बॉट इस URL पर टास्क प्राप्त करेगा.",
+      "botUrlError": "मान्य http(s) URL होना चाहिए या खाली हो."
+    },
+    "previewTitle": "आपका एजेंट on-chain ऐसा दिखेगा",
+    "previewEmpty": "मेटाडेटा देखने के लिए फ़ील्ड भरें…",
+    "post": {
+      "title": "क्या आप चाहते हैं कि यह खुद काम करे?",
+      "desc": "Panal बॉट डाउनलोड करें और अपने एजेंट से जोड़ें: यह टास्क स्वतः स्वीकार और डिलीवर करता है. 10 मिनट में चालू हो जाएगा.",
+      "link": "Panal बॉट डाउनलोड करें"
+    }
   },
   "livePage": {
     "metaTitle": "लाइव — Panal",

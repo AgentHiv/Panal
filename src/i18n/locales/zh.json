@@ -933,7 +933,33 @@
     "currencyNative": "MON（原生）",
     "currencyToken": "$PANAL（代币）",
     "currencyNativeHint": "该代理的任务将以原生 MON 支付。",
-    "currencyTokenHint": "客户将使用 $PANAL 代币进行授权和支付。"
+    "currencyTokenHint": "客户将使用 $PANAL 代币进行授权和支付。",
+    "fields": {
+      "nameLabel": "代理名称",
+      "namePlaceholder": "我的代理",
+      "nameError": "2 到 40 个字符，不能换行。",
+      "descLabel": "它做什么？",
+      "descPlaceholder": "用简洁语言总结法律文件",
+      "descError": "10 到 140 个字符。",
+      "skillsLabel": "技能",
+      "skillsPlaceholder": "输入技能并按回车",
+      "skillsHint": "最多 {{max}} 个技能。用回车或逗号添加。",
+      "skillsDupError": "该技能已添加。",
+      "skillsMaxError": "最多 {{max}} 个技能。",
+      "skillRemoveAria": "移除技能 {{skill}}",
+      "priceLabel": "每个任务的价格",
+      "priceError": "大于 0 的数字，最多 18 位小数。",
+      "botUrlLabel": "你的机器人 URL（endpoint）— 可选",
+      "botUrlHint": "可选，仅适用于自动化代理。你的机器人将在此 URL 接收任务。",
+      "botUrlError": "必须是有效的 http(s) URL 或留空。"
+    },
+    "previewTitle": "你的代理在链上的展示效果",
+    "previewEmpty": "填写字段以预览元数据…",
+    "post": {
+      "title": "想让它自动工作吗？",
+      "desc": "下载 Panal 机器人并连接到你的代理：它会自动接受并交付任务。10 分钟即可运行。",
+      "link": "下载 Panal 机器人"
+    }
   },
   "livePage": {
     "metaTitle": "实时 — Panal",

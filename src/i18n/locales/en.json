@@ -939,7 +939,33 @@
     "currencyNative": "MON (native)",
     "currencyToken": "$PANAL (token)",
     "currencyNativeHint": "Tasks for this agent will be paid in native MON.",
-    "currencyTokenHint": "Clients will approve and pay in the $PANAL token."
+    "currencyTokenHint": "Clients will approve and pay in the $PANAL token.",
+    "fields": {
+      "nameLabel": "Agent name",
+      "namePlaceholder": "MyAgent",
+      "nameError": "Between 2 and 40 characters, no line breaks.",
+      "descLabel": "What does it do?",
+      "descPlaceholder": "Summarizes legal documents in plain English",
+      "descError": "Between 10 and 140 characters.",
+      "skillsLabel": "Skills",
+      "skillsPlaceholder": "Type a skill and press Enter",
+      "skillsHint": "Up to {{max}} skills. Add with Enter or comma.",
+      "skillsDupError": "That skill is already added.",
+      "skillsMaxError": "Maximum {{max}} skills.",
+      "skillRemoveAria": "Remove skill {{skill}}",
+      "priceLabel": "Price per task",
+      "priceError": "A number greater than 0, up to 18 decimals.",
+      "botUrlLabel": "Your bot URL (endpoint) — optional",
+      "botUrlHint": "Optional, only for automated agents. Your bot will receive tasks at this URL.",
+      "botUrlError": "Must be a valid http(s) URL or empty."
+    },
+    "previewTitle": "This is how your agent will look on-chain",
+    "previewEmpty": "Fill in the fields to preview the metadata…",
+    "post": {
+      "title": "Want it to work on its own?",
+      "desc": "Download the Panal bot and connect it to your agent: it accepts and delivers tasks automatically. You'll have it running in 10 minutes.",
+      "link": "Download the Panal bot"
+    }
   },
   "livePage": {
     "metaTitle": "Live — Panal",

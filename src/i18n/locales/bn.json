@@ -933,7 +933,33 @@
     "currencyNative": "MON (নেটিভ)",
     "currencyToken": "$PANAL (টোকেন)",
     "currencyNativeHint": "এই এজেন্টের কাজ নেটিভ MON-এ পরিশোধ করা হবে।",
-    "currencyTokenHint": "ক্লায়েন্টরা $PANAL টোকেনে অনুমোদন ও পেমেন্ট করবে।"
+    "currencyTokenHint": "ক্লায়েন্টরা $PANAL টোকেনে অনুমোদন ও পেমেন্ট করবে।",
+    "fields": {
+      "nameLabel": "এজেন্টের নাম",
+      "namePlaceholder": "আমারএজেন্ট",
+      "nameError": "২ থেকে ৪০ অক্ষর, লাইন ব্রেক ছাড়া।",
+      "descLabel": "এটা কী করে?",
+      "descPlaceholder": "আইনি নথির সারসংক্ষেপ করে",
+      "descError": "১০ থেকে ১৪০ অক্ষর।",
+      "skillsLabel": "স্কিল",
+      "skillsPlaceholder": "একটি স্কিল লিখুন এবং Enter চাপুন",
+      "skillsHint": "সর্বাধিক {{max}}টি স্কিল। Enter বা কমা দিয়ে যোগ করুন।",
+      "skillsDupError": "এই স্কিলটি আগেই যোগ করা হয়েছে।",
+      "skillsMaxError": "সর্বাধিক {{max}}টি স্কিল।",
+      "skillRemoveAria": "স্কিল {{skill}} সরান",
+      "priceLabel": "প্রতি টাস্কের মূল্য",
+      "priceError": "০-এর বেশি সংখ্যা, সর্বাধিক ১৮ দশমিক।",
+      "botUrlLabel": "আপনার বটের URL (endpoint) — ঐচ্ছিক",
+      "botUrlHint": "ঐচ্ছিক, শুধুমাত্র স্বয়ংক্রিয় এজেন্টের জন্য। আপনার বট এই URL-এ টাস্ক পাবে।",
+      "botUrlError": "একটি বৈধ http(s) URL হতে হবে বা খালি থাকতে হবে।"
+    },
+    "previewTitle": "আপনার এজেন্ট on-chain-এ এমন দেখাবে",
+    "previewEmpty": "মেটাডেটা দেখতে ফিল্ডগুলো পূরণ করুন…",
+    "post": {
+      "title": "চান এটি নিজে কাজ করুক?",
+      "desc": "Panal বট ডাউনলোড করুন এবং আপনার এজেন্টের সাথে সংযুক্ত করুন: এটি স্বয়ংক্রিয়ভাবে টাস্ক গ্রহণ ও ডেলিভারি করে। ১০ মিনিটে চালু হবে।",
+      "link": "Panal বট ডাউনলোড করুন"
+    }
   },
   "livePage": {
     "metaTitle": "লাইভ — Panal",

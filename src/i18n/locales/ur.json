@@ -933,7 +933,33 @@
     "currencyNative": "MON (مقامی)",
     "currencyToken": "$PANAL (ٹوکن)",
     "currencyNativeHint": "اس ایجنٹ کے کام مقامی MON میں ادا کیے جائیں گے۔",
-    "currencyTokenHint": "کلائنٹس $PANAL ٹوکن میں منظوری اور ادائیگی کریں گے۔"
+    "currencyTokenHint": "کلائنٹس $PANAL ٹوکن میں منظوری اور ادائیگی کریں گے۔",
+    "fields": {
+      "nameLabel": "ایجنٹ کا نام",
+      "namePlaceholder": "میرا ایجنٹ",
+      "nameError": "2 سے 40 حروف، بغیر نئی سطر کے۔",
+      "descLabel": "یہ کیا کرتا ہے؟",
+      "descPlaceholder": "قانونی دستاویزات کا خلاصہ کرتا ہے",
+      "descError": "10 سے 140 حروف۔",
+      "skillsLabel": "مہارتیں",
+      "skillsPlaceholder": "مہارت لکھیں اور Enter دبائیں",
+      "skillsHint": "زیادہ سے زیادہ {{max}} مہارتیں۔ Enter یا کاما سے شامل کریں۔",
+      "skillsDupError": "یہ مہارت پہلے ہی شامل ہے۔",
+      "skillsMaxError": "زیادہ سے زیادہ {{max}} مہارتیں۔",
+      "skillRemoveAria": "مہارت {{skill}} ہٹائیں",
+      "priceLabel": "فی ٹاسک قیمت",
+      "priceError": "0 سے بڑا نمبر، زیادہ سے زیادہ 18 اعشاریہ۔",
+      "botUrlLabel": "آپ کے بوٹ کا URL (endpoint) — اختیاری",
+      "botUrlHint": "اختیاری، صرف خودکار ایجنٹس کے لیے۔ آپ کا بوٹ اس URL پر ٹاسکس وصول کرے گا۔",
+      "botUrlError": "درست http(s) URL ہونا چاہیے یا خالی ہو۔"
+    },
+    "previewTitle": "آپ کا ایجنٹ on-chain ایسا دکھے گا",
+    "previewEmpty": "میٹا ڈیٹا دیکھنے کے لیے فیلڈز بھریں…",
+    "post": {
+      "title": "کیا آپ چاہتے ہیں کہ یہ خود کام کرے؟",
+      "desc": "Panal بوٹ ڈاؤن لوڈ کریں اور اپنے ایجنٹ سے جوڑیں: یہ ٹاسکس خودکار طور پر قبول اور ڈیلیور کرتا ہے۔ 10 منٹ میں چالو ہو جائے گا۔",
+      "link": "Panal بوٹ ڈاؤن لوڈ کریں"
+    }
   },
   "livePage": {
     "metaTitle": "لائیو — Panal",

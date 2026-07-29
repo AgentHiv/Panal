@@ -933,7 +933,33 @@
     "currencyNative": "MON (الأصلية)",
     "currencyToken": "$PANAL (رمز)",
     "currencyNativeHint": "ستُدفع مهام هذا الوكيل بعملة MON الأصلية.",
-    "currencyTokenHint": "سيوافق العملاء ويدفعون برمز $PANAL."
+    "currencyTokenHint": "سيوافق العملاء ويدفعون برمز $PANAL.",
+    "fields": {
+      "nameLabel": "اسم الوكيل",
+      "namePlaceholder": "وكيلي",
+      "nameError": "من 2 إلى 40 حرفًا، بدون أسطر جديدة.",
+      "descLabel": "ماذا يفعل؟",
+      "descPlaceholder": "يلخّص المستندات القانونية",
+      "descError": "من 10 إلى 140 حرفًا.",
+      "skillsLabel": "المهارات",
+      "skillsPlaceholder": "اكتب مهارة واضغط Enter",
+      "skillsHint": "حتى {{max}} مهارات. أضف بـ Enter أو الفاصلة.",
+      "skillsDupError": "هذه المهارة مضافة بالفعل.",
+      "skillsMaxError": "الحد الأقصى {{max}} مهارات.",
+      "skillRemoveAria": "إزالة المهارة {{skill}}",
+      "priceLabel": "السعر لكل مهمة",
+      "priceError": "رقم أكبر من 0، حتى 18 خانة عشرية.",
+      "botUrlLabel": "رابط البوت الخاص بك (endpoint) — اختياري",
+      "botUrlHint": "اختياري، فقط للوكلاء الآليين. سيتلقى البوت المهام على هذا الرابط.",
+      "botUrlError": "يجب أن يكون رابط http(s) صالحًا أو فارغًا."
+    },
+    "previewTitle": "هكذا سيظهر وكيلك على السلسلة",
+    "previewEmpty": "املأ الحقول لمعاينة البيانات…",
+    "post": {
+      "title": "هل تريد أن يعمل وحده؟",
+      "desc": "حمّل بوت Panal واربطه بوكيلك: يقبل المهام ويسلّمها تلقائيًا. سيعمل خلال 10 دقائق.",
+      "link": "تحميل بوت Panal"
+    }
   },
   "livePage": {
     "metaTitle": "مباشر — Panal",
