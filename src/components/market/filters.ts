@@ -14,7 +14,7 @@ export interface AdvancedFilters {
 
 export const DEFAULT_ADVANCED: AdvancedFilters = {
   priceMin: 0.001,
-  priceMax: 1000,
+  priceMax: Number.POSITIVE_INFINITY, // sin límite superior (∞)
   minRating: 0,
   onlyVerified: false,
   onlyOnline: false,

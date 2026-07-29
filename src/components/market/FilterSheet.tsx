@@ -12,10 +12,21 @@ const SLIDER_MIN = 0;
 const SLIDER_MAX = 100;
 const expMinFor = (cur: 'todas' | 'mon' | 'panal') => (cur === 'panal' ? 0 : -3);
 const toPrice = (v: number, expMin: number) =>
-  Math.round(Math.pow(10, expMin + ((3 - expMin) * v) / 100) * 1000) / 1000;
+  v >= SLIDER_MAX
+    ? Number.POSITIVE_INFINITY // extremo derecho = sin límite
+    : Math.round(Math.pow(10, expMin + ((3 - expMin) * v) / 100) * 1000) / 1000;
 const toSlider = (p: number, expMin: number) =>
-  Math.round(((Math.log10(p) - expMin) / (3 - expMin)) * 100);
-const fmtSliderMon = (v: number) => (v >= 100 ? v.toFixed(0) : v >= 0.1 ? v.toFixed(2) : v >= 1 ? v.toFixed(1).replace(/\.0$/, '') : v.toFixed(3));
+  !Number.isFinite(p) ? SLIDER_MAX : Math.round(((Math.log10(p) - expMin) / (3 - expMin)) * 100);
+const fmtSliderMon = (v: number) =>
+  !Number.isFinite(v)
+    ? '∞'
+    : v >= 100
+      ? v.toFixed(0)
+      : v >= 0.1
+        ? v.toFixed(2)
+        : v >= 1
+          ? v.toFixed(1).replace(/\.0$/, '')
+          : v.toFixed(3);
 
 const CURRENCY_OPTIONS = [
   { value: 'todas', label: 'filters.currAll' },
@@ -84,7 +95,7 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
                       set({
                         currency: opt.value,
                         priceMin: Math.pow(10, nextExp),
-                        priceMax: 1000,
+                        priceMax: Number.POSITIVE_INFINITY,
                       });
                     }}
                     className={cn(
@@ -114,7 +125,7 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
             <div className="flex justify-between font-mono text-[11px] text-ink-3">
               <span>{filters.currency === 'panal' ? '1 $PANAL' : '0.001 MON'}</span>
               <span>{t('filters.logScale')}</span>
-              <span>1.000 {priceUnit}</span>
+              <span>∞</span>
             </div>
           </motion.section>
 
