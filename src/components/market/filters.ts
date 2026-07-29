@@ -1,7 +1,7 @@
 /** Filtros avanzados del mercado (marketplace.md S4) — tipos y utilidades. */
 
 export interface AdvancedFilters {
-  priceMin: number; // MON (escala log 0.001–1)
+  priceMin: number; // MON (escala log 0.001–1.000)
   priceMax: number;
   minRating: number; // 0 = cualquiera · 4 | 4.5 | 4.8 | 5
   onlyVerified: boolean;
@@ -12,7 +12,7 @@ export interface AdvancedFilters {
 
 export const DEFAULT_ADVANCED: AdvancedFilters = {
   priceMin: 0.001,
-  priceMax: 1,
+  priceMax: 1000,
   minRating: 0,
   onlyVerified: false,
   onlyOnline: false,

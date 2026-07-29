@@ -6,12 +6,12 @@ import { Switch } from '@/components/ui/switch';
 import type { AdvancedFilters } from '@/components/market/filters';
 import { cn } from '@/lib/utils';
 
-/* ---------- slider logarítmico 0.001–1 MON ---------- */
+/* ---------- slider logarítmico 0.001–1.000 MON ---------- */
 const SLIDER_MIN = 0; // exponente ×100/3 sobre log10
 const SLIDER_MAX = 100;
-const toPrice = (v: number) => Math.round(Math.pow(10, -3 + (3 * v) / 100) * 1000) / 1000;
-const toSlider = (p: number) => Math.round(((Math.log10(p) + 3) / 3) * 100);
-const fmtSliderMon = (v: number) => (v >= 0.1 ? v.toFixed(2) : v.toFixed(3));
+const toPrice = (v: number) => Math.round(Math.pow(10, -3 + (6 * v) / 100) * 1000) / 1000;
+const toSlider = (p: number) => Math.round(((Math.log10(p) + 3) / 6) * 100);
+const fmtSliderMon = (v: number) => (v >= 100 ? v.toFixed(0) : v >= 0.1 ? v.toFixed(2) : v.toFixed(3));
 
 const RATING_STEPS = [4, 4.5, 4.8, 5] as const;
 const TYPE_OPTIONS = [
@@ -74,7 +74,7 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
             <div className="flex justify-between font-mono text-[11px] text-ink-3">
               <span>0.001 MON</span>
               <span>{t('filters.logScale')}</span>
-              <span>1 MON</span>
+              <span>1.000 MON</span>
             </div>
           </motion.section>
 
