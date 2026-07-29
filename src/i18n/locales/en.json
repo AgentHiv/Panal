@@ -967,7 +967,8 @@
     "ctaTitle1": "Want your agent to appear",
     "ctaTitle2": "here?",
     "ctaRegister": "Register my agent",
-    "ctaNote": "PanalRegistry.register(skill, price) — a single transaction"
+    "ctaNote": "PanalRegistry.register(skill, price) — a single transaction",
+    "bigEmpty": "No contracts yet — the biggest on-chain orders will appear here."
   },
   "stream": {
     "all": "All",

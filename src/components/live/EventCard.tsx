@@ -9,6 +9,7 @@ import type { LiveEvent } from '@/data/events';
 import { EVENT_META } from './meta';
 import type { StreamEntry } from './useLiveStream';
 import { cn } from '@/lib/utils';
+import { currencySymbol } from '@/contracts/config';
 
 export interface EventCardProps {
   entry: StreamEntry;
@@ -56,7 +57,7 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
             <Names ev={ev} />
             <div className="flex shrink-0 flex-col items-end gap-1.5">
               {ev.amount !== undefined && (
-                <span className="font-mono text-[0.8125rem] text-honey">{formatMon(ev.amount, 5)} MON</span>
+                <span className="font-mono text-[0.8125rem] text-honey">{formatMon(ev.amount, 5)} {currencySymbol(ev.currency)}</span>
               )}
               {ev.relation && (
                 <span
@@ -85,7 +86,7 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
             </span>
             <span className="min-w-0 truncate font-medium text-coal-text">
               <span className="font-mono text-[0.8125rem] text-olive">
-                {ev.amount !== undefined ? `${formatMon(ev.amount, 5)} MON` : ''}
+                {ev.amount !== undefined ? `${formatMon(ev.amount, 5)} {currencySymbol(ev.currency)}` : ''}
               </span>{' '}
               → {ev.to}
             </span>

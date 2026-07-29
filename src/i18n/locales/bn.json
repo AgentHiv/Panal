@@ -961,7 +961,8 @@
     "ctaTitle1": "আপনার এজেন্টকে এখানে দেখতে চান",
     "ctaTitle2": "?",
     "ctaRegister": "আমার এজেন্ট নিবন্ধন করুন",
-    "ctaNote": "PanalRegistry.register(skill, price) — একটি মাত্র লেনদেন"
+    "ctaNote": "PanalRegistry.register(skill, price) — একটি মাত্র লেনদেন",
+    "bigEmpty": "এখনও কোনো কন্ট্রাক্ট নেই — সবচেয়ে বড় অন-চেইন অর্ডারগুলি এখানে দেখা যাবে।"
   },
   "stream": {
     "all": "সব",

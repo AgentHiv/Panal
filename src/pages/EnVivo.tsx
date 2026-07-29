@@ -12,6 +12,11 @@ import { useLiveStream } from '@/components/live/useLiveStream';
 import { useNetworkStats } from '@/hooks/useNetworkStats';
 import type { StreamEntry } from '@/components/live/useLiveStream';
 import { formatMon } from '@/data/agents';
+import { formatEther } from 'viem';
+import { timeAgo, truncateHash } from '@/data/events';
+import { useTopTasks } from '@/hooks/useTopTasks';
+import { getTaskBrief } from '@/lib/taskBriefs';
+import { currencySymbol } from '@/contracts/config';
 import type { LiveEvent } from '@/data/events';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -318,18 +323,11 @@ function MiniStream({ entries }: { entries: StreamEntry[] }) {
 /* S3 · Mayores contratos de la última hora                            */
 /* ------------------------------------------------------------------ */
 
-const BIG_CONTRACTS = [
-  { from: '0x7A4f…f9B2', to: 'CodeAuditor', task: 'Auditoría completa + parche', amount: 0.3, agoMin: 6 },
-  { from: 'DeFiFactory', to: 'LegalReviewer', task: 'Revisión de términos v2', amount: 0.16, agoMin: 12 },
-  { from: 'HelenaRojas.eth', to: 'StudioNadir', task: 'Sprint de identidad', amount: 0.8, agoMin: 21, badge: 'humano↔humano' },
-  { from: 'ResearchAgent', to: 'SummarizerAI', task: 'Dossier de protocolo L2', amount: 0.12, agoMin: 34 },
-  { from: '0xB22…9eF0', to: 'ImageAnalyst', task: 'OCR de 400 facturas', amount: 0.09, agoMin: 47 },
-];
-const MAX_AMOUNT = Math.max(...BIG_CONTRACTS.map((c) => c.amount));
-
 function BigContracts() {
   const { t } = useTranslation();
   const reduced = usePrefersReduced();
+  const { data: topTasks, isLoading } = useTopTasks(5);
+  const maxWei = topTasks && topTasks.length > 0 ? topTasks[0].amountWei : 0n;
   return (
     <section className="border-t border-coal-line">
       <div className="container-hive py-16">
@@ -351,9 +349,23 @@ function BigContracts() {
               </tr>
             </thead>
             <tbody>
-              {BIG_CONTRACTS.map((c, i) => (
+              {isLoading && (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-[0.875rem] text-coal-mute">
+                    {t('live.loading')}
+                  </td>
+                </tr>
+              )}
+              {!isLoading && (!topTasks || topTasks.length === 0) && (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-[0.875rem] text-coal-mute">
+                    {t('livePage.bigEmpty')}
+                  </td>
+                </tr>
+              )}
+              {(topTasks ?? []).map((c, i) => (
                 <motion.tr
-                  key={c.task}
+                  key={c.id.toString()}
                   initial={reduced ? false : { opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-8% 0px' }}
@@ -365,27 +377,28 @@ function BigContracts() {
                   </td>
                   <td className="py-4 pr-4">
                     <span className="flex flex-wrap items-center gap-1.5 text-[0.875rem] text-coal-text">
-                      {c.from}
+                      {truncateHash(c.client)}
                       <ArrowRight size={12} className="text-coal-mute" aria-hidden />
-                      {c.to}
-                      {c.badge && (
-                        <span className="ml-1 rounded-full bg-sand px-2 py-0.5 text-[11px] font-medium leading-none text-ink">
-                          {c.badge}
-                        </span>
-                      )}
+                      {truncateHash(c.worker)}
                     </span>
                   </td>
-                  <td className="hidden py-4 pr-4 text-[0.875rem] text-coal-mute sm:table-cell">{c.task}</td>
+                  <td className="hidden max-w-[220px] truncate py-4 pr-4 text-[0.875rem] text-coal-mute sm:table-cell">
+                    {getTaskBrief(c.taskHash) ?? t('live.taskNum', { id: c.id.toString() })}
+                  </td>
                   <td className="py-4 pr-4 text-right font-mono text-[0.875rem]">
-                    {c.amount === MAX_AMOUNT && !reduced ? (
+                    {c.amountWei === maxWei && !reduced ? (
                       <span className="animate-shimmer bg-[linear-gradient(110deg,#E29A2E_35%,#F2EFFA_50%,#E29A2E_65%)] bg-[length:200%_100%] bg-clip-text font-semibold text-transparent">
-                        {formatMon(c.amount, 2)} MON
+                        {formatMon(Number(formatEther(c.amountWei)), 2)} {currencySymbol(c.currency)}
                       </span>
                     ) : (
-                      <span className="text-honey">{formatMon(c.amount, 2)} MON</span>
+                      <span className="text-honey">
+                        {formatMon(Number(formatEther(c.amountWei)), 2)} {currencySymbol(c.currency)}
+                      </span>
                     )}
                   </td>
-                  <td className="hidden py-4 text-right font-mono text-[11px] text-coal-mute sm:table-cell">{t('common.timeAgo.minutes', { count: c.agoMin })}</td>
+                  <td className="hidden py-4 text-right font-mono text-[11px] text-coal-mute sm:table-cell">
+                    {timeAgo(Math.max(0, Math.floor(Date.now() / 1000) - Number(c.createdAt)), t)}
+                  </td>
                 </motion.tr>
               ))}
             </tbody>

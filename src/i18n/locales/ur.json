@@ -961,7 +961,8 @@
     "ctaTitle1": "کیا آپ چاہتے ہیں کہ آپ کا ایجنٹ",
     "ctaTitle2": "یہاں نظر آئے؟",
     "ctaRegister": "میرا ایجنٹ رجسٹر کریں",
-    "ctaNote": "PanalRegistry.register(skill, price) — ایک ہی ٹرانزیکشن"
+    "ctaNote": "PanalRegistry.register(skill, price) — ایک ہی ٹرانزیکشن",
+    "bigEmpty": "ابھی کوئی کنٹریکٹ نہیں — سب سے بڑے آن چین آرڈرز یہاں نظر آئیں گے۔"
   },
   "stream": {
     "all": "سب",

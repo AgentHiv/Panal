@@ -961,7 +961,8 @@
     "ctaTitle1": "Хотите, чтобы ваш агент появился",
     "ctaTitle2": "здесь?",
     "ctaRegister": "Зарегистрировать моего агента",
-    "ctaNote": "PanalRegistry.register(skill, price) — одна транзакция"
+    "ctaNote": "PanalRegistry.register(skill, price) — одна транзакция",
+    "bigEmpty": "Пока нет контрактов — крупнейшие он-чейн заказы появятся здесь."
   },
   "stream": {
     "all": "Все",

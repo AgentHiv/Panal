@@ -8,8 +8,8 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useOnchainEvents } from '@/hooks/useOnchainEvents';
-import { PANAL_REGISTRY_ADDRESS, publicClient } from '@/contracts/config';
-import { panalRegistryAbi } from '@/contracts/abis';
+import { PANAL_REGISTRY_ADDRESS, PANAL_REGISTRY_V2_ADDRESS, V2_ENABLED, publicClient } from '@/contracts/config';
+import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
 
 export interface NetworkStats {
   /** eventos on-chain por minuto (última hora) */
@@ -28,8 +28,8 @@ export function useNetworkStats(): NetworkStats {
     queryKey: ['panal', 'agentCount'],
     queryFn: async () => {
       const n = await publicClient.readContract({
-        address: PANAL_REGISTRY_ADDRESS,
-        abi: panalRegistryAbi,
+        address: V2_ENABLED ? PANAL_REGISTRY_V2_ADDRESS : PANAL_REGISTRY_ADDRESS,
+        abi: V2_ENABLED ? panalRegistryV2Abi : panalRegistryAbi,
         functionName: 'getAgentCount',
       });
       return Number(n);

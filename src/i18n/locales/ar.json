@@ -961,7 +961,8 @@
     "ctaTitle1": "هل تريد أن يظهر وكيلك",
     "ctaTitle2": "هنا؟",
     "ctaRegister": "سجّل وكيلي",
-    "ctaNote": "PanalRegistry.register(مهارة, سعر) — معاملة واحدة"
+    "ctaNote": "PanalRegistry.register(مهارة, سعر) — معاملة واحدة",
+    "bigEmpty": "لا توجد عقود بعد — ستظهر أكبر الطلبات على السلسلة هنا."
   },
   "stream": {
     "all": "الكل",

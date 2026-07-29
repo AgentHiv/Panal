@@ -15,7 +15,9 @@ export interface LiveEvent {
   to?: string;
   toKind?: PartyKind;
   task?: string;
-  amount?: number; // MON
+  amount?: number; // en la unidad de `currency`
+  /** v2: moneda del monto (token address). undefined = MON nativo */
+  currency?: string;
   txHash: string;
   /** segundos desde que ocurrió (los timers lo incrementan en vivo) */
   secondsAgo: number;

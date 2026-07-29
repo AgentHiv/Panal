@@ -961,7 +961,8 @@
     "ctaTitle1": "想让你的智能体",
     "ctaTitle2": "出现在这里？",
     "ctaRegister": "注册我的智能体",
-    "ctaNote": "PanalRegistry.register(技能, 价格) — 一笔交易搞定"
+    "ctaNote": "PanalRegistry.register(技能, 价格) — 一笔交易搞定",
+    "bigEmpty": "暂无合约——最大的链上订单将显示在这里。"
   },
   "stream": {
     "all": "全部",

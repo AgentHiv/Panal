@@ -27,29 +27,50 @@ import type { Address } from 'viem';
 import i18n from '@/i18n';
 import {
   PANAL_ESCROW_ADDRESS,
+  PANAL_ESCROW_V2_ADDRESS,
   PANAL_REGISTRY_ADDRESS,
+  PANAL_REGISTRY_V2_ADDRESS,
+  V2_ENABLED,
   publicClient,
 } from '@/contracts/config';
-import { panalEscrowAbi, panalRegistryAbi } from '@/contracts/abis';
+import { panalEscrowAbi, panalEscrowV2Abi, panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
 import { formatMon } from '@/data/agents';
 import { truncateHash } from '@/data/events';
 import type { LiveEvent, PartyKind } from '@/data/events';
 
 const MAX_EVENTS = 30;
 /** ventanas de backfill hacia atrás (tamaño = maxLogRange auto-detectado) */
-const BACKFILL_WINDOWS = 50;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Búsqueda binaria del primer bloque con timestamp >= tsSec (≈26 getBlock). */
+async function blockAtTime(tsSec: number): Promise<bigint> {
+  let lo = 0n;
+  let hi = await publicClient.getBlockNumber();
+  while (hi - lo > 1n) {
+    const mid = (lo + hi) / 2n;
+    const b = await publicClient.getBlock({ blockNumber: mid });
+    if (Number(b.timestamp) >= tsSec) hi = mid;
+    else lo = mid;
+  }
+  return hi;
+}
 /** tope de ventanas por poll incremental (pestaña suspendida mucho tiempo) */
 const INCREMENTAL_MAX_WINDOWS = 10;
 const POLL_MS = 12_000;
 const QUERY_KEY = ['onchain-events'] as const;
 
-const REGISTRY_EVENTS = [
+const REGISTRY_EVENTS_V1 = [
   parseAbiItem(
     'event AgentRegistered(address indexed agent, address indexed owner, uint256 pricePerTask)',
   ),
 ];
+const REGISTRY_EVENTS_V2 = [
+  parseAbiItem(
+    'event AgentRegistered(address indexed agent, address indexed owner, uint256 pricePerTask, address currency)',
+  ),
+];
 
-const ESCROW_EVENTS = [
+const ESCROW_EVENTS_V1 = [
   parseAbiItem(
     'event TaskCreated(uint256 indexed taskId, address indexed client, address indexed worker, uint256 amount)',
   ),
@@ -61,6 +82,26 @@ const ESCROW_EVENTS = [
   parseAbiItem('event TaskDisputed(uint256 indexed taskId, address indexed openedBy)'),
   parseAbiItem('event Withdrawal(address indexed to, uint256 amount)'),
 ];
+const ESCROW_EVENTS_V2 = [
+  parseAbiItem(
+    'event TaskCreated(uint256 indexed taskId, address indexed client, address indexed worker, uint256 amount, address currency)',
+  ),
+  parseAbiItem('event TaskClaimed(uint256 indexed taskId, address indexed worker)'),
+  parseAbiItem('event TaskDelivered(uint256 indexed taskId, bytes32 resultHash)'),
+  parseAbiItem(
+    'event TaskCompleted(uint256 indexed taskId, address indexed worker, uint256 workerPaid, uint256 fee, uint8 rating)',
+  ),
+  parseAbiItem('event TaskDisputed(uint256 indexed taskId, address indexed openedBy)'),
+  parseAbiItem('event Withdrawal(address indexed to, address indexed token, uint256 amount)'),
+];
+
+/** Contratos y eventos ACTIVOS: v2 tras la migración, v1 antes. */
+const REGISTRY_ADDRESS = V2_ENABLED ? PANAL_REGISTRY_V2_ADDRESS : PANAL_REGISTRY_ADDRESS;
+const ESCROW_ADDRESS = V2_ENABLED ? PANAL_ESCROW_V2_ADDRESS : PANAL_ESCROW_ADDRESS;
+const REGISTRY_ABI = V2_ENABLED ? panalRegistryV2Abi : panalRegistryAbi;
+const REGISTRY_EVENTS = V2_ENABLED ? REGISTRY_EVENTS_V2 : REGISTRY_EVENTS_V1;
+const ESCROW_ABI = V2_ENABLED ? panalEscrowV2Abi : panalEscrowAbi;
+const ESCROW_EVENTS = V2_ENABLED ? ESCROW_EVENTS_V2 : ESCROW_EVENTS_V1;
 
 /** Log decodificado por viem cuando se pasan `events` al getLogs. */
 interface DecodedLog {
@@ -133,8 +174,8 @@ async function getLogsChunked(
 async function fetchAgentSet(): Promise<Set<string>> {
   try {
     const addresses = (await publicClient.readContract({
-      address: PANAL_REGISTRY_ADDRESS,
-      abi: panalRegistryAbi,
+      address: REGISTRY_ADDRESS,
+      abi: REGISTRY_ABI,
       functionName: 'getAgents',
       args: [0n, 50n],
     })) as Address[];
@@ -149,15 +190,15 @@ async function fetchCounters(): Promise<{ agents: bigint; tasks: bigint }> {
   const [agents, tasks] = await Promise.all([
     publicClient
       .readContract({
-        address: PANAL_REGISTRY_ADDRESS,
-        abi: panalRegistryAbi,
+        address: REGISTRY_ADDRESS,
+        abi: REGISTRY_ABI,
         functionName: 'getAgentCount',
       })
       .catch(() => null),
     publicClient
       .readContract({
-        address: PANAL_ESCROW_ADDRESS,
-        abi: panalEscrowAbi,
+        address: ESCROW_ADDRESS,
+        abi: V2_ENABLED ? panalEscrowV2Abi : panalEscrowAbi,
         functionName: 'getTaskCount',
       })
       .catch(() => null),
@@ -229,6 +270,7 @@ function mapLog(log: DecodedLog, agents: Set<string>, nowSec: number): LiveEvent
         toKind,
         task: taskId ? t('live.taskNum', { id: taskId }) : undefined,
         amount: typeof args.amount === 'bigint' ? Number(formatEther(args.amount)) : undefined,
+        currency: typeof args.currency === 'string' ? args.currency : undefined,
         relation: relationFor(fromKind, toKind),
       };
     }
@@ -267,7 +309,7 @@ function mapLog(log: DecodedLog, agents: Set<string>, nowSec: number): LiveEvent
         to: taskId ? t('live.taskLabel', { id: taskId }) : undefined,
         task: taskId ? t('live.disputeTask', { id: taskId }) : t('live.disputeOpened'),
       };
-    case 'Withdrawal':
+    case 'Withdrawal': {
       return {
         ...base,
         type: 'pago',
@@ -277,7 +319,9 @@ function mapLog(log: DecodedLog, agents: Set<string>, nowSec: number): LiveEvent
         toKind: kindOf(args.to),
         task: t('live.withdrawal'),
         amount: typeof args.amount === 'bigint' ? Number(formatEther(args.amount)) : undefined,
+        currency: typeof args.token === 'string' ? args.token : undefined,
       };
+    }
     default:
       return null;
   }
@@ -296,21 +340,68 @@ async function fetchOnchainEvents(prev: LiveEvent[] | undefined): Promise<LiveEv
 
   let raw: DecodedLog[] = [];
   if (state.lastSeenBlock === undefined) {
-    // Carga inicial: ventanas hacia atrás (tamaño auto-detectado, el RPC
-    // público limita a 100 bloques) hasta reunir suficientes eventos.
+    // Carga inicial QUIRÚRGICA: el RPC limita eth_getLogs a ~100 bloques,
+    // así que barrer hacia atrás no alcanza eventos de horas/días atrás.
+    // En su lugar usamos los timestamps on-chain (Agent.registeredAt,
+    // Task.createdAt) + búsqueda binaria del bloque exacto, y pedimos logs
+    // solo en una ventana pequeña alrededor de cada punto de actividad.
     const counters = await fetchCounters();
     if (counters.agents > 0n || counters.tasks > 0n) {
-      let to = head;
-      for (let w = 0; w < BACKFILL_WINDOWS && to >= 0n; w += 1) {
-        const from =
-          to >= state.maxLogRange ? to - state.maxLogRange + 1n : 0n;
+      const targets: number[] = [];
+      if (counters.agents > 0n) {
+        const addrList = [...(state.agents ?? new Set<string>())];
+        for (let i = 0; i < addrList.length; i += 5) {
+          const stamps = await Promise.all(
+            addrList.slice(i, i + 5).map(async (a) => {
+              try {
+                const ag = (await publicClient.readContract({
+                  address: REGISTRY_ADDRESS,
+                  abi: REGISTRY_ABI,
+                  functionName: 'getAgent',
+                  args: [a as Address],
+                })) as { registeredAt: bigint };
+                return Number(ag.registeredAt);
+              } catch {
+                return null;
+              }
+            }),
+          );
+          for (const x of stamps) if (x) targets.push(x);
+          if (i + 5 < addrList.length) await sleep(300);
+        }
+      }
+      if (counters.tasks > 0n) {
+        const n = counters.tasks > 25n ? 25n : counters.tasks;
+        const ids: bigint[] = [];
+        for (let i = counters.tasks - n; i < counters.tasks; i += 1n) ids.push(i);
+        for (let i = 0; i < ids.length; i += 5) {
+          const stamps = await Promise.all(
+            ids.slice(i, i + 5).map(async (id) => {
+              try {
+                const tk = (await publicClient.readContract({
+                  address: ESCROW_ADDRESS,
+                  abi: ESCROW_ABI,
+                  functionName: 'tasks',
+                  args: [id],
+                })) as { createdAt: bigint };
+                return Number(tk.createdAt);
+              } catch {
+                return null;
+              }
+            }),
+          );
+          for (const x of stamps) if (x) targets.push(x);
+          if (i + 5 < ids.length) await sleep(300);
+        }
+      }
+      for (const ts of targets) {
+        const b = await blockAtTime(ts);
+        const from = b > 120n ? b - 120n : 0n;
         const [registryLogs, escrowLogs] = await Promise.all([
-          getLogsChunked(PANAL_REGISTRY_ADDRESS, REGISTRY_EVENTS, from, to),
-          getLogsChunked(PANAL_ESCROW_ADDRESS, ESCROW_EVENTS, from, to),
+          getLogsChunked(REGISTRY_ADDRESS, REGISTRY_EVENTS, from, b + 120n),
+          getLogsChunked(ESCROW_ADDRESS, ESCROW_EVENTS, from, b + 120n),
         ]);
         raw.push(...registryLogs, ...escrowLogs);
-        if (raw.length >= MAX_EVENTS || from === 0n) break;
-        to = from - 1n;
       }
     }
   } else if (head > state.lastSeenBlock) {
@@ -319,8 +410,8 @@ async function fetchOnchainEvents(prev: LiveEvent[] | undefined): Promise<LiveEv
     const from =
       head - state.lastSeenBlock > maxGap ? head - maxGap + 1n : state.lastSeenBlock + 1n;
     const [registryLogs, escrowLogs] = await Promise.all([
-      getLogsChunked(PANAL_REGISTRY_ADDRESS, REGISTRY_EVENTS, from, head),
-      getLogsChunked(PANAL_ESCROW_ADDRESS, ESCROW_EVENTS, from, head),
+      getLogsChunked(REGISTRY_ADDRESS, REGISTRY_EVENTS, from, head),
+      getLogsChunked(ESCROW_ADDRESS, ESCROW_EVENTS, from, head),
     ]);
     raw = [...registryLogs, ...escrowLogs];
   }
