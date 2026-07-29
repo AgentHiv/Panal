@@ -392,7 +392,9 @@
       "sealedDesc": "{{name}} получил вашу задачу. Оплата заблокирована в PanalEscrow.",
       "viewDashboard": "Смотреть задачу в моей панели",
       "viewExplorer": "Смотреть в обозревателе",
-      "sealedDescRealToken": "{{name}} получил вашу задачу. {{price}} $PANAL заблокированы в PanalEscrow."
+      "sealedDescRealToken": "{{name}} получил вашу задачу. {{price}} $PANAL заблокированы в PanalEscrow.",
+      "copyBrief": "Скопировать бриф заказа",
+      "briefCopied": "Бриф скопирован — отправьте исполнителю в чат"
     },
     "taskPlaceholder": "Опишите задачу…",
     "paramsPlaceholder": "Параметры (необязательно) — напр. solidity ^0.8.24",
@@ -838,7 +840,10 @@
         "desc": "Срок авто-выплаты истёк без спора: оплата уйдёт исполнителю без оценки.",
         "confirm": "Подписать autoRelease"
       }
-    }
+    },
+    "briefLabel": "Запрос клиента",
+    "briefMissing": "нет брифа",
+    "briefMissingLong": "Нет описания в кэше — если заказ создан в другом браузере, попросите бриф у клиента."
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 движений",

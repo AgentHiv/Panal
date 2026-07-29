@@ -392,7 +392,9 @@
       "sealedDesc": "{{name}} को आपका टास्क मिल गया है। भुगतान PanalEscrow में लॉक है।",
       "viewDashboard": "मेरे डैशबोर्ड में टास्क देखें",
       "viewExplorer": "एक्सप्लोरर पर देखें",
-      "sealedDescRealToken": "{{name}} को आपका टास्क मिल गया है। {{price}} $PANAL PanalEscrow में लॉक हैं।"
+      "sealedDescRealToken": "{{name}} को आपका टास्क मिल गया है। {{price}} $PANAL PanalEscrow में लॉक हैं।",
+      "copyBrief": "ऑर्डर ब्रीफ कॉपी करें",
+      "briefCopied": "ब्रीफ कॉपी हो गया — चैट से वर्कर को भेजें"
     },
     "taskPlaceholder": "टास्क का विवरण दें…",
     "paramsPlaceholder": "पैरामीटर (वैकल्पिक) — जैसे solidity ^0.8.24",
@@ -838,7 +840,10 @@
         "desc": "बिना विवाद के ऑटो-रिलीज़ अवधि बीत गई: भुगतान बिना रेटिंग worker को जाएगा।",
         "confirm": "autoRelease पर हस्ताक्षर"
       }
-    }
+    },
+    "briefLabel": "क्लाइंट का अनुरोध",
+    "briefMissing": "ब्रीफ नहीं",
+    "briefMissingLong": "कैश में विवरण नहीं — अगर ऑर्डर किसी और ब्राउज़र में बना था, तो क्लाइंट से ब्रीफ मांगें।"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 लेन-देन",

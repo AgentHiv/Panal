@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ExternalLink, Hexagon, Loader2, Timer, TriangleAlert } from 'lucide-react';
 import { useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { keccak256, toBytes } from 'viem';
+import { saveTaskBrief } from '@/lib/taskBriefs';
 import {
   Dialog,
   DialogContent,
@@ -133,6 +134,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     }
     const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
     const taskHash = keccak256(toBytes(brief));
+    saveTaskBrief(taskHash, brief); // caché local: el trabajador verá QUÉ se pidió
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 3 * 24 * 60 * 60);
     if (!V2_ENABLED) {
       // v1: createTask(worker, taskHash, deadline) con value = precio.
@@ -175,6 +177,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     setApprovePhase('approved');
     const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
     const taskHash = keccak256(toBytes(brief));
+    saveTaskBrief(taskHash, brief); // caché local: el trabajador verá QUÉ se pidió
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 3 * 24 * 60 * 60);
     writeContract({
       address: PANAL_ESCROW_V2_ADDRESS,
@@ -515,6 +518,16 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         </p>
                       </div>
                       {realTxHash && <TxHash hash={realTxHash} className="rounded-full border border-line bg-cream px-4 py-2" />}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(taskText.trim() + (params.trim() ? '\n' + params.trim() : ''));
+                          toast(t('hire.step3.briefCopied'));
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border border-monad/40 bg-monad/10 px-4 py-2 text-[0.8125rem] font-medium text-monad-mist transition-colors hover:border-monad"
+                      >
+                        {t('hire.step3.copyBrief')}
+                      </button>
                       <div className="flex w-full flex-col gap-2 sm:flex-row">
                         <Link
                           to="/dashboard"

@@ -392,7 +392,9 @@
       "sealedDesc": "استلم {{name}} مهمتك. الدفع مقفل في PanalEscrow.",
       "viewDashboard": "عرض المهمة في لوحة التحكم",
       "viewExplorer": "عرض على المستكشف",
-      "sealedDescRealToken": "استلم {{name}} مهمتك. {{price}} $PANAL مقفلة في PanalEscrow."
+      "sealedDescRealToken": "استلم {{name}} مهمتك. {{price}} $PANAL مقفلة في PanalEscrow.",
+      "copyBrief": "نسخ وصف الطلب",
+      "briefCopied": "تم نسخ الوصف — أرسله إلى العامل عبر الدردشة"
     },
     "taskPlaceholder": "صف المهمة…",
     "paramsPlaceholder": "المعاملات (اختياري) — مثل solidity ^0.8.24",
@@ -838,7 +840,10 @@
         "desc": "انقضت مهلة الإفراج التلقائي دون نزاع: يذهب الدفع للعامل دون تقييم.",
         "confirm": "توقيع autoRelease"
       }
-    }
+    },
+    "briefLabel": "طلب العميل",
+    "briefMissing": "بدون وصف",
+    "briefMissingLong": "لا يوجد وصف مخزن — إذا أُنشئ الطلب في متصفح آخر، اطلب الوصف من العميل."
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 حركات",

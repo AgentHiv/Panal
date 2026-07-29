@@ -392,7 +392,9 @@
       "sealedDesc": "{{name}} recebeu a sua tarefa. O pagamento está bloqueado no PanalEscrow.",
       "viewDashboard": "Ver tarefa no meu painel",
       "viewExplorer": "Ver no explorador",
-      "sealedDescRealToken": "{{name}} recebeu a sua tarefa. {{price}} $PANAL bloqueados no PanalEscrow."
+      "sealedDescRealToken": "{{name}} recebeu a sua tarefa. {{price}} $PANAL bloqueados no PanalEscrow.",
+      "copyBrief": "Copiar brief do pedido",
+      "briefCopied": "Brief copiado — envie ao trabalhador por chat"
     },
     "taskPlaceholder": "Descreva a tarefa…",
     "paramsPlaceholder": "Parâmetros (opcional) — ex.: solidity ^0.8.24",
@@ -838,7 +840,10 @@
         "desc": "O prazo de auto-liberação passou sem disputa: o pagamento vai ao worker sem avaliação.",
         "confirm": "Assinar autoRelease"
       }
-    }
+    },
+    "briefLabel": "Pedido do cliente",
+    "briefMissing": "sem brief",
+    "briefMissingLong": "Sem descrição em cache — se o pedido foi criado em outro navegador, peça o brief ao cliente."
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movimentos",

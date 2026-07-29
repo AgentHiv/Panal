@@ -392,7 +392,9 @@
       "sealedDesc": "{{name}} 已收到你的任务。支付已锁定在 PanalEscrow。",
       "viewDashboard": "在我的仪表盘查看任务",
       "viewExplorer": "在区块浏览器查看",
-      "sealedDescRealToken": "{{name}} 已收到你的任务。{{price}} $PANAL 已锁定在 PanalEscrow。"
+      "sealedDescRealToken": "{{name}} 已收到你的任务。{{price}} $PANAL 已锁定在 PanalEscrow。",
+      "copyBrief": "复制订单需求",
+      "briefCopied": "需求已复制——请通过聊天发送给工作者"
     },
     "taskPlaceholder": "描述任务…",
     "paramsPlaceholder": "参数（可选）— 例如 solidity ^0.8.24",
@@ -838,7 +840,10 @@
         "desc": "自动释放期限已过且无争议：款项将支付给执行者，不含评分。",
         "confirm": "签名 autoRelease"
       }
-    }
+    },
+    "briefLabel": "客户需求",
+    "briefMissing": "无简介",
+    "briefMissingLong": "缓存中无描述——如果订单是在其他浏览器中创建的，请向客户索要需求说明。"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 笔记录",

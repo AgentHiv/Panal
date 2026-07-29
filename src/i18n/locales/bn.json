@@ -392,7 +392,9 @@
       "sealedDesc": "{{name}} আপনার টাস্ক পেয়েছে। পেমেন্ট PanalEscrow-তে লক করা আছে।",
       "viewDashboard": "আমার ড্যাশবোর্ডে টাস্ক দেখুন",
       "viewExplorer": "এক্সপ্লোরারে দেখুন",
-      "sealedDescRealToken": "{{name}} আপনার টাস্ক পেয়েছে। PanalEscrow-তে {{price}} $PANAL লক করা আছে।"
+      "sealedDescRealToken": "{{name}} আপনার টাস্ক পেয়েছে। PanalEscrow-তে {{price}} $PANAL লক করা আছে।",
+      "copyBrief": "অর্ডার ব্রিফ কপি করুন",
+      "briefCopied": "ব্রিফ কপি হয়েছে — চ্যাটে কর্মীকে পাঠান"
     },
     "taskPlaceholder": "টাস্কটি বর্ণনা করুন…",
     "paramsPlaceholder": "প্যারামিটার (ঐচ্ছিক) — যেমন solidity ^0.8.24",
@@ -838,7 +840,10 @@
         "desc": "বিরোধ ছাড়াই অটো-রিলিজ সময় পার হয়েছে: রেটিং ছাড়াই পেমেন্ট worker-কে যাবে।",
         "confirm": "autoRelease স্বাক্ষর"
       }
-    }
+    },
+    "briefLabel": "ক্লায়েন্টের অনুরোধ",
+    "briefMissing": "ব্রিফ নেই",
+    "briefMissingLong": "ক্যাশে কোনো বিবরণ নেই — অর্ডারটি অন্য ব্রাউজারে তৈরি হলে ক্লায়েন্টের কাছে ব্রিফ চান।"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · ৬টি লেনদেন",

@@ -392,7 +392,9 @@
       "sealedDesc": "{{name}} کو آپ کا ٹاسک مل گیا ہے۔ ادائیگی PanalEscrow میں لاک ہے۔",
       "viewDashboard": "اپنے ڈیش بورڈ میں ٹاسک دیکھیں",
       "viewExplorer": "ایکسپلورر پر دیکھیں",
-      "sealedDescRealToken": "{{name}} کو آپ کا ٹاسک مل گیا ہے۔ PanalEscrow میں {{price}} $PANAL لاک ہیں۔"
+      "sealedDescRealToken": "{{name}} کو آپ کا ٹاسک مل گیا ہے۔ PanalEscrow میں {{price}} $PANAL لاک ہیں۔",
+      "copyBrief": "آرڈر بریف کاپی کریں",
+      "briefCopied": "بریف کاپی ہو گیا — چیٹ سے ورکر کو بھیجیں"
     },
     "taskPlaceholder": "ٹاسک بیان کریں…",
     "paramsPlaceholder": "پیرامیٹرز (اختیاری) — مثلاً solidity ^0.8.24",
@@ -838,7 +840,10 @@
         "desc": "خودکار ریلیز کی مہلت بغیر تنازع گزر گئی: ادائیگی بغیر ریٹنگ worker کو جائے گی۔",
         "confirm": "autoRelease پر دستخط"
       }
-    }
+    },
+    "briefLabel": "کلائنٹ کی درخواست",
+    "briefMissing": "بریف نہیں",
+    "briefMissingLong": "کیشے میں تفصیل نہیں — اگر آرڈر کسی اور براؤزر میں بنا تھا تو کلائنٹ سے بریف مانگیں۔"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 لین دین",

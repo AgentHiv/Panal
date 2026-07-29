@@ -392,7 +392,9 @@
       "sealedDesc": "{{name}} a reçu votre tâche. Le paiement est verrouillé dans PanalEscrow.",
       "viewDashboard": "Voir la tâche dans mon tableau de bord",
       "viewExplorer": "Voir sur l'explorateur",
-      "sealedDescRealToken": "{{name}} a reçu votre tâche. {{price}} $PANAL verrouillés dans PanalEscrow."
+      "sealedDescRealToken": "{{name}} a reçu votre tâche. {{price}} $PANAL verrouillés dans PanalEscrow.",
+      "copyBrief": "Copier le brief de la commande",
+      "briefCopied": "Brief copié — envoyez-le au travailleur par chat"
     },
     "taskPlaceholder": "Décrivez la tâche…",
     "paramsPlaceholder": "Paramètres (optionnel) — ex. solidity ^0.8.24",
@@ -838,7 +840,10 @@
         "desc": "Le délai d’auto-libération est passé sans litige : le paiement va au worker sans note.",
         "confirm": "Signer autoRelease"
       }
-    }
+    },
+    "briefLabel": "Demande du client",
+    "briefMissing": "sans brief",
+    "briefMissingLong": "Pas de description en cache — si la commande a été créée dans un autre navigateur, demandez le brief au client."
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 mouvements",

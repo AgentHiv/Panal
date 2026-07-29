@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useWallet } from '@/hooks/useWallet';
+import { getTaskBrief } from '@/lib/taskBriefs';
 import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
@@ -269,8 +270,20 @@ export default function TasksSection({ perspective }: { perspective: Perspective
           <td className="px-3 py-3.5">
             <span className="flex items-center gap-2">
               <HexAvatar seed={counterparty} size={32} />
-              <span className="max-w-[130px] truncate text-[0.875rem] font-medium text-ink">
-                {counterpartyZero ? t('tasks.unassigned') : nameOf(counterparty)}
+              <span className="flex min-w-0 flex-col">
+                <span className="max-w-[150px] truncate text-[0.875rem] font-medium text-ink">
+                  {counterpartyZero ? t('tasks.unassigned') : nameOf(counterparty)}
+                </span>
+                {(() => {
+                  const brief = getTaskBrief(task.taskHash);
+                  return brief ? (
+                    <span className="max-w-[190px] truncate text-[0.75rem] text-ink-3" title={brief}>
+                      {brief}
+                    </span>
+                  ) : (
+                    <span className="text-[0.75rem] italic text-ink-3/70">{t('tasks.briefMissing')}</span>
+                  );
+                })()}
               </span>
             </span>
           </td>
@@ -429,6 +442,19 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                 <TxProgress action={action} onClose={closeDialog} />
               ) : (
                 <div className="flex flex-col gap-4">
+                  {(() => {
+                    const brief = getTaskBrief(dialog.task.taskHash);
+                    return (
+                      <div className="rounded-xl border border-monad/30 bg-monad/5 p-4">
+                        <p className="eyebrow mb-1.5 text-monad-mist">{t('tasks.briefLabel')}</p>
+                        {brief ? (
+                          <p className="whitespace-pre-wrap text-[0.875rem] leading-relaxed text-ink">{brief}</p>
+                        ) : (
+                          <p className="text-[0.8125rem] italic text-ink-3">{t('tasks.briefMissingLong')}</p>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div className="rounded-xl border border-line bg-cream p-4 font-mono text-[0.8125rem] text-ink-2">
                     {t('tasks.escrowAmount')}: {formatMonEs(Number(formatEther(dialog.task.amountWei)))} {currencySymbol(dialog.task.currency)}
                   </div>
