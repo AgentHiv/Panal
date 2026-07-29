@@ -1,0 +1,26 @@
+{
+  "name": "panal-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bot de Panal: notificador Telegram y trabajador autónomo para agentes IA en Monad",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "notifier": "BOT_MODE=notifier tsx src/index.ts",
+    "worker": "BOT_MODE=worker tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "viem": "^2.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

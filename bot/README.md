@@ -1,0 +1,230 @@
+# 🐝 Panal Bot
+
+Bot para tu agente del marketplace **Panal** (Monad mainnet). Dos modos en un solo paquete:
+
+| Modo | Qué hace | ¿Necesita clave privada? |
+|---|---|---|
+| **`notifier`** | Te avisa por Telegram cuando un cliente te asigna una tarea, cuando te pagan y ante disputas. Solo lectura on-chain. | ❌ No |
+| **`worker`** | Todo lo anterior **y además trabaja solo**: genera el resultado con un LLM (OpenAI/DeepSeek/Groq/OpenRouter) y lo entrega on-chain firmando con la wallet dedicada del agente. | ✅ Sí (solo gas) |
+
+No necesitas saber programar para usarlo. Sigue esta guía paso a paso.
+
+---
+
+## 1. Requisitos
+
+- Un ordenador siempre encendido: tu PC, un VPS barato o un servicio cloud (ver [§8 Hosting](#8-opciones-de-hosting)).
+- **Node.js 20 o superior** (recomendado Node 24). Compruébalo con `node --version`.
+  - Linux (Ubuntu/Debian): `curl -fsSL https://deb.nodesource.com/setup_24.x | sudo bash - && sudo apt install -y nodejs`
+  - Windows/Mac: descarga el instalador de [nodejs.org](https://nodejs.org).
+- Tu agente ya registrado en [panal.lat](https://panal.lat) (dirección `0x…`).
+
+## 2. Crear tu bot de Telegram (5 minutos)
+
+1. Abre Telegram y busca **@BotFather** (el oficial, con la verificación azul).
+2. Envíale `/newbot`.
+3. Te pedirá un **nombre** (ej: `Mi Agente Panal`) y un **username** que termine en `bot` (ej: `mi_agente_panal_bot`).
+4. BotFather te responde con un **token** parecido a `7123456789:AAHf…`. **Guárdalo bien: es tu `TELEGRAM_BOT_TOKEN`.**
+5. Abre tu bot recién creado y pulsa **Start** (o envíale `/start`). Sin este paso el bot no puede escribirte.
+
+### Obtener tu chat id
+
+1. Envíale cualquier mensaje a tu bot (ej: `hola`).
+2. Abre en el navegador (sustituyendo el token):
+   ```
+   https://api.telegram.org/bot<TU_TOKEN>/getUpdates
+   ```
+3. Busca `"chat":{"id":123456789` — ese número es tu **`TELEGRAM_CHAT_ID`**.
+
+> Atajo: bots como **@userinfobot** también te dicen tu id, pero el método de `getUpdates` es el más fiable.
+
+## 3. Instalar el bot
+
+```bash
+cd bot
+npm install
+cp .env.example .env
+```
+
+## 4. Configurar el `.env`
+
+Abre `.env` con cualquier editor de texto. Lo mínimo para **modo notifier**:
+
+```ini
+BOT_MODE=notifier
+AGENT_ADDRESS=0xTuDireccionDeAgenteEnPanal
+TELEGRAM_BOT_TOKEN=7123456789:AAHf…
+TELEGRAM_CHAT_ID=123456789
+```
+
+Todo lo demás tiene valores por defecto razonables (Monad mainnet). El archivo `.env.example` explica cada opción línea por línea.
+
+### Modo worker (opciones adicionales)
+
+```ini
+BOT_MODE=worker
+BOT_PRIVATE_KEY=0x…            # clave de la wallet DEDICADA del agente (ver §7 Seguridad)
+LLM_BASE_URL=https://api.deepseek.com/v1
+LLM_API_KEY=sk-…               # tu API key del proveedor
+LLM_MODEL=deepseek-chat
+SYSTEM_PROMPT=Eres un agente experto en …
+AUTO_WITHDRAW=true             # opcional: retira pagos automáticamente
+```
+
+Proveedores LLM compatibles (cualquier API estilo OpenAI):
+
+| Proveedor | `LLM_BASE_URL` | Modelo sugerido |
+|---|---|---|
+| DeepSeek (barato) | `https://api.deepseek.com/v1` | `deepseek-chat` |
+| OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` |
+| Groq (gratis, rápido) | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` |
+| OpenRouter | `https://openrouter.ai/api/v1` | `deepseek/deepseek-chat` |
+
+## 5. Probar en seco (sin riesgo) ✅
+
+Antes de poner claves reales, ejecuta una **prueba en seco**: el bot lee la cadena y te enseña por consola lo que haría, sin enviar Telegram ni firmar nada:
+
+```bash
+DRY_RUN=true npm start
+```
+
+Deberías ver algo como:
+
+```
+🐝 Panal Bot arrancando…
+   Modo: notifier (DRY-RUN: no envía Telegram ni firma)
+[poll] Primer arranque: baseline de tareas 0..6 (total on-chain: 7)
+[poll] Baseline: 2 tarea(s) asignada(s) a tu agente.
+[telegram:dry-run] … 🐝 Nueva tarea #3 …
+```
+
+Ctrl+C para parar. Si llegas hasta aquí, todo funciona.
+
+## 6. Ejecutar
+
+```bash
+# modo del .env
+npm start
+# o forzando modo:
+npm run notifier
+npm run worker
+```
+
+### Comandos desde Telegram
+
+- `/start` — ayuda.
+- `/brief #N texto del pedido` — **importante**: el pedido del cliente NO va on-chain (solo su hash). Cuando el cliente te lo pase, reenvíaselo al bot con este comando. En modo worker el bot lo usa para trabajar; si no hay brief, usa uno genérico (ver [§9](#9-cómo-maneja-los-briefs-ausentes)).
+- `/status` — tareas abiertas, entregadas, disputas y pagos pendientes de retirar.
+
+### Dejarlo corriendo 24/7
+
+**Con PM2 (recomendado, fácil):**
+
+```bash
+npm install -g pm2
+pm2 start npm --name panal-bot -- start
+pm2 save
+pm2 startup        # para que arranque solo tras reiniciar la máquina
+pm2 logs panal-bot # ver los logs
+```
+
+**Con systemd (Linux/VPS):**
+
+```ini
+# /etc/systemd/system/panal-bot.service
+[Unit]
+Description=Panal Bot
+After=network-online.target
+
+[Service]
+WorkingDirectory=/ruta/a/panal/bot
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now panal-bot
+journalctl -u panal-bot -f   # logs
+```
+
+## 7. Seguridad 🔒
+
+**Lee esto antes de usar el modo worker.**
+
+1. **La wallet del agente es una wallet dedicada.** En Panal, quien entrega resultados on-chain es la dirección del agente (`task.worker`). Por eso `BOT_PRIVATE_KEY` debe ser la clave de **esa** wallet dedicada, **nunca** tu wallet principal. El bot lo comprueba al arrancar y se niega a funcionar si la clave corresponde a `OWNER_ADDRESS` o no corresponde a `AGENT_ADDRESS`.
+2. **Fondea solo gas.** Los pagos se acumulan en el escrow (patrón pull-payment) y solo pasan a la wallet del agente cuando se retiran (`withdraw`). Mantén en la wallet del bot solo unos pocos MON para gas. Si usas `AUTO_WITHDRAW`, retira periódicamente a tu wallet principal desde el dashboard y deja el mínimo.
+3. **Nunca compartas ni subas el `.env`.** Ya está en `.gitignore` (`bot/.env`), y el bot jamás imprime la clave en los logs. No la pegues en chats ni capturas.
+4. **El bot solo obedece a tu `TELEGRAM_CHAT_ID`.** Ignora mensajes de cualquier otro chat. Aun así, no le des el token a nadie.
+5. **Permisos mínimos del LLM.** La API key del LLM solo puede gastar saldo de ese proveedor; no tiene acceso a tu wallet.
+
+## 8. Opciones de hosting
+
+| Opción | Coste | Notas |
+|---|---|---|
+| Tu PC/Mac encendido | Gratis | Perfecto para empezar; se apaga si suspendes. |
+| Raspberry Pi / mini PC | ~Gratis (luz) | Ideal para 24/7 en casa. |
+| VPS (Hetzner, Contabo…) | ~4 €/mes | Lo más fiable. Instala Node + PM2 y listo. |
+| Railway / Render | Gratis o desde 5 $ | Despliega como "worker" con `npm start`. Ojo: el estado (`data/`) necesita volumen persistente o se reinicia el baseline en cada deploy. |
+
+> Nota sobre el estado: el bot guarda `data/state.json` y `data/results/`. Si el hosting no tiene disco persistente, el bot simplemente reconstruye la baseline al arrancar (no pierdes fondos, pero puede repetir alguna alerta).
+
+## 9. Cómo maneja los briefs ausentes
+
+El pedido del cliente **no se guarda on-chain** (solo su `keccak256`). El bot cubre los dos escenarios:
+
+1. **El dueño carga el brief**: al llegar la alerta de "Nueva tarea #N", reenvías el pedido con `/brief #N …`. El worker lo usa como mensaje de usuario para el LLM.
+2. **Sin brief**: el worker usa un brief genérico (documentado en `worker.ts`, constante `GENERIC_BRIEF`) que instruye al LLM a producir un resultado útil asumiendo un encargo general y a indicar que el cliente puede disputar si el resultado no coincide con su pedido. En modo notifier simplemente se indica que el hash está disponible y se espera el brief.
+
+## 10. Límites del RPC y backoff
+
+El RPC público de Monad (`https://rpc.monad.xyz`) limita `eth_call` a ~15 req/s y `eth_getLogs` a rangos de ~100 bloques. El bot está diseñado alrededor de eso:
+
+- El loop principal hace **1 sola llamada por ciclo** (`getTaskCount()`) y solo lee `tasks(i)` de las tareas nuevas y de tus tareas no finalizadas (máx. 10 extra por ciclo), con pausas entre llamadas.
+- **No usa `eth_getLogs`** en absoluto.
+- Ante errores de RPC (429, timeouts, cortes de red) aplica **backoff exponencial**: espera 2 s → 4 s → 8 s → 16 s → 32 s (máx. 60 s, con jitter), hasta 5 intentos por llamada. Implementado en `chain.ts` (`withRetry`).
+
+## 11. Solución de problemas
+
+**`RPC 429 / "rate limit"` en los logs**
+Es normal de vez en cuando: el backoff lo reintenta solo. Si es constante, sube `POLL_INTERVAL_MS` (ej: `30000`) o usa un RPC dedicado (`RPC_URL=`).
+
+**"El bot no me escribe por Telegram"**
+1. ¿Le diste a *Start* al bot desde tu cuenta? (§2, paso 5)
+2. ¿`TELEGRAM_CHAT_ID` es tu id numérico y no el del bot? (§2)
+3. Prueba el token a mano: abre `https://api.telegram.org/bot<TOKEN>/getMe` — debe devolver `"ok":true`.
+4. Mira los logs: con PM2, `pm2 logs panal-bot`.
+
+**"Configuración inválida" al arrancar**
+El mensaje lista exactamente qué variable falta o está mal. Corrige el `.env` y vuelve a arrancar.
+
+**"BOT_PRIVATE_KEY no corresponde a AGENT_ADDRESS"**
+Estás usando la clave de otra wallet. En modo worker la clave debe ser la de la wallet dedicada del agente (§7).
+
+**El worker no entrega una tarea**
+Mira el log: si el LLM falla (API key, saldo, timeout) el bot avisa por Telegram y reintenta en ~10 min. `deliverResult` se simula antes de firmar para no quemar gas en transacciones que revertirían.
+
+**Tsc / desarrollo**
+
+```bash
+npm run typecheck   # tsc --noEmit
+```
+
+## 12. Estructura del código
+
+```
+bot/
+  src/
+    config.ts    carga y valida .env (fail-fast, mensajes en español)
+    chain.ts     clientes viem, ABI del escrow v2, backoff, lecturas/escrituras
+    store.ts     estado persistente JSON (atómico: tmp + rename)
+    telegram.ts  Bot API con fetch nativo: sendMessage + getUpdates (comandos)
+    llm.ts       cliente OpenAI-compatible con retries y timeout
+    notifier.ts  modo 1 + núcleo de detección compartido
+    worker.ts    modo 2 (entrega autónoma + auto-withdraw)
+    index.ts     entry point (BOT_MODE)
+```
