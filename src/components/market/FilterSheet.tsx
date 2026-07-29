@@ -6,12 +6,22 @@ import { Switch } from '@/components/ui/switch';
 import type { AdvancedFilters } from '@/components/market/filters';
 import { cn } from '@/lib/utils';
 
-/* ---------- slider logarítmico 0.001–1.000 MON ---------- */
-const SLIDER_MIN = 0; // exponente ×100/3 sobre log10
+/* ---------- slider logarítmico (rango según moneda) ----------
+ * MON: 10^-3–10^3 (0.001–1.000) · $PANAL: 10^0–10^3 (1–1.000) */
+const SLIDER_MIN = 0;
 const SLIDER_MAX = 100;
-const toPrice = (v: number) => Math.round(Math.pow(10, -3 + (6 * v) / 100) * 1000) / 1000;
-const toSlider = (p: number) => Math.round(((Math.log10(p) + 3) / 6) * 100);
-const fmtSliderMon = (v: number) => (v >= 100 ? v.toFixed(0) : v >= 0.1 ? v.toFixed(2) : v.toFixed(3));
+const expMinFor = (cur: 'todas' | 'mon' | 'panal') => (cur === 'panal' ? 0 : -3);
+const toPrice = (v: number, expMin: number) =>
+  Math.round(Math.pow(10, expMin + ((3 - expMin) * v) / 100) * 1000) / 1000;
+const toSlider = (p: number, expMin: number) =>
+  Math.round(((Math.log10(p) - expMin) / (3 - expMin)) * 100);
+const fmtSliderMon = (v: number) => (v >= 100 ? v.toFixed(0) : v >= 0.1 ? v.toFixed(2) : v >= 1 ? v.toFixed(1).replace(/\.0$/, '') : v.toFixed(3));
+
+const CURRENCY_OPTIONS = [
+  { value: 'todas', label: 'filters.currAll' },
+  { value: 'mon', label: 'filters.currMon' },
+  { value: 'panal', label: 'filters.currPanal' },
+] as const;
 
 const RATING_STEPS = [4, 4.5, 4.8, 5] as const;
 const TYPE_OPTIONS = [
@@ -32,7 +42,9 @@ export interface FilterSheetProps {
 export default function FilterSheet({ open, onOpenChange, filters, onChange, resultCount, onClear }: FilterSheetProps) {
   const { t } = useTranslation();
   const set = (patch: Partial<AdvancedFilters>) => onChange({ ...filters, ...patch });
-  const sliderValue = [toSlider(filters.priceMin), toSlider(filters.priceMax)];
+  const expMin = expMinFor(filters.currency);
+  const sliderValue = [toSlider(filters.priceMin, expMin), toSlider(filters.priceMax, expMin)];
+  const priceUnit = filters.currency === 'panal' ? '$PANAL' : 'MON';
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -56,13 +68,41 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
             <div className="flex items-baseline justify-between">
               <h3 className="text-[0.875rem] font-semibold text-ink">{t('filters.pricePerTask')}</h3>
               <span className="font-mono text-[12px] text-honey-deep">
-                {fmtSliderMon(filters.priceMin)} – {fmtSliderMon(filters.priceMax)} MON
+                {fmtSliderMon(filters.priceMin)} – {fmtSliderMon(filters.priceMax)} {priceUnit}
               </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {CURRENCY_OPTIONS.map((opt) => {
+                const active = filters.currency === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      // Al cambiar a $PANAL el mínimo técnico es 1; al volver, 0.001
+                      const nextExp = expMinFor(opt.value);
+                      set({
+                        currency: opt.value,
+                        priceMin: Math.pow(10, nextExp),
+                        priceMax: 1000,
+                      });
+                    }}
+                    className={cn(
+                      'rounded-full border px-2 py-2 text-[0.8125rem] transition-colors',
+                      active
+                        ? 'border-honey bg-honey-soft text-honey-deep'
+                        : 'border-line bg-transparent text-ink-2 hover:border-honey/50 hover:text-ink',
+                    )}
+                  >
+                    {t(opt.label)}
+                  </button>
+                );
+              })}
             </div>
             <Slider
               value={sliderValue}
               onValueChange={([lo, hi]) =>
-                set({ priceMin: toPrice(lo ?? SLIDER_MIN), priceMax: toPrice(hi ?? SLIDER_MAX) })
+                set({ priceMin: toPrice(lo ?? SLIDER_MIN, expMin), priceMax: toPrice(hi ?? SLIDER_MAX, expMin) })
               }
               min={SLIDER_MIN}
               max={SLIDER_MAX}
@@ -72,9 +112,9 @@ export default function FilterSheet({ open, onOpenChange, filters, onChange, res
               className="py-2"
             />
             <div className="flex justify-between font-mono text-[11px] text-ink-3">
-              <span>0.001 MON</span>
+              <span>{filters.currency === 'panal' ? '1 $PANAL' : '0.001 MON'}</span>
               <span>{t('filters.logScale')}</span>
-              <span>1.000 MON</span>
+              <span>1.000 {priceUnit}</span>
             </div>
           </motion.section>
 

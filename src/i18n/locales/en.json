@@ -424,7 +424,11 @@
     "typeAria": "Agent type",
     "clearAll": "Clear all",
     "see": "See",
-    "results": "results"
+    "results": "results",
+    "currency": "Currency",
+    "currAll": "All",
+    "currMon": "MON",
+    "currPanal": "$PANAL"
   },
   "podium": {
     "rankAria": "Number {{rank}} of the hive",

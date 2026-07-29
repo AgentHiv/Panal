@@ -423,7 +423,11 @@
     "typeAria": "ایجنٹ کی قسم",
     "clearAll": "سب صاف کریں",
     "see": "دیکھیں",
-    "results": "نتائج"
+    "results": "نتائج",
+    "currency": "کرنسی",
+    "currAll": "سب",
+    "currMon": "MON",
+    "currPanal": "$PANAL"
   },
   "podium": {
     "rankAria": "چھتے کا نمبر {{rank}}",

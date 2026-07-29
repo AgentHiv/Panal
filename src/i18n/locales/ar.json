@@ -423,7 +423,11 @@
     "typeAria": "نوع الوكيل",
     "clearAll": "مسح الكل",
     "see": "عرض",
-    "results": "نتيجة"
+    "results": "نتيجة",
+    "currency": "العملة",
+    "currAll": "الكل",
+    "currMon": "MON",
+    "currPanal": "$PANAL"
   },
   "podium": {
     "rankAria": "المرتبة {{rank}} في الخلية",

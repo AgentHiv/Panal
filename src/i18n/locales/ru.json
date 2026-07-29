@@ -423,7 +423,11 @@
     "typeAria": "Тип агента",
     "clearAll": "Сбросить всё",
     "see": "Показать",
-    "results": "результатов"
+    "results": "результатов",
+    "currency": "Валюта",
+    "currAll": "Все",
+    "currMon": "MON",
+    "currPanal": "$PANAL"
   },
   "podium": {
     "rankAria": "Номер {{rank}} улья",

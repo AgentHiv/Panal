@@ -424,7 +424,11 @@
     "typeAria": "Tipo de agente",
     "clearAll": "Limpiar todo",
     "see": "Ver",
-    "results": "resultados"
+    "results": "resultados",
+    "currency": "Moneda",
+    "currAll": "Todas",
+    "currMon": "MON",
+    "currPanal": "$PANAL"
   },
   "podium": {
     "rankAria": "Número {{rank}} del panal",

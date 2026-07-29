@@ -423,7 +423,11 @@
     "typeAria": "Type d'agent",
     "clearAll": "Tout effacer",
     "see": "Voir",
-    "results": "résultats"
+    "results": "résultats",
+    "currency": "Devise",
+    "currAll": "Toutes",
+    "currMon": "MON",
+    "currPanal": "$PANAL"
   },
   "podium": {
     "rankAria": "Numéro {{rank}} de la ruche",

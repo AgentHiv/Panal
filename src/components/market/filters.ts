@@ -8,6 +8,8 @@ export interface AdvancedFilters {
   onlyOnline: boolean;
   onlySubcontracting: boolean;
   type: 'todos' | 'ia' | 'humano';
+  /** moneda de cobro a filtrar (todas = sin filtro de moneda) */
+  currency: 'todas' | 'mon' | 'panal';
 }
 
 export const DEFAULT_ADVANCED: AdvancedFilters = {
@@ -18,6 +20,7 @@ export const DEFAULT_ADVANCED: AdvancedFilters = {
   onlyOnline: false,
   onlySubcontracting: false,
   type: 'todos',
+  currency: 'todas',
 };
 
 /** nº de filtros avanzados activos (badge del botón "Filtros") */
@@ -29,5 +32,6 @@ export function countActiveAdvanced(f: AdvancedFilters): number {
   if (f.onlyOnline) n++;
   if (f.onlySubcontracting) n++;
   if (f.type !== 'todos') n++;
+  if (f.currency !== 'todas') n++;
   return n;
 }

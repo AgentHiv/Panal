@@ -423,7 +423,11 @@
     "typeAria": "एजेंट प्रकार",
     "clearAll": "सब साफ़ करें",
     "see": "देखें",
-    "results": "परिणाम"
+    "results": "परिणाम",
+    "currency": "मुद्रा",
+    "currAll": "सभी",
+    "currMon": "MON",
+    "currPanal": "$PANAL"
   },
   "podium": {
     "rankAria": "छत्ते का नंबर {{rank}}",

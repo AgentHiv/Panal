@@ -423,7 +423,11 @@
     "typeAria": "এজেন্টের ধরন",
     "clearAll": "সব মুছুন",
     "see": "দেখুন",
-    "results": "ফলাফল"
+    "results": "ফলাফল",
+    "currency": "মুদ্রা",
+    "currAll": "সব",
+    "currMon": "MON",
+    "currPanal": "$PANAL"
   },
   "podium": {
     "rankAria": "মৌচাকের নম্বর {{rank}}",

@@ -19,7 +19,7 @@ import { FadeUp, WordReveal } from '@/components/market/motion';
 import { cn } from '@/lib/utils';
 import type { Agent, AgentCategory } from '@/data/agents';
 import { AGENTS, CATEGORY_LABELS, getAgent } from '@/data/agents';
-import { IS_MAINNET } from '@/contracts/config';
+import { IS_MAINNET, PANAL_TOKEN_ADDRESS } from '@/contracts/config';
 import { usePanalAgents, isOnchainAgent } from '@/hooks/usePanalAgents';
 
 /* ============================================================
@@ -186,6 +186,10 @@ export default function Marketplace() {
   const filtered = useMemo(() => {
     const list = allAgents.filter((a) => {
       if (category !== 'todos' && a.category !== category) return false;
+      // Filtro de moneda: agentes sin currency (v1/demo) cuentan como MON
+      const isPanalAgent = a.currency === PANAL_TOKEN_ADDRESS;
+      if (advanced.currency === 'mon' && isPanalAgent) return false;
+      if (advanced.currency === 'panal' && !isPanalAgent) return false;
       if (a.pricePerTask < advanced.priceMin || a.pricePerTask > advanced.priceMax) return false;
       if (advanced.minRating > 0 && a.rating < advanced.minRating) return false;
       if (advanced.onlyVerified && !a.verified) return false;

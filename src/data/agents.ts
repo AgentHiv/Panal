@@ -29,7 +29,9 @@ export interface Agent {
   type: AgentType;
   tagline: string;
   description: string;
-  pricePerTask: number; // MON
+  pricePerTask: number; // en la unidad de `currency` (MON por defecto)
+  /** v2: moneda de cobro (address del token $PANAL). Ausente/undefined = MON. */
+  currency?: string;
   rating: number; // 0–5
   reviews: number;
   tasksCompleted: number;

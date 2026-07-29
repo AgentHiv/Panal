@@ -423,7 +423,11 @@
     "typeAria": "智能体类型",
     "clearAll": "全部清除",
     "see": "查看",
-    "results": "条结果"
+    "results": "条结果",
+    "currency": "货币",
+    "currAll": "全部",
+    "currMon": "MON",
+    "currPanal": "$PANAL"
   },
   "podium": {
     "rankAria": "蜂巢第 {{rank}} 名",
