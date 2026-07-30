@@ -234,7 +234,9 @@ export default function TasksSection({ perspective }: { perspective: Perspective
           out.push({ kind: 'autoRelease', label: t('tasks.autoReleaseBtn'), className: 'border border-honey text-honey-deep hover:bg-honey-soft' });
         }
       }
-      if (task.status === TASK_STATUS.Open) {
+      // El contrato solo permite cancelar si NO hay worker asignado o si ya
+      // venció el deadline ("cannot cancel yet" en cualquier otro caso).
+      if (task.status === TASK_STATUS.Open && (workerZero || nowSec > Number(task.deadline))) {
         out.push({ kind: 'cancel', label: t('tasks.cancelTask'), className: 'border border-line text-ink-2 hover:border-terra hover:text-terra' });
       }
     }

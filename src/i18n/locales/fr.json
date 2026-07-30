@@ -1119,7 +1119,9 @@
       "timeoutPassed": "Délai dépassé",
       "resolve": "Résoudre le litige",
       "note": "Passé le délai sans décision du jury, chaque partie peut déclencher la résolution automatique de l’escrow."
-    }
+    },
+    "errCancelYet": "Impossible d'annuler pour l'instant : la tâche a un travailleur assigné et le délai court encore.",
+    "errNotClient": "Vous n'êtes pas le client de cette tâche."
   },
   "token": {
     "official": "token officiel",

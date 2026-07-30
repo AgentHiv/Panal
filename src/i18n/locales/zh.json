@@ -1119,7 +1119,9 @@
       "timeoutPassed": "期限已过",
       "resolve": "解决争议",
       "note": "若期限过后评审团仍未裁决，任何一方均可触发托管的自动解决。"
-    }
+    },
+    "errCancelYet": "暂时无法取消：任务已分配工作者且期限未到。",
+    "errNotClient": "您不是此任务的客户。"
   },
   "token": {
     "official": "官方代币",

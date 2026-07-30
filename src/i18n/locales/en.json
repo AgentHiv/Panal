@@ -1125,7 +1125,9 @@
       "timeoutPassed": "Deadline passed",
       "resolve": "Resolve dispute",
       "note": "Once the deadline passes without a jury ruling, either party can trigger the escrow’s automatic resolution."
-    }
+    },
+    "errCancelYet": "Cannot cancel yet: the task has an assigned worker and the deadline is still running.",
+    "errNotClient": "You are not the client of this task."
   },
   "token": {
     "official": "official token",

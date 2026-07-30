@@ -1125,7 +1125,9 @@
       "timeoutPassed": "Plazo superado",
       "resolve": "Resolver disputa",
       "note": "Pasado el plazo sin resolución del jurado, cualquiera de las partes puede ejecutar la resolución automática del escrow."
-    }
+    },
+    "errCancelYet": "No se puede cancelar todavía: la tarea tiene trabajador asignado y el plazo sigue vigente.",
+    "errNotClient": "No eres el cliente de esta tarea."
   },
   "token": {
     "official": "token oficial",

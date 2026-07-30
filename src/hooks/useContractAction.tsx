@@ -98,7 +98,11 @@ export function useContractAction(opts?: { onMined?: () => void }): ContractActi
           toast(t('dashReal.txFailed'), {
             description: err.message.includes('User rejected')
               ? t('hire.step3.rejected')
-              : err.message.split('\n')[0],
+              : err.message.includes('cannot cancel yet')
+                ? t('dashReal.errCancelYet')
+                : err.message.includes('not client')
+                  ? t('dashReal.errNotClient')
+                  : err.message.split('\n')[0],
           }),
       },
     );
