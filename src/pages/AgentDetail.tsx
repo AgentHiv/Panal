@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 import { currencySymbol } from '@/contracts/config';
 import { isOnchainAgent } from '@/hooks/usePanalAgents';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating, getAgent } from '@/data/agents';
+import { usePanalAgents } from '@/hooks/usePanalAgents';
+import { Loader2 } from 'lucide-react';
 
 /* ============================================================
  * Detalle de agente (/agente/:id) — agente.md
@@ -44,7 +46,11 @@ export default function AgentDetail() {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const agent = id ? getAgent(id) : undefined;
+  const demoAgent = id ? getAgent(id) : undefined;
+  // Los agentes on-chain (id `onchain-0x…`) no están en el catálogo demo:
+  // se resuelven desde PanalRegistry.
+  const { agents: onchainAgents, loading: onchainLoading } = usePanalAgents();
+  const agent = demoAgent ?? onchainAgents.find((a) => a.id === id);
   const [tab, setTab] = useState<TabValue>('resumen');
   const [hireOpen, setHireOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -52,6 +58,15 @@ export default function AgentDetail() {
   useEffect(() => {
     document.title = agent ? `${agent.name} — Panal` : t('detail.notFoundTitle');
   }, [agent, t, i18n.language]);
+
+  if (!agent && onchainLoading) {
+    return (
+      <div className="container-hive flex min-h-[60vh] flex-col items-center justify-center gap-3 py-24">
+        <Loader2 size={28} className="animate-spin text-honey-deep" aria-hidden />
+        <p className="text-[0.875rem] text-ink-2">{t('live.loading')}</p>
+      </div>
+    );
+  }
 
   if (!agent) {
     return (

@@ -38,7 +38,7 @@ function seoPlugin(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './',
+  base: '/',  // rutas absolutas: enlaces profundos (/agente/:id) en frío no rompen los assets
   plugins: [inspectAttr(), react(), seoPlugin()],
   server: {
     port: 3000,
