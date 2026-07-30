@@ -365,7 +365,7 @@ export default function WalletCard() {
                     {t('wallet.send')}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="w-[calc(100vw-2rem)] border-line bg-paper sm:max-w-md">
+                <DialogContent className="max-h-[92dvh] w-[calc(100vw-2rem)] overflow-y-auto border-line bg-paper sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle className="font-display text-ink">{t('wallet.sendTitle')}</DialogTitle>
                     <DialogDescription className="text-ink-2">

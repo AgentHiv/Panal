@@ -430,7 +430,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
 
       {/* Diálogo de acción (deliver / approve / confirmaciones) */}
       <Dialog open={dialog !== null} onOpenChange={(o) => !o && !action.busy && closeDialog()}>
-        <DialogContent className="border-line bg-paper sm:max-w-lg">
+        <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] overflow-y-auto border-line bg-paper sm:max-w-lg">
           {dialog && (
             <>
               <DialogHeader>

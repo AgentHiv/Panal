@@ -58,7 +58,7 @@ function isHttpUrl(s: string): boolean {
 export default function RegisterAgentDialog({ open, onOpenChange }: RegisterAgentDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg border-line bg-paper p-0 sm:rounded-2xl">
+      <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto border-line bg-paper p-0 sm:rounded-2xl">
         <RegisterAgentForm onOpenChange={onOpenChange} />
       </DialogContent>
     </Dialog>

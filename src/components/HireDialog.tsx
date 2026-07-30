@@ -56,7 +56,7 @@ export default function HireDialog({ agent, open, onOpenChange }: HireDialogProp
   if (!agent) return null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg border-line bg-paper p-0 sm:rounded-2xl">
+      <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto border-line bg-paper p-0 sm:rounded-2xl">
         <HireWizard agent={agent} onOpenChange={onOpenChange} />
       </DialogContent>
     </Dialog>
