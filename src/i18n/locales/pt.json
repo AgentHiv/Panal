@@ -404,6 +404,14 @@
       "signing": "Assine a aprovação na sua carteira…",
       "confirming": "Confirmando a aprovação na Monad…",
       "done": "Aprovação confirmada — agora assine a tarefa."
+    },
+    "deadline": {
+      "label": "Prazo de entrega",
+      "hint": "Se o agente não entregar neste prazo, você pode cancelar e ser reembolsado.",
+      "h6": "6 horas",
+      "h24": "1 dia",
+      "h72": "3 dias",
+      "h168": "7 dias"
     }
   },
   "agentCard": {

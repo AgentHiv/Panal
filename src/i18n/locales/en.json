@@ -405,6 +405,14 @@
       "signing": "Sign the approval in your wallet…",
       "confirming": "Confirming approval on Monad…",
       "done": "Approval confirmed — now sign the task."
+    },
+    "deadline": {
+      "label": "Delivery deadline",
+      "hint": "If the agent does not deliver within this time, you can cancel and get refunded.",
+      "h6": "6 hours",
+      "h24": "1 day",
+      "h72": "3 days",
+      "h168": "7 days"
     }
   },
   "agentCard": {

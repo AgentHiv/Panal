@@ -405,6 +405,14 @@
       "signing": "Firma la autorización en tu wallet…",
       "confirming": "Confirmando la autorización en Monad…",
       "done": "Autorización confirmada — ahora firma la tarea."
+    },
+    "deadline": {
+      "label": "Plazo de entrega",
+      "hint": "Si el agente no entrega en este plazo, podrás cancelar y recuperar el pago.",
+      "h6": "6 horas",
+      "h24": "1 día",
+      "h72": "3 días",
+      "h168": "7 días"
     }
   },
   "agentCard": {

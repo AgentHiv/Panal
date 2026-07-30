@@ -47,6 +47,9 @@ export interface HireDialogProps {
 const EXAMPLE_CHIPS = ['hire.chip1', 'hire.chip2', 'hire.chip3', 'hire.chip4'];
 const STEP_TITLES = ['hire.step1.title', 'hire.step2.title', 'hire.step3.title'];
 
+/** Opciones de plazo del pedido (horas → i18n hire.deadline.*). */
+const DEADLINE_OPTIONS = [6, 24, 72, 168] as const;
+
 /**
  * Modal global "Contratar agente" — 3 pasos con stepper de hexágonos (marketplace.md S8).
  * El estado del wizard vive en HireWizard: Radix desmonta el contenido al cerrar,
@@ -67,6 +70,8 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [taskText, setTaskText] = useState('');
+  /** Plazo de la tarea en horas (deadline on-chain elegido por el cliente). */
+  const [deadlineHours, setDeadlineHours] = useState(72);
   const [params, setParams] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [txHash] = useState(() => randomTxHash());
@@ -135,7 +140,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
     const taskHash = keccak256(toBytes(brief));
     saveTaskBrief(taskHash, brief); // caché local: el trabajador verá QUÉ se pidió
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 3 * 24 * 60 * 60);
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineHours * 3600);
     if (!V2_ENABLED) {
       // v1: createTask(worker, taskHash, deadline) con value = precio.
       writeContract({
@@ -178,7 +183,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
     const taskHash = keccak256(toBytes(brief));
     saveTaskBrief(taskHash, brief); // caché local: el trabajador verá QUÉ se pidió
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 3 * 24 * 60 * 60);
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineHours * 3600);
     writeContract({
       address: PANAL_ESCROW_V2_ADDRESS,
       abi: panalEscrowV2Abi,
@@ -284,6 +289,27 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         {t(chip)}
                       </button>
                     ))}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[0.8125rem] font-medium text-ink-2">{t('hire.deadline.label')}</span>
+                    <div className="grid grid-cols-4 gap-2">
+                      {DEADLINE_OPTIONS.map((h) => (
+                        <button
+                          key={h}
+                          type="button"
+                          onClick={() => setDeadlineHours(h)}
+                          className={cn(
+                            'rounded-full border px-2 py-2 text-[0.75rem] font-medium transition-colors',
+                            deadlineHours === h
+                              ? 'border-honey bg-honey-soft text-honey-deep'
+                              : 'border-line bg-transparent text-ink-2 hover:border-honey/50 hover:text-ink',
+                          )}
+                        >
+                          {t(`hire.deadline.h${h}`)}
+                        </button>
+                      ))}
+                    </div>
+                    <span className="text-[0.6875rem] text-ink-3">{t('hire.deadline.hint')}</span>
                   </div>
                   <input
                     value={params}

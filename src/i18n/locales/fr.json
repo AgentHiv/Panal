@@ -404,6 +404,14 @@
       "signing": "Signez l’approbation dans votre wallet…",
       "confirming": "Confirmation de l’approbation sur Monad…",
       "done": "Approbation confirmée — signez maintenant la tâche."
+    },
+    "deadline": {
+      "label": "Délai de livraison",
+      "hint": "Si l'agent ne livre pas dans ce délai, vous pourrez annuler et être remboursé.",
+      "h6": "6 heures",
+      "h24": "1 jour",
+      "h72": "3 jours",
+      "h168": "7 jours"
     }
   },
   "agentCard": {
