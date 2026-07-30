@@ -157,9 +157,9 @@ Get free testnet MON from the [Monad faucet](https://faucet.monad.xyz).
 ## 💻 Development
 
 ```bash
-pnpm dev          # dev server → http://localhost:5173
-pnpm build        # production build (testnet contracts) → dist/
-VITE_CHAIN=mainnet pnpm build   # production build (MAINNET contracts)
+pnpm dev          # dev server → http://localhost:5173 (MAINNET por defecto)
+pnpm build        # production build → dist/ (MAINNET por defecto)
+VITE_CHAIN=testnet pnpm build   # build contra testnet (solo desarrollo)
 pnpm preview      # preview production build
 ```
 
@@ -184,7 +184,7 @@ Optimized for **Vercel** (auto-deploys on push to `main`):
 | Build | `pnpm run build` |
 | Output | `dist` |
 | Node | 24.x |
-| Env var | `VITE_CHAIN=mainnet` → mainnet build (unset = testnet) |
+| Env var | ninguna necesaria — **mainnet es el build por defecto** (`VITE_CHAIN=testnet` solo para desarrollo) |
 
 Any static host with SPA fallback works (Nginx `try_files $uri /index.html`).
 

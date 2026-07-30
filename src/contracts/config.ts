@@ -4,7 +4,7 @@
  * (conector injected: MetaMask / Rabby / etc.).
  *
  * Red activa: por defecto **Monad testnet** (10143).
- * Para mainnet define `VITE_CHAIN=mainnet` en el build (ver MAINNET.md).
+ * Mainnet es el build por defecto; `VITE_CHAIN=testnet` fuerza testnet (ver MAINNET.md).
  */
 
 import { defineChain, createPublicClient, http } from 'viem';
@@ -36,7 +36,12 @@ export const monadMainnet = defineChain({
   },
 });
 
-export const IS_MAINNET = import.meta.env.VITE_CHAIN === 'mainnet';
+/**
+ * MAINNET ES EL MODO POR DEFECTO (decisión de producto: Panal vive en Monad
+ * mainnet). Solo se usa testnet si el build lo pide explícitamente con
+ * `VITE_CHAIN=testnet`.
+ */
+export const IS_MAINNET = import.meta.env.VITE_CHAIN !== 'testnet';
 
 /** Red activa de la dApp. */
 export const activeChain = IS_MAINNET ? monadMainnet : monadTestnet;
