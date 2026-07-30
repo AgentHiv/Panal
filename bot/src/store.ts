@@ -139,4 +139,14 @@ export class Store {
     renameSync(tmp, file);
     return file;
   }
+
+  /** Lee un resultado guardado (null si no existe). */
+  getResult(taskId: bigint): string | null {
+    try {
+      const file = join(this.resultsDir, `${taskId.toString()}.md`);
+      return readFileSync(file, 'utf8');
+    } catch {
+      return null;
+    }
+  }
 }

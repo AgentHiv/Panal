@@ -111,6 +111,17 @@ export async function runWorker(
           `Pendiente de aprobación del cliente o auto-release en 72 h.\n` +
           `tx: \`${txHash}\``,
       );
+      // Enviar el resultado completo al dueño (Telegram limita a ~4096 chars;
+      // si es más largo, avisamos y queda en el archivo del servidor).
+      if (resultText.length <= 3600) {
+        await telegram.send(`📄 *Resultado de #${taskId}*:\n\n${resultText}`);
+      } else {
+        await telegram.send(
+          `📄 *Resultado de #${taskId}* (${resultText.length} chars, demasiado largo para Telegram):\n\n` +
+            resultText.slice(0, 3600) +
+            `\n\n… (completo en \`results/${taskId}.md\` o con /result #${taskId})`,
+        );
+      }
       failedAt.delete(key);
     } catch (err) {
       failedAt.set(key, Date.now());

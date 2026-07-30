@@ -155,6 +155,26 @@ export class Telegram {
       return;
     }
 
+    if (cmd === '/result') {
+      // Formato: /result #12  → devuelve el resultado entregado (si existe)
+      const m = rest.join(' ').match(/^#?(\d+)\s*$/);
+      if (!m) {
+        await this.send('⚠️ Formato: `/result #N` — ejemplo: `/result #3`');
+        return;
+      }
+      const taskId = BigInt(m[1]!);
+      const result = store.getResult(taskId);
+      if (!result) {
+        await this.send(
+          `ℹ️ No tengo guardado ningún resultado para la tarea *#${taskId}*.\n` +
+            'Si el agente ya la entregó on-chain, pídele al operador su resultado.',
+        );
+        return;
+      }
+      await this.send(`📄 *Resultado de #${taskId}*:\n\n${result.slice(0, 3800)}`);
+      return;
+    }
+
     if (cmd === '/brief') {
       // Formato: /brief #12 texto del pedido…   (también acepta "/brief 12 …")
       const joined = rest.join(' ');
