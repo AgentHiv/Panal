@@ -29,6 +29,7 @@ import {
   EXPLORER_TX,
   NATIVE_CURRENCY,
   PANAL_REGISTRY_ADDRESS,
+  PANAL_TOKEN_ADDRESS,
   PANAL_REGISTRY_V2_ADDRESS,
   V2_ENABLED,
   currencySymbol,
@@ -50,6 +51,8 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [priceInput, setPriceInput] = useState('');
+  /** Moneda elegida en el diálogo de edición (v2: updatePrice la lleva). */
+  const [editCurrency, setEditCurrency] = useState<'MON' | '$PANAL'>('MON');
 
   const priceStr = priceInput.replace(',', '.').trim();
   const priceValid = /^\d+(\.\d{1,18})?$/.test(priceStr) && Number(priceStr) > 0;
@@ -105,7 +108,7 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
             address: PANAL_REGISTRY_V2_ADDRESS,
             abi: panalRegistryV2Abi,
             functionName: 'updatePrice',
-            args: [parseEther(priceStr), agent?.currency ?? NATIVE_CURRENCY],
+            args: [parseEther(priceStr), editCurrency === '$PANAL' ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY],
           }
         : {
             address: PANAL_REGISTRY_ADDRESS,
@@ -183,6 +186,7 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
           type="button"
           onClick={() => {
             setPriceInput(agent ? formatEther(agent.pricePerTask) : '');
+            setEditCurrency(agent?.currency === PANAL_TOKEN_ADDRESS ? '$PANAL' : 'MON');
             setDialogOpen(true);
           }}
           disabled={!agent}
@@ -245,6 +249,28 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
             </div>
           ) : (
             <div className="flex flex-col gap-4 py-2">
+              {V2_ENABLED && (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[0.8125rem] font-medium text-ink-2">{t('register.currencyLabel')}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['MON', '$PANAL'] as const).map((cur) => (
+                      <button
+                        key={cur}
+                        type="button"
+                        onClick={() => setEditCurrency(cur)}
+                        className={cn(
+                          'rounded-full border px-3 py-2 text-[0.8125rem] font-medium transition-colors',
+                          editCurrency === cur
+                            ? 'border-honey bg-honey-soft text-honey-deep'
+                            : 'border-line bg-transparent text-ink-2 hover:border-honey/50 hover:text-ink',
+                        )}
+                      >
+                        {cur === 'MON' ? t('register.currencyNative') : t('register.currencyToken')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 <input
                   value={priceInput}
@@ -254,7 +280,7 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
                   aria-label={t('ownAgent.priceAria')}
                   className="w-full rounded-xl border border-line bg-paper px-4 py-2.5 font-mono text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
                 />
-                <span className="shrink-0 font-mono text-[0.8125rem] text-ink-2">{t('common.monTask')}</span>
+                <span className="shrink-0 font-mono text-[0.8125rem] text-ink-2">{editCurrency === '$PANAL' ? t('common.tokenTask') : t('common.monTask')}</span>
               </div>
               {priceStr.length > 0 && !priceValid && (
                 <p className="flex items-center gap-1.5 text-[0.75rem] text-terra">
