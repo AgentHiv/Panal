@@ -264,7 +264,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
           transition={{ duration: 0.35, delay: Math.min(i * 0.04, 0.4) }}
           className="border-b border-line last:border-0 hover:bg-cream/70"
         >
-          <td className="whitespace-nowrap py-3.5 pl-5 pr-3 font-mono text-[0.8125rem] text-ink-2">
+          <td className="whitespace-nowrap py-3.5 pl-3 pr-3 font-mono text-[0.8125rem] text-ink-2 sm:pl-5">
             #{task.id.toString()}
           </td>
           <td className="px-3 py-3.5">
@@ -277,7 +277,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                 {(() => {
                   const brief = getTaskBrief(task.taskHash);
                   return brief ? (
-                    <span className="max-w-[190px] truncate text-[0.75rem] text-ink-3" title={brief}>
+                    <span className="max-w-[130px] truncate text-[0.75rem] text-ink-3 sm:max-w-[190px]" title={brief}>
                       {brief}
                     </span>
                   ) : (
@@ -318,7 +318,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   const tableHead = (withActions: boolean) => (
     <thead>
       <tr className="border-b border-line text-left">
-        <th className="py-3 pl-5 pr-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">ID</th>
+        <th className="py-3 pl-3 pr-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3 sm:pl-5">ID</th>
         <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colCounterparty')}</th>
         <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colAmount')}</th>
         <th className="px-3 py-3 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tasks.colStatus')}</th>
@@ -331,11 +331,14 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   );
 
   const renderTable = (rows: RealTask[], withActions: boolean) => (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-paper shadow-card">
-      <table className="w-full min-w-[640px] border-collapse">
+    <div className="relative">
+        <div className="overflow-x-auto rounded-2xl border border-line bg-paper shadow-card">
+      <table className="w-full min-w-[560px] border-collapse sm:min-w-[640px]">
         {tableHead(withActions)}
         <tbody>{renderRows(rows, withActions)}</tbody>
       </table>
+        </div>
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-10 rounded-r-2xl bg-gradient-to-l from-paper to-transparent sm:hidden" aria-hidden />
     </div>
   );
 
@@ -365,24 +368,24 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   return (
     <div>
       <Tabs defaultValue="activas">
-        <TabsList className="h-auto gap-1 rounded-full border border-line bg-cream p-1">
+        <TabsList className="h-auto max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-cream p-1">
           <TabsTrigger
             value="activas"
-            className="rounded-full px-4 py-2 text-[0.8125rem] data-[state=active]:bg-paper data-[state=active]:text-ink data-[state=active]:shadow-sm"
+            className="shrink-0 rounded-full px-3 py-2 text-[0.75rem] data-[state=active]:bg-paper data-[state=active]:text-ink data-[state=active]:shadow-sm sm:px-4 sm:text-[0.8125rem]"
           >
             {t('tasks.tabActive')}
             <span className="ml-1.5 rounded-full bg-honey-soft px-1.5 py-0.5 font-mono text-[0.6875rem] text-honey-deep">{active.length}</span>
           </TabsTrigger>
           <TabsTrigger
             value="completadas"
-            className="rounded-full px-4 py-2 text-[0.8125rem] data-[state=active]:bg-paper data-[state=active]:text-ink data-[state=active]:shadow-sm"
+            className="shrink-0 rounded-full px-3 py-2 text-[0.75rem] data-[state=active]:bg-paper data-[state=active]:text-ink data-[state=active]:shadow-sm sm:px-4 sm:text-[0.8125rem]"
           >
             {t('tasks.tabCompleted')}
             <span className="ml-1.5 rounded-full bg-sand px-1.5 py-0.5 font-mono text-[0.6875rem] text-ink-2">{completed.length}</span>
           </TabsTrigger>
           <TabsTrigger
             value="disputa"
-            className="rounded-full px-4 py-2 text-[0.8125rem] data-[state=active]:bg-paper data-[state=active]:text-ink data-[state=active]:shadow-sm"
+            className="shrink-0 rounded-full px-3 py-2 text-[0.75rem] data-[state=active]:bg-paper data-[state=active]:text-ink data-[state=active]:shadow-sm sm:px-4 sm:text-[0.8125rem]"
           >
             {t('tasks.tabDisputed')}
             {disputed.length > 0 && (

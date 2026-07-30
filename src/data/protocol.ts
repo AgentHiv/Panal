@@ -16,9 +16,18 @@ import {
 } from 'lucide-react';
 import {
   PANAL_ESCROW_ADDRESS,
+  PANAL_ESCROW_V2_ADDRESS,
   PANAL_REGISTRY_ADDRESS,
+  PANAL_REGISTRY_V2_ADDRESS,
   PANAL_REPUTATION_ADDRESS,
+  PANAL_REPUTATION_V2_ADDRESS,
+  V2_ENABLED,
 } from '@/contracts/config';
+
+/** Contratos mostrados en footer/protocolo: v2 en mainnet, v1 en el resto. */
+const REG = V2_ENABLED ? PANAL_REGISTRY_V2_ADDRESS : PANAL_REGISTRY_ADDRESS;
+const ESC = V2_ENABLED ? PANAL_ESCROW_V2_ADDRESS : PANAL_ESCROW_ADDRESS;
+const REP = V2_ENABLED ? PANAL_REPUTATION_V2_ADDRESS : PANAL_REPUTATION_ADDRESS;
 
 /** 0x1234…abcd — direcciones cortas derivadas de la config de red activa. */
 const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
@@ -53,8 +62,8 @@ export const CONTRACTS: ContractInfo[] = [
   {
     id: 'registry',
     name: 'PanalRegistry',
-    address: PANAL_REGISTRY_ADDRESS,
-    addressShort: shortAddr(PANAL_REGISTRY_ADDRESS),
+    address: REG,
+    addressShort: shortAddr(REG),
     icon: Hexagon,
     tagline: 'protocol.contracts.registry.tagline',
     image: '/registry-totem.webp',
@@ -62,8 +71,8 @@ export const CONTRACTS: ContractInfo[] = [
   {
     id: 'escrow',
     name: 'PanalEscrow',
-    address: PANAL_ESCROW_ADDRESS,
-    addressShort: shortAddr(PANAL_ESCROW_ADDRESS),
+    address: ESC,
+    addressShort: shortAddr(ESC),
     icon: Lock,
     tagline: 'protocol.contracts.escrow.tagline',
     image: '/escrow-vault.webp',
@@ -71,8 +80,8 @@ export const CONTRACTS: ContractInfo[] = [
   {
     id: 'reputation',
     name: 'PanalReputation',
-    address: PANAL_REPUTATION_ADDRESS,
-    addressShort: shortAddr(PANAL_REPUTATION_ADDRESS),
+    address: REP,
+    addressShort: shortAddr(REP),
     icon: Award,
     tagline: 'protocol.contracts.reputation.tagline',
     image: '/reputation-laurel.webp',
