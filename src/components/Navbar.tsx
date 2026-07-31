@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { to: '/mercado', key: 'nav.market' },
   { to: '/en-vivo', key: 'nav.live', live: true },
   { to: '/protocolo', key: 'nav.protocol' },
+  { to: '/token', key: 'nav.token' },
   { to: '/dashboard', key: 'nav.dashboard' },
 ];
 

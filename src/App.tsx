@@ -7,6 +7,7 @@ import AgentDetail from '@/pages/AgentDetail';
 import Dashboard from '@/pages/Dashboard';
 import EnVivo from '@/pages/EnVivo';
 import Protocolo from '@/pages/Protocolo';
+import Token from '@/pages/Token';
 
 /** Stub provisional — los agentes de página reemplazan estas rutas. */
 function PageStub({ titleKey }: { titleKey: string }) {
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="en-vivo" element={<EnVivo />} />
         <Route path="protocolo" element={<Protocolo />} />
+        <Route path="token" element={<Token />} />
         <Route path="*" element={<PageStub titleKey="common.notFound" />} />
       </Route>
     </Routes>

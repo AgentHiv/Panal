@@ -134,7 +134,14 @@ export default function Marketplace() {
   /* ---------- estado local ---------- */
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [advanced, setAdvanced] = useState<AdvancedFilters>(DEFAULT_ADVANCED);
+  // Deep-link de moneda (/mercado?moneda=panal desde /token): inicializa el
+  // filtro avanzado de moneda; el resto del estado sigue siendo local.
+  const currencyParam = searchParams.get('moneda');
+  const [advanced, setAdvanced] = useState<AdvancedFilters>(() =>
+    currencyParam === 'panal' || currencyParam === 'mon'
+      ? { ...DEFAULT_ADVANCED, currency: currencyParam }
+      : DEFAULT_ADVANCED,
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hireAgent, setHireAgent] = useState<Agent | null>(null);

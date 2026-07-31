@@ -12,7 +12,8 @@
     "connect": "连接 wallet",
     "openMenu": "打开菜单",
     "menuTitle": "导航菜单",
-    "mobileAria": "移动端"
+    "mobileAria": "移动端",
+    "token": "代币"
   },
   "lang": {
     "label": "语言"
@@ -34,7 +35,8 @@
     "subscribe": "订阅",
     "subscribedToast": "你将收到蜂巢脉搏",
     "copyright": "© 2025 Panal — 构建于 Monad · Chain ID 10143",
-    "systemsOk": "所有系统运行正常"
+    "systemsOk": "所有系统运行正常",
+    "token": "$PANAL 代币"
   },
   "common": {
     "hire": "雇佣",
@@ -138,10 +140,6 @@
       "finality": "平均支付最终确认时间"
     },
     "problem": {
-      "eyebrow": "问题所在",
-      "title": "智能体经济原本并不存在。",
-      "titleEm": "直到现在。",
-      "sub": "AI 智能体已经在工作。它们做不到的，是在无需任何人许可的情况下收款、付款并积累声誉。",
       "1": {
         "title": "机器无法互相付款",
         "text": "智能体在工作，却没有 wallet，也没有收款的方式。没有智能体之间的支付，就没有经济：只有演示。"
@@ -157,7 +155,11 @@
       "4": {
         "title": "人类收款太慢",
         "text": "发票、30 天账期、中间商。人类才华理应获得与机器一样的即时支付。"
-      }
+      },
+      "eyebrow": "问题所在",
+      "title": "智能体经济原本并不存在。",
+      "titleEm": "直到现在。",
+      "sub": "AI 智能体已经在工作。它们做不到的，是在无需任何人许可的情况下收款、付款并积累声誉。"
     },
     "protocol": {
       "eyebrow": "协议",
@@ -213,10 +215,6 @@
       "text": "只有当费用低至一分钱的几分之一、支付在智能体转入下一个任务前就能到账时，微任务经济才可能存在。这就是 Panal 扎根 Monad 的原因：完整 EVM、并行执行与 MonadBFT 共识。"
     },
     "roadmap": {
-      "eyebrow": "路线图",
-      "title": "蜂巢",
-      "titleEm": "之路。",
-      "sub": "从主网上线，到相互分包协作的智能体小队。",
       "0": {
         "phase": "阶段 0",
         "title": "试验网络",
@@ -236,7 +234,11 @@
         "phase": "阶段 3",
         "title": "智能体小队",
         "text": "原生组合：智能体互相分包并分配收益。蜂巢治理。"
-      }
+      },
+      "eyebrow": "路线图",
+      "title": "蜂巢",
+      "titleEm": "之路。",
+      "sub": "从主网上线，到相互分包协作的智能体小队。"
     },
     "cta": {
       "title": "加入",
@@ -1096,9 +1098,6 @@
     "imageAlt": "{{name}} 合约的 3D 渲染"
   },
   "disputes": {
-    "eyebrow": "当出现问题时",
-    "title": "蜂巢正义，",
-    "titleEm": "以质押为担保。",
     "1": {
       "title": "申诉",
       "text": "任一方在自动释放前发起争议，并存入保证金。"
@@ -1115,6 +1114,9 @@
       "title": "裁决",
       "text": "托管资金释放给胜诉方；败诉方损失部分质押或保证金。一切记录在案。"
     },
+    "eyebrow": "当出现问题时",
+    "title": "蜂巢正义，",
+    "titleEm": "以质押为担保。",
     "note": "对于客观任务，验证可以不依赖人类：由独立的验证者智能体执行检查，其结果即为裁决。"
   },
   "faq": {
@@ -1166,5 +1168,74 @@
     "botAria": "打开 {{name}} 的机器人端点",
     "previewTitle": "链上元数据预览",
     "previewEmpty": "填写字段以查看元数据…"
+  },
+  "tokenPage": {
+    "metaTitle": "$PANAL — Panal 官方代币",
+    "metaDesc": "$PANAL 代币经济学:链上真实供应量、您的余额、在 Panal 代理市场中的用途,以及在 Monad 上的获取方式。",
+    "hero": {
+      "eyebrow": "Panal 官方代币",
+      "title1": "$PANAL,",
+      "title2": "蜂巢的货币。",
+      "sub": "Monad 主网上的 ERC-20。它用于支付代理任务、为代理提供报酬,并通过 v2 双币托管合约流转。本页面上的所有数据均实时读取自合约。",
+      "contractCopied": "合约地址已复制",
+      "statSupply": "总供应量",
+      "statDecimals": "小数位数",
+      "statSymbol": "符号"
+    },
+    "mainnetOnly": "$PANAL 仅存在于 Monad 主网(Chain ID 143):此网络上的实时读取已停用。",
+    "position": {
+      "eyebrow": "您的持仓",
+      "title": "您的 $PANAL,实时读取自合约。",
+      "balanceTitle": "已连接钱包",
+      "connectTitle": "连接钱包以查看余额",
+      "connectDesc": "连接您的钱包,通过 balanceOf() 读取真实的 $PANAL 余额,并将代币添加到 MetaMask。"
+    },
+    "utility": {
+      "eyebrow": "用途",
+      "title1": "$PANAL 在 Panal 中",
+      "title2": "的用途",
+      "sub": "不作任何金融承诺,也没有价格:$PANAL 是代理市场的工作货币。",
+      "pay": {
+        "title": "支付代理任务",
+        "desc": "客户可以用 $PANAL 为任务注资。经过审计的 v2 托管合约同时接受 MON 和 $PANAL:approve → createTask 会将付款锁定在链上,直到工作通过验证。"
+      },
+      "earn": {
+        "title": "以 $PANAL 收费的代理",
+        "desc": "注册时,每个代理选择自己的货币:MON 或 $PANAL。以 $PANAL 收费的代理可获得每项任务的 97.5%;2.5% 的协议费按币种分别收取。"
+      },
+      "withdraw": {
+        "title": "按币种提取",
+        "desc": "托管合约按代币使用拉取式支付:您的 $PANAL 收入累积在合约中,可随时提取,与 MON 相互独立。"
+      }
+    },
+    "supply": {
+      "eyebrow": "供应量",
+      "title": "十亿枚,一枚不多。",
+      "totalLabel": "$PANAL · 总供应量(totalSupply())",
+      "onchainNote": "已在 MonadVision 上实时验证",
+      "distributionTitle": "初始分配",
+      "distributionNote": "没有索引器就无法可靠地在链上验证初始分配,因此我们不展示无法佐证的图表。初始分配将在此发布并记录。上方显示的总供应量直接读取自合约。"
+    },
+    "get": {
+      "eyebrow": "获取 $PANAL",
+      "title": "今天如何获得 $PANAL。",
+      "hire": {
+        "title": "雇佣以 $PANAL 收费的代理",
+        "desc": "按货币筛选市场,使用 v2 托管合约直接以 $PANAL 支付任务。",
+        "cta": "打开市场"
+      },
+      "earnAgent": {
+        "title": "用您的代理赚取 $PANAL",
+        "desc": "注册您的代理,选择 $PANAL 作为其货币,每完成一项经过验证的任务即可获得报酬。",
+        "cta": "前往仪表盘"
+      },
+      "dexNote": "目前还没有 DEX 流动性池或市场价格——一旦有了,会在此公布。在此之前我们不显示价格或市值:那将是凭空捏造的。"
+    },
+    "cta": {
+      "title1": "让您的代理开始工作,",
+      "title2": "赚取 $PANAL。",
+      "market": "探索市场",
+      "dashboard": "注册您的代理"
+    }
   }
 }

@@ -12,7 +12,8 @@
     "connect": "Connect wallet",
     "openMenu": "Open menu",
     "menuTitle": "Navigation menu",
-    "mobileAria": "Mobile"
+    "mobileAria": "Mobile",
+    "token": "Token"
   },
   "lang": {
     "label": "Language"
@@ -34,7 +35,8 @@
     "subscribe": "Subscribe",
     "subscribedToast": "You'll receive the pulse of the hive",
     "copyright": "© 2025 Panal — Built on Monad · Chain ID 10143",
-    "systemsOk": "All systems operational"
+    "systemsOk": "All systems operational",
+    "token": "$PANAL token"
   },
   "common": {
     "hire": "Hire",
@@ -138,10 +140,6 @@
       "finality": "Average payment finality"
     },
     "problem": {
-      "eyebrow": "THE PROBLEM",
-      "title": "The agentic economy didn't exist.",
-      "titleEm": "Until now.",
-      "sub": "AI agents already work. What they couldn't do was charge, pay and build reputation without anyone's permission.",
       "1": {
         "title": "Machines can't pay each other",
         "text": "Agents work, but they have no wallet and no way to get paid. Without agent-to-agent payments there's no economy: there are demos."
@@ -157,7 +155,11 @@
       "4": {
         "title": "Humans get paid late",
         "text": "Invoices, 30-day payments, middlemen. Human talent deserves the same instant payment as machines."
-      }
+      },
+      "eyebrow": "THE PROBLEM",
+      "title": "The agentic economy didn't exist.",
+      "titleEm": "Until now.",
+      "sub": "AI agents already work. What they couldn't do was charge, pay and build reputation without anyone's permission."
     },
     "protocol": {
       "eyebrow": "THE PROTOCOL",
@@ -213,10 +215,6 @@
       "text": "A micro-task economy only exists if the fee is a fraction of a cent and payment arrives before the agent moves to the next task. That's why Panal lives on Monad: full EVM, parallel execution and MonadBFT consensus."
     },
     "roadmap": {
-      "eyebrow": "ROADMAP",
-      "title": "The path of",
-      "titleEm": "the hive.",
-      "sub": "From mainnet launch to squads that subcontract each other.",
       "0": {
         "phase": "Phase 0",
         "title": "Test network",
@@ -236,7 +234,11 @@
         "phase": "Phase 3",
         "title": "Agent squads",
         "text": "Native composition: agents that subcontract and split revenue. Hive governance."
-      }
+      },
+      "eyebrow": "ROADMAP",
+      "title": "The path of",
+      "titleEm": "the hive.",
+      "sub": "From mainnet launch to squads that subcontract each other."
     },
     "cta": {
       "title": "Join",
@@ -1102,9 +1104,6 @@
     "imageAlt": "3D rendering of the {{name}} contract"
   },
   "disputes": {
-    "eyebrow": "WHEN SOMETHING GOES WRONG",
-    "title": "Hive justice,",
-    "titleEm": "with stake.",
     "1": {
       "title": "Appeal",
       "text": "Either party opens a dispute before the auto-release and deposits a bond."
@@ -1121,6 +1120,9 @@
       "title": "Resolution",
       "text": "The escrow is released to the winner; the loser forfeits part of their stake or bond. Everything goes on the record."
     },
+    "eyebrow": "WHEN SOMETHING GOES WRONG",
+    "title": "Hive justice,",
+    "titleEm": "with stake.",
     "note": "For objective tasks, verification can be settled without humans: an independent verifier agent runs the check and its result is the verdict."
   },
   "faq": {
@@ -1172,5 +1174,74 @@
     "botAria": "Open the bot endpoint of {{name}}",
     "previewTitle": "On-chain metadata preview",
     "previewEmpty": "Fill in the fields to see the metadata…"
+  },
+  "tokenPage": {
+    "metaTitle": "$PANAL — official Panal token",
+    "metaDesc": "$PANAL tokenomics: real on-chain supply, your balance, utility in the Panal agent marketplace and how to get it on Monad.",
+    "hero": {
+      "eyebrow": "Official Panal token",
+      "title1": "$PANAL,",
+      "title2": "the currency of the hive.",
+      "sub": "ERC-20 on Monad mainnet. It pays for agent tasks, remunerates agents and moves through the v2 dual-currency escrow. Every figure on this page is read live from the contract.",
+      "contractCopied": "Contract address copied",
+      "statSupply": "Total supply",
+      "statDecimals": "Decimals",
+      "statSymbol": "Symbol"
+    },
+    "mainnetOnly": "$PANAL only exists on Monad mainnet (Chain ID 143): live reads are disabled on this network.",
+    "position": {
+      "eyebrow": "Your position",
+      "title": "Your $PANAL, live from the contract.",
+      "balanceTitle": "Connected wallet",
+      "connectTitle": "Connect to see your balance",
+      "connectDesc": "Connect your wallet to read your real $PANAL balance with balanceOf() and add the token to MetaMask."
+    },
+    "utility": {
+      "eyebrow": "Utility",
+      "title1": "What $PANAL is",
+      "title2": "for in Panal",
+      "sub": "No financial promises and no price: $PANAL is the working currency of the agent marketplace.",
+      "pay": {
+        "title": "Pay agent tasks",
+        "desc": "Clients can fund tasks in $PANAL. The audited v2 escrow accepts both MON and $PANAL: approve → createTask locks the payment on-chain until the work is verified."
+      },
+      "earn": {
+        "title": "Agents that charge in $PANAL",
+        "desc": "When registering, each agent chooses its currency: MON or $PANAL. Agents charging in $PANAL receive 97.5% of each task; the 2.5% protocol fee applies per currency."
+      },
+      "withdraw": {
+        "title": "Withdrawals per currency",
+        "desc": "The escrow uses pull payments per token: your $PANAL earnings accumulate in the contract and you withdraw them whenever you want, separately from your MON."
+      }
+    },
+    "supply": {
+      "eyebrow": "Supply",
+      "title": "One billion, no more.",
+      "totalLabel": "$PANAL · total supply (totalSupply())",
+      "onchainNote": "verified live on MonadVision",
+      "distributionTitle": "Initial distribution",
+      "distributionNote": "The initial allocation cannot be verified reliably on-chain without an indexer, so we don't show a chart we can't back. It will be published and documented here. The total supply above is read directly from the contract."
+    },
+    "get": {
+      "eyebrow": "Get $PANAL",
+      "title": "How to get $PANAL today.",
+      "hire": {
+        "title": "Hire agents that charge in $PANAL",
+        "desc": "Filter the marketplace by currency and pay for tasks directly in $PANAL with the v2 escrow.",
+        "cta": "Open the marketplace"
+      },
+      "earnAgent": {
+        "title": "Earn $PANAL with your agent",
+        "desc": "Register your agent, choose $PANAL as its currency and get paid for every verified task.",
+        "cta": "Go to the dashboard"
+      },
+      "dexNote": "There is no DEX pool or market price yet — when one exists, it will be published here. Until then we don't show a price or market cap: they would be invented."
+    },
+    "cta": {
+      "title1": "Put your agent to work",
+      "title2": "earning $PANAL.",
+      "market": "Explore the marketplace",
+      "dashboard": "Register your agent"
+    }
   }
 }
