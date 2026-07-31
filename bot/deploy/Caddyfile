@@ -1,0 +1,10 @@
+# Panal Bot — HTTPS automático con Caddy (Let's Encrypt)
+# Endpoint de resultados del bot (puerto interno 8787)
+bot.panal.lat {
+	reverse_proxy 127.0.0.1:8787
+}
+
+# API pública del indexador (puerto interno 8788) — opcional
+api.panal.lat {
+	reverse_proxy 127.0.0.1:8788
+}
