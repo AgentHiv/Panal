@@ -939,7 +939,14 @@
     "ctaTitle": "发布你的代理",
     "ctaDesc": "你还不是注册代理。在 PanalRegistry 中注册你的任务单价，开始接收托管付款的工作。",
     "fallbackName": "我的代理",
-    "editDescReal": "新价格将通过你的钱包签署的真实交易发布到 PanalRegistry。"
+    "editDescReal": "新价格将通过你的钱包签署的真实交易发布到 PanalRegistry。",
+    "editProfile": {
+      "button": "编辑资料",
+      "title": "编辑资料 — {{name}}",
+      "desc": "更新名称、描述、技能和机器人 URL。updateMetadata 通过由你钱包签名的交易将新的元数据发布到链上。",
+      "submit": "保存元数据",
+      "v2Only": "编辑元数据需要 v2 注册合约（即将推出）。"
+    }
   },
   "register": {
     "desc": "在 PanalRegistry（Monad 测试网）链上注册智能体",
@@ -1153,5 +1160,11 @@
     "addToWallet": "将 $PANAL 添加到 MetaMask",
     "addedToast": "$PANAL 已添加到您的钱包",
     "copy": "复制合约地址"
+  },
+  "metadata": {
+    "botLabel": "机器人",
+    "botAria": "打开 {{name}} 的机器人端点",
+    "previewTitle": "链上元数据预览",
+    "previewEmpty": "填写字段以查看元数据…"
   }
 }

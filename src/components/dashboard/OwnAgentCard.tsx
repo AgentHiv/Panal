@@ -6,12 +6,14 @@
  * Si no es agente: CTA que abre RegisterAgentDialog (prop onRegister).
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ExternalLink, Loader2, Plus, TriangleAlert } from 'lucide-react';
+import { Bot, ExternalLink, Loader2, Plus, TriangleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatEther, parseEther } from 'viem';
 import HexAvatar from '@/components/HexAvatar';
+import EditProfileDialog from '@/components/dashboard/EditProfileDialog';
+import { parseAgentMetadata } from '@/lib/agentMetadata';
 import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
@@ -50,6 +52,7 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
   const action = useContractAction({ onMined: () => profile.refetch() });
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [priceInput, setPriceInput] = useState('');
   /** Moneda elegida en el diálogo de edición (v2: updatePrice la lleva). */
   const [editCurrency, setEditCurrency] = useState<'MON' | '$PANAL'>('MON');
@@ -87,6 +90,11 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
     ? agentName(agent.metadataURI, addressShort ?? t('ownAgent.fallbackName'))
     : (addressShort ?? '…');
   const active = agent?.active ?? false;
+  /** URL del bot declarada en el metadata (`bot:<url>`), si existe. */
+  const botUrl = useMemo(
+    () => (agent ? parseAgentMetadata(agent.metadataURI).botUrl : ''),
+    [agent],
+  );
   const rating =
     rep.ratingCount > 0n ? Number(rep.ratingSum) / Number(rep.ratingCount) : null;
 
@@ -146,6 +154,18 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
                   : t('common.monPerTask', { price: formatMonEs(Number(formatEther(agent.pricePerTask))) })}
               </span>
             )}
+            {botUrl && (
+              <a
+                href={botUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={t('metadata.botAria', { name })}
+                className="inline-flex items-center gap-1 rounded-full border border-line bg-paper px-2.5 py-0.5 font-mono text-[0.75rem] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+              >
+                <Bot size={11} aria-hidden />
+                {t('metadata.botLabel')}
+              </a>
+            )}
           </div>
         </div>
         <label className="flex shrink-0 items-center gap-2">
@@ -194,6 +214,20 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
         >
           {t('ownAgent.editPrice')}
         </button>
+        {V2_ENABLED ? (
+          <button
+            type="button"
+            onClick={() => setProfileDialogOpen(true)}
+            disabled={!agent}
+            className="rounded-full border border-line bg-transparent px-3.5 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep disabled:opacity-40"
+          >
+            {t('ownAgent.editProfile.button')}
+          </button>
+        ) : (
+          <span className="text-[0.75rem] leading-snug text-ink-3">
+            {t('ownAgent.editProfile.v2Only')}
+          </span>
+        )}
         {action.busy && (
           <span className="inline-flex items-center gap-1.5 font-mono text-[0.75rem] text-ink-3">
             <Loader2 size={13} className="animate-spin" aria-hidden />
@@ -212,6 +246,17 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
           </a>
         )}
       </div>
+
+      {/* Dialog de edición de perfil (tx real updateMetadata, solo v2) */}
+      {agent && V2_ENABLED && (
+        <EditProfileDialog
+          open={profileDialogOpen}
+          onOpenChange={setProfileDialogOpen}
+          metadataURI={agent.metadataURI}
+          agentName={name}
+          onMined={() => profile.refetch()}
+        />
+      )}
 
       {/* Dialog de edición de precio (tx real updatePrice) */}
       <Dialog open={dialogOpen} onOpenChange={(o) => !action.busy && setDialogOpen(o)}>

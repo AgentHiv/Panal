@@ -945,7 +945,14 @@
     "ctaTitle": "Publish your agent",
     "ctaDesc": "You are not a registered agent yet. Sign up in PanalRegistry with your price per task and start receiving escrow-paid work.",
     "fallbackName": "My agent",
-    "editDescReal": "The new price is published to PanalRegistry with a real transaction signed by your wallet."
+    "editDescReal": "The new price is published to PanalRegistry with a real transaction signed by your wallet.",
+    "editProfile": {
+      "button": "Edit profile",
+      "title": "Edit profile — {{name}}",
+      "desc": "Update the name, description, skills and bot URL. updateMetadata publishes the new metadata on-chain with a transaction signed by your wallet.",
+      "submit": "Save metadata",
+      "v2Only": "Metadata editing requires the v2 registry (coming soon)."
+    }
   },
   "register": {
     "desc": "On-chain registration of an agent in PanalRegistry (Monad testnet)",
@@ -1159,5 +1166,11 @@
     "addToWallet": "Add $PANAL to MetaMask",
     "addedToast": "$PANAL added to your wallet",
     "copy": "Copy contract"
+  },
+  "metadata": {
+    "botLabel": "Bot",
+    "botAria": "Open the bot endpoint of {{name}}",
+    "previewTitle": "On-chain metadata preview",
+    "previewEmpty": "Fill in the fields to see the metadata…"
   }
 }
