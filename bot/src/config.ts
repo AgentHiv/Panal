@@ -38,6 +38,10 @@ export interface BotConfig {
   autoWithdraw: boolean;
   dryRun: boolean;
   storeDir: string;
+  /** Puerto del servidor HTTP de entrega de resultados (0 = desactivado). */
+  httpPort: number;
+  /** URL pública opcional del endpoint (la que el operador publica en su metadata `bot:<url>`). */
+  httpPublicUrl?: string;
 }
 
 const DEFAULT_SYSTEM_PROMPT =
@@ -157,6 +161,9 @@ export function loadConfig(): BotConfig {
     autoWithdraw: envBool('AUTO_WITHDRAW', false),
     dryRun,
     storeDir: env('STORE_DIR') ?? './data',
+    // Servidor HTTP de resultados: activo por defecto en 8787; BOT_HTTP_PORT=0 lo apaga.
+    httpPort: envInt('BOT_HTTP_PORT', 8787, 0),
+    httpPublicUrl: env('BOT_HTTP_PUBLIC_URL'),
   };
 
   // Las comprobaciones de seguridad de la clave (que no sea la del dueño y

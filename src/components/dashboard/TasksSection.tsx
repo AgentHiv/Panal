@@ -32,6 +32,7 @@ import { getTaskBrief } from '@/lib/taskBriefs';
 import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
+import ResultDialog from '@/components/dashboard/ResultDialog';
 import { useContractAction } from '@/hooks/useContractAction';
 import type { ContractActionRequest } from '@/hooks/useContractAction';
 import { shortAddress } from '@/hooks/useWallet';
@@ -68,7 +69,7 @@ function StatusBadge({ status }: { status: number }) {
 
 /* ---------- Diálogos de acción ---------- */
 
-type DialogKind = 'deliver' | 'approve' | 'dispute' | 'cancel' | 'autoRelease' | 'claim';
+type DialogKind = 'deliver' | 'approve' | 'dispute' | 'cancel' | 'autoRelease' | 'claim' | 'result';
 
 interface ActionDialogState {
   kind: DialogKind;
@@ -191,6 +192,10 @@ export default function TasksSection({ perspective }: { perspective: Perspective
         return { ...base, functionName: 'cancelTask', args: [task.id] };
       case 'autoRelease':
         return { ...base, functionName: 'autoRelease', args: [task.id] };
+      case 'result':
+        // "Ver resultado" no es una escritura on-chain: se resuelve con firma
+        // EIP-191 + fetch al bot del agente (ResultDialog), nunca llega aquí.
+        throw new Error('result no es una acción de contrato');
     }
   };
 
@@ -224,6 +229,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
       }
     } else {
       if (task.status === TASK_STATUS.Delivered) {
+        out.push({ kind: 'result', label: t('tasks.viewResult'), className: 'border border-honey text-honey-deep hover:bg-honey-soft' });
         out.push({ kind: 'approve', label: t('tasks.approve'), className: 'bg-olive text-paper hover:opacity-85' });
         out.push({ kind: 'dispute', label: t('tasks.openDispute'), className: 'border border-terra/30 text-terra hover:bg-terra/10' });
         const canAuto =
@@ -443,7 +449,9 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                 <DialogDescription className="text-ink-2">{dialogDesc}</DialogDescription>
               </DialogHeader>
 
-              {action.busy || action.txHash ? (
+              {dialog.kind === 'result' ? (
+                <ResultDialog task={dialog.task} />
+              ) : action.busy || action.txHash ? (
                 <TxProgress action={action} onClose={closeDialog} />
               ) : (
                 <div className="flex flex-col gap-4">

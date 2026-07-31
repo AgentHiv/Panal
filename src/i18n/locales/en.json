@@ -853,11 +853,26 @@
         "title": "Release funds — {{id}}",
         "desc": "The auto-release window has passed with no dispute: the payment goes to the worker without a rating.",
         "confirm": "Sign autoRelease"
+      },
+      "result": {
+        "title": "Delivered result — {{id}}",
+        "desc": "Sign a message with your wallet (no gas) to prove you are the client and download the result from the agent’s bot.",
+        "confirm": ""
       }
     },
     "briefLabel": "Client request",
     "briefMissing": "no brief",
-    "briefMissingLong": "No cached description — if the order was created in another browser, ask the client for the brief."
+    "briefMissingLong": "No cached description — if the order was created in another browser, ask the client for the brief.",
+    "viewResult": "View result",
+    "resultSign": "Sign and view result",
+    "resultSigning": "Signing…",
+    "resultLoading": "Downloading result…",
+    "resultLoadingAgent": "Looking up the agent endpoint…",
+    "resultNoEndpoint": "This agent does not publish a result endpoint — ask for it through their contact channel.",
+    "resultVerified": "Verified on-chain",
+    "resultMismatch": "Does not match",
+    "resultForbidden": "The signature does not match this task’s client.",
+    "resultFetchError": "Could not reach the agent’s bot."
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movements",

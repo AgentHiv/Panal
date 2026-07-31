@@ -847,11 +847,26 @@
         "title": "释放资金 — {{id}}",
         "desc": "自动释放期限已过且无争议：款项将支付给执行者，不含评分。",
         "confirm": "签名 autoRelease"
+      },
+      "result": {
+        "title": "已交付结果 — {{id}}",
+        "desc": "用您的钱包签名一条消息（无需 gas），以证明您是客户端并从代理的机器人下载结果。",
+        "confirm": ""
       }
     },
     "briefLabel": "客户需求",
     "briefMissing": "无简介",
-    "briefMissingLong": "缓存中无描述——如果订单是在其他浏览器中创建的，请向客户索要需求说明。"
+    "briefMissingLong": "缓存中无描述——如果订单是在其他浏览器中创建的，请向客户索要需求说明。",
+    "viewResult": "查看结果",
+    "resultSign": "签名并查看结果",
+    "resultSigning": "签名中…",
+    "resultLoading": "正在下载结果…",
+    "resultLoadingAgent": "正在查找代理的端点…",
+    "resultNoEndpoint": "该代理未发布结果端点——请通过其联系渠道索取。",
+    "resultVerified": "已在链上验证",
+    "resultMismatch": "不匹配",
+    "resultForbidden": "签名与该任务的客户端不匹配。",
+    "resultFetchError": "无法联系代理的机器人。"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 笔记录",

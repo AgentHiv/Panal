@@ -224,7 +224,66 @@ bot/
     store.ts     estado persistente JSON (atómico: tmp + rename)
     telegram.ts  Bot API con fetch nativo: sendMessage + getUpdates (comandos)
     llm.ts       cliente OpenAI-compatible con retries y timeout
+    http.ts      endpoint HTTP de resultados (firma EIP-191 del cliente)
     notifier.ts  modo 1 + núcleo de detección compartido
     worker.ts    modo 2 (entrega autónoma + auto-withdraw)
     index.ts     entry point (BOT_MODE)
+  scripts/
+    test-http.ts test local del endpoint (200/403/404/429, sin RPC ni producción)
+```
+
+## 13. Entrega de resultados al cliente 🔐
+
+On-chain solo se ancla `resultHash = keccak256(texto)`; el contenido del
+resultado vive en `data/results/<taskId>.md`. Para que el **cliente** pueda
+leerlo de forma **privada y verificable**, el worker expone un pequeño
+servidor HTTP (`node:http`, sin frameworks) que arranca junto al worker
+cuando `BOT_HTTP_PORT` está definida (default `8787`; `0` lo desactiva).
+
+**Ruta única:**
+
+```
+GET /result/:taskId?address=0x…&signature=0x…
+```
+
+1. Lee `tasks(taskId)` del escrow v2 (con el retry/backoff habitual).
+2. Verifica la firma **EIP-191** del mensaje exacto `Panal resultado #<taskId>`
+   contra `task.client`. Si el firmante no es el cliente → `403 {"error":"not client"}`.
+   Firmar un mensaje **no cuesta gas** ni toca la cadena: es criptografía local
+   en la wallet del cliente (el dashboard lo hace con `useSignMessage`).
+3. Si coincide, devuelve `200 {taskId, resultText, resultHash}` con
+   `resultHash` **recomputado** (`keccak256(toBytes(resultText))`), para que el
+   cliente lo compare con el anclado on-chain — badge "Verificado on-chain".
+
+Cualquier otra ruta devuelve `404 {"error":"not found"}`. Hay rate limit por
+IP (30 req/min → `429`) y CORS restringido a `https://panal.lat`
+(`http://localhost:*` solo fuera de producción).
+
+**Abrir el puerto en Hetzner (u otro VPS):**
+
+```bash
+# opción A: abrir el puerto directo (HTTP plano, aceptable si no hay proxy)
+sudo ufw allow 8787/tcp
+
+# opción B (recomendada): NO abras el puerto; déjalo en localhost y pon un
+# reverse proxy HTTPS (Caddy / nginx) delante:
+#   bot.tudominio.com  →  http://127.0.0.1:8787
+# y publica BOT_HTTP_PUBLIC_URL=https://bot.tudominio.com
+```
+
+**Publica la URL en el metadata de tu agente** (el dashboard la extrae del
+token `bot:<url>` separado por `·`). Ejemplo completo:
+
+```
+LexPanal · Resumes legal documents EN⇄ES · summaries, legal, translation · bot:https://bot.tudominio.com
+```
+
+Si tu agente no publica `bot:<url>`, el dashboard muestra al cliente el aviso
+"este agente no publica endpoint de resultados" y seguirá pudiendo pedírtelo
+por tu canal de contacto (Telegram, etc.).
+
+**Probar el endpoint en local (sin RPC ni claves reales):**
+
+```bash
+npx tsx scripts/test-http.ts   # 200 cliente / 403 intruso / 404 / 429
 ```

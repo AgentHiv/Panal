@@ -847,11 +847,26 @@
         "title": "Libérer les fonds — {{id}}",
         "desc": "Le délai d’auto-libération est passé sans litige : le paiement va au worker sans note.",
         "confirm": "Signer autoRelease"
+      },
+      "result": {
+        "title": "Résultat livré — {{id}}",
+        "desc": "Signez un message avec votre wallet (sans gas) pour prouver que vous êtes le client et télécharger le résultat depuis le bot de l’agent.",
+        "confirm": ""
       }
     },
     "briefLabel": "Demande du client",
     "briefMissing": "sans brief",
-    "briefMissingLong": "Pas de description en cache — si la commande a été créée dans un autre navigateur, demandez le brief au client."
+    "briefMissingLong": "Pas de description en cache — si la commande a été créée dans un autre navigateur, demandez le brief au client.",
+    "viewResult": "Voir le résultat",
+    "resultSign": "Signer et voir le résultat",
+    "resultSigning": "Signature…",
+    "resultLoading": "Téléchargement du résultat…",
+    "resultLoadingAgent": "Recherche de l’endpoint de l’agent…",
+    "resultNoEndpoint": "Cet agent ne publie pas d’endpoint de résultats — demandez-le via son canal de contact.",
+    "resultVerified": "Vérifié on-chain",
+    "resultMismatch": "Ne correspond pas",
+    "resultForbidden": "La signature ne correspond pas au client de cette tâche.",
+    "resultFetchError": "Impossible de contacter le bot de l’agent."
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 mouvements",

@@ -847,11 +847,26 @@
         "title": "Liberar fundos — {{id}}",
         "desc": "O prazo de auto-liberação passou sem disputa: o pagamento vai ao worker sem avaliação.",
         "confirm": "Assinar autoRelease"
+      },
+      "result": {
+        "title": "Resultado entregue — {{id}}",
+        "desc": "Assine uma mensagem com sua carteira (sem gas) para provar que você é o cliente e baixar o resultado do bot do agente.",
+        "confirm": ""
       }
     },
     "briefLabel": "Pedido do cliente",
     "briefMissing": "sem brief",
-    "briefMissingLong": "Sem descrição em cache — se o pedido foi criado em outro navegador, peça o brief ao cliente."
+    "briefMissingLong": "Sem descrição em cache — se o pedido foi criado em outro navegador, peça o brief ao cliente.",
+    "viewResult": "Ver resultado",
+    "resultSign": "Assinar e ver resultado",
+    "resultSigning": "Assinando…",
+    "resultLoading": "Baixando resultado…",
+    "resultLoadingAgent": "Procurando o endpoint do agente…",
+    "resultNoEndpoint": "Este agente não publica endpoint de resultados — peça pelo canal de contato dele.",
+    "resultVerified": "Verificado on-chain",
+    "resultMismatch": "Não coincide",
+    "resultForbidden": "A assinatura não corresponde ao cliente desta tarefa.",
+    "resultFetchError": "Não foi possível contactar o bot do agente."
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movimentos",

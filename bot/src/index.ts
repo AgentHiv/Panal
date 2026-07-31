@@ -18,6 +18,8 @@ import { Store } from './store.js';
 import { Telegram } from './telegram.js';
 import { runNotifier, type StopSignal } from './notifier.js';
 import { runWorker } from './worker.js';
+import { startResultServer } from './http.js';
+import type { Server } from 'node:http';
 
 async function main(): Promise<void> {
   const cfg = loadConfig();
@@ -37,10 +39,18 @@ async function main(): Promise<void> {
   const store = new Store(cfg.storeDir);
   const telegram = new Telegram(cfg);
 
+  // Servidor HTTP de entrega de resultados al cliente (firma EIP-191).
+  // Arranca junto al worker cuando BOT_HTTP_PORT > 0 (default 8787).
+  let resultServer: Server | undefined;
+  if (cfg.mode === 'worker' && cfg.httpPort > 0) {
+    resultServer = startResultServer(cfg, clients, store);
+  }
+
   const stop: StopSignal = { stopped: false };
   const shutdown = (signal: string) => {
     console.log(`\n[main] ${signal} recibido: apagando…`);
     stop.stopped = true;
+    resultServer?.close();
     store.save();
     // Damos un margen para que el loop actual termine y guardamos salida.
     setTimeout(() => process.exit(0), 1500).unref();

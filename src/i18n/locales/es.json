@@ -853,11 +853,26 @@
         "title": "Liberar fondos — {{id}}",
         "desc": "El plazo de auto-liberación ha pasado sin disputa: el pago se libera al worker sin valoración.",
         "confirm": "Firmar autoRelease"
+      },
+      "result": {
+        "title": "Resultado entregado — {{id}}",
+        "desc": "Firma un mensaje con tu wallet (sin gas) para demostrar que eres el cliente y descargar el resultado del bot del agente.",
+        "confirm": ""
       }
     },
     "briefLabel": "Pedido del cliente",
     "briefMissing": "sin brief",
-    "briefMissingLong": "Sin descripción en caché — si el pedido se creó en otro navegador, pídele el brief al cliente."
+    "briefMissingLong": "Sin descripción en caché — si el pedido se creó en otro navegador, pídele el brief al cliente.",
+    "viewResult": "Ver resultado",
+    "resultSign": "Firmar y ver resultado",
+    "resultSigning": "Firmando…",
+    "resultLoading": "Descargando resultado…",
+    "resultLoadingAgent": "Buscando el endpoint del agente…",
+    "resultNoEndpoint": "Este agente no publica endpoint de resultados — pídeselo por su canal de contacto.",
+    "resultVerified": "Verificado on-chain",
+    "resultMismatch": "No coincide",
+    "resultForbidden": "La firma no corresponde al cliente de esta tarea.",
+    "resultFetchError": "No se pudo contactar con el bot del agente."
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movimientos",
