@@ -29,6 +29,7 @@ import {
   type Task,
 } from './chain.js';
 import { generateResult } from './llm.js';
+import { A2aManager } from './a2a.js';
 import {
   buildStatusSummary,
   newTaskMessage,
@@ -66,7 +67,10 @@ export async function runWorker(
 ): Promise<void> {
   console.log(
     `[worker] Agente autónomo ${cfg.agentAddress} | LLM: ${cfg.llm.model} @ ${cfg.llm.baseUrl} | ` +
-      `AUTO_WITHDRAW=${cfg.autoWithdraw} | DRY_RUN=${cfg.dryRun}`,
+      `AUTO_WITHDRAW=${cfg.autoWithdraw} | DRY_RUN=${cfg.dryRun}` +
+      (cfg.a2a.enabled
+        ? ` | A2A=${cfg.a2a.enabled} (máx ${formatAmount(cfg.a2a.maxSubWei)}/sub, ${formatAmount(cfg.a2a.dailyBudgetWei)}/día)`
+        : ''),
   );
 
   // Tareas cuya entrega falló recientemente (en memoria: se reintentan tras
@@ -74,6 +78,46 @@ export async function runWorker(
   const failedAt = new Map<string, number>();
   // Entregas en curso, para no duplicar trabajo si el poll se solapa.
   const inFlight = new Set<string>();
+
+  /** Entrega on-chain de un resultado ya generado + guardado + aviso Telegram. */
+  const deliverTaskResult = async (taskId: bigint, resultText: string): Promise<void> => {
+    const resultHash = keccak256(toBytes(resultText));
+    const resultFile = store.saveResult(taskId, resultText);
+    console.log(`[worker] Resultado de #${taskId} guardado en ${resultFile}`);
+
+    const txHash = await deliverResult(clients, cfg, taskId, resultHash);
+    console.log(`[worker] #${taskId} entregada on-chain. tx: ${txHash}`);
+
+    await telegram.send(
+      `✅ *Entregada #${taskId}* (resultado guardado en \`results/${taskId}.md\`).\n` +
+        `Pendiente de aprobación del cliente o auto-release en 72 h.\n` +
+        `tx: \`${txHash}\``,
+    );
+    // Enviar el resultado completo al dueño (Telegram limita a ~4096 chars;
+    // si es más largo, avisamos y queda en el archivo del servidor).
+    if (resultText.length <= 3600) {
+      await telegram.send(`📄 *Resultado de #${taskId}*:\n\n${resultText}`);
+    } else {
+      await telegram.send(
+        `📄 *Resultado de #${taskId}* (${resultText.length} chars, demasiado largo para Telegram):\n\n` +
+          resultText.slice(0, 3600) +
+          `\n\n… (completo en \`results/${taskId}.md\` o con /result #${taskId})`,
+      );
+    }
+  };
+
+  // A2A (escuadras): subcontratación de otros agentes. Solo si A2A_ENABLED.
+  // El manager APARCA el padre cuando subcontrata y lo continúa desde poll().
+  const a2a = cfg.a2a.enabled
+    ? new A2aManager({
+        cfg,
+        clients,
+        store,
+        telegram,
+        parentBrief: (taskId) => store.getBrief(taskId) ?? GENERIC_BRIEF(taskId, '0x'),
+        deliverParent: deliverTaskResult,
+      })
+    : null;
 
   const processTask = async (taskId: bigint, task: Task): Promise<void> => {
     const key = taskId.toString();
@@ -89,6 +133,8 @@ export async function runWorker(
       }
 
       if (cfg.dryRun) {
+        // A2A en seco: simula router + selección (solo lectura, sin firmar).
+        if (a2a) await a2a.simulate(taskId, task, briefText);
         console.log(
           `[worker:dry-run] Simularía entrega de #${taskId}: brief=${brief ? 'del store' : 'genérico'}, ` +
             `LLM=${cfg.llm.model}, deliverResult(${taskId}, keccak256(resultado))`,
@@ -96,32 +142,17 @@ export async function runWorker(
         return;
       }
 
+      // A2A: el router decide si subcontratar una parte. Si lo hace, el padre
+      // queda aparcado y el ciclo A2A (a2a.poll) lo entrega cuando el hijo
+      // termina (integrado) o expira (sin esa parte).
+      if (a2a) {
+        const parked = await a2a.maybeSubcontract(taskId, task, briefText);
+        if (parked) return;
+      }
+
       console.log(`[worker] Generando resultado para #${taskId}…`);
       const resultText = await generateResult(cfg, briefText);
-      const resultHash = keccak256(toBytes(resultText));
-
-      const resultFile = store.saveResult(taskId, resultText);
-      console.log(`[worker] Resultado de #${taskId} guardado en ${resultFile}`);
-
-      const txHash = await deliverResult(clients, cfg, taskId, resultHash);
-      console.log(`[worker] #${taskId} entregada on-chain. tx: ${txHash}`);
-
-      await telegram.send(
-        `✅ *Entregada #${taskId}* (resultado guardado en \`results/${taskId}.md\`).\n` +
-          `Pendiente de aprobación del cliente o auto-release en 72 h.\n` +
-          `tx: \`${txHash}\``,
-      );
-      // Enviar el resultado completo al dueño (Telegram limita a ~4096 chars;
-      // si es más largo, avisamos y queda en el archivo del servidor).
-      if (resultText.length <= 3600) {
-        await telegram.send(`📄 *Resultado de #${taskId}*:\n\n${resultText}`);
-      } else {
-        await telegram.send(
-          `📄 *Resultado de #${taskId}* (${resultText.length} chars, demasiado largo para Telegram):\n\n` +
-            resultText.slice(0, 3600) +
-            `\n\n… (completo en \`results/${taskId}.md\` o con /result #${taskId})`,
-        );
-      }
+      await deliverTaskResult(taskId, resultText);
       failedAt.delete(key);
     } catch (err) {
       failedAt.set(key, Date.now());
@@ -149,11 +180,23 @@ export async function runWorker(
     }
   };
 
-  const commandsLoop = telegram.pollCommands({ getStatus: () => buildStatusSummary(cfg, clients, store) }, store, stop);
+  const commandsLoop = telegram.pollCommands(
+    {
+      getStatus: async () => {
+        const base = await buildStatusSummary(cfg, clients, store);
+        return a2a ? `${base}\n\n${a2a.statusSummary()}` : base;
+      },
+    },
+    store,
+    stop,
+  );
 
   while (!stop.stopped) {
     try {
       await pollOnce(cfg, clients, store, onNewTask, onTransition);
+      // Vigilancia de sub-tareas A2A (hijo entregado → evaluar/aprobar/
+      // integrar; timeout → cancelar y entregar el padre sin esa parte).
+      if (a2a) await a2a.poll();
     } catch (err) {
       console.error(`[worker] Ciclo fallido: ${err instanceof Error ? err.message : err}`);
     }

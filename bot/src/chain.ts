@@ -127,7 +127,119 @@ export const escrowAbi = [
     inputs: [{ name: 'token', type: 'address' }],
     outputs: [],
   },
+  {
+    type: 'function',
+    name: 'createTask',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'worker', type: 'address' },
+      { name: 'taskHash', type: 'bytes32' },
+      { name: 'deadline', type: 'uint256' },
+      { name: 'currency', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: 'taskId', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'approveAndRelease',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'taskId', type: 'uint256' },
+      { name: 'rating', type: 'uint8' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'cancelTask',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [],
+  },
 ] as const;
+
+/** Subconjunto del ABI del registry v2 que usa el modo A2A (subcontratación). */
+export const registryAbi = [
+  {
+    type: 'function',
+    name: 'getAgentCount',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'getAgents',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'offset', type: 'uint256' },
+      { name: 'limit', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'address[]' }],
+  },
+  {
+    type: 'function',
+    name: 'getAgent',
+    stateMutability: 'view',
+    inputs: [{ name: 'agent', type: 'address' }],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          { name: 'owner', type: 'address' },
+          { name: 'metadataURI', type: 'string' },
+          { name: 'pricePerTask', type: 'uint256' },
+          { name: 'active', type: 'bool' },
+          { name: 'registeredAt', type: 'uint256' },
+          { name: 'currency', type: 'address' },
+        ],
+      },
+    ],
+  },
+] as const;
+
+/** ERC-20 mínimo para pagos en $PANAL (A2A) y chequeos de fondos. */
+export const erc20Abi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'allowance',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'approve',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+] as const;
+
+/** Tupla `getAgent(address)` del registry v2. */
+export interface RegistryAgent {
+  owner: Address;
+  metadataURI: string;
+  pricePerTask: bigint;
+  active: boolean;
+  registeredAt: bigint;
+  currency: Address;
+}
 
 export interface ChainClients {
   publicClient: PublicClient;
@@ -338,6 +450,238 @@ export function formatAmount(amount: bigint): string {
 /** Recorta una dirección para mostrarla: 0x1234…abcd. */
 export function shortAddress(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
+
+// ---------------------------------------------------------------------------
+// A2A (subcontratación): lecturas del registry v2 y escrituras como CLIENTE
+// de otros agentes. La wallet del bot es a la vez worker (sus tareas) y
+// cliente (de las sub-tareas que crea); el escrow no restringe el rol.
+// ---------------------------------------------------------------------------
+
+export async function getAgentCount(clients: ChainClients, cfg: BotConfig): Promise<bigint> {
+  return withRetry('getAgentCount', () =>
+    clients.publicClient.readContract({
+      address: cfg.registryAddress,
+      abi: registryAbi,
+      functionName: 'getAgentCount',
+    }),
+  );
+}
+
+/** Página de direcciones de agentes registrados (getAgents(offset, limit)). */
+export async function getAgentsPage(
+  clients: ChainClients,
+  cfg: BotConfig,
+  offset: bigint,
+  limit: bigint,
+): Promise<readonly Address[]> {
+  return withRetry(`getAgents(${offset},${limit})`, () =>
+    clients.publicClient.readContract({
+      address: cfg.registryAddress,
+      abi: registryAbi,
+      functionName: 'getAgents',
+      args: [offset, limit],
+    }),
+  );
+}
+
+export async function getRegistryAgent(
+  clients: ChainClients,
+  cfg: BotConfig,
+  agent: Address,
+): Promise<RegistryAgent> {
+  return withRetry(`getAgent(${agent})`, () =>
+    clients.publicClient.readContract({
+      address: cfg.registryAddress,
+      abi: registryAbi,
+      functionName: 'getAgent',
+      args: [agent],
+    }),
+  );
+}
+
+/** Balance nativo (MON) de una cuenta. */
+export async function getNativeBalance(clients: ChainClients, account: Address): Promise<bigint> {
+  return withRetry(`getBalance(${account})`, () => clients.publicClient.getBalance({ address: account }));
+}
+
+export async function getTokenBalance(
+  clients: ChainClients,
+  cfg: BotConfig,
+  token: Address,
+  account: Address,
+): Promise<bigint> {
+  return withRetry(`balanceOf(${account})`, () =>
+    clients.publicClient.readContract({
+      address: token,
+      abi: erc20Abi,
+      functionName: 'balanceOf',
+      args: [account],
+    }),
+  );
+}
+
+export async function getTokenAllowance(
+  clients: ChainClients,
+  cfg: BotConfig,
+  token: Address,
+  owner: Address,
+  spender: Address,
+): Promise<bigint> {
+  return withRetry(`allowance(${owner})`, () =>
+    clients.publicClient.readContract({
+      address: token,
+      abi: erc20Abi,
+      functionName: 'allowance',
+      args: [owner, spender],
+    }),
+  );
+}
+
+/** approve(spender, amount) exacto sobre el token $PANAL (pagos A2A). */
+export async function approveToken(
+  clients: ChainClients,
+  cfg: BotConfig,
+  token: Address,
+  spender: Address,
+  amount: bigint,
+): Promise<`0x${string}`> {
+  if (!clients.walletClient) throw new Error('walletClient no disponible (¿BOT_PRIVATE_KEY configurada?)');
+  await withRetry(`simulate approve(${token})`, () =>
+    clients.publicClient.simulateContract({
+      address: token,
+      abi: erc20Abi,
+      functionName: 'approve',
+      args: [spender, amount],
+      account: clients.walletClient!.account!,
+    }),
+  );
+  const hash = await withRetry(`approve(${token})`, () =>
+    clients.walletClient!.writeContract({
+      address: token,
+      abi: erc20Abi,
+      functionName: 'approve',
+      args: [spender, amount],
+      account: clients.walletClient!.account!,
+      chain: monad,
+    }),
+  );
+  await withRetry(`wait approve(${token})`, () =>
+    clients.publicClient.waitForTransactionReceipt({ hash }),
+  );
+  return hash;
+}
+
+/**
+ * Crea una tarea como CLIENTE (A2A: el bot subcontrata a otro agente).
+ * MON nativo: value = amount. $PANAL: value = 0 (exige approve previo).
+ * Devuelve el taskId (obtenido de la simulación) y el hash de la tx.
+ */
+export async function createTaskTx(
+  clients: ChainClients,
+  cfg: BotConfig,
+  worker: Address,
+  taskHash: `0x${string}`,
+  deadline: bigint,
+  currency: Address,
+  amount: bigint,
+): Promise<{ taskId: bigint; txHash: `0x${string}` }> {
+  if (!clients.walletClient) throw new Error('walletClient no disponible (¿BOT_PRIVATE_KEY configurada?)');
+  const value = currency.toLowerCase() === NATIVE_CURRENCY.toLowerCase() ? amount : 0n;
+  const sim = await withRetry('simulate createTask(A2A)', () =>
+    clients.publicClient.simulateContract({
+      address: cfg.escrowAddress,
+      abi: escrowAbi,
+      functionName: 'createTask',
+      args: [worker, taskHash, deadline, currency, amount],
+      value,
+      account: clients.walletClient!.account!,
+    }),
+  );
+  const taskId = (sim as { result: bigint }).result;
+  const txHash = await withRetry(`createTask(A2A → ${worker})`, () =>
+    clients.walletClient!.writeContract({
+      address: cfg.escrowAddress,
+      abi: escrowAbi,
+      functionName: 'createTask',
+      args: [worker, taskHash, deadline, currency, amount],
+      value,
+      account: clients.walletClient!.account!,
+      chain: monad,
+    }),
+  );
+  await withRetry(`wait createTask(${taskId})`, () =>
+    clients.publicClient.waitForTransactionReceipt({ hash: txHash }),
+  );
+  return { taskId, txHash };
+}
+
+/** Aprueba y libera el pago de una sub-tarea entregada (rating 1-5). */
+export async function approveAndReleaseTx(
+  clients: ChainClients,
+  cfg: BotConfig,
+  taskId: bigint,
+  rating: number,
+): Promise<`0x${string}`> {
+  if (!clients.walletClient) throw new Error('walletClient no disponible (¿BOT_PRIVATE_KEY configurada?)');
+  await withRetry(`simulate approveAndRelease(${taskId})`, () =>
+    clients.publicClient.simulateContract({
+      address: cfg.escrowAddress,
+      abi: escrowAbi,
+      functionName: 'approveAndRelease',
+      args: [taskId, rating],
+      account: clients.walletClient!.account!,
+    }),
+  );
+  const hash = await withRetry(`approveAndRelease(${taskId})`, () =>
+    clients.walletClient!.writeContract({
+      address: cfg.escrowAddress,
+      abi: escrowAbi,
+      functionName: 'approveAndRelease',
+      args: [taskId, rating],
+      account: clients.walletClient!.account!,
+      chain: monad,
+    }),
+  );
+  await withRetry(`wait approveAndRelease(${taskId})`, () =>
+    clients.publicClient.waitForTransactionReceipt({ hash }),
+  );
+  return hash;
+}
+
+/**
+ * Cancela una sub-tarea Open cuyo deadline ya venció (el contrato solo lo
+ * permite al cliente, con status Open y deadline pasado o sin worker).
+ */
+export async function cancelTaskTx(
+  clients: ChainClients,
+  cfg: BotConfig,
+  taskId: bigint,
+): Promise<`0x${string}`> {
+  if (!clients.walletClient) throw new Error('walletClient no disponible (¿BOT_PRIVATE_KEY configurada?)');
+  await withRetry(`simulate cancelTask(${taskId})`, () =>
+    clients.publicClient.simulateContract({
+      address: cfg.escrowAddress,
+      abi: escrowAbi,
+      functionName: 'cancelTask',
+      args: [taskId],
+      account: clients.walletClient!.account!,
+    }),
+  );
+  const hash = await withRetry(`cancelTask(${taskId})`, () =>
+    clients.walletClient!.writeContract({
+      address: cfg.escrowAddress,
+      abi: escrowAbi,
+      functionName: 'cancelTask',
+      args: [taskId],
+      account: clients.walletClient!.account!,
+      chain: monad,
+    }),
+  );
+  await withRetry(`wait cancelTask(${taskId})`, () =>
+    clients.publicClient.waitForTransactionReceipt({ hash }),
+  );
+  return hash;
 }
 
 /**

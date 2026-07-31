@@ -51,6 +51,23 @@ export interface BotConfig {
   indexPollIntervalMs: number;
   /** Tope de ventanas de barrido hacia atrás por día (presupuesto de RPC). */
   indexSweepWindowsPerDay: number;
+  /** A2A: subcontratación de otros agentes (solo modo worker; ver README §15). */
+  a2a: A2aConfig;
+}
+
+export interface A2aConfig {
+  /** A2A_ENABLED (default false → comportamiento actual intacto). */
+  enabled: boolean;
+  /** Prompt del router LLM (A2A_ROUTER_PROMPT; default documentado en a2a.ts). */
+  routerPrompt?: string;
+  /** A2A_MAX_SUB_WEI: precio máximo por sub-tarea (default 5e18 = 5 MON/$PANAL). */
+  maxSubWei: bigint;
+  /** A2A_DAILY_BUDGET_WEI: gasto máximo en sub-tareas por día UTC (default 20e18). */
+  dailyBudgetWei: bigint;
+  /** A2A_SUB_TIMEOUT_S: deadline máx. de la sub-tarea desde ahora (default 7200 = 2 h). */
+  subTimeoutS: number;
+  /** A2A_MIN_RATING: rating mínimo 1-5 para aprobar al subcontratista (default 3). */
+  minRating: number;
 }
 
 const DEFAULT_SYSTEM_PROMPT =
@@ -81,6 +98,19 @@ function envInt(name: string, fallback: number, min: number): number {
     return fallback;
   }
   return n;
+}
+
+function envBigInt(name: string, fallback: bigint, min: bigint): bigint {
+  const v = env(name);
+  if (v === undefined) return fallback;
+  try {
+    const n = BigInt(v);
+    if (n < min) throw new Error('below min');
+    return n;
+  } catch {
+    errors.push(`${name} debe ser un entero (wei) >= ${min} (valor: "${v}")`);
+    return fallback;
+  }
 }
 
 function envAddress(name: string, required: boolean): Address | undefined {
@@ -186,7 +216,21 @@ export function loadConfig(): BotConfig {
     // getLogs de ~100 bloques: registry + escrow). 2000 ventanas/día ≈ 400k
     // bloques/día de cobertura extra sin ahogar el RPC público.
     indexSweepWindowsPerDay: envInt('INDEX_SWEEP_WINDOWS_PER_DAY', 2_000, 0),
+    // A2A (escuadras): el bot subcontrata partes de una tarea a otros agentes
+    // del registry. Solo aplica al modo worker; ver README §15.
+    a2a: {
+      enabled: envBool('A2A_ENABLED', false),
+      routerPrompt: env('A2A_ROUTER_PROMPT'),
+      maxSubWei: envBigInt('A2A_MAX_SUB_WEI', 5n * 10n ** 18n, 0n),
+      dailyBudgetWei: envBigInt('A2A_DAILY_BUDGET_WEI', 20n * 10n ** 18n, 0n),
+      subTimeoutS: envInt('A2A_SUB_TIMEOUT_S', 7_200, 300),
+      minRating: envInt('A2A_MIN_RATING', 3, 1),
+    },
   };
+
+  if (cfg.a2a.minRating > 5) {
+    errors.push(`A2A_MIN_RATING debe estar entre 1 y 5 (valor: "${cfg.a2a.minRating}")`);
+  }
 
   // Las comprobaciones de seguridad de la clave (que no sea la del dueño y
   // que corresponda al agente) se hacen en chain.ts al derivar la address.

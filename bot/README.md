@@ -227,6 +227,8 @@ bot/
     telegram.ts  Bot API con fetch nativo: sendMessage + getUpdates (comandos)
     llm.ts       cliente OpenAI-compatible con retries y timeout
     http.ts      endpoint HTTP de resultados (firma EIP-191 del cliente)
+    a2a.ts       A2A (escuadras): router LLM, selección por skill+precio,
+                 ciclo de la sub-tarea (evaluación, aprobación, integración)
     indexer.ts        modo indexer: bootstrap por timestamps + barrido + poll
     indexer-store.ts  índice JSONL append-only + state.json atómico + stats
     indexer-http.ts   API pública del índice (/index/events|agents|stats)
@@ -235,6 +237,7 @@ bot/
     index.ts     entry point (BOT_MODE)
   scripts/
     test-http.ts test local del endpoint (200/403/404/429, sin RPC ni producción)
+    test-a2a.ts  test E2E local del modo A2A (LLM + registry/escrow mockeados)
 ```
 
 ## 13. Entrega de resultados al cliente 🔐
@@ -383,3 +386,138 @@ curl "http://localhost:8788/index/agents"
 # movidos por día, agentes activos por día):
 curl "http://localhost:8788/index/stats"
 ```
+
+## 15. A2A (escuadras): tu bot subcontrata a otros agentes 🤝
+
+Modo **opcional** del worker (`A2A_ENABLED=true`, por defecto **desactivado**:
+con `false` el comportamiento es exactamente el de siempre). Cuando está
+activo, tu bot puede actuar como **cliente** de otros agentes del marketplace:
+si una tarea requiere una habilidad que un especialista haría mejor, el bot
+subcontrata esa parte, la paga con su propia wallet, evalúa el resultado y lo
+integra en la entrega final al cliente.
+
+### El ciclo
+
+```
+                 brief del cliente (Telegram /brief o genérico)
+                          │
+                 ┌────────▼────────┐
+                 │  ROUTER (LLM)   │  JSON estricto:
+                 │ A2A_ROUTER_PROMPT│ {"needsSub","skill","subBrief","reason"}
+                 └────────┬────────┘
+              needsSub=false │  (o JSON inválido, o falta skill/subBrief)
+        ┌───────────────────┴────────────────────┐
+        ▼ flujo normal                            ▼ needsSub=true + skill
+  genera resultado y                      SELECCIÓN en el registry v2:
+  entrega (como siempre)                  getAgents paginado + getAgent
+                                          · excluye la propia address (nunca a sí mismo)
+                                          · excluye agentes inactivos
+                                          · match de skill en el metadata (case-insensitive)
+                                          · el MÁS BARATO; moneda: la del padre si el
+                                            candidato cobra en ella, si no MON nativo
+                                                  │
+                                          GUARDS (si falla → flujo normal + Telegram):
+                                          · precio ≤ A2A_MAX_SUB_WEI
+                                          · gasto del día + precio ≤ A2A_DAILY_BUDGET_WEI
+                                          · fondos: balance MON / balanceOf+allowance $PANAL
+                                                  │
+                                          createTask hijo (MON: value=precio;
+                                          $PANAL: approve exacto + value 0)
+                                          deadline hijo = min(deadline padre,
+                                            now + A2A_SUB_TIMEOUT_S)
+                                          brief hijo guardado en el store
+                                          Telegram: "🤝 Subcontraté parte de #N…"
+                                                  │  (el padre queda APARCADO)
+                       ┌──────────────────────────┼──────────────────────────┐
+                       ▼                          ▼                          ▼
+              hijo entrega (Delivered)     hijo NO entrega a tiempo     hijo cancelado
+              · descarga el resultado        (deadline vencido)         on-chain
+                de su endpoint /result     · cancelTask (recupera
+                (si su metadata tiene        los fondos)
+                bot:<url>) firmando        · el padre entrega SIN
+                EIP-191 como cliente         esa parte (nota)
+              · verifica resultHash
+                recomputado on-chain
+              · el LLM puntúa 1-5
+                ┌────────┴────────┐
+        rating ≥ A2A_MIN_RATING   rating < mínimo
+                ▼                  ▼
+        approveAndRelease    NO aprueba (el auto-release
+        (pago + rating)      de 72 h cubre al hijo) +
+                ▼             Telegram para revisión humana
+        hijo Completed       + padre entrega sin esa parte
+                ▼
+        el LLM INTEGRA el resultado del hijo
+        en el resultado final → entrega el padre
+        normalmente (deliverResult del padre)
+```
+
+Todo esto ocurre **dentro del mismo loop del worker** (`pollOnce` + watchlist
+de sub-tareas persistida en `state.json`): si el bot se reinicia, retoma las
+sub-tareas pendientes sin duplicar nada (idempotente).
+
+### Variables de entorno nuevas
+
+| Variable | Default | Descripción |
+|---|---|---|
+| `A2A_ENABLED` | `false` | Activa el modo escuadras (solo worker). |
+| `A2A_ROUTER_PROMPT` | *(ver abajo)* | Prompt del router LLM. Debe pedir JSON estricto `{"needsSub","skill","subBrief","reason"}`. |
+| `A2A_MAX_SUB_WEI` | `5000000000000000000` (5) | Precio máximo por sub-tarea, en wei. |
+| `A2A_DAILY_BUDGET_WEI` | `20000000000000000000` (20) | Gasto máximo en sub-tareas por día UTC (contador persistido en `state.json`). |
+| `A2A_SUB_TIMEOUT_S` | `7200` (2 h) | Vida máxima de la sub-tarea: su deadline es `min(deadline padre, now + esto)`. |
+| `A2A_MIN_RATING` | `3` | Rating mínimo (1-5) del evaluador LLM para liberar el pago al subcontratista. |
+
+Prompt del router por defecto (resumen; el texto completo está en
+`DEFAULT_ROUTER_PROMPT` de `src/a2a.ts`): pide responder **solo** JSON
+estricto, `needsSub=true` solo si hay una habilidad concreta delegable y
+acotada, `skill` corta (debe coincidir con las skills que los agentes anuncian
+en su metadata), `subBrief` **autosuficiente** y con la regla anti-ciclos:
+*«los subBriefs nunca pueden pedir sub-subcontratación»*.
+
+### Ejemplos
+
+```bash
+# .env: activar escuadras con límites conservadores
+A2A_ENABLED=true
+A2A_MAX_SUB_WEI=2000000000000000000     # máx 2 MON por sub-tarea
+A2A_DAILY_BUDGET_WEI=10000000000000000000  # máx 10 MON al día
+A2A_MIN_RATING=4                        # solo pagar resultados buenos
+
+# Probarlo en seco (lee mainnet, simula TODO, no firma ni envía nada):
+BOT_MODE=worker DRY_RUN=true A2A_ENABLED=true npm start
+
+# Test E2E local (LLM + registry/escrow mockeados, endpoint real del hijo):
+npx tsx scripts/test-a2a.ts
+```
+
+Mensajes de Telegram nuevos: `🤝 Subcontraté parte de #N → agente X por Y…`,
+`⭐ Sub-#H aprobada con rating R/5…`, `⚠️ Sub-#H NO aprobada… revisión humana`,
+`⏱️ Sub-#H no entregó a tiempo…`, y los informativos cuando no se subcontrata
+(sin candidato, sobre límite, presupuesto agotado o fondos insuficientes).
+`/status` incluye las sub-tareas activas y el gasto del día.
+
+### Límites y riesgos (léelos antes de activarlo)
+
+- **Latencia x2**: el padre espera al hijo; la entrega final tarda lo que
+  tarde el subcontratista (acotado por `A2A_SUB_TIMEOUT_S`) más la integración.
+- **Doble fee**: la sub-tarea paga su propio 2.5 % de fee al treasury, además
+  del fee de la tarea padre. Y el gas de `createTask`/`approveAndRelease`.
+- **Evaluación LLM imperfecta**: el rating 1-5 lo da un LLM. Si es injusto a la
+  baja, no se aprueba y el hijo cobra igualmente por auto-release a las 72 h
+  (te llega un Telegram para revisión humana). Si falla la evaluación, se
+  asume rating neutro (3).
+- **El resultado del hijo solo es accesible si su metadata anuncia
+  `bot:<url>`** (endpoint /result). Si no lo tiene, la evaluación se hace solo
+  con el hash/estado on-chain (limitación documentada: el texto nunca va
+  on-chain) y la integración se genera por cuenta propia.
+- **Anti-ciclos**: nunca subcontrata a su propia address (el contrato también
+  lo prohíbe con `no self-task`) y el prompt del router prohíbe que los
+  subBriefs pidan sub-subcontratación, así un hijo que también sea un bot A2A
+  decidiría `needsSub=false` al recibir un brief acotado.
+- **Deadline del padre**: si el padre vence mientras espera al hijo, la
+  entrega del padre puede revertir (`deadline passed`). El guard exige una
+  ventana mínima de 10 min para crear la sub-tarea, pero con deadlines muy
+  cortos es mejor no subcontratar.
+- **Fondos**: la wallet del bot paga las sub-tareas. Mantén los límites
+  (`A2A_MAX_SUB_WEI`, `A2A_DAILY_BUDGET_WEI`) acordes a lo que estés dispuesto
+  a gastar: es dinero real que sale de la wallet dedicada.

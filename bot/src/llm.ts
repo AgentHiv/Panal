@@ -27,17 +27,24 @@ function sleep(ms: number): Promise<void> {
 /**
  * Genera el resultado de una tarea. `brief` es el pedido del cliente
  * (mensaje user); el system prompt viene de SYSTEM_PROMPT.
- *
- * Lanza error si todos los reintentos fallan: el caller (worker) decide
- * si reintentar la tarea en el siguiente ciclo.
  */
 export async function generateResult(cfg: BotConfig, brief: string): Promise<string> {
-  const { baseUrl, apiKey, model, systemPrompt, timeoutMs, maxRetries } = cfg.llm;
+  return chatWithSystem(cfg, cfg.llm.systemPrompt, brief);
+}
+
+/**
+ * Llamada genérica al LLM con un system prompt explícito (la usa el router
+ * A2A, el evaluador de sub-resultados y generateResult).
+ *
+ * Lanza error si todos los reintentos fallan: el caller decide si reintentar.
+ */
+export async function chatWithSystem(cfg: BotConfig, systemPrompt: string, user: string): Promise<string> {
+  const { baseUrl, apiKey, model, timeoutMs, maxRetries } = cfg.llm;
   if (!apiKey) throw new Error('LLM_API_KEY no configurada');
 
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },
-    { role: 'user', content: brief },
+    { role: 'user', content: user },
   ];
 
   let lastError: unknown;
