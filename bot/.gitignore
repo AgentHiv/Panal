@@ -3,3 +3,6 @@ dist
 .env
 data
 *.log
+
+# lockfile generado en local (el proyecto no lo versiona)
+bot/package-lock.json

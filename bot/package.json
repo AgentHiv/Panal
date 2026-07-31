@@ -11,6 +11,7 @@
     "start": "tsx src/index.ts",
     "notifier": "BOT_MODE=notifier tsx src/index.ts",
     "worker": "BOT_MODE=worker tsx src/index.ts",
+    "indexer": "BOT_MODE=indexer tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc"
   },

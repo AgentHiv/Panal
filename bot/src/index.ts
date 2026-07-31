@@ -1,14 +1,15 @@
 /**
  * Panal Bot — punto de entrada.
  *
- * Selecciona el modo por BOT_MODE (notifier | worker), crea los clientes de
- * cadena, el store y el cliente de Telegram, y arranca el bucle principal.
- * Maneja SIGINT/SIGTERM para un apagado limpio.
+ * Selecciona el modo por BOT_MODE (notifier | worker | indexer), crea los
+ * clientes de cadena, el store y el cliente de Telegram, y arranca el bucle
+ * principal. Maneja SIGINT/SIGTERM para un apagado limpio.
  *
  * Uso:
  *   npm start                (usa BOT_MODE del .env)
  *   npm run notifier
  *   npm run worker
+ *   npm run indexer
  *   DRY_RUN=true npm start   (prueba en seco, sin Telegram ni firmas)
  */
 
@@ -19,6 +20,9 @@ import { Telegram } from './telegram.js';
 import { runNotifier, type StopSignal } from './notifier.js';
 import { runWorker } from './worker.js';
 import { startResultServer } from './http.js';
+import { IndexStore } from './indexer-store.js';
+import { runIndexer } from './indexer.js';
+import { startIndexServer } from './indexer-http.js';
 import type { Server } from 'node:http';
 
 async function main(): Promise<void> {
@@ -29,11 +33,36 @@ async function main(): Promise<void> {
   console.log(`   Agente: ${cfg.agentAddress}`);
   console.log(`   RPC: ${cfg.rpcUrl}`);
   console.log(`   Escrow v2: ${cfg.escrowAddress}`);
+  if (cfg.mode === 'indexer') {
+    console.log(`   Registry v2: ${cfg.registryAddress}`);
+  }
   // NUNCA loguear BOT_PRIVATE_KEY ni TELEGRAM_BOT_TOKEN.
 
   const clients = createClients(cfg);
   if (clients.botAddress) {
     console.log(`   Wallet del bot: ${clients.botAddress}`);
+  }
+
+  // Modo indexer: proceso hermano, solo lectura. No usa Store/Telegram del
+  // bot (tiene su propio IndexStore en INDEX_DIR y su propia API HTTP).
+  if (cfg.mode === 'indexer') {
+    const indexStore = new IndexStore(cfg.indexDir, cfg.panalTokenAddress);
+    let indexServer: Server | undefined;
+    if (cfg.indexHttpPort > 0) {
+      indexServer = startIndexServer(cfg, indexStore);
+    }
+    const indexStop: StopSignal = { stopped: false };
+    const indexShutdown = (signal: string) => {
+      console.log(`\n[main] ${signal} recibido: apagando…`);
+      indexStop.stopped = true;
+      indexServer?.close();
+      indexStore.saveState();
+      setTimeout(() => process.exit(0), 1500).unref();
+    };
+    process.on('SIGINT', () => indexShutdown('SIGINT'));
+    process.on('SIGTERM', () => indexShutdown('SIGTERM'));
+    await runIndexer(cfg, clients, indexStore, indexStop);
+    return;
   }
 
   const store = new Store(cfg.storeDir);

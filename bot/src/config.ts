@@ -9,7 +9,7 @@
 import 'dotenv/config';
 import { isAddress, getAddress, type Address } from 'viem';
 
-export type BotMode = 'notifier' | 'worker';
+export type BotMode = 'notifier' | 'worker' | 'indexer';
 
 export interface BotConfig {
   mode: BotMode;
@@ -31,6 +31,7 @@ export interface BotConfig {
   };
   rpcUrl: string;
   escrowAddress: Address;
+  registryAddress: Address;
   panalTokenAddress: Address;
   dashboardUrl: string;
   pollIntervalMs: number;
@@ -42,6 +43,14 @@ export interface BotConfig {
   httpPort: number;
   /** URL pública opcional del endpoint (la que el operador publica en su metadata `bot:<url>`). */
   httpPublicUrl?: string;
+  /** Puerto de la API pública del indexador (0 = desactivada). Solo modo indexer. */
+  indexHttpPort: number;
+  /** Directorio del índice (events.jsonl + state.json). Solo modo indexer. */
+  indexDir: string;
+  /** Intervalo del poll incremental del indexador (ms). */
+  indexPollIntervalMs: number;
+  /** Tope de ventanas de barrido hacia atrás por día (presupuesto de RPC). */
+  indexSweepWindowsPerDay: number;
 }
 
 const DEFAULT_SYSTEM_PROMPT =
@@ -104,20 +113,22 @@ function envPrivateKey(name: string, required: boolean): `0x${string}` | undefin
 /** Carga y valida la configuración. Termina el proceso si hay errores. */
 export function loadConfig(): BotConfig {
   const modeRaw = (env('BOT_MODE') ?? 'notifier').toLowerCase();
-  if (modeRaw !== 'notifier' && modeRaw !== 'worker') {
-    errors.push(`BOT_MODE debe ser "notifier" o "worker" (valor: "${modeRaw}")`);
+  if (modeRaw !== 'notifier' && modeRaw !== 'worker' && modeRaw !== 'indexer') {
+    errors.push(`BOT_MODE debe ser "notifier", "worker" o "indexer" (valor: "${modeRaw}")`);
   }
   const mode = modeRaw as BotMode;
 
   const dryRun = envBool('DRY_RUN', false);
 
-  const agentAddress = envAddress('AGENT_ADDRESS', true);
+  // El indexador es solo lectura y agnóstico del agente: no exige AGENT_ADDRESS.
+  const agentAddress = envAddress('AGENT_ADDRESS', mode !== 'indexer');
   const ownerAddress = envAddress('OWNER_ADDRESS', false);
 
   // Telegram: obligatorio salvo dry-run (en seco solo se loguea por consola).
+  // El modo indexer no notifica: no exige credenciales de Telegram.
   const telegramBotToken = env('TELEGRAM_BOT_TOKEN');
   const telegramChatId = env('TELEGRAM_CHAT_ID');
-  if (!dryRun) {
+  if (!dryRun && mode !== 'indexer') {
     if (!telegramBotToken) errors.push('TELEGRAM_BOT_TOKEN es obligatorio (créalo con @BotFather, ver README)');
     if (!telegramChatId) errors.push('TELEGRAM_CHAT_ID es obligatorio (ver README: cómo obtener tu chat id)');
   }
@@ -152,6 +163,9 @@ export function loadConfig(): BotConfig {
     escrowAddress:
       envAddress('ESCROW_ADDRESS', false) ??
       getAddress('0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9'),
+    registryAddress:
+      envAddress('REGISTRY_ADDRESS', false) ??
+      getAddress('0x89a812BFb1c35fc814ef25a3E6Ca75068B16Ac51'),
     panalTokenAddress:
       envAddress('PANAL_TOKEN_ADDRESS', false) ??
       getAddress('0x2e2e44e7fa6178822d4397299f719e89d1a67777'),
@@ -164,6 +178,14 @@ export function loadConfig(): BotConfig {
     // Servidor HTTP de resultados: activo por defecto en 8787; BOT_HTTP_PORT=0 lo apaga.
     httpPort: envInt('BOT_HTTP_PORT', 8787, 0),
     httpPublicUrl: env('BOT_HTTP_PUBLIC_URL'),
+    // Indexador (modo indexer): API pública en 8788 por defecto; 0 la apaga.
+    indexHttpPort: envInt('INDEX_HTTP_PORT', 8788, 0),
+    indexDir: env('INDEX_DIR') ?? './data/index',
+    indexPollIntervalMs: envInt('INDEX_POLL_INTERVAL_MS', 15_000, 5_000),
+    // Barrido hacia atrás: presupuesto diario de ventanas (cada ventana = 2
+    // getLogs de ~100 bloques: registry + escrow). 2000 ventanas/día ≈ 400k
+    // bloques/día de cobertura extra sin ahogar el RPC público.
+    indexSweepWindowsPerDay: envInt('INDEX_SWEEP_WINDOWS_PER_DAY', 2_000, 0),
   };
 
   // Las comprobaciones de seguridad de la clave (que no sea la del dueño y

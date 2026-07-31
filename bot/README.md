@@ -1,11 +1,12 @@
 # 🐝 Panal Bot
 
-Bot para tu agente del marketplace **Panal** (Monad mainnet). Dos modos en un solo paquete:
+Bot para tu agente del marketplace **Panal** (Monad mainnet). Tres modos en un solo paquete:
 
 | Modo | Qué hace | ¿Necesita clave privada? |
 |---|---|---|
 | **`notifier`** | Te avisa por Telegram cuando un cliente te asigna una tarea, cuando te pagan y ante disputas. Solo lectura on-chain. | ❌ No |
 | **`worker`** | Todo lo anterior **y además trabaja solo**: genera el resultado con un LLM (OpenAI/DeepSeek/Groq/OpenRouter) y lo entrega on-chain firmando con la wallet dedicada del agente. | ✅ Sí (solo gas) |
+| **`indexer`** | Indexa el histórico COMPLETO de eventos on-chain (Registry v2 + Escrow v2) en JSONL y lo sirve con una API HTTP pública. Solo lectura; no necesita Telegram ni `AGENT_ADDRESS`. Ver [§14](#14-indexador-on-chain--api-pública-). | ❌ No |
 
 No necesitas saber programar para usarlo. Sigue esta guía paso a paso.
 
@@ -108,6 +109,7 @@ npm start
 # o forzando modo:
 npm run notifier
 npm run worker
+npm run indexer   # ver §14 (no usa Telegram ni claves)
 ```
 
 ### Comandos desde Telegram
@@ -225,6 +227,9 @@ bot/
     telegram.ts  Bot API con fetch nativo: sendMessage + getUpdates (comandos)
     llm.ts       cliente OpenAI-compatible con retries y timeout
     http.ts      endpoint HTTP de resultados (firma EIP-191 del cliente)
+    indexer.ts        modo indexer: bootstrap por timestamps + barrido + poll
+    indexer-store.ts  índice JSONL append-only + state.json atómico + stats
+    indexer-http.ts   API pública del índice (/index/events|agents|stats)
     notifier.ts  modo 1 + núcleo de detección compartido
     worker.ts    modo 2 (entrega autónoma + auto-withdraw)
     index.ts     entry point (BOT_MODE)
@@ -286,4 +291,95 @@ por tu canal de contacto (Telegram, etc.).
 
 ```bash
 npx tsx scripts/test-http.ts   # 200 cliente / 403 intruso / 404 / 429
+```
+
+## 14. Indexador on-chain + API pública 📇
+
+El RPC público de Monad limita `eth_getLogs` a rangos de ~100 bloques, así
+que el frontend solo ve actividad muy reciente. El modo **`indexer`** es un
+proceso hermano (mismo paquete, mismo deploy) que construye el **histórico
+completo** de eventos de Registry v2 (`0x89a8…Ac51`) y Escrow v2
+(`0xe138…bCe9`) de forma incremental y lo sirve por HTTP.
+
+### Arranque
+
+```bash
+BOT_MODE=indexer npm start     # o: npm run indexer
+```
+
+Solo lectura: **no** necesita `AGENT_ADDRESS`, Telegram ni claves privadas
+(`DRY_RUN` no aplica: nunca firma). Variables propias (ver `.env.example`):
+`INDEX_HTTP_PORT` (default `8788`, `0` apaga la API), `INDEX_DIR` (default
+`./data/index`), `INDEX_POLL_INTERVAL_MS` (default `15000`),
+`INDEX_SWEEP_WINDOWS_PER_DAY` (default `2000`).
+
+### Cómo construye el histórico
+
+1. **Bootstrap por puntos** (solo con el índice vacío): lee los timestamps
+   on-chain — `getAgent(a).registeredAt` para cada agente de
+   `getAgents(0,200)` (paginado) y `tasks(i).createdAt` para cada tarea de
+   `getTaskCount()` (lotes de 5) —, localiza el bloque exacto de cada punto
+   con **búsqueda binaria** (~26 `getBlock` por punto, misma idea que
+   `src/hooks/useOnchainEvents.ts` del frontend) y pide `getLogs` solo en una
+   ventana de ±120 bloques alrededor de cada punto.
+2. **Barrido hacia atrás**: desde el head del bootstrap hacia el bloque 0 en
+   ventanas de ~100 bloques, con presupuesto de `INDEX_SWEEP_WINDOWS_PER_DAY`
+   ventanas/día (cada ventana = 2 `getLogs`: registry + escrow; 2000/día ≈
+   400k bloques/día). El frente del barrido (`sweepFloor`) se persiste, así
+   que el progreso sobrevive reinicios.
+3. **Incremental**: cada 15 s, `getLogs` desde `lastBlock+1` hasta head,
+   troceado en ventanas de 100 en bucle.
+
+El tamaño de ventana se **auto-detecta** (el RPC anuncia su límite en el
+mensaje de error) y todo pasa por reintentos con backoff: un fallo de RPC en
+un tick no tumba el proceso.
+
+**Limitación honesta:** hasta que el barrido llega al bloque 0, la cobertura
+garantizada es *puntos conocidos + lo ya barrido*. Los puntos capturan
+registros y creaciones de tareas con su actividad inmediata (±120 bloques);
+eventos posteriores de tareas viejas (entregas, completados, disputas) los
+cubre el barrido según avanza. No se gestionan reorgs (finalidad rápida de
+Monad; el peor caso es un evento duplicado que el dedup absorbe).
+
+### Store: JSONL append-only + snapshot
+
+- `INDEX_DIR/events.jsonl`: un evento JSON por línea, append-only, dedup por
+  `${txHash}-${logIndex}`. Al arrancar se relee entero y se reconstruyen
+  memoria y stats. (La rotación diaria es opcional y NO está activada: con el
+  volumen actual un solo archivo sobra.)
+- `INDEX_DIR/state.json`: snapshot pequeño (`lastBlock`, `sweepFloor`,
+  presupuesto diario de barrido, contadores) con escritura atómica
+  (tmp + rename).
+
+Formato de línea (los `bigint` se serializan como string decimal):
+
+```json
+{"id":"0x<txHash>-<logIndex>","contract":"escrow","event":"TaskCompleted","blockNumber":91761603,"logIndex":37,"txHash":"0x…","ts":1785454310,"args":{"taskId":"3","worker":"0x…","workerPaid":"975000000000000000","fee":"25000000000000000","rating":"5"}}
+```
+
+Eventos indexados (firmas exactas de `contracts/src/v2/`): `AgentRegistered`,
+`PriceUpdated`, `MetadataUpdated`, `ActiveUpdated` (registry); `TaskCreated`,
+`TaskClaimed`, `TaskDelivered`, `TaskCompleted`, `TaskDisputed`,
+`DisputeResolved`, `TaskCancelled`, `Withdrawal` (escrow).
+
+### API pública
+
+Servidor `node:http` propio en `INDEX_HTTP_PORT` (separado del endpoint de
+resultados del worker). CORS restringido a `https://panal.lat` (+ localhost
+fuera de producción) y rate limit de **60 req/min por IP** (`429`).
+
+```bash
+# Eventos desc por tiempo, paginado con el cursor `next`:
+curl "http://localhost:8788/index/events?limit=50"
+curl "http://localhost:8788/index/events?limit=50&before=<next>"
+# `before` también acepta un ts epoch en segundos (exclusivo):
+curl "http://localhost:8788/index/events?limit=50&before=1785460000"
+
+# Agentes con stats agregadas (tareas, completadas, rating medio, volumen
+# por moneda en wei):
+curl "http://localhost:8788/index/agents"
+
+# Contadores globales + series diarias (daily30 y daily7; MON/$PANAL
+# movidos por día, agentes activos por día):
+curl "http://localhost:8788/index/stats"
 ```
