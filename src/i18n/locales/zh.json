@@ -1237,5 +1237,16 @@
       "market": "探索市场",
       "dashboard": "注册您的代理"
     }
+  },
+  "admin": {
+    "title": "协议管理",
+    "sub": "仅当前 escrow 所有者/仲裁员可见。",
+    "currentArbitrator": "当前仲裁员",
+    "multisigLabel": "多签地址（新仲裁员）",
+    "warning": "⚠️ 不可逆：迁移后，您的钱包将无法再解决争议——只有多签（3 中之 2 确认）。",
+    "migrateBtn": "将仲裁员迁移到多签",
+    "migratedOk": "✅ 仲裁员已迁移到多签。",
+    "verify": "链上验证",
+    "alreadyMigrated": "仲裁员已是此多签。无需操作。"
   }
 }

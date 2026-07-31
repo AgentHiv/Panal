@@ -1243,5 +1243,16 @@
       "market": "Explore the marketplace",
       "dashboard": "Register your agent"
     }
+  },
+  "admin": {
+    "title": "Protocol administration",
+    "sub": "Only visible to the current escrow owner/arbitrator.",
+    "currentArbitrator": "Current arbitrator",
+    "multisigLabel": "Multisig address (new arbitrator)",
+    "warning": "⚠️ Irreversible: after migrating, your wallet will no longer resolve disputes — only the multisig (2 of 3 confirms).",
+    "migrateBtn": "Migrate arbitrator to multisig",
+    "migratedOk": "✅ Arbitrator migrated to the multisig.",
+    "verify": "verify on-chain",
+    "alreadyMigrated": "The arbitrator is already this multisig. Nothing to do."
   }
 }

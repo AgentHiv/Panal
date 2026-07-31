@@ -26,6 +26,7 @@ import OwnAgentCard from '@/components/dashboard/OwnAgentCard';
 import TasksSection from '@/components/dashboard/TasksSection';
 import DisputeCard from '@/components/dashboard/DisputeCard';
 import PaymentsSection from '@/components/dashboard/PaymentsSection';
+import AdminCard from '@/components/dashboard/AdminCard';
 import ReputationSection from '@/components/dashboard/ReputationSection';
 import { EarningsAreaChart } from '@/components/dashboard/charts';
 import type { EarningsPoint, Perspective } from '@/components/dashboard/data';
@@ -508,6 +509,11 @@ export default function Dashboard() {
           <DisputeCard tasks={disputedTasks} onResolved={refetchTasks} />
         </section>
       )}
+
+      {/* ── S6b · Administración del protocolo (solo owner/arbitrator) ──── */}
+      <section className="container-hive pb-14">
+        <AdminCard />
+      </section>
 
       {/* ── S7 · Pagos reales ───────────────────────────────────────────── */}
       <section className="container-hive pb-14 md:pb-20">

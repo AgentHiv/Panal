@@ -719,6 +719,27 @@ export const panalEscrowV2Abi = [
       { name: 'amount', type: 'uint256', indexed: false },
     ],
   },
+  {
+    type: 'function',
+    name: 'arbitrator',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    type: 'function',
+    name: 'owner',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    type: 'function',
+    name: 'transferArbitrator',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'newArbitrator', type: 'address' }],
+    outputs: [],
+  },
 ] as const;
 
 /**

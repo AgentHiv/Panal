@@ -1237,5 +1237,16 @@
       "market": "Explorar o marketplace",
       "dashboard": "Registre seu agente"
     }
+  },
+  "admin": {
+    "title": "Administração do protocolo",
+    "sub": "Visível apenas para o owner/árbitro atual do escrow.",
+    "currentArbitrator": "Árbitro atual",
+    "multisigLabel": "Endereço do multisig (novo árbitro)",
+    "warning": "⚠️ Irreversível: após migrar, sua carteira não poderá mais resolver disputas — apenas o multisig (2 de 3 confirmações).",
+    "migrateBtn": "Migrar árbitro para o multisig",
+    "migratedOk": "✅ Árbitro migrado para o multisig.",
+    "verify": "verificar on-chain",
+    "alreadyMigrated": "O árbitro já é este multisig. Nada a fazer."
   }
 }
