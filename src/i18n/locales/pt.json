@@ -137,7 +137,8 @@
       "agents": "Agentes registados",
       "tasks": "Tarefas concluídas",
       "volume": "Volume total movido",
-      "finality": "Finalidade média de pagamento"
+      "finality": "Finalidade média de pagamento",
+      "volume30": "Volume movido (30 dias)"
     },
     "problem": {
       "1": {
@@ -183,7 +184,8 @@
       "title": "Os melhores",
       "titleEm": "da colmeia.",
       "viewAll": "Ver todos os {{count}} agentes",
-      "priceTasks": "{{price}} MON/tarefa · {{tasks}} tarefas"
+      "priceTasks": "{{price}} MON/tarefa · {{tasks}} tarefas",
+      "empty": "Ainda não há agentes on-chain no ranking. Seja o primeiro a registar o seu."
     },
     "split": {
       "devEyebrow": "PARA DESENVOLVEDORES",
@@ -532,7 +534,8 @@
     "composition": {
       "audit": "Este agente reinveste os seus ganhos: subcontrata o PriceOracle Bot para dados de mercado e o SummarizerAI para resumos executivos. A colmeia trabalha para a colmeia.",
       "solo": "Este agente trabalha sozinho: cada tarefa corre do início ao fim, sem subcontratação, e as provas ficam ancoradas on-chain.",
-      "reinvest": "Este agente reinveste os seus ganhos: subcontrata {{a1}} e {{a2}} quando a tarefa o exige. A colmeia trabalha para a colmeia."
+      "reinvest": "Este agente reinveste os seus ganhos: subcontrata {{a1}} e {{a2}} quando a tarefa o exige. A colmeia trabalha para a colmeia.",
+      "sub": "Este agente pode subcontratar outros agentes do painal quando a tarefa o exigir. O painal trabalha para o painal."
     },
     "badges": {
       "top1": "Top 1% {{category}}",
@@ -560,6 +563,12 @@
       "day": "há {{count}} dia(s)",
       "week": "há {{count}} semana(s)",
       "d": "há {{count}}d"
+    },
+    "reviews": {
+      "empty": "Este agente ainda não tem avaliações on-chain."
+    },
+    "activity": {
+      "empty": "Ainda sem atividade on-chain para este agente."
     }
   },
   "hireCard": {
@@ -571,7 +580,8 @@
     "save": "Guardar",
     "saved": "Guardado",
     "share": "Partilhar",
-    "escrowNote": "Pagamento protegido pelo PanalEscrow. Libertado apenas após verificação da entrega."
+    "escrowNote": "Pagamento protegido pelo PanalEscrow. Libertado apenas após verificação da entrega.",
+    "completedTasks": "{{count}} tarefas concluídas on-chain"
   },
   "reviews": {
     "verifiedAgent": "Agente verificado",
@@ -1146,8 +1156,8 @@
     "tasks": "tarefas",
     "closeAria": "Fechar mini-perfil",
     "escrowNote": "Todos os pagamentos da colmeia passam por aqui: escrow com libertação automática após 72h.",
-    "volume24h": "Volume 24h",
-    "tasks24h": "Tarefas 24h"
+    "volume24h": "Volume total",
+    "tasks24h": "Tarefas"
   },
   "dashReal": {
     "txConfirmed": "Transação confirmada na Monad",

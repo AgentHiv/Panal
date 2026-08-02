@@ -18,9 +18,10 @@ import { DEFAULT_ADVANCED, countActiveAdvanced } from '@/components/market/filte
 import { FadeUp, WordReveal } from '@/components/market/motion';
 import { cn } from '@/lib/utils';
 import type { Agent, AgentCategory } from '@/data/agents';
-import { AGENTS, CATEGORY_LABELS, getAgent } from '@/data/agents';
-import { IS_MAINNET, PANAL_TOKEN_ADDRESS } from '@/contracts/config';
+import { CATEGORY_LABELS } from '@/data/agents';
+import { PANAL_TOKEN_ADDRESS } from '@/contracts/config';
 import { usePanalAgents, isOnchainAgent } from '@/hooks/usePanalAgents';
+import { useTopAgents } from '@/hooks/useTopAgents';
 
 /* ============================================================
  * Mercado (/mercado) — marketplace.md
@@ -52,11 +53,8 @@ const CATEGORIES: Array<'todos' | AgentCategory> = [
   'humanos',
 ];
 
-// Total REAL del panal: agentes on-chain (+ catálogo demo solo en builds no-mainnet).
+// Total REAL del panal: solo agentes on-chain (sin catálogo demo).
 // Antes: constante fantasma 48.291 — eliminada.
-
-/** Podio fijo del mercado (marketplace.md S2). */
-const PODIUM_IDS = ['codeauditor', 'legalreviewer', 'translatorbot'];
 
 function isCategory(v: string | null): v is AgentCategory {
   return v !== null && v !== 'todos' && CATEGORIES.includes(v as AgentCategory);
@@ -149,14 +147,13 @@ export default function Marketplace() {
   const [scrolled, setScrolled] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  /* ---------- agentes on-chain (PanalRegistry · Monad testnet) ---------- */
+  /* ---------- agentes on-chain (PanalRegistry · Monad mainnet) ---------- */
   const { agents: onchainAgents, hasOnchain } = usePanalAgents();
-  // En mainnet no hay fallback a datos demo: un agente mock mostraría un
-  // TxHash simulado como si la contratación hubiera ocurrido (auditoría ALTO-2).
-  const allAgents = useMemo<Agent[]>(
-    () => (IS_MAINNET ? onchainAgents : [...onchainAgents, ...AGENTS]),
-    [onchainAgents],
-  );
+  // Sin fallback a datos demo en ninguna red: solo agentes reales on-chain.
+  const allAgents = useMemo<Agent[]>(() => onchainAgents, [onchainAgents]);
+  // Podio real: top 3 por actividad/reputación del indexador (useTopAgents).
+  const { top: topAgents } = useTopAgents();
+  const podiumAgents = useMemo(() => topAgents.slice(0, 3), [topAgents]);
 
   useEffect(() => {
     document.title = t('market.metaTitle');
@@ -232,11 +229,6 @@ export default function Marketplace() {
     return () => window.clearTimeout(t);
   }, [filtersKey, loadedKey]);
   const loading = loadedKey !== filtersKey;
-
-  const podiumAgents = useMemo(
-    () => PODIUM_IDS.map((id) => getAgent(id)).filter((a): a is Agent => Boolean(a)),
-    [],
-  );
 
   const activeFilters = countActiveAdvanced(advanced) + (debouncedQuery ? 1 : 0);
 
@@ -331,26 +323,28 @@ export default function Marketplace() {
             </span>
           ) : (
             <span className="inline-flex items-center gap-2 rounded-full bg-sand px-3 py-1 font-mono text-[12px] text-ink-2">
-              {IS_MAINNET ? t('market.emptyOnchain') : t('market.demoData')}
+              {t('market.emptyOnchain')}
             </span>
           )}
         </FadeUp>
       </header>
 
-      {/* ============ S2 · Podio — Top del panal ============ */}
-      <section className="relative bg-cream py-16 md:py-20">
-      <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-[0.07]" aria-hidden />
-        <div className="container-hive">
-          <FadeUp className="mb-10 flex flex-col items-center gap-3 text-center">
-            <p className="eyebrow flex items-center gap-2 text-ink-3">
-              <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-              {t('market.podiumEyebrow')}
-            </p>
-            <h2 className="display-m text-ink">{t('market.podiumTitle')}</h2>
-          </FadeUp>
-          <Podium agents={podiumAgents} onHire={openHire} />
-        </div>
-      </section>
+      {/* ============ S2 · Podio — Top del panal (solo con top 3 real) ============ */}
+      {podiumAgents.length === 3 && (
+        <section className="relative bg-cream py-16 md:py-20">
+        <div className="bg-honeycomb pointer-events-none absolute inset-0 opacity-[0.07]" aria-hidden />
+          <div className="container-hive">
+            <FadeUp className="mb-10 flex flex-col items-center gap-3 text-center">
+              <p className="eyebrow flex items-center gap-2 text-ink-3">
+                <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
+                {t('market.podiumEyebrow')}
+              </p>
+              <h2 className="display-m text-ink">{t('market.podiumTitle')}</h2>
+            </FadeUp>
+            <Podium agents={podiumAgents} onHire={openHire} />
+          </div>
+        </section>
+      )}
 
       {/* ============ S3 · Toolbar de filtros (sticky) ============ */}
       <div

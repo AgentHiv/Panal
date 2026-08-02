@@ -1,10 +1,13 @@
 /**
  * Panal — Lectura on-chain de agentes registrados (sin wallet).
  * Usa el publicClient de viem contra PanalRegistry + PanalReputation
- * (Monad testnet). Si no hay agentes on-chain devuelve lista vacía y
- * el marketplace cae a los datos mock.
+ * (Monad mainnet) y enriquece cada agente con las stats REALES del
+ * indexador (useIndexAgents: tareas completadas, rating medio, nº de
+ * ratings, volumen cobrado en MON). Si el indexador no responde, los
+ * campos derivados quedan con los valores on-chain/cero (fallback honesto).
  */
 
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatEther } from 'viem';
 import type { Address } from 'viem';
@@ -19,8 +22,9 @@ import {
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
 import type { Agent } from '@/data/agents';
+import { useIndexAgents, type AgentStats } from '@/lib/indexer';
 
-/** Agent del mercado enriquecido con datos reales on-chain. */
+/** Agent del mercado enriquecido con datos reales on-chain + indexador. */
 export interface OnchainAgent extends Agent {
   onchain: true;
   /** dirección real del agente (worker en PanalEscrow) */
@@ -29,6 +33,8 @@ export interface OnchainAgent extends Agent {
   priceWei: bigint;
   /** moneda del precio: address(0) = MON (v1 siempre), PANAL_TOKEN = $PANAL (solo v2) */
   currency: Address;
+  /** stats del indexador para esta address (null si aún no tiene actividad) */
+  indexStats: AgentStats | null;
 }
 
 export function isOnchainAgent(agent: Agent): agent is OnchainAgent {
@@ -120,7 +126,7 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       tagline: meta.tagline || 'Agente registrado on-chain en PanalRegistry.',
       description:
         meta.tagline ||
-        'Agente registrado directamente en PanalRegistry (Monad testnet). La reputación mostrada proviene de PanalReputation.',
+        'Agente registrado directamente en PanalRegistry (Monad mainnet). La reputación mostrada proviene de PanalReputation.',
       pricePerTask: priceMon,
       rating: rating > 0 ? Math.min(5, rating) : 0,
       reviews: 0,
@@ -145,6 +151,7 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       workerAddress: addr,
       priceWei,
       currency: data.currency ?? NATIVE_CURRENCY,
+      indexStats: null,
     };
   };
 
@@ -166,10 +173,33 @@ export function usePanalAgents() {
     retry: 3,
     retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 10_000),
   });
+  // Stats reales del indexador (react-query dedup por queryKey: el fetch lo
+  // comparte con el resto de consumidores de useIndexAgents).
+  const { byAddress } = useIndexAgents();
+
+  const agents = useMemo<OnchainAgent[]>(
+    () =>
+      (query.data ?? []).map((a) => {
+        const st = byAddress.get(a.workerAddress.toLowerCase()) ?? null;
+        if (!st) return a;
+        return {
+          ...a,
+          indexStats: st,
+          tasksCompleted: st.completed,
+          rating: st.avgRating ?? a.rating,
+          reviews: st.ratingCount,
+          // Agent.totalEarned es un number en MON: solo se suma el volumen en
+          // MON (wei → MON). El volumen en $PANAL no se mezcla (unidades
+          // distintas); está disponible en indexStats.volume.
+          totalEarned: Number(formatEther(BigInt(st.volume['MON'] ?? '0'))),
+        };
+      }),
+    [query.data, byAddress],
+  );
 
   return {
-    agents: query.data ?? [],
+    agents,
     loading: query.isLoading,
-    hasOnchain: (query.data?.length ?? 0) > 0,
+    hasOnchain: agents.length > 0,
   };
 }

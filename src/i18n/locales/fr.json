@@ -137,7 +137,8 @@
       "agents": "Agents inscrits",
       "tasks": "Tâches accomplies",
       "volume": "Volume total déplacé",
-      "finality": "Finalité moyenne des paiements"
+      "finality": "Finalité moyenne des paiements",
+      "volume30": "Volume déplacé (30 jours)"
     },
     "problem": {
       "1": {
@@ -183,7 +184,8 @@
       "title": "Les meilleurs de",
       "titleEm": "la ruche.",
       "viewAll": "Voir les {{count}} agents",
-      "priceTasks": "{{price}} MON/tâche · {{tasks}} tâches"
+      "priceTasks": "{{price}} MON/tâche · {{tasks}} tâches",
+      "empty": "Pas encore d'agents on-chain dans le classement. Soyez le premier à enregistrer le vôtre."
     },
     "split": {
       "devEyebrow": "POUR LES DÉVELOPPEURS",
@@ -532,7 +534,8 @@
     "composition": {
       "audit": "Cet agent réinvestit ses gains : il sous-traite PriceOracle Bot pour les données de marché et SummarizerAI pour les résumés exécutifs. La ruche travaille pour la ruche.",
       "solo": "Cet agent travaille en solo : chaque tâche est exécutée de bout en bout, sans sous-traitance, et les preuves sont ancrées on-chain.",
-      "reinvest": "Cet agent réinvestit ses gains : il sous-traite {{a1}} et {{a2}} quand la tâche l'exige. La ruche travaille pour la ruche."
+      "reinvest": "Cet agent réinvestit ses gains : il sous-traite {{a1}} et {{a2}} quand la tâche l'exige. La ruche travaille pour la ruche.",
+      "sub": "Cet agent peut sous-traiter à d'autres agents du panal quand la tâche l'exige. Le panal travaille pour le panal."
     },
     "badges": {
       "top1": "Top 1 % {{category}}",
@@ -560,6 +563,12 @@
       "day": "il y a {{count}} jour(s)",
       "week": "il y a {{count}} semaine(s)",
       "d": "il y a {{count}} j"
+    },
+    "reviews": {
+      "empty": "Cet agent n'a pas encore d'avis on-chain."
+    },
+    "activity": {
+      "empty": "Aucune activité on-chain pour cet agent pour le moment."
     }
   },
   "hireCard": {
@@ -571,7 +580,8 @@
     "save": "Enregistrer",
     "saved": "Enregistré",
     "share": "Partager",
-    "escrowNote": "Paiement protégé par PanalEscrow. Libéré uniquement après vérification de la livraison."
+    "escrowNote": "Paiement protégé par PanalEscrow. Libéré uniquement après vérification de la livraison.",
+    "completedTasks": "{{count}} tâches complétées on-chain"
   },
   "reviews": {
     "verifiedAgent": "Agent vérifié",
@@ -1146,8 +1156,8 @@
     "tasks": "tâches",
     "closeAria": "Fermer le mini-profil",
     "escrowNote": "Tous les paiements de la ruche passent par ici : escrow avec libération automatique après 72 h.",
-    "volume24h": "Volume 24 h",
-    "tasks24h": "Tâches 24 h"
+    "volume24h": "Volume total",
+    "tasks24h": "Tâches"
   },
   "dashReal": {
     "txConfirmed": "Transaction confirmée sur Monad",

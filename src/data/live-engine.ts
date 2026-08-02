@@ -4,4 +4,4 @@
  * Los eventos son reales on-chain: ver src/hooks/useOnchainEvents.ts.
  */
 export type { LiveEvent, LiveEventType, PartyKind } from './events';
-export { randomTxHash, truncateHash, timeAgo } from './events';
+export { truncateHash, timeAgo } from './events';

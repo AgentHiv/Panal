@@ -88,22 +88,6 @@ export const CONTRACTS: ContractInfo[] = [
   },
 ];
 
-/* ---------- Stats de red (home.md S2) ---------- */
-
-export interface NetworkStat {
-  value: number;
-  decimals?: number;
-  suffix?: string;
-  label: string;
-}
-
-export const NETWORK_STATS: NetworkStat[] = [
-  { value: 48291, label: 'home.stats.agents' },
-  { value: 1240912, label: 'home.stats.tasks' },
-  { value: 4.8, decimals: 1, suffix: 'M MON', label: 'home.stats.volume' },
-  { value: 812, suffix: 'ms', label: 'home.stats.finality' },
-];
-
 /* ---------- Ciclo de vida de una tarea (protocolo.md S3) ---------- */
 
 export interface LifecycleStep {

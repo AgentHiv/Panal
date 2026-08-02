@@ -26,13 +26,16 @@ import HireDialog from '@/components/HireDialog';
 import Magnetic from '@/components/Magnetic';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
-import { getAgent, formatInt, formatMon, formatRating, CATEGORY_LABELS } from '@/data/agents';
+import { formatInt, formatMon, formatRating, CATEGORY_LABELS } from '@/data/agents';
 import { timeAgo, truncateHash } from '@/data/events';
 import type { LiveEvent, TickerItem } from '@/data/events';
 import { EVENT_META } from '@/components/live/meta';
 import { useOnchainEvents } from '@/hooks/useOnchainEvents';
 import { useNetworkStats } from '@/hooks/useNetworkStats';
-import { CONTRACTS, NETWORK_STATS, NETWORK_COMPARISON, ROADMAP_PHASES } from '@/data/protocol';
+import { useTopAgents } from '@/hooks/useTopAgents';
+import { useIndexStats } from '@/lib/indexer';
+import { formatEther } from 'viem';
+import { CONTRACTS, NETWORK_COMPARISON, ROADMAP_PHASES } from '@/data/protocol';
 
 const HeroSwarm = lazy(() => import('@/components/home/HeroSwarm'));
 
@@ -250,16 +253,45 @@ function HeroTicker() {
 }
 
 /* ============================================================
- * S2 · Banda de stats (claro)
+ * S2 · Banda de stats (claro) — datos REALES del indexador;
+ * fallback a getAgentCount (RPC) para agentes; '—' si no hay dato.
  * ============================================================ */
 function StatsBand() {
   const { t } = useTranslation();
+  const { stats } = useIndexStats();
+  const { agentCount } = useNetworkStats();
+
+  // MON movidos en los últimos 30 días (suma de las series diarias del índice).
+  const volume30 = useMemo(() => {
+    if (!stats) return null;
+    const wei = stats.daily30.reduce((acc, d) => acc + BigInt(d.monMoved), 0n);
+    return Number(formatEther(wei));
+  }, [stats]);
+
+  const agents = stats?.totals.agents ?? agentCount;
+  const tasks = stats?.totals.completed ?? null;
+
+  const items: Array<{ value: number | null; decimals?: number; suffix?: string; label: string }> = [
+    { value: agents, label: t('home.stats.agents') },
+    { value: tasks, label: t('home.stats.tasks') },
+    { value: volume30, decimals: 2, suffix: 'MON', label: t('home.stats.volume30') },
+    // Constante de spec de red (no es un dato medido por Panal)
+    { value: 812, suffix: 'ms', label: t('home.stats.finality') },
+  ];
+
   return (
     <section className="border-y border-line bg-paper">
       <Reveal stagger className="container-hive grid grid-cols-2 md:grid-cols-4 md:divide-x md:divide-line">
-        {NETWORK_STATS.map((s) => (
+        {items.map((s) => (
           <div key={s.label} className="py-10 md:px-10 md:py-14 md:first:pl-0 md:last:pr-0">
-            <StatBlock value={s.value} decimals={s.decimals} suffix={s.suffix} label={t(s.label)} />
+            {s.value === null ? (
+              <div className="flex flex-col gap-2">
+                <span className="stat-number text-ink">—</span>
+                <span className="eyebrow text-ink-3">{s.label}</span>
+              </div>
+            ) : (
+              <StatBlock value={s.value} decimals={s.decimals} suffix={s.suffix} label={s.label} />
+            )}
           </div>
         ))}
       </Reveal>
@@ -589,13 +621,10 @@ function RankingSection() {
   const { agentCount } = useNetworkStats();
   const agentCountLabel =
     agentCount !== null ? new Intl.NumberFormat(i18n.language).format(agentCount) : '—';
-  // Podio curado del diseño (home.md S6): Nº1 CodeAuditor, Nº2 LegalReviewer, Nº3 TranslatorBot
-  const podium = ['codeauditor', 'legalreviewer', 'translatorbot']
-    .map((id) => getAgent(id))
-    .filter((a): a is Agent => !!a);
-  const minis = ['researchagent', 'summarizerai', 'datascout', 'imageanalyst']
-    .map((id) => getAgent(id))
-    .filter((a): a is Agent => !!a);
+  // Ranking REAL: top del panal por actividad/reputación del indexador.
+  const { top } = useTopAgents();
+  const podium = top.slice(0, 3);
+  const minis = top.slice(3, 7);
 
   return (
     <section className="bg-paper py-24 md:py-32">
@@ -617,29 +646,37 @@ function RankingSection() {
             </Link>
           }
         />
-        <Reveal stagger className="mt-16 grid items-start gap-6 md:grid-cols-3">
-          {podium.map((a, i) => (
-            <PodiumCard key={a.id} agent={a} rank={i + 1} />
-          ))}
-        </Reveal>
-        <Reveal stagger className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {minis.map((a) => (
-            <Link
-              key={a.id}
-              to={`/agente/${a.id}`}
-              className="group flex items-center gap-3 rounded-2xl border border-line bg-paper p-4 transition-all duration-200 hover:-translate-y-1 hover:border-honey hover:shadow-card"
-            >
-              <HexAvatar seed={a.wallet} size={40} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[0.875rem] font-semibold text-ink">{a.name}</p>
-                <p className="font-mono text-[11px] text-ink-3">
-                  {formatRating(a.rating)} ★ · {formatMon(a.pricePerTask)} MON
-                </p>
-              </div>
-              <Sparkline data={a.trend7d} className="shrink-0 opacity-80 transition-opacity group-hover:opacity-100" />
-            </Link>
-          ))}
-        </Reveal>
+        {podium.length === 0 ? (
+          <p className="mt-16 rounded-xl border border-dashed border-line px-4 py-6 text-center text-[0.875rem] text-ink-3">
+            {t('home.rank.empty')}
+          </p>
+        ) : (
+          <>
+            <Reveal stagger className="mt-16 grid items-start gap-6 md:grid-cols-3">
+              {podium.map((a, i) => (
+                <PodiumCard key={a.id} agent={a} rank={i + 1} />
+              ))}
+            </Reveal>
+            <Reveal stagger className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {minis.map((a) => (
+                <Link
+                  key={a.id}
+                  to={`/agente/${a.id}`}
+                  className="group flex items-center gap-3 rounded-2xl border border-line bg-paper p-4 transition-all duration-200 hover:-translate-y-1 hover:border-honey hover:shadow-card"
+                >
+                  <HexAvatar seed={a.wallet} size={40} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[0.875rem] font-semibold text-ink">{a.name}</p>
+                    <p className="font-mono text-[11px] text-ink-3">
+                      {formatRating(a.rating)} ★ · {formatMon(a.pricePerTask)} MON
+                    </p>
+                  </div>
+                  <Sparkline data={a.trend7d} className="shrink-0 opacity-80 transition-opacity group-hover:opacity-100" />
+                </Link>
+              ))}
+            </Reveal>
+          </>
+        )}
       </div>
     </section>
   );
@@ -938,9 +975,6 @@ function FinalCta() {
             </Link>
           </Magnetic>
         </div>
-        <p className="mt-6 font-mono text-[12px] text-coal-mute">
-          PanalRegistry · 0xA6e1…R3g5 · Monad Mainnet
-        </p>
       </div>
     </section>
   );

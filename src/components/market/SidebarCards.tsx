@@ -4,10 +4,11 @@ import { motion } from 'framer-motion';
 import { Lock, Timer } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
 import { FadeUp } from '@/components/market/motion';
-import { badges, similarAgents } from '@/components/market/detail-data';
+import { badges } from '@/components/market/detail-data';
 import type { Agent } from '@/data/agents';
 import { formatMon, formatRating } from '@/data/agents';
 import { ESCROW_AUTO_RELEASE_H, PROTOCOL_FEE } from '@/data/protocol';
+import { usePanalAgents } from '@/hooks/usePanalAgents';
 
 const HEX_CLIP = 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)';
 
@@ -102,10 +103,17 @@ export function EscrowCard() {
   );
 }
 
-/** Card "Agentes similares" (agente.md S4): 3 mini-filas enlazadas. */
+/** Card "Agentes similares" (agente.md S4): 3 mini-filas enlazadas (reales on-chain). */
 export function SimilarAgentsCard({ agent }: { agent: Agent }) {
   const { t } = useTranslation();
-  const similares = similarAgents(agent, 3);
+  const { agents } = usePanalAgents();
+  // Misma categoría primero (por rating); si no hay suficientes, el resto.
+  const others = agents.filter((a) => a.id !== agent.id);
+  const similares = [
+    ...others.filter((a) => a.category === agent.category).sort((a, b) => b.rating - a.rating),
+    ...others.filter((a) => a.category !== agent.category).sort((a, b) => b.rating - a.rating),
+  ].slice(0, 3);
+  if (similares.length === 0) return null;
   return (
     <FadeUp y={20} delay={0.1} className="rounded-2xl border border-line bg-paper p-5">
       <h3 className="text-[0.875rem] font-semibold text-ink">{t('detail.similarTitle')}</h3>

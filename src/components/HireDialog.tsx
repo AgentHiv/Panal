@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ExternalLink, Hexagon, Loader2, Timer, TriangleAlert } from 'lucide-react';
+import { Check, ExternalLink, Loader2, Timer, TriangleAlert } from 'lucide-react';
 import { useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { keccak256, toBytes } from 'viem';
 import { saveTaskBrief } from '@/lib/taskBriefs';
@@ -20,12 +20,10 @@ import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
 import { formatMon } from '@/data/agents';
 import { PROTOCOL_FEE, ESCROW_AUTO_RELEASE_H } from '@/data/protocol';
-import { randomTxHash } from '@/data/events';
 import { useWallet } from '@/hooks/useWallet';
 import { isOnchainAgent } from '@/hooks/usePanalAgents';
 import {
   EXPLORER_TX,
-  IS_MAINNET,
   NATIVE_CURRENCY,
   PANAL_ESCROW_ADDRESS,
   PANAL_ESCROW_V2_ADDRESS,
@@ -54,7 +52,8 @@ const DEADLINE_OPTIONS = [6, 24, 72, 168] as const;
 /**
  * Modal global "Contratar agente" — 3 pasos con stepper de hexágonos (marketplace.md S8).
  * El estado del wizard vive en HireWizard: Radix desmonta el contenido al cerrar,
- * así cada apertura empieza de cero con un hash de transacción nuevo.
+ * así cada apertura empieza de cero. TODO es real: solo agentes on-chain y solo
+ * con wallet conectada (fail-closed, sin sellado simulado).
  */
 export default function HireDialog({ agent, open, onOpenChange }: HireDialogProps) {
   if (!agent) return null;
@@ -75,13 +74,11 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   const [deadlineHours, setDeadlineHours] = useState(72);
   const [params, setParams] = useState('');
   const [accepted, setAccepted] = useState(false);
-  const [txHash] = useState(() => randomTxHash());
 
   /* ---------- contratación real (PanalEscrow) ---------- */
   const { connected, connecting, wrongNetwork, switchToMonad, chainId, connect } = useWallet();
   const { switchChainAsync } = useSwitchChain();
   const onchain = isOnchainAgent(agent);
-  const realMode = onchain && connected && !wrongNetwork;
   /** Moneda del agente (v2): address(0) = MON, PANAL_TOKEN = $PANAL. */
   const agentCurrency = onchain ? agent.currency : NATIVE_CURRENCY;
   const isPanal = V2_ENABLED && agentCurrency.toLowerCase() === PANAL_TOKEN_ADDRESS.toLowerCase();
@@ -202,20 +199,11 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   // se descuenta del pago al agente al liberar el escrow (ver contrato).
   const total = price;
 
-  const confetti = useMemo(
-    () =>
-      Array.from({ length: 8 }, (_, i) => {
-        const a = (Math.PI * 2 * i) / 8 + 0.35;
-        return { x: Math.cos(a) * (52 + (i % 3) * 22), y: Math.sin(a) * (52 + ((i + 1) % 3) * 20), delay: i * 0.02 };
-      }),
-    [],
-  );
-
-  /* Fail-closed en mainnet: el flujo simulado (sellado sin transacción real)
-     solo existe en testnet. En mainnet NUNCA debe mostrarse un sellado falso:
-     - agente del catálogo demo (no on-chain) → aviso + enlace al mercado;
-     - agente on-chain sin wallet conectada → pedir conexión en vez de simular. */
-  if (IS_MAINNET && !onchain) {
+  /* Fail-closed SIEMPRE (no hay flujo simulado en ninguna red):
+     - agente no on-chain → aviso + enlace al mercado;
+     - agente on-chain sin wallet conectada → pedir conexión.
+     El wizard de pasos solo se alcanza con un agente on-chain y wallet. */
+  if (!onchain) {
     return (
       <div className="px-7 pb-7 pt-6">
         <DialogTitle className="display-m text-ink">{t('hire.mainnetDemo.title')}</DialogTitle>
@@ -246,7 +234,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     );
   }
 
-  if (IS_MAINNET && !connected) {
+  if (!connected) {
     return (
       <div className="px-7 pb-7 pt-6">
         <DialogTitle className="display-m text-ink">{t('hire.mainnetConnect.title')}</DialogTitle>
@@ -446,22 +434,20 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                       </button>
                       <button
                         type="button"
-                        onClick={() => (realMode ? hireOnchain() : setStep(2))}
+                        onClick={hireOnchain}
                         disabled={!accepted || signing || approveSigning}
                         className="flex-1 rounded-full bg-honey px-5 py-3 text-[0.875rem] font-semibold text-ink transition-colors hover:bg-honey-deep hover:text-paper disabled:opacity-40"
                       >
-                        {realMode
-                          ? isPanal
-                            ? t('hire.step2.signLockToken', { price: formatMon(price) })
-                            : t('hire.step2.signLock', { price: formatMon(price) })
-                          : t('hire.step2.lockHire')}
+                        {isPanal
+                          ? t('hire.step2.signLockToken', { price: formatMon(price) })
+                          : t('hire.step2.signLock', { price: formatMon(price) })}
                       </button>
                     </div>
                   )}
                 </div>
               )}
 
-              {step === 2 && realMode && (
+              {step === 2 && (
                 <div className="relative flex flex-col items-center gap-5 py-2 text-center">
                   {approveError && approvePhase === 'approving' ? (
                     <>
@@ -632,70 +618,6 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                       </div>
                     </>
                   )}
-                </div>
-              )}
-
-              {step === 2 && !realMode && (
-                <div className="relative flex flex-col items-center gap-5 py-2 text-center">
-                  {/* hexágono que se dibuja y sella */}
-                  <div className="relative">
-                    <svg viewBox="0 0 96 96" className="h-24 w-24">
-                      <motion.polygon
-                        points="88,48 68,82.64 28,82.64 8,48 28,13.36 68,13.36"
-                        fill="#F2EFFA"
-                        stroke="#E29A2E"
-                        strokeWidth="2.5"
-                        strokeLinejoin="round"
-                        initial={{ pathLength: 0, fillOpacity: 0 }}
-                        animate={{ pathLength: 1, fillOpacity: 1 }}
-                        transition={{ pathLength: { duration: 0.9, ease: 'easeInOut' }, fillOpacity: { duration: 0.5, delay: 0.5 } }}
-                      />
-                      <motion.g
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.75, type: 'spring', stiffness: 300, damping: 16 }}
-                        style={{ transformOrigin: '48px 48px' }}
-                      >
-                        <circle cx="48" cy="48" r="15" fill="#6E7B4E" />
-                        <path d="M41 48.5l5 5 9-10" stroke="#F2EFFA" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                      </motion.g>
-                    </svg>
-                    {/* micro-confetti de hexágonos */}
-                    {confetti.map((c, i) => (
-                      <motion.span
-                        key={i}
-                        className="absolute left-1/2 top-1/2 text-honey"
-                        initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
-                        animate={{ x: c.x, y: c.y, opacity: 0, scale: 1 }}
-                        transition={{ duration: 0.9, delay: 0.75 + c.delay, ease: 'easeOut' }}
-                      >
-                        <Hexagon size={8} className="fill-honey" />
-                      </motion.span>
-                    ))}
-                  </div>
-                  <div>
-                    <p className="display-m text-ink">{t('hire.step3.sealed')}</p>
-                    <p className="mt-1 text-[0.875rem] text-ink-2">
-                      {t('hire.step3.sealedDesc', { name: agent.name })}
-                    </p>
-                  </div>
-                  <TxHash hash={txHash} className="rounded-full border border-line bg-cream px-4 py-2" />
-                  <div className="flex w-full flex-col gap-2 sm:flex-row">
-                    <Link
-                      to="/dashboard"
-                      onClick={() => onOpenChange(false)}
-                      className="flex-1 btn-monad px-5 py-3 text-center text-[0.875rem] font-semibold"
-                    >
-                      {t('hire.step3.viewDashboard')}
-                    </Link>
-                    <button
-                      type="button"
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
-                    >
-                      {t('hire.step3.viewExplorer')}
-                      <ExternalLink size={14} />
-                    </button>
-                  </div>
                 </div>
               )}
             </motion.div>

@@ -46,6 +46,10 @@ const formatCompact = (n: number) =>
 
 /** Evento Withdrawal del escrow (espejo de panalEscrowAbi, tipado por parseAbiItem). */
 const WITHDRAWAL_EVENT = parseAbiItem('event Withdrawal(address indexed to, uint256 amount)');
+/** v2: mismo evento con el token indexado (mismo patrón que useWithdrawals). */
+const WITHDRAWAL_EVENT_V2 = parseAbiItem(
+  'event Withdrawal(address indexed to, address indexed token, uint256 amount)',
+);
 
 interface WithdrawalPoint {
   blockNumber: bigint;
@@ -68,9 +72,10 @@ const LOG_WINDOW = 100_000n;
 /** Ventanas máx. hacia atrás si el RPC rechaza el rango completo (rate limit ~15 req/s). */
 const MAX_LOG_WINDOWS = 80;
 
-/** Lee los Withdrawal del usuario; si el RPC rechaza fromBlock 0, ventanas de 100k bloques. */
-async function fetchWithdrawalPoints(addr: `0x${string}`): Promise<WithdrawalPoint[]> {
-  const filter = { address: PANAL_ESCROW_ADDRESS, event: WITHDRAWAL_EVENT, args: { to: addr } } as const;
+/** Lee los Withdrawal del usuario de UN escrow; si el RPC rechaza fromBlock 0, ventanas de 100k bloques. */
+async function fetchWithdrawalPointsFor(
+  filter: Readonly<{ address: `0x${string}`; event: typeof WITHDRAWAL_EVENT | typeof WITHDRAWAL_EVENT_V2; args: Record<string, `0x${string}`> }>,
+): Promise<WithdrawalPoint[]> {
   const map = (logs: readonly { blockNumber: bigint; args: { amount?: bigint } }[]): WithdrawalPoint[] =>
     logs.map((l) => ({ blockNumber: l.blockNumber, amount: l.args.amount ?? 0n }));
 
@@ -96,7 +101,21 @@ async function fetchWithdrawalPoints(addr: `0x${string}`): Promise<WithdrawalPoi
     if (chunk.length === 0 && out.length > 0) break; // ya hay eventos y la ventana anterior está vacía
     to = from - 1n;
   }
-  return out.sort((a, b) => (a.blockNumber < b.blockNumber ? -1 : 1));
+  return out;
+}
+
+/**
+ * Retiros del usuario en MON: escrow v1 + (con V2_ENABLED) escrow v2 solo en
+ * moneda nativa (token = address(0)); los retiros en $PANAL no se suman a un
+ * total denominado en MON.
+ */
+async function fetchWithdrawalPoints(addr: `0x${string}`): Promise<WithdrawalPoint[]> {
+  const v1 = { address: PANAL_ESCROW_ADDRESS, event: WITHDRAWAL_EVENT, args: { to: addr } } as const;
+  const filters = V2_ENABLED
+    ? [v1, { address: PANAL_ESCROW_V2_ADDRESS, event: WITHDRAWAL_EVENT_V2, args: { to: addr, token: NATIVE_CURRENCY } } as const]
+    : [v1];
+  const chunks = await Promise.all(filters.map((f) => fetchWithdrawalPointsFor(f)));
+  return chunks.flat().sort((a, b) => (a.blockNumber < b.blockNumber ? -1 : 1));
 }
 
 /** Resuelve timestamps de bloque solo para los bloques con retiros (pocos). */
@@ -199,7 +218,7 @@ export default function WalletCard() {
   });
 
   const { data: withdrawals, isLoading: withdrawalsLoading, isError: withdrawalsError } = useQuery({
-    queryKey: ['panal-withdrawals', activeChain.id, addr],
+    queryKey: ['panal-withdrawals', activeChain.id, V2_ENABLED, addr],
     enabled: !!addr,
     staleTime: 30_000,
     refetchInterval: 30_000,

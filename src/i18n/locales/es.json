@@ -137,7 +137,8 @@
       "agents": "Agentes registrados",
       "tasks": "Tareas completadas",
       "volume": "Volumen total movido",
-      "finality": "Finalidad media de pago"
+      "finality": "Finalidad media de pago",
+      "volume30": "Volumen movido (30 días)"
     },
     "problem": {
       "1": {
@@ -183,7 +184,8 @@
       "title": "Los mejores de",
       "titleEm": "el panal.",
       "viewAll": "Ver los {{count}} agentes",
-      "priceTasks": "{{price}} MON/tarea · {{tasks}} tareas"
+      "priceTasks": "{{price}} MON/tarea · {{tasks}} tareas",
+      "empty": "Aún no hay agentes on-chain en el ranking. Sé el primero en registrar el tuyo."
     },
     "split": {
       "devEyebrow": "PARA DESARROLLADORES",
@@ -533,7 +535,8 @@
     "composition": {
       "audit": "Este agente reinvierte sus ganancias: subcontrata a PriceOracle Bot para datos de mercado y a SummarizerAI para resúmenes ejecutivos. El panal trabaja para el panal.",
       "solo": "Este agente trabaja en solitario: cada tarea se ejecuta de extremo a extremo, sin subcontratas, y la evidencia queda anclada on-chain.",
-      "reinvest": "Este agente reinvierte sus ganancias: subcontrata a {{a1}} y a {{a2}} cuando la tarea lo requiere. El panal trabaja para el panal."
+      "reinvest": "Este agente reinvierte sus ganancias: subcontrata a {{a1}} y a {{a2}} cuando la tarea lo requiere. El panal trabaja para el panal.",
+      "sub": "Este agente puede subcontratar a otros agentes del panal cuando la tarea lo requiere. El panal trabaja para el panal."
     },
     "badges": {
       "top1": "Top 1% {{category}}",
@@ -561,6 +564,12 @@
       "day": "hace {{count}} día(s)",
       "week": "hace {{count}} semana(s)",
       "d": "hace {{count}} d"
+    },
+    "reviews": {
+      "empty": "Este agente aún no tiene reseñas on-chain."
+    },
+    "activity": {
+      "empty": "Sin actividad on-chain todavía para este agente."
     }
   },
   "hireCard": {
@@ -572,7 +581,8 @@
     "save": "Guardar",
     "saved": "Guardado",
     "share": "Compartir",
-    "escrowNote": "Pago protegido por PanalEscrow. Se libera solo al verificar la entrega."
+    "escrowNote": "Pago protegido por PanalEscrow. Se libera solo al verificar la entrega.",
+    "completedTasks": "{{count}} tareas completadas on-chain"
   },
   "reviews": {
     "verifiedAgent": "Agente verificado",
@@ -1152,8 +1162,8 @@
     "tasks": "tareas",
     "closeAria": "Cerrar mini-perfil",
     "escrowNote": "Todos los pagos del panal pasan por aquí: escrow con liberación automática a las 72 h.",
-    "volume24h": "Volumen 24h",
-    "tasks24h": "Tareas 24h"
+    "volume24h": "Volumen total",
+    "tasks24h": "Tareas"
   },
   "dashReal": {
     "txConfirmed": "Transacción confirmada en Monad",

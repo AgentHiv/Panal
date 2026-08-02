@@ -2,9 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BadgeCheck, X } from 'lucide-react';
+import { formatEther } from 'viem';
 import HexAvatar from '@/components/HexAvatar';
-import { AGENTS, CATEGORY_LABELS, formatInt, formatMon } from '@/data/agents';
+import { CATEGORY_LABELS, formatInt, formatMon } from '@/data/agents';
 import type { LiveEvent } from '@/data/events';
+import { publicClient } from '@/contracts/config';
+import { usePanalAgents } from '@/hooks/usePanalAgents';
+import { useIndexAgents, type AgentStats } from '@/lib/indexer';
 import { EVENT_META } from './meta';
 import type { StreamEntry } from './useLiveStream';
 import { cn } from '@/lib/utils';
@@ -53,24 +57,43 @@ interface Pulse {
 
 const MAX_ARCS = 6; // cola de arcos simultáneos (en-vivo.md S2c)
 
-/** Nombres sintéticos para llegar a ~40 nodos (agents.ts solo trae 12). */
-const SYNTH_NAMES = [
-  'SentimentHive', 'PixelForge', 'LexisBot', 'QuantSage', 'EchoScribe', 'VaultWarden',
-  'NexusMiner', 'ChainScribe', 'OraclePrime', 'DataMiel', 'HiveSentry', 'TokenScribe',
-  'BlockBard', 'GasGolfer', 'MEVWatcher', 'DeepIndex', 'SignetBot', 'PolyGlotAI',
-  'NFTScout', 'ZKProver', 'VaultScout', 'LedgerLark', 'SubnetSage', 'TensorTarea',
-  'BitBrio', 'CifraSol', 'NeuroNectar', 'PanaLab',
-];
-const SYNTH_CATS = [
-  'categories.datos',
-  'categories.texto',
-  'categories.defi',
-  'categories.codigo',
-  'categories.vision',
-  'categories.creativo',
-  'categories.legal',
-];
+/**
+ * Nodos = agentes REALES on-chain (usePanalAgents), con volumen y tareas
+ * del indexador cuando están disponibles (0 si aún no tienen actividad).
+ * Sin agentes registrados: solo el nodo central PanalEscrow + arcos de
+ * eventos reales.
+ */
+function buildSpecs(
+  agents: ReturnType<typeof usePanalAgents>['agents'],
+  byAddress: Map<string, AgentStats>,
+): NodeSpec[] {
+  const specs: NodeSpec[] = agents.map((a) => {
+    const st = byAddress.get(a.workerAddress.toLowerCase()) ?? null;
+    return {
+      key: a.id,
+      name: a.name,
+      category: CATEGORY_LABELS[a.category],
+      // Volumen total cobrado en MON (wei → MON). El volumen en $PANAL no
+      // se mezcla (unidades distintas).
+      volume24h: st ? Number(formatEther(BigInt(st.volume['MON'] ?? '0'))) : 0,
+      tasks24h: st?.tasks ?? 0,
+      agentId: a.id,
+      verified: a.verified,
+      r: 0,
+    };
+  });
+  const maxV = Math.max(1e-9, ...specs.map((s) => s.volume24h));
+  const top3Names = new Set(
+    [...specs].sort((x, y) => y.volume24h - x.volume24h).slice(0, 3).map((s) => s.name),
+  );
+  return specs.map((s) => ({
+    ...s,
+    top3: top3Names.has(s.name),
+    r: 5.5 + Math.sqrt(s.volume24h / maxV) * 10.5, // tamaño ∝ volumen
+  }));
+}
 
+/** Espiral de ángulo áureo alrededor del centro + nodo PanalEscrow central. */
 function mulberry32(seed: number) {
   return () => {
     seed |= 0;
@@ -81,42 +104,6 @@ function mulberry32(seed: number) {
   };
 }
 
-/** ~40 agentes top: 12 reales de agents.ts + 28 sintéticos deterministas. */
-function buildSpecs(): NodeSpec[] {
-  const rng = mulberry32(20251220);
-  const maxV = Math.max(...AGENTS.map((a) => a.volume24h));
-  const top3Names = new Set(
-    [...AGENTS].sort((x, y) => y.volume24h - x.volume24h).slice(0, 3).map((a) => a.name),
-  );
-  const reals: NodeSpec[] = AGENTS.map((a) => ({
-    key: a.id,
-    name: a.name,
-    category: CATEGORY_LABELS[a.category],
-    volume24h: a.volume24h,
-    tasks24h: Math.max(3, Math.round(a.volume24h / a.pricePerTask)),
-    agentId: a.id,
-    verified: a.verified,
-    r: 0,
-  }));
-  const synth: NodeSpec[] = SYNTH_NAMES.map((name, i) => {
-    const v = 0.6 + rng() * 5.4;
-    return {
-      key: `synth-${i}`,
-      name,
-      category: SYNTH_CATS[i % SYNTH_CATS.length],
-      volume24h: v,
-      tasks24h: 5 + Math.floor(rng() * 380),
-      r: 0,
-    };
-  });
-  return [...reals, ...synth].map((s) => ({
-    ...s,
-    top3: top3Names.has(s.name),
-    r: 5.5 + Math.sqrt(s.volume24h / maxV) * 10.5, // tamaño ∝ volumen 24h
-  }));
-}
-
-/** Espiral de ángulo áureo alrededor del centro + nodo PanalEscrow central. */
 function layoutNodes(specs: NodeSpec[], w: number, h: number): SwarmNode[] {
   const rng = mulberry32(77);
   const cx = w / 2;
@@ -358,18 +345,22 @@ function stepPhysics(nodes: SwarmNode[], w: number, h: number, dt: number, now: 
 }
 
 /* ------------------------------------------------------------------ */
-/* Contador de bloque (400ms, guiño a Monad)                           */
+/* Contador de bloque REAL (watchBlockNumber del publicClient)         */
 /* ------------------------------------------------------------------ */
 
 function BlockTicker() {
-  const [block, setBlock] = useState(41_283_117);
+  const [block, setBlock] = useState<number | null>(null);
   const [reduced] = useState(
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
   useEffect(() => {
-    const id = window.setInterval(() => setBlock((b) => b + 1), 400);
-    return () => window.clearInterval(id);
+    // Suscripción real a los bloques de la chain activa (cleanup: unwatch).
+    const unwatch = publicClient.watchBlockNumber({
+      onBlockNumber: (n) => setBlock(Number(n)),
+    });
+    return () => unwatch();
   }, []);
+  if (block === null) return null;
   return (
     <span className="relative inline-flex overflow-hidden rounded px-1 font-mono text-[11px] text-coal-mute">
       {!reduced && (
@@ -408,8 +399,11 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
   const [reduced] = useState(
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
+  // Nodos reales: agentes on-chain + stats del indexador.
+  const { agents } = usePanalAgents();
+  const { byAddress } = useIndexAgents();
 
-  const specs = useMemo(() => buildSpecs(), []);
+  const specs = useMemo(() => buildSpecs(agents, byAddress), [agents, byAddress]);
 
   const nodesRef = useRef<SwarmNode[] | null>(null);
   const byNameRef = useRef<Map<string, SwarmNode>>(new Map());
@@ -421,6 +415,11 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
   const visibleRef = useRef(true);
   const startRef = useRef(0);
   const drawOnceRef = useRef<() => void>(() => {});
+
+  /* Los specs cambian cuando llegan los agentes/stats: reconstruir nodos. */
+  useEffect(() => {
+    nodesRef.current = null;
+  }, [specs]);
 
   /* Tamaño del lienzo vía ResizeObserver */
   useEffect(() => {
@@ -652,7 +651,7 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
           <p className="text-[11px] text-coal-mute">{catLabel(hoverTip.node.category)}</p>
           {!hoverTip.node.isEscrow && (
             <p className="mt-1 font-mono text-[11px] text-honey">
-              {formatMon(hoverTip.node.volume24h, 2)} MON <span className="text-coal-mute">24h</span>
+              {formatMon(hoverTip.node.volume24h, 2)} MON
               {' · '}
               {formatInt(hoverTip.node.tasks24h)} <span className="text-coal-mute">{t('swarm.tasks')}</span>
             </p>

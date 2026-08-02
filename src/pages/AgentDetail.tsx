@@ -20,15 +20,17 @@ import ActivityTab from '@/components/market/ActivityTab';
 import { FadeUp, WordReveal } from '@/components/market/motion';
 import { responseInWords } from '@/components/market/detail-data';
 import { cn } from '@/lib/utils';
-import { currencySymbol } from '@/contracts/config';
+import { EXPLORER_ADDRESS, currencySymbol } from '@/contracts/config';
 import { isOnchainAgent } from '@/hooks/usePanalAgents';
-import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating, getAgent } from '@/data/agents';
-import { usePanalAgents } from '@/hooks/usePanalAgents';
+import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
+import { useTopAgents } from '@/hooks/useTopAgents';
 import { Loader2 } from 'lucide-react';
 
 /* ============================================================
  * Detalle de agente (/agente/:id) — agente.md
- * Resuelve el agente por slug desde src/data/agents.ts.
+ * Solo agentes REALES on-chain (id `onchain-<address>`), enriquecidos
+ * con las stats del indexador (useTopAgents). Los slugs antiguos del
+ * catálogo demo caen al estado "no encontrado".
  * ============================================================ */
 
 const TABS = [
@@ -46,11 +48,9 @@ export default function AgentDetail() {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const demoAgent = id ? getAgent(id) : undefined;
-  // Los agentes on-chain (id `onchain-0x…`) no están en el catálogo demo:
-  // se resuelven desde PanalRegistry.
-  const { agents: onchainAgents, loading: onchainLoading } = usePanalAgents();
-  const agent = demoAgent ?? onchainAgents.find((a) => a.id === id);
+  // Solo agentes on-chain (id `onchain-0x…`), con stats reales del indexador.
+  const { top: onchainAgents, loading: onchainLoading } = useTopAgents();
+  const agent = onchainAgents.find((a) => a.id === id);
   const [tab, setTab] = useState<TabValue>('resumen');
   const [hireOpen, setHireOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -103,7 +103,10 @@ export default function AgentDetail() {
     { value: agent.tasksCompleted, label: t('detail.stats.tasks') },
     { value: agent.rating, label: t('detail.stats.rating'), decimals: 1, suffix: '★' },
     { value: agent.successRate, label: t('detail.stats.success'), decimals: 1, suffix: '%' },
-    { value: responseStat.value, label: t('detail.stats.response'), decimals: responseStat.decimals, suffix: responseStat.suffix },
+    // Respuesta media: solo si hay dato real ('—' = sin medir todavía)
+    ...(agent.avgResponse === '—'
+      ? []
+      : [{ value: responseStat.value, label: t('detail.stats.response'), decimals: responseStat.decimals, suffix: responseStat.suffix }]),
     { value: agent.totalEarned, label: t('detail.stats.earned'), suffix: 'MON' },
   ];
 
@@ -204,7 +207,7 @@ export default function AgentDetail() {
                   </button>
                 </span>
                 <a
-                  href={`https://monadvision.com/address/${agent.wallet}`}
+                  href={EXPLORER_ADDRESS(agent.wallet)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-[0.8125rem] font-medium text-honey-deep transition-colors hover:text-ink"
@@ -342,7 +345,10 @@ export default function AgentDetail() {
               segments={[
                 { text: t('detail.cta.work') },
                 { text: agent.name, accent: true },
-                { text: t('detail.cta.responds', { time: responseInWords(agent, t) }) },
+                // Sin medición real de respuesta todavía → no inventarla
+                ...(agent.avgResponse === '—'
+                  ? []
+                  : [{ text: t('detail.cta.responds', { time: responseInWords(agent, t) }) }]),
               ]}
             />
           </h2>

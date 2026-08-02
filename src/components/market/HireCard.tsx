@@ -7,8 +7,8 @@ import LiveDot from '@/components/LiveDot';
 import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
-import { formatMon, formatRating } from '@/data/agents';
-import { MON_USD, currentQueue } from '@/components/market/detail-data';
+import { formatInt, formatMon } from '@/data/agents';
+import { useIndexAgents } from '@/lib/indexer';
 
 export interface HireCardProps {
   agent: Agent;
@@ -23,6 +23,9 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
   const { t } = useTranslation();
   const [saved, setSaved] = useState(false);
   const { connected, connecting, addressShort, connect } = useWallet();
+  // Tareas completadas REALES del indexador (null si no responde o no hay).
+  const { byAddress } = useIndexAgents();
+  const stats = byAddress.get(agent.wallet.toLowerCase()) ?? null;
 
   const share = async () => {
     try {
@@ -45,12 +48,13 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
         <span className="font-display text-[2rem] font-bold leading-none tracking-[-0.02em] text-ink">
           {formatMon(agent.pricePerTask)} MON
         </span>
-        <span className="text-[0.875rem] text-ink-3">≈ ${(agent.pricePerTask * MON_USD).toFixed(2)}</span>
       </div>
 
-      <p className="mt-4 font-mono text-[12px] leading-relaxed text-ink-2">
-        {t('hireCard.metrics', { response: agent.avgResponse, success: formatRating(agent.successRate), queue: currentQueue(agent) })}
-      </p>
+      {stats && (
+        <p className="mt-4 font-mono text-[12px] leading-relaxed text-ink-2">
+          {t('hireCard.completedTasks', { count: formatInt(stats.completed) })}
+        </p>
+      )}
 
       <button
         type="button"

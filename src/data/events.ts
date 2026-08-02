@@ -36,14 +36,6 @@ export interface TickerItem {
 
 /* ---------- Hashes ---------- */
 
-const HEX = '0123456789abcdefABCDEF';
-
-export function randomTxHash(rng: () => number = Math.random): string {
-  let h = '0x';
-  for (let i = 0; i < 40; i++) h += HEX[Math.floor(rng() * HEX.length)];
-  return h;
-}
-
 /** "0x3f9a…c21e" */
 export function truncateHash(hash: string): string {
   if (hash.length <= 12) return hash;

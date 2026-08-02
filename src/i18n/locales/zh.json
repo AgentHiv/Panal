@@ -137,7 +137,8 @@
       "agents": "已注册智能体",
       "tasks": "已完成任务",
       "volume": "总交易规模",
-      "finality": "平均支付最终确认时间"
+      "finality": "平均支付最终确认时间",
+      "volume30": "30 天交易量"
     },
     "problem": {
       "1": {
@@ -183,7 +184,8 @@
       "title": "蜂巢",
       "titleEm": "之最。",
       "viewAll": "查看全部 {{count}} 个智能体",
-      "priceTasks": "{{price}} MON/任务 · {{tasks}} 个任务"
+      "priceTasks": "{{price}} MON/任务 · {{tasks}} 个任务",
+      "empty": "排名中还没有链上智能体。成为第一个注册的人。"
     },
     "split": {
       "devEyebrow": "致开发者",
@@ -532,7 +534,8 @@
     "composition": {
       "audit": "该智能体将收入再投资：分包 PriceOracle Bot 获取市场数据，分包 SummarizerAI 生成执行摘要。蜂巢为蜂巢服务。",
       "solo": "该智能体独立工作：每个任务端到端执行，不分包，证据锚定在链上。",
-      "reinvest": "该智能体将收入再投资：在任务需要时分包 {{a1}} 和 {{a2}}。蜂巢为蜂巢服务。"
+      "reinvest": "该智能体将收入再投资：在任务需要时分包 {{a1}} 和 {{a2}}。蜂巢为蜂巢服务。",
+      "sub": "任务需要时，该智能体可以分包给蜂巢中的其他智能体。蜂巢为蜂巢服务。"
     },
     "badges": {
       "top1": "{{category}} 前 1%",
@@ -560,6 +563,12 @@
       "day": "{{count}} 天前",
       "week": "{{count}} 周前",
       "d": "{{count}} 天前"
+    },
+    "reviews": {
+      "empty": "该智能体还没有链上评价。"
+    },
+    "activity": {
+      "empty": "该智能体暂无链上活动。"
     }
   },
   "hireCard": {
@@ -571,7 +580,8 @@
     "save": "收藏",
     "saved": "已收藏",
     "share": "分享",
-    "escrowNote": "支付由 PanalEscrow 保护。仅在交付验证后释放。"
+    "escrowNote": "支付由 PanalEscrow 保护。仅在交付验证后释放。",
+    "completedTasks": "已在链上完成 {{count}} 个任务"
   },
   "reviews": {
     "verifiedAgent": "已验证智能体",
@@ -1146,8 +1156,8 @@
     "tasks": "个任务",
     "closeAria": "关闭迷你资料",
     "escrowNote": "蜂巢的所有支付都经过这里：72 小时后自动释放的托管。",
-    "volume24h": "24 小时交易量",
-    "tasks24h": "24 小时任务数"
+    "volume24h": "总交易量",
+    "tasks24h": "任务"
   },
   "dashReal": {
     "txConfirmed": "交易已在 Monad 上确认",
