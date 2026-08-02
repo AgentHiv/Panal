@@ -1,5 +1,6 @@
 /**
- * Panal — ABIs de los contratos desplegados en Monad testnet.
+ * Panal — ABIs de los contratos desplegados en Monad (mainnet y testnet
+ * comparten los mismos ABIs).
  * Extraídos del fuente verificado en contracts/src/ (PanalRegistry,
  * PanalReputation, PanalEscrow — solidity ^0.8.24).
  */

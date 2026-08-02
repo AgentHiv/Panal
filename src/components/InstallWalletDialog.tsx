@@ -1,9 +1,9 @@
 /**
  * Panal — Diálogo "Necesitas una wallet".
  * Se abre desde WalletProvider cuando el usuario pulsa "Conectar wallet"
- * sin tener ninguna wallet EVM inyectada (móvil sin MetaMask, desktop sin
- * extensión). Ofrece instalar MetaMask y, en móvil, abrir la dapp dentro
- * de la app de MetaMask vía deep link.
+ * sin tener ninguna wallet EVM inyectada (móvil o desktop sin extensión).
+ * Ofrece instalar MetaMask o Trust Wallet y, en móvil, abrir la dapp dentro
+ * del navegador de cada app vía deep link.
  */
 
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,11 @@ export interface InstallWalletDialogProps {
 const IS_MOBILE =
   typeof navigator !== 'undefined' && /Android|iPhone|iPad/i.test(navigator.userAgent);
 
+/** window.open siempre con noopener/noreferrer (la pestaña nueva queda aislada). */
+function openExternal(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 export default function InstallWalletDialog({ open, onOpenChange }: InstallWalletDialogProps) {
   const { t } = useTranslation();
 
@@ -43,27 +48,53 @@ export default function InstallWalletDialog({ open, onOpenChange }: InstallWalle
             </DialogDescription>
           </div>
           <div className="flex w-full flex-col gap-3">
-            {IS_MOBILE && (
-              <Button
-                size="lg"
-                className="w-full gap-2"
-                onClick={() =>
-                  window.open(`https://metamask.app.link/dapp/${window.location.host}`, '_blank')
-                }
-              >
-                <Smartphone className="size-4" />
-                {t('wallet.openInMetamask')}
-              </Button>
+            {IS_MOBILE ? (
+              <>
+                <Button
+                  size="lg"
+                  className="w-full gap-2"
+                  onClick={() =>
+                    openExternal(`https://metamask.app.link/dapp/${window.location.host}`)
+                  }
+                >
+                  <Smartphone className="size-4" />
+                  {t('wallet.openInMetamask')}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() =>
+                    openExternal(
+                      `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(window.location.href)}`,
+                    )
+                  }
+                >
+                  <Smartphone className="size-4" />
+                  {t('wallet.openInTrust')}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="lg"
+                  className="w-full gap-2"
+                  onClick={() => openExternal('https://metamask.io/download')}
+                >
+                  <ExternalLink className="size-4" />
+                  {t('wallet.installMetamask')}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => openExternal('https://trustwallet.com/download')}
+                >
+                  <ExternalLink className="size-4" />
+                  {t('wallet.installTrust')}
+                </Button>
+              </>
             )}
-            <Button
-              size="lg"
-              variant={IS_MOBILE ? 'outline' : 'default'}
-              className="w-full gap-2"
-              onClick={() => window.open('https://metamask.io/download', '_blank')}
-            >
-              <ExternalLink className="size-4" />
-              {t('wallet.installMetamask')}
-            </Button>
           </div>
         </div>
       </DialogContent>

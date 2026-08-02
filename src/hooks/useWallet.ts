@@ -3,7 +3,8 @@
  * El provider vive en @/components/WalletProvider; el estado es global.
  * Mantiene la API pública original (connected, connecting, address,
  * addressShort, connect, disconnect) y añade gestión de red:
- * `wrongNetwork` + `switchToMonad` cuando la wallet no está en Monad testnet.
+ * `wrongNetwork` + `switchToMonad` cuando la wallet no está en la red activa
+ * (Monad mainnet por defecto).
  */
 
 import { createContext, useContext } from 'react';
@@ -15,9 +16,9 @@ export interface WalletState {
   addressShort: string | null;
   connect: () => void;
   disconnect: () => void;
-  /** true si hay wallet conectada pero en una red distinta de Monad testnet */
+  /** true si hay wallet conectada pero en una red distinta de la activa */
   wrongNetwork: boolean;
-  /** pide a la wallet cambiar (o añadir) Monad testnet */
+  /** pide a la wallet cambiar (o añadir) la red activa */
   switchToMonad: () => void;
   chainId: number | null;
   /** true mientras el diálogo "instala una wallet" está abierto */

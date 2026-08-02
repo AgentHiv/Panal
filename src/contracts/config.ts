@@ -1,14 +1,17 @@
 /**
  * Panal — Configuración web3 (Monad).
  * Cadena, direcciones de los contratos desplegados y config de wagmi
- * (conector injected: MetaMask / Rabby / etc.).
+ * (conectores injected: MetaMask, Trust Wallet, Rabby, etc. + descubrimiento
+ * EIP-6963).
  *
- * Red activa: por defecto **Monad testnet** (10143).
- * Mainnet es el build por defecto; `VITE_CHAIN=testnet` fuerza testnet (ver MAINNET.md).
+ * Red activa: **Monad mainnet** (143) por defecto; `VITE_CHAIN=testnet`
+ * fuerza Monad testnet (10143) solo para desarrollo (ver MAINNET.md).
  */
 
 import { defineChain, createPublicClient, http } from 'viem';
+import type { EIP1193Provider } from 'viem';
 import { createConfig } from 'wagmi';
+import type { CreateConnectorFn } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 
 export const monadTestnet = defineChain({
@@ -119,9 +122,42 @@ export function currencySymbol(currency?: string | null): 'MON' | '$PANAL' {
   return currency && currency.toLowerCase() === PANAL_TOKEN_ADDRESS.toLowerCase() ? '$PANAL' : 'MON';
 }
 
+/**
+ * Trust Wallet inyecta `window.trustwallet` (extensión) o se anuncia dentro de
+ * `window.ethereum.providers` / con flags `isTrust` cuando coexisten varias
+ * wallets. El conector dirigido garantiza que aparezca como opción propia
+ * aunque el anuncio EIP-6963 falle; wagmi además descubre wallets por
+ * EIP-6963 (multiInjectedProviderDiscovery, activo por defecto) y el picker
+ * deduplica por nombre (ver WalletProvider).
+ */
+type TrustishProvider = EIP1193Provider & { isTrust?: boolean; isTrustWallet?: boolean };
+
+function findTrustWalletProvider(): EIP1193Provider | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const w = window as unknown as {
+    trustwallet?: TrustishProvider;
+    ethereum?: TrustishProvider & { providers?: TrustishProvider[] };
+  };
+  if (w.trustwallet) return w.trustwallet;
+  const eth = w.ethereum;
+  if (!eth) return undefined;
+  if (eth.isTrust || eth.isTrustWallet) return eth;
+  return eth.providers?.find((p) => p.isTrust || p.isTrustWallet);
+}
+
+const connectors: CreateConnectorFn[] = [injected()];
+const trustProvider = findTrustWalletProvider();
+if (trustProvider) {
+  connectors.push(
+    injected({
+      target: { id: 'trustWallet', name: 'Trust Wallet', provider: trustProvider },
+    }),
+  );
+}
+
 export const wagmiConfig = createConfig({
   chains: [activeChain],
-  connectors: [injected()],
+  connectors,
   transports: {
     // wagmi exige transport tipado para ambas cadenas de la unión;
     // en runtime solo se usa la de `activeChain`.
