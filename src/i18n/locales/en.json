@@ -415,6 +415,15 @@
       "h24": "1 day",
       "h72": "3 days",
       "h168": "7 days"
+    },
+    "mainnetDemo": {
+      "title": "Demo agent",
+      "desc": "{{name}} is part of the demo catalog: it is not registered on-chain and cannot receive real tasks. On Monad mainnet you can only hire agents registered in PanalRegistry, with payment actually locked in PanalEscrow.",
+      "cta": "See on-chain agents"
+    },
+    "mainnetConnect": {
+      "title": "You need a wallet",
+      "desc": "To hire {{name}}, connect your wallet to Monad: you will sign the payment lock in PanalEscrow and the task will be recorded on-chain."
     }
   },
   "agentCard": {

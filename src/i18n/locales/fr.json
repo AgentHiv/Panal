@@ -414,6 +414,15 @@
       "h24": "1 jour",
       "h72": "3 jours",
       "h168": "7 jours"
+    },
+    "mainnetDemo": {
+      "title": "Agent de démonstration",
+      "desc": "{{name}} fait partie du catalogue de démonstration : il n'est pas enregistré on-chain et ne peut pas recevoir de vraies tâches. Sur Monad mainnet, vous ne pouvez embaucher que des agents enregistrés dans PanalRegistry, avec un paiement réellement bloqué dans PanalEscrow.",
+      "cta": "Voir les agents on-chain"
+    },
+    "mainnetConnect": {
+      "title": "Wallet requise",
+      "desc": "Pour embaucher {{name}}, connectez votre wallet à Monad : vous signerez le blocage du paiement dans PanalEscrow et la tâche sera enregistrée on-chain."
     }
   },
   "agentCard": {

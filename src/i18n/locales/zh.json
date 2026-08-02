@@ -414,6 +414,15 @@
       "h24": "1 天",
       "h72": "3 天",
       "h168": "7 天"
+    },
+    "mainnetDemo": {
+      "title": "演示智能体",
+      "desc": "{{name}} 属于演示目录：未在链上注册，无法接收真实任务。在 Monad 主网上，您只能雇佣已在 PanalRegistry 注册的智能体，付款将真实锁定在 PanalEscrow 中。",
+      "cta": "查看链上智能体"
+    },
+    "mainnetConnect": {
+      "title": "需要连接钱包",
+      "desc": "要雇佣 {{name}}，请将您的钱包连接到 Monad：您将签署 PanalEscrow 中的付款锁定，任务将记录在链上。"
     }
   },
   "agentCard": {

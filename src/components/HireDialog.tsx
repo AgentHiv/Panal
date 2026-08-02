@@ -25,6 +25,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { isOnchainAgent } from '@/hooks/usePanalAgents';
 import {
   EXPLORER_TX,
+  IS_MAINNET,
   NATIVE_CURRENCY,
   PANAL_ESCROW_ADDRESS,
   PANAL_ESCROW_V2_ADDRESS,
@@ -77,7 +78,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   const [txHash] = useState(() => randomTxHash());
 
   /* ---------- contratación real (PanalEscrow) ---------- */
-  const { connected, wrongNetwork, switchToMonad, chainId } = useWallet();
+  const { connected, connecting, wrongNetwork, switchToMonad, chainId, connect } = useWallet();
   const { switchChainAsync } = useSwitchChain();
   const onchain = isOnchainAgent(agent);
   const realMode = onchain && connected && !wrongNetwork;
@@ -209,6 +210,61 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
       }),
     [],
   );
+
+  /* Fail-closed en mainnet: el flujo simulado (sellado sin transacción real)
+     solo existe en testnet. En mainnet NUNCA debe mostrarse un sellado falso:
+     - agente del catálogo demo (no on-chain) → aviso + enlace al mercado;
+     - agente on-chain sin wallet conectada → pedir conexión en vez de simular. */
+  if (IS_MAINNET && !onchain) {
+    return (
+      <div className="px-7 pb-7 pt-6">
+        <DialogTitle className="display-m text-ink">{t('hire.mainnetDemo.title')}</DialogTitle>
+        <DialogDescription className="sr-only">{t('hire.desc', { name: agent.name })}</DialogDescription>
+        <div className="mt-5 flex flex-col gap-4">
+          <div className="flex items-center gap-3 rounded-xl border border-line bg-cream px-4 py-3">
+            <HexAvatar seed={agent.wallet} size={40} />
+            <div className="flex-1">
+              <p className="text-[0.875rem] font-semibold text-ink">{agent.name}</p>
+              <p className="font-mono text-[12px] text-ink-3">
+                {t('common.monPerTask', { price: formatMon(agent.pricePerTask) })}
+              </p>
+            </div>
+          </div>
+          <p className="flex items-start gap-2 rounded-xl border border-honey bg-honey-soft px-4 py-3 text-[0.8125rem] text-honey-deep">
+            <TriangleAlert size={15} className="mt-0.5 shrink-0" />
+            {t('hire.mainnetDemo.desc', { name: agent.name })}
+          </p>
+          <Link
+            to="/mercado"
+            onClick={() => onOpenChange(false)}
+            className="btn-monad px-5 py-3 text-center text-[0.875rem] font-semibold"
+          >
+            {t('hire.mainnetDemo.cta')}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (IS_MAINNET && !connected) {
+    return (
+      <div className="px-7 pb-7 pt-6">
+        <DialogTitle className="display-m text-ink">{t('hire.mainnetConnect.title')}</DialogTitle>
+        <DialogDescription className="sr-only">{t('hire.desc', { name: agent.name })}</DialogDescription>
+        <div className="mt-5 flex flex-col gap-4">
+          <p className="text-[0.875rem] text-ink-2">{t('hire.mainnetConnect.desc', { name: agent.name })}</p>
+          <button
+            type="button"
+            onClick={connect}
+            disabled={connecting}
+            className="btn-monad px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40"
+          >
+            {connecting ? t('nav.connecting') : t('nav.connect')}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-7 pb-7 pt-6">

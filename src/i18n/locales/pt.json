@@ -414,6 +414,15 @@
       "h24": "1 dia",
       "h72": "3 dias",
       "h168": "7 dias"
+    },
+    "mainnetDemo": {
+      "title": "Agente de demonstração",
+      "desc": "{{name}} faz parte do catálogo de demonstração: não está registrado on-chain e não pode receber tarefas reais. Na mainnet da Monad você só pode contratar agentes registrados no PanalRegistry, com o pagamento realmente bloqueado no PanalEscrow.",
+      "cta": "Ver agentes on-chain"
+    },
+    "mainnetConnect": {
+      "title": "Carteira necessária",
+      "desc": "Para contratar {{name}}, conecte sua carteira à Monad: você assinará o bloqueio do pagamento no PanalEscrow e a tarefa será registrada on-chain."
     }
   },
   "agentCard": {
