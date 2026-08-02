@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import TxHash from '@/components/TxHash';
 import { cn } from '@/lib/utils';
+import { ensureActiveChain } from '@/lib/ensureChain';
 import { useWallet } from '@/hooks/useWallet';
 import {
   EXPLORER_TX,
@@ -168,17 +169,15 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
 
   const submit = async () => {
     if (!valid) return;
-    // Guarda de red: si la wallet está en otra chain, pedir el cambio y
-    // continuar automáticamente al confirmarlo (un solo clic del usuario).
-    if (connected && chainId !== activeChain.id) {
-      try {
-        await switchChainAsync({ chainId: activeChain.id });
-      } catch {
-        toast(t('wallet.wrongChainToast'), {
-          description: t('wallet.wrongChainToastDesc', { network: `${activeChain.name} · ${activeChain.id}` }),
-        });
-        return;
-      }
+    // Guarda de red: verificar la chain REAL de la wallet (eth_chainId) y
+    // re-verificar tras el cambio; continuar automáticamente al confirmarlo
+    // (un solo clic del usuario).
+    const chainOk = await ensureActiveChain({ connected, chainId, switchChainAsync });
+    if (!chainOk) {
+      toast(t('wallet.wrongChainToast'), {
+        description: t('wallet.wrongChainToastDesc', { network: `${activeChain.name} · ${activeChain.id}` }),
+      });
+      return;
     }
     // v2: registerAgent(metadataURI, pricePerTask, currency) en registry v2;
     // v1: registerAgent(metadataURI, pricePerTask) en el registry clásico.

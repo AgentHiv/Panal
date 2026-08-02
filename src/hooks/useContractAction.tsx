@@ -22,6 +22,7 @@ import { useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from '
 import type { Address } from 'viem';
 import TxHash from '@/components/TxHash';
 import { useWallet } from '@/hooks/useWallet';
+import { ensureActiveChain } from '@/lib/ensureChain';
 import { activeChain } from '@/contracts/config';
 
 export interface ContractActionRequest {
@@ -73,17 +74,17 @@ export function useContractAction(opts?: { onMined?: () => void }): ContractActi
   }, [mined, txHash, t]);
 
   const run = async (req: ContractActionRequest) => {
-    if (connected && chainId !== activeChain.id) {
-      try {
-        await switchChainAsync({ chainId: activeChain.id });
-      } catch {
-        toast(t('wallet.wrongChainToast'), {
-          description: t('wallet.wrongChainToastDesc', {
-            network: `${activeChain.name} · ${activeChain.id}`,
-          }),
-        });
-        return;
-      }
+    // Guarda de red contra la chain REAL de la wallet (eth_chainId), con
+    // re-verificación tras el cambio: el estado de wagmi puede ir por delante
+    // de la wallet y la tx fallaría con el error crudo de viem.
+    const chainOk = await ensureActiveChain({ connected, chainId, switchChainAsync });
+    if (!chainOk) {
+      toast(t('wallet.wrongChainToast'), {
+        description: t('wallet.wrongChainToastDesc', {
+          network: `${activeChain.name} · ${activeChain.id}`,
+        }),
+      });
+      return;
     }
     writeContract(
       {

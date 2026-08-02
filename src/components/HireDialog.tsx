@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ExternalLink, Loader2, Timer, TriangleAlert } from 'lucide-react';
 import { useSignMessage, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { keccak256, parseEventLogs, toBytes } from 'viem';
+import { ensureActiveChain } from '@/lib/ensureChain';
 import { saveTaskBrief } from '@/lib/taskBriefs';
 import { briefSignMessage, buildBriefUrl, extractBotUrl } from '@/lib/botEndpoint';
 import {
@@ -109,17 +110,15 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
 
   const hireOnchain = async () => {
     if (!isOnchainAgent(agent)) return;
-    // Guarda de red: pedir cambio a la chain activa en vez de fallar con
-    // el error crudo de viem (chain de la wallet != chain objetivo).
-    if (connected && chainId !== activeChain.id) {
-      try {
-        await switchChainAsync({ chainId: activeChain.id });
-      } catch {
-        toast(t('wallet.wrongChainToast'), {
-          description: t('wallet.wrongChainToastDesc', { network: `${activeChain.name} · ${activeChain.id}` }),
-        });
-        return;
-      }
+    // Guarda de red: verificar la chain REAL de la wallet (eth_chainId), no
+    // solo el estado de wagmi, y re-verificar tras el cambio. Si no, la tx
+    // falla con el error crudo de viem (chain de la wallet != chain objetivo).
+    const chainOk = await ensureActiveChain({ connected, chainId, switchChainAsync });
+    if (!chainOk) {
+      toast(t('wallet.wrongChainToast'), {
+        description: t('wallet.wrongChainToastDesc', { network: `${activeChain.name} · ${activeChain.id}` }),
+      });
+      return;
     }
     // Revalidar el precio on-chain justo antes de firmar: el agente puede
     // haberlo cambiado desde que se cargó la lista (protección económica).

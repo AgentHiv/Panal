@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import { ArrowDownLeft, ArrowUpRight, Check, Copy, ExternalLink, Loader2, TriangleAlert, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
-import { useBalance, useReadContract, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
+import { useBalance, useReadContract, useSendTransaction, useSwitchChain, useWaitForTransactionReceipt } from 'wagmi';
 import { panalEscrowV2Abi, panalTokenAbi } from '@/contracts/abis';
 import { formatEther, formatUnits, isAddress, parseAbiItem, parseEther } from 'viem';
 import {
@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TxHash from '@/components/TxHash';
 import { useWallet } from '@/hooks/useWallet';
+import { ensureActiveChain } from '@/lib/ensureChain';
 import { EXPLORER_TX, NATIVE_CURRENCY, PANAL_ESCROW_ADDRESS, PANAL_ESCROW_V2_ADDRESS, activeChain, publicClient , IS_MAINNET, PANAL_TOKEN_ADDRESS, V2_ENABLED } from '@/contracts/config';
 import { panalEscrowAbi } from '@/contracts/abis';
 import { WalletSparkline } from './charts';
@@ -164,7 +165,8 @@ function WalletBlock({ label, value, hint, suffix = 'MON' }: { label: string; va
 
 export default function WalletCard() {
   const { t } = useTranslation();
-  const { connected, address, addressShort, wrongNetwork, switchToMonad, connect } = useWallet();
+  const { connected, address, addressShort, wrongNetwork, switchToMonad, connect, chainId } = useWallet();
+  const { switchChainAsync } = useSwitchChain();
   const addr = (address ?? null) as `0x${string}` | null;
 
   /* ---------- Datos on-chain ---------- */
@@ -310,9 +312,19 @@ export default function WalletCard() {
   const amountValid = /^\d+(\.\d{1,18})?$/.test(amountStr) && Number(amountStr) > 0;
   const sendValid = destValid && amountValid;
 
-  const submitSend = (e: React.FormEvent) => {
+  const submitSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sendValid || !addr || wrongNetwork) return;
+    if (!sendValid || !addr) return;
+    // Guarda de red contra la chain REAL de la wallet (eth_chainId): si el
+    // estado de wagmi va desincronizado, wrongNetwork sería false y la tx
+    // fallaría con el error crudo de viem.
+    const chainOk = await ensureActiveChain({ connected, chainId, switchChainAsync });
+    if (!chainOk) {
+      toast(t('wallet.wrongChainToast'), {
+        description: t('wallet.wrongChainToastDesc', { network: `${activeChain.name} · ${activeChain.id}` }),
+      });
+      return;
+    }
     sendTransaction(
       { to: destTrim as `0x${string}`, value: parseEther(amountStr), chainId: activeChain.id },
       {
