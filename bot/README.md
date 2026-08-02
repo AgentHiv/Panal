@@ -124,11 +124,17 @@ npm run indexer   # ver §14 (no usa Telegram ni claves)
 
 ```bash
 npm install -g pm2
-pm2 start npm --name panal-bot -- start
+pm2 startOrReload ecosystem.config.cjs   # worker + notifier + indexer, sin duplicados
 pm2 save
 pm2 startup        # para que arranque solo tras reiniciar la máquina
-pm2 logs panal-bot # ver los logs
+pm2 logs panal-worker   # o panal-notifier / panal-indexer
 ```
+
+Los procesos se declaran en `ecosystem.config.cjs` (fuente única de verdad).
+**No uses `pm2 start ...` a mano**: crea duplicados. Para aplicar cambios,
+siempre `pm2 startOrReload ecosystem.config.cjs`; y si la lista de procesos se
+desordenó, reset limpio con `pm2 delete all && pm2 start ecosystem.config.cjs`.
+Si no usas Telegram, borra el bloque `panal-notifier` del ecosystem.
 
 **Con systemd (Linux/VPS):**
 
