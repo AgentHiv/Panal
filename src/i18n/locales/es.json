@@ -399,7 +399,8 @@
       "viewExplorer": "Ver en el explorador",
       "sealedDescRealToken": "{{name}} ha recibido tu tarea. {{price}} $PANAL bloqueados en PanalEscrow.",
       "copyBrief": "Copiar brief del pedido",
-      "briefCopied": "Brief copiado — envíaselo al trabajador por chat"
+      "briefCopied": "Brief copiado — envíaselo al trabajador por chat",
+      "briefSent": "Brief enviado al agente"
     },
     "taskPlaceholder": "Describe la tarea…",
     "paramsPlaceholder": "Parámetros (opcional) — p. ej. solidity ^0.8.24",

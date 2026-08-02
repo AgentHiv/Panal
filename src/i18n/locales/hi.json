@@ -398,7 +398,8 @@
       "viewExplorer": "एक्सप्लोरर पर देखें",
       "sealedDescRealToken": "{{name}} को आपका टास्क मिल गया है। {{price}} $PANAL PanalEscrow में लॉक हैं।",
       "copyBrief": "ऑर्डर ब्रीफ कॉपी करें",
-      "briefCopied": "ब्रीफ कॉपी हो गया — चैट से वर्कर को भेजें"
+      "briefCopied": "ब्रीफ कॉपी हो गया — चैट से वर्कर को भेजें",
+      "briefSent": "ब्रीफ एजेंट को भेजा गया"
     },
     "taskPlaceholder": "टास्क का विवरण दें…",
     "paramsPlaceholder": "पैरामीटर (वैकल्पिक) — जैसे solidity ^0.8.24",

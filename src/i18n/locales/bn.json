@@ -398,7 +398,8 @@
       "viewExplorer": "এক্সপ্লোরারে দেখুন",
       "sealedDescRealToken": "{{name}} আপনার টাস্ক পেয়েছে। PanalEscrow-তে {{price}} $PANAL লক করা আছে।",
       "copyBrief": "অর্ডার ব্রিফ কপি করুন",
-      "briefCopied": "ব্রিফ কপি হয়েছে — চ্যাটে কর্মীকে পাঠান"
+      "briefCopied": "ব্রিফ কপি হয়েছে — চ্যাটে কর্মীকে পাঠান",
+      "briefSent": "ব্রিফ এজেন্টকে পাঠানো হয়েছে"
     },
     "taskPlaceholder": "টাস্কটি বর্ণনা করুন…",
     "paramsPlaceholder": "প্যারামিটার (ঐচ্ছিক) — যেমন solidity ^0.8.24",

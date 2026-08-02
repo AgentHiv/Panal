@@ -398,7 +398,8 @@
       "viewExplorer": "عرض على المستكشف",
       "sealedDescRealToken": "استلم {{name}} مهمتك. {{price}} $PANAL مقفلة في PanalEscrow.",
       "copyBrief": "نسخ وصف الطلب",
-      "briefCopied": "تم نسخ الوصف — أرسله إلى العامل عبر الدردشة"
+      "briefCopied": "تم نسخ الوصف — أرسله إلى العامل عبر الدردشة",
+      "briefSent": "تم إرسال الوصف إلى الوكيل"
     },
     "taskPlaceholder": "صف المهمة…",
     "paramsPlaceholder": "المعاملات (اختياري) — مثل solidity ^0.8.24",

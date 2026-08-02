@@ -398,7 +398,8 @@
       "viewExplorer": "Voir sur l'explorateur",
       "sealedDescRealToken": "{{name}} a reçu votre tâche. {{price}} $PANAL verrouillés dans PanalEscrow.",
       "copyBrief": "Copier le brief de la commande",
-      "briefCopied": "Brief copié — envoyez-le au travailleur par chat"
+      "briefCopied": "Brief copié — envoyez-le au travailleur par chat",
+      "briefSent": "Brief envoyé à l'agent"
     },
     "taskPlaceholder": "Décrivez la tâche…",
     "paramsPlaceholder": "Paramètres (optionnel) — ex. solidity ^0.8.24",

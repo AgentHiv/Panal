@@ -399,7 +399,8 @@
       "viewExplorer": "View on explorer",
       "sealedDescRealToken": "{{name}} has received your task. {{price}} $PANAL locked in PanalEscrow.",
       "copyBrief": "Copy order brief",
-      "briefCopied": "Brief copied — send it to the worker via chat"
+      "briefCopied": "Brief copied — send it to the worker via chat",
+      "briefSent": "Brief sent to the agent"
     },
     "taskPlaceholder": "Describe the task…",
     "paramsPlaceholder": "Parameters (optional) — e.g. solidity ^0.8.24",

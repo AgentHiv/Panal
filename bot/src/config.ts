@@ -43,6 +43,8 @@ export interface BotConfig {
   httpPort: number;
   /** URL pública opcional del endpoint (la que el operador publica en su metadata `bot:<url>`). */
   httpPublicUrl?: string;
+  /** URL pública de la API del indexador Panal (se anuncia en GET /agent.json). */
+  indexerPublicUrl: string;
   /** Puerto de la API pública del indexador (0 = desactivada). Solo modo indexer. */
   indexHttpPort: number;
   /** Directorio del índice (events.jsonl + state.json). Solo modo indexer. */
@@ -154,13 +156,15 @@ export function loadConfig(): BotConfig {
   const agentAddress = envAddress('AGENT_ADDRESS', mode !== 'indexer');
   const ownerAddress = envAddress('OWNER_ADDRESS', false);
 
-  // Telegram: obligatorio salvo dry-run (en seco solo se loguea por consola).
-  // El modo indexer no notifica: no exige credenciales de Telegram.
+  // Telegram: OBLIGATORIO en modo notifier (ese modo existe solo para avisar
+  // por Telegram). En modo worker es OPCIONAL: sin credenciales el agente
+  // opera en modo headless (notificaciones solo por consola; los briefs le
+  // llegan por POST /brief/:taskId, ver http.ts). El indexer no notifica.
   const telegramBotToken = env('TELEGRAM_BOT_TOKEN');
   const telegramChatId = env('TELEGRAM_CHAT_ID');
-  if (!dryRun && mode !== 'indexer') {
-    if (!telegramBotToken) errors.push('TELEGRAM_BOT_TOKEN es obligatorio (créalo con @BotFather, ver README)');
-    if (!telegramChatId) errors.push('TELEGRAM_CHAT_ID es obligatorio (ver README: cómo obtener tu chat id)');
+  if (!dryRun && mode === 'notifier') {
+    if (!telegramBotToken) errors.push('TELEGRAM_BOT_TOKEN es obligatorio en modo notifier (créalo con @BotFather, ver README)');
+    if (!telegramChatId) errors.push('TELEGRAM_CHAT_ID es obligatorio en modo notifier (ver README: cómo obtener tu chat id)');
   }
 
   // Clave del bot: solo necesaria en modo worker real.
@@ -208,6 +212,8 @@ export function loadConfig(): BotConfig {
     // Servidor HTTP de resultados: activo por defecto en 8787; BOT_HTTP_PORT=0 lo apaga.
     httpPort: envInt('BOT_HTTP_PORT', 8787, 0),
     httpPublicUrl: env('BOT_HTTP_PUBLIC_URL'),
+    // API pública del indexador (la misma que usa el frontend, src/lib/indexer.ts).
+    indexerPublicUrl: env('INDEXER_PUBLIC_URL') ?? 'https://api.panal.lat',
     // Indexador (modo indexer): API pública en 8788 por defecto; 0 la apaga.
     indexHttpPort: envInt('INDEX_HTTP_PORT', 8788, 0),
     indexDir: env('INDEX_DIR') ?? './data/index',
@@ -240,6 +246,13 @@ export function loadConfig(): BotConfig {
     for (const e of errors) console.error(`   • ${e}`);
     console.error('\nConsulta bot/README.md sección "Configurar el .env".\n');
     process.exit(1);
+  }
+
+  if (cfg.mode === 'worker' && !cfg.dryRun && (!cfg.telegramBotToken || !cfg.telegramChatId)) {
+    console.warn(
+      '⚠️  Sin TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID: modo headless — Telegram deshabilitado, ' +
+        'notificaciones solo por consola (los briefs llegan por POST /brief/:taskId).',
+    );
   }
 
   return cfg;

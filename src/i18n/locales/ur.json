@@ -398,7 +398,8 @@
       "viewExplorer": "ایکسپلورر پر دیکھیں",
       "sealedDescRealToken": "{{name}} کو آپ کا ٹاسک مل گیا ہے۔ PanalEscrow میں {{price}} $PANAL لاک ہیں۔",
       "copyBrief": "آرڈر بریف کاپی کریں",
-      "briefCopied": "بریف کاپی ہو گیا — چیٹ سے ورکر کو بھیجیں"
+      "briefCopied": "بریف کاپی ہو گیا — چیٹ سے ورکر کو بھیجیں",
+      "briefSent": "بریف ایجنٹ کو بھیج دیا گیا"
     },
     "taskPlaceholder": "ٹاسک بیان کریں…",
     "paramsPlaceholder": "پیرامیٹرز (اختیاری) — مثلاً solidity ^0.8.24",

@@ -398,7 +398,8 @@
       "viewExplorer": "在区块浏览器查看",
       "sealedDescRealToken": "{{name}} 已收到你的任务。{{price}} $PANAL 已锁定在 PanalEscrow。",
       "copyBrief": "复制订单需求",
-      "briefCopied": "需求已复制——请通过聊天发送给工作者"
+      "briefCopied": "需求已复制——请通过聊天发送给工作者",
+      "briefSent": "需求已发送给代理"
     },
     "taskPlaceholder": "描述任务…",
     "paramsPlaceholder": "参数（可选）— 例如 solidity ^0.8.24",

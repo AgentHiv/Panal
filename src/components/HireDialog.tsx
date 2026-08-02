@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ExternalLink, Loader2, Timer, TriangleAlert } from 'lucide-react';
-import { useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { keccak256, toBytes } from 'viem';
+import { useSignMessage, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { keccak256, parseEventLogs, toBytes } from 'viem';
 import { saveTaskBrief } from '@/lib/taskBriefs';
+import { briefSignMessage, buildBriefUrl, extractBotUrl } from '@/lib/botEndpoint';
 import {
   Dialog,
   DialogContent,
@@ -76,8 +77,9 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   const [accepted, setAccepted] = useState(false);
 
   /* ---------- contratación real (PanalEscrow) ---------- */
-  const { connected, connecting, wrongNetwork, switchToMonad, chainId, connect } = useWallet();
+  const { connected, connecting, wrongNetwork, switchToMonad, chainId, connect, address } = useWallet();
   const { switchChainAsync } = useSwitchChain();
+  const { signMessageAsync } = useSignMessage();
   const onchain = isOnchainAgent(agent);
   /** Moneda del agente (v2): address(0) = MON, PANAL_TOKEN = $PANAL. */
   const agentCurrency = onchain ? agent.currency : NATIVE_CURRENCY;
@@ -90,7 +92,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     error: writeError,
     reset: resetWrite,
   } = useWriteContract();
-  const { isLoading: confirming, isSuccess: mined } = useWaitForTransactionReceipt({ hash: realTxHash });
+  const { isLoading: confirming, isSuccess: mined, data: receipt } = useWaitForTransactionReceipt({ hash: realTxHash });
 
   /* Paso approve previo (solo agentes en $PANAL): approve(escrowV2, price) */
   const [approvePhase, setApprovePhase] = useState<'idle' | 'approving' | 'approved'>('idle');
@@ -192,6 +194,55 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [approveMined, approvePhase, isPanal]);
+
+  /* Push del brief al bot del agente (entrega máquina-a-máquina, headless).
+     Tras minarse createTask: si el agente publica "bot:<url>" en su metadata
+     on-chain, firmamos "Panal brief #<taskId>" (EIP-191, sin gas) y hacemos
+     POST /brief/:taskId. FIRE-AND-FORGET: si falla (bot offline, sin endpoint,
+     firma rechazada) no bloquea ni ensucia la UI — el brief sigue en
+     localStorage y el operador puede cargarlo por Telegram como fallback. */
+  const briefPushedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!mined || !receipt || !realTxHash || briefPushedFor.current === realTxHash) return;
+    briefPushedFor.current = realTxHash;
+    if (!V2_ENABLED || !address || !isOnchainAgent(agent)) return;
+    void (async () => {
+      try {
+        // taskId del evento TaskCreated del receipt.
+        const [created] = parseEventLogs({
+          abi: panalEscrowV2Abi,
+          eventName: 'TaskCreated',
+          logs: receipt.logs,
+        });
+        const taskId = created?.args?.taskId;
+        if (taskId === undefined) return;
+        // URL del bot del metadataURI on-chain del agente (token "bot:<url>").
+        const meta = (await publicClient.readContract({
+          address: PANAL_REGISTRY_V2_ADDRESS,
+          abi: panalRegistryV2Abi,
+          functionName: 'getAgent',
+          args: [agent.workerAddress],
+        })) as { metadataURI?: string };
+        const botUrl = extractBotUrl(meta.metadataURI);
+        if (!botUrl) return;
+        const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
+        const signature = await signMessageAsync({ message: briefSignMessage(taskId) });
+        const res = await fetch(buildBriefUrl(botUrl, taskId), {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ brief, address, signature }),
+        });
+        if (res.ok) {
+          toast(t('hire.step3.briefSent'));
+        } else {
+          console.warn(`[panal] POST brief al bot respondió ${res.status}; el brief sigue en local`);
+        }
+      } catch (err) {
+        console.warn(`[panal] no se pudo enviar el brief al bot: ${err instanceof Error ? err.message.split('\n')[0] : err}`);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mined, receipt, realTxHash]);
 
   const price = agent.pricePerTask;
   const fee = price * PROTOCOL_FEE;

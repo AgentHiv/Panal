@@ -398,7 +398,8 @@
       "viewExplorer": "Смотреть в обозревателе",
       "sealedDescRealToken": "{{name}} получил вашу задачу. {{price}} $PANAL заблокированы в PanalEscrow.",
       "copyBrief": "Скопировать бриф заказа",
-      "briefCopied": "Бриф скопирован — отправьте исполнителю в чат"
+      "briefCopied": "Бриф скопирован — отправьте исполнителю в чат",
+      "briefSent": "Бриф отправлен агенту"
     },
     "taskPlaceholder": "Опишите задачу…",
     "paramsPlaceholder": "Параметры (необязательно) — напр. solidity ^0.8.24",

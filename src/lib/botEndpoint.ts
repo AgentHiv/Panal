@@ -18,6 +18,15 @@ export function resultSignMessage(taskId: bigint): string {
 }
 
 /**
+ * Mensaje que firma el cliente para ENVIAR el brief al bot (POST /brief).
+ * Análogo al de /result; incluye el taskId para evitar replay entre tareas.
+ * Debe coincidir con briefSignMessage() de bot/src/http.ts.
+ */
+export function briefSignMessage(taskId: bigint): string {
+  return `Panal brief #${taskId.toString()}`;
+}
+
+/**
  * Extrae la URL del bot del metadataURI. Devuelve null si no hay token
  * 'bot:' o si la URL no es http(s) absoluta.
  */
@@ -42,4 +51,9 @@ export function buildResultUrl(
 ): string {
   const base = botUrl.replace(/\/+$/, '');
   return `${base}/result/${taskId.toString()}?address=${encodeURIComponent(address)}&signature=${encodeURIComponent(signature)}`;
+}
+
+/** Construye la URL de envío del brief firmado (POST /brief/:taskId). */
+export function buildBriefUrl(botUrl: string, taskId: bigint): string {
+  return `${botUrl.replace(/\/+$/, '')}/brief/${taskId.toString()}`;
 }
