@@ -35,6 +35,12 @@ export interface BotConfig {
   panalTokenAddress: Address;
   dashboardUrl: string;
   pollIntervalMs: number;
+  /**
+   * Espera máx. a que el brief del cliente llegue al store (POST /brief o
+   * /brief por Telegram) antes de generar con el brief genérico (ms).
+   * 0 = no esperar (comportamiento anterior). Solo modo worker.
+   */
+  briefWaitMs: number;
   maxInitialScan: number;
   autoWithdraw: boolean;
   dryRun: boolean;
@@ -205,6 +211,9 @@ export function loadConfig(): BotConfig {
       getAddress('0x2e2e44e7fa6178822d4397299f719e89d1a67777'),
     dashboardUrl: env('DASHBOARD_URL') ?? 'https://panal.lat/dashboard',
     pollIntervalMs: envInt('POLL_INTERVAL_MS', 20_000, 5_000),
+    // El brief no va on-chain: el worker espera este tiempo a que llegue por
+    // POST /brief (frontend) o /brief (Telegram) antes de usar el genérico.
+    briefWaitMs: envInt('BRIEF_WAIT_MS', 180_000, 0),
     maxInitialScan: envInt('MAX_INITIAL_SCAN', 200, 1),
     autoWithdraw: envBool('AUTO_WITHDRAW', false),
     dryRun,

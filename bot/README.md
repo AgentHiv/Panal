@@ -185,8 +185,8 @@ journalctl -u panal-bot -f   # logs
 
 El pedido del cliente **no se guarda on-chain** (solo su `keccak256`). El bot cubre los dos escenarios:
 
-1. **El dueño carga el brief**: al llegar la alerta de "Nueva tarea #N", reenvías el pedido con `/brief #N …`. El worker lo usa como mensaje de usuario para el LLM.
-2. **Sin brief**: el worker usa un brief genérico (documentado en `worker.ts`, constante `GENERIC_BRIEF`) que instruye al LLM a producir un resultado útil asumiendo un encargo general y a indicar que el cliente puede disputar si el resultado no coincide con su pedido. En modo notifier simplemente se indica que el hash está disponible y se espera el brief.
+1. **El brief llega**: el frontend del cliente lo envía firmado (EIP-191) con `POST /brief/:taskId` justo después de minarse `createTask`, o tú lo cargas a mano con `/brief #N …`. El worker lo usa como mensaje de usuario para el LLM.
+2. **Sin brief**: el worker **espera hasta `BRIEF_WAIT_MS`** (3 min por defecto) a que el brief llegue — el cliente tarda unos segundos en firmarlo y enviarlo tras el tx— y solo si la espera expira usa el brief genérico (documentado en `worker.ts`, constante `GENERIC_BRIEF`), que instruye al LLM a producir un resultado útil asumiendo un encargo general y a indicar que el cliente puede disputar si el resultado no coincide con su pedido. En modo notifier simplemente se indica que el hash está disponible y se espera el brief. Con `BRIEF_WAIT_MS=0` se recupera el comportamiento anterior (genérico inmediato).
 
 ## 10. Límites del RPC y backoff
 

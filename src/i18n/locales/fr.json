@@ -399,7 +399,9 @@
       "sealedDescRealToken": "{{name}} a reçu votre tâche. {{price}} $PANAL verrouillés dans PanalEscrow.",
       "copyBrief": "Copier le brief de la commande",
       "briefCopied": "Brief copié — envoyez-le au travailleur par chat",
-      "briefSent": "Brief envoyé à l'agent"
+      "briefSent": "Brief envoyé à l'agent",
+      "briefNoEndpoint": "L'agent n'a pas d'endpoint bot : il ne recevra pas votre brief et le résultat sera générique",
+      "briefFailed": "Impossible d'envoyer le brief à l'agent : le résultat peut être générique"
     },
     "taskPlaceholder": "Décrivez la tâche…",
     "paramsPlaceholder": "Paramètres (optionnel) — ex. solidity ^0.8.24",

@@ -399,7 +399,9 @@
       "sealedDescRealToken": "{{name}} recebeu a sua tarefa. {{price}} $PANAL bloqueados no PanalEscrow.",
       "copyBrief": "Copiar brief do pedido",
       "briefCopied": "Brief copiado — envie ao trabalhador por chat",
-      "briefSent": "Brief enviado ao agente"
+      "briefSent": "Brief enviado ao agente",
+      "briefNoEndpoint": "O agente não tem endpoint de bot: não receberá o seu brief e o resultado será genérico",
+      "briefFailed": "Não foi possível enviar o brief ao agente: o resultado pode ser genérico"
     },
     "taskPlaceholder": "Descreva a tarefa…",
     "paramsPlaceholder": "Parâmetros (opcional) — ex.: solidity ^0.8.24",

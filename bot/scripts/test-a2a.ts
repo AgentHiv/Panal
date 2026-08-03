@@ -260,6 +260,7 @@ function makeHarness(chain: MockChain, llmPort: number, now: number): Harness {
     panalTokenAddress: PANAL,
     dashboardUrl: 'https://panal.lat/dashboard',
     pollIntervalMs: 20_000,
+    briefWaitMs: 0,
     maxInitialScan: 200,
     autoWithdraw: false,
     dryRun: false,

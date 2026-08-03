@@ -2,8 +2,11 @@
  * Panal Bot — MODO 2: WORKER (agente autónomo).
  *
  * Por cada tarea Open asignada a AGENT_ADDRESS:
- *   1. Recupera el brief guardado por el dueño (`/brief #N …` en Telegram) o,
- *      si no existe, usa un brief genérico documentado (ver GENERIC_BRIEF).
+ *   1. Recupera el brief guardado por el dueño (`/brief #N …` en Telegram) o
+ *      por el cliente (POST /brief/:taskId). Si aún no existe, espera hasta
+ *      BRIEF_WAIT_MS a que llegue antes de usar el brief genérico
+ *      (ver GENERIC_BRIEF): el brief NO va on-chain y el cliente tarda unos
+ *      segundos en enviarlo tras minarse createTask.
  *   2. Genera el resultado con el LLM configurado (llm.ts).
  *   3. Entrega on-chain: deliverResult(taskId, keccak256(resultText)) firmado
  *      con BOT_PRIVATE_KEY (la wallet DEDICADA del agente; ver README >
@@ -67,7 +70,7 @@ export async function runWorker(
 ): Promise<void> {
   console.log(
     `[worker] Agente autónomo ${cfg.agentAddress} | LLM: ${cfg.llm.model} @ ${cfg.llm.baseUrl} | ` +
-      `AUTO_WITHDRAW=${cfg.autoWithdraw} | DRY_RUN=${cfg.dryRun}` +
+      `AUTO_WITHDRAW=${cfg.autoWithdraw} | DRY_RUN=${cfg.dryRun} | BRIEF_WAIT=${cfg.briefWaitMs / 1000}s` +
       (cfg.a2a.enabled
         ? ` | A2A=${cfg.a2a.enabled} (máx ${formatAmount(cfg.a2a.maxSubWei)}/sub, ${formatAmount(cfg.a2a.dailyBudgetWei)}/día)`
         : ''),
@@ -119,6 +122,37 @@ export async function runWorker(
       })
     : null;
 
+  /**
+   * Espera a que el brief del cliente llegue al store (POST /brief desde el
+   * frontend o /brief por Telegram) hasta BRIEF_WAIT_MS. Sin esta espera el
+   * worker ganaba la carrera al cliente —que firma y envía el brief unos
+   * segundos después de minarse createTask— y entregaba resultados con el
+   * brief genérico. Devuelve undefined si la espera expira sin brief.
+   */
+  const waitForBrief = async (taskId: bigint): Promise<string | undefined> => {
+    const existing = store.getBrief(taskId);
+    // En DRY_RUN no se espera: las pruebas en seco deben ser inmediatas.
+    if (existing || cfg.briefWaitMs <= 0 || cfg.dryRun) return existing;
+    const waitMin = Math.max(1, Math.round(cfg.briefWaitMs / 60_000));
+    console.log(`[worker] Tarea #${taskId} sin brief: esperando hasta ${cfg.briefWaitMs / 1000}s a que llegue…`);
+    await telegram.send(
+      `⏳ *Tarea #${taskId} sin brief todavía.*\n` +
+        `Espero ~${waitMin} min a que el cliente lo envíe. También puedes cargarlo tú con:\n` +
+        `\`/brief #${taskId} texto del pedido\`\n` +
+        `Si no llega, generaré un resultado genérico.`,
+    );
+    const deadline = Date.now() + cfg.briefWaitMs;
+    while (!stop.stopped && Date.now() < deadline) {
+      await sleep(Math.min(5_000, Math.max(1, deadline - Date.now())));
+      const brief = store.getBrief(taskId);
+      if (brief) {
+        console.log(`[worker] Brief de #${taskId} recibido durante la espera.`);
+        return brief;
+      }
+    }
+    return undefined;
+  };
+
   const processTask = async (taskId: bigint, task: Task): Promise<void> => {
     const key = taskId.toString();
     if (inFlight.has(key)) return;
@@ -126,10 +160,10 @@ export async function runWorker(
     if (lastFail && Date.now() - lastFail < RETRY_FAILED_AFTER_MS) return;
     inFlight.add(key);
     try {
-      const brief = store.getBrief(taskId);
+      const brief = await waitForBrief(taskId);
       const briefText = brief ?? GENERIC_BRIEF(taskId, task.taskHash);
       if (!brief) {
-        console.log(`[worker] Tarea #${taskId} sin brief cargado: se usa el brief genérico.`);
+        console.log(`[worker] Tarea #${taskId} sin brief cargado tras la espera: se usa el brief genérico.`);
       }
 
       if (cfg.dryRun) {
@@ -169,7 +203,10 @@ export async function runWorker(
   const onNewTask: NewTaskHandler = async (taskId, task) => {
     if (task.status !== TaskStatus.Open) return;
     await telegram.send(newTaskMessage(cfg, taskId, task));
-    await processTask(taskId, task);
+    // Sin await a propósito: la espera de brief (BRIEF_WAIT_MS) no debe
+    // bloquear el poll on-chain. processTask captura sus propios errores y
+    // evita duplicados con inFlight, así que es seguro lanzarla en paralelo.
+    void processTask(taskId, task);
   };
 
   const onTransition: TransitionHandler = async (taskId, _from, to, task) => {

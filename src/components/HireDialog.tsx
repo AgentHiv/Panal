@@ -197,8 +197,9 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   /* Push del brief al bot del agente (entrega máquina-a-máquina, headless).
      Tras minarse createTask: si el agente publica "bot:<url>" en su metadata
      on-chain, firmamos "Panal brief #<taskId>" (EIP-191, sin gas) y hacemos
-     POST /brief/:taskId. FIRE-AND-FORGET: si falla (bot offline, sin endpoint,
-     firma rechazada) no bloquea ni ensucia la UI — el brief sigue en
+     POST /brief/:taskId. Si el envío no es posible (agente sin endpoint, bot
+     offline, firma rechazada) avisamos con un toast: sin brief el bot solo
+     puede entregar un resultado GENÉRICO. El brief también queda en
      localStorage y el operador puede cargarlo por Telegram como fallback. */
   const briefPushedFor = useRef<string | null>(null);
   useEffect(() => {
@@ -223,7 +224,11 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
           args: [agent.workerAddress],
         })) as { metadataURI?: string };
         const botUrl = extractBotUrl(meta.metadataURI);
-        if (!botUrl) return;
+        if (!botUrl) {
+          console.warn('[panal] el agente no publica "bot:<url>" en su metadata; no se pudo enviar el brief');
+          toast.warning(t('hire.step3.briefNoEndpoint'));
+          return;
+        }
         const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
         const signature = await signMessageAsync({ message: briefSignMessage(taskId) });
         const res = await fetch(buildBriefUrl(botUrl, taskId), {
@@ -235,9 +240,11 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
           toast(t('hire.step3.briefSent'));
         } else {
           console.warn(`[panal] POST brief al bot respondió ${res.status}; el brief sigue en local`);
+          toast.warning(t('hire.step3.briefFailed'));
         }
       } catch (err) {
         console.warn(`[panal] no se pudo enviar el brief al bot: ${err instanceof Error ? err.message.split('\n')[0] : err}`);
+        toast.warning(t('hire.step3.briefFailed'));
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps

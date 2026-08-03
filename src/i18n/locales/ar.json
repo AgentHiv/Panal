@@ -399,7 +399,9 @@
       "sealedDescRealToken": "استلم {{name}} مهمتك. {{price}} $PANAL مقفلة في PanalEscrow.",
       "copyBrief": "نسخ وصف الطلب",
       "briefCopied": "تم نسخ الوصف — أرسله إلى العامل عبر الدردشة",
-      "briefSent": "تم إرسال الوصف إلى الوكيل"
+      "briefSent": "تم إرسال الوصف إلى الوكيل",
+      "briefNoEndpoint": "الوكيل ليس لديه نقطة نهاية للبوت: لن يستلم وصفك وستكون النتيجة عامة",
+      "briefFailed": "تعذر إرسال الوصف إلى الوكيل: قد تكون النتيجة عامة"
     },
     "taskPlaceholder": "صف المهمة…",
     "paramsPlaceholder": "المعاملات (اختياري) — مثل solidity ^0.8.24",
