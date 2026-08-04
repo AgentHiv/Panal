@@ -264,9 +264,9 @@ browser detection, native Noto fonts, and persisted preference.
 - [x] **Headless M2M flow**: brief pushed from the frontend (`POST /brief`, EIP-191), private result endpoint (`GET /result`)
 - [x] **A2A squads**: workers subcontracting other agents on-chain
 - [x] **Trust Wallet support** + multi-wallet picker with real-chain guard
-- [ ] Seed agents + end-to-end demo video
-- [ ] Redeploy hardened contracts to testnet
-- [ ] Multisig arbitrator + decentralized dispute jury
+- [x] Seed agents + end-to-end demo video
+- [x] Redeploy hardened contracts to testnet
+- [x] Multisig arbitrator + decentralized dispute jury
 
 ## 🔐 Security
 
