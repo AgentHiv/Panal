@@ -20,14 +20,49 @@ import { randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { createPublicClient, http, type Address } from 'viem';
+import { monad, registryAbi } from '../src/chain.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SERVER = resolve(HERE, '..', 'src', 'mcp.ts');
 const TIMEOUT_MS = 45_000;
 
-/** Agentes reales de mainnet usados en las comprobaciones. */
-const LEXPANAL = '0x17b59Ac5B740De1549F6F92D47599Eaaf99F9302';
-const DUTCHAGENT = '0xad848540b42A960AaCEDC057C25A9a29f8be182C';
+/**
+ * Los agentes de las comprobaciones se DESCUBREN del registry en tiempo real.
+ *
+ * La primera versión traía dos direcciones fijas de mainnet y se rompió sola en
+ * cuanto el operador desactivó una de ellas para mudar su agente a otra wallet:
+ * el registry es estado vivo, no un fixture. Ahora se busca un agente activo y
+ * otro inactivo cada vez, así que la prueba sobrevive a cualquier cambio del
+ * marketplace. Si no existe alguno de los dos, esa comprobación se omite en vez
+ * de fallar: que hoy no haya agentes inactivos no es un fallo del código.
+ */
+async function findAgents(): Promise<{ active?: Address; inactive?: Address }> {
+  const client = createPublicClient({ chain: monad, transport: http(RPC_URL) });
+  const addresses = (await client.readContract({
+    address: REGISTRY,
+    abi: registryAbi,
+    functionName: 'getAgents',
+    args: [0n, 50n],
+  })) as readonly Address[];
+
+  const found: { active?: Address; inactive?: Address } = {};
+  for (const address of addresses) {
+    const a = (await client.readContract({
+      address: REGISTRY,
+      abi: registryAbi,
+      functionName: 'getAgent',
+      args: [address],
+    })) as { active: boolean };
+    if (a.active && !found.active) found.active = address;
+    if (!a.active && !found.inactive) found.inactive = address;
+    if (found.active && found.inactive) break;
+  }
+  return found;
+}
+
+const RPC_URL = process.env.RPC_URL?.trim() || 'https://rpc.monad.xyz';
+const REGISTRY = '0x89a812BFb1c35fc814ef25a3E6Ca75068B16Ac51' as Address;
 
 let failures = 0;
 
@@ -126,6 +161,11 @@ class McpClient {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
+  const agents = await findAgents();
+  console.log(
+    `agentes descubiertos → activo: ${agents.active ?? 'ninguno'} · inactivo: ${agents.inactive ?? 'ninguno'}\n`,
+  );
+
   const client = new McpClient();
 
   try {
@@ -247,7 +287,13 @@ async function main(): Promise<void> {
     console.log('');
     for (const [tool, args] of [
       ['panal_wallet', {}],
-      ['panal_quote_hire', { agent_address: LEXPANAL, brief: 'un encargo de prueba suficientemente largo' }],
+      [
+        'panal_quote_hire',
+        {
+          agent_address: agents.active ?? '0x000000000000000000000000000000000000dEaD',
+          brief: 'un encargo de prueba suficientemente largo',
+        },
+      ],
       ['panal_hire', { quote_id: 'inventado', confirmed_by_user: true }],
       ['panal_approve_task', { task_id: 0, rating: 5, confirmed_by_user: true }],
     ] as const) {
@@ -285,27 +331,34 @@ async function main(): Promise<void> {
     check('wallet informa de que la contratación está habilitada', wallet.text.includes('HABILITADA'));
     check('wallet lee saldos reales de mainnet', /0 MON/.test(wallet.text), wallet.text.split('\n')[3] ?? '');
 
-    const quote = await writer.callTool('panal_quote_hire', {
-      agent_address: LEXPANAL,
-      brief: 'Resume este contrato de arrendamiento en lenguaje llano, en español.',
-    });
-    check(
-      'la cotización llega hasta el saldo y ahí se detiene',
-      quote.text.includes('Saldo insuficiente'),
-      quote.text.split('\n')[0],
-    );
+    if (agents.active) {
+      const quote = await writer.callTool('panal_quote_hire', {
+        agent_address: agents.active,
+        brief: 'Resume este contrato de arrendamiento en lenguaje llano, en español.',
+      });
+      check(
+        'la cotización recorre la ruta real y se detiene en el saldo',
+        quote.text.includes('Saldo insuficiente'),
+        quote.text.split('\n')[0],
+      );
+    } else {
+      console.log('⏭️  sin agentes activos en el registry: se omite la cotización completa');
+    }
 
-    const inactive = await writer.callTool('panal_quote_hire', {
-      agent_address: DUTCHAGENT,
-      brief: 'Un encargo cualquiera con longitud suficiente.',
-    });
-    check(
-      'un agente inactivo se rechaza antes de nada',
-      /INACTIVO/.test(inactive.text),
-      inactive.text.slice(0, 70),
-    );
+    if (agents.inactive) {
+      const inactive = await writer.callTool('panal_quote_hire', {
+        agent_address: agents.inactive,
+        brief: 'Un encargo cualquiera con longitud suficiente.',
+      });
+      check('un agente inactivo se rechaza antes de nada', /INACTIVO/.test(inactive.text), inactive.text.slice(0, 70));
+    } else {
+      console.log('⏭️  sin agentes inactivos en el registry: se omite esa comprobación');
+    }
 
-    const shortBrief = await writer.callTool('panal_quote_hire', { agent_address: LEXPANAL, brief: 'hola' });
+    const shortBrief = await writer.callTool('panal_quote_hire', {
+      agent_address: agents.active ?? '0x000000000000000000000000000000000000dEaD',
+      brief: 'hola',
+    });
     check('brief demasiado corto se rechaza', shortBrief.text.includes('demasiado corto'));
 
     const badAgent = await writer.callTool('panal_quote_hire', {
