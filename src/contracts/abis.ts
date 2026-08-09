@@ -805,3 +805,113 @@ export const panalTokenAbi = [
     outputs: [{ name: '', type: 'uint256' }],
   },
 ] as const;
+
+/**
+ * PanalEscrowV2 — `resolveDispute`, que solo puede llamar el `arbitrator`.
+ *
+ * Va aparte del ABI principal porque el dashboard nunca la invoca de forma
+ * directa: el árbitro es el multisig, así que esta función se codifica como
+ * calldata y se propone dentro de `PanalMultisig.submit`.
+ *
+ *   workerShareBps  reparto al agente en puntos básicos
+ *                   (0 = todo al cliente · 10000 = todo al agente)
+ *   rating          1-5, queda grabado en la reputación on-chain
+ */
+export const panalResolveDisputeAbi = [
+  {
+    type: 'function',
+    name: 'resolveDispute',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'taskId', type: 'uint256' },
+      { name: 'workerShareBps', type: 'uint256' },
+      { name: 'rating', type: 'uint8' },
+    ],
+    outputs: [],
+  },
+] as const;
+
+/**
+ * PanalMultisig 2-de-3 — el contrato que ostenta el rol de `arbitrator`.
+ *
+ * Flujo de una resolución: un firmante `submit`ea la propuesta y luego DOS
+ * firmantes distintos la `confirm`an; en la segunda confirmación se ejecuta la
+ * llamada al escrow. `submit` NO cuenta como confirmación, así que quien
+ * propone tiene que confirmar aparte.
+ */
+export const panalMultisigAbi = [
+  {
+    type: 'function',
+    name: 'REQUIRED',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint8' }],
+  },
+  {
+    type: 'function',
+    name: 'owners',
+    stateMutability: 'view',
+    inputs: [{ name: '', type: 'uint256' }],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    type: 'function',
+    name: 'isOwner',
+    stateMutability: 'view',
+    inputs: [{ name: '', type: 'address' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'txCount',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'getTx',
+    stateMutability: 'view',
+    inputs: [{ name: 'txId', type: 'uint256' }],
+    outputs: [
+      { name: 'target', type: 'address' },
+      { name: 'data', type: 'bytes' },
+      { name: 'confirmations', type: 'uint8' },
+      { name: 'executed', type: 'bool' },
+    ],
+  },
+  {
+    type: 'function',
+    name: 'isConfirmedBy',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'txId', type: 'uint256' },
+      { name: 'owner', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'submit',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'target', type: 'address' },
+      { name: 'data', type: 'bytes' },
+    ],
+    outputs: [{ name: 'txId', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'confirm',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'txId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'revoke',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'txId', type: 'uint256' }],
+    outputs: [],
+  },
+] as const;

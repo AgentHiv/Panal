@@ -27,6 +27,7 @@ import TasksSection from '@/components/dashboard/TasksSection';
 import DisputeCard from '@/components/dashboard/DisputeCard';
 import PaymentsSection from '@/components/dashboard/PaymentsSection';
 import AdminCard from '@/components/dashboard/AdminCard';
+import ArbitrationCard from '@/components/dashboard/ArbitrationCard';
 import ReputationSection from '@/components/dashboard/ReputationSection';
 import { EarningsAreaChart } from '@/components/dashboard/charts';
 import type { EarningsPoint, Perspective } from '@/components/dashboard/data';
@@ -512,6 +513,8 @@ export default function Dashboard() {
 
       {/* ── S6b · Administración del protocolo (solo owner/arbitrator) ──── */}
       <section className="container-hive pb-14">
+        <ArbitrationCard />
+
         <AdminCard />
       </section>
 
