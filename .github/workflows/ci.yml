@@ -1,0 +1,120 @@
+# Panal — CI
+#
+# Hasta ahora los 127 tests de contratos y los scripts de prueba del bot solo
+# corrían si alguien se acordaba de lanzarlos a mano. Esto los ejecuta en cada
+# push y en cada PR.
+#
+# Tres trabajos, separados a propósito por su dependencia de la red:
+#   contracts   — hermético (forge-std está versionado en el repo).
+#   bot         — hermético: los scripts corren en DRY_RUN, con la cadena simulada.
+#   mcp-mainnet — SÍ toca Monad mainnet. Es solo lectura (ni gas ni fondos), y es
+#                 la única forma de detectar que una dirección o un ABI dejaron de
+#                 cuadrar con la realidad. Lleva reintentos porque el RPC público
+#                 tiene límites y un corte suyo no debe bloquear un PR.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Un push nuevo cancela la ejecución anterior de la misma rama.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    name: Contratos (forge test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Compilar
+        working-directory: contracts
+        run: forge build --sizes
+
+      - name: Tests
+        working-directory: contracts
+        run: forge test -vv
+
+  bot:
+    name: Bot (typecheck + pruebas en seco)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: bot/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        working-directory: bot
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        working-directory: bot
+        run: pnpm typecheck
+
+      - name: Endurecimiento (IP tras proxy, anti-SSRF, tope de respuesta, prompts)
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-hardening.ts
+
+      - name: Endpoints HTTP (/result y /brief, firmas EIP-191, CORS, rate limit)
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-http.ts
+        env:
+          DRY_RUN: 'true'
+
+      - name: A2A (subcontratación, rechazo por calidad, timeout, $PANAL, topes)
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-a2a.ts
+        env:
+          DRY_RUN: 'true'
+
+  mcp-mainnet:
+    name: MCP contra Monad mainnet (solo lectura)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: bot/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        working-directory: bot
+        run: pnpm install --frozen-lockfile
+
+      # El RPC público limita peticiones: se reintenta antes de dar por fallado
+      # el trabajo, para no bloquear un PR por un corte ajeno al cambio.
+      - name: MCP y x402 contra mainnet
+        working-directory: bot
+        run: |
+          for suite in test-mcp test-x402; do
+            ok=0
+            for intento in 1 2 3; do
+              echo "── $suite · intento $intento de 3 ──"
+              if pnpm exec tsx "scripts/$suite.ts"; then ok=1; break; fi
+              echo "falló; esperando 20s antes de reintentar"
+              sleep 20
+            done
+            if [ "$ok" -ne 1 ]; then echo "$suite falló las 3 veces"; exit 1; fi
+          done
