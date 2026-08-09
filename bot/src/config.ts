@@ -61,6 +61,22 @@ export interface BotConfig {
   indexSweepWindowsPerDay: number;
   /** A2A: subcontratación de otros agentes (solo modo worker; ver README §15). */
   a2a: A2aConfig;
+  /** x402: cobro por llamada HTTP (ver src/x402.ts). */
+  x402: X402Config;
+}
+
+export interface X402Config {
+  /** X402_ENABLED: habilita POST /x402/ask. Default false. */
+  enabled: boolean;
+  /**
+   * X402_PRICE_WEI: precio por llamada en $PANAL (18 decimales).
+   * Default 2e15 = 0,002 $PANAL. Debe cubrir de sobra el gas de permit +
+   * transferFrom, que paga el agente: por debajo de eso se pierde dinero en
+   * cada petición.
+   */
+  priceWei: bigint;
+  /** X402_MAX_PROMPT_CHARS: tope del prompt aceptado (default 2000). */
+  maxPromptChars: number;
 }
 
 export interface A2aConfig {
@@ -74,6 +90,18 @@ export interface A2aConfig {
   dailyBudgetWei: bigint;
   /** A2A_SUB_TIMEOUT_S: deadline máx. de la sub-tarea desde ahora (default 7200 = 2 h). */
   subTimeoutS: number;
+  /**
+   * A2A_ALLOW_PRIVATE_ENDPOINTS: permite que el endpoint del subcontratista
+   * apunte a una dirección interna (localhost, red privada). **Default false, y
+   * en producción debe quedarse así.**
+   *
+   * La URL del hijo sale de su metadata on-chain, que puede escribir cualquiera
+   * que registre un agente. Sin la guardia, bastaba con anunciar
+   * `bot:http://169.254.169.254/…` para que nuestro bot llamase al servicio de
+   * metadatos de la nube —y encima firmando la petición con su wallet—.
+   * Actívalo solo para desarrollo, cuando el agente hijo corre en tu máquina.
+   */
+  allowPrivateEndpoints: boolean;
   /** A2A_MIN_RATING: rating mínimo 1-5 para aprobar al subcontratista (default 3). */
   minRating: number;
 }
@@ -239,7 +267,13 @@ export function loadConfig(): BotConfig {
       maxSubWei: envBigInt('A2A_MAX_SUB_WEI', 5n * 10n ** 18n, 0n),
       dailyBudgetWei: envBigInt('A2A_DAILY_BUDGET_WEI', 20n * 10n ** 18n, 0n),
       subTimeoutS: envInt('A2A_SUB_TIMEOUT_S', 7_200, 300),
+      allowPrivateEndpoints: envBool('A2A_ALLOW_PRIVATE_ENDPOINTS', false),
       minRating: envInt('A2A_MIN_RATING', 3, 1),
+    },
+    x402: {
+      enabled: envBool('X402_ENABLED', false),
+      priceWei: envBigInt('X402_PRICE_WEI', 2n * 10n ** 15n, 1n),
+      maxPromptChars: envInt('X402_MAX_PROMPT_CHARS', 2_000, 1),
     },
   };
 

@@ -39,6 +39,7 @@ import {
   pollOnce,
   transitionMessage,
   type NewTaskHandler,
+  type PendingTaskHandler,
   type StopSignal,
   type TransitionHandler,
 } from './notifier.js';
@@ -209,6 +210,27 @@ export async function runWorker(
     void processTask(taskId, task);
   };
 
+  /**
+   * Reintento de las entregas que fallaron.
+   *
+   * Se dispara desde la watchlist del poll, que ya relee cada ciclo las tareas
+   * propias que siguen Open — así que no cuesta ni una llamada RPC extra.
+   *
+   * Solo se reintenta lo que TIENE un fallo registrado. Una tarea aparcada por
+   * A2A (esperando al subcontratista) o una que se está procesando ahora mismo
+   * también siguen Open, y volver a lanzarlas sería trabajo duplicado. `failedAt`
+   * es el único marcador que distingue "falló" de "va bien pero tarda".
+   */
+  const onPendingTask: PendingTaskHandler = async (taskId, task) => {
+    const key = taskId.toString();
+    const lastFail = failedAt.get(key);
+    if (lastFail === undefined) return;
+    if (Date.now() - lastFail < RETRY_FAILED_AFTER_MS) return;
+    if (inFlight.has(key)) return;
+    console.log(`[worker] Reintentando #${taskId} tras el fallo anterior…`);
+    await processTask(taskId, task);
+  };
+
   const onTransition: TransitionHandler = async (taskId, _from, to, task) => {
     const msg = transitionMessage(cfg, taskId, to, task);
     if (msg) await telegram.send(msg);
@@ -230,7 +252,7 @@ export async function runWorker(
 
   while (!stop.stopped) {
     try {
-      await pollOnce(cfg, clients, store, onNewTask, onTransition);
+      await pollOnce(cfg, clients, store, onNewTask, onTransition, onPendingTask);
       // Vigilancia de sub-tareas A2A (hijo entregado → evaluar/aprobar/
       // integrar; timeout → cancelar y entregar el padre sin esa parte).
       if (a2a) await a2a.poll();

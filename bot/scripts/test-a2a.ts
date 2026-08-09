@@ -276,6 +276,9 @@ function makeHarness(chain: MockChain, llmPort: number, now: number): Harness {
       dailyBudgetWei: 20n * E18,
       subTimeoutS: 7_200,
       minRating: 3,
+      // El agente "hijo" de esta prueba corre en 127.0.0.1, que la guardia
+      // anti-SSRF bloquea por defecto (ver net.ts). Se abre solo aquí.
+      allowPrivateEndpoints: true,
     },
   };
 
