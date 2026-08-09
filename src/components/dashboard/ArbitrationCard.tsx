@@ -2,39 +2,43 @@
  * Panal — Panel de arbitraje para los firmantes del multisig.
  *
  * POR QUÉ EXISTE
- * El rol de `arbitrator` del escrow lo ostenta un multisig 2-de-3, pero hasta
- * ahora sus firmantes no tenían dónde ver una disputa ni cómo resolverla: el
- * dashboard solo mostraba disputas a quien era PARTE del conflicto. Un juez
- * entraba y no veía nada. Resolver exigía construir el calldata a mano y
- * llamar al multisig desde un explorador, así que en la práctica no se
- * resolvía ninguna — mientras el reloj de 14 días corría hacia el reembolso
+ * El rol de `arbitrator` del escrow lo ostenta un multisig 2-de-3, pero sus
+ * firmantes no tenían dónde ver una disputa ni cómo resolverla: el dashboard
+ * solo mostraba disputas a quien era PARTE del conflicto. Un juez entraba y no
+ * veía nada, y resolver exigía construir el calldata a mano desde un
+ * explorador. Mientras tanto el reloj de 14 días corría hacia el reembolso
  * automático al cliente.
  *
- * QUÉ MUESTRA
- * Solo se renderiza si la wallet conectada es uno de los firmantes. Para cada
- * disputa abierta: importe, partes, días restantes, y el estado de firma de
- * LOS TRES jueces — quién ha confirmado y cuántas faltan. Sin eso, en un
- * 2-de-3 nadie sabe si su firma es la que falta.
+ * DELIBERACIÓN, NO VOTACIÓN A CIEGAS
+ * Sobre una misma disputa puede haber VARIAS propuestas vivas a la vez: si el
+ * juez 0 propone un reparto y el 2 no lo comparte, el 2 presenta la suya en
+ * lugar de tener que tragar o bloquear. Gana la primera que reúna dos firmas.
+ * Eso ya lo permitía el contrato —los `txId` son independientes— pero no había
+ * forma de verlo ni de usarlo.
+ *
+ * Un firmante puede además RETIRAR su firma (`revoke`) mientras la propuesta no
+ * se haya ejecutado, así que apoyar algo no es irreversible: se puede cambiar
+ * de opinión al leer una alternativa mejor.
+ *
+ * NO HAY VOTO NEGATIVO, Y NO HACE FALTA. Con quórum de 2 sobre 3, que dos
+ * firmantes no confirmen ya bloquea una propuesta para siempre. Un "no"
+ * explícito exigiría cambiar el contrato sin añadir poder real.
  *
  * EL CALLDATA SE ENSEÑA DECODIFICADO
- * Quien confirma está aprobando lo que otro propuso. La propuesta se muestra
- * traducida a lenguaje llano (cuánto al agente, cuánto al cliente, qué nota)
- * para que nadie firme a ciegas.
+ * Quien confirma aprueba algo que escribió otro. Cada propuesta se muestra en
+ * lenguaje llano (cuánto al agente, cuánto al cliente, qué nota) para que nadie
+ * firme un hexadecimal a ciegas.
  */
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Check, ExternalLink, Gavel, Loader2, Scale } from 'lucide-react';
+import { AlertTriangle, Check, ExternalLink, Gavel, Loader2, Plus, Scale, Undo2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { decodeFunctionData, encodeFunctionData, formatEther, type Address } from 'viem';
 import { useAccount, useReadContract, useReadContracts } from 'wagmi';
 import { useContractAction } from '@/hooks/useContractAction';
 import { shortAddress } from '@/hooks/useWallet';
-import {
-  panalEscrowV2Abi,
-  panalMultisigAbi,
-  panalResolveDisputeAbi,
-} from '@/contracts/abis';
+import { panalEscrowV2Abi, panalMultisigAbi, panalResolveDisputeAbi } from '@/contracts/abis';
 import {
   EXPLORER_ADDRESS,
   EXPLORER_TX,
@@ -47,10 +51,10 @@ import {
 /**
  * Reloj en segundos que se refresca solo.
  *
- * Leer `Date.now()` durante el render es impuro: el valor cambia entre
- * renderizados sin que nada lo provoque, y el compilador de React lo rechaza.
- * Con estado, además, la cuenta atrás del plazo avanza de verdad en pantalla
- * en vez de quedarse congelada en el instante en que se montó la tarjeta.
+ * Leer `Date.now()` durante el render es impuro: cambia entre renderizados sin
+ * que nada lo provoque y el compilador de React lo rechaza. Con estado, además,
+ * la cuenta atrás avanza de verdad en pantalla en vez de quedarse congelada en
+ * el instante en que se montó la tarjeta.
  */
 function useNowSec(): number {
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
@@ -66,7 +70,9 @@ const STATUS_DISPUTED = 3;
 /** Cuántas tareas recientes se revisan buscando disputas. */
 const TASK_SCAN = 60;
 /** Cuántas propuestas recientes del multisig se revisan. */
-const TX_SCAN = 30;
+const TX_SCAN = 40;
+/** Firmas necesarias para ejecutar (quórum del multisig). */
+const REQUIRED = 2;
 
 interface DisputedTask {
   id: bigint;
@@ -89,7 +95,6 @@ export default function ArbitrationCard() {
   const { address } = useAccount();
   const me = address?.toLowerCase();
 
-  // ---- Quién arbitra -------------------------------------------------------
   const { data: arbitrator } = useReadContract({
     address: PANAL_ESCROW_V2_ADDRESS,
     abi: panalEscrowV2Abi,
@@ -97,7 +102,6 @@ export default function ArbitrationCard() {
     chainId: activeChain.id,
     query: { enabled: V2_ENABLED, retry: 1 },
   });
-
   const multisig = arbitrator as Address | undefined;
 
   // Los tres firmantes. Si el árbitro fuese una wallet suelta y no un multisig,
@@ -123,7 +127,6 @@ export default function ArbitrationCard() {
 
   const isJudge = Boolean(me && owners.some((o) => o.toLowerCase() === me));
 
-  // ---- Disputas abiertas ---------------------------------------------------
   const { data: taskCount } = useReadContract({
     address: PANAL_ESCROW_V2_ADDRESS,
     abi: panalEscrowV2Abi,
@@ -172,7 +175,6 @@ export default function ArbitrationCard() {
     return out;
   }, [tasksRaw, scanIds]);
 
-  // ---- Propuestas ya presentadas en el multisig ----------------------------
   const { data: txCount } = useReadContract({
     address: multisig,
     abi: panalMultisigAbi,
@@ -198,25 +200,39 @@ export default function ArbitrationCard() {
     query: { enabled: isJudge && txIds.length > 0, refetchInterval: 30_000, retry: 1 },
   });
 
-  /** taskId -> propuesta viva más reciente. */
-  const proposals = useMemo(() => {
-    const map = new Map<string, Proposal>();
+  /**
+   * taskId -> TODAS sus propuestas vivas.
+   *
+   * Antes esto guardaba una sola por tarea y las alternativas quedaban
+   * invisibles: si dos jueces proponían repartos distintos, uno de los dos
+   * desaparecía de la pantalla y su firma se perdía en el limbo.
+   */
+  const proposalsByTask = useMemo(() => {
+    const map = new Map<string, Proposal[]>();
     (txsRaw ?? []).forEach((r, i) => {
       if (r.status !== 'success' || !r.result) return;
-      const [, data, confirmations, executed] = r.result as unknown as [Address, `0x${string}`, number, boolean];
+      const [, data, confirmations, executed] = r.result as unknown as [
+        Address,
+        `0x${string}`,
+        number,
+        boolean,
+      ];
       try {
         const decoded = decodeFunctionData({ abi: panalResolveDisputeAbi, data });
         if (decoded.functionName !== 'resolveDispute') return;
         const [taskId, bps, rating] = decoded.args as readonly [bigint, bigint, number];
-        map.set(taskId.toString(), {
+        const key = taskId.toString();
+        const list = map.get(key) ?? [];
+        list.push({
           txId: txIds[i]!,
           confirmations: Number(confirmations),
           executed: Boolean(executed),
           workerShareBps: Number(bps),
           rating: Number(rating),
         });
+        map.set(key, list);
       } catch {
-        // La propuesta es de otra cosa (cambiar treasury, migrar árbitro…): se ignora.
+        // La propuesta es de otra cosa (cambiar treasury, migrar árbitro…).
       }
     });
     return map;
@@ -224,7 +240,10 @@ export default function ArbitrationCard() {
 
   if (!V2_ENABLED || !isJudge) return null;
 
-  const pending = disputed.filter((d) => !proposals.get(d.id.toString())?.executed);
+  const refresh = () => {
+    void refetchTxs();
+    void refetchTasks();
+  };
 
   return (
     <motion.section
@@ -261,24 +280,21 @@ export default function ArbitrationCard() {
         )}
       </header>
 
-      {pending.length === 0 ? (
+      {disputed.length === 0 ? (
         <p className="mt-6 rounded-xl border border-line bg-paper px-4 py-6 text-center text-[0.875rem] text-ink-3">
           {t('dashReal.arbitration.empty')}
         </p>
       ) : (
         <div className="mt-6 flex flex-col gap-4">
-          {pending.map((d) => (
+          {disputed.map((d) => (
             <DisputeRow
               key={d.id.toString()}
               dispute={d}
-              proposal={proposals.get(d.id.toString())}
+              proposals={(proposalsByTask.get(d.id.toString()) ?? []).filter((p) => !p.executed)}
               owners={owners}
               multisig={multisig!}
               me={me}
-              onDone={() => {
-                void refetchTxs();
-                void refetchTasks();
-              }}
+              onDone={refresh}
             />
           ))}
         </div>
@@ -291,26 +307,24 @@ export default function ArbitrationCard() {
 
 function DisputeRow({
   dispute,
-  proposal,
+  proposals,
   owners,
   multisig,
   me,
   onDone,
 }: {
   dispute: DisputedTask;
-  proposal: Proposal | undefined;
+  proposals: Proposal[];
   owners: Address[];
   multisig: Address;
   me: string | undefined;
   onDone: () => void;
 }) {
   const { t } = useTranslation();
-  const action = useContractAction({ onMined: onDone });
-
+  const [composing, setComposing] = useState(false);
+  const nowSec = useNowSec();
   const symbol = currencySymbol(dispute.currency);
 
-  // Cuenta atrás: pasado DISPUTE_TIMEOUT cualquiera puede reembolsar al
-  // cliente al 100 %, y el agente se queda sin cobrar aunque hubiera entregado.
   const { data: disputedAt } = useReadContract({
     address: PANAL_ESCROW_V2_ADDRESS,
     abi: panalEscrowV2Abi,
@@ -327,44 +341,10 @@ function DisputeRow({
     query: { retry: 1 },
   });
 
-  const nowSec = useNowSec();
   const expiresAt =
     disputedAt !== undefined && timeout !== undefined ? Number(disputedAt) + Number(timeout) : null;
   const daysLeft = expiresAt === null ? null : Math.max(0, (expiresAt - nowSec) / 86_400);
   const urgent = daysLeft !== null && daysLeft < 3;
-
-  // Estado de firma de LOS TRES jueces.
-  const { data: confirmedRaw } = useReadContracts({
-    contracts: owners.map((o) => ({
-      address: multisig,
-      abi: panalMultisigAbi,
-      functionName: 'isConfirmedBy' as const,
-      args: [proposal?.txId ?? 0n, o],
-      chainId: activeChain.id,
-    })),
-    query: { enabled: Boolean(proposal), refetchInterval: 30_000, retry: 1 },
-  });
-
-  const confirmedBy = owners.map(
-    (_, i) => confirmedRaw?.[i]?.status === 'success' && Boolean(confirmedRaw[i]!.result),
-  );
-  const iConfirmed = owners.some((o, i) => o.toLowerCase() === me && confirmedBy[i]);
-  const missing = Math.max(0, 2 - (proposal?.confirmations ?? 0));
-
-  const propose = (workerShareBps: number, rating: number) =>
-    void action.run({
-      address: multisig,
-      abi: panalMultisigAbi,
-      functionName: 'submit',
-      args: [
-        PANAL_ESCROW_V2_ADDRESS,
-        encodeFunctionData({
-          abi: panalResolveDisputeAbi,
-          functionName: 'resolveDispute',
-          args: [dispute.id, BigInt(workerShareBps), rating],
-        }),
-      ],
-    });
 
   return (
     <article className="rounded-xl border border-line bg-paper p-5">
@@ -388,9 +368,7 @@ function DisputeRow({
           </dl>
         </div>
 
-        <div
-          className={`rounded-xl border px-4 py-3 ${urgent ? 'border-terra/40 bg-terra/5' : 'border-line'}`}
-        >
+        <div className={`rounded-xl border px-4 py-3 ${urgent ? 'border-terra/40 bg-terra/5' : 'border-line'}`}>
           <p className="eyebrow text-ink-3">{t('dashReal.arbitration.deadline')}</p>
           <p className={`mt-1 font-mono text-[1.0625rem] ${urgent ? 'text-terra' : 'text-ink'}`}>
             {daysLeft === null ? '…' : t('dashReal.dispute.daysLeft', { days: daysLeft.toFixed(1) })}
@@ -404,124 +382,301 @@ function DisputeRow({
         </div>
       </div>
 
-      {/* Estado de los tres firmantes */}
       <div className="mt-5 border-t border-line pt-4">
-        <p className="eyebrow text-ink-3">{t('dashReal.arbitration.signers')}</p>
-        <ul className="mt-2 flex flex-wrap gap-2">
-          {owners.map((o, i) => {
-            const done = Boolean(proposal) && confirmedBy[i];
-            const isMe = o.toLowerCase() === me;
-            return (
-              <li
-                key={o}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[0.75rem] ${
-                  done ? 'border-olive/50 bg-olive/10 text-olive' : 'border-line text-ink-3'
-                }`}
-              >
-                {done && <Check size={12} aria-hidden />}
-                {shortAddress(o)}
-                {isMe && <span className="text-ink-2">{t('dashReal.arbitration.you')}</span>}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-
-      {/* Propuesta viva, decodificada para que nadie firme a ciegas */}
-      {proposal ? (
-        <div className="mt-4 rounded-xl border border-monad/30 bg-cream p-4">
-          <p className="eyebrow text-monad">{t('dashReal.arbitration.proposalLabel')}</p>
-          <p className="mt-2 text-[0.875rem] leading-relaxed text-ink-2">
-            {t('dashReal.arbitration.proposalDetail', {
-              agent: (proposal.workerShareBps / 100).toFixed(0),
-              client: ((10_000 - proposal.workerShareBps) / 100).toFixed(0),
-              rating: proposal.rating,
-            })}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="eyebrow text-ink-3">
+            {proposals.length === 0
+              ? t('dashReal.arbitration.noProposals')
+              : t('dashReal.arbitration.proposalsCount', { count: proposals.length })}
           </p>
-          <p className="mt-2 font-mono text-[0.8125rem] text-ink-3">
-            {t('dashReal.arbitration.confirmations', {
-              have: proposal.confirmations,
-              missing,
-            })}
-          </p>
-          <div className="mt-3">
-            {action.busy || action.txHash ? (
-              <TxState action={action} />
-            ) : iConfirmed ? (
-              <p className="text-[0.8125rem] text-olive">{t('dashReal.arbitration.alreadySigned')}</p>
-            ) : (
-              <button
-                type="button"
-                onClick={() =>
-                  void action.run({
-                    address: multisig,
-                    abi: panalMultisigAbi,
-                    functionName: 'confirm',
-                    args: [proposal.txId],
-                  })
-                }
-                className="inline-flex items-center gap-2 rounded-full border border-monad/50 px-4 py-2 text-[0.875rem] font-semibold text-monad transition-colors hover:bg-monad/10"
-              >
-                <Gavel size={14} />
-                {t('dashReal.arbitration.confirm')}
-              </button>
-            )}
-          </div>
+          {!composing && (
+            <button
+              type="button"
+              onClick={() => setComposing(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-monad hover:text-monad"
+            >
+              <Plus size={13} aria-hidden />
+              {proposals.length === 0
+                ? t('dashReal.arbitration.propose')
+                : t('dashReal.arbitration.counter')}
+            </button>
+          )}
         </div>
-      ) : (
-        <VerdictForm busy={action.busy} txHash={action.txHash} action={action} onPropose={propose} />
-      )}
+
+        {proposals.length > 1 && (
+          <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-3">
+            {t('dashReal.arbitration.raceNote')}
+          </p>
+        )}
+
+        <div className="mt-3 flex flex-col gap-3">
+          {proposals.map((p) => (
+            <ProposalRow
+              key={p.txId.toString()}
+              proposal={p}
+              owners={owners}
+              multisig={multisig}
+              me={me}
+              onDone={onDone}
+            />
+          ))}
+        </div>
+
+        {composing && (
+          <VerdictForm
+            dispute={dispute}
+            multisig={multisig}
+            onCancel={() => setComposing(false)}
+            onDone={() => {
+              setComposing(false);
+              onDone();
+            }}
+          />
+        )}
+      </div>
     </article>
   );
 }
 
 // ---------------------------------------------------------------------------
 
-/** Tres fallos habituales, para no obligar a nadie a pensar en puntos básicos. */
-const PRESETS: { bps: number; rating: number; key: string }[] = [
-  { bps: 10_000, rating: 5, key: 'worker' },
-  { bps: 5_000, rating: 3, key: 'split' },
-  { bps: 0, rating: 1, key: 'client' },
+function ProposalRow({
+  proposal,
+  owners,
+  multisig,
+  me,
+  onDone,
+}: {
+  proposal: Proposal;
+  owners: Address[];
+  multisig: Address;
+  me: string | undefined;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  const action = useContractAction({ onMined: onDone });
+
+  const { data: confirmedRaw } = useReadContracts({
+    contracts: owners.map((o) => ({
+      address: multisig,
+      abi: panalMultisigAbi,
+      functionName: 'isConfirmedBy' as const,
+      args: [proposal.txId, o],
+      chainId: activeChain.id,
+    })),
+    query: { refetchInterval: 30_000, retry: 1 },
+  });
+
+  const confirmedBy = owners.map(
+    (_, i) => confirmedRaw?.[i]?.status === 'success' && Boolean(confirmedRaw[i]!.result),
+  );
+  const iConfirmed = owners.some((o, i) => o.toLowerCase() === me && confirmedBy[i]);
+  const missing = Math.max(0, REQUIRED - proposal.confirmations);
+
+  return (
+    <div className="rounded-xl border border-monad/25 bg-cream p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[0.875rem] leading-relaxed text-ink">
+            {t('dashReal.arbitration.proposalDetail', {
+              agent: (proposal.workerShareBps / 100).toFixed(0),
+              client: ((10_000 - proposal.workerShareBps) / 100).toFixed(0),
+              rating: proposal.rating,
+            })}
+          </p>
+          <p className="mt-1 font-mono text-[0.75rem] text-ink-3">
+            {t('dashReal.arbitration.confirmations', { have: proposal.confirmations, missing })}
+          </p>
+        </div>
+        <span className="font-mono text-[0.75rem] text-ink-3">#{proposal.txId.toString()}</span>
+      </div>
+
+      <ul className="mt-3 flex flex-wrap gap-2">
+        {owners.map((o, i) => (
+          <li
+            key={o}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[0.75rem] ${
+              confirmedBy[i] ? 'border-olive/50 bg-olive/10 text-olive' : 'border-line text-ink-3'
+            }`}
+          >
+            {confirmedBy[i] && <Check size={12} aria-hidden />}
+            {shortAddress(o)}
+            {o.toLowerCase() === me && <span className="text-ink-2">{t('dashReal.arbitration.you')}</span>}
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-3">
+        {action.busy || action.txHash ? (
+          <TxState action={action} />
+        ) : iConfirmed ? (
+          // Retirar la firma permite cambiar de opinión al leer una alternativa
+          // mejor: apoyar algo no es irreversible mientras no se ejecute.
+          <button
+            type="button"
+            onClick={() =>
+              void action.run({
+                address: multisig,
+                abi: panalMultisigAbi,
+                functionName: 'revoke',
+                args: [proposal.txId],
+              })
+            }
+            className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-terra hover:text-terra"
+          >
+            <Undo2 size={13} aria-hidden />
+            {t('dashReal.arbitration.revoke')}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() =>
+              void action.run({
+                address: multisig,
+                abi: panalMultisigAbi,
+                functionName: 'confirm',
+                args: [proposal.txId],
+              })
+            }
+            className="inline-flex items-center gap-2 rounded-full border border-monad/50 px-4 py-2 text-[0.875rem] font-semibold text-monad transition-colors hover:bg-monad/10"
+          >
+            <Gavel size={14} />
+            {t('dashReal.arbitration.confirm')}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+/** Repartos habituales, para no obligar a nadie a pensar en puntos básicos. */
+const PRESETS: { pct: number; rating: number; key: string }[] = [
+  { pct: 100, rating: 5, key: 'worker' },
+  { pct: 50, rating: 3, key: 'split' },
+  { pct: 0, rating: 1, key: 'client' },
 ];
 
 function VerdictForm({
-  busy,
-  txHash,
-  action,
-  onPropose,
+  dispute,
+  multisig,
+  onCancel,
+  onDone,
 }: {
-  busy: boolean;
-  txHash: `0x${string}` | undefined;
-  action: ReturnType<typeof useContractAction>;
-  onPropose: (bps: number, rating: number) => void;
+  dispute: DisputedTask;
+  multisig: Address;
+  onCancel: () => void;
+  onDone: () => void;
 }) {
   const { t } = useTranslation();
+  const action = useContractAction({ onMined: onDone });
+  const [pct, setPct] = useState(50);
+  const [rating, setRating] = useState(3);
 
-  if (busy || txHash) {
+  const symbol = currencySymbol(dispute.currency);
+  const toAgent = (dispute.amount * BigInt(Math.round(pct * 100))) / 10_000n;
+  const toClient = dispute.amount - toAgent;
+
+  if (action.busy || action.txHash) {
     return (
-      <div className="mt-4">
+      <div className="mt-3 rounded-xl border border-line bg-cream p-4">
         <TxState action={action} />
       </div>
     );
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-line bg-cream p-4">
-      <p className="eyebrow text-ink-3">{t('dashReal.arbitration.verdictLabel')}</p>
+    <div className="mt-3 rounded-xl border border-monad/30 bg-cream p-4">
+      <p className="eyebrow text-monad">{t('dashReal.arbitration.verdictLabel')}</p>
       <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-3">
         {t('dashReal.arbitration.verdictHelp')}
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+
+      <div className="mt-4 flex flex-wrap gap-2">
         {PRESETS.map((p) => (
           <button
             key={p.key}
             type="button"
-            onClick={() => onPropose(p.bps, p.rating)}
-            className="rounded-full border border-line px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-monad hover:text-monad"
+            onClick={() => {
+              setPct(p.pct);
+              setRating(p.rating);
+            }}
+            className={`rounded-full border px-3 py-1.5 text-[0.8125rem] transition-colors ${
+              pct === p.pct ? 'border-monad text-monad' : 'border-line text-ink-2 hover:border-monad/50'
+            }`}
           >
             {t(`dashReal.arbitration.preset.${p.key}`)}
           </button>
         ))}
+      </div>
+
+      <div className="mt-4 grid gap-4">
+        <label className="block">
+          <span className="text-[0.8125rem] font-medium text-ink-2">
+            {t('dashReal.arbitration.agentShare', { pct })}
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={pct}
+            onChange={(e) => setPct(Number(e.target.value))}
+            className="mt-2 w-full accent-monad"
+          />
+          <span className="mt-1 block font-mono text-[0.8125rem] text-ink-3">
+            {formatEther(toAgent)} {symbol} → {t('dashReal.arbitration.agent')} ·{' '}
+            {formatEther(toClient)} {symbol} → {t('dashReal.arbitration.client')}
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="text-[0.8125rem] font-medium text-ink-2">
+            {t('dashReal.arbitration.ratingLabel', { rating })}
+          </span>
+          <input
+            type="range"
+            min={1}
+            max={5}
+            step={1}
+            value={rating}
+            onChange={(e) => setRating(Number(e.target.value))}
+            className="mt-2 w-full accent-monad"
+          />
+        </label>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() =>
+            void action.run({
+              address: multisig,
+              abi: panalMultisigAbi,
+              functionName: 'submit',
+              args: [
+                PANAL_ESCROW_V2_ADDRESS,
+                encodeFunctionData({
+                  abi: panalResolveDisputeAbi,
+                  functionName: 'resolveDispute',
+                  args: [dispute.id, BigInt(Math.round(pct * 100)), rating],
+                }),
+              ],
+            })
+          }
+          className="inline-flex items-center gap-2 rounded-full border border-monad/50 px-4 py-2 text-[0.875rem] font-semibold text-monad transition-colors hover:bg-monad/10"
+        >
+          <Gavel size={14} />
+          {t('dashReal.arbitration.submit')}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-full border border-line px-4 py-2 text-[0.875rem] text-ink-2 transition-colors hover:text-ink"
+        >
+          {t('dashReal.arbitration.cancel')}
+        </button>
       </div>
     </div>
   );
