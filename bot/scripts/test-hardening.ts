@@ -16,7 +16,7 @@
  */
 
 import { createServer, type IncomingMessage, type Server } from 'node:http';
-import { assertPublicUrl, clientIp, fetchJsonLimited } from '../src/net.js';
+import { allowedOrigin, assertPublicUrl, clientIp, fetchJsonLimited } from '../src/net.js';
 import { untrustedBlock } from '../src/a2a.js';
 
 let failures = 0;
@@ -174,6 +174,22 @@ async function main(): Promise<void> {
   const fenceCount = escaping.split('<<<PANAL_DATOS_EXTERNOS>>>').length - 1;
   check('no se puede cerrar el bloque antes de tiempo', fenceCount === 2, `${fenceCount} delimitadores`);
   check('el intento de fuga queda marcado', escaping.includes('[delimitador eliminado]'));
+
+  console.log('\n── 5. CORS: los dos dominios del dashboard ──');
+
+  // www.panal.lat sirve la web igual que el dominio raíz y no redirige. Cuando
+  // faltaba en la lista, un cliente que entrara por ahí firmaba el brief y la
+  // peticion moria en el preflight; tampoco podia descargar su resultado ni
+  // cargar el dashboard. Fallaba o no segun por que dominio hubiera entrado.
+  check('permite el dominio raíz', allowedOrigin('https://panal.lat', false) === 'https://panal.lat');
+  check('permite www', allowedOrigin('https://www.panal.lat', false) === 'https://www.panal.lat');
+  check('refleja el origen recibido, no uno fijo', allowedOrigin('https://www.panal.lat', false) !== 'https://panal.lat');
+  check('rechaza un dominio ajeno', allowedOrigin('https://evil.example', false) === null);
+  check('rechaza un subdominio inventado', allowedOrigin('https://api.panal.lat.evil.com', false) === null);
+  check('rechaza http en vez de https', allowedOrigin('http://panal.lat', false) === null);
+  check('sin Origin no hay CORS', allowedOrigin(undefined, false) === null);
+  check('localhost solo en desarrollo', allowedOrigin('http://localhost:5173', false) === null);
+  check('localhost permitido en desarrollo', allowedOrigin('http://localhost:5173', true) === 'http://localhost:5173');
 
   console.log('');
   if (failures === 0) console.log('✅ Todas las comprobaciones de endurecimiento pasaron');
