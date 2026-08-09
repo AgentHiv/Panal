@@ -585,7 +585,7 @@ async function main(): Promise<void> {
     );
     check(
       'padre entregado sin la parte subcontratada (nota)',
-      h.deliveredParents.length === 1 && h.deliveredParents[0]!.text.includes('no llegó a tiempo'),
+      h.deliveredParents.length === 1 && h.deliveredParents[0]!.text.includes('did not deliver in time'),
       `state=${rec.state}`,
     );
     check('Telegram de timeout', h.telegram.some((t) => t.includes('no entregó a tiempo')), 'OK');

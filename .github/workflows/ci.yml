@@ -67,6 +67,10 @@ jobs:
         working-directory: bot
         run: pnpm typecheck
 
+      - name: Formato de salida (sin Markdown crudo para el cliente)
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-format.ts
+
       - name: Endurecimiento (IP tras proxy, anti-SSRF, tope de respuesta, prompts)
         working-directory: bot
         run: pnpm exec tsx scripts/test-hardening.ts

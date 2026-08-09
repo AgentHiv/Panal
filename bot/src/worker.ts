@@ -52,12 +52,18 @@ import type { Telegram } from './telegram.js';
  * humana el bot no puede conocerlo: esto está documentado en el README y
  * en el mensaje de alerta de tarea nueva.
  */
+// Escrito en inglés, igual que el system prompt: es andamiaje interno, y
+// redactarlo en español empujaba al modelo a responder en español aunque el
+// cliente hubiera escrito en otro idioma. Aquí no hay texto del cliente que
+// imitar, así que se fija el inglés de forma explícita en vez de dejarlo al azar.
 const GENERIC_BRIEF = (taskId: bigint, taskHash: string) =>
-  `Eres un agente autónomo del marketplace Panal. Se te ha asignado la tarea #${taskId} ` +
-  `(hash del pedido on-chain: ${taskHash}), pero el texto del pedido no está disponible: ` +
-  `el cliente solo publicó su hash. Genera una respuesta útil, profesional y completa ` +
-  `dentro de tus capacidades descritas en el system prompt, indicando al final que, ` +
-  `si el pedido era más específico, el cliente puede abrir una disputa o contactar al agente.`;
+  `You have been assigned task #${taskId} on the Panal marketplace ` +
+  `(on-chain request hash: ${taskHash}), but the request text never reached you: ` +
+  `the client only published its hash.\n\n` +
+  `Produce the most useful professional deliverable you can within the capabilities described ` +
+  `in your system prompt, and open with one short line stating that the detailed request was ` +
+  `not received. Close by inviting the client to resend the request to the agent endpoint. ` +
+  `Because the client's language is unknown here, write this one in English.`;
 
 /** Reintento de entregas fallidas: no reintentar antes de este intervalo. */
 const RETRY_FAILED_AFTER_MS = 10 * 60 * 1000;

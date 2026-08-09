@@ -9,6 +9,7 @@
  */
 
 import type { BotConfig } from './config.js';
+import { toPlainText } from './format.js';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -29,7 +30,17 @@ function sleep(ms: number): Promise<void> {
  * (mensaje user); el system prompt viene de SYSTEM_PROMPT.
  */
 export async function generateResult(cfg: BotConfig, brief: string): Promise<string> {
-  return chatWithSystem(cfg, cfg.llm.systemPrompt, brief);
+  const raw = await chatWithSystem(cfg, cfg.llm.systemPrompt, brief);
+  // Punto único de saneado: por aquí pasan TODAS las entregas al cliente (el
+  // worker y las dos rutas de composición del A2A). El system prompt ya pide
+  // texto plano, pero los modelos vuelven al Markdown cada pocas respuestas y
+  // el cliente acaba viendo `**negrita**` y `## Título` en crudo, porque ni el
+  // cuadro del dashboard ni Telegram lo renderizan.
+  //
+  // Sanear AQUÍ y no al entregar es deliberado: el resultHash se calcula sobre
+  // este texto, así que lo que se hashea, lo que se guarda y lo que lee el
+  // cliente son exactamente lo mismo.
+  return toPlainText(raw);
 }
 
 /**

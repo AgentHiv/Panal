@@ -9,6 +9,7 @@
 
 import type { BotConfig } from './config.js';
 import type { Store } from './store.js';
+import { toPlainText } from './format.js';
 
 const API_BASE = (token: string) => `https://api.telegram.org/bot${token}`;
 
@@ -72,28 +73,34 @@ export class Telegram {
   }
 
   /**
-   * Envía un mensaje al chat del dueño. Si Telegram devuelve error por el
-   * Markdown (texto de usuario con caracteres raros), reintenta en texto plano.
+   * Envía un mensaje al chat del dueño, siempre como TEXTO PLANO.
+   *
+   * Antes se mandaba con `parse_mode: 'Markdown'` y, si Telegram lo rechazaba,
+   * se reintentaba borrando a lo bruto los caracteres de formato. Eso fallaba
+   * de las dos maneras posibles:
+   *
+   *   - El parser antiguo de Telegram no admite encabezados `#` y revienta con
+   *     asteriscos desparejados. Cualquier resultado del LLM con Markdown caía
+   *     en el reintento.
+   *   - El reintento borraba `_`, `*` y backticks de TODO el mensaje, así que
+   *     destrozaba nombres como `BRIEF_WAIT_MS` y dejaba el texto a medias.
+   *
+   * Ahora el mensaje se convierte a texto plano legible antes de salir y se
+   * manda sin `parse_mode`. No hay nada que interpretar, así que no hay error
+   * posible ni reintento que degrade nada: lo que se lee es lo que se escribió,
+   * sin asteriscos ni almohadillas a la vista.
    */
   async send(text: string): Promise<void> {
+    const plain = toPlainText(text);
     if (!this.enabled) {
-      console.log(`\n[telegram:dry-run] ────────────────────────────\n${text}\n`);
+      console.log(`\n[telegram:dry-run] ────────────────────────────\n${plain}\n`);
       return;
     }
-    const chatId = this.cfg.telegramChatId;
-    const ok = await this.api<unknown>('sendMessage', {
-      chat_id: chatId,
-      text,
-      parse_mode: 'Markdown',
+    await this.api<unknown>('sendMessage', {
+      chat_id: this.cfg.telegramChatId,
+      text: plain,
       disable_web_page_preview: true,
     });
-    if (ok === null) {
-      await this.api<unknown>('sendMessage', {
-        chat_id: chatId,
-        text: text.replace(/[\\_*`\[]/g, ''), // versión sin formato
-        disable_web_page_preview: true,
-      });
-    }
   }
 
   /** Long polling de getUpdates (espera hasta `timeoutSec` segundos en Telegram). */

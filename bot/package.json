@@ -14,6 +14,7 @@
     "indexer": "BOT_MODE=indexer tsx src/index.ts",
     "mcp": "tsx src/mcp.ts",
     "test:mcp": "tsx scripts/test-mcp.ts",
+    "test:format": "tsx scripts/test-format.ts",
     "test:hardening": "tsx scripts/test-hardening.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
