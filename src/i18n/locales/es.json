@@ -1178,7 +1178,31 @@
       "note": "Pasado el plazo sin resolución del jurado, cualquiera de las partes puede ejecutar la resolución automática del escrow."
     },
     "errCancelYet": "No se puede cancelar todavía: la tarea tiene trabajador asignado y el plazo sigue vigente.",
-    "errNotClient": "No eres el cliente de esta tarea."
+    "errNotClient": "No eres el cliente de esta tarea.",
+    "arbitration": {
+      "title": "Arbitraje de disputas",
+      "subtitle": "Eres firmante del multisig que arbitra en Panal. Aquí ves las disputas abiertas y puedes proponer o confirmar un fallo. Hacen falta 2 firmas de 3.",
+      "empty": "No hay disputas pendientes ahora mismo.",
+      "taskLabel": "Tarea #{{id}}",
+      "client": "Cliente",
+      "agent": "Agente",
+      "deadline": "Plazo restante",
+      "urgent": "Si expira, el cliente recupera el 100 %",
+      "signers": "Firmantes",
+      "you": "(tú)",
+      "proposalLabel": "Propuesta en curso",
+      "proposalDetail": "{{agent}} % para el agente · {{client}} % de reembolso al cliente · valoración {{rating}}/5",
+      "confirmations": "{{have}} de 2 firmas · faltan {{missing}}",
+      "alreadySigned": "Ya has firmado esta propuesta.",
+      "confirm": "Confirmar el fallo",
+      "verdictLabel": "Proponer un fallo",
+      "verdictHelp": "Al proponer no se ejecuta nada: hace falta que dos firmantes distintos confirmen. Tu propuesta no cuenta como firma.",
+      "preset": {
+        "worker": "Todo al agente",
+        "split": "Mitad y mitad",
+        "client": "Todo al cliente"
+      }
+    }
   },
   "token": {
     "official": "token oficial",

@@ -1178,7 +1178,31 @@
       "note": "Once the deadline passes without a jury ruling, either party can trigger the escrow’s automatic resolution."
     },
     "errCancelYet": "Cannot cancel yet: the task has an assigned worker and the deadline is still running.",
-    "errNotClient": "You are not the client of this task."
+    "errNotClient": "You are not the client of this task.",
+    "arbitration": {
+      "title": "Dispute arbitration",
+      "subtitle": "You are a signer of the multisig that arbitrates on Panal. Open disputes appear here and you can propose or confirm a verdict. Two of three signatures are required.",
+      "empty": "No pending disputes right now.",
+      "taskLabel": "Task #{{id}}",
+      "client": "Client",
+      "agent": "Agent",
+      "deadline": "Time left",
+      "urgent": "If it expires, the client gets 100% back",
+      "signers": "Signers",
+      "you": "(you)",
+      "proposalLabel": "Live proposal",
+      "proposalDetail": "{{agent}}% to the agent · {{client}}% refunded to the client · rating {{rating}}/5",
+      "confirmations": "{{have}} of 2 signatures · {{missing}} missing",
+      "alreadySigned": "You already signed this proposal.",
+      "confirm": "Confirm verdict",
+      "verdictLabel": "Propose a verdict",
+      "verdictHelp": "Proposing executes nothing: two different signers must confirm. Your proposal does not count as a signature.",
+      "preset": {
+        "worker": "All to the agent",
+        "split": "Split 50/50",
+        "client": "All to the client"
+      }
+    }
   },
   "token": {
     "official": "official token",
