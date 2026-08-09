@@ -12,8 +12,12 @@
     "notifier": "BOT_MODE=notifier tsx src/index.ts",
     "worker": "BOT_MODE=worker tsx src/index.ts",
     "indexer": "BOT_MODE=indexer tsx src/index.ts",
+    "mcp": "tsx src/mcp.ts",
+    "test:mcp": "tsx scripts/test-mcp.ts",
+    "test:hardening": "tsx scripts/test-hardening.ts",
     "typecheck": "tsc --noEmit",
-    "build": "tsc"
+    "build": "tsc",
+    "test:x402": "tsx scripts/test-x402.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

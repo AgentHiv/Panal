@@ -42,6 +42,19 @@
  */
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { clientIp } from './net.js';
+import { generateResult } from './llm.js';
+import {
+  buildQuote,
+  parsePaymentHeader,
+  permitNonce,
+  readPermitDomain,
+  SCHEME,
+  verifyAndSettle,
+  type PermitDomain,
+  type SettleResult,
+  type X402Payment,
+} from './x402.js';
 import {
   getAddress,
   isAddress,
@@ -262,6 +275,29 @@ export interface ResultServerDeps {
   allowLocalhostOrigin: boolean;
   /** Límite de tamaño de URL aceptado (defensa ante URLs gigantes). */
   maxUrlLength?: number;
+  /**
+   * Cobro por llamada (x402). Si falta, `/x402/ask` responde 404 y el agente
+   * sigue funcionando solo con encargos por escrow.
+   */
+  x402?: X402Endpoint;
+}
+
+/** Todo lo que necesita la ruta de pago por llamada. */
+export interface X402Endpoint {
+  priceWei: bigint;
+  token: Address;
+  tokenSymbol: string;
+  /** Quién cobra: la wallet del agente, que también es el spender del permit. */
+  payee: Address;
+  /** Dominio EIP-712 del token. Perezoso: se lee de la cadena y se cachea. */
+  getDomain: () => Promise<PermitDomain>;
+  maxPromptChars: number;
+  /** Nonce de permit del pagador, para incluirlo en el presupuesto. */
+  nonceOf: (payer: Address) => Promise<bigint>;
+  /** Verifica la firma y cobra on-chain. Sirve solo si sale bien. */
+  settle: (payment: X402Payment, price: bigint) => Promise<SettleResult>;
+  /** Genera la respuesta que se vende. */
+  answer: (prompt: string) => Promise<string>;
 }
 
 export function createResultServer(deps: ResultServerDeps): Server {
@@ -392,6 +428,104 @@ export function createResultServer(deps: ResultServerDeps): Server {
     json(res, 200, { ok: true });
   };
 
+  // ---- POST /x402/ask  {"prompt"} -------------------------------------------
+  //
+  // Sin cabecera X-Payment se responde 402 con el presupuesto; con ella se
+  // cobra y se sirve en la misma llamada. Se COBRA ANTES DE RESPONDER: al
+  // revés, un cobro fallido habría regalado el trabajo.
+  const handleX402Ask = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+    const x = deps.x402;
+    if (!x) {
+      json(res, 404, { error: 'este agente no cobra por llamada (x402 deshabilitado)' });
+      return;
+    }
+
+    const raw = await readBody(req, MAX_BODY_BYTES);
+    if (raw === null) {
+      json(res, 413, { error: 'body too large' });
+      return;
+    }
+    let prompt = '';
+    try {
+      const body = JSON.parse(raw || '{}') as { prompt?: unknown };
+      if (typeof body.prompt === 'string') prompt = body.prompt.trim();
+    } catch {
+      json(res, 400, { error: 'bad json' });
+      return;
+    }
+    if (prompt.length === 0 || prompt.length > x.maxPromptChars) {
+      json(res, 400, { error: `prompt requerido, máx. ${x.maxPromptChars} caracteres` });
+      return;
+    }
+
+    const header = req.headers['x-payment'];
+    const paymentHeader = Array.isArray(header) ? header[0] : header;
+
+    if (!paymentHeader) {
+      // 402 con el presupuesto. Si el cliente se identifica con X-Payment-Payer
+      // se le devuelve además su nonce, para que no tenga que leerlo él.
+      const payerHeader = req.headers['x-payment-payer'];
+      const payerRaw = Array.isArray(payerHeader) ? payerHeader[0] : payerHeader;
+      let payerNonce: bigint | undefined;
+      if (typeof payerRaw === 'string' && isAddress(payerRaw)) {
+        payerNonce = await x.nonceOf(getAddress(payerRaw)).catch(() => undefined);
+      }
+      const domain = await x.getDomain();
+      const quote = buildQuote({
+        asset: x.token,
+        assetSymbol: x.tokenSymbol,
+        amount: x.priceWei,
+        payTo: x.payee,
+        resource: '/x402/ask',
+        description: 'Una consulta al agente, respondida al momento.',
+        domain,
+        payerNonce,
+      });
+      res.writeHead(402, {
+        'content-type': 'application/json; charset=utf-8',
+        // Cabecera estándar de HTTP para que un cliente genérico sepa qué hacer.
+        'www-authenticate': `${SCHEME} realm="panal", chain="${domain.chainId}"`,
+      });
+      res.end(JSON.stringify(quote));
+      return;
+    }
+
+    const parsed = parsePaymentHeader(paymentHeader);
+    if (!parsed.ok) {
+      json(res, 402, { error: parsed.error });
+      return;
+    }
+
+    const settled = await x.settle(parsed.payment, x.priceWei);
+    if (!settled.ok) {
+      json(res, settled.status, { error: settled.error });
+      return;
+    }
+
+    let answer: string;
+    try {
+      answer = await x.answer(prompt);
+    } catch (err) {
+      // El cobro ya está hecho: es dinero del cliente, así que el fallo se
+      // reporta con el hash para que pueda reclamar con prueba en la mano.
+      console.error(`[x402] cobrado ${settled.txHash} pero la respuesta falló: ${err instanceof Error ? err.message : err}`);
+      json(res, 502, {
+        error: 'el pago se cobró pero la respuesta falló',
+        paymentTx: settled.txHash,
+      });
+      return;
+    }
+
+    console.log(`[x402] ${parsed.payment.payer} pagó ${settled.amount} por /x402/ask · tx ${settled.txHash}`);
+    res.writeHead(200, {
+      'content-type': 'application/json; charset=utf-8',
+      'x-payment-response': Buffer.from(
+        JSON.stringify({ settled: true, txHash: settled.txHash, amount: settled.amount.toString() }),
+      ).toString('base64'),
+    });
+    res.end(JSON.stringify({ answer, payment: { txHash: settled.txHash, amount: settled.amount.toString() } }));
+  };
+
   // ---- GET /agent.json -------------------------------------------------------
   const handleAgentJson = async (res: ServerResponse): Promise<void> => {
     if (!deps.fetchAgentJson) {
@@ -423,7 +557,12 @@ export function createResultServer(deps: ResultServerDeps): Server {
     }
 
     // ---- Rate limit por IP ---------------------------------------------------
-    const ip = req.socket.remoteAddress ?? 'unknown';
+    // clientIp() y no req.socket.remoteAddress: detrás de Caddy todas las
+    // peticiones entran por loopback, así que la IP del socket es siempre
+    // 127.0.0.1 y el tope "por IP" se comportaba como un tope GLOBAL —un solo
+    // cliente agotaba la cuota de todos. Ver net.ts para por qué solo se hace
+    // caso a X-Forwarded-For cuando la conexión viene de loopback.
+    const ip = clientIp(req);
     if (!rateLimitOk(ip)) {
       json(res, 429, { error: 'rate limited' });
       return;
@@ -451,6 +590,10 @@ export function createResultServer(deps: ResultServerDeps): Server {
       await handleAgentJson(res);
       return;
     }
+    if (url.pathname === '/x402/ask' && req.method === 'POST') {
+      await handleX402Ask(req, res);
+      return;
+    }
     json(res, 404, { error: 'not found' });
   };
 
@@ -469,8 +612,40 @@ export function createResultServer(deps: ResultServerDeps): Server {
  * poder cerrarlo en el apagado.
  */
 export function startResultServer(cfg: BotConfig, clients: ChainClients, store: Store): Server {
+  // x402 solo tiene sentido con wallet: sin ella no se puede ejecutar el cobro,
+  // y servir sin cobrar sería regalar el trabajo.
+  let x402: X402Endpoint | undefined;
+  if (cfg.x402.enabled && clients.walletClient && clients.botAddress) {
+    let domainCache: Promise<PermitDomain> | undefined;
+    x402 = {
+      priceWei: cfg.x402.priceWei,
+      token: cfg.panalTokenAddress,
+      tokenSymbol: '$PANAL',
+      payee: clients.botAddress,
+      maxPromptChars: cfg.x402.maxPromptChars,
+      getDomain: () => (domainCache ??= readPermitDomain(clients, cfg.panalTokenAddress)),
+      nonceOf: (payer) => permitNonce(clients, cfg.panalTokenAddress, payer),
+      settle: async (payment, price) =>
+        verifyAndSettle(
+          {
+            clients,
+            cfg,
+            token: cfg.panalTokenAddress,
+            domain: await (domainCache ??= readPermitDomain(clients, cfg.panalTokenAddress)),
+            payee: clients.botAddress!,
+          },
+          payment,
+          price,
+        ),
+      answer: (prompt) => generateResult(cfg, prompt),
+    };
+  } else if (cfg.x402.enabled) {
+    console.warn('   ⚠ X402_ENABLED pero sin wallet del bot: el cobro por llamada queda deshabilitado.');
+  }
+
   const server = createResultServer({
     store,
+    x402,
     fetchTask: (taskId) => getTask(clients, cfg, taskId),
     fetchAgentJson: () => buildAgentJson(cfg, clients),
     // En producción (NODE_ENV=production) solo panal.lat; en dev también localhost.
