@@ -42,7 +42,7 @@
  */
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
-import { clientIp } from './net.js';
+import { allowedOrigin, clientIp } from './net.js';
 import { generateResult } from './llm.js';
 import {
   buildQuote,
@@ -117,15 +117,7 @@ function rateLimitOk(ip: string): boolean {
 // CORS: solo el dashboard oficial (y localhost en desarrollo).
 // ---------------------------------------------------------------------------
 
-const PROD_ORIGIN = 'https://panal.lat';
-const LOCALHOST_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
-
-function allowedOrigin(origin: string | undefined, allowLocalhost: boolean): string | null {
-  if (!origin) return null;
-  if (origin === PROD_ORIGIN) return origin;
-  if (allowLocalhost && LOCALHOST_ORIGIN.test(origin)) return origin;
-  return null;
-}
+// (allowedOrigin vive en net.ts: lo comparten este servidor y el del índice)
 
 // ---------------------------------------------------------------------------
 // Descriptor del agente (GET /agent.json): identidad, contratos, skills y

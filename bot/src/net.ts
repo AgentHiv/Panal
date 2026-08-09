@@ -266,3 +266,33 @@ export async function fetchJsonLimited<T>(
     return { ok: false, status: res.status, error: 'la respuesta no es JSON válido' };
   }
 }
+
+// ---------------------------------------------------------------------------
+// 4. Orígenes permitidos por CORS.
+// ---------------------------------------------------------------------------
+
+/**
+ * Orígenes del dashboard oficial.
+ *
+ * `www.panal.lat` SIRVE LA WEB IGUAL QUE EL DOMINIO RAÍZ y no redirige, así que
+ * un cliente puede acabar ahí sin saberlo. Cuando faltaba en esta lista, el
+ * navegador le bloqueaba en silencio: no podía mandar el brief de su encargo
+ * —firmaba y la petición moría en el preflight—, no podía descargar el
+ * resultado que había pagado, y el dashboard le salía vacío porque tampoco
+ * llegaba a la API del índice. Un mismo cliente veía el sitio funcionar o no
+ * según por cuál de los dos dominios hubiera entrado.
+ *
+ * La corrección de fondo es que `www` redirija al dominio raíz en el hosting,
+ * para que exista un único origen canónico. Esta lista es la red de seguridad:
+ * mientras los dos dominios respondan, los dos deben funcionar.
+ */
+const PROD_ORIGINS = ['https://panal.lat', 'https://www.panal.lat'];
+const LOCALHOST_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+
+/** Devuelve el origen si está permitido (para reflejarlo en la cabecera), o null. */
+export function allowedOrigin(origin: string | undefined, allowLocalhost: boolean): string | null {
+  if (!origin) return null;
+  if (PROD_ORIGINS.includes(origin)) return origin;
+  if (allowLocalhost && LOCALHOST_ORIGIN.test(origin)) return origin;
+  return null;
+}
