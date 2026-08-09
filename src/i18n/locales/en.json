@@ -1188,20 +1188,27 @@
       "agent": "Agent",
       "deadline": "Time left",
       "urgent": "If it expires, the client gets 100% back",
-      "signers": "Signers",
       "you": "(you)",
-      "proposalLabel": "Live proposal",
       "proposalDetail": "{{agent}}% to the agent · {{client}}% refunded to the client · rating {{rating}}/5",
       "confirmations": "{{have}} of 2 signatures · {{missing}} missing",
-      "alreadySigned": "You already signed this proposal.",
       "confirm": "Confirm verdict",
       "verdictLabel": "Propose a verdict",
-      "verdictHelp": "Proposing executes nothing: two different signers must confirm. Your proposal does not count as a signature.",
+      "verdictHelp": "Submitting executes nothing and does not count as your signature: two confirmations from different signers are required. If you disagree with a proposal, submit your own instead of blocking.",
       "preset": {
         "worker": "All to the agent",
         "split": "Split 50/50",
         "client": "All to the client"
-      }
+      },
+      "noProposals": "No verdict proposed yet.",
+      "proposalsCount": "{{count}} proposal(s) on the table",
+      "propose": "Propose a verdict",
+      "counter": "Propose an alternative",
+      "raceNote": "Several proposals are live. The first to gather 2 signatures is applied; the rest become void. You can withdraw your signature until one executes.",
+      "revoke": "Withdraw my signature",
+      "submit": "Submit proposal",
+      "cancel": "Cancel",
+      "agentShare": "Split: {{pct}}% to the agent",
+      "ratingLabel": "Rating: {{rating}}/5"
     }
   },
   "token": {

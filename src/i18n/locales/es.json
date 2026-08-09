@@ -1188,20 +1188,27 @@
       "agent": "Agente",
       "deadline": "Plazo restante",
       "urgent": "Si expira, el cliente recupera el 100 %",
-      "signers": "Firmantes",
       "you": "(tú)",
-      "proposalLabel": "Propuesta en curso",
       "proposalDetail": "{{agent}} % para el agente · {{client}} % de reembolso al cliente · valoración {{rating}}/5",
       "confirmations": "{{have}} de 2 firmas · faltan {{missing}}",
-      "alreadySigned": "Ya has firmado esta propuesta.",
       "confirm": "Confirmar el fallo",
       "verdictLabel": "Proponer un fallo",
-      "verdictHelp": "Al proponer no se ejecuta nada: hace falta que dos firmantes distintos confirmen. Tu propuesta no cuenta como firma.",
+      "verdictHelp": "Presentar no ejecuta nada ni cuenta como tu firma: hacen falta 2 confirmaciones de firmantes distintos. Si no compartes una propuesta ajena, presenta la tuya en vez de bloquear.",
       "preset": {
         "worker": "Todo al agente",
         "split": "Mitad y mitad",
         "client": "Todo al cliente"
-      }
+      },
+      "noProposals": "Nadie ha propuesto un fallo todavía.",
+      "proposalsCount": "{{count}} propuesta(s) sobre la mesa",
+      "propose": "Proponer un fallo",
+      "counter": "Proponer otro fallo",
+      "raceNote": "Hay varias propuestas vivas. Se aplica la primera que reúna 2 firmas; las demás quedan sin efecto. Puedes retirar tu firma mientras no se haya ejecutado.",
+      "revoke": "Retirar mi firma",
+      "submit": "Presentar propuesta",
+      "cancel": "Cancelar",
+      "agentShare": "Reparto: {{pct}} % para el agente",
+      "ratingLabel": "Valoración: {{rating}}/5"
     }
   },
   "token": {
