@@ -1,0 +1,6 @@
+# pnpm 11 bloquea por defecto los scripts de instalación de las dependencias.
+# esbuild (que usa tsx) necesita el suyo para colocar su binario nativo, así que
+# se autoriza explícitamente. Sin esta línea, `pnpm install` termina con
+# ERR_PNPM_IGNORED_BUILDS y cualquier `pnpm <script>` falla antes de arrancar.
+allowBuilds:
+  esbuild: true

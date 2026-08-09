@@ -26,6 +26,7 @@
  */
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { clientIp } from './net.js';
 import type { BotConfig } from './config.js';
 import type { IndexStore } from './indexer-store.js';
 
@@ -110,7 +111,9 @@ export function createIndexServer(deps: IndexServerDeps): Server {
     }
 
     // ---- Rate limit por IP ---------------------------------------------------
-    const ip = req.socket.remoteAddress ?? 'unknown';
+    // Detrás de Caddy la IP del socket es siempre loopback; sin esto el tope
+    // de 60/min era global para toda la API pública. Ver net.ts.
+    const ip = clientIp(req);
     if (!rateLimitOk(ip)) {
       json(res, 429, { error: 'rate limited' });
       return;

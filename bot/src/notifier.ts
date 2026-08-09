@@ -30,12 +30,31 @@ import {
 import type { Store } from './store.js';
 import type { Telegram } from './telegram.js';
 
+/** Lecturas extra de tareas pendientes por ciclo (acota el gasto de RPC). */
+const WATCHLIST_PER_CYCLE = 10;
+/**
+ * Cursor de la ventana rotativa de la watchlist. Vive en el módulo porque el
+ * bucle es único por proceso; se reinicia al arrancar, que es lo deseable.
+ */
+let watchCursor = 0;
+
 export interface StopSignal {
   stopped: boolean;
 }
 
 /** Hook para reaccionar ante tareas nuevas (el worker lo usa para trabajarlas). */
 export type NewTaskHandler = (taskId: bigint, task: Task) => Promise<void>;
+/**
+ * Hook para tareas propias que siguen pendientes y NO cambiaron de estado.
+ *
+ * Existe porque `onNewTask` solo se dispara una vez por tarea (baseline de
+ * arranque o ids nuevos). Si esa única oportunidad falla —timeout del LLM, RPC
+ * caído, gas— nadie volvía a intentarlo nunca: la tarea se quedaba Open para
+ * siempre y el aviso de Telegram prometía un reintento que no llegaba. El
+ * worker engancha aquí su reintento, reaprovechando la lectura que la
+ * watchlist ya hace cada ciclo (cero llamadas RPC extra).
+ */
+export type PendingTaskHandler = (taskId: bigint, task: Task) => Promise<void>;
 /** Hook para transiciones de estado (el worker lo usa para AUTO_WITHDRAW). */
 export type TransitionHandler = (
   taskId: bigint,
@@ -95,6 +114,7 @@ export async function pollOnce(
   store: Store,
   onNewTask: NewTaskHandler,
   onTransition: TransitionHandler,
+  onPendingTask?: PendingTaskHandler,
 ): Promise<number | null> {
   const count = Number(await getTaskCount(clients, cfg));
   const last = store.lastTaskCount;
@@ -138,10 +158,21 @@ export async function pollOnce(
 
   // Re-chequeo de transiciones: solo tareas propias en estados no finales
   // (Open/Delivered/Disputed). Son pocas: 1 call cada una, acotado por ciclo.
-  const watchlist = store
+  // Ventana ROTATIVA de 10: con `.slice(0, 10)` fijo, si había más de diez
+  // tareas pendientes las de la cola nunca se releían —ni transiciones, ni
+  // reintentos— porque el corte caía siempre en el mismo sitio. El cursor
+  // avanza cada ciclo, así que todas entran por turno.
+  const pending = store
     .taskIdsWithStatus([TaskStatus.Open, TaskStatus.Delivered, TaskStatus.Disputed])
-    .filter((id) => id < BigInt(count))
-    .slice(0, 10); // máximo 10 lecturas extra por ciclo
+    .filter((id) => id < BigInt(count));
+  const watchlist: bigint[] = [];
+  if (pending.length > 0) {
+    const window = Math.min(WATCHLIST_PER_CYCLE, pending.length);
+    for (let i = 0; i < window; i++) {
+      watchlist.push(pending[(watchCursor + i) % pending.length]!);
+    }
+    watchCursor = (watchCursor + window) % pending.length;
+  }
   for (const id of watchlist) {
     try {
       const task = await getTask(clients, cfg, id);
@@ -151,6 +182,14 @@ export async function pollOnce(
         store.save();
         console.log(`[poll] Tarea #${id}: ${TASK_STATUS_LABEL[prev as TaskStatus] ?? prev} -> ${TASK_STATUS_LABEL[task.status]}`);
         await onTransition(id, prev as TaskStatus, task.status, task);
+      } else if (
+        task.status === TaskStatus.Open &&
+        onPendingTask &&
+        task.worker.toLowerCase() === cfg.agentAddress.toLowerCase()
+      ) {
+        // Sigue Open y sin cambios: es la ocasión de reintentar si el primer
+        // intento falló. El handler decide si toca (ver RETRY_FAILED_AFTER_MS).
+        await onPendingTask(id, task);
       }
     } catch (err) {
       console.warn(`[poll] Error re-leyendo tarea #${id}: ${err instanceof Error ? err.message : err}`);
