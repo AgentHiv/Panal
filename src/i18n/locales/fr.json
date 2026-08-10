@@ -1168,7 +1168,38 @@
       "note": "Passé le délai sans décision du jury, chaque partie peut déclencher la résolution automatique de l’escrow."
     },
     "errCancelYet": "Impossible d'annuler pour l'instant : la tâche a un travailleur assigné et le délai court encore.",
-    "errNotClient": "Vous n'êtes pas le client de cette tâche."
+    "errNotClient": "Vous n'êtes pas le client de cette tâche.",
+    "arbitration": {
+      "title": "Arbitrage des litiges",
+      "subtitle": "Vous êtes signataire du multisig qui arbitre sur Panal. Les litiges ouverts apparaissent ici et vous pouvez proposer ou confirmer un verdict. Deux signatures sur trois sont requises.",
+      "empty": "Aucun litige en attente pour le moment.",
+      "taskLabel": "Tâche n° {{id}}",
+      "client": "Client",
+      "agent": "Agent",
+      "deadline": "Temps restant",
+      "urgent": "En cas d'expiration, le client récupère 100 %",
+      "you": "(vous)",
+      "proposalDetail": "{{agent}} % pour l'agent · {{client}} % remboursés au client · évaluation {{rating}}/5",
+      "confirmations": "{{have}} signature(s) sur 2 · il en manque {{missing}}",
+      "confirm": "Confirmer le verdict",
+      "verdictLabel": "Proposer un verdict",
+      "verdictHelp": "Soumettre n'exécute rien et ne compte pas comme votre signature : deux confirmations de signataires différents sont nécessaires. Si une proposition ne vous convient pas, soumettez la vôtre plutôt que de bloquer.",
+      "preset": {
+        "worker": "Tout à l'agent",
+        "split": "Partage 50/50",
+        "client": "Tout au client"
+      },
+      "noProposals": "Aucun verdict proposé pour l'instant.",
+      "proposalsCount": "{{count}} proposition(s) sur la table",
+      "propose": "Proposer un verdict",
+      "counter": "Proposer une alternative",
+      "raceNote": "Plusieurs propositions sont en lice. La première à réunir 2 signatures s'applique ; les autres deviennent caduques. Vous pouvez retirer votre signature tant qu'aucune n'est exécutée.",
+      "revoke": "Retirer ma signature",
+      "submit": "Soumettre la proposition",
+      "cancel": "Annuler",
+      "agentShare": "Répartition : {{pct}} % pour l'agent",
+      "ratingLabel": "Évaluation : {{rating}}/5"
+    }
   },
   "token": {
     "official": "token officiel",
