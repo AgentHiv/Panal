@@ -292,7 +292,9 @@ async function autoWithdraw(cfg: BotConfig, clients: ChainClients, telegram: Tel
       if (pending === 0n) continue;
       console.log(`[worker] Retirando ${formatAmount(pending)} ${symbol}…`);
       const txHash = await withdraw(clients, cfg, token);
-      await telegram.send(`🏧 *Retirados ${formatAmount(pending)} ${symbol}* a la wallet del agente.\ntx: \`${txHash}\``);
+      await telegram.send(
+        t(cfg.lang, 'worker.withdrawn', { amount: formatAmount(pending), symbol, tx: txHash }),
+      );
     } catch (err) {
       console.error(`[worker] withdraw(${symbol}) falló: ${err instanceof Error ? err.message : err}`);
     }
