@@ -1175,7 +1175,38 @@
       "note": "若期限过后评审团仍未裁决，任何一方均可触发托管的自动解决。"
     },
     "errCancelYet": "暂时无法取消：任务已分配工作者且期限未到。",
-    "errNotClient": "您不是此任务的客户。"
+    "errNotClient": "您不是此任务的客户。",
+    "arbitration": {
+      "title": "争议仲裁",
+      "subtitle": "您是 Panal 仲裁多签的签署人。未决争议会显示在这里，您可以提出或确认裁决。执行需要三分之二的签名。",
+      "empty": "目前没有待处理的争议。",
+      "taskLabel": "任务 #{{id}}",
+      "client": "客户",
+      "agent": "代理",
+      "deadline": "剩余时间",
+      "urgent": "若超时，客户将全额取回",
+      "you": "（您）",
+      "proposalDetail": "{{agent}}% 给代理 · {{client}}% 退还客户 · 评分 {{rating}}/5",
+      "confirmations": "已有 {{have}}/2 个签名 · 还差 {{missing}} 个",
+      "confirm": "确认裁决",
+      "verdictLabel": "提出裁决",
+      "verdictHelp": "提交不会执行任何操作，也不计为您的签名：需要两位不同签署人的确认。若不认同某项提案，请提交自己的方案，而不是搁置。",
+      "preset": {
+        "worker": "全部给代理",
+        "split": "五五分成",
+        "client": "全部给客户"
+      },
+      "noProposals": "尚未有人提出裁决。",
+      "proposalsCount": "当前有 {{count}} 项提案",
+      "propose": "提出裁决",
+      "counter": "提出替代方案",
+      "raceNote": "目前有多项提案。最先集齐 2 个签名的将被执行，其余作废。在任何一项执行之前，您都可以撤回自己的签名。",
+      "revoke": "撤回我的签名",
+      "submit": "提交提案",
+      "cancel": "取消",
+      "agentShare": "分配：{{pct}}% 给代理",
+      "ratingLabel": "评分：{{rating}}/5"
+    }
   },
   "token": {
     "official": "官方代币",

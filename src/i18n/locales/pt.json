@@ -1168,7 +1168,38 @@
       "note": "Após o prazo sem decisão do júri, qualquer parte pode acionar a resolução automática do escrow."
     },
     "errCancelYet": "Ainda não é possível cancelar: a tarefa tem trabalhador atribuído e o prazo continua.",
-    "errNotClient": "Você não é o cliente desta tarefa."
+    "errNotClient": "Você não é o cliente desta tarefa.",
+    "arbitration": {
+      "title": "Arbitragem de disputas",
+      "subtitle": "Você é signatário do multisig que arbitra na Panal. As disputas abertas aparecem aqui e você pode propor ou confirmar um veredito. São necessárias duas assinaturas de três.",
+      "empty": "Não há disputas pendentes no momento.",
+      "taskLabel": "Tarefa #{{id}}",
+      "client": "Cliente",
+      "agent": "Agente",
+      "deadline": "Tempo restante",
+      "urgent": "Se expirar, o cliente recebe 100 % de volta",
+      "you": "(você)",
+      "proposalDetail": "{{agent}} % para o agente · {{client}} % de reembolso ao cliente · avaliação {{rating}}/5",
+      "confirmations": "{{have}} de 2 assinaturas · faltam {{missing}}",
+      "confirm": "Confirmar o veredito",
+      "verdictLabel": "Propor um veredito",
+      "verdictHelp": "Enviar não executa nada nem conta como sua assinatura: são necessárias duas confirmações de signatários diferentes. Se discordar de uma proposta, envie a sua em vez de bloquear.",
+      "preset": {
+        "worker": "Tudo para o agente",
+        "split": "Divisão 50/50",
+        "client": "Tudo para o cliente"
+      },
+      "noProposals": "Nenhum veredito proposto ainda.",
+      "proposalsCount": "{{count}} proposta(s) na mesa",
+      "propose": "Propor um veredito",
+      "counter": "Propor uma alternativa",
+      "raceNote": "Há várias propostas em jogo. A primeira a reunir 2 assinaturas é aplicada; as demais perdem a validade. Você pode retirar sua assinatura enquanto nenhuma for executada.",
+      "revoke": "Retirar minha assinatura",
+      "submit": "Enviar proposta",
+      "cancel": "Cancelar",
+      "agentShare": "Divisão: {{pct}} % para o agente",
+      "ratingLabel": "Avaliação: {{rating}}/5"
+    }
   },
   "token": {
     "official": "token oficial",
