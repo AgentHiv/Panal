@@ -8,12 +8,25 @@
  * En DRY_RUN no se llama a Telegram: los mensajes se imprimen por consola.
  */
 
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { BotConfig } from './config.js';
 import type { Store } from './store.js';
 import { toPlainText } from './format.js';
 import { escapeHtml, t, telegramLangCode, type BotLang } from './i18n.js';
 
 const API_BASE = (token: string) => `https://api.telegram.org/bot${token}`;
+
+/** ¿Sigue vivo ese pid? `kill(pid, 0)` no envía señal: solo comprueba. */
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    // EPERM = existe pero es de otro usuario; ESRCH = no existe.
+    return (err as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
 
 /** Los cuatro comandos que se publican en el menú de Telegram. */
 const COMMANDS = [
@@ -146,6 +159,57 @@ export class Telegram {
     console.log('[telegram] Comandos publicados en el menú (10 idiomas).');
   }
 
+  /**
+   * Reserva el derecho a escuchar comandos, uno por token.
+   *
+   * El modo worker es un superconjunto del notifier: manda los mismos avisos de
+   * tarea nueva y de cambio de estado, y además trabaja. Pero
+   * `ecosystem.config.cjs` arrancaba los dos a la vez, así que cada aviso salía
+   * DUPLICADO y un `/status` respondía dos veces —los dos procesos hacían
+   * getUpdates contra el mismo token y ambos contestaban—. Peor: al competir
+   * por el mismo `offset`, cada uno se llevaba parte de los mensajes, así que
+   * los comandos fallaban de forma intermitente.
+   *
+   * Arreglar solo el ecosystem no bastaba: nada impedía volver a levantar los
+   * dos. Este candado lo hace imposible por construcción. Se comprueba que el
+   * pid siga vivo, así que un proceso muerto de mala manera no deja el bot
+   * mudo para siempre: el siguiente en arrancar se queda con el turno.
+   */
+  private claimCommandLock(): boolean {
+    const lockPath = join(this.cfg.storeDir, 'telegram-commands.lock');
+    const mine = JSON.stringify({ pid: process.pid, mode: this.cfg.mode, at: new Date().toISOString() });
+
+    for (let intento = 0; intento < 2; intento++) {
+      try {
+        mkdirSync(this.cfg.storeDir, { recursive: true });
+        writeFileSync(lockPath, mine, { flag: 'wx' }); // atómico: falla si existe
+        return true;
+      } catch {
+        // Ya hay candado: solo cuenta si su proceso sigue vivo.
+        let holder: { pid?: number; mode?: string } = {};
+        try {
+          holder = JSON.parse(readFileSync(lockPath, 'utf8')) as typeof holder;
+        } catch {
+          /* candado ilegible: se trata como caduco */
+        }
+        const alive = typeof holder.pid === 'number' && isProcessAlive(holder.pid);
+        if (alive && holder.pid !== process.pid) {
+          console.warn(
+            `[telegram] El proceso ${holder.pid} (${holder.mode ?? '?'}) ya escucha los comandos de este bot. ` +
+              `Este proceso (${this.cfg.mode}) NO los atenderá, para no responder por duplicado.`,
+          );
+          return false;
+        }
+        try {
+          rmSync(lockPath, { force: true }); // caduco: se retoma
+        } catch {
+          return false;
+        }
+      }
+    }
+    return false;
+  }
+
   /** Long polling de getUpdates (espera hasta `timeoutSec` segundos en Telegram). */
   private async getUpdates(offset: number, timeoutSec: number): Promise<TelegramUpdate[]> {
     const result = await this.api<TelegramUpdate[]>(
@@ -162,6 +226,8 @@ export class Telegram {
    */
   async pollCommands(handlers: CommandHandlers, store: Store, stop: { stopped: boolean }): Promise<void> {
     if (!this.enabled) return; // en dry-run no hay telegram que escuchar
+    // Un solo proceso puede escuchar comandos por token. Ver claimCommandLock.
+    if (!this.claimCommandLock()) return;
     // Descartar mensajes viejos acumulados mientras el bot estaba apagado.
     const backlog = await this.getUpdates(store.telegramOffset || -1, 0);
     let offset = store.telegramOffset;

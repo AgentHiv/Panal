@@ -432,9 +432,19 @@ export class A2aManager {
 
       console.log(`[a2a] Sub-#${childId} creada: padre #${taskId} → ${shortAddress(chosen.address)} por ${formatAmount(price)} ${symbol}. tx: ${txHash}`);
       await this.telegram.send(
-        `🤝 *Subcontraté parte de #${taskId}* → agente \`${shortAddress(chosen.address)}\` ` +
-          `por *${formatAmount(price)} ${symbol}* (sub-#${childId}).\n` +
-          `Skill: ${decision.skill} · Deadline sub-tarea: ${new Date(childDeadline * 1000).toLocaleString('es-ES', { timeZone: 'UTC' })} UTC`,
+        t(this.cfg.lang, 'a2a.subcontracted', {
+          id: taskId.toString(),
+          childId: childId.toString(),
+          agent: shortAddress(chosen.address),
+          price: formatAmount(price),
+          symbol,
+          skill: decision.skill,
+          deadline: new Date(childDeadline * 1000).toLocaleString(this.cfg.lang, {
+            timeZone: 'UTC',
+            dateStyle: 'short',
+            timeStyle: 'short',
+          }),
+        }),
       );
       return true;
     } catch (err) {

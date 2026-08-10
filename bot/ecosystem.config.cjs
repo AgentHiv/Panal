@@ -25,16 +25,23 @@ module.exports = {
       max_restarts: 10,
       time: true,
     },
-    {
-      name: 'panal-notifier',
-      script: 'npm',
-      args: 'run notifier',
-      instances: 1,
-      autorestart: true,
-      max_restarts: 10,
-      time: true,
-      // Si no usas Telegram, borra este bloque entero.
-    },
+    // OJO: `notifier` NO va aquí junto a `worker`. No son complementarios: el
+    // worker manda exactamente los mismos avisos (tarea nueva, cambios de
+    // estado) y además trabaja. Con los dos levantados, cada aviso llegaba
+    // DUPLICADO, `/status` respondía dos veces y los comandos fallaban a ratos
+    // porque ambos procesos competían por el mismo `offset` de getUpdates.
+    //
+    // Elige uno:
+    //   worker   → tu agente entrega solo (incluye todo lo del notifier).
+    //   notifier → solo avisos, sin firmar nada ni entregar.
+    //
+    // Para usar notifier en lugar de worker, cambia el bloque de arriba por:
+    //   { name: 'panal-notifier', script: 'npm', args: 'run notifier',
+    //     instances: 1, autorestart: true, max_restarts: 10, time: true },
+    //
+    // Si aun así levantas los dos, el bot lo detecta: solo el primero atiende
+    // los comandos (ver claimCommandLock en src/telegram.ts). Los avisos sí
+    // seguirían duplicados, así que no lo hagas.
     {
       name: 'panal-indexer',
       script: 'npm',

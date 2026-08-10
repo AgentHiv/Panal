@@ -83,7 +83,9 @@ export type MsgKey =
   | 'a2a.subApproved'
   | 'a2a.subCancelled'
   | 'a2a.subDisputed'
-  | 'a2a.subRejected';
+  | 'a2a.subRejected'
+  | 'a2a.subcontracted'
+  | 'worker.withdrawn';
 
 type Catalog = Record<MsgKey, string>;
 
@@ -181,6 +183,10 @@ const es: Catalog = {
     '⚠️ <b>Sub-#{{childId}} en disputa</b> ({{amount}}). Revísala en <a href="{{dashboard}}">el panel</a>; el padre #{{parentId}} sigue aparcado.',
   'a2a.subRejected':
     '⚠️ <b>Sub-#{{childId}} NO aprobada</b> · el evaluador le dio {{rating}}/5, por debajo de tu mínimo de {{min}}.\n\nMotivo: {{comment}}\n\nNo se libera el pago; al hijo lo cubre el auto-release de 72 h. <b>Conviene que lo mires tú</b>: si el resultado vale, apruébala desde <a href="{{dashboard}}">el panel</a>. El padre #{{parentId}} se entrega sin esa parte.',
+  'a2a.subcontracted':
+    '🤝 <b>Subcontraté parte de #{{id}}</b>\n\n👤 Agente: <code>{{agent}}</code>\n💰 {{price}} {{symbol}} · sub-#{{childId}}\n🧩 Skill: {{skill}}\n⏰ Vence: {{deadline}} UTC',
+  'worker.withdrawn':
+    '🏧 <b>Retirados {{amount}} {{symbol}}</b> a la wallet del agente.\n🔗 tx: <code>{{tx}}</code>',
 };
 
 const en: Catalog = {
@@ -277,6 +283,10 @@ const en: Catalog = {
     '⚠️ <b>Sub-#{{childId}} disputed</b> ({{amount}}). Review it on <a href="{{dashboard}}">the dashboard</a>; parent #{{parentId}} stays parked.',
   'a2a.subRejected':
     '⚠️ <b>Sub-#{{childId}} not approved</b> · the reviewer rated it {{rating}}/5, below your minimum of {{min}}.\n\nReason: {{comment}}\n\nPayment stays locked; the child is covered by the 72 h auto-release. <b>Worth a human look</b>: if the work is fine, approve it from <a href="{{dashboard}}">the dashboard</a>. Parent #{{parentId}} ships without that part.',
+  'a2a.subcontracted':
+    '🤝 <b>Subcontracted part of #{{id}}</b>\n\n👤 Agent: <code>{{agent}}</code>\n💰 {{price}} {{symbol}} · sub-#{{childId}}\n🧩 Skill: {{skill}}\n⏰ Due: {{deadline}} UTC',
+  'worker.withdrawn':
+    '🏧 <b>Withdrew {{amount}} {{symbol}}</b> to the agent wallet.\n🔗 tx: <code>{{tx}}</code>',
 };
 
 const pt: Catalog = {
@@ -373,6 +383,10 @@ const pt: Catalog = {
     '⚠️ <b>Sub-#{{childId}} em disputa</b> ({{amount}}). Revise no <a href="{{dashboard}}">painel</a>; o pai #{{parentId}} segue parado.',
   'a2a.subRejected':
     '⚠️ <b>Sub-#{{childId}} não aprovada</b> · o avaliador deu {{rating}}/5, abaixo do seu mínimo de {{min}}.\n\nMotivo: {{comment}}\n\nO pagamento não é liberado; o filho fica coberto pelo auto-release de 72 h. <b>Vale você olhar</b>: se o resultado presta, aprove pelo <a href="{{dashboard}}">painel</a>. O pai #{{parentId}} vai sem essa parte.',
+  'a2a.subcontracted':
+    '🤝 <b>Subcontratei parte de #{{id}}</b>\n\n👤 Agente: <code>{{agent}}</code>\n💰 {{price}} {{symbol}} · sub-#{{childId}}\n🧩 Skill: {{skill}}\n⏰ Vence: {{deadline}} UTC',
+  'worker.withdrawn':
+    '🏧 <b>Sacados {{amount}} {{symbol}}</b> para a wallet do agente.\n🔗 tx: <code>{{tx}}</code>',
 };
 
 const fr: Catalog = {
@@ -469,6 +483,10 @@ const fr: Catalog = {
     '⚠️ <b>Sous-#{{childId}} en litige</b> ({{amount}}). Examinez-la sur <a href="{{dashboard}}">le tableau de bord</a> ; le parent #{{parentId}} reste en attente.',
   'a2a.subRejected':
     '⚠️ <b>Sous-#{{childId}} non approuvée</b> · l’évaluateur lui a mis {{rating}}/5, sous votre minimum de {{min}}.\n\nMotif : {{comment}}\n\nLe paiement reste bloqué ; l’enfant est couvert par la libération automatique de 72 h. <b>Un œil humain serait utile</b> : si le travail tient la route, approuvez-le depuis <a href="{{dashboard}}">le tableau de bord</a>. Le parent #{{parentId}} part sans cette partie.',
+  'a2a.subcontracted':
+    '🤝 <b>Sous-traité une partie de #{{id}}</b>\n\n👤 Agent : <code>{{agent}}</code>\n💰 {{price}} {{symbol}} · sous-#{{childId}}\n🧩 Compétence : {{skill}}\n⏰ Échéance : {{deadline}} UTC',
+  'worker.withdrawn':
+    '🏧 <b>{{amount}} {{symbol}} retirés</b> vers le wallet de l’agent.\n🔗 tx : <code>{{tx}}</code>',
 };
 
 const ru: Catalog = {
@@ -565,6 +583,10 @@ const ru: Catalog = {
     '⚠️ <b>Под-#{{childId}} в споре</b> ({{amount}}). Посмотрите её в <a href="{{dashboard}}">панели</a>; родительская #{{parentId}} пока на паузе.',
   'a2a.subRejected':
     '⚠️ <b>Под-#{{childId}} не принята</b> · оценщик поставил {{rating}}/5, ниже вашего минимума {{min}}.\n\nПричина: {{comment}}\n\nОплата не разблокируется; исполнителя прикрывает автоматический release через 72 ч. <b>Стоит взглянуть самому</b>: если работа годная, примите её в <a href="{{dashboard}}">панели</a>. Родительская #{{parentId}} уходит без этой части.',
+  'a2a.subcontracted':
+    '🤝 <b>Часть задачи #{{id}} передана субподрядчику</b>\n\n👤 Агент: <code>{{agent}}</code>\n💰 {{price}} {{symbol}} · под-#{{childId}}\n🧩 Навык: {{skill}}\n⏰ Срок: {{deadline}} UTC',
+  'worker.withdrawn':
+    '🏧 <b>Выведено {{amount}} {{symbol}}</b> на кошелёк агента.\n🔗 tx: <code>{{tx}}</code>',
 };
 
 const zh: Catalog = {
@@ -661,6 +683,10 @@ const zh: Catalog = {
     '⚠️ <b>子任务 #{{childId}} 进入争议</b>（{{amount}}）。到<a href="{{dashboard}}">面板</a>查看；父任务 #{{parentId}} 继续挂起。',
   'a2a.subRejected':
     '⚠️ <b>子任务 #{{childId}} 未通过</b> · 评审给了 {{rating}}/5，低于你设定的最低 {{min}}。\n\n原因：{{comment}}\n\n款项不会释放；子任务由 72 小时自动放款兜底。<b>建议你亲自看一眼</b>：如果结果没问题，到<a href="{{dashboard}}">面板</a>手动通过。父任务 #{{parentId}} 将缺少这一部分。',
+  'a2a.subcontracted':
+    '🤝 <b>已将 #{{id}} 的一部分外包</b>\n\n👤 代理：<code>{{agent}}</code>\n💰 {{price}} {{symbol}} · 子任务 #{{childId}}\n🧩 技能：{{skill}}\n⏰ 截止：{{deadline}} UTC',
+  'worker.withdrawn':
+    '🏧 <b>已提取 {{amount}} {{symbol}}</b> 到代理钱包。\n🔗 tx：<code>{{tx}}</code>',
 };
 
 const hi: Catalog = {
@@ -757,6 +783,10 @@ const hi: Catalog = {
     '⚠️ <b>उप-#{{childId}} विवाद में</b> ({{amount}})। <a href="{{dashboard}}">पैनल</a> में देखें; मूल #{{parentId}} फ़िलहाल रुका है।',
   'a2a.subRejected':
     '⚠️ <b>उप-#{{childId}} स्वीकृत नहीं</b> · मूल्यांकनकर्ता ने {{rating}}/5 दिया, आपके न्यूनतम {{min}} से कम।\n\nकारण: {{comment}}\n\nभुगतान जारी नहीं होगा; उप-एजेंट को 72 घंटे का स्वतः रिलीज़ कवर करता है। <b>आप खुद देख लें तो बेहतर</b>: परिणाम ठीक हो तो <a href="{{dashboard}}">पैनल</a> से स्वीकृत करें। मूल #{{parentId}} उस हिस्से के बिना जाएगा।',
+  'a2a.subcontracted':
+    '🤝 <b>#{{id}} का एक हिस्सा उपठेके पर दिया</b>\n\n👤 एजेंट: <code>{{agent}}</code>\n💰 {{price}} {{symbol}} · उप-#{{childId}}\n🧩 स्किल: {{skill}}\n⏰ समय सीमा: {{deadline}} UTC',
+  'worker.withdrawn':
+    '🏧 <b>{{amount}} {{symbol}} निकाले</b> एजेंट की वॉलेट में।\n🔗 tx: <code>{{tx}}</code>',
 };
 
 const bn: Catalog = {
@@ -853,6 +883,10 @@ const bn: Catalog = {
     '⚠️ <b>সাব-#{{childId}} বিরোধে</b> ({{amount}})। <a href="{{dashboard}}">প্যানেলে</a> দেখুন; মূল #{{parentId}} আপাতত থেমে আছে।',
   'a2a.subRejected':
     '⚠️ <b>সাব-#{{childId}} অনুমোদিত হয়নি</b> · মূল্যায়নকারী দিয়েছেন {{rating}}/5, আপনার ন্যূনতম {{min}}-এর নিচে।\n\nকারণ: {{comment}}\n\nপেমেন্ট ছাড়া হবে না; সাব-এজেন্টকে ৭২ ঘণ্টার স্বয়ংক্রিয় রিলিজ রক্ষা করে। <b>আপনি নিজে দেখলে ভালো</b>: ফলাফল ঠিক থাকলে <a href="{{dashboard}}">প্যানেল</a> থেকে অনুমোদন দিন। মূল #{{parentId}} ওই অংশ ছাড়াই যাবে।',
+  'a2a.subcontracted':
+    '🤝 <b>#{{id}}-এর একটি অংশ সাব-কন্ট্রাক্ট করা হয়েছে</b>\n\n👤 এজেন্ট: <code>{{agent}}</code>\n💰 {{price}} {{symbol}} · সাব-#{{childId}}\n🧩 স্কিল: {{skill}}\n⏰ সময়সীমা: {{deadline}} UTC',
+  'worker.withdrawn':
+    '🏧 <b>{{amount}} {{symbol}} তোলা হয়েছে</b> এজেন্টের ওয়ালেটে।\n🔗 tx: <code>{{tx}}</code>',
 };
 
 const ar: Catalog = {
@@ -949,6 +983,10 @@ const ar: Catalog = {
     '⚠️ <b>المهمة الفرعية #{{childId}} في نزاع</b> ({{amount}}). راجعها في <a href="{{dashboard}}">اللوحة</a>؛ الأصلية #{{parentId}} ما تزال متوقفة.',
   'a2a.subRejected':
     '⚠️ <b>لم تُعتمد المهمة الفرعية #{{childId}}</b> · منحها المقيّم {{rating}}/5، دون حدّك الأدنى {{min}}.\n\nالسبب: {{comment}}\n\nلن يُحرَّر المبلغ؛ والمنفّذ يغطيه التحرير التلقائي خلال 72 ساعة. <b>يُستحسن أن تراجعها بنفسك</b>: إن كان العمل سليمًا فاعتمده من <a href="{{dashboard}}">اللوحة</a>. وستُسلَّم الأصلية #{{parentId}} دون ذلك الجزء.',
+  'a2a.subcontracted':
+    '🤝 <b>تم التعاقد من الباطن على جزء من #{{id}}</b>\n\n👤 الوكيل: <code>{{agent}}</code>\n💰 {{price}} {{symbol}} · فرعية #{{childId}}\n🧩 المهارة: {{skill}}\n⏰ الموعد النهائي: {{deadline}} UTC',
+  'worker.withdrawn':
+    '🏧 <b>سُحب {{amount}} {{symbol}}</b> إلى محفظة الوكيل.\n🔗 tx: <code>{{tx}}</code>',
 };
 
 const ur: Catalog = {
@@ -1045,6 +1083,10 @@ const ur: Catalog = {
     '⚠️ <b>ذیلی #{{childId}} تنازع میں</b> ({{amount}})۔ <a href="{{dashboard}}">پینل</a> میں دیکھیں؛ بنیادی #{{parentId}} فی الحال رکا ہوا ہے۔',
   'a2a.subRejected':
     '⚠️ <b>ذیلی #{{childId}} منظور نہیں ہوئی</b> · جانچنے والے نے {{rating}}/5 دیا، جو آپ کی کم از کم حد {{min}} سے نیچے ہے۔\n\nوجہ: {{comment}}\n\nادائیگی جاری نہیں ہوگی؛ ذیلی ایجنٹ کو 72 گھنٹے کا خودکار ریلیز پورا کرتا ہے۔ <b>بہتر ہے آپ خود دیکھ لیں</b>: اگر کام ٹھیک ہے تو <a href="{{dashboard}}">پینل</a> سے منظور کر دیں۔ بنیادی #{{parentId}} اس حصے کے بغیر جائے گا۔',
+  'a2a.subcontracted':
+    '🤝 <b>#{{id}} کا ایک حصہ ذیلی ٹھیکے پر دیا</b>\n\n👤 ایجنٹ: <code>{{agent}}</code>\n💰 {{price}} {{symbol}} · ذیلی #{{childId}}\n🧩 مہارت: {{skill}}\n⏰ آخری تاریخ: {{deadline}} UTC',
+  'worker.withdrawn':
+    '🏧 <b>{{amount}} {{symbol}} نکالے</b> ایجنٹ کی والٹ میں۔\n🔗 tx: <code>{{tx}}</code>',
 };
 
 const CATALOG: Record<BotLang, Catalog> = { es, en, pt, fr, ru, zh, hi, bn, ar, ur };

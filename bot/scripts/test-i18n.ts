@@ -18,6 +18,7 @@
  *   4. `t()` escapa los valores interpolados (no se puede inyectar formato).
  */
 
+import { readFileSync } from 'node:fs';
 import { BOT_LANGS, DEFAULT_LANG, _CATALOG, escapeHtml, isBotLang, lines, t, telegramLangCode } from '../src/i18n.js';
 import type { MsgKey } from '../src/i18n.js';
 
@@ -113,6 +114,23 @@ check('los demás idiomas van tal cual', telegramLangCode('fr') === 'fr');
 // lines() descarta condicionales pero conserva los separadores en blanco.
 check('lines conserva la línea vacía', lines('a', '', 'b') === 'a\n\nb');
 check('lines descarta lo condicional', lines('a', false, null, undefined, 'b') === 'a\nb');
+
+console.log('\n── 6. Ningún mensaje se escapa del catálogo ──');
+// Al pasar send() a HTML dejó de aplicarse toPlainText(), que hasta entonces
+// borraba los asteriscos. Dos mensajes que no se migraron —el aviso de
+// subcontratación y el de retirada automática— empezaron a enseñar su Markdown
+// crudo en producción. Este chequeo recorre el código en vez de fiarse de que
+// alguien se acuerde: cualquier `*negrita*` o backtick que llegue a send() falla.
+const SOURCES = ['src/telegram.ts', 'src/notifier.ts', 'src/worker.ts', 'src/a2a.ts'];
+const MARKDOWN_IN_SEND = /\.send\(\s*(?:[^;]|\n){0,600}?\);/g;
+for (const file of SOURCES) {
+  const src = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+  const offenders = [...src.matchAll(MARKDOWN_IN_SEND)]
+    .map((m) => m[0])
+    .filter((block) => /\*[^*\n]+\*|\\`/.test(block))
+    .map((block) => block.replace(/\s+/g, ' ').slice(0, 70));
+  check(`${file}: sin Markdown suelto`, offenders.length === 0, offenders.join(' · '));
+}
 
 console.log('');
 if (failures === 0) console.log(`✅ Los ${BOT_LANGS.length} idiomas cuadran (${refKeys.length} mensajes cada uno)`);
