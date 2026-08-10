@@ -18,6 +18,9 @@
  * arranca y para, y no consume RPC cuando no hay trabajo.
  */
 
+// Carga el .env ANTES que nada: si esto falta, el servidor no ve la clave que
+// el generador dejó ahí y muere diciendo que falta, con el fichero delante.
+import 'dotenv/config';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
