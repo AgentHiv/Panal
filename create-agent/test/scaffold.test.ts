@@ -153,10 +153,18 @@ async function main(): Promise<void> {
     // asi que no veia la clave que el propio generador le habia dejado en el
     // .env. El typecheck no puede cazar eso; encender el proceso, si.
     const port = 9700 + Math.floor(Math.random() * 200);
-    const agent = spawn('npx', ['tsx', 'src/server.ts'], {
+    // Se lanza el binario de tsx DIRECTAMENTE y en su propio grupo de procesos.
+    //
+    // Con `npx tsx …` hay dos procesos: el envoltorio y el node de dentro.
+    // `kill()` mataba solo el envoltorio y el nieto sobrevivia agarrando las
+    // tuberias de stdio que heredo. En local eso deja un huerfano; en CI cuelga
+    // el trabajo para siempre, porque el runner no da un paso por terminado
+    // hasta que esas tuberias se cierran, no cuando sale el proceso principal.
+    const agent = spawn(join(dest, 'node_modules', '.bin', 'tsx'), ['src/server.ts'], {
       cwd: dest,
       env: { ...process.env, PORT: String(port) },
       stdio: 'pipe',
+      detached: true, // grupo propio: se puede matar entero con kill(-pid)
     });
     let salida = '';
     agent.stdout.on('data', (d: Buffer) => (salida += d.toString()));
@@ -179,7 +187,17 @@ async function main(): Promise<void> {
       });
       check('un brief sin firma se rechaza', sinFirma.status === 400, `HTTP ${sinFirma.status}`);
     } finally {
-      agent.kill();
+      // Se mata el GRUPO entero (el menos delante del pid), no solo el proceso:
+      // si queda algo vivo con las tuberias abiertas, el paso de CI no termina.
+      try {
+        if (agent.pid) process.kill(-agent.pid, 'SIGKILL');
+      } catch {
+        agent.kill('SIGKILL');
+      }
+      // Y se sueltan las tuberias por si acaso: basta con que una siga abierta.
+      agent.stdout.destroy();
+      agent.stderr.destroy();
+      agent.stdin.destroy();
     }
     if (!salida.includes('escuchando')) {
       check('el arranque no imprime errores', false, salida.slice(0, 300));
