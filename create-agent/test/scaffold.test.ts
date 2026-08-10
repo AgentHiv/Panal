@@ -12,7 +12,7 @@
  * desarrollador se encuentra el error creyendo que lo rompió él.
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -42,9 +42,25 @@ function run(args: string[], cwd: string): { out: string; code: number } {
   }
 }
 
+/** Sondea una URL hasta que responde o se acaba el tiempo. */
+async function esperarRespuesta(url: string, timeoutMs: number): Promise<unknown | null> {
+  const hasta = Date.now() + timeoutMs;
+  while (Date.now() < hasta) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+    } catch {
+      /* todavía no escucha */
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return null;
+}
+
 const work = mkdtempSync(join(tmpdir(), 'panal-scaffold-'));
 
-try {
+async function main(): Promise<void> {
+ try {
   console.log('── 1. Nombres que no valen ──');
 
   check('sin nombre explica cómo se usa', run([], work).out.includes('create-panal-agent'));
@@ -131,10 +147,47 @@ try {
 
     execFileSync('npx', ['tsc', '--noEmit'], { cwd: dest, stdio: 'pipe', timeout: 180_000 });
     check('typecheck del proyecto generado', true);
+
+    // Y ARRANCA. Compilar no basta: la version 0.1.0 publicada compilaba
+    // perfectamente y moria al arrancar porque el servidor no cargaba dotenv,
+    // asi que no veia la clave que el propio generador le habia dejado en el
+    // .env. El typecheck no puede cazar eso; encender el proceso, si.
+    const port = 9700 + Math.floor(Math.random() * 200);
+    const agent = spawn('npx', ['tsx', 'src/server.ts'], {
+      cwd: dest,
+      env: { ...process.env, PORT: String(port) },
+      stdio: 'pipe',
+    });
+    let salida = '';
+    agent.stdout.on('data', (d: Buffer) => (salida += d.toString()));
+    agent.stderr.on('data', (d: Buffer) => (salida += d.toString()));
+
+    try {
+      const card = await esperarRespuesta(`http://127.0.0.1:${port}/agent.json`, 30_000);
+      check('el agente arranca y se presenta', card !== null, JSON.stringify(card));
+      check(
+        'se presenta con la wallet que generó el andamiaje',
+        (card as { agent?: string } | null)?.agent?.toLowerCase() === shown?.toLowerCase(),
+      );
+
+      // Sin firma no se trabaja: si esto pasara, cualquiera colaría encargos
+      // que nadie ha pagado.
+      const sinFirma = await fetch(`http://127.0.0.1:${port}/brief`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ taskId: 0, brief: 'gratis' }),
+      });
+      check('un brief sin firma se rechaza', sinFirma.status === 400, `HTTP ${sinFirma.status}`);
+    } finally {
+      agent.kill();
+    }
+    if (!salida.includes('escuchando')) {
+      check('el arranque no imprime errores', false, salida.slice(0, 300));
+    }
   } catch (err) {
     const e = err as { stdout?: Buffer; stderr?: Buffer; message?: string };
     const detail = `${e.stdout ?? ''}${e.stderr ?? ''}`.trim() || e.message || 'sin detalle';
-    check('el proyecto generado compila', false, detail.slice(0, 600));
+    check('el proyecto generado compila y arranca', false, detail.slice(0, 600));
   }
 
   console.log('');
@@ -145,4 +198,11 @@ try {
   }
 } finally {
   rmSync(work, { recursive: true, force: true });
+ }
 }
+
+main().catch((err) => {
+  console.error(`❌ error inesperado: ${err instanceof Error ? err.message : err}`);
+  rmSync(work, { recursive: true, force: true });
+  process.exitCode = 1;
+});
