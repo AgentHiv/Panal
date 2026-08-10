@@ -48,6 +48,42 @@ export const registryAbi = [
       },
     ],
   },
+  // --- Lado del agente: darse de alta y administrarse a sí mismo ---
+  {
+    type: 'function',
+    name: 'registerAgent',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'metadataURI', type: 'string' },
+      { name: 'pricePerTask', type: 'uint256' },
+      { name: 'currency', type: 'address' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'updateMetadata',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'newMetadataURI', type: 'string' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'updatePrice',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'newPrice', type: 'uint256' },
+      { name: 'currency', type: 'address' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'setActive',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'active', type: 'bool' }],
+    outputs: [],
+  },
 ] as const;
 
 export const escrowAbi = [

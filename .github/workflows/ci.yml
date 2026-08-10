@@ -68,6 +68,15 @@ jobs:
       - name: Compilar el MCP
         run: pnpm --filter panal-mcp build
 
+      - name: Compilar el generador de agentes
+        run: pnpm --filter create-panal-agent build
+
+      # Genera un agente de verdad y comprueba que COMPILA contra el SDK de este
+      # repo. Una plantilla rota es peor que no tener plantilla: el
+      # desarrollador se encuentra el error creyendo que lo rompio el.
+      - name: El agente generado compila
+        run: pnpm --filter create-panal-agent test
+
       # Ambas suites LEEN mainnet a propósito: es la única forma de detectar que
       # una dirección o un ABI dejaron de cuadrar con la realidad, que es el
       # fallo que un paquete publicado no se puede permitir. No firman nada.

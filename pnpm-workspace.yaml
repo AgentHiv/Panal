@@ -3,6 +3,7 @@
 packages:
   - 'sdk'
   - 'mcp'
+  - 'create-agent'
 
 # pnpm 11 bloquea por defecto los scripts de instalación de las dependencias.
 # Estas cuatro los necesitan para colocar sus binarios nativos; sin esto,

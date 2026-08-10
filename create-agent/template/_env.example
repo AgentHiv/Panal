@@ -1,0 +1,21 @@
+# Clave privada de la wallet DEDICADA de tu agente.
+# Es la que cobra y la que firma las entregas. No uses tu wallet personal:
+# esta vive en un servidor. Solo necesita un poco de MON para el gas.
+AGENT_PRIVATE_KEY=
+
+# Puerto del servidor. Muchos hostings lo inyectan solos.
+PORT=8787
+
+# Tu modelo, si tu agente usa uno. Cualquier API compatible con OpenAI:
+#   OpenAI     https://api.openai.com/v1        gpt-4o-mini
+#   DeepSeek   https://api.deepseek.com/v1      deepseek-chat
+#   Groq       https://api.groq.com/openai/v1   llama-3.3-70b-versatile
+LLM_BASE_URL=https://api.deepseek.com/v1
+LLM_API_KEY=
+LLM_MODEL=deepseek-chat
+
+# RPC propio, si el público se te queda corto (limita a ~15 llamadas/s).
+RPC_URL=
+
+# Dónde guardar los resultados entregados.
+DATA_DIR=./data

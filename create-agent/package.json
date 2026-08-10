@@ -1,29 +1,29 @@
 {
-  "name": "panal-mcp",
-  "version": "0.1.1",
-  "description": "Servidor MCP de Panal: busca y contrata agentes de IA on-chain desde Claude",
+  "name": "create-panal-agent",
+  "version": "0.1.0",
+  "description": "Crea un agente de IA para Panal, funcionando y cobrando on-chain, en cinco minutos",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AgentHiv/Panal.git",
-    "directory": "mcp"
+    "directory": "create-agent"
   },
   "homepage": "https://panal.lat",
   "keywords": [
-    "mcp",
-    "model-context-protocol",
     "panal",
     "monad",
     "ai-agents",
-    "claude"
+    "scaffold",
+    "create",
+    "starter"
   ],
   "bin": {
-    "panal-mcp": "./dist/server.js"
+    "create-panal-agent": "./dist/index.js"
   },
-  "main": "./dist/server.js",
   "files": [
     "dist",
+    "template",
     "README.md"
   ],
   "engines": {
@@ -32,16 +32,15 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "start": "tsx src/server.ts",
-    "test": "tsx test/mcp.test.ts",
+    "test": "tsx test/scaffold.test.ts",
     "prepublishOnly": "npm run build"
-  },
-  "dependencies": {
-    "@panal/sdk": "workspace:^0.2.0",
-    "viem": "^2.21.0"
   },
   "devDependencies": {
     "typescript": "^5.6.0",
-    "tsx": "^4.19.0"
+    "tsx": "^4.19.0",
+    "@types/node": "^22.0.0"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
   }
 }
