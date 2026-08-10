@@ -23,13 +23,15 @@ import { useWallet } from '@/hooks/useWallet';
 import { useContractAction } from '@/hooks/useContractAction';
 import { cn } from '@/lib/utils';
 
-/** Multisig 2-de-3 desplegado en mainnet (2026-07-31). */
-const DEFAULT_MULTISIG = '0x2cD03300A82EC4cEAe102A4626445F561167C944';
-
 export default function AdminCard() {
   const { t } = useTranslation();
   const { connected, address } = useWallet();
-  const [target, setTarget] = useState(DEFAULT_MULTISIG);
+  // Vacío a propósito. Antes venía relleno con el multisig del momento, pero los
+  // owners de PanalMultisig son inmutables: rotar jueces exige desplegar otro y
+  // volver a pasar por aquí. Con el árbitro vigente precargado, `alreadyMigrated`
+  // era true al abrir y el formulario entero desaparecía, dejando el panel
+  // inservible para la segunda migración en adelante.
+  const [target, setTarget] = useState('');
 
   const roles = useQuery({
     queryKey: ['escrow-admin', activeChain.id],
@@ -102,47 +104,46 @@ export default function AdminCard() {
         </p>
       </div>
 
-      {alreadyMigrated ? (
-        <p className="rounded-xl border border-olive/40 bg-olive/10 px-4 py-3 text-[0.8125rem] text-olive">
-          {t('admin.alreadyMigrated')}
-        </p>
-      ) : (
-        <>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="multisig-addr" className="text-[0.8125rem] font-medium text-coal-text">
-              {t('admin.multisigLabel')}
-            </label>
-            <input
-              id="multisig-addr"
-              value={target}
-              onChange={(e) => setTarget(e.target.value.trim())}
-              spellCheck={false}
-              className="w-full rounded-xl border border-coal-line bg-paper px-4 py-2.5 font-mono text-[0.8125rem] text-ink focus:border-monad focus:outline-none"
-            />
-            <p className="flex items-start gap-1.5 text-[0.75rem] text-coal-mute">
-              <TriangleAlert size={12} className="mt-0.5 shrink-0 text-honey" aria-hidden />
-              {t('admin.warning')}
-            </p>
-          </div>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="multisig-addr" className="text-[0.8125rem] font-medium text-coal-text">
+          {t('admin.multisigLabel')}
+        </label>
+        <input
+          id="multisig-addr"
+          value={target}
+          onChange={(e) => setTarget(e.target.value.trim())}
+          spellCheck={false}
+          placeholder="0x…"
+          className="w-full rounded-xl border border-coal-line bg-paper px-4 py-2.5 font-mono text-[0.8125rem] text-ink focus:border-monad focus:outline-none"
+        />
+        {alreadyMigrated ? (
+          <p className="rounded-xl border border-olive/40 bg-olive/10 px-4 py-2.5 text-[0.75rem] text-olive">
+            {t('admin.alreadyMigrated')}
+          </p>
+        ) : (
+          <p className="flex items-start gap-1.5 text-[0.75rem] text-coal-mute">
+            <TriangleAlert size={12} className="mt-0.5 shrink-0 text-honey" aria-hidden />
+            {t('admin.warning')}
+          </p>
+        )}
+      </div>
 
-          <button
-            type="button"
-            onClick={migrate}
-            disabled={!valid || action.busy}
-            className={cn(
-              'btn-monad inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-[0.875rem] font-semibold',
-              (!valid || action.busy) && 'opacity-40',
-            )}
-          >
-            {action.busy && <Loader2 size={15} className="animate-spin" aria-hidden />}
-            {action.signing
-              ? t('hire.step3.signing')
-              : action.confirming
-                ? t('hire.step3.confirming')
-                : t('admin.migrateBtn')}
-          </button>
-        </>
-      )}
+      <button
+        type="button"
+        onClick={migrate}
+        disabled={!valid || action.busy}
+        className={cn(
+          'btn-monad inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-[0.875rem] font-semibold',
+          (!valid || action.busy) && 'opacity-40',
+        )}
+      >
+        {action.busy && <Loader2 size={15} className="animate-spin" aria-hidden />}
+        {action.signing
+          ? t('hire.step3.signing')
+          : action.confirming
+            ? t('hire.step3.confirming')
+            : t('admin.migrateBtn')}
+      </button>
 
       {action.mined && action.txHash && (
         <p className="rounded-xl border border-olive/40 bg-olive/10 px-4 py-3 text-[0.8125rem] text-olive">
