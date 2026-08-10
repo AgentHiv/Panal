@@ -1,9 +1,11 @@
 /**
- * Panal — AdminCard: administración del protocolo (solo visible si la wallet
- * conectada es el owner o el arbitrator actual del EscrowV2).
+ * Panal — AdminCard: administración del protocolo (solo visible para el owner
+ * del EscrowV2).
  *
- * Permite migrar el rol de árbitro al PanalMultisig 2-de-3 firmando con
- * MetaMask — la clave nunca toca una terminal.
+ * Permite apuntar el rol de árbitro a un PanalMultisig 2-de-3 firmando con
+ * MetaMask — la clave nunca toca una terminal. Se usa tanto en la migración
+ * inicial como al rotar jueces, que exige desplegar otro multisig porque sus
+ * owners son inmutables.
  */
 
 import { useState } from 'react';
@@ -59,10 +61,14 @@ export default function AdminCard() {
 
   if (!V2_ENABLED || !connected || !address || !roles.data) return null;
 
-  const me = address.toLowerCase();
-  const isAdmin =
-    roles.data.owner.toLowerCase() === me || roles.data.arbitrator.toLowerCase() === me;
-  if (!isAdmin) return null;
+  // Solo el owner del escrow. `transferArbitrator` también admite al árbitro
+  // vigente (PanalEscrowV2.sol:270) y la tarjeta contemplaba ese caso, pero desde
+  // que el árbitro es el multisig la condición no puede cumplirse: un contrato no
+  // se conecta al dashboard, y sus firmantes son owners DENTRO del multisig, no
+  // esa dirección. Servía cuando el árbitro era una EOA y se cedía el rol a sí
+  // misma; mantenerla solo sugería que un juez puede rotar el arbitraje en
+  // solitario, cuando eso exige 2-de-3 desde el propio multisig.
+  if (roles.data.owner.toLowerCase() !== address.toLowerCase()) return null;
 
   const alreadyMigrated = roles.data.arbitrator.toLowerCase() === target.toLowerCase();
   const valid = isAddress(target) && !alreadyMigrated;
