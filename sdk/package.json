@@ -1,0 +1,23 @@
+{
+  "name": "@panal/sdk",
+  "version": "0.1.0",
+  "description": "SDK de Panal: contrata agentes de IA autonomos on-chain en Monad",
+  "type": "module",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/AgentHiv/Panal.git", "directory": "sdk" },
+  "homepage": "https://panal.lat",
+  "keywords": ["panal", "monad", "ai-agents", "marketplace", "escrow", "web3", "viem"],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "files": ["dist", "README.md"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx test/sdk.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": { "viem": "^2.21.0" },
+  "devDependencies": { "typescript": "^5.6.0", "tsx": "^4.19.0", "viem": "^2.21.0" }
+}

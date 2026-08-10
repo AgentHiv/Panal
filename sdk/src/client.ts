@@ -1,0 +1,348 @@
+/**
+ * Panal SDK — el cliente.
+ *
+ *   import { createPanalClient } from '@panal/sdk';
+ *
+ *   const panal = createPanalClient();                 // solo lectura, mainnet
+ *   const agents = await panal.searchAgents('traducción');
+ *
+ * Con una cuenta pasa a poder contratar:
+ *
+ *   import { privateKeyToAccount } from 'viem/accounts';
+ *   const panal = createPanalClient({ account: privateKeyToAccount(key) });
+ *   const { taskId } = await panal.hire({ agent, brief });
+ *
+ * Sin configuración apunta a Monad mainnet, que es donde Panal está desplegado
+ * y en uso: el caso de "quiero probar esto ahora" no debería exigir un .env.
+ */
+
+import { createPublicClient, createWalletClient, formatEther, getAddress, http, keccak256, toBytes } from 'viem';
+import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem';
+import { erc20Abi, escrowAbi, registryAbi } from './abis.js';
+import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type PanalNetwork } from './chains.js';
+import { TaskStatus, parseAgentMetadata, type Agent, type Task } from './types.js';
+
+export interface PanalClientOptions {
+  /** `mainnet` por defecto. */
+  network?: PanalNetwork;
+  /** RPC propio. Sin esto se usa el público, que limita a ~15 llamadas/s. */
+  rpcUrl?: string;
+  /** Necesaria solo para contratar y aprobar; leer no la requiere. */
+  account?: Account;
+  /** Sobrescribe direcciones concretas (para pruebas o un despliegue propio). */
+  addresses?: Partial<PanalAddresses>;
+}
+
+/** Cuántos agentes se leen por llamada al registry. */
+const REGISTRY_PAGE = 50n;
+/** Tope duro de agentes recorridos, por si el registro crece mucho. */
+const REGISTRY_MAX = 500;
+
+export interface HireParams {
+  /** Dirección del agente que hará el trabajo. */
+  agent: Address;
+  /** El encargo. No viaja on-chain: solo su keccak256. */
+  brief: string;
+  /**
+   * Cuánto pagar, en unidades mínimas. Por defecto el `pricePerTask` que el
+   * agente publica, leído en el momento de contratar.
+   */
+  amount?: bigint;
+  /** Plazo de entrega. Por defecto 24 h desde ahora. */
+  deadline?: bigint;
+}
+
+export interface HireResult {
+  taskId: bigint;
+  txHash: Hex;
+  amount: bigint;
+  currency: Address;
+  /** El hash del brief que quedó registrado, para poder probarlo después. */
+  taskHash: Hex;
+}
+
+export class PanalClient {
+  readonly network: PanalNetwork;
+  readonly addresses: PanalAddresses;
+  readonly publicClient: PublicClient;
+  readonly account?: Account;
+  private readonly walletClient?: WalletClient;
+
+  constructor(options: PanalClientOptions = {}) {
+    this.network = options.network ?? 'mainnet';
+    const chain = chainFor(this.network);
+    this.addresses = { ...addressesFor(this.network), ...options.addresses };
+
+    if (this.addresses.registry === NATIVE_CURRENCY || this.addresses.escrow === NATIVE_CURRENCY) {
+      throw new Error(
+        `Panal no tiene contratos desplegados en ${this.network}. ` +
+          'Usa network: "mainnet", o pasa `addresses` con los tuyos.',
+      );
+    }
+
+    const transport = http(options.rpcUrl ?? chain.rpcUrls.default.http[0]);
+    this.publicClient = createPublicClient({ chain, transport });
+    this.account = options.account;
+    if (options.account) {
+      this.walletClient = createWalletClient({ chain, transport, account: options.account });
+    }
+  }
+
+  /** El wallet client, o un error que dice exactamente qué falta. */
+  private wallet(): WalletClient {
+    if (!this.walletClient || !this.account) {
+      throw new Error('Esta operación firma una transacción: crea el cliente con `account`.');
+    }
+    return this.walletClient;
+  }
+
+  // -------------------------------------------------------------------------
+  // Lectura
+  // -------------------------------------------------------------------------
+
+  /** Todos los agentes del registry, activos e inactivos. */
+  async listAgents(): Promise<Agent[]> {
+    const count = (await this.publicClient.readContract({
+      address: this.addresses.registry,
+      abi: registryAbi,
+      functionName: 'getAgentCount',
+    })) as bigint;
+
+    const addresses: Address[] = [];
+    const total = Math.min(Number(count), REGISTRY_MAX);
+    for (let offset = 0n; offset < BigInt(total); offset += REGISTRY_PAGE) {
+      const page = (await this.publicClient.readContract({
+        address: this.addresses.registry,
+        abi: registryAbi,
+        functionName: 'getAgents',
+        args: [offset, REGISTRY_PAGE],
+      })) as readonly Address[];
+      addresses.push(...page);
+      if (page.length < Number(REGISTRY_PAGE)) break;
+    }
+
+    return Promise.all(addresses.map((address) => this.getAgent(address)));
+  }
+
+  /** Un agente concreto, con su metadata ya interpretada. */
+  async getAgent(address: Address): Promise<Agent> {
+    const raw = (await this.publicClient.readContract({
+      address: this.addresses.registry,
+      abi: registryAbi,
+      functionName: 'getAgent',
+      args: [getAddress(address)],
+    })) as {
+      owner: Address;
+      metadataURI: string;
+      pricePerTask: bigint;
+      active: boolean;
+      registeredAt: bigint;
+      currency: Address;
+    };
+
+    return {
+      address: getAddress(address),
+      owner: raw.owner,
+      pricePerTask: raw.pricePerTask,
+      currency: raw.currency,
+      active: raw.active,
+      registeredAt: raw.registeredAt,
+      metadataURI: raw.metadataURI,
+      metadata: parseAgentMetadata(raw.metadataURI),
+    };
+  }
+
+  /**
+   * Busca agentes activos por texto libre sobre nombre, descripción y skills.
+   *
+   * Sin `query` devuelve todos los activos. La búsqueda es del lado del cliente
+   * porque el registry no indexa texto: son pocos agentes y una lectura
+   * paginada sale más barata que montar un índice.
+   */
+  async searchAgents(query?: string, options: { includeInactive?: boolean } = {}): Promise<Agent[]> {
+    const all = await this.listAgents();
+    const pool = options.includeInactive ? all : all.filter((a) => a.active);
+    if (!query?.trim()) return pool;
+
+    const needles = query.toLowerCase().split(/\s+/).filter(Boolean);
+    return pool.filter((agent) => {
+      const haystack = [agent.metadata.name, agent.metadata.description, ...agent.metadata.skills]
+        .join(' ')
+        .toLowerCase();
+      return needles.every((n) => haystack.includes(n));
+    });
+  }
+
+  /** Una tarea por su id. */
+  async getTask(taskId: bigint): Promise<Task> {
+    // El ABI declara los campos con nombre, así que viem devuelve un objeto y
+    // no una tupla: desestructurar por posición aquí compilaría pero leería
+    // basura si algún día cambia el orden.
+    const raw = (await this.publicClient.readContract({
+      address: this.addresses.escrow,
+      abi: escrowAbi,
+      functionName: 'tasks',
+      args: [taskId],
+    })) as {
+      client: Address;
+      worker: Address;
+      amount: bigint;
+      taskHash: Hex;
+      resultHash: Hex;
+      deadline: bigint;
+      createdAt: bigint;
+      status: number;
+      currency: Address;
+    };
+
+    return { id: taskId, ...raw };
+  }
+
+  /** Cuántas tareas se han creado en total (los ids van de 0 a este número - 1). */
+  async getTaskCount(): Promise<bigint> {
+    return (await this.publicClient.readContract({
+      address: this.addresses.escrow,
+      abi: escrowAbi,
+      functionName: 'getTaskCount',
+    })) as bigint;
+  }
+
+  /** Saldo acreditado y pendiente de retirar, por moneda. */
+  async getPendingWithdrawal(account: Address, currency: Address = NATIVE_CURRENCY): Promise<bigint> {
+    return (await this.publicClient.readContract({
+      address: this.addresses.escrow,
+      abi: escrowAbi,
+      functionName: 'pendingWithdrawals',
+      args: [currency, getAddress(account)],
+    })) as bigint;
+  }
+
+  // -------------------------------------------------------------------------
+  // Escritura
+  // -------------------------------------------------------------------------
+
+  /**
+   * Contrata a un agente: bloquea el pago en el escrow y crea la tarea.
+   *
+   * El brief no se sube a ningún sitio; lo que va on-chain es su keccak256. Se
+   * lo tienes que hacer llegar tú al agente (por su endpoint, por el dashboard
+   * o como quieras), y el hash sirve para demostrar después qué se encargó.
+   *
+   * Si el agente cobra en $PANAL, esto hace dos transacciones: el `approve` por
+   * el importe exacto y luego `createTask`. En MON nativo va en una sola.
+   */
+  async hire(params: HireParams): Promise<HireResult> {
+    const wallet = this.wallet();
+    const agent = await this.getAgent(params.agent);
+    if (!agent.active) throw new Error(`El agente ${params.agent} está dado de baja: no acepta encargos.`);
+
+    const amount = params.amount ?? agent.pricePerTask;
+    if (amount <= 0n) throw new Error('El importe tiene que ser mayor que cero.');
+    const deadline = params.deadline ?? BigInt(Math.floor(Date.now() / 1000) + 24 * 60 * 60);
+    const taskHash = keccak256(toBytes(params.brief));
+    const isNative = agent.currency.toLowerCase() === NATIVE_CURRENCY.toLowerCase();
+
+    // Antes de nada: ¿hay saldo? Fallar aquí da un mensaje claro; fallar dentro
+    // del contrato da un revert sin contexto.
+    await this.assertFunds(agent.currency, amount, isNative);
+
+    if (!isNative) {
+      // approve por el importe exacto, no infinito: si el escrow tuviera un
+      // fallo, la exposición se limita a este encargo.
+      const approveHash = await wallet.writeContract({
+        address: agent.currency,
+        abi: erc20Abi,
+        functionName: 'approve',
+        args: [this.addresses.escrow, amount],
+        chain: chainFor(this.network),
+        account: this.account!,
+      });
+      await this.publicClient.waitForTransactionReceipt({ hash: approveHash });
+    }
+
+    const txHash = await wallet.writeContract({
+      address: this.addresses.escrow,
+      abi: escrowAbi,
+      functionName: 'createTask',
+      args: [agent.address, taskHash, deadline, agent.currency, amount],
+      value: isNative ? amount : 0n,
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    const receipt = await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    if (receipt.status !== 'success') throw new Error(`createTask revirtió (tx ${txHash}).`);
+
+    // El id es el contador ANTES de crear: se relee del recibo para no asumirlo.
+    const taskId = (await this.getTaskCount()) - 1n;
+    return { taskId, txHash, amount, currency: agent.currency, taskHash };
+  }
+
+  /**
+   * Aprueba el resultado y libera el pago, con una valoración de 1 a 5.
+   *
+   * Si no apruebas ni disputas, el escrow libera el pago solo a las 72 h. Este
+   * método existe para cobrar antes y, sobre todo, para que la valoración quede
+   * registrada: sin ella el agente no construye reputación.
+   */
+  async approveTask(taskId: bigint, rating: number): Promise<Hex> {
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      throw new Error('La valoración es un entero de 1 a 5.');
+    }
+    const wallet = this.wallet();
+    const task = await this.getTask(taskId);
+    if (task.status !== TaskStatus.Delivered) {
+      throw new Error(`La tarea #${taskId} está "${TaskStatus[task.status]}": solo se aprueba lo entregado.`);
+    }
+    const hash = await wallet.writeContract({
+      address: this.addresses.escrow,
+      abi: escrowAbi,
+      functionName: 'approveAndRelease',
+      args: [taskId, rating],
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash });
+    return hash;
+  }
+
+  /** Retira lo acreditado en una moneda (patrón pull payment). */
+  async withdraw(currency: Address = NATIVE_CURRENCY): Promise<Hex> {
+    const wallet = this.wallet();
+    const hash = await wallet.writeContract({
+      address: this.addresses.escrow,
+      abi: escrowAbi,
+      functionName: 'withdraw',
+      args: [currency],
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash });
+    return hash;
+  }
+
+  /** Comprueba el saldo antes de firmar, para fallar con un mensaje legible. */
+  private async assertFunds(currency: Address, amount: bigint, isNative: boolean): Promise<void> {
+    const owner = this.account!.address;
+    const balance = isNative
+      ? await this.publicClient.getBalance({ address: owner })
+      : ((await this.publicClient.readContract({
+          address: currency,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          args: [owner],
+        })) as bigint);
+
+    if (balance < amount) {
+      const symbol = isNative ? 'MON' : '$PANAL';
+      throw new Error(
+        `Saldo insuficiente: hacen falta ${formatEther(amount)} ${symbol} y ${owner} tiene ${formatEther(balance)}.` +
+          (isNative ? ' Además necesitas algo extra para el gas.' : ''),
+      );
+    }
+  }
+}
+
+/** Atajo: `createPanalClient()` sin argumentos ya habla con mainnet. */
+export function createPanalClient(options: PanalClientOptions = {}): PanalClient {
+  return new PanalClient(options);
+}

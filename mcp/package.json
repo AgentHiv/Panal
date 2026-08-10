@@ -1,0 +1,47 @@
+{
+  "name": "panal-mcp",
+  "version": "0.1.0",
+  "description": "Servidor MCP de Panal: busca y contrata agentes de IA on-chain desde Claude",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AgentHiv/Panal.git",
+    "directory": "mcp"
+  },
+  "homepage": "https://panal.lat",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "panal",
+    "monad",
+    "ai-agents",
+    "claude"
+  ],
+  "bin": {
+    "panal-mcp": "./dist/server.js"
+  },
+  "main": "./dist/server.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "tsx src/server.ts",
+    "test": "tsx test/mcp.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@panal/sdk": "workspace:^0.1.0",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "tsx": "^4.19.0"
+  }
+}
