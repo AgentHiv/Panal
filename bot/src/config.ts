@@ -8,8 +8,24 @@
 
 import 'dotenv/config';
 import { isAddress, getAddress, type Address } from 'viem';
+import { BOT_LANGS, DEFAULT_LANG, isBotLang, type BotLang } from './i18n.js';
 
 export type BotMode = 'notifier' | 'worker' | 'indexer';
+
+/**
+ * BOT_LANG -> idioma válido. Un valor desconocido avisa y cae al defecto en vez
+ * de matar el proceso: un bot que no arranca por una errata en el idioma sería
+ * peor que uno que avisa en español.
+ */
+function resolveLang(raw: string | undefined): BotLang {
+  if (!raw) return DEFAULT_LANG;
+  const value = raw.trim().toLowerCase();
+  if (isBotLang(value)) return value;
+  console.warn(
+    `[config] BOT_LANG="${raw}" no es un idioma soportado (${BOT_LANGS.join(', ')}). Uso "${DEFAULT_LANG}".`,
+  );
+  return DEFAULT_LANG;
+}
 
 export interface BotConfig {
   mode: BotMode;
@@ -34,6 +50,13 @@ export interface BotConfig {
   registryAddress: Address;
   panalTokenAddress: Address;
   dashboardUrl: string;
+  /**
+   * Idioma de los avisos de Telegram (BOT_LANG). El bot habla con UNA persona
+   * —el dueño del agente—, así que es una preferencia suya y no se detecta por
+   * mensaje. No afecta al idioma de las ENTREGAS: eso lo decide el system
+   * prompt, que refleja el idioma en que escribió el cliente.
+   */
+  lang: BotLang;
   pollIntervalMs: number;
   /**
    * Espera máx. a que el brief del cliente llegue al store (POST /brief o
@@ -270,6 +293,7 @@ export function loadConfig(): BotConfig {
       envAddress('PANAL_TOKEN_ADDRESS', false) ??
       getAddress('0x2e2e44e7fa6178822d4397299f719e89d1a67777'),
     dashboardUrl: env('DASHBOARD_URL') ?? 'https://panal.lat/dashboard',
+    lang: resolveLang(env('BOT_LANG')),
     pollIntervalMs: envInt('POLL_INTERVAL_MS', 20_000, 5_000),
     // El brief no va on-chain: el worker espera este tiempo a que llegue por
     // POST /brief (frontend) o /brief (Telegram) antes de usar el genérico.

@@ -38,6 +38,7 @@
  */
 
 import { keccak256, toBytes, type Address } from 'viem';
+import { t } from './i18n.js';
 import type { BotConfig } from './config.js';
 import {
   NATIVE_CURRENCY,
@@ -312,8 +313,7 @@ export class A2aManager {
       if (childDeadline - now < MIN_SUB_WINDOW_S) {
         console.log(`[a2a] Deadline del padre #${taskId} demasiado cercano para subcontratar: flujo normal.`);
         await this.telegram.send(
-          `ℹ️ *A2A:* la tarea #${taskId} pediría subcontratar "${decision.skill}", pero su deadline ` +
-            `está demasiado cerca. Se resuelve sin subcontratar.`,
+          t(this.cfg.lang, 'a2a.deadlineTooClose', { id: taskId.toString(), skill: decision.skill }),
         );
         return false;
       }
@@ -323,8 +323,7 @@ export class A2aManager {
       if (!chosen) {
         console.log(`[a2a] Sin candidato activo con skill "${decision.skill}": flujo normal.`);
         await this.telegram.send(
-          `ℹ️ *A2A:* quise subcontratar "${decision.skill}" para #${taskId} pero no hay agente activo ` +
-            `con esa skill. Se resuelve sin subcontratar.`,
+          t(this.cfg.lang, 'a2a.noCandidate', { id: taskId.toString(), skill: decision.skill }),
         );
         return false;
       }
@@ -336,8 +335,12 @@ export class A2aManager {
       if (price > this.cfg.a2a.maxSubWei) {
         console.log(`[a2a] ${shortAddress(chosen.address)} cobra ${formatAmount(price)} ${symbol} > A2A_MAX_SUB_WEI: no se subcontrata.`);
         await this.telegram.send(
-          `ℹ️ *A2A:* el candidato más barato para "${decision.skill}" cobra ${formatAmount(price)} ${symbol}, ` +
-            `por encima del límite por sub-tarea. Se resuelve sin subcontratar.`,
+          t(this.cfg.lang, 'a2a.tooExpensive', {
+            id: taskId.toString(),
+            skill: decision.skill,
+            price: formatAmount(price),
+            symbol,
+          }),
         );
         return false;
       }
@@ -346,9 +349,11 @@ export class A2aManager {
       if (dailySpend + price > this.cfg.a2a.dailyBudgetWei) {
         console.log(`[a2a] Presupuesto diario A2A agotado (${formatAmount(dailySpend)}/${formatAmount(this.cfg.a2a.dailyBudgetWei)}): no se subcontrata.`);
         await this.telegram.send(
-          `ℹ️ *A2A:* presupuesto diario de subcontratación agotado ` +
-            `(${formatAmount(dailySpend)}/${formatAmount(this.cfg.a2a.dailyBudgetWei)} gastado). ` +
-            `#${taskId} se resuelve sin subcontratar.`,
+          t(this.cfg.lang, 'a2a.budgetExhausted', {
+            id: taskId.toString(),
+            spent: formatAmount(dailySpend),
+            budget: formatAmount(this.cfg.a2a.dailyBudgetWei),
+          }),
         );
         return false;
       }
@@ -365,8 +370,12 @@ export class A2aManager {
         if (balance < price) {
           console.log(`[a2a] Balance nativo insuficiente (${formatAmount(balance)} < ${formatAmount(price)} MON): no se subcontrata.`);
           await this.telegram.send(
-            `ℹ️ *A2A:* fondos MON insuficientes para subcontratar "${decision.skill}" ` +
-              `(${formatAmount(price)} MON). #${taskId} se resuelve sin subcontratar.`,
+            t(this.cfg.lang, 'a2a.insufficientFunds', {
+              id: taskId.toString(),
+              skill: decision.skill,
+              price: formatAmount(price),
+              symbol: 'MON',
+            }),
           );
           return false;
         }
@@ -375,8 +384,12 @@ export class A2aManager {
         if (balance < price) {
           console.log(`[a2a] Balance $PANAL insuficiente (${formatAmount(balance)} < ${formatAmount(price)}): no se subcontrata.`);
           await this.telegram.send(
-            `ℹ️ *A2A:* fondos $PANAL insuficientes para subcontratar "${decision.skill}" ` +
-              `(${formatAmount(price)} $PANAL). #${taskId} se resuelve sin subcontratar.`,
+            t(this.cfg.lang, 'a2a.insufficientFunds', {
+              id: taskId.toString(),
+              skill: decision.skill,
+              price: formatAmount(price),
+              symbol: '$PANAL',
+            }),
           );
           return false;
         }
@@ -526,8 +539,12 @@ export class A2aManager {
           rec.note = note;
           this.store.setSubTask(rec);
           await this.telegram.send(
-            `⏱️ *Sub-#${childId}* (${rec.skill}, ${amount}) no entregó a tiempo. ` +
-              `El padre #${parentId} se entrega sin esa parte.`,
+            t(this.cfg.lang, 'a2a.subLate', {
+              childId: childId.toString(),
+              parentId: parentId.toString(),
+              skill: rec.skill,
+              amount,
+            }),
           );
           await this.deliverParentWithoutSub(rec, 'the subcontractor did not deliver in time');
         }
@@ -561,8 +578,12 @@ export class A2aManager {
             this.store.setSubTask(rec);
             console.log(`[a2a] Sub-#${childId} aprobada (rating ${rating}/5). tx: ${tx}`);
             await this.telegram.send(
-              `⭐ *Sub-#${childId} aprobada* con rating ${rating}/5 (${amount}). ` +
-                `Integrando el resultado en el padre #${parentId}…`,
+              t(this.cfg.lang, 'a2a.subApproved', {
+                childId: childId.toString(),
+                parentId: parentId.toString(),
+                rating,
+                amount,
+              }),
             );
             await this.integrateAndDeliverParent(rec, child);
           } catch (err) {
@@ -576,10 +597,14 @@ export class A2aManager {
           this.store.setSubTask(rec);
           console.log(`[a2a] Sub-#${childId} rechazada (rating ${rating}/5 < ${this.cfg.a2a.minRating}).`);
           await this.telegram.send(
-            `⚠️ *Sub-#${childId} NO aprobada:* el evaluador le dio ${rating}/5 (mínimo ${this.cfg.a2a.minRating}).\n` +
-              `Motivo: ${comment}\nNo se libera el pago (el auto-release de 72 h cubre al hijo). ` +
-              `*Revisión humana recomendada* — si el resultado es válido, apruébala desde ${this.cfg.dashboardUrl}.\n` +
-              `El padre #${parentId} se entrega sin esa parte.`,
+            t(this.cfg.lang, 'a2a.subRejected', {
+              childId: childId.toString(),
+              parentId: parentId.toString(),
+              rating,
+              min: this.cfg.a2a.minRating,
+              comment,
+              dashboard: this.cfg.dashboardUrl,
+            }),
           );
           await this.deliverParentWithoutSub(rec, 'the subcontracted work did not pass the quality review');
         }
@@ -607,7 +632,11 @@ export class A2aManager {
         this.store.setSubTask(rec);
         if (!rec.parentDelivered) {
           await this.telegram.send(
-            `❌ *Sub-#${childId}* (${rec.skill}) fue cancelada. El padre #${parentId} se entrega sin esa parte.`,
+            t(this.cfg.lang, 'a2a.subCancelled', {
+              childId: childId.toString(),
+              parentId: parentId.toString(),
+              skill: rec.skill,
+            }),
           );
           await this.deliverParentWithoutSub(rec, 'the subcontracted task was cancelled');
         }
@@ -617,8 +646,12 @@ export class A2aManager {
       case TaskStatus.Disputed: {
         if (!rec.note?.includes('disputa notificada')) {
           await this.telegram.send(
-            `⚠️ *Sub-#${childId} en disputa* (${amount}). Revisa el caso desde ${this.cfg.dashboardUrl} ` +
-              `(el padre #${parentId} sigue aparcado de momento).`,
+            t(this.cfg.lang, 'a2a.subDisputed', {
+              childId: childId.toString(),
+              parentId: parentId.toString(),
+              amount,
+              dashboard: this.cfg.dashboardUrl,
+            }),
           );
           rec.note = `${rec.note ?? ''} disputa notificada`.trim();
           this.store.setSubTask(rec);

@@ -12,6 +12,7 @@
  */
 
 import type { BotConfig } from './config.js';
+import { lines, t } from './i18n.js';
 import {
   TaskStatus,
   TASK_STATUS_LABEL,
@@ -66,16 +67,27 @@ export type TransitionHandler = (
 /** Mensaje de alerta de tarea nueva para el dueño. */
 export function newTaskMessage(cfg: BotConfig, taskId: bigint, task: Task): string {
   const symbol = currencySymbol(task.currency, cfg);
-  const deadline = new Date(Number(task.deadline) * 1000).toLocaleString('es-ES', { timeZone: 'UTC' });
-  return (
-    `🐝 *Nueva tarea #${taskId}*\n` +
-    `• Monto: *${formatAmount(task.amount)} ${symbol}*\n` +
-    `• Cliente: \`${shortAddress(task.client)}\`\n` +
-    `• Hash del pedido: \`${task.taskHash}\`\n` +
-    `• Deadline: ${deadline} UTC\n\n` +
-    `El brief NO va on-chain (solo su hash). Cuando el cliente te lo pase, ` +
-    `guárdalo con:\n\`/brief #${taskId} texto del pedido\`\n\n` +
-    `Panel: ${cfg.dashboardUrl}`
+  // La fecha se formatea en el idioma del operador. Antes iba fija en es-ES,
+  // así que un operador con el bot en chino recibía "12/8/2026, 14:30:00".
+  const deadline = new Date(Number(task.deadline) * 1000).toLocaleString(cfg.lang, {
+    timeZone: 'UTC',
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+  const id = taskId.toString();
+  // Línea en blanco entre bloques: el aviso se lee de un vistazo en el móvil,
+  // que es donde se lee de verdad.
+  return lines(
+    t(cfg.lang, 'task.new.title', { id }),
+    '',
+    t(cfg.lang, 'task.new.amount', { amount: formatAmount(task.amount), symbol }),
+    t(cfg.lang, 'task.new.client', { client: shortAddress(task.client) }),
+    t(cfg.lang, 'task.new.hash', { hash: task.taskHash }),
+    t(cfg.lang, 'task.new.deadline', { deadline }),
+    '',
+    t(cfg.lang, 'task.new.hint', { id }),
+    '',
+    t(cfg.lang, 'status.panel', { dashboard: cfg.dashboardUrl }),
   );
 }
 
@@ -83,19 +95,16 @@ export function newTaskMessage(cfg: BotConfig, taskId: bigint, task: Task): stri
 export function transitionMessage(cfg: BotConfig, taskId: bigint, to: TaskStatus, task: Task): string | null {
   const symbol = currencySymbol(task.currency, cfg);
   const amount = `${formatAmount(task.amount)} ${symbol}`;
+  const vars = { id: taskId.toString(), amount, dashboard: cfg.dashboardUrl };
   switch (to) {
     case TaskStatus.Completed:
-      return (
-        `💰 *Pago liberado de #${taskId}* (${amount}).\n` +
-        `Los fondos ya son tuyos: ejecuta el retiro desde ${cfg.dashboardUrl} ` +
-        `(o activa AUTO_WITHDRAW en el bot worker).`
-      );
+      return t(cfg.lang, 'task.completed', vars);
     case TaskStatus.Delivered:
-      return `📦 *Tarea #${taskId} entregada* (${amount}). Pendiente de aprobación del cliente o auto-release en 72 h.`;
+      return t(cfg.lang, 'task.delivered', vars);
     case TaskStatus.Disputed:
-      return `⚠️ *Tarea #${taskId} en disputa* (${amount}). Revisa el resultado entregado y contacta al cliente.`;
+      return t(cfg.lang, 'task.disputed', vars);
     case TaskStatus.Cancelled:
-      return `❌ *Tarea #${taskId} cancelada* por el cliente.`;
+      return t(cfg.lang, 'task.cancelled', vars);
     default:
       return null;
   }
@@ -223,15 +232,18 @@ export async function buildStatusSummary(
   }
 
   const fmtIds = (ids: bigint[]) => (ids.length ? ids.map((i) => `#${i}`).join(', ') : '—');
-  return (
-    `🐝 *Estado de tu agente*\n` +
-    `• Abiertas (${open.length}): ${fmtIds(open)}\n` +
-    `• Entregadas, pendientes de aprobación (${delivered.length}): ${fmtIds(delivered)}\n` +
-    `• En disputa (${disputed.length}): ${fmtIds(disputed)}\n` +
-    `• Completadas (histórico local): ${completed.length}\n` +
-    `• Briefs guardados: ${store.briefCount()}\n\n` +
-    `💰 *Pendiente de retirar:* ${formatAmount(pendingMon)} MON · ${formatAmount(pendingPanal)} $PANAL\n` +
-    `Panel: ${cfg.dashboardUrl}`
+  const lang = cfg.lang;
+  return lines(
+    t(lang, 'status.title'),
+    '',
+    t(lang, 'status.open', { count: open.length, ids: fmtIds(open) }),
+    t(lang, 'status.delivered', { count: delivered.length, ids: fmtIds(delivered) }),
+    t(lang, 'status.disputed', { count: disputed.length, ids: fmtIds(disputed) }),
+    t(lang, 'status.completed', { count: completed.length }),
+    t(lang, 'status.briefs', { count: store.briefCount() }),
+    '',
+    t(lang, 'status.pending', { mon: formatAmount(pendingMon), panal: formatAmount(pendingPanal) }),
+    t(lang, 'status.panel', { dashboard: cfg.dashboardUrl })
   );
 }
 
@@ -255,6 +267,10 @@ export async function runNotifier(
   };
 
   // Loop de comandos Telegram en paralelo (no bloquea el loop on-chain).
+  // Publica el menu de comandos antes de escuchar: existian pero eran
+  // invisibles, habia que saberselos de memoria.
+  await telegram.publishCommands();
+
   const commandsLoop = telegram.pollCommands({ getStatus: () => buildStatusSummary(cfg, clients, store) }, store, stop);
 
   while (!stop.stopped) {
