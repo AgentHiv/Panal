@@ -33,6 +33,7 @@ jobs:
   i18n:
     name: Traducciones (paridad de los 10 idiomas)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
@@ -47,6 +48,7 @@ jobs:
   packages:
     name: SDK y MCP contra Monad mainnet (solo lectura)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -68,15 +70,6 @@ jobs:
       - name: Compilar el MCP
         run: pnpm --filter panal-mcp build
 
-      - name: Compilar el generador de agentes
-        run: pnpm --filter create-panal-agent build
-
-      # Genera un agente de verdad y comprueba que COMPILA contra el SDK de este
-      # repo. Una plantilla rota es peor que no tener plantilla: el
-      # desarrollador se encuentra el error creyendo que lo rompio el.
-      - name: El agente generado compila
-        run: pnpm --filter create-panal-agent test
-
       # Ambas suites LEEN mainnet a propósito: es la única forma de detectar que
       # una dirección o un ABI dejaron de cuadrar con la realidad, que es el
       # fallo que un paquete publicado no se puede permitir. No firman nada.
@@ -94,9 +87,43 @@ jobs:
             if [ "$ok" -ne 1 ]; then echo "$suite falló las 3 veces"; exit 1; fi
           done
 
+  agente-generado:
+    name: El agente generado compila y arranca
+    runs-on: ubuntu-latest
+    # Instala el proyecto generado desde cero, asi que es el trabajo mas lento.
+    # Va aparte para no retrasar las comprobaciones rapidas, y con tope: si el
+    # agente de prueba se queda vivo, el paso debe fallar y no colgarse.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      # La plantilla se prueba contra el SDK de ESTE repo, no contra el
+      # publicado: apunta a la version que se publicara con ella.
+      - name: Compilar el SDK
+        run: pnpm --filter @panal/sdk build
+
+      - name: Compilar el generador
+        run: pnpm --filter create-panal-agent build
+
+      - name: Generar un agente, compilarlo y arrancarlo
+        run: pnpm --filter create-panal-agent test
+
   contracts:
     name: Contratos (forge test)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -114,6 +141,7 @@ jobs:
   bot:
     name: Bot (typecheck + pruebas en seco)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -165,6 +193,7 @@ jobs:
   mcp-mainnet:
     name: MCP contra Monad mainnet (solo lectura)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
