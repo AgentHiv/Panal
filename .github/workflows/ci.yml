@@ -4,7 +4,7 @@
 # corrían si alguien se acordaba de lanzarlos a mano. Esto los ejecuta en cada
 # push y en cada PR.
 #
-# Cuatro trabajos, separados a propósito por su dependencia de la red:
+# Cinco trabajos, separados a propósito por su dependencia de la red:
 #   i18n        — hermético y sin dependencias: solo lee los JSON de locales.
 #                 i18next cae al español en silencio cuando falta una clave, así
 #                 que una traducción olvidada no rompe nada y no se nota hasta
@@ -43,6 +43,47 @@ jobs:
       # Sin `install`: el script solo lee los JSON de src/i18n/locales.
       - name: Paridad de locales
         run: node scripts/check-i18n.mjs
+
+  packages:
+    name: SDK y MCP contra Monad mainnet (solo lectura)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Compilar el SDK
+        run: pnpm --filter @panal/sdk build
+
+      - name: Compilar el MCP
+        run: pnpm --filter panal-mcp build
+
+      # Ambas suites LEEN mainnet a propósito: es la única forma de detectar que
+      # una dirección o un ABI dejaron de cuadrar con la realidad, que es el
+      # fallo que un paquete publicado no se puede permitir. No firman nada.
+      # Reintentos porque el RPC público limita y su corte no debe tumbar un PR.
+      - name: Pruebas del SDK y del servidor MCP
+        run: |
+          for suite in "@panal/sdk" "panal-mcp"; do
+            ok=0
+            for intento in 1 2 3; do
+              echo "── $suite · intento $intento de 3 ──"
+              if pnpm --filter "$suite" test; then ok=1; break; fi
+              echo "falló; esperando 20s antes de reintentar"
+              sleep 20
+            done
+            if [ "$ok" -ne 1 ]; then echo "$suite falló las 3 veces"; exit 1; fi
+          done
 
   contracts:
     name: Contratos (forge test)
