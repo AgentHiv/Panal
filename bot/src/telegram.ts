@@ -1,8 +1,9 @@
 /**
  * Panal Bot — cliente de la Bot API de Telegram usando fetch nativo de Node
  * (sin dependencias extra). Soporta:
- *   - sendMessage con Markdown (para las alertas bonitas)
- *   - getUpdates con long polling (para los comandos /start, /status, /brief)
+ *   - sendMessage en HTML (formato de verdad, sin marcado a la vista)
+ *   - setMyCommands (los comandos salen en el menú "/" de Telegram)
+ *   - getUpdates con long polling (comandos /start, /status, /brief, /result)
  *
  * En DRY_RUN no se llama a Telegram: los mensajes se imprimen por consola.
  */
@@ -10,8 +11,17 @@
 import type { BotConfig } from './config.js';
 import type { Store } from './store.js';
 import { toPlainText } from './format.js';
+import { escapeHtml, t, telegramLangCode, type BotLang } from './i18n.js';
 
 const API_BASE = (token: string) => `https://api.telegram.org/bot${token}`;
+
+/** Los cuatro comandos que se publican en el menú de Telegram. */
+const COMMANDS = [
+  { command: 'start', key: 'menu.start' },
+  { command: 'status', key: 'menu.status' },
+  { command: 'brief', key: 'menu.brief' },
+  { command: 'result', key: 'menu.result' },
+] as const;
 
 interface TelegramUpdate {
   update_id: number;
@@ -73,34 +83,67 @@ export class Telegram {
   }
 
   /**
-   * Envía un mensaje al chat del dueño, siempre como TEXTO PLANO.
+   * Envía un mensaje ya compuesto en HTML de Telegram.
    *
-   * Antes se mandaba con `parse_mode: 'Markdown'` y, si Telegram lo rechazaba,
-   * se reintentaba borrando a lo bruto los caracteres de formato. Eso fallaba
-   * de las dos maneras posibles:
+   * Historia de por qué HTML y no Markdown: al principio se mandaba con
+   * `parse_mode: 'Markdown'` y, si Telegram lo rechazaba, se reintentaba
+   * borrando a lo bruto los caracteres de formato. Fallaba de las dos maneras
+   * posibles —el parser antiguo revienta con asteriscos desparejados y no
+   * admite `#`, y el reintento destrozaba nombres como `BRIEF_WAIT_MS`—, así
+   * que se pasó a texto plano: correcto, pero sin ninguna jerarquía visual.
    *
-   *   - El parser antiguo de Telegram no admite encabezados `#` y revienta con
-   *     asteriscos desparejados. Cualquier resultado del LLM con Markdown caía
-   *     en el reintento.
-   *   - El reintento borraba `_`, `*` y backticks de TODO el mensaje, así que
-   *     destrozaba nombres como `BRIEF_WAIT_MS` y dejaba el texto a medias.
+   * HTML resuelve las dos cosas a la vez. El formato se ve renderizado y la
+   * etiqueta nunca aparece en pantalla, que era la queja original: lo que
+   * molestaba no era el formato, eran los asteriscos crudos.
    *
-   * Ahora el mensaje se convierte a texto plano legible antes de salir y se
-   * manda sin `parse_mode`. No hay nada que interpretar, así que no hay error
-   * posible ni reintento que degrade nada: lo que se lee es lo que se escribió,
-   * sin asteriscos ni almohadillas a la vista.
+   * El contrato es que quien llama compone con `t()`, que escapa cada valor
+   * interpolado. Para texto libre que no pasa por el catálogo —el resultado
+   * del LLM, un mensaje de error— está `sendText()`.
    */
-  async send(text: string): Promise<void> {
-    const plain = toPlainText(text);
+  async send(html: string): Promise<void> {
     if (!this.enabled) {
-      console.log(`\n[telegram:dry-run] ────────────────────────────\n${plain}\n`);
+      console.log(`\n[telegram:dry-run] ────────────────────────────\n${toPlainText(html)}\n`);
       return;
     }
     await this.api<unknown>('sendMessage', {
       chat_id: this.cfg.telegramChatId,
-      text: plain,
+      text: html,
+      parse_mode: 'HTML',
       disable_web_page_preview: true,
     });
+  }
+
+  /**
+   * Envía texto que NO viene del catálogo (resultado del LLM, error de una
+   * librería). Se normaliza el Markdown que traiga el modelo y se escapa: sin
+   * esto, un resultado con `<` rompería el parser y Telegram devolvería 400.
+   */
+  async sendText(text: string): Promise<void> {
+    await this.send(escapeHtml(toPlainText(text)));
+  }
+
+  /**
+   * Publica los comandos en el menú "/" de Telegram, en los 10 idiomas.
+   *
+   * Sin esto los comandos existían pero eran invisibles: había que saberse
+   * `/brief` de memoria. Telegram guarda una lista por `language_code` y sirve
+   * la que coincide con el idioma del cliente de cada usuario, con la lista sin
+   * idioma como respaldo —por eso se publica también el idioma configurado como
+   * predeterminado, para quien tenga Telegram en un idioma que no cubrimos.
+   */
+  async publishCommands(): Promise<void> {
+    if (!this.enabled) return;
+    const build = (lang: BotLang) =>
+      COMMANDS.map((c) => ({ command: c.command, description: t(lang, c.key) }));
+
+    await this.api('setMyCommands', { commands: build(this.cfg.lang) });
+    for (const lang of ['es', 'en', 'zh', 'hi', 'fr', 'ar', 'pt', 'ru', 'bn', 'ur'] as const) {
+      await this.api('setMyCommands', {
+        commands: build(lang),
+        language_code: telegramLangCode(lang),
+      });
+    }
+    console.log('[telegram] Comandos publicados en el menú (10 idiomas).');
   }
 
   /** Long polling de getUpdates (espera hasta `timeoutSec` segundos en Telegram). */
@@ -152,8 +195,10 @@ export class Telegram {
     const [rawCmd = '', ...rest] = text.split(/\s+/);
     const cmd = rawCmd.toLowerCase().split('@')[0] ?? ''; // quita @NombreDelBot
 
+    const lang = this.cfg.lang;
+
     if (cmd === '/start' || cmd === '/help') {
-      await this.send(HELP_TEXT);
+      await this.send(t(lang, 'cmd.help', { dashboard: this.cfg.dashboardUrl }));
       return;
     }
 
@@ -166,19 +211,18 @@ export class Telegram {
       // Formato: /result #12  → devuelve el resultado entregado (si existe)
       const m = rest.join(' ').match(/^#?(\d+)\s*$/);
       if (!m) {
-        await this.send('⚠️ Formato: `/result #N` — ejemplo: `/result #3`');
+        await this.send(t(lang, 'cmd.result.usage'));
         return;
       }
       const taskId = BigInt(m[1]!);
       const result = store.getResult(taskId);
       if (!result) {
-        await this.send(
-          `ℹ️ No tengo guardado ningún resultado para la tarea *#${taskId}*.\n` +
-            'Si el agente ya la entregó on-chain, pídele al operador su resultado.',
-        );
+        await this.send(t(lang, 'cmd.result.missing', { id: taskId.toString() }));
         return;
       }
-      await this.send(`📄 *Resultado de #${taskId}*:\n\n${result.slice(0, 3800)}`);
+      // El resultado lo escribió un LLM: va por sendText para escaparlo.
+      await this.send(t(lang, 'cmd.result.header', { id: taskId.toString() }));
+      await this.sendText(result.slice(0, 3800));
       return;
     }
 
@@ -187,36 +231,26 @@ export class Telegram {
       const joined = rest.join(' ');
       const m = joined.match(/^#?(\d+)\s+([\s\S]+)$/);
       if (!m) {
-        await this.send(
-          '⚠️ Formato: `/brief #N texto del pedido`\n' +
-            'Ejemplo: `/brief #3 Redacta un hilo de 5 tuits sobre Monad`',
-        );
+        await this.send(t(lang, 'cmd.brief.usage'));
         return;
       }
       const taskId = BigInt(m[1]!);
       const briefText = m[2]!.trim();
       store.setBrief(taskId, briefText);
-      await this.send(`📝 Brief guardado para la tarea *#${taskId}* (${briefText.length} caracteres).`);
+      await this.send(
+        t(lang, 'cmd.brief.saved', { id: taskId.toString(), chars: briefText.length }),
+      );
       return;
     }
 
     if (cmd.startsWith('/')) {
-      await this.send('🤔 Comando no reconocido. Escribe /start para ver la ayuda.');
+      await this.send(t(lang, 'cmd.unknown'));
     }
   }
 }
 
 /** Handlers que cada modo (notifier/worker) implementa para los comandos. */
 export interface CommandHandlers {
-  /** Texto Markdown para el comando /status. */
+  /** HTML de Telegram ya compuesto para el comando /status. */
   getStatus: () => Promise<string>;
 }
-
-const HELP_TEXT =
-  '🐝 *Panal Bot*\n\n' +
-  'Comandos disponibles:\n' +
-  '• `/brief #N texto` — guarda el pedido del cliente para la tarea N ' +
-  '(el brief no va on-chain, solo su hash; reenvíalo aquí cuando el cliente te lo pase).\n' +
-  '• `/status` — resumen de tus tareas y pagos pendientes.\n' +
-  '• `/start` — esta ayuda.\n\n' +
-  'Panel web: https://panal.lat/dashboard';

@@ -89,6 +89,13 @@ jobs:
         working-directory: bot
         run: pnpm exec tsx scripts/test-format.ts
 
+      # Telegram responde 400 y NO envía nada si el HTML está mal formado, así
+      # que una etiqueta sin cerrar en un idioma deja a ese operador sin avisos
+      # y solo se ve en los logs del servidor.
+      - name: Mensajes del bot en los 10 idiomas (claves, HTML, escapado)
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-i18n.ts
+
       - name: Endurecimiento (IP tras proxy, anti-SSRF, tope de respuesta, prompts)
         working-directory: bot
         run: pnpm exec tsx scripts/test-hardening.ts

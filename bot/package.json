@@ -18,7 +18,8 @@
     "test:hardening": "tsx scripts/test-hardening.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "test:x402": "tsx scripts/test-x402.ts"
+    "test:x402": "tsx scripts/test-x402.ts",
+    "test:i18n": "tsx scripts/test-i18n.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

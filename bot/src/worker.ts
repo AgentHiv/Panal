@@ -18,6 +18,7 @@
  * saldos pull-payment (MON y $PANAL) con withdraw(token).
  */
 
+import { t } from './i18n.js';
 import { keccak256, toBytes } from 'viem';
 import type { BotConfig } from './config.js';
 import {
@@ -98,21 +99,19 @@ export async function runWorker(
     const txHash = await deliverResult(clients, cfg, taskId, resultHash);
     console.log(`[worker] #${taskId} entregada on-chain. tx: ${txHash}`);
 
-    await telegram.send(
-      `✅ *Entregada #${taskId}* (resultado guardado en \`results/${taskId}.md\`).\n` +
-        `Pendiente de aprobación del cliente o auto-release en 72 h.\n` +
-        `tx: \`${txHash}\``,
-    );
+    await telegram.send(t(cfg.lang, 'worker.delivered', { id: taskId.toString(), tx: txHash }));
     // Enviar el resultado completo al dueño (Telegram limita a ~4096 chars;
     // si es más largo, avisamos y queda en el archivo del servidor).
+    // La cabecera va del catálogo (lleva formato); el resultado del LLM va por
+    // sendText, que lo escapa: si trae un `<`, Telegram devolvería 400.
     if (resultText.length <= 3600) {
-      await telegram.send(`📄 *Resultado de #${taskId}*:\n\n${resultText}`);
+      await telegram.send(t(cfg.lang, 'worker.result.header', { id: taskId.toString() }));
+      await telegram.sendText(resultText);
     } else {
       await telegram.send(
-        `📄 *Resultado de #${taskId}* (${resultText.length} chars, demasiado largo para Telegram):\n\n` +
-          resultText.slice(0, 3600) +
-          `\n\n… (completo en \`results/${taskId}.md\` o con /result #${taskId})`,
+        t(cfg.lang, 'worker.result.truncated', { id: taskId.toString(), chars: resultText.length }),
       );
+      await telegram.sendText(resultText.slice(0, 3600));
     }
   };
 
@@ -143,10 +142,7 @@ export async function runWorker(
     const waitMin = Math.max(1, Math.round(cfg.briefWaitMs / 60_000));
     console.log(`[worker] Tarea #${taskId} sin brief: esperando hasta ${cfg.briefWaitMs / 1000}s a que llegue…`);
     await telegram.send(
-      `⏳ *Tarea #${taskId} sin brief todavía.*\n` +
-        `Espero ~${waitMin} min a que el cliente lo envíe. También puedes cargarlo tú con:\n` +
-        `\`/brief #${taskId} texto del pedido\`\n` +
-        `Si no llega, generaré un resultado genérico.`,
+      t(cfg.lang, 'worker.waitingBrief', { id: taskId.toString(), minutes: waitMin }),
     );
     const deadline = Date.now() + cfg.briefWaitMs;
     while (!stop.stopped && Date.now() < deadline) {
@@ -200,7 +196,7 @@ export async function runWorker(
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[worker] Falló la entrega de #${taskId}: ${msg}`);
       await telegram.send(
-        `🚨 *Falló la entrega de #${taskId}*: ${msg.slice(0, 400)}\nSe reintentará automáticamente en ~10 min.`,
+        t(cfg.lang, 'worker.failed', { id: taskId.toString(), error: msg.slice(0, 400) }),
       );
     } finally {
       inFlight.delete(key);
@@ -244,6 +240,10 @@ export async function runWorker(
       await autoWithdraw(cfg, clients, telegram);
     }
   };
+
+  // Publica el menu de comandos antes de escuchar: existian pero eran
+  // invisibles, habia que saberselos de memoria.
+  await telegram.publishCommands();
 
   const commandsLoop = telegram.pollCommands(
     {

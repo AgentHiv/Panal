@@ -36,6 +36,7 @@ import { join } from 'node:path';
 import { createServer, type Server } from 'node:http';
 import { keccak256, toBytes, type Address } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
+import { _CATALOG, t } from '../src/i18n.js';
 import { A2aManager, parseRouterDecision, pickCheapest, skillMatches } from '../src/a2a.js';
 import { createResultServer } from '../src/http.js';
 import { Store } from '../src/store.js';
@@ -218,6 +219,16 @@ class MockChain {
 // ---------------------------------------------------------------------------
 // Utilidades del test
 // ---------------------------------------------------------------------------
+
+/**
+ * Trozo estable de un mensaje del catálogo: todo lo anterior al primer
+ * placeholder. Las aserciones se anclan aquí y no a frases literales, así que
+ * reescribir la redacción de un aviso ya no rompe el test —que es justo lo que
+ * pasó al traducir el bot a 10 idiomas—.
+ */
+function msgFragment(key: Parameters<typeof t>[1]): string {
+  return _CATALOG.es[key].split('{{')[0]!.trim();
+}
 
 let failures = 0;
 function check(name: string, ok: boolean, detail: string): void {
@@ -428,7 +439,7 @@ async function main(): Promise<void> {
     const parked = await h.manager.maybeSubcontract(parentId, chain.tasks[Number(parentId)]!, 'brief');
     check(
       'precio > A2A_MAX_SUB_WEI → no subcontrata + Telegram',
-      parked === false && chain.writes.length === 0 && h.telegram.some((t) => t.includes('por encima del límite')),
+      parked === false && chain.writes.length === 0 && h.telegram.some((m) => m.includes(msgFragment('a2a.tooExpensive'))),
       `parked=${parked}`,
     );
   }
@@ -443,7 +454,7 @@ async function main(): Promise<void> {
     const parked = await h.manager.maybeSubcontract(parentId, chain.tasks[Number(parentId)]!, 'brief');
     check(
       'presupuesto diario respetado → no subcontrata + Telegram',
-      parked === false && chain.writes.length === 0 && h.telegram.some((t) => t.includes('presupuesto diario')),
+      parked === false && chain.writes.length === 0 && h.telegram.some((m) => m.includes(msgFragment('a2a.budgetExhausted'))),
       `parked=${parked}`,
     );
   }
@@ -458,7 +469,7 @@ async function main(): Promise<void> {
     const parked = await h.manager.maybeSubcontract(parentId, chain.tasks[Number(parentId)]!, 'brief');
     check(
       'fondos insuficientes → no subcontrata + Telegram',
-      parked === false && chain.writes.length === 0 && h.telegram.some((t) => t.includes('insuficientes')),
+      parked === false && chain.writes.length === 0 && h.telegram.some((m) => m.includes(msgFragment('a2a.insufficientFunds'))),
       `parked=${parked}`,
     );
   }
@@ -472,7 +483,7 @@ async function main(): Promise<void> {
     const parked = await h.manager.maybeSubcontract(parentId, chain.tasks[Number(parentId)]!, 'brief');
     check(
       'sin candidato → no subcontrata + Telegram',
-      parked === false && chain.writes.length === 0 && h.telegram.some((t) => t.includes('no hay agente activo')),
+      parked === false && chain.writes.length === 0 && h.telegram.some((m) => m.includes(msgFragment('a2a.noCandidate'))),
       `parked=${parked}`,
     );
   }
@@ -531,7 +542,7 @@ async function main(): Promise<void> {
       rec.state === 'completed' && rec.parentDelivered === true && rec.rating === 5,
       `state=${rec.state} rating=${rec.rating}`,
     );
-    check('Telegram de aprobación', h.telegram.some((t) => t.includes('aprobada') && t.includes('5/5')), 'OK');
+    check('Telegram de aprobación', h.telegram.some((m) => m.includes(msgFragment('a2a.subApproved')) && m.includes('5/5')), 'OK');
     await h.manager.poll(); // no debe re-entregar ni duplicar writes
     check(
       'poll posterior no duplica trabajo',
@@ -562,7 +573,7 @@ async function main(): Promise<void> {
     );
     check(
       'Telegram para revisión humana + padre entregado sin esa parte',
-      h.telegram.some((t) => t.includes('NO aprobada') && t.includes('Revisión humana')) && h.deliveredParents.length === 1,
+      h.telegram.some((m) => m.includes(msgFragment('a2a.subRejected'))) && h.deliveredParents.length === 1,
       'OK',
     );
   }
@@ -588,7 +599,7 @@ async function main(): Promise<void> {
       h.deliveredParents.length === 1 && h.deliveredParents[0]!.text.includes('did not deliver in time'),
       `state=${rec.state}`,
     );
-    check('Telegram de timeout', h.telegram.some((t) => t.includes('no entregó a tiempo')), 'OK');
+    check('Telegram de timeout', h.telegram.some((m) => m.includes(msgFragment('a2a.subLate'))), 'OK');
   }
 
   // ---- 8. Pago en $PANAL: approve exacto + createTask value 0 ------------------
