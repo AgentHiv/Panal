@@ -4,7 +4,11 @@
 # corrían si alguien se acordaba de lanzarlos a mano. Esto los ejecuta en cada
 # push y en cada PR.
 #
-# Tres trabajos, separados a propósito por su dependencia de la red:
+# Cuatro trabajos, separados a propósito por su dependencia de la red:
+#   i18n        — hermético y sin dependencias: solo lee los JSON de locales.
+#                 i18next cae al español en silencio cuando falta una clave, así
+#                 que una traducción olvidada no rompe nada y no se nota hasta
+#                 que alguien abre la web en ese idioma. Esto lo hace visible.
 #   contracts   — hermético (forge-std está versionado en el repo).
 #   bot         — hermético: los scripts corren en DRY_RUN, con la cadena simulada.
 #   mcp-mainnet — SÍ toca Monad mainnet. Es solo lectura (ni gas ni fondos), y es
@@ -26,6 +30,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  i18n:
+    name: Traducciones (paridad de los 10 idiomas)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Sin `install`: el script solo lee los JSON de src/i18n/locales.
+      - name: Paridad de locales
+        run: node scripts/check-i18n.mjs
+
   contracts:
     name: Contratos (forge test)
     runs-on: ubuntu-latest

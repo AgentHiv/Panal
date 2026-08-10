@@ -356,7 +356,8 @@
     "emptyDesc": "试试扩大价格范围、降低最低评分或清空搜索。",
     "emptyAction": "清除筛选",
     "loadMore": "加载更多智能体",
-    "endToast": "您已到达列表末尾"
+    "endToast": "您已到达列表末尾",
+    "emptyOnchain": "链上暂无代理"
   },
   "hire": {
     "chip1": "审计这份合约",
@@ -633,7 +634,6 @@
     "asClient": "客户视角",
     "withdraw": "提取资金",
     "withdrawToast": "提取已开始",
-    "withdrawToastDesc": "1,284.50 MON → {{address}}（模拟）。",
     "registerAgent": "注册新智能体",
     "registerToast": "智能体注册",
     "registerToastSwitch": "将你的 wallet 切换到 Monad 主网，以在链上注册智能体。",
@@ -767,8 +767,6 @@
     "confirmSend": "确认发送",
     "receiveTitle": "接收 MON",
     "receiveDesc": "分享你的蜂巢地址（Monad 网络 · Chain ID 143）。",
-    "sendToast": "模拟发送已确认",
-    "sendToastDesc": "交易已签名并广播至 Monad（演示）。",
     "chartAria": "30 天余额变化",
     "qrAria": "地址二维码",
     "switchNetwork": "切换到 Monad",
@@ -781,7 +779,16 @@
     "wrongChainToast": "网络错误",
     "wrongChainToastDesc": "您的钱包位于其他网络。我们已请求切换到 {{network}}，请重试。",
     "chainMismatch": "钱包在其他网络上，请切换到 {{network}} 后重试。",
-    "tokenOfficial": "官方代币"
+    "tokenOfficial": "官方代币",
+    "chooseWallet": "选择您的钱包",
+    "chooseWalletDesc": "检测到多个 EVM 钱包。请选择用哪一个连接 Panal（Monad 主网）。",
+    "connectError": "无法连接钱包，请重试。",
+    "installMetamask": "安装 MetaMask",
+    "installTrust": "安装 Trust Wallet",
+    "needWallet": "您需要一个钱包",
+    "needWalletDesc": "Panal 运行在 Monad 区块链上：要连接，您需要在浏览器中安装 MetaMask、Trust Wallet 或其他兼容 EVM 的钱包。",
+    "openInMetamask": "在 MetaMask 应用中打开",
+    "openInTrust": "在 Trust Wallet 应用中打开"
   },
   "tasks": {
     "status": {
@@ -795,7 +802,6 @@
     },
     "newDelivery": "{{name}} 的新交付 — 请验证",
     "paymentReleased": "支付已释放：tx {{tx}}",
-    "paymentReleasedDesc": "{{id}} · 已转账 {{amount}} MON（模拟）。",
     "disputeOpened": "{{id}} 已开启争议",
     "disputeOpenedDesc": "质押陪审团将在未来几小时内召集。",
     "verify": "验证交付",
@@ -811,7 +817,6 @@
     "tabActive": "活跃",
     "tabCompleted": "已完成",
     "tabDisputed": "争议中",
-    "showingActive": "显示 {{shown}} / {{total}} 个活跃任务 · 进度实时更新（模拟）。",
     "page": "第 {{page}} 页，共 {{pages}} 页 · {{total}} 个任务",
     "noDisputes": "没有进行中的争议",
     "noDisputesDesc": "当交付被质疑时，案卷与陪审团投票将显示在这里。",
@@ -954,9 +959,7 @@
     "statsToastDesc": "高级面板将在阶段 2 提供。",
     "withdrawEarnings": "提取收入",
     "withdrawToast": "{{name}} 的收入提取已开始",
-    "withdrawToastDesc": "{{amount}} MON → 你的 wallet（模拟）。",
     "editTitle": "编辑价格 — {{name}}",
-    "editDesc": "新价格将通过一笔交易（模拟）发布到 PanalRegistry。",
     "signing": "正在签名交易…",
     "priceAria": "以 MON 计的任务单价",
     "savePrice": "保存价格",

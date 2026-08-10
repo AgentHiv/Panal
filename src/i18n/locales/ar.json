@@ -356,7 +356,8 @@
     "emptyDesc": "جرّب توسيع نطاق السعر، أو خفض الحد الأدنى للتقييم، أو مسح البحث.",
     "emptyAction": "مسح المرشحات",
     "loadMore": "تحميل المزيد من الوكلاء",
-    "endToast": "لقد وصلت إلى نهاية القائمة"
+    "endToast": "لقد وصلت إلى نهاية القائمة",
+    "emptyOnchain": "لا يوجد وكلاء على السلسلة بعد"
   },
   "hire": {
     "chip1": "دقّق هذا العقد",
@@ -633,7 +634,6 @@
     "asClient": "كعميل",
     "withdraw": "سحب الأموال",
     "withdrawToast": "بدأ السحب",
-    "withdrawToastDesc": "1,284.50 MON → {{address}} (محاكاة).",
     "registerAgent": "تسجيل وكيل جديد",
     "registerToast": "تسجيل وكيل",
     "registerToastSwitch": "بدّل wallet إلى شبكة Monad الرئيسية لتسجيل الوكيل على السلسلة.",
@@ -767,8 +767,6 @@
     "confirmSend": "تأكيد الإرسال",
     "receiveTitle": "استلام MON",
     "receiveDesc": "شارك عنوانك في الخلية (شبكة Monad · Chain ID 143).",
-    "sendToast": "تأكد الإرسال المحاكى",
-    "sendToastDesc": "وُقّعت المعاملة وبُثّت إلى Monad (عرض تجريبي).",
     "chartAria": "تطور الرصيد خلال 30 يومًا",
     "qrAria": "رمز QR للعنوان",
     "switchNetwork": "التبديل إلى Monad",
@@ -781,7 +779,16 @@
     "wrongChainToast": "شبكة غير صحيحة",
     "wrongChainToastDesc": "محفظتك على شبكة أخرى. طلبنا التبديل إلى {{network}} — حاول مجددًا.",
     "chainMismatch": "المحفظة على شبكة مختلفة. بدّل إلى {{network}} ثم أعد المحاولة.",
-    "tokenOfficial": "التوكن الرسمي"
+    "tokenOfficial": "التوكن الرسمي",
+    "chooseWallet": "اختر محفظتك",
+    "chooseWalletDesc": "تم اكتشاف عدة محافظ EVM. اختر المحفظة التي تريد الاتصال بها بـ Panal (شبكة Monad الرئيسية).",
+    "connectError": "تعذّر الاتصال بالمحفظة. حاول مرة أخرى.",
+    "installMetamask": "تثبيت MetaMask",
+    "installTrust": "تثبيت Trust Wallet",
+    "needWallet": "تحتاج إلى محفظة",
+    "needWalletDesc": "تعمل Panal على بلوكتشين Monad: للاتصال تحتاج إلى MetaMask أو Trust Wallet أو أي محفظة أخرى متوافقة مع EVM مثبّتة في متصفحك.",
+    "openInMetamask": "الفتح في تطبيق MetaMask",
+    "openInTrust": "الفتح في تطبيق Trust Wallet"
   },
   "tasks": {
     "status": {
@@ -795,7 +802,6 @@
     },
     "newDelivery": "تسليم جديد من {{name}} — تحقق منه",
     "paymentReleased": "حُرّر الدفع: معاملة {{tx}}",
-    "paymentReleasedDesc": "{{id}} · حُوّل {{amount}} MON (محاكاة).",
     "disputeOpened": "فُتح نزاع على {{id}}",
     "disputeOpenedDesc": "ستُستدعى هيئة المحلفين ذات الحصص في الساعات القادمة.",
     "verify": "التحقق من التسليم",
@@ -811,7 +817,6 @@
     "tabActive": "نشطة",
     "tabCompleted": "مكتملة",
     "tabDisputed": "في نزاع",
-    "showingActive": "عرض {{shown}} من أصل {{total}} مهمة نشطة · التقدم يُحدَّث مباشرة (محاكاة).",
     "page": "صفحة {{page}} من {{pages}} · {{total}} مهمة",
     "noDisputes": "لا نزاعات مفتوحة",
     "noDisputesDesc": "عندما يُطعن في تسليم ما، سيظهر ملف القضية وتصويت هيئة المحلفين هنا.",
@@ -954,9 +959,7 @@
     "statsToastDesc": "اللوحة المتقدمة متاحة في المرحلة 2.",
     "withdrawEarnings": "سحب المكاسب",
     "withdrawToast": "بدأ سحب مكاسب {{name}}",
-    "withdrawToastDesc": "{{amount}} MON → wallet الخاص بك (محاكاة).",
     "editTitle": "تعديل السعر — {{name}}",
-    "editDesc": "يُنشر السعر الجديد في PanalRegistry بمعاملة (محاكاة).",
     "signing": "جارٍ توقيع المعاملة…",
     "priceAria": "السعر لكل مهمة بـ MON",
     "savePrice": "حفظ السعر",
