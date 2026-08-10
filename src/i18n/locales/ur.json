@@ -356,7 +356,8 @@
     "emptyDesc": "قیمت کی رینج وسیع کریں، کم از کم ریٹنگ گھٹائیں یا تلاش صاف کریں۔",
     "emptyAction": "فلٹرز صاف کریں",
     "loadMore": "مزید ایجنٹس لوڈ کریں",
-    "endToast": "آپ فہرست کے آخر میں پہنچ گئے ہیں"
+    "endToast": "آپ فہرست کے آخر میں پہنچ گئے ہیں",
+    "emptyOnchain": "ابھی تک کوئی آن چین ایجنٹ نہیں"
   },
   "hire": {
     "chip1": "اس کنٹریکٹ کی آڈٹ کریں",
@@ -633,7 +634,6 @@
     "asClient": "بطور کلائنٹ",
     "withdraw": "فنڈز نکالیں",
     "withdrawToast": "نکالنا شروع ہو گیا",
-    "withdrawToastDesc": "1,284.50 MON → {{address}} (نمائشی)۔",
     "registerAgent": "نیا ایجنٹ رجسٹر کریں",
     "registerToast": "ایجنٹ رجسٹریشن",
     "registerToastSwitch": "ایجنٹ کو آن چین رجسٹر کرنے کے لیے اپنا والٹ Monad مین نیٹ پر لے جائیں۔",
@@ -767,8 +767,6 @@
     "confirmSend": "بھیجنے کی تصدیق کریں",
     "receiveTitle": "MON وصول کریں",
     "receiveDesc": "اپنا چھتے کا پتہ شیئر کریں (Monad نیٹ ورک · Chain ID 143)۔",
-    "sendToast": "نمائشی بھیجنے کی تصدیق ہو گئی",
-    "sendToastDesc": "ٹرانزیکشن سائن اور Monad پر نشر کر دی گئی (ڈیمو)۔",
     "chartAria": "30 دن کے بیلنس کا اتار چڑھاؤ",
     "qrAria": "پتے کا QR کوڈ",
     "switchNetwork": "Monad پر جائیں",
@@ -781,7 +779,16 @@
     "wrongChainToast": "غلط نیٹ ورک",
     "wrongChainToastDesc": "آپ کا والٹ کسی اور نیٹ ورک پر ہے۔ ہم نے {{network}} پر سوئچ کی درخواست بھیجی ہے — دوبارہ کوشش کریں۔",
     "chainMismatch": "والٹ دوسرے نیٹ ورک پر ہے۔ {{network}} پر سوئچ کر کے دوبارہ کوشش کریں۔",
-    "tokenOfficial": "سرکاری ٹوکن"
+    "tokenOfficial": "سرکاری ٹوکن",
+    "chooseWallet": "اپنا والٹ منتخب کریں",
+    "chooseWalletDesc": "کئی EVM والٹ معلوم ہوئے ہیں۔ منتخب کریں کہ Panal (Monad مین نیٹ) سے کس کے ذریعے منسلک ہونا ہے۔",
+    "connectError": "والٹ منسلک نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
+    "installMetamask": "MetaMask انسٹال کریں",
+    "installTrust": "Trust Wallet انسٹال کریں",
+    "needWallet": "آپ کو ایک والٹ درکار ہے",
+    "needWalletDesc": "Panal موناد بلاک چین پر چلتا ہے: منسلک ہونے کے لیے آپ کے براؤزر میں MetaMask، Trust Wallet یا کوئی اور EVM سے ہم آہنگ والٹ انسٹال ہونا ضروری ہے۔",
+    "openInMetamask": "MetaMask ایپ میں کھولیں",
+    "openInTrust": "Trust Wallet ایپ میں کھولیں"
   },
   "tasks": {
     "status": {
@@ -795,7 +802,6 @@
     },
     "newDelivery": "{{name}} کی نئی ڈیلیوری — تصدیق کریں",
     "paymentReleased": "ادائیگی ریلیز ہو گئی: tx {{tx}}",
-    "paymentReleasedDesc": "{{id}} · {{amount}} MON منتقل (نمائشی)۔",
     "disputeOpened": "{{id}} پر تنازعہ کھولا گیا",
     "disputeOpenedDesc": "آنے والے گھنٹوں میں سٹیک کی ہوئی جیوری طلب کی جائے گی۔",
     "verify": "ڈیلیوری کی تصدیق کریں",
@@ -811,7 +817,6 @@
     "tabActive": "فعال",
     "tabCompleted": "مکمل",
     "tabDisputed": "تنازعہ میں",
-    "showingActive": "{{shown}} ٹاسکس دکھائے جا رہے ہیں، کل {{total}} فعال ٹاسکس میں سے · پیش رفت لائیو اپڈیٹ ہوتی ہے (نمائشی)۔",
     "page": "صفحہ {{page}} از {{pages}} · {{total}} ٹاسکس",
     "noDisputes": "کوئی کھلا تنازعہ نہیں",
     "noDisputesDesc": "جب کوئی ڈیلیوری چیلنج ہوگی تو کیس فائل اور جیوری ووٹنگ یہاں نظر آئے گی۔",
@@ -954,9 +959,7 @@
     "statsToastDesc": "ایڈوانسڈ پینل مرحلہ 2 میں دستیاب ہوگا۔",
     "withdrawEarnings": "کمائی نکالیں",
     "withdrawToast": "{{name}} کی کمائی نکالنا شروع ہو گئی",
-    "withdrawToastDesc": "{{amount}} MON → آپ کا والٹ (نمائشی)۔",
     "editTitle": "قیمت میں ترمیم — {{name}}",
-    "editDesc": "نئی قیمت ایک ٹرانزیکشن کے ساتھ (نمائشی) PanalRegistry پر شائع ہوتی ہے۔",
     "signing": "ٹرانزیکشن سائن ہو رہی ہے…",
     "priceAria": "MON میں فی ٹاسک قیمت",
     "savePrice": "قیمت محفوظ کریں",

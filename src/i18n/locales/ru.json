@@ -356,7 +356,8 @@
     "emptyDesc": "Попробуйте расширить диапазон цен, снизить минимальный рейтинг или очистить поиск.",
     "emptyAction": "Сбросить фильтры",
     "loadMore": "Загрузить ещё агентов",
-    "endToast": "Вы дошли до конца списка"
+    "endToast": "Вы дошли до конца списка",
+    "emptyOnchain": "Пока нет агентов в сети"
   },
   "hire": {
     "chip1": "Аудировать этот контракт",
@@ -633,7 +634,6 @@
     "asClient": "Как клиент",
     "withdraw": "Вывести средства",
     "withdrawToast": "Вывод начат",
-    "withdrawToastDesc": "1 284,50 MON → {{address}} (симуляция).",
     "registerAgent": "Зарегистрировать нового агента",
     "registerToast": "Регистрация агента",
     "registerToastSwitch": "Переключите wallet на Monad, чтобы зарегистрировать агента он-чейн.",
@@ -767,8 +767,6 @@
     "confirmSend": "Подтвердить отправку",
     "receiveTitle": "Получить MON",
     "receiveDesc": "Поделитесь своим адресом улья (сеть Monad · Chain ID 143).",
-    "sendToast": "Симулированная отправка подтверждена",
-    "sendToastDesc": "Транзакция подписана и транслирована в Monad (демо).",
     "chartAria": "Динамика баланса за 30 дней",
     "qrAria": "QR-код адреса",
     "switchNetwork": "Переключиться на Monad",
@@ -781,7 +779,16 @@
     "wrongChainToast": "Неверная сеть",
     "wrongChainToastDesc": "Ваш кошелёк в другой сети. Мы запросили переключение на {{network}} — повторите попытку.",
     "chainMismatch": "Кошелёк в другой сети. Переключитесь на {{network}} и повторите.",
-    "tokenOfficial": "официальный токен"
+    "tokenOfficial": "официальный токен",
+    "chooseWallet": "Выберите кошелёк",
+    "chooseWalletDesc": "Обнаружено несколько EVM-кошельков. Выберите, каким подключиться к Panal (Monad mainnet).",
+    "connectError": "Не удалось подключить кошелёк. Попробуйте ещё раз.",
+    "installMetamask": "Установить MetaMask",
+    "installTrust": "Установить Trust Wallet",
+    "needWallet": "Нужен кошелёк",
+    "needWalletDesc": "Panal работает на блокчейне Monad: для подключения нужен MetaMask, Trust Wallet или другой EVM-совместимый кошелёк, установленный в браузере.",
+    "openInMetamask": "Открыть в приложении MetaMask",
+    "openInTrust": "Открыть в приложении Trust Wallet"
   },
   "tasks": {
     "status": {
@@ -795,7 +802,6 @@
     },
     "newDelivery": "Новая доставка от {{name}} — проверьте её",
     "paymentReleased": "Платёж освобождён: tx {{tx}}",
-    "paymentReleasedDesc": "{{id}} · {{amount}} MON переведено (симуляция).",
     "disputeOpened": "Открыт спор по {{id}}",
     "disputeOpenedDesc": "Жюри со стейком будет созвано в ближайшие часы.",
     "verify": "Проверить доставку",
@@ -811,7 +817,6 @@
     "tabActive": "Активные",
     "tabCompleted": "Завершённые",
     "tabDisputed": "В споре",
-    "showingActive": "Показано {{shown}} из {{total}} активных задач · прогресс обновляется вживую (симуляция).",
     "page": "Страница {{page}} из {{pages}} · {{total}} задач",
     "noDisputes": "Нет открытых споров",
     "noDisputesDesc": "Когда доставку оспорят, здесь появятся дело и голосование жюри.",
@@ -954,9 +959,7 @@
     "statsToastDesc": "Расширенная панель доступна в Фазе 2.",
     "withdrawEarnings": "Вывести заработок",
     "withdrawToast": "Начат вывод заработка {{name}}",
-    "withdrawToastDesc": "{{amount}} MON → ваш wallet (симуляция).",
     "editTitle": "Изменить цену — {{name}}",
-    "editDesc": "Новая цена публикуется в PanalRegistry транзакцией (симуляция).",
     "signing": "Подписание транзакции…",
     "priceAria": "Цена за задачу в MON",
     "savePrice": "Сохранить цену",

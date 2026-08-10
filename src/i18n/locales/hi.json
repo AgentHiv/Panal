@@ -356,7 +356,8 @@
     "emptyDesc": "कीमत की सीमा बढ़ाकर, न्यूनतम रेटिंग घटाकर या खोज साफ़ करके देखें।",
     "emptyAction": "फ़िल्टर साफ़ करें",
     "loadMore": "और एजेंट लोड करें",
-    "endToast": "आप सूची के अंत तक पहुंच गए हैं"
+    "endToast": "आप सूची के अंत तक पहुंच गए हैं",
+    "emptyOnchain": "अभी तक कोई ऑन-चेन एजेंट नहीं"
   },
   "hire": {
     "chip1": "इस कॉन्ट्रैक्ट का ऑडिट करें",
@@ -633,7 +634,6 @@
     "asClient": "क्लाइंट के रूप में",
     "withdraw": "फंड निकालें",
     "withdrawToast": "निकासी शुरू हुई",
-    "withdrawToastDesc": "1,284.50 MON → {{address}} (सिम्युलेटेड)।",
     "registerAgent": "नया एजेंट पंजीकृत करें",
     "registerToast": "एजेंट पंजीकरण",
     "registerToastSwitch": "एजेंट को ऑन-चेन पंजीकृत करने के लिए अपना wallet Monad पर बदलें।",
@@ -767,8 +767,6 @@
     "confirmSend": "भेजने की पुष्टि करें",
     "receiveTitle": "MON प्राप्त करें",
     "receiveDesc": "अपना छत्ता पता साझा करें (Monad नेटवर्क · Chain ID 143)।",
-    "sendToast": "सिम्युलेटेड भेजना कन्फ़र्म हुआ",
-    "sendToastDesc": "ट्रांज़ैक्शन साइन होकर Monad पर प्रसारित हुआ (डेमो)।",
     "chartAria": "30 दिनों का बैलेंस रुझान",
     "qrAria": "पते का QR कोड",
     "switchNetwork": "Monad पर बदलें",
@@ -781,7 +779,16 @@
     "wrongChainToast": "गलत नेटवर्क",
     "wrongChainToastDesc": "आपका वॉलेट किसी अन्य नेटवर्क पर है। हमने {{network}} पर स्विच करने का अनुरोध किया है — फिर प्रयास करें।",
     "chainMismatch": "वॉलेट दूसरे नेटवर्क पर है। {{network}} पर स्विच करके पुनः प्रयास करें।",
-    "tokenOfficial": "आधिकारिक टोकन"
+    "tokenOfficial": "आधिकारिक टोकन",
+    "chooseWallet": "अपना वॉलेट चुनें",
+    "chooseWalletDesc": "कई EVM वॉलेट मिले हैं। चुनें कि Panal (Monad मेननेट) से किससे कनेक्ट करना है।",
+    "connectError": "वॉलेट कनेक्ट नहीं हो सका। कृपया फिर से प्रयास करें।",
+    "installMetamask": "MetaMask इंस्टॉल करें",
+    "installTrust": "Trust Wallet इंस्टॉल करें",
+    "needWallet": "आपको एक वॉलेट चाहिए",
+    "needWalletDesc": "Panal, Monad ब्लॉकचेन पर चलता है: कनेक्ट करने के लिए आपके ब्राउज़र में MetaMask, Trust Wallet या कोई अन्य EVM-संगत वॉलेट इंस्टॉल होना चाहिए।",
+    "openInMetamask": "MetaMask ऐप में खोलें",
+    "openInTrust": "Trust Wallet ऐप में खोलें"
   },
   "tasks": {
     "status": {
@@ -795,7 +802,6 @@
     },
     "newDelivery": "{{name}} की नई डिलीवरी — सत्यापित करें",
     "paymentReleased": "भुगतान रिलीज़: tx {{tx}}",
-    "paymentReleasedDesc": "{{id}} · {{amount}} MON ट्रांसफ़र हुए (सिम्युलेटेड)।",
     "disputeOpened": "{{id}} पर विवाद खुला",
     "disputeOpenedDesc": "स्टेक वाली जूरी आने वाले घंटों में बुलाई जाएगी।",
     "verify": "डिलीवरी सत्यापित करें",
@@ -811,7 +817,6 @@
     "tabActive": "सक्रिय",
     "tabCompleted": "पूर्ण",
     "tabDisputed": "विवाद में",
-    "showingActive": "{{total}} में से {{shown}} सक्रिय टास्क दिखाए जा रहे हैं · प्रगति लाइव अपडेट होती है (सिम्युलेटेड)।",
     "page": "पेज {{page}} / {{pages}} · {{total}} टास्क",
     "noDisputes": "कोई खुला विवाद नहीं",
     "noDisputesDesc": "जब किसी डिलीवरी को चुनौती दी जाएगी, केस फ़ाइल और जूरी का मतदान यहाँ दिखेगा।",
@@ -954,9 +959,7 @@
     "statsToastDesc": "उन्नत पैनल फ़ेज़ 2 में उपलब्ध होगा।",
     "withdrawEarnings": "कमाई निकालें",
     "withdrawToast": "{{name}} की कमाई की निकासी शुरू",
-    "withdrawToastDesc": "{{amount}} MON → आपका wallet (सिम्युलेटेड)।",
     "editTitle": "कीमत बदलें — {{name}}",
-    "editDesc": "नई कीमत एक ट्रांज़ैक्शन (सिम्युलेटेड) के साथ PanalRegistry में प्रकाशित होगी।",
     "signing": "ट्रांज़ैक्शन साइन हो रहा है…",
     "priceAria": "MON में प्रति टास्क कीमत",
     "savePrice": "कीमत सेव करें",

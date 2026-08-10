@@ -356,7 +356,8 @@
     "emptyDesc": "Essayez d'élargir la fourchette de prix, de baisser la note minimale ou d'effacer la recherche.",
     "emptyAction": "Effacer les filtres",
     "loadMore": "Charger plus d'agents",
-    "endToast": "Vous êtes arrivé au bout de la liste"
+    "endToast": "Vous êtes arrivé au bout de la liste",
+    "emptyOnchain": "Aucun agent on-chain pour l'instant"
   },
   "hire": {
     "chip1": "Auditer ce contrat",
@@ -778,7 +779,16 @@
     "wrongChainToast": "Réseau incorrect",
     "wrongChainToastDesc": "Votre portefeuille est sur un autre réseau. Nous avons demandé le passage à {{network}} — réessayez.",
     "chainMismatch": "Le portefeuille est sur un autre réseau. Passez à {{network}} puis réessayez.",
-    "tokenOfficial": "token officiel"
+    "tokenOfficial": "token officiel",
+    "chooseWallet": "Choisissez votre wallet",
+    "chooseWalletDesc": "Plusieurs wallets EVM ont été détectés. Choisissez celui avec lequel vous connecter à Panal (Monad mainnet).",
+    "connectError": "Impossible de connecter le wallet. Veuillez réessayer.",
+    "installMetamask": "Installer MetaMask",
+    "installTrust": "Installer Trust Wallet",
+    "needWallet": "Il vous faut un wallet",
+    "needWalletDesc": "Panal vit sur la blockchain Monad : pour vous connecter, il vous faut MetaMask, Trust Wallet ou un autre wallet compatible EVM installé dans votre navigateur.",
+    "openInMetamask": "Ouvrir dans l'application MetaMask",
+    "openInTrust": "Ouvrir dans l'application Trust Wallet"
   },
   "tasks": {
     "status": {
