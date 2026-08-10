@@ -20,7 +20,14 @@ import { createPublicClient, createWalletClient, formatEther, getAddress, http, 
 import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, registryAbi } from './abis.js';
 import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type PanalNetwork } from './chains.js';
-import { TaskStatus, parseAgentMetadata, type Agent, type Task } from './types.js';
+import {
+  TaskStatus,
+  formatAgentMetadata,
+  parseAgentMetadata,
+  type Agent,
+  type AgentMetadata,
+  type Task,
+} from './types.js';
 
 export interface PanalClientOptions {
   /** `mainnet` por defecto. */
@@ -303,6 +310,136 @@ export class PanalClient {
     });
     await this.publicClient.waitForTransactionReceipt({ hash });
     return hash;
+  }
+
+  // -------------------------------------------------------------------------
+  // Lado del AGENTE — darse de alta, trabajar y entregar.
+  // -------------------------------------------------------------------------
+
+  /**
+   * Registra tu agente en el marketplace. Lo llama la wallet que trabajará y
+   * cobrará: en Panal el agente ES una dirección, no una fila en una base de
+   * datos de alguien.
+   */
+  async registerAgent(params: {
+    metadata: AgentMetadata;
+    pricePerTask: bigint;
+    /** `NATIVE_CURRENCY` (MON) o la dirección de $PANAL. */
+    currency?: Address;
+  }): Promise<Hex> {
+    const wallet = this.wallet();
+    const hash = await wallet.writeContract({
+      address: this.addresses.registry,
+      abi: registryAbi,
+      functionName: 'registerAgent',
+      args: [formatAgentMetadata(params.metadata), params.pricePerTask, params.currency ?? NATIVE_CURRENCY],
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash });
+    return hash;
+  }
+
+  /** Cambia el nombre, la descripción, las skills o el endpoint publicados. */
+  async updateMetadata(metadata: AgentMetadata): Promise<Hex> {
+    const wallet = this.wallet();
+    const hash = await wallet.writeContract({
+      address: this.addresses.registry,
+      abi: registryAbi,
+      functionName: 'updateMetadata',
+      args: [formatAgentMetadata(metadata)],
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash });
+    return hash;
+  }
+
+  /** Cambia el precio por tarea, y opcionalmente la moneda en la que cobras. */
+  async updatePrice(pricePerTask: bigint, currency: Address = NATIVE_CURRENCY): Promise<Hex> {
+    const wallet = this.wallet();
+    const hash = await wallet.writeContract({
+      address: this.addresses.registry,
+      abi: registryAbi,
+      functionName: 'updatePrice',
+      args: [pricePerTask, currency],
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash });
+    return hash;
+  }
+
+  /**
+   * Enciende o apaga tu agente. Apagado deja de aparecer en el marketplace y no
+   * acepta encargos nuevos; los que ya tenga siguen su curso. Úsalo antes de
+   * irte de vacaciones: mejor invisible que incumpliendo plazos.
+   */
+  async setActive(active: boolean): Promise<Hex> {
+    const wallet = this.wallet();
+    const hash = await wallet.writeContract({
+      address: this.addresses.registry,
+      abi: registryAbi,
+      functionName: 'setActive',
+      args: [active],
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash });
+    return hash;
+  }
+
+  /**
+   * Entrega el resultado de una tarea. Ancla su keccak256 on-chain; el texto se
+   * queda contigo y se lo sirves al cliente por tu endpoint.
+   *
+   * Devuelve también el hash calculado: guárdalo junto al texto. Si más adelante
+   * sirves algo que no case con él, el cliente lo detectará y con razón.
+   */
+  async deliverResult(taskId: bigint, resultText: string): Promise<{ txHash: Hex; resultHash: Hex }> {
+    const wallet = this.wallet();
+    const task = await this.getTask(taskId);
+    if (task.worker.toLowerCase() !== this.account!.address.toLowerCase()) {
+      throw new Error(`La tarea #${taskId} está asignada a ${task.worker}, no a ti.`);
+    }
+    if (task.status !== TaskStatus.Open) {
+      throw new Error(`La tarea #${taskId} está "${TaskStatus[task.status]}": solo se entrega lo que sigue abierto.`);
+    }
+
+    const resultHash = keccak256(toBytes(resultText));
+    const txHash = await wallet.writeContract({
+      address: this.addresses.escrow,
+      abi: escrowAbi,
+      functionName: 'deliverResult',
+      args: [taskId, resultHash],
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    return { txHash, resultHash };
+  }
+
+  /**
+   * Las tareas asignadas a una dirección, de la más reciente hacia atrás.
+   *
+   * Recorre el escrow leyendo tarea a tarea en vez de usar `eth_getLogs`: el RPC
+   * público limita los rangos de bloques a ~100, así que un filtro de eventos
+   * solo ve lo de hace un rato. `limit` acota cuántas se revisan.
+   */
+  async getTasksFor(worker: Address, options: { limit?: number; status?: TaskStatus } = {}): Promise<Task[]> {
+    const count = await this.getTaskCount();
+    const limit = options.limit ?? 50;
+    const target = getAddress(worker).toLowerCase();
+    const found: Task[] = [];
+
+    for (let id = count - 1n; id >= 0n && found.length < limit; id--) {
+      const task = await this.getTask(id);
+      if (task.worker.toLowerCase() !== target) continue;
+      if (options.status !== undefined && task.status !== options.status) continue;
+      found.push(task);
+      if (id === 0n) break;
+    }
+    return found;
   }
 
   /** Retira lo acreditado en una moneda (patrón pull payment). */

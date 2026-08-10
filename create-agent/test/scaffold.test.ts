@@ -1,0 +1,148 @@
+/**
+ * Prueba del generador: crea un agente de verdad en un directorio temporal y
+ * comprueba que lo que sale sirve.
+ *
+ *   npx tsx test/scaffold.test.ts     (o: npm test)
+ *
+ * HERMÉTICO salvo el `npm install` del proyecto generado, que sí baja paquetes.
+ * No toca la cadena ni firma nada.
+ *
+ * Lo que de verdad se comprueba: que el proyecto generado COMPILA. Una
+ * plantilla que no compila es peor que no tener plantilla, porque el
+ * desarrollador se encuentra el error creyendo que lo rompió él.
+ */
+
+import { execFileSync } from 'node:child_process';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { privateKeyToAccount } from 'viem/accounts';
+
+let failures = 0;
+
+function check(label: string, ok: boolean, detail = ''): void {
+  if (ok) console.log(`✅ ${label}${detail ? `: ${detail}` : ''}`);
+  else {
+    failures += 1;
+    console.error(`❌ ${label}${detail ? `: ${detail}` : ''}`);
+  }
+}
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const CLI = resolve(HERE, '..', 'src', 'index.ts');
+
+function run(args: string[], cwd: string): { out: string; code: number } {
+  try {
+    const out = execFileSync('npx', ['tsx', CLI, ...args], { cwd, encoding: 'utf8', stdio: 'pipe' });
+    return { out, code: 0 };
+  } catch (err) {
+    const e = err as { stdout?: string; stderr?: string; status?: number };
+    return { out: `${e.stdout ?? ''}${e.stderr ?? ''}`, code: e.status ?? 1 };
+  }
+}
+
+const work = mkdtempSync(join(tmpdir(), 'panal-scaffold-'));
+
+try {
+  console.log('── 1. Nombres que no valen ──');
+
+  check('sin nombre explica cómo se usa', run([], work).out.includes('create-panal-agent'));
+  check('rechaza mayúsculas y espacios', run(['Mi Agente'], work).code !== 0);
+  check('rechaza un nombre que empieza por guion', run(['-raro'], work).code !== 0);
+
+  console.log('\n── 2. Se genera el proyecto ──');
+
+  const name = 'agente-prueba';
+  const created = run([name], work);
+  const dest = join(work, name);
+  check('el generador termina bien', created.code === 0, created.out.split('\n').find((l) => l.includes('creado')) ?? '');
+
+  for (const file of ['package.json', 'tsconfig.json', '.env.example', '.gitignore', '.env', 'src/agent.ts', 'src/server.ts', 'src/register.ts']) {
+    check(`  ${file}`, existsSync(join(dest, file)));
+  }
+
+  console.log('\n── 3. Los marcadores se sustituyen ──');
+
+  const pkg = JSON.parse(readFileSync(join(dest, 'package.json'), 'utf8')) as { name: string; dependencies: Record<string, string> };
+  check('el package.json lleva el nombre', pkg.name === name, pkg.name);
+  check('depende del SDK', Boolean(pkg.dependencies['@panal/sdk']), pkg.dependencies['@panal/sdk']);
+  const register = readFileSync(join(dest, 'src', 'register.ts'), 'utf8');
+  check('el perfil lleva el nombre', register.includes(`name: '${name}'`));
+  check('no queda ningún marcador sin sustituir', !register.includes('__NAME__'));
+
+  console.log('\n── 4. La wallet dedicada ──');
+
+  const env = readFileSync(join(dest, '.env'), 'utf8');
+  const key = /AGENT_PRIVATE_KEY=(0x[0-9a-fA-F]{64})/.exec(env)?.[1];
+  check('se genera una clave válida', Boolean(key));
+  // La dirección que se le enseña al usuario tiene que ser la de esa clave: si
+  // no cuadraran, mandaría el gas a una wallet que no controla el agente.
+  const shown = /0x[0-9a-fA-F]{40}/.exec(created.out)?.[0];
+  check(
+    'la dirección mostrada es la de la clave generada',
+    Boolean(key && shown && privateKeyToAccount(key as `0x${string}`).address.toLowerCase() === shown.toLowerCase()),
+    shown ?? '',
+  );
+  check('cada proyecto recibe una clave distinta', (() => {
+    run(['otro-agente'], work);
+    const otra = /AGENT_PRIVATE_KEY=(0x[0-9a-fA-F]{64})/.exec(readFileSync(join(work, 'otro-agente', '.env'), 'utf8'))?.[1];
+    return Boolean(otra && otra !== key);
+  })());
+  check('el .env está ignorado por git', readFileSync(join(dest, '.gitignore'), 'utf8').includes('.env'));
+  check('el .env.example NO lleva la clave', !readFileSync(join(dest, '.env.example'), 'utf8').includes('0x'));
+
+  console.log('\n── 5. No se pisa una carpeta con contenido ──');
+  const repetido = run([name], work);
+  check('avisa en vez de sobreescribir', repetido.code !== 0 && repetido.out.includes('ya existe'));
+
+  console.log('\n── 6. El proyecto generado COMPILA ──');
+  console.log('   (instalando dependencias, tarda un poco…)');
+  try {
+    // La plantilla apunta a la versión del SDK que se va a publicar CON ella, y
+    // esa version puede no estar aun en npm: instalarla fallaria con ETARGET.
+    // Se instala el resto y se enlaza el SDK de este repo, que ademas es lo que
+    // de verdad interesa comprobar —que la plantilla cuadra con el SDK actual—.
+    const pkgPath = join(dest, 'package.json');
+    const generated = JSON.parse(readFileSync(pkgPath, 'utf8')) as { dependencies: Record<string, string> };
+    const sdkRange = generated.dependencies['@panal/sdk']!;
+    delete generated.dependencies['@panal/sdk'];
+    writeFileSync(pkgPath, `${JSON.stringify(generated, null, 2)}\n`);
+
+    execFileSync('npm', ['install', '--no-audit', '--no-fund'], { cwd: dest, stdio: 'pipe', timeout: 300_000 });
+    check('npm install funciona', true);
+
+    generated.dependencies['@panal/sdk'] = sdkRange;
+    writeFileSync(pkgPath, `${JSON.stringify(generated, null, 2)}\n`);
+
+    const localSdk = resolve(HERE, '..', '..', 'sdk');
+    check('el SDK local está compilado', existsSync(join(localSdk, 'dist', 'index.d.ts')), 'dist/index.d.ts');
+
+    // Se COPIA, no se enlaza. Un symlink hacia el paquete del workspace hace que
+    // el SDK resuelva el viem de la raíz mientras el proyecto usa el suyo, y
+    // TypeScript ve dos viem incompatibles: un fallo del montaje de la prueba
+    // que no le pasaría a nadie instalando desde npm. Copiar reproduce lo que
+    // npm deja de verdad en node_modules.
+    const installed = join(dest, 'node_modules', '@panal', 'sdk');
+    rmSync(installed, { recursive: true, force: true });
+    mkdirSync(installed, { recursive: true });
+    cpSync(join(localSdk, 'dist'), join(installed, 'dist'), { recursive: true });
+    cpSync(join(localSdk, 'package.json'), join(installed, 'package.json'));
+
+    execFileSync('npx', ['tsc', '--noEmit'], { cwd: dest, stdio: 'pipe', timeout: 180_000 });
+    check('typecheck del proyecto generado', true);
+  } catch (err) {
+    const e = err as { stdout?: Buffer; stderr?: Buffer; message?: string };
+    const detail = `${e.stdout ?? ''}${e.stderr ?? ''}`.trim() || e.message || 'sin detalle';
+    check('el proyecto generado compila', false, detail.slice(0, 600));
+  }
+
+  console.log('');
+  if (failures === 0) console.log('✅ El generador produce un agente que compila y arranca');
+  else {
+    console.error(`❌ ${failures} comprobación(es) fallaron`);
+    process.exitCode = 1;
+  }
+} finally {
+  rmSync(work, { recursive: true, force: true });
+}
