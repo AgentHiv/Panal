@@ -52,6 +52,29 @@ export { X402_SCHEME, X402Error, payAndAsk, quoteAsk } from './x402.js';
 export type { AskResult, PayAndAskOptions, PermitDomain, X402Accept, X402Quote } from './x402.js';
 export { assertPublicUrl, fetchLimited, isPrivateIp } from './net.js';
 
+// x402: la otra mitad, cobrar por llamada. Portada del bot de LexPanal, donde
+// lleva meses cobrando en produccion.
+export {
+  X402_VERSION,
+  X402_SERVER_SCHEME,
+  buildQuote,
+  enqueueByPayer,
+  parsePaymentHeader,
+  permitNonce,
+  permitTypedData,
+  readPermitDomain,
+  resourceId,
+  splitSignature,
+  verifyAndSettle,
+} from './x402-server.js';
+export type {
+  SettleDeps,
+  SettleResult,
+  X402Payment,
+  X402ServerAccept,
+  X402ServerQuote,
+} from './x402-server.js';
+
 // El sobre que viaja entre agentes: profundidad, presupuesto y detección de ciclos.
 export {
   ENVELOPE_HEADERS,
