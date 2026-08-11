@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -201,54 +201,85 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
      offline, firma rechazada) avisamos con un toast: sin brief el bot solo
      puede entregar un resultado GENÉRICO. El brief también queda en
      localStorage y el operador puede cargarlo por Telegram como fallback. */
-  const briefPushedFor = useRef<string | null>(null);
-  useEffect(() => {
-    if (!mined || !receipt || !realTxHash || briefPushedFor.current === realTxHash) return;
-    briefPushedFor.current = realTxHash;
-    if (!V2_ENABLED || !address || !isOnchainAgent(agent)) return;
-    void (async () => {
-      try {
-        // taskId del evento TaskCreated del receipt.
-        const [created] = parseEventLogs({
-          abi: panalEscrowV2Abi,
-          eventName: 'TaskCreated',
-          logs: receipt.logs,
-        });
-        const taskId = created?.args?.taskId;
-        if (taskId === undefined) return;
-        // URL del bot del metadataURI on-chain del agente (token "bot:<url>").
-        const meta = (await publicClient.readContract({
-          address: PANAL_REGISTRY_V2_ADDRESS,
-          abi: panalRegistryV2Abi,
-          functionName: 'getAgent',
-          args: [agent.workerAddress],
-        })) as { metadataURI?: string };
-        const botUrl = extractBotUrl(meta.metadataURI);
-        if (!botUrl) {
-          console.warn('[panal] el agente no publica "bot:<url>" en su metadata; no se pudo enviar el brief');
-          toast.warning(t('hire.step3.briefNoEndpoint'));
-          return;
-        }
-        const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
-        const signature = await signMessageAsync({ message: briefSignMessage(taskId) });
-        const res = await fetch(buildBriefUrl(botUrl, taskId), {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ brief, address, signature }),
-        });
-        if (res.ok) {
-          toast(t('hire.step3.briefSent'));
-        } else {
-          console.warn(`[panal] POST brief al bot respondió ${res.status}; el brief sigue en local`);
-          toast.warning(t('hire.step3.briefFailed'));
-        }
-      } catch (err) {
-        console.warn(`[panal] no se pudo enviar el brief al bot: ${err instanceof Error ? err.message.split('\n')[0] : err}`);
+  const [briefEstado, setBriefEstado] = useState<'pendiente' | 'enviando' | 'enviado' | 'fallo'>('pendiente');
+
+  const enviarBrief = useCallback(async (): Promise<void> => {
+    if (!receipt || !address || !isOnchainAgent(agent)) return;
+    setBriefEstado('enviando');
+    try {
+      // taskId del evento TaskCreated del receipt.
+      const [created] = parseEventLogs({
+        abi: panalEscrowV2Abi,
+        eventName: 'TaskCreated',
+        logs: receipt.logs,
+      });
+      const taskId = created?.args?.taskId;
+      if (taskId === undefined) {
+        // Sin id no hay a dónde mandar el brief. Antes se salía en silencio y
+        // el cliente se quedaba mirando una pantalla de éxito sin saber que su
+        // encargo no había llegado a ninguna parte.
+        console.warn('[panal] el receipt no trae TaskCreated: no se puede saber el id de la tarea');
+        setBriefEstado('fallo');
+        toast.warning(t('hire.step3.briefFailed'));
+        return;
+      }
+      // URL del bot del metadataURI on-chain del agente (token "bot:<url>").
+      const meta = (await publicClient.readContract({
+        address: PANAL_REGISTRY_V2_ADDRESS,
+        abi: panalRegistryV2Abi,
+        functionName: 'getAgent',
+        args: [agent.workerAddress],
+      })) as { metadataURI?: string };
+      const botUrl = extractBotUrl(meta.metadataURI);
+      if (!botUrl) {
+        console.warn('[panal] el agente no publica "bot:<url>" en su metadata; no se pudo enviar el brief');
+        setBriefEstado('fallo');
+        toast.warning(t('hire.step3.briefNoEndpoint'));
+        return;
+      }
+      const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
+      const signature = await signMessageAsync({ message: briefSignMessage(taskId) });
+      const res = await fetch(buildBriefUrl(botUrl, taskId), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ brief, address, signature }),
+      });
+      if (res.ok) {
+        setBriefEstado('enviado');
+        toast(t('hire.step3.briefSent'));
+      } else {
+        console.warn(`[panal] POST brief al bot respondió ${res.status}; el brief sigue en local`);
+        setBriefEstado('fallo');
         toast.warning(t('hire.step3.briefFailed'));
       }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mined, receipt, realTxHash]);
+    } catch (err) {
+      console.warn(`[panal] no se pudo enviar el brief al bot: ${err instanceof Error ? err.message.split('\n')[0] : err}`);
+      setBriefEstado('fallo');
+      toast.warning(t('hire.step3.briefFailed'));
+    }
+  }, [receipt, address, agent, taskText, params, signMessageAsync, t]);
+
+  /* Push del brief al bot del agente (entrega máquina-a-máquina, headless).
+     Tras minarse createTask: si el agente publica "bot:<url>" en su metadata
+     on-chain, firmamos "Panal brief #<taskId>" (EIP-191, sin gas) y hacemos
+     POST /brief/:taskId.
+
+     El orden de las dos guardas importa y es la razón de este comentario: la
+     marca de "ya intentado" NO puede ponerse antes de tener `address`. En el
+     móvil, al volver del navegador de la wallet tras firmar la transacción, la
+     cuenta tarda un instante en rehidratarse; si se marcara antes, ese hueco se
+     comería el único intento y el brief no se enviaría nunca, sin un solo
+     aviso. Por eso además existe el botón manual del paso 3: en el navegador de
+     una wallet, una firma que no nace de un toque del usuario se ignora a
+     menudo. */
+  const briefPushedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!mined || !receipt || !realTxHash) return;
+    if (!V2_ENABLED || !address || !isOnchainAgent(agent)) return;
+    if (briefPushedFor.current === realTxHash) return;
+    briefPushedFor.current = realTxHash;
+    void enviarBrief();
+  }, [mined, receipt, realTxHash, address, agent, enviarBrief]);
 
   const price = agent.pricePerTask;
   const fee = price * PROTOCOL_FEE;
@@ -643,6 +674,23 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                         </p>
                       </div>
                       {realTxHash && <TxHash hash={realTxHash} className="rounded-full border border-line bg-cream px-4 py-2" />}
+                      {/* Envío manual del brief. Visible hasta que conste enviado:
+                          en el navegador de una wallet el envío automático se
+                          pierde a menudo, y sin brief el agente entrega genérico. */}
+                      {briefEstado !== 'enviado' && (
+                        <button
+                          type="button"
+                          disabled={briefEstado === 'enviando'}
+                          onClick={() => void enviarBrief()}
+                          className="btn-monad px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40"
+                        >
+                          {briefEstado === 'enviando'
+                            ? t('hire.step3.sendingBrief')
+                            : briefEstado === 'fallo'
+                              ? t('hire.step3.retryBrief')
+                              : t('hire.step3.sendBrief')}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {

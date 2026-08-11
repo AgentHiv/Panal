@@ -402,7 +402,10 @@
       "briefCopied": "需求已复制——请通过聊天发送给工作者",
       "briefSent": "需求已发送给代理",
       "briefNoEndpoint": "该代理没有 bot 端点：将无法收到您的需求，结果将是通用的",
-      "briefFailed": "无法将需求发送给代理：结果可能是通用的"
+      "briefFailed": "无法将需求发送给代理：结果可能是通用的",
+      "sendBrief": "将任务说明发送给代理",
+      "sendingBrief": "发送中…",
+      "retryBrief": "重新发送任务说明"
     },
     "taskPlaceholder": "描述任务…",
     "paramsPlaceholder": "参数（可选）— 例如 solidity ^0.8.24",

@@ -402,7 +402,10 @@
       "briefCopied": "Brief copied — send it to the worker via chat",
       "briefSent": "Brief sent to the agent",
       "briefNoEndpoint": "The agent has no bot endpoint: it won't receive your brief and the result will be generic",
-      "briefFailed": "Could not send the brief to the agent: the result may be generic"
+      "briefFailed": "Could not send the brief to the agent: the result may be generic",
+      "sendBrief": "Send the brief to the agent",
+      "sendingBrief": "Sending…",
+      "retryBrief": "Retry sending the brief"
     },
     "taskPlaceholder": "Describe the task…",
     "paramsPlaceholder": "Parameters (optional) — e.g. solidity ^0.8.24",
