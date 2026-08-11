@@ -17,6 +17,9 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, write
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+// Las aserciones se atan al catálogo, no a una frase suelta: así siguen
+// valiendo cuando cambie la redacción o el idioma por defecto.
+import { CATALOG, fill } from '../src/i18n.js';
 import { privateKeyToAccount } from 'viem/accounts';
 
 let failures = 0;
@@ -32,9 +35,12 @@ function check(label: string, ok: boolean, detail = ''): void {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(HERE, '..', 'src', 'index.ts');
 
-function run(args: string[], cwd: string): { out: string; code: number } {
+function run(args: string[], cwd: string, env: Record<string, string> = {}): { out: string; code: number } {
+  // PANAL_LANG y LANG se limpian salvo que la prueba los ponga: si no, el
+  // idioma de la máquina donde corre el CI decidiría el de las aserciones.
+  const entorno = { ...process.env, PANAL_LANG: '', LC_ALL: '', LC_MESSAGES: '', LANG: '', ...env };
   try {
-    const out = execFileSync('npx', ['tsx', CLI, ...args], { cwd, encoding: 'utf8', stdio: 'pipe' });
+    const out = execFileSync('npx', ['tsx', CLI, ...args], { cwd, encoding: 'utf8', stdio: 'pipe', env: entorno });
     return { out, code: 0 };
   } catch (err) {
     const e = err as { stdout?: string; stderr?: string; status?: number };
@@ -66,6 +72,36 @@ async function main(): Promise<void> {
   check('sin nombre explica cómo se usa', run([], work).out.includes('create-panal-agent'));
   check('rechaza mayúsculas y espacios', run(['Mi Agente'], work).code !== 0);
   check('rechaza un nombre que empieza por guion', run(['-raro'], work).code !== 0);
+
+  console.log('\n── 1b. El idioma ──');
+
+  const ayuda = run(['--help'], work);
+  check('--help explica el uso y termina bien', ayuda.code === 0 && ayuda.out.includes('--lang'));
+  const version = run(['--version'], work);
+  check('--version imprime una versión', version.code === 0 && /^\d+\.\d+\.\d+/.test(version.out.trim()), version.out.trim());
+  check('un idioma inventado se rechaza', run(['agente-x', '--lang', 'klingon'], work).code !== 0);
+  check('--help sale en el idioma pedido', run(['--help', '--lang=ru'], work).out.includes('Опции'));
+  check('PANAL_LANG manda cuando no hay bandera', run(['--help'], work, { PANAL_LANG: 'fr' }).out.includes('Options'));
+  check('el locale del sistema se respeta', run(['--help'], work, { LANG: 'zh_CN.UTF-8' }).out.includes('选项'));
+
+  // Sin TTY —CI, Docker, una tubería— no se puede preguntar: preguntar ahí
+  // cuelga el proceso para siempre. Debe caer al inglés y seguir.
+  const sinTty = run(['agente-sin-tty'], work);
+  check('sin terminal interactiva no se queda preguntando', sinTty.code === 0 && sinTty.out.includes('created'));
+
+  console.log('\n── 1c. Un agente generado en chino ──');
+
+  const zh = run(['agente-zh', '--lang', 'zh'], work);
+  const destZh = join(work, 'agente-zh');
+  check('se genera', zh.code === 0);
+  check('la salida del CLI está en chino', zh.out.includes('代理钱包'), zh.out.split('\n').find((l) => l.includes('代理')) ?? '');
+  const readmeZh = readFileSync(join(destZh, 'README.md'), 'utf8');
+  check('el README del proyecto está en chino', readmeZh.includes('三个步骤'));
+  check('el README lleva su nombre y su wallet', readmeZh.includes('agente-zh') && /0x[0-9a-fA-F]{40}/.test(readmeZh));
+  check('no quedan marcadores sin sustituir en el README', !readmeZh.includes('{name}') && !readmeZh.includes('{address}'));
+  const envZh = readFileSync(join(destZh, '.env.example'), 'utf8');
+  check('el .env.example está en chino', envZh.includes('私钥'));
+  check('y conserva todas sus claves', ['AGENT_PRIVATE_KEY=', 'PORT=', 'LLM_API_KEY=', 'RPC_URL=', 'DATA_DIR='].every((k) => envZh.includes(k)));
 
   console.log('\n── 2. Se genera el proyecto ──');
 
@@ -110,7 +146,11 @@ async function main(): Promise<void> {
 
   console.log('\n── 5. No se pisa una carpeta con contenido ──');
   const repetido = run([name], work);
-  check('avisa en vez de sobreescribir', repetido.code !== 0 && repetido.out.includes('ya existe'));
+  check(
+    'avisa en vez de sobreescribir',
+    repetido.code !== 0 && repetido.out.includes(fill(CATALOG.en.errDirExists, { name })),
+    `código ${repetido.code}`,
+  );
 
   console.log('\n── 6. El proyecto generado COMPILA ──');
   console.log('   (instalando dependencias, tarda un poco…)');

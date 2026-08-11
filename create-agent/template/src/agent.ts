@@ -52,6 +52,10 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<strin
   const res = await fetch(`${process.env.LLM_BASE_URL ?? 'https://api.openai.com/v1'}/chat/completions`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+    // Sin este tope, un modelo que se cuelga deja la tarea colgada para
+    // siempre: el cliente ni cobra el resultado ni recupera su dinero hasta
+    // que vence el plazo. Pasó de verdad, en mainnet.
+    signal: AbortSignal.timeout(120_000),
     body: JSON.stringify({
       model: process.env.LLM_MODEL ?? 'gpt-4o-mini',
       messages: [
