@@ -142,7 +142,13 @@ async function main(): Promise<void> {
     return Boolean(otra && otra !== key);
   })());
   check('el .env está ignorado por git', readFileSync(join(dest, '.gitignore'), 'utf8').includes('.env'));
-  check('el .env.example NO lleva la clave', !readFileSync(join(dest, '.env.example'), 'utf8').includes('0x'));
+  // Lo que no puede aparecer aquí es una CLAVE PRIVADA (0x + 64 hex). Hay otras
+  // direcciones legítimas —la del token de x402, por ejemplo—, así que buscar
+  // "0x" a secas daría un falso positivo y dejaría de comprobar lo que importa.
+  check(
+    'el .env.example NO lleva la clave privada',
+    !/0x[0-9a-fA-F]{64}/.test(readFileSync(join(dest, '.env.example'), 'utf8')),
+  );
 
   console.log('\n── 5. No se pisa una carpeta con contenido ──');
   const repetido = run([name], work);
@@ -242,6 +248,17 @@ async function main(): Promise<void> {
         rutaDelDashboard.status === 400,
         `HTTP ${rutaDelDashboard.status}${rutaDelDashboard.status === 404 ? ' — el agente vuelve a ser sordo al dashboard' : ''}`,
       );
+
+      // Cobro por llamada: sin X402_PRICE en el .env, la ruta no debe existir.
+      // Un agente que cobrara sin que su dueño lo pidiera seria un problema.
+      const sinCobro = await fetch(`http://127.0.0.1:${port}/x402/ask`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ prompt: 'hola' }),
+      });
+      check('sin X402_PRICE no se cobra por llamada', sinCobro.status === 404, `HTTP ${sinCobro.status}`);
+      const tarjeta = (await (await fetch(`http://127.0.0.1:${port}/agent.json`)).json()) as Record<string, unknown>;
+      check('y la tarjeta no anuncia cobro que no existe', tarjeta.x402Ask === undefined);
 
       // Salida de emergencia cuando el envío automático no llega (móvil, wallet
       // que se traga la firma). Servida por el propio agente: mismo origen, sin

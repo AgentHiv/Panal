@@ -73,6 +73,7 @@ export interface Catalog {
     model: string;
     rpc: string;
     data: string;
+    x402: string;
   };
   /** README que se escribe dentro del proyecto generado. */
   readme: string;
@@ -118,6 +119,7 @@ The language is taken from --lang, then PANAL_LANG, then your system locale.`,
     model: 'Your model, if your agent uses one. Any OpenAI-compatible API.',
     rpc: 'Your own RPC, if the public one falls short (it caps at ~15 calls/s).',
     data: 'Where to store delivered results.',
+    x402: 'Charge per call (optional). Leave it empty and your agent only takes escrow jobs.\nThe price is per request, in an EIP-2612 token — it cannot be MON, the scheme needs `permit`.',
   },
   readme: `# {name}
 
@@ -208,6 +210,7 @@ El idioma sale de --lang, luego de PANAL_LANG, y si no del locale del sistema.`,
     model: 'Tu modelo, si tu agente usa uno. Cualquier API compatible con OpenAI.',
     rpc: 'RPC propio, si el público se te queda corto (limita a ~15 llamadas/s).',
     data: 'Dónde guardar los resultados entregados.',
+    x402: 'Cobro por llamada (opcional). Déjalo vacío y tu agente solo acepta encargos del escrow.\nEl precio es por petición, en un token EIP-2612: no puede ser MON, el esquema necesita `permit`.',
   },
   readme: `# {name}
 
@@ -299,6 +302,7 @@ const zh: Catalog = {
     model: '你的模型（如果代理需要）。任何兼容 OpenAI 的 API 均可。',
     rpc: '你自己的 RPC，当公共节点不够用时（其上限约为每秒 15 次调用）。',
     data: '交付结果的存放位置。',
+    x402: '按次收费（可选）。留空则你的代理只接受托管订单。\n价格按每次请求计算，使用支持 EIP-2612 的代币——不能是 MON，该方案依赖 `permit`。',
   },
   readme: `# {name}
 
@@ -385,6 +389,7 @@ const hi: Catalog = {
     model: 'आपका मॉडल, अगर एजेंट किसी का उपयोग करता है। OpenAI-संगत कोई भी API।',
     rpc: 'अपना RPC, अगर सार्वजनिक कम पड़े (इसकी सीमा ~15 कॉल/सेकंड है)।',
     data: 'दिए गए परिणाम कहाँ सहेजें।',
+    x402: 'प्रति कॉल शुल्क (वैकल्पिक)। खाली छोड़ें तो आपका एजेंट केवल एस्क्रो वाले काम लेगा।\nकीमत प्रति अनुरोध है, EIP-2612 टोकन में — MON नहीं चल सकता, इस योजना को `permit` चाहिए।',
   },
   readme: `# {name}
 
@@ -475,6 +480,7 @@ const ar: Catalog = {
     model: 'نموذجك، إن كان وكيلك يستخدم واحدًا. أي واجهة متوافقة مع OpenAI.',
     rpc: 'عقدة RPC خاصة بك، إن لم تكفِ العامة (حدّها نحو 15 طلبًا في الثانية).',
     data: 'مكان حفظ النتائج المُسلَّمة.',
+    x402: 'التحصيل لكل استدعاء (اختياري). اتركه فارغًا فيقبل وكيلك مهام الضمان فقط.\nالسعر لكل طلب، بعملة تدعم EIP-2612 — لا يصلح MON، فالمخطط يحتاج `permit`.',
   },
   readme: `# {name}
 
@@ -564,6 +570,7 @@ La langue vient de --lang, puis de PANAL_LANG, puis de la locale du système.`,
     model: 'Votre modèle, si votre agent en utilise un. Toute API compatible OpenAI.',
     rpc: 'Votre propre RPC, si le public ne suffit pas (limité à ~15 appels/s).',
     data: 'Où stocker les résultats livrés.',
+    x402: "Facturation à l'appel (facultatif). Laissez vide et votre agent ne prend que des missions sous entiercement.\nLe prix est par requête, dans un jeton EIP-2612 : pas de MON, le schéma exige `permit`.",
   },
   readme: `# {name}
 
@@ -657,6 +664,7 @@ O idioma vem de --lang, depois de PANAL_LANG e, por fim, do locale do sistema.`,
     model: 'O seu modelo, se o agente usar um. Qualquer API compatível com OpenAI.',
     rpc: 'RPC próprio, se o público não chegar (limita a ~15 chamadas/s).',
     data: 'Onde guardar os resultados entregues.',
+    x402: 'Cobrança por chamada (opcional). Deixe vazio e o seu agente só aceita trabalhos do escrow.\nO preço é por pedido, num token EIP-2612: não pode ser MON, o esquema precisa de `permit`.',
   },
   readme: `# {name}
 
@@ -748,6 +756,7 @@ const ru: Catalog = {
     model: 'Ваша модель, если агент её использует. Любой API, совместимый с OpenAI.',
     rpc: 'Свой RPC, если публичного не хватает (лимит ~15 запросов/с).',
     data: 'Где хранить сданные результаты.',
+    x402: 'Плата за вызов (необязательно). Оставьте пустым — агент будет брать только заказы через эскроу.\nЦена за один запрос, в токене с EIP-2612: MON не подходит, схеме нужен `permit`.',
   },
   readme: `# {name}
 
@@ -840,6 +849,7 @@ const bn: Catalog = {
     model: 'আপনার মডেল, যদি এজেন্ট ব্যবহার করে। OpenAI-সঙ্গতিপূর্ণ যেকোনো API।',
     rpc: 'নিজস্ব RPC, যদি সর্বজনীনটি যথেষ্ট না হয় (সীমা প্রায় ১৫ কল/সেকেন্ড)।',
     data: 'সরবরাহ করা ফলাফল কোথায় রাখা হবে।',
+    x402: 'প্রতি কলে চার্জ (ঐচ্ছিক)। ফাঁকা রাখলে আপনার এজেন্ট কেবল এসক্রো কাজ নেবে।\nদাম প্রতি অনুরোধে, EIP-2612 টোকেনে — MON চলবে না, স্কিমটির `permit` দরকার।',
   },
   readme: `# {name}
 
@@ -929,6 +939,7 @@ const ur: Catalog = {
     model: 'آپ کا ماڈل، اگر ایجنٹ استعمال کرے۔ OpenAI سے ہم آہنگ کوئی بھی API۔',
     rpc: 'اپنا RPC، اگر عوامی کم پڑ جائے (حد تقریباً 15 کالز فی سیکنڈ)۔',
     data: 'فراہم کردہ نتائج کہاں محفوظ ہوں۔',
+    x402: 'فی کال وصولی (اختیاری)۔ خالی چھوڑ دیں تو آپ کا ایجنٹ صرف ایسکرو کے کام لے گا۔\nقیمت فی درخواست ہے، EIP-2612 ٹوکن میں — MON نہیں چل سکتا، اس اسکیم کو `permit` چاہیے۔',
   },
   readme: `# {name}
 

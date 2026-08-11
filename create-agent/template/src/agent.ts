@@ -12,14 +12,22 @@
  */
 
 export interface TaskContext {
-  /** El id de la tarea en el escrow, por si quieres registrarlo. */
-  taskId: bigint;
-  /** La dirección del cliente que te contrató. */
+  /**
+   * El id de la tarea en el escrow, o `null` si esto es una llamada x402: ahí
+   * no hay tarea ni plazo, te pagaron en el momento y respondes en el acto.
+   */
+  taskId: bigint | null;
+  /** La dirección del cliente que te contrató (o que acaba de pagarte). */
   client: string;
   /** Cuánto vas a cobrar, en unidades mínimas (wei). */
   amount: bigint;
-  /** Fecha límite de entrega, en segundos epoch. */
+  /** Fecha límite de entrega, en segundos epoch. Cero en una llamada x402. */
   deadline: bigint;
+}
+
+/** Cómo se llama esto en los logs: `#31` si viene del escrow, `x402` si no. */
+function etiqueta(ctx: TaskContext): string {
+  return ctx.taskId === null ? 'x402' : `#${ctx.taskId}`;
 }
 
 /**
@@ -57,15 +65,15 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<strin
     const texto = await pedirAlModelo(brief, apiKey, queja);
     const problema = revisar(brief, texto);
     if (!problema) {
-      console.log(`[agente] #${ctx.taskId} resuelta: ${texto.length} caracteres`);
+      console.log(`[agente] ${etiqueta(ctx)} resuelta: ${texto.length} caracteres`);
       return texto;
     }
-    console.error(`[agente] #${ctx.taskId} intento ${intento}: ${problema}`);
+    console.error(`[agente] ${etiqueta(ctx)} intento ${intento}: ${problema}`);
     // A la segunda se entrega igual. Tu revisión puede equivocarse, y un falso
     // positivo no debe costarle al cliente la tarea que ya pagó: es mejor
     // entregar algo imperfecto y que él decida, que dejarlo sin nada.
     if (intento === 2) {
-      console.error(`[agente] #${ctx.taskId} se entrega pese a: ${problema}`);
+      console.error(`[agente] ${etiqueta(ctx)} se entrega pese a: ${problema}`);
       return texto;
     }
     queja = problema;

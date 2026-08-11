@@ -24,9 +24,19 @@ import 'dotenv/config';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createPanalClient, TaskStatus } from '@panal/sdk';
+import {
+  buildQuote,
+  createPanalClient,
+  MAINNET_ADDRESSES,
+  parsePaymentHeader,
+  permitNonce,
+  readPermitDomain,
+  TaskStatus,
+  verifyAndSettle,
+  type PermitDomain,
+} from '@panal/sdk';
 import { privateKeyToAccount } from 'viem/accounts';
-import { keccak256, toBytes, verifyMessage } from 'viem';
+import { isAddress, keccak256, parseEther, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
 import { handleTask } from './agent.js';
 
@@ -44,6 +54,58 @@ const account = privateKeyToAccount(key as `0x${string}`);
 const panal = createPanalClient({ account, rpcUrl: process.env.RPC_URL });
 
 console.log(`Agente ${account.address} escuchando en :${PORT}`);
+
+// ---------------------------------------------------------------------------
+// x402: cobrar por llamada, sin escrow.
+//
+// El escrow es para encargos que valen algo: bloquea el pago, hay plazo y hay
+// disputa. Para una consulta de dos milésimas todo eso sobra —el trámite cuesta
+// más que el servicio—, y ahí entra x402: el cliente firma una autorización de
+// pago (gratis, sin gas), tú cobras y respondes en la misma llamada.
+//
+// Es OPCIONAL: sin X402_PRICE en el .env, esta ruta no existe y tu agente
+// funciona igual solo con encargos del escrow.
+//
+// Solo se puede cobrar en un ERC-20 con EIP-2612, no en MON: el esquema entero
+// se apoya en `permit`, y la moneda nativa no lo tiene.
+// ---------------------------------------------------------------------------
+
+const X402_PRICE = (() => {
+  const raw = process.env.X402_PRICE?.trim();
+  if (!raw) return null;
+  try {
+    const wei = parseEther(raw);
+    return wei > 0n ? wei : null;
+  } catch {
+    console.error(`X402_PRICE="${raw}" no es un número válido: el cobro por llamada queda desactivado.`);
+    return null;
+  }
+})();
+const X402_TOKEN: Address = (() => {
+  const raw = process.env.X402_TOKEN?.trim();
+  return raw && isAddress(raw) ? (raw as Address) : MAINNET_ADDRESSES.panalToken;
+})();
+const X402_SYMBOL = process.env.X402_SYMBOL?.trim() || '$PANAL';
+// En inglés porque viaja en el 402 y lo lee un desconocido de cualquier parte.
+// Cámbialo por lo tuyo con X402_DESCRIPTION en el .env.
+const X402_DESCRIPTION = process.env.X402_DESCRIPTION?.trim() || 'One question to the agent, answered on the spot.';
+
+if (X402_PRICE !== null) {
+  console.log(`Cobro por llamada activo: ${process.env.X402_PRICE} ${X402_SYMBOL} en POST /x402/ask`);
+}
+
+/**
+ * El dominio EIP-712 del token, leído de la cadena una sola vez.
+ *
+ * Se cachea porque no cambia nunca y leerlo en cada petición añade una llamada
+ * al RPC al camino de una respuesta que cobras al momento. Si el RPC falla, se
+ * vuelve a intentar en la siguiente: no se cachea el error.
+ */
+let dominioCache: PermitDomain | null = null;
+async function dominioPermit(): Promise<PermitDomain> {
+  if (!dominioCache) dominioCache = await readPermitDomain(panal.publicClient, X402_TOKEN);
+  return dominioCache;
+}
 
 // ---------------------------------------------------------------------------
 // Almacén: los resultados en disco, para poder servirlos después.
@@ -224,8 +286,114 @@ const server = createServer((req, res) => {
     }
 
     // Tarjeta de presentación: quién eres y qué sabes hacer.
+    //
+    // Si cobras por llamada hay que ANUNCIARLO aquí. Durante meses el bot de
+    // LexPanal tuvo x402 funcionando y nadie lo usó, sencillamente porque no
+    // salía en su tarjeta: un cobro que nadie puede descubrir no existe.
     if (url.pathname === '/agent.json' && req.method === 'GET') {
-      json(res, 200, { agent: account.address, protocol: 'panal', network: 'monad-mainnet' });
+      json(res, 200, {
+        agent: account.address,
+        protocol: 'panal',
+        network: 'monad-mainnet',
+        ...(X402_PRICE !== null
+          ? {
+              x402Ask: {
+                method: 'POST',
+                path: '/x402/ask',
+                scheme: 'eip2612-permit',
+                asset: X402_TOKEN,
+                assetSymbol: X402_SYMBOL,
+                amount: X402_PRICE.toString(),
+                payTo: account.address,
+                howTo: 'POST {"prompt":"…"} and you get a 402 with the quote. Sign it and repeat with X-Payment.',
+              },
+            }
+          : {}),
+      });
+      return;
+    }
+
+    // ---- Cobro por llamada: pagas y te respondo en el acto ------------------
+    if (url.pathname === '/x402/ask' && req.method === 'POST') {
+      if (X402_PRICE === null) {
+        json(res, 404, { error: 'this agent does not charge per call; hire it through the escrow' });
+        return;
+      }
+      const body = JSON.parse(await readBody(req)) as { prompt?: string };
+      const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
+      if (!prompt || prompt.length > 2000) {
+        json(res, 400, { error: 'prompt required, max 2000 characters' });
+        return;
+      }
+
+      const domain = await dominioPermit();
+      const pagoCrudo = req.headers['x-payment'];
+
+      // Sin pago: se responde 402 con el presupuesto. Este es el paso que le da
+      // por fin sentido a un código de estado que llevaba desde los noventa
+      // reservado y sin usar, porque no había forma de pagar en la web.
+      if (typeof pagoCrudo !== 'string' || !pagoCrudo.trim()) {
+        // Si el cliente dice quién es, se le regala su nonce y se ahorra una
+        // consulta a la cadena antes de poder firmar.
+        const quien = req.headers['x-payment-payer'];
+        const payer = typeof quien === 'string' && isAddress(quien) ? (quien as Address) : null;
+        const nonce = payer ? await permitNonce(panal.publicClient, X402_TOKEN, payer).catch(() => undefined) : undefined;
+
+        res.setHeader('www-authenticate', `eip2612-permit realm="panal", chain="${domain.chainId}"`);
+        json(
+          res,
+          402,
+          buildQuote({
+            asset: X402_TOKEN,
+            assetSymbol: X402_SYMBOL,
+            amount: X402_PRICE,
+            payTo: account.address,
+            resource: '/x402/ask',
+            description: X402_DESCRIPTION,
+            domain,
+            payerNonce: nonce,
+          }),
+        );
+        return;
+      }
+
+      const leido = parsePaymentHeader(pagoCrudo);
+      if (!leido.ok) {
+        json(res, 400, { error: leido.error });
+        return;
+      }
+
+      // SE COBRA ANTES DE SERVIR. Si se sirviera primero y el cobro fallara, el
+      // trabajo estaría regalado y no habría forma de recuperarlo.
+      const cobro = await verifyAndSettle(
+        { publicClient: panal.publicClient, walletClient: panal.walletClient ?? null, token: X402_TOKEN, domain, payee: account.address },
+        leido.payment,
+        X402_PRICE,
+      );
+      if (!cobro.ok) {
+        json(res, cobro.status, { error: cobro.error });
+        return;
+      }
+      console.log(`[x402] cobrado ${cobro.amount} de ${leido.payment.payer} · tx ${cobro.txHash}`);
+
+      // Ya está cobrado: pase lo que pase a partir de aquí, hay que responder
+      // algo. Si el modelo revienta, se dice; callarse sería quedarse el dinero.
+      try {
+        const answer = await handleTask(prompt, {
+          taskId: null,
+          client: leido.payment.payer,
+          amount: cobro.amount,
+          deadline: 0n,
+        });
+        res.setHeader('x-payment-tx', cobro.txHash);
+        json(res, 200, { answer, paid: { txHash: cobro.txHash, amount: cobro.amount.toString(), asset: X402_TOKEN } });
+      } catch (err) {
+        console.error(`[x402] cobrado pero falló al responder: ${err instanceof Error ? err.message : err}`);
+        json(res, 502, {
+          error: 'the payment went through but the agent could not answer',
+          paid: { txHash: cobro.txHash, amount: cobro.amount.toString() },
+        });
+      }
       return;
     }
 

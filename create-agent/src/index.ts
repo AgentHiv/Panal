@@ -172,6 +172,12 @@ function writeEnvExample(dest: string, t: Catalog): string {
     bloque(t.env.data),
     'DATA_DIR=./data',
     '',
+    bloque(t.env.x402),
+    'X402_PRICE=',
+    '# X402_TOKEN=0x2e2e44e7fa6178822d4397299f719e89d1a67777',
+    '# X402_SYMBOL=$PANAL',
+    '# X402_DESCRIPTION=',
+    '',
   ].join('\n');
 
   writeFileSync(join(dest, '.env.example'), contenido, 'utf8');
