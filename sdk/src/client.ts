@@ -19,6 +19,8 @@
 import { createPublicClient, createWalletClient, formatEther, getAddress, http, keccak256, toBytes } from 'viem';
 import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, registryAbi } from './abis.js';
+import { assertPublicUrl, fetchLimited } from './net.js';
+import { X402Error, payAndAsk, quoteAsk, type AskResult, type X402Accept } from './x402.js';
 import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type PanalNetwork } from './chains.js';
 import {
   TaskStatus,
@@ -440,6 +442,148 @@ export class PanalClient {
       if (id === 0n) break;
     }
     return found;
+  }
+
+  // -------------------------------------------------------------------------
+  // Llamar a otro agente y pagarle al momento (x402).
+  //
+  // Esto es lo que permite que un agente contrate a otro sin humano de por
+  // medio. A diferencia del escrow, aquí no hay tarea, ni plazo, ni disputa:
+  // se paga y se responde en la misma llamada. Por eso vale para consultas de
+  // céntimos y NO vale para un encargo serio.
+  // -------------------------------------------------------------------------
+
+  /**
+   * Pregunta el precio de un agente sin pagar nada.
+   *
+   * Es gratis y no compromete: puedes cotizar a varios candidatos y decidir.
+   */
+  async quoteAgent(agent: Address, prompt: string, options: { allowInsecure?: boolean } = {}): Promise<X402Accept> {
+    const endpoint = await this.x402Endpoint(agent, options);
+    return quoteAsk(endpoint, prompt, { payer: this.account?.address, ...options });
+  }
+
+  /**
+   * Paga a un agente concreto por una consulta y devuelve su respuesta.
+   *
+   * `maxSpend` es obligatorio: el precio lo pone el otro extremo, así que sin
+   * tope estarías firmando lo que te pidan.
+   */
+  async askAgent(
+    agent: Address,
+    prompt: string,
+    options: { maxSpend: bigint; quote?: X402Accept; allowInsecure?: boolean; timeoutMs?: number },
+  ): Promise<AskResult> {
+    const wallet = this.wallet();
+    const endpoint = await this.x402Endpoint(agent, options);
+    return payAndAsk(wallet, this.account!, endpoint, prompt, {
+      ...options,
+      chainId: chainFor(this.network).id,
+      // Se ata a quién esperamos pagar: si el endpoint estuviera secuestrado y
+      // cotizara a nombre de otro, la firma no llega a producirse.
+      expectedPayee: agent,
+    });
+  }
+
+  /**
+   * Busca un agente con esa skill, negocia el precio y le paga por la consulta.
+   *
+   * Es la operación que hace de Panal algo más que un directorio: una llamada
+   * a función que cruza una frontera económica.
+   *
+   *   const respuesta = await panal.ask('traducción', 'traduce esto', {
+   *     maxSpend: parseEther('0.01'),
+   *   });
+   *
+   * Cotiza a los candidatos —gratis, con el 402— y se queda con el más barato
+   * que quepa en el presupuesto. Los que no cobran por llamada o no responden
+   * se descartan sin ruido: que un agente esté caído no debe tumbar al que
+   * pregunta.
+   */
+  async ask(
+    skill: string,
+    prompt: string,
+    options: {
+      maxSpend: bigint;
+      /** Cuántos candidatos se cotizan como mucho. Cada uno es una petición. */
+      maxCandidates?: number;
+      /** Descartar a estos (evita que un agente se llame a sí mismo). */
+      exclude?: Address[];
+      allowInsecure?: boolean;
+      timeoutMs?: number;
+    },
+  ): Promise<AskResult & { agent: Address }> {
+    const wallet = this.wallet();
+    const excluded = new Set(
+      [...(options.exclude ?? []), this.account!.address].map((a) => getAddress(a).toLowerCase()),
+    );
+
+    const candidates = (await this.searchAgents(skill))
+      .filter((a) => !excluded.has(a.address.toLowerCase()) && a.metadata.botUrl)
+      .slice(0, options.maxCandidates ?? 5);
+
+    if (!candidates.length) throw new X402Error(`Ningún agente activo con la skill "${skill}" publica endpoint.`);
+
+    const quotes: { agent: Agent; endpoint: string; accept: X402Accept }[] = [];
+    const rechazos: string[] = [];
+    for (const agent of candidates) {
+      try {
+        const endpoint = await this.x402Endpoint(agent.address, options, agent);
+        const accept = await quoteAsk(endpoint, prompt, { payer: this.account!.address, ...options });
+        if (BigInt(accept.amount) <= options.maxSpend) quotes.push({ agent, endpoint, accept });
+        else rechazos.push(`${agent.metadata.name || agent.address}: pide ${accept.amount}, por encima del tope`);
+      } catch (err) {
+        rechazos.push(`${agent.metadata.name || agent.address}: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+
+    if (!quotes.length) {
+      throw new X402Error(
+        `Ningún agente de "${skill}" pudo cotizar dentro del presupuesto.\n  ${rechazos.join('\n  ')}`,
+      );
+    }
+
+    quotes.sort((a, b) => (BigInt(a.accept.amount) < BigInt(b.accept.amount) ? -1 : 1));
+    const elegido = quotes[0]!;
+
+    const result = await payAndAsk(wallet, this.account!, elegido.endpoint, prompt, {
+      ...options,
+      chainId: chainFor(this.network).id,
+      expectedPayee: elegido.agent.address,
+      quote: elegido.accept,
+    });
+    return { ...result, agent: elegido.agent.address };
+  }
+
+  /**
+   * Dónde escucha el x402 de un agente.
+   *
+   * Se prefiere lo que el propio agente anuncia en su `agent.json`; si no lo
+   * anuncia, se prueba la ruta por convención. Así funciona con los agentes que
+   * ya están desplegados sin obligarles a actualizarse.
+   */
+  private async x402Endpoint(
+    agent: Address,
+    options: { allowInsecure?: boolean } = {},
+    known?: Agent,
+  ): Promise<string> {
+    const info = known ?? (await this.getAgent(agent));
+    const base = info.metadata.botUrl;
+    if (!base) throw new X402Error(`El agente ${agent} no publica endpoint en su metadata.`);
+
+    try {
+      const url = await assertPublicUrl(new URL('/agent.json', base).toString(), options);
+      const res = await fetchLimited(url, { timeoutMs: 10_000 });
+      if (res.status === 200) {
+        const card = JSON.parse(res.text) as { endpoints?: { x402Ask?: { url?: string; path?: string } } };
+        const anunciado = card.endpoints?.x402Ask;
+        if (anunciado?.url) return anunciado.url;
+        if (anunciado?.path) return new URL(anunciado.path, base).toString();
+      }
+    } catch {
+      /* sin tarjeta o ilegible: se cae a la convención */
+    }
+    return new URL('/x402/ask', base).toString();
   }
 
   /** Retira lo acreditado en una moneda (patrón pull payment). */

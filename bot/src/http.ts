@@ -143,6 +143,25 @@ export interface AgentJson {
     base: string | null;
     postBrief: { method: 'POST'; path: '/brief/:taskId'; signMessage: string; body: string };
     getResult: { method: 'GET'; path: '/result/:taskId?address&signature'; signMessage: string };
+    /**
+     * Cobro por llamada (x402). Presente solo si el agente lo tiene activado.
+     *
+     * Sin esto el endpoint existe pero es indescubrible: estuvo semanas vivo
+     * respondiendo cotizaciones a nadie, porque ningun cliente podia saber que
+     * estaba ahi. Es lo que permite que otro agente pregunte el precio y pague
+     * sin intervencion humana.
+     */
+    x402Ask?: {
+      method: 'POST';
+      path: '/x402/ask';
+      url: string;
+      scheme: string;
+      asset: string;
+      assetSymbol: string;
+      amount: string;
+      payTo: string;
+      howTo: string;
+    };
     /** API pública del indexador Panal (agentes, tareas y eventos). */
     indexer: string;
   };
@@ -167,7 +186,12 @@ function parseMetadataURI(uri: string): { name?: string; description?: string; s
  * skills, precio, active); si el RPC falla, sirve el descriptor con lo
  * estático de la config (mejor degradado que un 502).
  */
-export async function buildAgentJson(cfg: BotConfig, clients: ChainClients): Promise<AgentJson> {
+export async function buildAgentJson(
+  cfg: BotConfig,
+  clients: ChainClients,
+  /** Si el agente cobra por llamada, se anuncia en la tarjeta. */
+  x402?: X402Endpoint,
+): Promise<AgentJson> {
   let agent: RegistryAgent | null = null;
   try {
     agent = await getRegistryAgent(clients, cfg, cfg.agentAddress);
@@ -211,6 +235,24 @@ export async function buildAgentJson(cfg: BotConfig, clients: ChainClients): Pro
         path: '/result/:taskId?address&signature',
         signMessage: 'Panal resultado #<taskId>  (EIP-191, firmado por el cliente de la tarea)',
       },
+      ...(x402
+        ? {
+            x402Ask: {
+              method: 'POST' as const,
+              path: '/x402/ask' as const,
+              url: `${basePath}/x402/ask`,
+              scheme: SCHEME,
+              asset: x402.token,
+              assetSymbol: x402.tokenSymbol,
+              amount: x402.priceWei.toString(),
+              payTo: x402.payee,
+              howTo:
+                'POST sin cabecera devuelve 402 con la cotizacion (gratis). Firma el permit EIP-2612 ' +
+                'que describe y repite con X-Payment: base64({scheme,payer,value,deadline,signature}). ' +
+                'Se cobra y se responde en la misma llamada; el cliente no paga gas.',
+            },
+          }
+        : {}),
       indexer: cfg.indexerPublicUrl,
     },
     howToHire: [
@@ -639,7 +681,7 @@ export function startResultServer(cfg: BotConfig, clients: ChainClients, store: 
     store,
     x402,
     fetchTask: (taskId) => getTask(clients, cfg, taskId),
-    fetchAgentJson: () => buildAgentJson(cfg, clients),
+    fetchAgentJson: () => buildAgentJson(cfg, clients, x402),
     // En producción (NODE_ENV=production) solo panal.lat; en dev también localhost.
     allowLocalhostOrigin: cfg.dryRun || process.env.NODE_ENV !== 'production',
   });

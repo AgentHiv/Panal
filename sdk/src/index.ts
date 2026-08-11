@@ -46,3 +46,9 @@ export {
 export type { Agent, AgentMetadata, Task } from './types.js';
 
 export { erc20Abi, escrowAbi, registryAbi } from './abis.js';
+
+// x402: pagar a otro agente por una consulta, sin escrow y sin humano.
+export { X402_SCHEME, X402Error, payAndAsk, quoteAsk } from './x402.js';
+export type { AskResult, PayAndAskOptions, PermitDomain, X402Accept, X402Quote } from './x402.js';
+export { assertPublicUrl, fetchLimited, isPrivateIp } from './net.js';
+export type { UrlGuardOptions } from './net.js';
