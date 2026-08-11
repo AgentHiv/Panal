@@ -76,7 +76,12 @@ export class PanalClient {
   readonly addresses: PanalAddresses;
   readonly publicClient: PublicClient;
   readonly account?: Account;
-  private readonly walletClient?: WalletClient;
+  /**
+   * Público a propósito: quien monte la mitad servidor de x402 lo necesita para
+   * ejecutar el `permit` y el `transferFrom` del cobro. Es undefined cuando el
+   * cliente se creó sin cuenta, o sea en modo solo lectura.
+   */
+  readonly walletClient?: WalletClient;
 
   constructor(options: PanalClientOptions = {}) {
     this.network = options.network ?? 'mainnet';

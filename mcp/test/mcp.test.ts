@@ -118,7 +118,7 @@ async function main(): Promise<void> {
 
     const list = await mcp.request('tools/list');
     const names: string[] = (list?.tools ?? []).map((t: { name: string }) => t.name);
-    check('las 9 herramientas se anuncian', names.length === 9, names.join(', '));
+    check('las 10 herramientas se anuncian', names.length === 10, names.join(', '));
     for (const expected of [
       'panal_search_agents',
       'panal_get_agent',
@@ -129,6 +129,7 @@ async function main(): Promise<void> {
       'panal_hire',
       'panal_get_result',
       'panal_approve_task',
+      'panal_send_brief',
     ]) {
       check(`  ${expected} presente`, names.includes(expected));
     }
@@ -140,7 +141,7 @@ async function main(): Promise<void> {
     console.log('\n── 3. Lectura contra Monad mainnet ──');
 
     const stats = await mcp.callTool('panal_marketplace_stats');
-    check('las cifras del marketplace se leen', /Agentes registrados: \d+/.test(stats), stats.split('\n')[0]);
+    check('las cifras del marketplace se leen', /Registered agents: \d+/.test(stats), stats.split('\n')[0]);
     check('el escrow que reporta es el desplegado', stats.includes('0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9'));
 
     const search = await mcp.callTool('panal_search_agents', {});
@@ -157,7 +158,7 @@ async function main(): Promise<void> {
     }
 
     const task = await mcp.callTool('panal_get_task', { task_id: 0 });
-    check('una tarea real se lee', task.startsWith('Tarea #0'), task.split('\n')[0]);
+    check('una tarea real se lee', task.startsWith('Task #0'), task.split('\n')[0]);
 
     console.log('\n── 4. Entradas inválidas: mensaje claro, nunca una excepción ──');
 
@@ -167,7 +168,7 @@ async function main(): Promise<void> {
     );
     check(
       'una tarea inexistente se explica',
-      (await mcp.callTool('panal_get_task', { task_id: 99_999_999 })).includes('no existe'),
+      (await mcp.callTool('panal_get_task', { task_id: 99_999_999 })).includes('does not exist'),
     );
     const unknown = await mcp.request('tools/call', { name: 'panal_no_existe', arguments: {} });
     check('una herramienta inventada da error de protocolo', unknown?.code === -32602, JSON.stringify(unknown));
@@ -177,19 +178,24 @@ async function main(): Promise<void> {
     // MCP_ENABLE_WRITES, así que toda ruta que mueva dinero debe estar cerrada.
 
     const wallet = await mcp.callTool('panal_wallet');
-    check('la wallet avisa de que está en solo lectura', wallet.includes('SOLO LECTURA'), wallet.slice(0, 60));
+    check('la wallet avisa de que está en solo lectura', wallet.includes('READ-ONLY'), wallet.slice(0, 60));
 
     const quote = await mcp.callTool('panal_quote_hire', {
       agent: '0x0000000000000000000000000000000000000001',
       brief: 'lo que sea',
     });
-    check('presupuestar está cerrado', quote.includes('SOLO LECTURA'));
+    check('presupuestar está cerrado', quote.includes('READ-ONLY'));
 
     const hire = await mcp.callTool('panal_hire', { quote_id: 'inventado', confirmed_by_user: true });
-    check('contratar está cerrado incluso con confirmación', hire.includes('SOLO LECTURA'), hire.slice(0, 60));
+    check('contratar está cerrado incluso con confirmación', hire.includes('READ-ONLY'), hire.slice(0, 60));
 
     const approve = await mcp.callTool('panal_approve_task', { task_id: 0, rating: 5, confirmed_by_user: true });
-    check('liberar el pago está cerrado', approve.includes('SOLO LECTURA'));
+    check('liberar el pago está cerrado', approve.includes('READ-ONLY'));
+
+    // Reenviar el encargo no mueve dinero, pero firma con la wallet del
+    // servidor: sin autorización tampoco se firma nada en nombre de nadie.
+    const reenvio = await mcp.callTool('panal_send_brief', { task_id: 0, brief: 'lo que sea' });
+    check('reenviar el encargo también está cerrado', reenvio.includes('READ-ONLY'), reenvio.slice(0, 60));
 
     console.log('\n── 6. Disciplina de stdio ──');
     check(

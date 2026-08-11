@@ -49,8 +49,8 @@ export class QuoteBook {
     if (!quote) {
       return {
         error:
-          'Ese presupuesto no existe o ya caducó (duran 5 minutos). ' +
-          'Pide uno nuevo con panal_quote_hire y enséñaselo a la persona antes de contratar.',
+          'That quote does not exist or has expired (they last 5 minutes). ' +
+          'Ask for a new one with panal_quote_hire and show it to the person before hiring.',
       };
     }
     // De un solo uso: sin esto, un reintento del modelo contrataría dos veces.
