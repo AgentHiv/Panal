@@ -49,6 +49,65 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<strin
     );
   }
 
+  // Un intento, una revisión y una corrección. Un modelo falla el formato de
+  // vez en cuando, y aquí eso no es un mensaje feo en un chat: el hash de lo
+  // que entregues queda anclado en la cadena y ya no se puede rectificar.
+  let queja: string | null = null;
+  for (let intento = 1; intento <= 2; intento++) {
+    const texto = await pedirAlModelo(brief, apiKey, queja);
+    const problema = revisar(brief, texto);
+    if (!problema) {
+      console.log(`[agente] #${ctx.taskId} resuelta: ${texto.length} caracteres`);
+      return texto;
+    }
+    console.error(`[agente] #${ctx.taskId} intento ${intento}: ${problema}`);
+    // A la segunda se entrega igual. Tu revisión puede equivocarse, y un falso
+    // positivo no debe costarle al cliente la tarea que ya pagó: es mejor
+    // entregar algo imperfecto y que él decida, que dejarlo sin nada.
+    if (intento === 2) {
+      console.error(`[agente] #${ctx.taskId} se entrega pese a: ${problema}`);
+      return texto;
+    }
+    queja = problema;
+  }
+  throw new Error('inalcanzable');
+}
+
+/**
+ * TU CONTROL DE CALIDAD. Devuelve null si la respuesta vale, o el motivo si no.
+ *
+ * Lo que devuelvas aquí se le manda al modelo en el segundo intento, así que
+ * escribe el motivo como se lo dirías a él: "faltan los puertos 8790 y 8791"
+ * corrige mucho más que "respuesta incompleta".
+ *
+ * Merece la pena rellenarlo con lo que TU agente promete. Un ejemplo real: un
+ * agente que convertía texto a JSON recibió tres registros y devolvió uno,
+ * tirando los otros dos. Era JSON válido, así que ninguna comprobación de
+ * formato se enteró, y el cliente pagó por un tercio de su encargo. Se detectó
+ * comparando los números del encargo con los de la respuesta:
+ *
+ *     const perdidos = [...new Set(brief.match(/\d{2,}/g) ?? [])]
+ *       .filter((n) => !resultado.includes(n));
+ *     if (perdidos.length) return `faltan datos del encargo: ${perdidos.join(', ')}`;
+ *
+ * Ojo: eso vale para un agente que extrae datos, y es un desastre para uno que
+ * resume o traduce, donde descartar cifras es su trabajo. Comprueba lo que tú
+ * prometes, no lo que promete otro.
+ */
+function revisar(brief: string, resultado: string): string | null {
+  if (!resultado.trim()) return 'la respuesta vino vacía';
+
+  // El prompt de abajo prohíbe Markdown, porque ni el dashboard ni Telegram lo
+  // renderizan y el cliente ve los asteriscos en crudo. Pedirlo no basta: hay
+  // que comprobarlo.
+  if (/(\*\*|^#{1,6}\s|```)/m.test(resultado)) {
+    return 'la respuesta lleva Markdown (**, # o ```) y el cliente lo verá en crudo: devuélvela en texto plano';
+  }
+
+  return null;
+}
+
+async function pedirAlModelo(brief: string, apiKey: string, queja: string | null): Promise<string> {
   const res = await fetch(`${process.env.LLM_BASE_URL ?? 'https://api.openai.com/v1'}/chat/completions`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
@@ -75,6 +134,9 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<strin
             'RULE 3: deliver finished professional work, with no preamble or meta-commentary.',
         },
         { role: 'user', content: brief },
+        // La corrección va como un mensaje más: decirle QUÉ falló acierta mucho
+        // más que repetirle la misma petición a ciegas esperando otra suerte.
+        ...(queja ? [{ role: 'user' as const, content: `Tu respuesta anterior no vale: ${queja}. Corrígela.` }] : []),
       ],
     }),
   });
@@ -83,7 +145,5 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<strin
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   const text = data.choices?.[0]?.message?.content?.trim();
   if (!text) throw new Error('El modelo devolvió una respuesta vacía.');
-
-  console.log(`[agente] #${ctx.taskId} resuelta: ${text.length} caracteres`);
   return text;
 }
