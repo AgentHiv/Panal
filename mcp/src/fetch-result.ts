@@ -70,10 +70,10 @@ export async function pushBrief(
     // —firma, estado, o que el texto no cuadra con el hash—, y eso es
     // exactamente lo que hay que enseñar para poder arreglarlo.
     const detalle = (await res.text().catch(() => '')).slice(0, 300);
-    return `el agente respondió ${res.status}${detalle ? `: ${detalle}` : ''}`;
+    return `the agent replied ${res.status}${detalle ? `: ${detalle}` : ''}`;
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
-      return `el endpoint no respondió en ${TIMEOUT_MS / 1000} s`;
+      return `the endpoint did not answer within ${TIMEOUT_MS / 1000} s`;
     }
     return err instanceof Error ? err.message : String(err);
   } finally {
@@ -121,22 +121,22 @@ export async function assertPublicUrl(raw: string): Promise<URL> {
   try {
     url = new URL(raw);
   } catch {
-    throw new Error(`El endpoint del agente no es una URL válida: ${raw}`);
+    throw new Error(`The agent endpoint is not a valid URL: ${raw}`);
   }
   if (url.protocol !== 'https:') {
     // La petición lleva una firma del cliente en la query: en claro la lee cualquiera.
-    throw new Error(`El endpoint del agente tiene que ser https, y es ${url.protocol}//`);
+    throw new Error(`The agent endpoint must be https, and it is ${url.protocol}//`);
   }
-  if (url.username || url.password) throw new Error('El endpoint lleva credenciales embebidas: se rechaza.');
+  if (url.username || url.password) throw new Error('The endpoint carries embedded credentials: rejected.');
 
   const host = url.hostname.replace(/^\[|\]$/g, '');
   if (/^(localhost|.*\.local|.*\.internal)$/i.test(host)) {
-    throw new Error(`El endpoint apunta a un nombre local (${host}): se rechaza.`);
+    throw new Error(`The endpoint points at a local name (${host}): rejected.`);
   }
   const ips = isIP(host) ? [host] : (await lookup(host, { all: true })).map((r) => r.address);
-  if (!ips.length) throw new Error(`No se pudo resolver ${host}.`);
+  if (!ips.length) throw new Error(`Could not resolve ${host}.`);
   for (const ip of ips) {
-    if (isPrivateIp(ip)) throw new Error(`El endpoint apunta a una dirección interna (${ip}): se rechaza.`);
+    if (isPrivateIp(ip)) throw new Error(`The endpoint points at an internal address (${ip}): rejected.`);
   }
   return url;
 }
@@ -158,10 +158,10 @@ export async function fetchResultText(
   try {
     const res = await fetch(url, { signal: controller.signal, headers: { accept: 'application/json' } });
     if (!res.ok) {
-      throw new Error(`El endpoint del agente respondió ${res.status}. ¿Sigue en pie y la firma es la del cliente?`);
+      throw new Error(`The agent endpoint replied ${res.status}. Is it still up, and is the signature the client's?`);
     }
     const reader = res.body?.getReader();
-    if (!reader) throw new Error('El endpoint del agente respondió sin cuerpo.');
+    if (!reader) throw new Error('The agent endpoint replied with no body.');
 
     const chunks: Uint8Array[] = [];
     let total = 0;
@@ -171,13 +171,13 @@ export async function fetchResultText(
       total += value.byteLength;
       if (total > MAX_BYTES) {
         await reader.cancel();
-        throw new Error(`El resultado pasa de ${MAX_BYTES / 1024} KB: se corta por seguridad.`);
+        throw new Error(`The result exceeds ${MAX_BYTES / 1024} KB: cut off for safety.`);
       }
       chunks.push(value);
     }
     const body = Buffer.concat(chunks).toString('utf8');
     const parsed = JSON.parse(body) as { resultText?: string };
-    if (typeof parsed.resultText !== 'string') throw new Error('La respuesta del agente no trae `resultText`.');
+    if (typeof parsed.resultText !== 'string') throw new Error('The agent response has no `resultText`.');
     return parsed.resultText;
   } finally {
     clearTimeout(timer);
