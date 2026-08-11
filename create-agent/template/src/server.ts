@@ -26,7 +26,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createPanalClient, TaskStatus } from '@panal/sdk';
 import { privateKeyToAccount } from 'viem/accounts';
-import { verifyMessage } from 'viem';
+import { keccak256, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
 import { handleTask } from './agent.js';
 
@@ -116,6 +116,82 @@ async function work(taskId: bigint, brief: string): Promise<void> {
 // HTTP
 // ---------------------------------------------------------------------------
 
+/**
+ * Página de reenvío manual (GET /reenviar?task=<id>).
+ *
+ * Todo va incrustado: ni CDN ni fuentes ni librerías. Dentro del navegador de
+ * una wallet, cada recurso externo es una cosa más que puede no cargar, y esta
+ * página existe precisamente para cuando algo ya ha fallado.
+ */
+const PAGINA_REENVIO = `<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reenviar brief · Panal</title>
+<style>
+:root{color-scheme:dark light}
+body{margin:0;padding:24px 18px;font:16px/1.5 system-ui,-apple-system,sans-serif;background:#0f0f11;color:#e8e8ea;max-width:34rem;margin-inline:auto}
+h1{font-size:1.25rem;margin:0 0 .25rem}
+p.sub{margin:0 0 1.5rem;color:#9a9aa2;font-size:.9rem}
+label{display:block;margin:1rem 0 .35rem;font-size:.85rem;color:#b8b8c0}
+input,textarea{width:100%;box-sizing:border-box;padding:.7rem .8rem;border-radius:10px;border:1px solid #33333a;background:#17171b;color:inherit;font:inherit}
+textarea{min-height:9rem;resize:vertical}
+button{width:100%;margin-top:1rem;padding:.85rem;border:0;border-radius:10px;background:#f5c518;color:#1a1a1a;font:600 1rem system-ui;cursor:pointer}
+button.sec{background:#26262c;color:#e8e8ea}
+#estado{margin-top:1.1rem;padding:.8rem;border-radius:10px;font-size:.9rem;white-space:pre-wrap;word-break:break-word}
+#estado.bien{background:#12301c;color:#7ee2a8}
+#estado.mal{background:#33161a;color:#ff9d9d}
+#estado:empty{display:none}
+</style></head><body>
+<h1>Reenviar el brief</h1>
+<p class="sub">Para cuando el envío automático no llegó. Copia el texto exacto del pedido desde panal.lat (botón "Copiar brief del pedido") y pégalo aquí.</p>
+<label for="id">Número de tarea</label>
+<input id="id" inputmode="numeric" placeholder="24">
+<label for="brief">Texto del pedido</label>
+<textarea id="brief" placeholder="Pega aquí el brief, tal cual"></textarea>
+<button id="conectar" class="sec">Conectar wallet</button>
+<button id="enviar">Firmar y enviar</button>
+<div id="estado"></div>
+<script>
+var q = new URLSearchParams(location.search);
+function $(s){ return document.querySelector(s); }
+// Solo dígitos, siempre. Un teclado de móvil cuela un punto sin que lo veas y
+// la petición se va a /brief/25. → 404, con el usuario mirando un número que
+// parece correcto.
+function soloDigitos(v){ return String(v || '').replace(/[^0-9]/g, ''); }
+$('#id').value = soloDigitos(q.get('task'));
+$('#id').addEventListener('input', function(){ this.value = soloDigitos(this.value); });
+var cuenta = null;
+function estado(msg, mal){ var e = $('#estado'); e.textContent = msg; e.className = mal ? 'mal' : 'bien'; }
+$('#conectar').onclick = async function(){
+  if (!window.ethereum) { estado('Aquí no hay wallet. Abre esta página desde el navegador de MetaMask, no desde Chrome.', true); return; }
+  try {
+    var r = await ethereum.request({ method: 'eth_requestAccounts' });
+    cuenta = r[0];
+    $('#conectar').textContent = cuenta.slice(0,6) + '…' + cuenta.slice(-4);
+    estado('Wallet conectada.');
+  } catch (e) { estado('Conexión rechazada.', true); }
+};
+$('#enviar').onclick = async function(){
+  var id = soloDigitos($('#id').value);
+  var brief = $('#brief').value;
+  if (!id || !brief.trim()) { estado('Falta el número de tarea o el texto.', true); return; }
+  if (!cuenta) { estado('Conecta la wallet primero: hay que firmar con la misma que pagó.', true); return; }
+  try {
+    estado('Firma el mensaje en tu wallet. No cuesta gas.');
+    var firma = await ethereum.request({ method: 'personal_sign', params: ['Panal brief #' + id, cuenta] });
+    estado('Enviando…');
+    var res = await fetch('/brief/' + id, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ brief: brief, address: cuenta, signature: firma })
+    });
+    var txt = await res.text();
+    if (res.ok) estado('Aceptado. El agente ya está trabajando en tu pedido.');
+    else estado('Rechazado (' + res.status + '):\\n' + txt, true);
+  } catch (e) { estado('Falló: ' + (e && e.message ? e.message : e), true); }
+};
+</script></body></html>`;
+
 function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
@@ -153,24 +229,48 @@ const server = createServer((req, res) => {
       return;
     }
 
+    // Reenvío manual del brief, para cuando el envío automático del dashboard
+    // no llega: móvil, wallet que se traga la firma, pestaña cerrada a medias.
+    // Se sirve desde el propio agente a propósito: mismo origen, sin CORS de
+    // por medio, y funciona dentro del navegador de una wallet.
+    if (url.pathname === '/reenviar' && req.method === 'GET') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(PAGINA_REENVIO);
+      return;
+    }
+
     // ---- El cliente te manda el encargo -------------------------------------
-    if (url.pathname === '/brief' && req.method === 'POST') {
+    // La ruta canónica es POST /brief/<taskId>: es la que llama el dashboard de
+    // panal.lat y la que documenta el bot de referencia. Se admite también
+    // POST /brief con el taskId dentro del cuerpo, porque hay clientes que ya
+    // hablaban así y romperlos no arregla nada.
+    const rutaBrief = /^\/brief(?:\/(\d+))?$/.exec(url.pathname);
+    if (rutaBrief && req.method === 'POST') {
       const body = JSON.parse(await readBody(req)) as {
         taskId?: string | number;
         brief?: string;
+        address?: string;
         signature?: string;
       };
-      if (body.taskId === undefined || !body.brief || !body.signature) {
+      const idCrudo = rutaBrief[1] ?? body.taskId;
+      if (idCrudo === undefined || !body.brief || !body.signature) {
         json(res, 400, { error: 'faltan taskId, brief o signature' });
         return;
       }
-      const taskId = BigInt(body.taskId);
+      const taskId = BigInt(idCrudo);
       const task = await panal.getTask(taskId);
 
-      // Tres comprobaciones, y las tres importan: que la tarea sea tuya, que
-      // siga abierta, y que quien manda el brief sea el cliente que pagó.
+      // Cuatro comprobaciones, y las cuatro importan: que la tarea sea tuya,
+      // que siga abierta, que quien dice firmar sea el cliente que pagó, y que
+      // la firma lo demuestre.
       if (task.worker.toLowerCase() !== account.address.toLowerCase()) {
         json(res, 403, { error: 'esa tarea no es de este agente' });
+        return;
+      }
+      // El dashboard manda además quién firma; si no cuadra con el cliente de
+      // la tarea, se corta antes de gastar una verificación de firma.
+      if (body.address && body.address.toLowerCase() !== task.client.toLowerCase()) {
+        json(res, 403, { error: 'esa dirección no es el cliente de la tarea' });
         return;
       }
       if (task.status !== TaskStatus.Open) {
@@ -179,6 +279,17 @@ const server = createServer((req, res) => {
       }
       if (!(await signedBy(briefSignMessage(taskId), body.signature, task.client))) {
         json(res, 401, { error: 'la firma no es del cliente de esta tarea' });
+        return;
+      }
+      // Y que el texto sea EL que se encargó. Para esto existe el taskHash: sin
+      // esta comprobación, un cliente podría pagar por una cosa on-chain y
+      // pedirte otra por HTTP, y en una disputa el árbitro no tendría con qué
+      // decidir. Un carácter de más y esto salta, que es justo lo que se busca.
+      if (keccak256(toBytes(body.brief)) !== task.taskHash) {
+        json(res, 409, {
+          error: 'ese texto no es el que se registró en la cadena para esta tarea',
+          taskHash: task.taskHash,
+        });
         return;
       }
 

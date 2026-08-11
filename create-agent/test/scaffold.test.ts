@@ -186,6 +186,33 @@ async function main(): Promise<void> {
         body: JSON.stringify({ taskId: 0, brief: 'gratis' }),
       });
       check('un brief sin firma se rechaza', sinFirma.status === 400, `HTTP ${sinFirma.status}`);
+
+      // La ruta CANÓNICA es /brief/<taskId>: es la que llama el dashboard de
+      // panal.lat. Esto no es un detalle de estilo — la plantilla 0.1.2 solo
+      // escuchaba en /brief y devolvía 404 a todos los encargos reales, con el
+      // cliente viendo su pago hecho y al agente sin enterarse de nada. Un 404
+      // aquí significa que ese agujero ha vuelto.
+      const rutaDelDashboard = await fetch(`http://127.0.0.1:${port}/brief/7`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ brief: 'con el id en la ruta, como lo manda la web' }),
+      });
+      check(
+        'la ruta /brief/<taskId> del dashboard existe',
+        rutaDelDashboard.status === 400,
+        `HTTP ${rutaDelDashboard.status}${rutaDelDashboard.status === 404 ? ' — el agente vuelve a ser sordo al dashboard' : ''}`,
+      );
+
+      // Salida de emergencia cuando el envío automático no llega (móvil, wallet
+      // que se traga la firma). Servida por el propio agente: mismo origen, sin
+      // CORS, y funciona dentro del navegador de una wallet.
+      const reenvio = await fetch(`http://127.0.0.1:${port}/reenviar?task=7`);
+      const html = await reenvio.text();
+      check(
+        'la página de reenvío manual se sirve',
+        reenvio.status === 200 && html.includes('Firmar y enviar'),
+        `HTTP ${reenvio.status}`,
+      );
     } finally {
       // Se mata el GRUPO entero (el menos delante del pid), no solo el proceso:
       // si queda algo vivo con las tuberias abiertas, el paso de CI no termina.
