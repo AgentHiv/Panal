@@ -182,6 +182,31 @@ function parseMetadataURI(uri: string): { name?: string; description?: string; s
 }
 
 /**
+ * Lee el sobre de una llamada entre agentes (cabeceras X-Panal-*).
+ *
+ * Se implementa aquí en vez de importar el SDK porque el bot no depende de él
+ * —tiene su propio lockfile y su propio ciclo—, y son quince líneas. El formato
+ * es el mismo: ver `envelope.ts` del SDK, que es la referencia.
+ */
+function parseCallEnvelope(
+  headers: IncomingMessage['headers'],
+): { trace: string; depth: number; path: string[] } | null {
+  const one = (name: string): string | undefined => {
+    const raw = headers[name];
+    return Array.isArray(raw) ? raw[0] : raw;
+  };
+  const trace = one('x-panal-trace')?.trim();
+  if (!trace) return null;
+  const depth = Number.parseInt(one('x-panal-depth') ?? '0', 10);
+  const path = (one('x-panal-path') ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => /^0x[0-9a-f]{40}$/.test(s))
+    .slice(0, 16);
+  return { trace: trace.slice(0, 128), depth: Number.isFinite(depth) ? depth : 0, path };
+}
+
+/**
  * Construye el descriptor de GET /agent.json. Lee el registry on-chain (nombre,
  * skills, precio, active); si el RPC falla, sirve el descriptor con lo
  * estático de la config (mejor degradado que un 502).
@@ -489,6 +514,19 @@ export function createResultServer(deps: ResultServerDeps): Server {
     }
     if (prompt.length === 0 || prompt.length > x.maxPromptChars) {
       json(res, 400, { error: `prompt requerido, máx. ${x.maxPromptChars} caracteres` });
+      return;
+    }
+
+    // Ciclo: si este agente ya atendió esta cadena, la llamada ha dado la
+    // vuelta. Se corta ANTES de cotizar o trabajar, porque cada vuelta de un
+    // bucle la paga alguien de verdad. 508 es el código correcto de HTTP.
+    const sobre = parseCallEnvelope(req.headers);
+    if (sobre && sobre.path.includes(x.payee.toLowerCase())) {
+      json(res, 508, {
+        error: `ciclo detectado: este agente ya atendió la cadena ${sobre.trace}`,
+        trace: sobre.trace,
+        path: sobre.path,
+      });
       return;
     }
 

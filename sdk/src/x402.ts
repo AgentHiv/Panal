@@ -19,6 +19,7 @@
 import { isAddress, getAddress } from 'viem';
 import type { Account, Address, Hex, WalletClient } from 'viem';
 import { assertPublicUrl, fetchLimited, type UrlGuardOptions } from './net.js';
+import { envelopeHeaders, type CallEnvelope } from './envelope.js';
 
 /** El único esquema que entiende este cliente. Debe coincidir con el servidor. */
 export const X402_SCHEME = 'eip2612-permit';
@@ -82,11 +83,14 @@ export class X402Error extends Error {
 export async function quoteAsk(
   endpoint: string,
   prompt: string,
-  options: { payer?: Address; timeoutMs?: number } & UrlGuardOptions = {},
+  options: { payer?: Address; timeoutMs?: number; envelope?: CallEnvelope } & UrlGuardOptions = {},
 ): Promise<X402Accept> {
   const url = await assertPublicUrl(endpoint, options);
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (options.payer) headers['x-payment-payer'] = options.payer;
+  // El sobre viaja tambien al cotizar: si esto ya es un ciclo, mejor que el
+  // otro extremo lo diga con un 508 antes de que nadie firme nada.
+  if (options.envelope) Object.assign(headers, envelopeHeaders(options.envelope));
 
   const res = await fetchLimited(url, {
     method: 'POST',
@@ -134,6 +138,11 @@ export interface PayAndAskOptions extends UrlGuardOptions {
   /** Cotización ya obtenida, para no pedirla dos veces. */
   quote?: X402Accept;
   timeoutMs?: number;
+  /**
+   * Sobre de la cadena. Va ya descendido: quien llama se ha añadido al path y
+   * ha gastado su salto. Ver `descend()` en envelope.ts.
+   */
+  envelope?: CallEnvelope;
 }
 
 export interface AskResult {
@@ -173,7 +182,11 @@ export async function payAndAsk(
   if (accept.chainId !== options.chainId) {
     throw new X402Error(`La cotización es de la cadena ${accept.chainId} y tú estás en la ${options.chainId}.`);
   }
-  if (!isAddress(accept.payTo)) throw new X402Error('El `payTo` de la cotización no es una dirección.');
+  // Sin `strict: false` se rechazaria un `payTo` en minusculas, que es valido
+  // y es lo que devuelve cualquier servidor que no normalice a checksum.
+  if (!isAddress(accept.payTo, { strict: false })) {
+    throw new X402Error('El `payTo` de la cotización no es una dirección.');
+  }
   if (options.expectedPayee && getAddress(accept.payTo) !== getAddress(options.expectedPayee)) {
     // Sin esto, un endpoint secuestrado cobraría a nombre de otro: pagarías al
     // atacante creyendo que pagas al agente que elegiste.
@@ -229,7 +242,11 @@ export async function payAndAsk(
 
   const res = await fetchLimited(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-payment': header },
+    headers: {
+      'content-type': 'application/json',
+      'x-payment': header,
+      ...(options.envelope ? envelopeHeaders(options.envelope) : {}),
+    },
     body: JSON.stringify({ prompt }),
     timeoutMs: options.timeoutMs ?? (accept.maxTimeoutSeconds ?? 120) * 1000,
   });
@@ -248,6 +265,12 @@ export async function payAndAsk(
       throw new X402Error(
         `El agente cobró (tx ${body.paymentTx}) pero no entregó respuesta: ${body.error ?? 'sin detalle'}`,
         res.status,
+      );
+    }
+    if (res.status === 508) {
+      throw new X402Error(
+        `El agente rechazó la llamada por ciclo: ya había atendido esta cadena. ${body.error ?? ''}`.trim(),
+        508,
       );
     }
     throw new X402Error(body.error ?? `El agente respondió ${res.status}.`, res.status);

@@ -21,6 +21,7 @@ import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, registryAbi } from './abis.js';
 import { assertPublicUrl, fetchLimited } from './net.js';
 import { X402Error, payAndAsk, quoteAsk, type AskResult, type X402Accept } from './x402.js';
+import { descend, newEnvelope, remainingBudget, type CallEnvelope } from './envelope.js';
 import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type PanalNetwork } from './chains.js';
 import {
   TaskStatus,
@@ -511,12 +512,27 @@ export class PanalClient {
       exclude?: Address[];
       allowInsecure?: boolean;
       timeoutMs?: number;
+      /**
+       * Sobre recibido, si este agente está atendiendo una llamada de otro.
+       * Sin él se abre una cadena nueva. Con él, se hereda lo que quede de
+       * profundidad y presupuesto, que es lo que impide que A→B→C→A se coma
+       * el dinero dando vueltas.
+       */
+      envelope?: CallEnvelope | null;
+      /** Saltos permitidos al abrir una cadena nueva. */
+      depth?: number;
     },
   ): Promise<AskResult & { agent: Address }> {
     const wallet = this.wallet();
     const excluded = new Set(
       [...(options.exclude ?? []), this.account!.address].map((a) => getAddress(a).toLowerCase()),
     );
+
+    // El presupuesto real es el menor entre lo que dice el sobre y el tope de
+    // esta llamada: heredar una cadena no puede ampliar lo que autorizaste.
+    const heredado = options.envelope ?? newEnvelope({ budget: options.maxSpend, depth: options.depth });
+    const tope = remainingBudget(options.envelope ?? null, options.maxSpend);
+    if (tope <= 0n) throw new X402Error('El presupuesto de la cadena está agotado: no se puede delegar más.');
 
     const candidates = (await this.searchAgents(skill))
       .filter((a) => !excluded.has(a.address.toLowerCase()) && a.metadata.botUrl)
@@ -529,8 +545,12 @@ export class PanalClient {
     for (const agent of candidates) {
       try {
         const endpoint = await this.x402Endpoint(agent.address, options, agent);
-        const accept = await quoteAsk(endpoint, prompt, { payer: this.account!.address, ...options });
-        if (BigInt(accept.amount) <= options.maxSpend) quotes.push({ agent, endpoint, accept });
+        const accept = await quoteAsk(endpoint, prompt, {
+          payer: this.account!.address,
+          ...options,
+          envelope: heredado,
+        });
+        if (BigInt(accept.amount) <= tope) quotes.push({ agent, endpoint, accept });
         else rechazos.push(`${agent.metadata.name || agent.address}: pide ${accept.amount}, por encima del tope`);
       } catch (err) {
         rechazos.push(`${agent.metadata.name || agent.address}: ${err instanceof Error ? err.message : err}`);
@@ -546,11 +566,17 @@ export class PanalClient {
     quotes.sort((a, b) => (BigInt(a.accept.amount) < BigInt(b.accept.amount) ? -1 : 1));
     const elegido = quotes[0]!;
 
+    // Se desciende el sobre ANTES de firmar: aquí es donde se comprueba que
+    // quedan saltos, que hay presupuesto y que no estamos cerrando un ciclo.
+    const siguiente = descend(heredado, this.account!.address, BigInt(elegido.accept.amount));
+
     const result = await payAndAsk(wallet, this.account!, elegido.endpoint, prompt, {
       ...options,
+      maxSpend: tope,
       chainId: chainFor(this.network).id,
       expectedPayee: elegido.agent.address,
       quote: elegido.accept,
+      envelope: siguiente,
     });
     return { ...result, agent: elegido.agent.address };
   }
