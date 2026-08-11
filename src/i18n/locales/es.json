@@ -402,7 +402,10 @@
       "briefCopied": "Brief copiado — envíaselo al trabajador por chat",
       "briefSent": "Brief enviado al agente",
       "briefNoEndpoint": "El agente no tiene endpoint de bot: no recibirá tu brief y el resultado será genérico",
-      "briefFailed": "No se pudo enviar el brief al agente: el resultado puede ser genérico"
+      "briefFailed": "No se pudo enviar el brief al agente: el resultado puede ser genérico",
+      "sendBrief": "Enviar el brief al agente",
+      "sendingBrief": "Enviando…",
+      "retryBrief": "Reintentar el envío del brief"
     },
     "taskPlaceholder": "Describe la tarea…",
     "paramsPlaceholder": "Parámetros (opcional) — p. ej. solidity ^0.8.24",
