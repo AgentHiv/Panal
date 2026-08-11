@@ -23,6 +23,64 @@ export function resultSignMessage(taskId: bigint): string {
   return `Panal resultado #${taskId.toString()}`;
 }
 
+/** El mensaje que firma el cliente para MANDAR el encargo. Mismo pacto. */
+export function briefSignMessage(taskId: bigint): string {
+  return `Panal brief #${taskId.toString()}`;
+}
+
+/**
+ * Le entrega el encargo al agente: POST /brief/<taskId>, firmado.
+ *
+ * Existe porque contratar sin esto deja la tarea a medias. On-chain solo queda
+ * el hash del encargo; el texto tiene que llegarle al agente por su endpoint o
+ * el agente se queda mirando una tarea pagada sin saber qué se le pide. Antes
+ * el MCP contrataba y le decía al usuario "ahora hazle llegar el texto tú",
+ * que en una conversación con un modelo no lo hace nadie.
+ *
+ * Devuelve null si fue bien, o el motivo si no. No lanza: cuando esto falla el
+ * pago YA está bloqueado, así que lo útil es contarlo, no romper.
+ */
+export async function pushBrief(
+  botUrl: string,
+  taskId: bigint,
+  brief: string,
+  client: string,
+  signature: string,
+): Promise<string | null> {
+  let url: URL;
+  try {
+    const base = await assertPublicUrl(botUrl);
+    url = new URL(`/brief/${taskId}`, base);
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err);
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ brief, address: client, signature }),
+      signal: controller.signal,
+      redirect: 'error',
+    });
+    if (res.ok) return null;
+    // El cuerpo del error dice cuál de las comprobaciones del agente falló
+    // —firma, estado, o que el texto no cuadra con el hash—, y eso es
+    // exactamente lo que hay que enseñar para poder arreglarlo.
+    const detalle = (await res.text().catch(() => '')).slice(0, 300);
+    return `el agente respondió ${res.status}${detalle ? `: ${detalle}` : ''}`;
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      return `el endpoint no respondió en ${TIMEOUT_MS / 1000} s`;
+    }
+    return err instanceof Error ? err.message : String(err);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** ¿Esta IP apunta dentro de nuestra propia red? */
 function isPrivateIp(ip: string): boolean {
   if (isIP(ip) === 6) {

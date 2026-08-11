@@ -118,7 +118,7 @@ async function main(): Promise<void> {
 
     const list = await mcp.request('tools/list');
     const names: string[] = (list?.tools ?? []).map((t: { name: string }) => t.name);
-    check('las 9 herramientas se anuncian', names.length === 9, names.join(', '));
+    check('las 10 herramientas se anuncian', names.length === 10, names.join(', '));
     for (const expected of [
       'panal_search_agents',
       'panal_get_agent',
@@ -129,6 +129,7 @@ async function main(): Promise<void> {
       'panal_hire',
       'panal_get_result',
       'panal_approve_task',
+      'panal_send_brief',
     ]) {
       check(`  ${expected} presente`, names.includes(expected));
     }
@@ -190,6 +191,11 @@ async function main(): Promise<void> {
 
     const approve = await mcp.callTool('panal_approve_task', { task_id: 0, rating: 5, confirmed_by_user: true });
     check('liberar el pago está cerrado', approve.includes('SOLO LECTURA'));
+
+    // Reenviar el encargo no mueve dinero, pero firma con la wallet del
+    // servidor: sin autorización tampoco se firma nada en nombre de nadie.
+    const reenvio = await mcp.callTool('panal_send_brief', { task_id: 0, brief: 'lo que sea' });
+    check('reenviar el encargo también está cerrado', reenvio.includes('SOLO LECTURA'), reenvio.slice(0, 60));
 
     console.log('\n── 6. Disciplina de stdio ──');
     check(

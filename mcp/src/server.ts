@@ -23,7 +23,10 @@
  * corrompe la sesión entera—, así que todo el registro va por stderr.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
+import { fileURLToPath } from 'node:url';
 import { formatEther, isAddress, keccak256, parseEther, toBytes } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { Address } from 'viem';
@@ -35,10 +38,22 @@ import {
   type PanalClient,
 } from '@panal/sdk';
 import { QuoteBook, SpendLedger, limitsFromEnv } from './limits.js';
-import { fetchResultText, resultSignMessage } from './fetch-result.js';
+import { briefSignMessage, fetchResultText, pushBrief, resultSignMessage } from './fetch-result.js';
 
 const SERVER_NAME = 'panal';
-const SERVER_VERSION = '0.1.0';
+/**
+ * Sale del package.json, no de una constante a mano: la copiada se quedó en
+ * 0.1.0 mientras el paquete iba por 0.1.3, y un servidor que se anuncia con
+ * una versión falsa hace imposible saber qué está corriendo el usuario.
+ */
+const SERVER_VERSION = ((): string => {
+  try {
+    const aqui = dirname(fileURLToPath(import.meta.url));
+    return (JSON.parse(readFileSync(resolve(aqui, '..', 'package.json'), 'utf8')) as { version: string }).version;
+  } catch {
+    return '0.0.0';
+  }
+})();
 /** Versiones del protocolo que sabemos hablar; la primera es la preferida. */
 const SUPPORTED_PROTOCOLS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 
@@ -341,17 +356,37 @@ const WRITE_TOOLS: Tool[] = [
         const result = await panal.hire({ agent: quote.worker, brief: quote.brief, deadline });
         ledger.record(result.amount);
         log(`contratada #${result.taskId} a ${quote.worker} por ${formatEther(result.amount)} ${quote.symbol}`);
+
+        // Contratar sin entregar el encargo deja la tarea a medias: el pago
+        // bloqueado y el agente esperando un texto que nadie le manda. Se hace
+        // aquí, no se le pide al usuario, porque quien está leyendo esto es un
+        // modelo en mitad de una conversación y no va a abrir una terminal.
+        let entregaBrief: string;
+        if (!quote.botUrl) {
+          entregaBrief = 'Ese agente no publica endpoint: hazle llegar el encargo por el canal que uses con él.';
+        } else {
+          const firma = await account!.signMessage({ message: briefSignMessage(result.taskId) });
+          const fallo = await pushBrief(quote.botUrl, result.taskId, quote.brief, account!.address, firma);
+          if (fallo === null) {
+            entregaBrief = `Encargo entregado a ${quote.botUrl}: el agente ya está trabajando.`;
+            log(`brief #${result.taskId} entregado en ${quote.botUrl}`);
+          } else {
+            entregaBrief =
+              `AVISO: el pago está bloqueado pero el encargo NO llegó (${fallo}).\n` +
+              `El agente no puede empezar. Reintenta con panal_send_brief ${result.taskId}, ` +
+              `o el pago vuelve solo cuando venza el plazo.`;
+            log(`brief #${result.taskId} NO entregado: ${fallo}`);
+          }
+        }
+
         return [
           `Contratado. Tarea #${result.taskId} creada y pago bloqueado en el escrow.`,
           `  Agente: ${quote.agentName}`,
           `  Importe: ${formatEther(result.amount)} ${quote.symbol}`,
           `  tx: ${EXPLORER}/tx/${result.txHash}`,
           '',
-          quote.botUrl
-            ? `El agente publica endpoint (${quote.botUrl}): el resultado se podrá descargar de ahí.`
-            : 'Ese agente no publica endpoint: pídele el resultado por el canal que uses con él.',
+          entregaBrief,
           '',
-          'IMPORTANTE: el encargo NO viaja on-chain, solo su hash. Hazle llegar el texto al agente.',
           `Cuando entregue, revisa con panal_get_task ${result.taskId} y aprueba con panal_approve_task.`,
         ].join('\n');
       } catch (err) {
@@ -415,6 +450,58 @@ const WRITE_TOOLS: Tool[] = [
       } catch (err) {
         return `No se pudo recoger el resultado: ${err instanceof Error ? err.message : err}`;
       }
+    },
+  },
+  {
+    name: 'panal_send_brief',
+    description:
+      'Vuelve a entregarle el encargo a un agente ya contratado, cuando el envío automático de ' +
+      'panal_hire no llegó. NO cuesta dinero: el pago ya está bloqueado, esto solo repite el envío ' +
+      'por HTTP. El texto tiene que ser EXACTAMENTE el que se contrató, porque su hash quedó en la cadena.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'number', description: 'Id de la tarea ya creada.' },
+        brief: { type: 'string', description: 'El encargo, palabra por palabra igual que al contratar.' },
+      },
+      required: ['task_id', 'brief'],
+    },
+    handler: async (args) => {
+      const blocked = writesBlockedReason();
+      if (blocked) return blocked;
+      const id = Number(args.task_id);
+      if (!Number.isInteger(id) || id < 0) return 'Necesito un id de tarea válido.';
+      const brief = str(args.brief);
+      if (!brief) return 'Necesito el texto del encargo.';
+
+      const task = await panal.getTask(BigInt(id));
+      if (task.client.toLowerCase() !== account!.address.toLowerCase()) {
+        return `La tarea #${id} no la contrató esta wallet, así que su firma no vale para mandarle el encargo.`;
+      }
+      if (task.status !== TaskStatus.Open) {
+        return `La tarea #${id} está ${TaskStatus[task.status]}: ya no admite el encargo.`;
+      }
+      // Se comprueba aquí antes de molestar al agente: así el error dice que el
+      // texto no es el mismo, en vez de un 409 sin contexto desde el endpoint.
+      if (keccak256(toBytes(brief)) !== task.taskHash) {
+        return [
+          'Ese texto NO es el que se contrató: su hash no coincide con el de la cadena.',
+          `  hash contratado: ${task.taskHash}`,
+          `  hash de tu texto: ${keccak256(toBytes(brief))}`,
+          'Tiene que ser idéntico, carácter por carácter. Un espacio de más ya lo cambia.',
+        ].join('\n');
+      }
+
+      const agent = await panal.getAgent(task.worker);
+      if (!agent.metadata.botUrl) return 'Ese agente no publica endpoint: no hay a dónde mandarle el encargo.';
+
+      const firma = await account!.signMessage({ message: briefSignMessage(BigInt(id)) });
+      const fallo = await pushBrief(agent.metadata.botUrl, BigInt(id), brief, account!.address, firma);
+      if (fallo === null) {
+        log(`brief #${id} entregado (reintento) en ${agent.metadata.botUrl}`);
+        return `Encargo entregado. El agente ya está trabajando en la tarea #${id}.`;
+      }
+      return `Sigue sin llegar (${fallo}). El pago sigue bloqueado y vuelve solo al vencer el plazo.`;
     },
   },
   {
