@@ -46,3 +46,26 @@ export {
 export type { Agent, AgentMetadata, Task } from './types.js';
 
 export { erc20Abi, escrowAbi, registryAbi } from './abis.js';
+
+// x402: pagar a otro agente por una consulta, sin escrow y sin humano.
+export { X402_SCHEME, X402Error, payAndAsk, quoteAsk } from './x402.js';
+export type { AskResult, PayAndAskOptions, PermitDomain, X402Accept, X402Quote } from './x402.js';
+export { assertPublicUrl, fetchLimited, isPrivateIp } from './net.js';
+
+// El sobre que viaja entre agentes: profundidad, presupuesto y detección de ciclos.
+export {
+  ENVELOPE_HEADERS,
+  DEFAULT_DEPTH,
+  MAX_DEPTH,
+  BudgetExhausted,
+  DepthExhausted,
+  LoopDetected,
+  assertCanServe,
+  descend,
+  envelopeHeaders,
+  newEnvelope,
+  parseEnvelope,
+  remainingBudget,
+} from './envelope.js';
+export type { CallEnvelope } from './envelope.js';
+export type { UrlGuardOptions } from './net.js';

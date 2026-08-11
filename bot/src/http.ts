@@ -143,6 +143,25 @@ export interface AgentJson {
     base: string | null;
     postBrief: { method: 'POST'; path: '/brief/:taskId'; signMessage: string; body: string };
     getResult: { method: 'GET'; path: '/result/:taskId?address&signature'; signMessage: string };
+    /**
+     * Cobro por llamada (x402). Presente solo si el agente lo tiene activado.
+     *
+     * Sin esto el endpoint existe pero es indescubrible: estuvo semanas vivo
+     * respondiendo cotizaciones a nadie, porque ningun cliente podia saber que
+     * estaba ahi. Es lo que permite que otro agente pregunte el precio y pague
+     * sin intervencion humana.
+     */
+    x402Ask?: {
+      method: 'POST';
+      path: '/x402/ask';
+      url: string;
+      scheme: string;
+      asset: string;
+      assetSymbol: string;
+      amount: string;
+      payTo: string;
+      howTo: string;
+    };
     /** API pública del indexador Panal (agentes, tareas y eventos). */
     indexer: string;
   };
@@ -163,11 +182,41 @@ function parseMetadataURI(uri: string): { name?: string; description?: string; s
 }
 
 /**
+ * Lee el sobre de una llamada entre agentes (cabeceras X-Panal-*).
+ *
+ * Se implementa aquí en vez de importar el SDK porque el bot no depende de él
+ * —tiene su propio lockfile y su propio ciclo—, y son quince líneas. El formato
+ * es el mismo: ver `envelope.ts` del SDK, que es la referencia.
+ */
+function parseCallEnvelope(
+  headers: IncomingMessage['headers'],
+): { trace: string; depth: number; path: string[] } | null {
+  const one = (name: string): string | undefined => {
+    const raw = headers[name];
+    return Array.isArray(raw) ? raw[0] : raw;
+  };
+  const trace = one('x-panal-trace')?.trim();
+  if (!trace) return null;
+  const depth = Number.parseInt(one('x-panal-depth') ?? '0', 10);
+  const path = (one('x-panal-path') ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => /^0x[0-9a-f]{40}$/.test(s))
+    .slice(0, 16);
+  return { trace: trace.slice(0, 128), depth: Number.isFinite(depth) ? depth : 0, path };
+}
+
+/**
  * Construye el descriptor de GET /agent.json. Lee el registry on-chain (nombre,
  * skills, precio, active); si el RPC falla, sirve el descriptor con lo
  * estático de la config (mejor degradado que un 502).
  */
-export async function buildAgentJson(cfg: BotConfig, clients: ChainClients): Promise<AgentJson> {
+export async function buildAgentJson(
+  cfg: BotConfig,
+  clients: ChainClients,
+  /** Si el agente cobra por llamada, se anuncia en la tarjeta. */
+  x402?: X402Endpoint,
+): Promise<AgentJson> {
   let agent: RegistryAgent | null = null;
   try {
     agent = await getRegistryAgent(clients, cfg, cfg.agentAddress);
@@ -211,6 +260,24 @@ export async function buildAgentJson(cfg: BotConfig, clients: ChainClients): Pro
         path: '/result/:taskId?address&signature',
         signMessage: 'Panal resultado #<taskId>  (EIP-191, firmado por el cliente de la tarea)',
       },
+      ...(x402
+        ? {
+            x402Ask: {
+              method: 'POST' as const,
+              path: '/x402/ask' as const,
+              url: `${basePath}/x402/ask`,
+              scheme: SCHEME,
+              asset: x402.token,
+              assetSymbol: x402.tokenSymbol,
+              amount: x402.priceWei.toString(),
+              payTo: x402.payee,
+              howTo:
+                'POST sin cabecera devuelve 402 con la cotizacion (gratis). Firma el permit EIP-2612 ' +
+                'que describe y repite con X-Payment: base64({scheme,payer,value,deadline,signature}). ' +
+                'Se cobra y se responde en la misma llamada; el cliente no paga gas.',
+            },
+          }
+        : {}),
       indexer: cfg.indexerPublicUrl,
     },
     howToHire: [
@@ -450,6 +517,19 @@ export function createResultServer(deps: ResultServerDeps): Server {
       return;
     }
 
+    // Ciclo: si este agente ya atendió esta cadena, la llamada ha dado la
+    // vuelta. Se corta ANTES de cotizar o trabajar, porque cada vuelta de un
+    // bucle la paga alguien de verdad. 508 es el código correcto de HTTP.
+    const sobre = parseCallEnvelope(req.headers);
+    if (sobre && sobre.path.includes(x.payee.toLowerCase())) {
+      json(res, 508, {
+        error: `ciclo detectado: este agente ya atendió la cadena ${sobre.trace}`,
+        trace: sobre.trace,
+        path: sobre.path,
+      });
+      return;
+    }
+
     const header = req.headers['x-payment'];
     const paymentHeader = Array.isArray(header) ? header[0] : header;
 
@@ -639,7 +719,7 @@ export function startResultServer(cfg: BotConfig, clients: ChainClients, store: 
     store,
     x402,
     fetchTask: (taskId) => getTask(clients, cfg, taskId),
-    fetchAgentJson: () => buildAgentJson(cfg, clients),
+    fetchAgentJson: () => buildAgentJson(cfg, clients, x402),
     // En producción (NODE_ENV=production) solo panal.lat; en dev también localhost.
     allowLocalhostOrigin: cfg.dryRun || process.env.NODE_ENV !== 'production',
   });
