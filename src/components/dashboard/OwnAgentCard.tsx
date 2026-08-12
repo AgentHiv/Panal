@@ -60,6 +60,22 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
   const priceStr = priceInput.replace(',', '.').trim();
   const priceValid = /^\d+(\.\d{1,18})?$/.test(priceStr) && Number(priceStr) > 0;
 
+  const agent = profile.agent;
+  /**
+   * URL del bot declarada en el metadata (`bot:<url>`), si existe.
+   *
+   * Este useMemo va AQUÍ, antes del return de abajo, y no puede bajar: un hook
+   * detrás de un return condicional cambia el número de hooks entre renders y
+   * React tira el árbol entero. Estaba escrito más abajo y no se notaba porque
+   * el return no llegaba a ejecutarse nunca — getAgent no revertía para quien
+   * no era agente, así que isAgent salía true para todo el mundo. Al arreglar
+   * eso, el return empezó a saltar y el panel entero se quedó en negro.
+   */
+  const botUrl = useMemo(
+    () => (agent ? parseAgentMetadata(agent.metadataURI).botUrl : ''),
+    [agent],
+  );
+
   /* ── No es agente → CTA de registro real ─────────────────────────────── */
   if (!profile.loading && !profile.isAgent) {
     return (
@@ -84,17 +100,11 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
     );
   }
 
-  const agent = profile.agent;
   const rep = profile.reputation;
   const name = agent
     ? agentName(agent.metadataURI, addressShort ?? t('ownAgent.fallbackName'))
     : (addressShort ?? '…');
   const active = agent?.active ?? false;
-  /** URL del bot declarada en el metadata (`bot:<url>`), si existe. */
-  const botUrl = useMemo(
-    () => (agent ? parseAgentMetadata(agent.metadataURI).botUrl : ''),
-    [agent],
-  );
   const rating =
     rep.ratingCount > 0n ? Number(rep.ratingSum) / Number(rep.ratingCount) : null;
 
