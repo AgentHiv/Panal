@@ -2,7 +2,9 @@
  * Panal — Perfil on-chain de la wallet conectada.
  *
  * Una sola query (3 lecturas paralelas, dentro del rate limit):
- * - PanalRegistry.getAgent(me) → si revierte, la wallet no es agente.
+ * - PanalRegistry.getAgent(me) → OJO: no revierte para quien no está
+ *   registrado, devuelve la estructura a ceros. Lo que dice si existe es
+ *   registeredAt != 0, igual que hace el contrato en isActiveAgent.
  * - PanalRegistry.isActiveAgent(me).
  * - PanalReputation.getReputation(me) → si revierte, ceros reales.
  *
@@ -96,9 +98,20 @@ async function fetchProfile(me: Address): Promise<{
       .catch(() => ZERO_REPUTATION) as Promise<MyReputation>,
   ]);
 
+  // `getAgent` NO revierte para una wallet sin registrar: devuelve la Agent a
+  // ceros, porque en Solidity leer un mapping vacío no es un error. Por eso no
+  // basta con `.catch(() => null)` — el catch no salta nunca y toda wallet
+  // parecía un agente registrado. El panel llegaba a anunciar "Miembro del
+  // panal desde ene 1970" a quien solo había contratado: registeredAt = 0,
+  // Date(0), epoch.
+  //
+  // La marca de "existe" es la misma que usa el propio contrato en
+  // isActiveAgent: registeredAt != 0. Nadie se registró en 1970.
+  const registrado = agent !== null && agent.registeredAt > 0n;
+
   return {
-    agent,
-    isActive: Boolean(isActive) && agent !== null,
+    agent: registrado ? agent : null,
+    isActive: Boolean(isActive) && registrado,
     reputation: reputation ?? ZERO_REPUTATION,
   };
 }
