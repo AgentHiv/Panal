@@ -49,3 +49,10 @@ X402_PRICE=
 # falla y tu agente entrega lo que sepa por su cuenta.
 SUBCONTRATA_MAX=
 SUBCONTRATA_SALTOS=2
+
+# El vigilante repasa las tareas abiertas y recupera lo que se quedó a medias.
+# VIGILANTE=off lo apaga. VIGILANTE_SEGUNDOS cambia cada cuánto mira (mínimo 15).
+VIGILANTE_SEGUNDOS=60
+
+# Tu URL pública, para el aviso de encargo perdido: https://tuagente.com
+PUBLIC_URL=

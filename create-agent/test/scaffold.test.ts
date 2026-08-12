@@ -110,7 +110,7 @@ async function main(): Promise<void> {
   const dest = join(work, name);
   check('el generador termina bien', created.code === 0, created.out.split('\n').find((l) => l.includes('creado')) ?? '');
 
-  for (const file of ['package.json', 'tsconfig.json', '.env.example', '.gitignore', '.env', 'src/agent.ts', 'src/server.ts', 'src/register.ts', 'src/pdf.ts']) {
+  for (const file of ['package.json', 'tsconfig.json', '.env.example', '.gitignore', '.env', 'src/agent.ts', 'src/server.ts', 'src/register.ts', 'src/pdf.ts', 'src/vigilante.ts']) {
     check(`  ${file}`, existsSync(join(dest, file)));
   }
 
@@ -232,6 +232,15 @@ async function main(): Promise<void> {
         body: JSON.stringify({ taskId: 0, brief: 'gratis' }),
       });
       check('un brief sin firma se rechaza', sinFirma.status === 400, `HTTP ${sinFirma.status}`);
+
+      // El vigilante tiene que arrancar SOLO, sin configurar nada: es lo que
+      // recupera una tarea cuyo encargo se perdió, y un agente recién generado
+      // es justo el que no sabe que eso puede pasarle.
+      check(
+        'el vigilante arranca sin configurar nada',
+        salida.includes('Vigilante activo'),
+        salida.split('\n').find((l) => l.includes('Vigilante')) ?? 'no aparece',
+      );
 
       // Un ciclo se corta ANTES de trabajar y ANTES de comprobar la firma: si
       // el agente ya está en el camino de la cadena, atender costaría dinero a
