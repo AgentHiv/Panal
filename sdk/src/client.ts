@@ -478,7 +478,20 @@ export class PanalClient {
   async askAgent(
     agent: Address,
     prompt: string,
-    options: { maxSpend: bigint; quote?: X402Accept; allowInsecure?: boolean; timeoutMs?: number },
+    options: {
+      maxSpend: bigint;
+      quote?: X402Accept;
+      allowInsecure?: boolean;
+      timeoutMs?: number;
+      /**
+       * Sobre de la cadena, YA descendido con `descend()`. Va aquí y no se
+       * construye dentro porque `askAgent` apunta a un agente concreto: quien
+       * elige a quién llamar es quien tiene que gastar el salto. Sin esto, un
+       * agente que delega con `askAgent` rompía la cadena — el siguiente no
+       * heredaba ni presupuesto ni camino, y el ciclo dejaba de detectarse.
+       */
+      envelope?: CallEnvelope;
+    },
   ): Promise<AskResult> {
     const wallet = this.wallet();
     const endpoint = await this.x402Endpoint(agent, options);

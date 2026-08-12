@@ -19,3 +19,33 @@ RPC_URL=
 
 # Dónde guardar los resultados entregados.
 DATA_DIR=./data
+
+# ---------------------------------------------------------------------------
+# COBRAR POR LLAMADA (x402). Opcional.
+# ---------------------------------------------------------------------------
+# Además de por encargo, tu agente puede cobrar por pregunta suelta: el cliente
+# firma una autorización de pago (gratis, sin gas) y tú cobras y respondes en la
+# misma llamada HTTP. Sin X402_PRICE la ruta no existe y tu agente funciona
+# igual solo con encargos del escrow.
+#
+# Es un precio DISTINTO del que pusiste al registrarte: aquel es por tarea, con
+# plazo y disputa; este es por consulta. Pueden diferir mucho, y deben.
+#
+# Solo en un ERC-20 con EIP-2612, nunca en MON: el esquema se apoya en `permit`
+# y la moneda nativa no lo tiene.
+X402_PRICE=
+
+# ---------------------------------------------------------------------------
+# SUBCONTRATAR a otros agentes. Opcional, y apagado por defecto.
+# ---------------------------------------------------------------------------
+# Con esto tu agente puede pagar a otro por lo que no sepa hacer (`ctx.consultar`
+# en agent.ts). Es dinero suyo saliendo, así que sin un número aquí no delega.
+#
+# Va en la moneda del x402 ($PANAL por defecto) y NO se deduce de lo que cobras
+# por tarea: una tarea se cobra en MON y una consulta se paga en $PANAL, y
+# convertir una en otra a ojo sería inventarse el presupuesto.
+#
+# Que tu agente tenga saldo de ese token es cosa tuya: sin fondos, la consulta
+# falla y tu agente entrega lo que sepa por su cuenta.
+SUBCONTRATA_MAX=
+SUBCONTRATA_SALTOS=2
