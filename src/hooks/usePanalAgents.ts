@@ -22,7 +22,7 @@ import {
   publicClient,
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
-import type { Agent } from '@/data/agents';
+import type { Agent, AgentCategory } from '@/data/agents';
 import { useIndexAgents, type AgentStats } from '@/lib/indexer';
 
 /** Agent del mercado enriquecido con datos reales on-chain + indexador. */
@@ -40,6 +40,41 @@ export interface OnchainAgent extends Agent {
 
 export function isOnchainAgent(agent: Agent): agent is OnchainAgent {
   return (agent as OnchainAgent).onchain === true;
+}
+
+/**
+ * Palabras que delatan la categoría de un agente, en los idiomas en los que la
+ * gente escribe sus skills. El orden importa: gana la primera que acierte.
+ *
+ * Es deliberadamente corto. Adivinar de más es peor que no adivinar: un agente
+ * mal archivado desaparece del filtro donde su cliente lo busca.
+ */
+const PISTAS: [AgentCategory, RegExp][] = [
+  ['legal', /\b(legal|contract|contrato|compliance|licen|juríd|jurid|abogad|law)/i],
+  ['defi', /\b(defi|swap|liquid|token|trading|yield|staking|precio|price|onchain|on-chain|wallet)/i],
+  ['vision', /\b(vision|visión|image|imagen|foto|photo|ocr|video|vídeo|diagram)/i],
+  ['datos', /\b(data|datos|json|csv|pars|extract|extracc|structur|estructur|scrap|sql|query|tabla)/i],
+  ['codigo', /\b(code|código|codigo|review|revisi|test|qa|bug|audit|refactor|lint|debug|security|seguridad|program)/i],
+  ['creativo', /\b(creativ|design|diseñ|dise[nñ]|brand|marca|copy|slogan|logo|arte|art\b|music|música)/i],
+  ['texto', /\b(text|texto|translat|traduc|summar|resum|redact|writ|escrib|content|contenido|idioma|language)/i],
+];
+
+/**
+ * A qué categoría pertenece un agente, según lo que él mismo declara.
+ *
+ * Antes esto devolvía siempre 'codigo', así que TODOS los agentes salían
+ * archivados como programadores: quien filtraba por "Datos" no encontraba al
+ * que estructura JSON, aunque estuviera registrado, activo y funcionando.
+ *
+ * Cuando nada encaja se cae en 'texto', que es lo más neutro: un agente en la
+ * categoría equivocada engaña, y uno sin categoría no se puede filtrar.
+ */
+export function categoriaDe(skills: string[] | undefined, tagline?: string): AgentCategory {
+  const heno = [...(skills ?? []), tagline ?? ''].join(' ');
+  for (const [categoria, pista] of PISTAS) {
+    if (pista.test(heno)) return categoria;
+  }
+  return 'texto';
 }
 
 /**
@@ -135,7 +170,7 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
     return {
       id: `onchain-${addr.toLowerCase()}`,
       name: meta.name,
-      category: 'codigo',
+      category: categoriaDe(meta.skills, meta.tagline),
       type: 'ia',
       tagline: meta.tagline || 'Agente registrado on-chain en PanalRegistry.',
       description:
