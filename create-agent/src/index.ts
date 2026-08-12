@@ -186,6 +186,11 @@ function writeEnvExample(dest: string, t: Catalog): string {
     'VIGILANTE_SEGUNDOS=60',
     'PUBLIC_URL=',
     '',
+    bloque(t.env.seguridad),
+    'LIMITE_POR_MINUTO=60',
+    '# TRAS_PROXY=1',
+    '# AUTH_ESTRICTA=1',
+    '',
   ].join('\n');
 
   writeFileSync(join(dest, '.env.example'), contenido, 'utf8');

@@ -11,16 +11,33 @@
  * valida antes de pedirle nada, y la respuesta se lee con un tope de tamaño.
  */
 
-import { lookup } from 'node:dns/promises';
-import { isIP } from 'node:net';
+// El guard de SSRF viene del SDK, no de una copia local. Había dos
+// implementaciones equivalentes de lo mismo —la del SDK y una aquí—, y dos
+// copias de un control de seguridad son una que se queda atrás sin que nadie
+// se entere el día que la otra mejora.
+import { assertPublicUrl } from '@panal/sdk';
 
 /** Tope de la respuesta. Sin esto, un endpoint hostil tumba el proceso. */
 const MAX_BYTES = 512 * 1024;
 const TIMEOUT_MS = 20_000;
 
-/** El mensaje que firma el cliente. Debe coincidir con el bot y el frontend. */
-export function resultSignMessage(taskId: bigint): string {
-  return `Panal resultado #${taskId.toString()}`;
+/** Cuánto vale una firma de descarga: abre toda la entrega, así que poco. */
+export const VENTANA_FIRMA_S = 10 * 60;
+
+/**
+ * El mensaje que firma el cliente. Debe coincidir con el bot y el frontend.
+ *
+ * Lleva la caducidad dentro: cambiarla invalida la firma. Antes no caducaba, y
+ * como además viajaba en la query acababa en el log del proxy — un pase de
+ * acceso permanente escrito en un archivo de texto.
+ */
+export function resultSignMessage(taskId: bigint, expira: number): string {
+  return `Panal resultado #${taskId.toString()} · ${expira}`;
+}
+
+/** El segundo en el que caduca una firma emitida ahora. */
+export function expiraEn(ventanaS: number = VENTANA_FIRMA_S): number {
+  return Math.floor(Date.now() / 1000) + ventanaS;
 }
 
 /** El mensaje que firma el cliente para MANDAR el encargo. Mismo pacto. */
@@ -81,65 +98,7 @@ export async function pushBrief(
   }
 }
 
-/** ¿Esta IP apunta dentro de nuestra propia red? */
-function isPrivateIp(ip: string): boolean {
-  if (isIP(ip) === 6) {
-    const v6 = ip.toLowerCase();
-    if (v6 === '::1' || v6 === '::') return true;
-    if (/^f[cd]/.test(v6) || v6.startsWith('fe80')) return true;
-    // IPv4 mapeada: ::ffff:10.0.0.1
-    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(v6);
-    return mapped ? isPrivateIp(mapped[1]!) : false;
-  }
-  const [a = 0, b = 0] = ip.split('.').map(Number);
-  return (
-    a === 0 ||
-    a === 10 ||
-    a === 127 ||
-    (a === 169 && b === 254) || // metadatos de la nube: credenciales
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) ||
-    (a === 100 && b >= 64 && b <= 127) || // CGNAT
-    a >= 224
-  );
-}
 
-/**
- * Rechaza una URL que apunte a algo que no sea internet pública.
- *
- * Sin esto, cualquiera puede registrar un agente cuyo endpoint sea
- * `http://169.254.169.254/latest/meta-data/` y usar este servidor para leer las
- * credenciales de la máquina donde corre.
- *
- * Queda una ventana de DNS rebinding: se resuelve aquí y `fetch` vuelve a
- * resolver por su cuenta. Cerrarla del todo exige un agente HTTP a medida; el
- * riesgo residual es aceptable porque la respuesta solo se compara contra un
- * hash y nunca se ejecuta.
- */
-export async function assertPublicUrl(raw: string): Promise<URL> {
-  let url: URL;
-  try {
-    url = new URL(raw);
-  } catch {
-    throw new Error(`The agent endpoint is not a valid URL: ${raw}`);
-  }
-  if (url.protocol !== 'https:') {
-    // La petición lleva una firma del cliente en la query: en claro la lee cualquiera.
-    throw new Error(`The agent endpoint must be https, and it is ${url.protocol}//`);
-  }
-  if (url.username || url.password) throw new Error('The endpoint carries embedded credentials: rejected.');
-
-  const host = url.hostname.replace(/^\[|\]$/g, '');
-  if (/^(localhost|.*\.local|.*\.internal)$/i.test(host)) {
-    throw new Error(`The endpoint points at a local name (${host}): rejected.`);
-  }
-  const ips = isIP(host) ? [host] : (await lookup(host, { all: true })).map((r) => r.address);
-  if (!ips.length) throw new Error(`Could not resolve ${host}.`);
-  for (const ip of ips) {
-    if (isPrivateIp(ip)) throw new Error(`The endpoint points at an internal address (${ip}): rejected.`);
-  }
-  return url;
-}
 
 /** Descarga acotada: se corta en cuanto se pasa del tope. */
 export async function fetchResultText(
@@ -147,16 +106,24 @@ export async function fetchResultText(
   taskId: bigint,
   client: string,
   signature: string,
+  expira: number,
 ): Promise<string> {
   const base = await assertPublicUrl(botUrl);
   const url = new URL(`/result/${taskId}`, base);
-  url.searchParams.set('address', client);
-  url.searchParams.set('signature', signature);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(url, { signal: controller.signal, headers: { accept: 'application/json' } });
+    // En cabeceras, no en la query: por ahí acababan en el log del proxy.
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        accept: 'application/json',
+        'x-panal-address': client,
+        'x-panal-signature': signature,
+        'x-panal-expira': String(expira),
+      },
+    });
     if (!res.ok) {
       throw new Error(`The agent endpoint replied ${res.status}. Is it still up, and is the signature the client's?`);
     }

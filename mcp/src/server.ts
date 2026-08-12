@@ -38,7 +38,7 @@ import {
   type PanalClient,
 } from '@panal/sdk';
 import { QuoteBook, SpendLedger, limitsFromEnv } from './limits.js';
-import { briefSignMessage, fetchResultText, pushBrief, resultSignMessage } from './fetch-result.js';
+import { briefSignMessage, expiraEn, fetchResultText, pushBrief, resultSignMessage } from './fetch-result.js';
 
 const SERVER_NAME = 'panal';
 /**
@@ -586,8 +586,10 @@ const WRITE_TOOLS: Tool[] = [
       }
 
       try {
-        const signature = await account.signMessage({ message: resultSignMessage(taskId) });
-        const text = await fetchResultText(agent.metadata.botUrl, taskId, account.address, signature);
+        // La firma caduca: abre el resultado y todos los archivos de la tarea.
+        const expira = expiraEn();
+        const signature = await account.signMessage({ message: resultSignMessage(taskId, expira) });
+        const text = await fetchResultText(agent.metadata.botUrl, taskId, account.address, signature, expira);
 
         // Lo que importa de todo esto: que el texto sea EXACTAMENTE el que se
         // ancló. Sin esta comprobación, el agente podría entregar una cosa

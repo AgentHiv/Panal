@@ -27,7 +27,7 @@ import {
   publicClient,
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
-import { buildResultUrl, extractBotUrl, resultSignMessage } from '@/lib/botEndpoint';
+import { buildResultUrl, cabecerasFirma, expiraEn, extractBotUrl, resultSignMessage } from '@/lib/botEndpoint';
 import { useWallet } from '@/hooks/useWallet';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { cn } from '@/lib/utils';
@@ -64,7 +64,7 @@ export default function ResultDialog({ task }: { task: RealTask }) {
    * La firma se guarda porque la MISMA abre el texto y todos los archivos. Sin
    * esto habría que pedirle al usuario una firma por cada PDF que se baje.
    */
-  const [signature, setSignature] = useState<string | null>(null);
+  const [signature, setSignature] = useState<{ firma: string; expira: number } | null>(null);
   /** Estado de cada descarga, por nombre de archivo. */
   const [descargas, setDescargas] = useState<Record<string, 'bajando' | 'ok' | 'mismatch' | 'error'>>({});
 
@@ -103,10 +103,16 @@ export default function ResultDialog({ task }: { task: RealTask }) {
     if (!botUrl || !address) return;
     try {
       setPhase('signing');
-      const firma = await signMessageAsync({ message: resultSignMessage(task.id) });
-      setSignature(firma);
+      // La firma caduca, y la caducidad va dentro de lo firmado. Se guarda con
+      // ella porque el agente la necesita para reconstruir el mensaje, y porque
+      // la MISMA firma abre luego cada archivo de la entrega.
+      const expira = expiraEn();
+      const firma = await signMessageAsync({ message: resultSignMessage(task.id, expira) });
+      setSignature({ firma, expira });
       setPhase('fetching');
-      const res = await fetch(buildResultUrl(botUrl, task.id, address, firma));
+      const res = await fetch(buildResultUrl(botUrl, task.id), {
+        headers: cabecerasFirma(address, firma, expira),
+      });
       if (res.status === 403) {
         setPhase('forbidden');
         return;

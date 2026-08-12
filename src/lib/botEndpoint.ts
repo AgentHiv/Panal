@@ -12,9 +12,28 @@
  * corresponde al cliente de la tarea.
  */
 
-/** Mensaje exacto que firma el cliente (debe coincidir con bot/src/http.ts). */
-export function resultSignMessage(taskId: bigint): string {
-  return `Panal resultado #${taskId.toString()}`;
+/**
+ * Cuánto vale una firma de descarga. Corto a propósito.
+ *
+ * La firma abre el resultado y todos los archivos de la tarea: es un pase de
+ * acceso. Si se filtra —y se filtraba, por la query string, al log del proxy—
+ * lo que limita el daño es que caduque.
+ */
+export const VENTANA_FIRMA_S = 10 * 60;
+
+/**
+ * Mensaje exacto que firma el cliente. Debe coincidir con el del agente.
+ *
+ * Lleva la caducidad DENTRO: cambiarla invalida la firma, así que el agente
+ * puede fiarse del número que le llega al lado.
+ */
+export function resultSignMessage(taskId: bigint, expira: number): string {
+  return `Panal resultado #${taskId.toString()} · ${expira}`;
+}
+
+/** El segundo en el que caducará una firma que se emita ahora. */
+export function expiraEn(ventanaS: number = VENTANA_FIRMA_S): number {
+  return Math.floor(Date.now() / 1000) + ventanaS;
 }
 
 /**
@@ -42,15 +61,24 @@ export function extractBotUrl(metadataURI: string | null | undefined): string | 
   return null;
 }
 
-/** Construye la URL de descarga del resultado firmado. */
-export function buildResultUrl(
-  botUrl: string,
-  taskId: bigint,
-  address: string,
-  signature: string,
-): string {
-  const base = botUrl.replace(/\/+$/, '');
-  return `${base}/result/${taskId.toString()}?address=${encodeURIComponent(address)}&signature=${encodeURIComponent(signature)}`;
+/**
+ * URL de descarga del resultado. SIN credenciales.
+ *
+ * Antes las metía en la query, y de ahí pasaban al log de accesos del proxy
+ * —23 firmas en claro en un log de producción—, al historial del navegador y a
+ * cualquier intermediario. Ahora van en cabeceras, que no se registran.
+ */
+export function buildResultUrl(botUrl: string, taskId: bigint): string {
+  return `${botUrl.replace(/\/+$/, '')}/result/${taskId.toString()}`;
+}
+
+/** Las cabeceras con las que el cliente demuestra que la tarea es suya. */
+export function cabecerasFirma(address: string, signature: string, expira: number): Record<string, string> {
+  return {
+    'x-panal-address': address,
+    'x-panal-signature': signature,
+    'x-panal-expira': String(expira),
+  };
 }
 
 /** Construye la URL de envío del brief firmado (POST /brief/:taskId). */

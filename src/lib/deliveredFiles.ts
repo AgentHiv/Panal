@@ -154,13 +154,20 @@ export async function downloadDeliveredFile(
   file: DeliveredFile,
   botUrl: string,
   address: string,
-  signature: string,
+  credencial: { firma: string; expira: number },
 ): Promise<Blob> {
   const destino = new URL(fileUrl(file, botUrl));
-  destino.searchParams.set('address', address);
-  destino.searchParams.set('signature', signature);
 
-  const res = await fetch(destino.toString(), { redirect: 'error' });
+  // En cabeceras, nunca en la query: esta firma abre toda la entrega y por la
+  // query acababa escrita en el log de accesos del proxy y en el historial.
+  const res = await fetch(destino.toString(), {
+    redirect: 'error',
+    headers: {
+      'x-panal-address': address,
+      'x-panal-signature': credencial.firma,
+      'x-panal-expira': String(credencial.expira),
+    },
+  });
   if (!res.ok) throw new FileVerificationError(`HTTP ${res.status}`);
 
   const bytes = new Uint8Array(await res.arrayBuffer());

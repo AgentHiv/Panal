@@ -229,8 +229,16 @@ export interface DownloadOptions extends UrlGuardOptions {
   baseUrl?: string;
   /** Wallet del cliente; el agente solo entrega a quien pagó. */
   address?: string;
-  /** Firma de `Panal resultado #<taskId>`, la misma que abre `/result/:id`. */
+  /** Firma de `Panal resultado #<taskId> · <expira>`, la misma que abre `/result/:id`. */
   signature?: string;
+  /**
+   * Segundo en el que caduca esa firma, tal y como se firmó.
+   *
+   * Va con la firma porque el agente la necesita para reconstruir el mensaje.
+   * Mandarla en claro no regala nada: está DENTRO de lo firmado, así que
+   * cambiarla invalida la firma.
+   */
+  expira?: number;
   maxBytes?: number;
   timeoutMs?: number;
 }
@@ -246,8 +254,17 @@ export async function downloadDeliveredFile(
   options: DownloadOptions = {},
 ): Promise<Uint8Array> {
   const destino = new URL(fileUrl(file, options.baseUrl));
-  if (options.address) destino.searchParams.set('address', options.address);
-  if (options.signature) destino.searchParams.set('signature', options.signature);
+
+  // Las credenciales van en CABECERAS, no en la query.
+  //
+  // Esta firma abre el resultado y todos los archivos de la tarea, o sea que es
+  // un pase de acceso. En la query acababa escrita en el log de accesos del
+  // proxy y en el historial del navegador — se encontraron 23 en claro en un
+  // log de producción. Una cabecera no se registra por defecto.
+  const cabeceras: Record<string, string> = {};
+  if (options.address) cabeceras['x-panal-address'] = options.address;
+  if (options.signature) cabeceras['x-panal-signature'] = options.signature;
+  if (options.expira !== undefined) cabeceras['x-panal-expira'] = String(options.expira);
 
   await assertPublicUrl(destino.toString(), options);
 
@@ -259,6 +276,7 @@ export async function downloadDeliveredFile(
     maxBytes: tope,
     timeoutMs: options.timeoutMs ?? 120_000,
     redirect: 'error',
+    headers: cabeceras,
   });
   if (status !== 200) {
     throw new FileVerificationError(`El agente respondió ${status} al pedirle "${file.name}".`, file.name);

@@ -248,7 +248,21 @@ const inFlight = new Set<string>();
 // ---------------------------------------------------------------------------
 
 const briefSignMessage = (taskId: bigint) => `Panal brief #${taskId}`;
-const resultSignMessage = (taskId: bigint) => `Panal resultado #${taskId}`;
+/** Formato ANTIGUO, sin caducidad. Se sigue aceptando; ver `credencialValida`. */
+const resultSignMessageLegacy = (taskId: bigint) => `Panal resultado #${taskId}`;
+/** Formato actual: la firma dice hasta cuándo vale. */
+const resultSignMessage = (taskId: bigint, expira: number) => `Panal resultado #${taskId} · ${expira}`;
+
+/**
+ * Cuánto puede durar como mucho una firma de descarga.
+ *
+ * El cliente elige cuándo caduca la suya y este tope acota lo que se acepta:
+ * sin él, firmar una válida hasta el año 2100 sería lo mismo que no caducar.
+ */
+const MAX_VENTANA_S = 15 * 60;
+
+/** Rechaza el formato antiguo (sin caducidad). Pásalo a 1 cuando puedas. */
+const AUTH_ESTRICTA = process.env.AUTH_ESTRICTA === '1';
 
 async function signedBy(message: string, signature: string, expected: Address): Promise<boolean> {
   try {
@@ -256,6 +270,91 @@ async function signedBy(message: string, signature: string, expected: Address): 
   } catch {
     return false;
   }
+}
+
+/**
+ * Las credenciales de una descarga: de dónde se leen y si valen.
+ *
+ * SE LEEN DE LAS CABECERAS, no de la query. La firma abre el resultado y TODOS
+ * los archivos de una tarea, así que es un pase de acceso — y en la query
+ * acababa escrita en el log de accesos del proxy, en el historial del navegador
+ * y en cualquier intermediario del camino. Se encontraron 23 en un log de
+ * producción, en claro. Un pase que se registra en un archivo de texto no es
+ * un pase.
+ *
+ * La query se sigue leyendo porque los clientes publicados antes de esto la
+ * usan, y romperles la descarga no arregla nada. Pero avisa.
+ */
+function credencialesDe(
+  req: IncomingMessage,
+  url: URL,
+): { address: string | null; signature: string | null; expira: string | null; porQuery: boolean } {
+  const cabecera = (n: string): string | null => {
+    const v = req.headers[n];
+    return typeof v === 'string' && v.trim() ? v.trim() : null;
+  };
+  const address = cabecera('x-panal-address');
+  const signature = cabecera('x-panal-signature');
+  if (address && signature) {
+    return { address, signature, expira: cabecera('x-panal-expira'), porQuery: false };
+  }
+  return {
+    address: url.searchParams.get('address'),
+    signature: url.searchParams.get('signature'),
+    expira: url.searchParams.get('expira'),
+    porQuery: true,
+  };
+}
+
+/**
+ * ¿La firma abre esta tarea?
+ *
+ * La caducidad la MANDA el cliente y va dentro de lo firmado, así que no se
+ * puede estirar: cambiar el número invalida la firma. Mandarla en claro no
+ * regala nada y ahorra lo que sí sería un problema — adivinarla probando
+ * segundo a segundo son cientos de verificaciones de firma por petición, o
+ * sea un ataque de denegación montado por uno mismo.
+ */
+/** Un aviso por tarea: repetirlo en cada archivo llenaría el log de ruido. */
+const avisadasPorQuery = new Set<string>();
+function avisaQuery(taskId: bigint): void {
+  const k = taskId.toString();
+  if (avisadasPorQuery.has(k)) return;
+  avisadasPorQuery.add(k);
+  console.error(
+    `[panal] #${taskId} credenciales por QUERY STRING. Acaban en el log de accesos del proxy ` +
+      'y en el historial del navegador. Actualiza el cliente: van en cabeceras.',
+  );
+}
+
+async function credencialValida(
+  taskId: bigint,
+  signature: string,
+  expiraCrudo: string | null,
+  cliente: Address,
+): Promise<boolean> {
+  const ahora = Math.floor(Date.now() / 1000);
+
+  if (expiraCrudo !== null) {
+    const expira = Number(expiraCrudo);
+    if (!Number.isInteger(expira)) return false;
+    // Ni caducada, ni válida durante un año: el tope es lo que impide que una
+    // firma filtrada valga para siempre, que es el motivo de todo esto.
+    if (expira <= ahora || expira > ahora + MAX_VENTANA_S) return false;
+    return signedBy(resultSignMessage(taskId, expira), signature, cliente);
+  }
+
+  // Sin caducidad: formato antiguo. Se acepta para no romper a los clientes ya
+  // publicados, y se avisa en cada uso.
+  if (AUTH_ESTRICTA) return false;
+  if (await signedBy(resultSignMessageLegacy(taskId), signature, cliente)) {
+    console.error(
+      `[panal] #${taskId} descarga con firma SIN CADUCIDAD (formato antiguo). ` +
+        'Actualiza el cliente; con AUTH_ESTRICTA=1 esto se rechaza.',
+    );
+    return true;
+  }
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -443,9 +542,92 @@ async function readBody(req: IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+// ---------------------------------------------------------------------------
+// Aguantar el ruido: límite de peticiones y caché de la tarea
+// ---------------------------------------------------------------------------
+//
+// Cada petición a /result, /files o /brief cuesta una llamada al RPC ANTES de
+// poder verificar nada — hay que leer la tarea para saber quién es su cliente.
+// El RPC público limita a ~15 llamadas/s, así que un bucle de curl sin
+// autenticar agotaba esa cuota y dejaba al agente sin poder entregar su trabajo
+// real, con el dinero de clientes legítimos bloqueado hasta que vencía el plazo.
+
+/** Peticiones por minuto y por IP. 0 lo desactiva. */
+const LIMITE_POR_MINUTO = (() => {
+  const n = Number(process.env.LIMITE_POR_MINUTO?.trim() || '60');
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 60;
+})();
+
+/**
+ * Confiar en `x-forwarded-for`. Solo con un proxy delante (Caddy, nginx).
+ *
+ * Apagado por defecto a propósito: si se confía sin proxy, cualquiera manda esa
+ * cabecera con una IP inventada por petición y el límite deja de existir.
+ */
+const TRAS_PROXY = process.env.TRAS_PROXY === '1';
+
+const cubos = new Map<string, { n: number; hasta: number }>();
+
+function ipDe(req: IncomingMessage): string {
+  if (TRAS_PROXY) {
+    const xff = req.headers['x-forwarded-for'];
+    const primera = (Array.isArray(xff) ? xff[0] : xff)?.split(',')[0]?.trim();
+    if (primera) return primera;
+  }
+  return req.socket.remoteAddress ?? 'desconocida';
+}
+
+/** true si hay que rechazar. Ventana fija de un minuto, que sobra aquí. */
+function pasaDelLimite(req: IncomingMessage): boolean {
+  if (LIMITE_POR_MINUTO === 0) return false;
+  const ahora = Date.now();
+  const ip = ipDe(req);
+  const cubo = cubos.get(ip);
+  if (!cubo || cubo.hasta <= ahora) {
+    // Se limpia aquí y no con un temporizador: sin esto el mapa crece sin fin
+    // con una IP distinta por petición, que es su propia forma de tumbarlo.
+    if (cubos.size > 10_000) for (const [k, v] of cubos) if (v.hasta <= ahora) cubos.delete(k);
+    cubos.set(ip, { n: 1, hasta: ahora + 60_000 });
+    return false;
+  }
+  cubo.n += 1;
+  return cubo.n > LIMITE_POR_MINUTO;
+}
+
+/**
+ * La tarea, cacheada unos segundos.
+ *
+ * Solo para las rutas de LECTURA (/result, /files), y solo se usa su `client`,
+ * que no cambia nunca. El camino del encargo NO la usa: ahí se mira el estado y
+ * el hash, y servir un estado de hace cinco segundos podría aceptar un encargo
+ * de una tarea que acaba de cerrarse.
+ *
+ * Además de aguantar el ruido, ahorra lo obvio: bajarse cuatro archivos de una
+ * entrega hacía cuatro lecturas idénticas de la misma tarea.
+ */
+const CACHE_TAREA_MS = 5_000;
+const tareasCache = new Map<string, { cliente: Address; hasta: number }>();
+
+async function clienteDeTarea(taskId: bigint): Promise<Address> {
+  const k = taskId.toString();
+  const ahora = Date.now();
+  const cacheada = tareasCache.get(k);
+  if (cacheada && cacheada.hasta > ahora) return cacheada.cliente;
+  const task = await panal.getTask(taskId);
+  if (tareasCache.size > 1_000) for (const [kk, v] of tareasCache) if (v.hasta <= ahora) tareasCache.delete(kk);
+  tareasCache.set(k, { cliente: task.client, hasta: ahora + CACHE_TAREA_MS });
+  return task.client;
+}
+
 const server = createServer((req, res) => {
   void (async () => {
     const url = new URL(req.url ?? '/', 'http://localhost');
+
+    if (pasaDelLimite(req)) {
+      res.setHeader('retry-after', '60');
+      json(res, 429, { error: 'too many requests' });
+      return;
+    }
 
     // El dashboard vive en otro dominio: sin CORS el cliente no puede ni
     // mandarte el brief ni descargar su resultado.
@@ -453,7 +635,13 @@ const server = createServer((req, res) => {
     res.setHeader('vary', 'origin');
     if (req.method === 'OPTIONS') {
       res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
-      res.setHeader('access-control-allow-headers', 'content-type');
+      // Las credenciales van en cabeceras propias, y esas NO son simples: sin
+      // declararlas aquí el navegador bloquea la descarga en el preflight.
+      res.setHeader(
+        'access-control-allow-headers',
+        'content-type, x-panal-address, x-panal-signature, x-panal-expira, x-payment, x-payment-payer',
+      );
+      res.setHeader('access-control-max-age', '86400');
       res.writeHead(204).end();
       return;
     }
@@ -686,19 +874,20 @@ const server = createServer((req, res) => {
     const match = /^\/result\/(\d+)$/.exec(url.pathname);
     if (match && req.method === 'GET') {
       const taskId = BigInt(match[1]!);
-      const address = url.searchParams.get('address');
-      const signature = url.searchParams.get('signature');
-      if (!address || !signature) {
-        json(res, 400, { error: 'faltan address y signature' });
+      const cred = credencialesDe(req, url);
+      if (!cred.address || !cred.signature) {
+        json(res, 400, { error: 'faltan address y signature (cabeceras x-panal-address / x-panal-signature)' });
         return;
       }
-      const task = await panal.getTask(taskId);
-      if (address.toLowerCase() !== task.client.toLowerCase()) {
+      if (cred.porQuery) avisaQuery(taskId);
+      // Cacheado: aquí solo se usa el cliente, que no cambia nunca.
+      const cliente = await clienteDeTarea(taskId);
+      if (cred.address.toLowerCase() !== cliente.toLowerCase()) {
         json(res, 403, { error: 'solo el cliente de la tarea puede descargar el resultado' });
         return;
       }
-      if (!(await signedBy(resultSignMessage(taskId), signature, task.client))) {
-        json(res, 401, { error: 'firma inválida' });
+      if (!(await credencialValida(taskId, cred.signature, cred.expira, cliente))) {
+        json(res, 401, { error: 'firma inválida o caducada' });
         return;
       }
       const text = loadResult(taskId);
@@ -718,19 +907,20 @@ const server = createServer((req, res) => {
     const archivo = /^\/files\/(\d+)\/([^/]+)$/.exec(url.pathname);
     if (archivo && req.method === 'GET') {
       const taskId = BigInt(archivo[1]!);
-      const address = url.searchParams.get('address');
-      const signature = url.searchParams.get('signature');
-      if (!address || !signature) {
-        json(res, 400, { error: 'faltan address y signature' });
+      const cred = credencialesDe(req, url);
+      if (!cred.address || !cred.signature) {
+        json(res, 400, { error: 'faltan address y signature (cabeceras x-panal-address / x-panal-signature)' });
         return;
       }
-      const task = await panal.getTask(taskId);
-      if (address.toLowerCase() !== task.client.toLowerCase()) {
+      if (cred.porQuery) avisaQuery(taskId);
+      // Cacheado: aquí solo se usa el cliente, que no cambia nunca.
+      const cliente = await clienteDeTarea(taskId);
+      if (cred.address.toLowerCase() !== cliente.toLowerCase()) {
         json(res, 403, { error: 'solo el cliente de la tarea puede descargar sus archivos' });
         return;
       }
-      if (!(await signedBy(resultSignMessage(taskId), signature, task.client))) {
-        json(res, 401, { error: 'firma inválida' });
+      if (!(await credencialValida(taskId, cred.signature, cred.expira, cliente))) {
+        json(res, 401, { error: 'firma inválida o caducada' });
         return;
       }
 
