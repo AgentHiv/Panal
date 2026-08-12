@@ -11,6 +11,7 @@
  * anclado en la cadena al entregar. Si luego sirves otra cosa, se nota.
  */
 
+import type { CallEnvelope } from '@panal/sdk';
 import { textoAPdf } from './pdf.js';
 
 export interface TaskContext {
@@ -25,6 +26,41 @@ export interface TaskContext {
   amount: bigint;
   /** Fecha límite de entrega, en segundos epoch. Cero en una llamada x402. */
   deadline: bigint;
+
+  /**
+   * PREGUNTAR A OTRO AGENTE, Y PAGARLE.
+   *
+   * Busca en el mercado quién dice saber hacer eso, les pide precio —gratis—,
+   * elige al más barato que quepa en tu presupuesto, le paga y te devuelve su
+   * respuesta. Tú decides cuándo merece la pena; el motor se encarga del resto.
+   *
+   *     const glosario = await ctx.consultar('traducción', 'traduce estos términos al alemán: …');
+   *
+   * Cuesta DINERO TUYO, del que acabas de cobrar. Tres cosas que conviene
+   * tener claras antes de usarlo:
+   *
+   *   - Si no pusiste SUBCONTRATA_MAX en el .env, esto lanza. Es deliberado:
+   *     un agente no debería empezar a gastar por defecto.
+   *   - Puede lanzar aunque haya presupuesto, si la cadena que te llamó ya lo
+   *     agotó o se quedó sin saltos. Heredar una cadena no amplía sus límites.
+   *   - No lo captures en silencio. Que entregues algo peor porque no pudiste
+   *     delegar es justo lo que necesitas ver en los logs.
+   *
+   * @param skill     Qué buscas, en el idioma en que la gente escribe sus
+   *                  skills: 'traducción', 'legal', 'json'…
+   * @param pregunta  Lo que le preguntas. Va tal cual al otro agente.
+   */
+  consultar(skill: string, pregunta: string): Promise<string>;
+
+  /** Lo que puedes gastarte en `consultar` en este encargo. Cero = no delegas. */
+  presupuesto: bigint;
+
+  /**
+   * El sobre de la cadena, si quien te llamó era otro agente. `null` si el
+   * encargo viene de una persona. Solo lo necesitas para mirarlo en los logs:
+   * `consultar` ya lo respeta por su cuenta.
+   */
+  envelope: CallEnvelope | null;
 }
 
 /** Un archivo que entregas junto al texto. */
@@ -91,12 +127,16 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
     );
   }
 
+  // ¿Esto lo sé hacer yo, o me conviene preguntar? La decisión es del agente,
+  // no del cliente: él pidió un trabajo, no una arquitectura.
+  const ayuda = await pedirAyudaSiHaceFalta(brief, ctx, apiKey);
+
   // Un intento, una revisión y una corrección. Un modelo falla el formato de
   // vez en cuando, y aquí eso no es un mensaje feo en un chat: el hash de lo
   // que entregues queda anclado en la cadena y ya no se puede rectificar.
   let queja: string | null = null;
   for (let intento = 1; intento <= 2; intento++) {
-    const texto = await pedirAlModelo(brief, apiKey, queja);
+    const texto = await pedirAlModelo(brief, apiKey, queja, ayuda);
     const problema = revisar(brief, texto);
     if (!problema) {
       console.log(`[agente] ${etiqueta(ctx)} resuelta: ${texto.length} caracteres`);
@@ -113,6 +153,96 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
     queja = problema;
   }
   throw new Error('inalcanzable');
+}
+
+/**
+ * TU AGENTE DECIDIENDO SI SUBCONTRATA. Devuelve lo que le contestó otro, o null.
+ *
+ * Esto es lo que separa a un agente de un endpoint: mira el encargo, reconoce
+ * lo que no es suyo y va a comprarlo con su dinero. Nadie se lo ha pedido.
+ *
+ * La decisión la toma el propio modelo, en una llamada aparte y barata, con una
+ * regla incómoda de escribir y necesaria: NO delegar es la respuesta correcta
+ * casi siempre. Un agente que pregunta por todo se funde lo que cobró, y en
+ * cuanto el trabajo es suyo la respuesta de un tercero solo añade ruido.
+ *
+ * Bórralo entero si tu agente no necesita a nadie. Muchos no lo necesitan, y
+ * ese es el caso sano.
+ */
+async function pedirAyudaSiHaceFalta(
+  brief: string,
+  ctx: TaskContext,
+  apiKey: string,
+): Promise<string | null> {
+  // Sin presupuesto no hay nada que decidir, y así se ahorra la llamada.
+  if (ctx.presupuesto <= 0n) return null;
+
+  const decision = await decidirDelegacion(brief, apiKey);
+  if (!decision) return null;
+
+  try {
+    const respuesta = await ctx.consultar(decision.skill, decision.pregunta);
+    console.log(`[agente] ${etiqueta(ctx)} subcontrató "${decision.skill}": ${respuesta.length} caracteres`);
+    return respuesta;
+  } catch (err) {
+    // Que no se pueda delegar NO cancela el encargo: el cliente pagó por un
+    // trabajo y lo va a recibir, hecho con lo que este agente sepa. Se deja
+    // dicho en voz alta porque es justo lo que el autor querrá ver el día que
+    // la respuesta salga más floja de lo normal.
+    console.error(
+      `[agente] ${etiqueta(ctx)} quería preguntar a un agente de "${decision.skill}" y no pudo: ` +
+        `${err instanceof Error ? err.message : err}. Sigue por su cuenta.`,
+    );
+    return null;
+  }
+}
+
+/** Una llamada corta al modelo: ¿delego, y a quién? Formato JSON o nada. */
+async function decidirDelegacion(
+  brief: string,
+  apiKey: string,
+): Promise<{ skill: string; pregunta: string } | null> {
+  try {
+    const res = await fetch(`${process.env.LLM_BASE_URL ?? 'https://api.openai.com/v1'}/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      // Corto a propósito: si decidir tarda más que trabajar, no compensa.
+      signal: AbortSignal.timeout(30_000),
+      body: JSON.stringify({
+        model: process.env.LLM_MODEL ?? 'gpt-4o-mini',
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are an agent deciding whether to PAY another specialist agent out of your own earnings ' +
+              'to do part of a job. Answer with JSON only.\n' +
+              '{"delegate": false} if you can do the job yourself. This is the right answer almost always.\n' +
+              '{"delegate": true, "skill": "…", "question": "…"} ONLY if the job clearly needs expertise ' +
+              'outside your own, and a specialist answer would measurably improve the result.\n' +
+              '"skill" is one or two words to search a marketplace by (e.g. "translation", "legal", "json").\n' +
+              '"question" is the self-contained question for that specialist: it will be sent on its own, ' +
+              'so it must make sense without the rest of the job.\n' +
+              'Paying costs real money. If in doubt, do not delegate.',
+          },
+          { role: 'user', content: brief },
+        ],
+      }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const crudo = data.choices?.[0]?.message?.content;
+    if (!crudo) return null;
+    const parsed = JSON.parse(crudo) as { delegate?: boolean; skill?: string; question?: string };
+    if (parsed.delegate !== true) return null;
+    const skill = parsed.skill?.trim();
+    const pregunta = parsed.question?.trim();
+    if (!skill || !pregunta) return null;
+    return { skill, pregunta };
+  } catch {
+    // Decidir mal no puede tumbar el encargo: ante la duda, se trabaja solo.
+    return null;
+  }
 }
 
 /**
@@ -182,7 +312,12 @@ function conPdfSiLoPidio(brief: string, texto: string, ctx: TaskContext): TaskRe
   return { text: texto, files: [{ name: 'entrega.pdf', data: pdf, mime: 'application/pdf' }] };
 }
 
-async function pedirAlModelo(brief: string, apiKey: string, queja: string | null): Promise<string> {
+async function pedirAlModelo(
+  brief: string,
+  apiKey: string,
+  queja: string | null,
+  ayuda: string | null,
+): Promise<string> {
   const res = await fetch(`${process.env.LLM_BASE_URL ?? 'https://api.openai.com/v1'}/chat/completions`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
@@ -213,6 +348,19 @@ async function pedirAlModelo(brief: string, apiKey: string, queja: string | null
             'you answer. Never mention files, PDFs or attachments — not even to say you cannot make them.',
         },
         { role: 'user', content: brief },
+        // Lo que contestó el especialista, si se le preguntó. Va marcado como
+        // material de apoyo y no como parte del encargo: sin esa aclaración el
+        // modelo tiende a copiarlo tal cual y a entregar la respuesta de otro.
+        ...(ayuda
+          ? [
+              {
+                role: 'user' as const,
+                content:
+                  'Material de apoyo, pagado a un agente especialista. Úsalo si ayuda y descártalo si no; ' +
+                  `no lo copies tal cual ni lo menciones en la entrega:\n\n${ayuda}`,
+              },
+            ]
+          : []),
         // La corrección va como un mensaje más: decirle QUÉ falló acierta mucho
         // más que repetirle la misma petición a ciegas esperando otra suerte.
         ...(queja ? [{ role: 'user' as const, content: `Tu respuesta anterior no vale: ${queja}. Corrígela.` }] : []),

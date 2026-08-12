@@ -26,15 +26,19 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   appendFilesManifest,
+  assertCanServe,
   buildQuote,
   createPanalClient,
+  LoopDetected,
   MAINNET_ADDRESSES,
+  parseEnvelope,
   parsePaymentHeader,
   permitNonce,
   readPermitDomain,
   sanitizeFileName,
   TaskStatus,
   verifyAndSettle,
+  type CallEnvelope,
   type DeliveredFile,
   type PermitDomain,
 } from '@panal/sdk';
@@ -42,7 +46,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { isAddress, keccak256, parseEther, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
 import { handleTask } from './agent.js';
-import type { TaskFile, TaskResult } from './agent.js';
+import type { TaskContext, TaskFile, TaskResult } from './agent.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const DATA_DIR = process.env.DATA_DIR ?? './data';
@@ -96,6 +100,43 @@ const X402_DESCRIPTION = process.env.X402_DESCRIPTION?.trim() || 'One question t
 
 if (X402_PRICE !== null) {
   console.log(`Cobro por llamada activo: ${process.env.X402_PRICE} ${X402_SYMBOL} en POST /x402/ask`);
+}
+
+// ---------------------------------------------------------------------------
+// SUBCONTRATAR: lo que tu agente puede gastarse en preguntar a otros
+// ---------------------------------------------------------------------------
+//
+// Tu agente puede pagar a otro por lo que no sepa hacer (ver `ctx.consultar` en
+// agent.ts). Eso es dinero suyo saliendo, así que necesita un tope, y el tope
+// se pone AQUÍ y no en el prompt: un prompt se negocia, un número no.
+//
+// Va en la moneda del x402 —$PANAL por defecto— y NO se deduce de lo que cobras
+// por la tarea. Es tentador decir "que gaste como mucho el 30 % de lo que le
+// pagan", pero una tarea se cobra en MON y una consulta se paga en $PANAL: son
+// monedas distintas sin tipo de cambio, y convertir una en otra a ojo sería
+// inventarse el presupuesto. Si no pones nada, tu agente no delega.
+//
+//   SUBCONTRATA_MAX=0.5     # como mucho 0,5 $PANAL por encargo
+//   SUBCONTRATA_SALTOS=2    # cuántos agentes puede encadenar (tope duro: 8)
+//
+const SUBCONTRATA_MAX = (() => {
+  const raw = process.env.SUBCONTRATA_MAX?.trim();
+  if (!raw) return 0n;
+  try {
+    const wei = parseEther(raw);
+    return wei > 0n ? wei : 0n;
+  } catch {
+    console.error(`SUBCONTRATA_MAX="${raw}" no es un número válido: tu agente no subcontratará.`);
+    return 0n;
+  }
+})();
+const SUBCONTRATA_SALTOS = (() => {
+  const n = Number(process.env.SUBCONTRATA_SALTOS?.trim() || '2');
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 2;
+})();
+
+if (SUBCONTRATA_MAX > 0n) {
+  console.log(`Subcontratación activa: hasta ${process.env.SUBCONTRATA_MAX} ${X402_SYMBOL} por encargo`);
 }
 
 /**
@@ -194,18 +235,68 @@ async function signedBy(message: string, signature: string, expected: Address): 
 // El trabajo
 // ---------------------------------------------------------------------------
 
-async function work(taskId: bigint, brief: string): Promise<void> {
+/**
+ * Monta el contexto que recibe tu `handleTask`, con la capacidad de delegar.
+ *
+ * `consultar` es lo que convierte a tu agente en cliente de otro: busca en el
+ * mercado quién sabe hacer eso, pide precio a los candidatos —gratis, con el
+ * 402—, se queda con el más barato que quepa en el presupuesto, le paga y
+ * devuelve su respuesta.
+ *
+ * Los tres límites se aplican antes de firmar ningún pago:
+ *
+ *   - PRESUPUESTO. Nunca más de SUBCONTRATA_MAX, y si esta llamada viene de
+ *     otro agente, nunca más de lo que quede en el sobre. Heredar una cadena
+ *     no puede AMPLIAR lo que autorizó quien la empezó.
+ *   - PROFUNDIDAD. Cada salto gasta uno. Al llegar a cero hay que resolver solo.
+ *   - CICLOS. Si tu agente ya aparece en el camino, se corta: A→B→C→A daría
+ *     vueltas cobrando en cada una.
+ *
+ * Si algo de eso falta, `consultar` lanza. No lo captures en silencio: que tu
+ * agente entregue algo peor porque no pudo delegar es información que el autor
+ * necesita ver en los logs.
+ */
+function contexto(
+  base: { taskId: bigint | null; client: string; amount: bigint; deadline: bigint },
+  sobre: CallEnvelope | null,
+): TaskContext {
+  return {
+    ...base,
+    envelope: sobre,
+    presupuesto: SUBCONTRATA_MAX,
+    consultar: async (skill: string, pregunta: string) => {
+      if (SUBCONTRATA_MAX <= 0n) {
+        throw new Error(
+          'Este agente no tiene presupuesto para subcontratar: pon SUBCONTRATA_MAX en el .env si quieres que delegue.',
+        );
+      }
+      const res = await panal.ask(skill, pregunta, {
+        maxSpend: SUBCONTRATA_MAX,
+        depth: SUBCONTRATA_SALTOS,
+        // El sobre recibido, si lo hay. Sin él se abre una cadena nueva.
+        envelope: sobre,
+        // Sin esto un agente que busca su propia skill se contrataría a sí
+        // mismo, se pagaría a sí mismo y se quedaría esperando su respuesta.
+        exclude: [account.address],
+      });
+      console.log(
+        `[panal] consulta a ${res.agent} por ${res.paid} (${skill}) · trace ${sobre?.trace ?? 'nuevo'}`,
+      );
+      return res.answer;
+    },
+  };
+}
+
+async function work(taskId: bigint, brief: string, sobre: CallEnvelope | null): Promise<void> {
   const key = taskId.toString();
   if (inFlight.has(key)) return;
   inFlight.add(key);
   try {
     const task = await panal.getTask(taskId);
-    const salida = await handleTask(brief, {
-      taskId,
-      client: task.client,
-      amount: task.amount,
-      deadline: task.deadline,
-    });
+    const salida = await handleTask(
+      brief,
+      contexto({ taskId, client: task.client, amount: task.amount, deadline: task.deadline }, sobre),
+    );
 
     // Tu handleTask puede devolver un texto a secas —lo normal— o un texto con
     // archivos. Los archivos se escriben en disco y su hash se cuela en el
@@ -378,6 +469,22 @@ const server = createServer((req, res) => {
         return;
       }
 
+      // El sobre, antes que nada. Cortar el ciclo aquí importa más que en el
+      // escrow: en x402 el cobro va ANTES de trabajar, así que una vuelta de
+      // más no es tiempo perdido, es dinero cobrado por dar vueltas. Y va
+      // antes del 402 a propósito: si la cadena está viciada, ni se cotiza.
+      const sobre = parseEnvelope(req.headers);
+      try {
+        assertCanServe(sobre, account.address);
+      } catch (err) {
+        if (err instanceof LoopDetected) {
+          console.error(`[x402] ciclo cortado: ${err.message}`);
+          json(res, 508, { error: err.message, trace: err.trace });
+          return;
+        }
+        throw err;
+      }
+
       const domain = await dominioPermit();
       const pagoCrudo = req.headers['x-payment'];
 
@@ -431,12 +538,10 @@ const server = createServer((req, res) => {
       // Ya está cobrado: pase lo que pase a partir de aquí, hay que responder
       // algo. Si el modelo revienta, se dice; callarse sería quedarse el dinero.
       try {
-        const salida = await handleTask(prompt, {
-          taskId: null,
-          client: leido.payment.payer,
-          amount: cobro.amount,
-          deadline: 0n,
-        });
+        const salida = await handleTask(
+          prompt,
+          contexto({ taskId: null, client: leido.payment.payer, amount: cobro.amount, deadline: 0n }, sobre),
+        );
         // En una llamada x402 no hay tarea, así que no hay nada que anclar ni
         // ninguna firma con la que proteger una descarga: los archivos no
         // tienen dónde agarrarse. Se responde el texto y se avisa en el log en
@@ -489,6 +594,23 @@ const server = createServer((req, res) => {
         return;
       }
       const taskId = BigInt(idCrudo);
+
+      // El sobre de la cadena, si este encargo viene de otro agente. Se mira
+      // ANTES de leer la tarea: si es un ciclo, hasta el eth_call sobra.
+      const sobre = parseEnvelope(req.headers);
+      try {
+        assertCanServe(sobre, account.address);
+      } catch (err) {
+        if (err instanceof LoopDetected) {
+          // 508 Loop Detected. Existe para esto exactamente, y decirlo con el
+          // código correcto deja que quien llama lo distinga de un fallo suyo.
+          console.error(`[panal] ciclo cortado en #${taskId}: ${err.message}`);
+          json(res, 508, { error: err.message, trace: err.trace });
+          return;
+        }
+        throw err;
+      }
+
       const task = await panal.getTask(taskId);
 
       // Cuatro comprobaciones, y las cuatro importan: que la tarea sea tuya,
@@ -526,7 +648,7 @@ const server = createServer((req, res) => {
 
       json(res, 202, { ok: true });
       // Sin await: el cliente no debería esperar a que termines de trabajar.
-      void work(taskId, body.brief);
+      void work(taskId, body.brief, sobre);
       return;
     }
 

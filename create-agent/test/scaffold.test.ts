@@ -233,6 +233,34 @@ async function main(): Promise<void> {
       });
       check('un brief sin firma se rechaza', sinFirma.status === 400, `HTTP ${sinFirma.status}`);
 
+      // Un ciclo se corta ANTES de trabajar y ANTES de comprobar la firma: si
+      // el agente ya está en el camino de la cadena, atender costaría dinero a
+      // alguien para nada. Se manda un sobre en el que él mismo aparece; el
+      // 508 tiene que llegar aunque el resto de la petición sea basura, porque
+      // se mira lo primero de todo.
+      const suPropia = (card as { agent?: string } | null)?.agent ?? '';
+      const ciclo = await fetch(`http://127.0.0.1:${port}/brief/0`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-panal-trace': 'prueba-de-ciclo',
+          'x-panal-depth': '3',
+          'x-panal-budget': '1000000000000000000',
+          'x-panal-path': `0xAAaA000000000000000000000000000000000001,${suPropia}`,
+        },
+        body: JSON.stringify({ taskId: 0, brief: 'da la vuelta', signature: '0x00' }),
+      });
+      check('un encargo que cierra un ciclo se corta con 508', ciclo.status === 508, `HTTP ${ciclo.status}`);
+
+      // Y sin sobre no se vigila nada: la inmensa mayoría de encargos vienen de
+      // una persona, y esos no traen cadena que proteger.
+      const sinSobre = await fetch(`http://127.0.0.1:${port}/brief/0`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ taskId: 0, brief: 'normal', signature: '0x00' }),
+      });
+      check('sin sobre el encargo sigue su curso normal', sinSobre.status !== 508, `HTTP ${sinSobre.status}`);
+
       // La ruta CANÓNICA es /brief/<taskId>: es la que llama el dashboard de
       // panal.lat. Esto no es un detalle de estilo — la plantilla 0.1.2 solo
       // escuchaba en /brief y devolvía 404 a todos los encargos reales, con el
