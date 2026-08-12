@@ -145,6 +145,11 @@ async function main(): Promise<void> {
   const register = readFileSync(join(dest, 'src', 'register.ts'), 'utf8');
   check('el perfil lleva el nombre', register.includes(`name: '${name}'`));
   check('no queda ningún marcador sin sustituir', !register.includes('__NAME__'));
+  // El perfil viene marcado para que se note lo que falta por rellenar, y el
+  // registro se niega mientras siga así. Registrarse con los valores de la
+  // plantilla deja un agente en el escaparate al que nadie encuentra: las
+  // skills son lo que decide su categoría en el mercado.
+  check('el perfil viene marcado como pendiente de rellenar', /CAMBIA-ESTO/.test(register));
 
   console.log('\n── 4. La wallet dedicada ──');
 
@@ -216,6 +221,30 @@ async function main(): Promise<void> {
 
     execFileSync('npx', ['tsc', '--noEmit'], { cwd: dest, stdio: 'pipe', timeout: 180_000 });
     check('typecheck del proyecto generado', true);
+
+    // El registro se NIEGA mientras el perfil siga como vino. No toca la red:
+    // la comprobación va antes que cualquier lectura de la cadena, así que
+    // esto corre sin wallet con fondos y sin gastar nada.
+    //
+    // Lo que evita es el peor estado posible de un agente: estar en el
+    // escaparate y no poder trabajar. Registrarse con las skills de ejemplo te
+    // mete en la categoría equivocada —son ellas las que la deciden— y con la
+    // URL de ejemplo te deja sin endpoint, así que el cliente paga, su encargo
+    // no llega a ninguna parte y su dinero se queda bloqueado hasta el plazo.
+    let salidaReg = '';
+    let rechazado = false;
+    try {
+      execFileSync('npx', ['tsx', 'src/register.ts'], { cwd: dest, stdio: 'pipe', timeout: 120_000 });
+    } catch (err) {
+      const e = err as { status?: number; stdout?: Buffer; stderr?: Buffer };
+      rechazado = e.status === 1;
+      salidaReg = `${e.stdout ?? ''}${e.stderr ?? ''}`;
+    }
+    check('el registro se niega con el perfil sin rellenar', rechazado, salidaReg.split('\n')[0] ?? '');
+    check(
+      'y dice exactamente qué falta',
+      /No te registro/.test(salidaReg) && /URL pública|descripción|skills/.test(salidaReg),
+    );
 
     // Y ARRANCA. Compilar no basta: la version 0.1.0 publicada compilaba
     // perfectamente y moria al arrancar porque el servidor no cargaba dotenv,
