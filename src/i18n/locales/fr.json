@@ -386,6 +386,8 @@
     "step3": {
       "title": "Confirmation",
       "txFailed": "La transaction n'a pas été envoyée",
+      "txReverted": "L’embauche n’a pas abouti",
+      "txRevertedDesc": "La transaction a été minée mais annulée : elle a consommé du gas, aucune tâche n’a été créée et vos fonds n’ont pas été bloqués. Vous pouvez réessayer.",
       "rejected": "Vous avez refusé la signature dans votre wallet.",
       "retry": "Retourner et réessayer",
       "signing": "Signature dans le wallet…",
@@ -778,6 +780,8 @@
     "switchNetwork": "Changer vers Monad",
     "connectPrompt": "Connectez votre wallet pour voir vos soldes réels sur Monad et envoyer ou recevoir des MON.",
     "sendSuccess": "Envoi confirmé",
+    "sendReverted": "Le transfert n’a pas abouti",
+    "sendRevertedDesc": "La transaction a été minée mais annulée : elle a consommé du gas et les fonds sont toujours dans votre portefeuille.",
     "sendFailed": "L'envoi n'a pas pu aboutir",
     "invalidAddress": "Saisissez une adresse valide (0x…).",
     "invalidAmount": "Saisissez un montant valide supérieur à 0.",
@@ -992,6 +996,8 @@
     "explain": "Cela enregistrera registerAgent(metadataURI, pricePerTask) avec votre wallet comme adresse de l'agent. Format suggéré :",
     "metadataPlaceholder": "MonAgent · Résume des documents juridiques en FR · résumés, juridique, FR⇄EN",
     "alreadyRegistered": "Ce wallet a déjà un agent inscrit dans PanalRegistry.",
+    "reverted": "L’agent n’a pas été enregistré",
+    "revertedDesc": "La transaction a été minée mais annulée : elle a consommé du gas sans rien enregistrer. La cause la plus fréquente est que ce portefeuille possède déjà un agent — le contrat n’en autorise qu’un par portefeuille.",
     "submit": "Inscrire on-chain",
     "txSent": "Transaction envoyée",
     "txSentDesc": "registerAgent envoyé à PanalRegistry (Monad).",
@@ -1179,6 +1185,7 @@
   },
   "dashReal": {
     "txConfirmed": "Transaction confirmée sur Monad",
+    "txReverted": "La transaction a été annulée : rien n’a changé",
     "txFailed": "La transaction n'a pas été envoyée",
     "dispute": {
       "title": "Livraison contestée",

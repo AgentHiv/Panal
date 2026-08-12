@@ -8,7 +8,9 @@
  * - Errores: `User rejected` → `hire.step3.rejected`; si no, primera línea
  *   del mensaje del error.
  * - Éxito: toast con link al explorador (`EXPLORER_TX`) al minarse la tx y
- *   callback `onMined` (p. ej. refetch de las lecturas afectadas).
+ *   callback `onMined` (p. ej. refetch de las lecturas afectadas). "Minarse"
+ *   aquí quiere decir ejecutarse bien: una tx revertida se mina igual y saca
+ *   el toast de `dashReal.txReverted` sin llamar a `onMined` (ver useTxReceipt).
  *
  * Usado por: TasksSection (claim/deliver/approve/dispute/autoRelease/cancel),
  * OwnAgentCard (updatePrice/setActive), PaymentsSection (withdraw) y
@@ -18,9 +20,10 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useSwitchChain, useWriteContract } from 'wagmi';
 import type { Address } from 'viem';
 import TxHash from '@/components/TxHash';
+import { useTxReceipt } from '@/hooks/useTxReceipt';
 import { useWallet } from '@/hooks/useWallet';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { activeChain } from '@/contracts/config';
@@ -39,7 +42,10 @@ export interface ContractAction {
   run: (req: ContractActionRequest) => Promise<void>;
   signing: boolean;
   confirming: boolean;
+  /** Minada Y ejecutada bien (ver useTxReceipt: una tx revertida también se mina). */
   mined: boolean;
+  /** Minada pero revertida: gastó gas y no cambió nada. */
+  reverted: boolean;
   txHash: `0x${string}` | undefined;
   /** ocupado = firmando o confirmando */
   busy: boolean;
@@ -57,21 +63,33 @@ export function useContractAction(opts?: { onMined?: () => void }): ContractActi
     isPending: signing,
     reset: resetWrite,
   } = useWriteContract();
-  const { isLoading: confirming, isSuccess: mined } = useWaitForTransactionReceipt({ hash: txHash });
+  const { confirming, mined, reverted } = useTxReceipt(txHash);
 
   const onMinedRef = useRef(opts?.onMined);
   onMinedRef.current = opts?.onMined;
   const toasted = useRef<`0x${string}` | null>(null);
 
   useEffect(() => {
-    if (mined && txHash && toasted.current !== txHash) {
+    if (!txHash || toasted.current === txHash) return;
+    // Una tx revertida se mina igual: hay que decirlo, y NO llamar a onMined.
+    // Llamarlo tampoco rompería nada aquí (suele ser un refetch, y la cadena
+    // devolvería el estado sin tocar), pero avisar de un cambio que no ocurrió
+    // es justo lo que hacía que esto pasara desapercibido.
+    if (reverted) {
+      toasted.current = txHash;
+      toast(t('dashReal.txReverted'), {
+        description: <TxHash hash={txHash} className="text-[0.75rem]" />,
+      });
+      return;
+    }
+    if (mined) {
       toasted.current = txHash;
       toast(t('dashReal.txConfirmed'), {
         description: <TxHash hash={txHash} className="text-[0.75rem]" />,
       });
       onMinedRef.current?.();
     }
-  }, [mined, txHash, t]);
+  }, [mined, reverted, txHash, t]);
 
   const run = async (req: ContractActionRequest) => {
     // Guarda de red contra la chain REAL de la wallet (eth_chainId), con
@@ -114,5 +132,5 @@ export function useContractAction(opts?: { onMined?: () => void }): ContractActi
     toasted.current = null;
   };
 
-  return { run, signing, confirming, mined, txHash, busy: signing || confirming, reset };
+  return { run, signing, confirming, mined, reverted, txHash, busy: signing || confirming, reset };
 }

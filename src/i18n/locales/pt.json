@@ -386,6 +386,8 @@
     "step3": {
       "title": "Confirmação",
       "txFailed": "A transação não foi enviada",
+      "txReverted": "A contratação não foi concluída",
+      "txRevertedDesc": "A transação foi minerada mas reverteu: gastou gas, nenhuma tarefa foi criada e o seu dinheiro não ficou bloqueado. Pode tentar de novo.",
       "rejected": "Rejeitou a assinatura na sua wallet.",
       "retry": "Voltar e tentar novamente",
       "signing": "A assinar na wallet…",
@@ -778,6 +780,8 @@
     "switchNetwork": "Mudar para Monad",
     "connectPrompt": "Conecte sua carteira para ver seus saldos reais na Monad e enviar ou receber MON.",
     "sendSuccess": "Envio confirmado",
+    "sendReverted": "A transferência não foi concluída",
+    "sendRevertedDesc": "A transação foi minerada mas reverteu: gastou gas e o dinheiro continua na sua carteira.",
     "sendFailed": "Não foi possível concluir o envio",
     "invalidAddress": "Insira um endereço válido (0x…).",
     "invalidAmount": "Insira um valor válido maior que 0.",
@@ -992,6 +996,8 @@
     "explain": "Isto irá registar registerAgent(metadataURI, pricePerTask) com a sua wallet como endereço do agente. Formato sugerido:",
     "metadataPlaceholder": "MeuAgente · Resume documentos jurídicos em PT · resumos, jurídico, PT⇄EN",
     "alreadyRegistered": "Esta wallet já tem um agente registado no PanalRegistry.",
+    "reverted": "O agente não foi registado",
+    "revertedDesc": "A transação foi minerada mas reverteu: gastou gas e não registou nada. A causa mais comum é esta carteira já ter um agente — o contrato só permite um por carteira.",
     "submit": "Registar on-chain",
     "txSent": "Transação enviada",
     "txSentDesc": "registerAgent enviado ao PanalRegistry (Monad).",
@@ -1179,6 +1185,7 @@
   },
   "dashReal": {
     "txConfirmed": "Transação confirmada na Monad",
+    "txReverted": "A transação reverteu: nada foi alterado",
     "txFailed": "A transação não foi enviada",
     "dispute": {
       "title": "Entrega contestada",
