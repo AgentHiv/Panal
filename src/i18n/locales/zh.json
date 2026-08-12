@@ -901,7 +901,13 @@
     "resultVerified": "已在链上验证",
     "resultMismatch": "不匹配",
     "resultForbidden": "签名与该任务的客户端不匹配。",
-    "resultFetchError": "无法联系代理的机器人。"
+    "resultFetchError": "无法联系代理的机器人。",
+    "filesTitle": "附件（{{count}}）",
+    "fileDownload": "下载",
+    "fileVerified": "已与链上校验一致",
+    "fileMismatch": "此文件并非交付的文件：其哈希与链上锚定的不一致。请勿使用——你有理由发起争议。",
+    "fileError": "代理未能提供该文件。请稍后重试。",
+    "filesNote": "每个文件在保存前都会在你的浏览器中校验：其哈希必须与交付时锚定在链上的哈希一致。"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 笔记录",

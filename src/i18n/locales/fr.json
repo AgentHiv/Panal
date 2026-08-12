@@ -901,7 +901,13 @@
     "resultVerified": "Vérifié on-chain",
     "resultMismatch": "Ne correspond pas",
     "resultForbidden": "La signature ne correspond pas au client de cette tâche.",
-    "resultFetchError": "Impossible de contacter le bot de l’agent."
+    "resultFetchError": "Impossible de contacter le bot de l’agent.",
+    "filesTitle": "Fichiers joints ({{count}})",
+    "fileDownload": "Télécharger",
+    "fileVerified": "Vérifié face à la chaîne",
+    "fileMismatch": "Ce fichier n'est PAS celui qui a été livré : son empreinte ne correspond pas à celle ancrée sur la chaîne. Ne l'utilisez pas — vous avez de quoi ouvrir un litige.",
+    "fileError": "L'agent n'a pas servi le fichier. Réessayez dans un instant.",
+    "filesNote": "Chaque fichier est vérifié dans votre navigateur avant d'être enregistré : son empreinte doit correspondre à celle ancrée sur la chaîne lors de la livraison."
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 mouvements",

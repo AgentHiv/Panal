@@ -17,7 +17,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, BadgeCheck, Loader2, RefreshCw, ShieldX } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, FileDown, Loader2, RefreshCw, ShieldX } from 'lucide-react';
 import { keccak256, toBytes } from 'viem';
 import { useSignMessage } from 'wagmi';
 import {
@@ -31,6 +31,14 @@ import { buildResultUrl, extractBotUrl, resultSignMessage } from '@/lib/botEndpo
 import { useWallet } from '@/hooks/useWallet';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { cn } from '@/lib/utils';
+import {
+  FileVerificationError,
+  downloadDeliveredFile,
+  formatBytes,
+  parseFilesManifest,
+  stripFilesManifest,
+  type DeliveredFile,
+} from '@/lib/deliveredFiles';
 
 type Phase = 'loadingAgent' | 'noEndpoint' | 'ready' | 'signing' | 'fetching' | 'done' | 'forbidden' | 'fetchError';
 
@@ -50,6 +58,15 @@ export default function ResultDialog({ task }: { task: RealTask }) {
   const [resultText, setResultText] = useState('');
   const [verified, setVerified] = useState<boolean | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  /** Archivos que anuncia la entrega, leídos del manifiesto del texto. */
+  const [files, setFiles] = useState<DeliveredFile[]>([]);
+  /**
+   * La firma se guarda porque la MISMA abre el texto y todos los archivos. Sin
+   * esto habría que pedirle al usuario una firma por cada PDF que se baje.
+   */
+  const [signature, setSignature] = useState<string | null>(null);
+  /** Estado de cada descarga, por nombre de archivo. */
+  const [descargas, setDescargas] = useState<Record<string, 'bajando' | 'ok' | 'mismatch' | 'error'>>({});
 
   // 1. Registry activo → metadataURI del agente → URL del bot.
   useEffect(() => {
@@ -81,9 +98,10 @@ export default function ResultDialog({ task }: { task: RealTask }) {
     if (!botUrl || !address) return;
     try {
       setPhase('signing');
-      const signature = await signMessageAsync({ message: resultSignMessage(task.id) });
+      const firma = await signMessageAsync({ message: resultSignMessage(task.id) });
+      setSignature(firma);
       setPhase('fetching');
-      const res = await fetch(buildResultUrl(botUrl, task.id, address, signature));
+      const res = await fetch(buildResultUrl(botUrl, task.id, address, firma));
       if (res.status === 403) {
         setPhase('forbidden');
         return;
@@ -97,11 +115,41 @@ export default function ResultDialog({ task }: { task: RealTask }) {
       setResultText(text);
       // Verificación local contra el hash anclado on-chain (tupla tasks()).
       setVerified(keccak256(toBytes(text)).toLowerCase() === task.resultHash.toLowerCase());
+      // Los archivos van anunciados DENTRO del texto, así que su hash queda
+      // cubierto por el mismo resultHash que se acaba de comprobar arriba.
+      setFiles(parseFilesManifest(text));
       setPhase('done');
     } catch (err) {
       // El usuario rechazó la firma: volvemos al estado listo sin error ruidoso.
       const msg = err instanceof Error ? err.message : String(err);
       setPhase(/reject|denied|user/i.test(msg) ? 'ready' : 'fetchError');
+    }
+  };
+
+  /**
+   * Baja un archivo, comprueba sus bytes y solo entonces lo guarda.
+   *
+   * Si el hash no cuadra NO se descarga: se avisa. Es el único momento en que
+   * todo esto sirve de algo — significa que el archivo servido no es el que se
+   * entregó, y el cliente tiene con qué abrir una disputa.
+   */
+  const bajarArchivo = async (file: DeliveredFile) => {
+    if (!botUrl || !address || !signature) return;
+    setDescargas((d) => ({ ...d, [file.name]: 'bajando' }));
+    try {
+      const blob = await downloadDeliveredFile(file, botUrl, address, signature);
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = href;
+      a.download = file.name;
+      a.click();
+      // Sin revocar, el blob se queda en memoria hasta que se recarga la
+      // pestaña; con un vídeo de 20 MB eso se nota.
+      URL.revokeObjectURL(href);
+      setDescargas((d) => ({ ...d, [file.name]: 'ok' }));
+    } catch (err) {
+      const roto = err instanceof FileVerificationError && /hash|size/.test(err.message);
+      setDescargas((d) => ({ ...d, [file.name]: roto ? 'mismatch' : 'error' }));
     }
   };
 
@@ -161,9 +209,61 @@ export default function ResultDialog({ task }: { task: RealTask }) {
 
       {phase === 'done' && (
         <>
+          {/* El manifiesto se quita de la vista: es para la máquina, y en
+              pantalla solo es ruido debajo del trabajo que se pagó. */}
           <div className="max-h-64 overflow-y-auto whitespace-pre-wrap rounded-xl border border-line bg-cream p-4 font-mono text-[0.8125rem] leading-relaxed text-ink">
-            {resultText}
+            {files.length > 0 ? stripFilesManifest(resultText) : resultText}
           </div>
+
+          {files.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3">
+                {t('tasks.filesTitle', { count: files.length })}
+              </p>
+              {files.map((file) => {
+                const estado = descargas[file.name];
+                return (
+                  <div
+                    key={file.name}
+                    className="flex items-center gap-3 rounded-xl border border-line bg-paper px-3 py-2.5"
+                  >
+                    <FileDown size={16} className="shrink-0 text-honey-deep" aria-hidden />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[0.875rem] font-medium text-ink">{file.name}</p>
+                      <p className="font-mono text-[11px] text-ink-3">
+                        {formatBytes(file.size)}
+                        {file.mime ? ` · ${file.mime}` : ''}
+                      </p>
+                      {estado === 'mismatch' && (
+                        <p className="mt-1 text-[0.75rem] font-medium text-terra">{t('tasks.fileMismatch')}</p>
+                      )}
+                      {estado === 'error' && (
+                        <p className="mt-1 text-[0.75rem] text-terra">{t('tasks.fileError')}</p>
+                      )}
+                      {estado === 'ok' && (
+                        <p className="mt-1 inline-flex items-center gap-1 text-[0.75rem] font-medium text-olive">
+                          <BadgeCheck size={12} /> {t('tasks.fileVerified')}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void bajarArchivo(file)}
+                      disabled={estado === 'bajando'}
+                      className="shrink-0 rounded-full border border-line px-3 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep disabled:opacity-50"
+                    >
+                      {estado === 'bajando' ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        t('tasks.fileDownload')
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+              <p className="text-[0.75rem] leading-snug text-ink-3">{t('tasks.filesNote')}</p>
+            </div>
+          )}
           <div
             className={cn(
               'inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1 text-[0.75rem] font-semibold',

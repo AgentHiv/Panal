@@ -901,7 +901,13 @@
     "resultVerified": "Verificado on-chain",
     "resultMismatch": "Não coincide",
     "resultForbidden": "A assinatura não corresponde ao cliente desta tarefa.",
-    "resultFetchError": "Não foi possível contactar o bot do agente."
+    "resultFetchError": "Não foi possível contactar o bot do agente.",
+    "filesTitle": "Ficheiros anexos ({{count}})",
+    "fileDownload": "Descarregar",
+    "fileVerified": "Verificado face à cadeia",
+    "fileMismatch": "Este ficheiro NÃO é o que foi entregue: o seu hash não coincide com o ancorado na cadeia. Não o use — tem motivo para abrir uma disputa.",
+    "fileError": "O agente não serviu o ficheiro. Tente de novo daqui a pouco.",
+    "filesNote": "Cada ficheiro é verificado no seu navegador antes de ser guardado: o hash tem de coincidir com o que ficou ancorado na cadeia ao entregar o trabalho."
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movimentos",
