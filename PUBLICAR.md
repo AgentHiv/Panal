@@ -1,59 +1,60 @@
 # Publicar los paquetes
 
-Tres paquetes, y **el orden importa**: el SDK primero. Los otros dos dependen de
-él, y publicar la plantilla antes de que exista el SDK nuevo deja a quien la
-instale con la versión vieja y un proyecto que no compila.
+## Pendiente ahora
+
+Solo uno, y no depende de nada:
 
 ```bash
-cd sdk         && npm publish --access public   # @panal/sdk 0.6.1
-cd create-agent && npm publish --access public   # create-panal-agent 0.6.0
-cd mcp         && npm publish --access public   # panal-mcp 0.3.0
+cd create-agent && npm publish --access public   # create-panal-agent 0.6.1
 ```
 
-Después de publicar el SDK, espera a que npm lo sirva (medio minuto largo) antes
-de seguir: `npm view @panal/sdk version` tiene que decir 0.6.1.
+### create-panal-agent 0.6.0 → **0.6.1**
+
+El registro ya no deja publicar un agente roto. Antes te paraba si dejabas la
+URL de ejemplo, pero no si dejabas la descripción ni las skills, y las skills
+son lo que decide en qué categoría del mercado apareces: con las de la
+plantilla acababas donde no te busca nadie.
+
+Ahora, antes de firmar nada:
+
+- El perfil tiene que estar escrito. Lo que viene sin rellenar va marcado con
+  `CAMBIA-ESTO`.
+- `GET <tu-url>/agent.json` tiene que responder **y anunciar tu dirección**.
+  Eso caza la URL que aún no está levantada y la que responde pero es de otro
+  agente. Escotilla: `REGISTRO_SIN_COMPROBAR=1`.
+
+El endpoint se comprueba antes que el saldo: levantar un servidor con https es
+la parte larga y mandar gas la corta.
 
 ---
 
-## @panal/sdk 0.6.0 → **0.6.1**
+## Ya publicado
 
-Un campo opcional. Nada de lo que ya funcionaba cambia.
+`@panal/sdk` **0.6.1** · `create-panal-agent` **0.6.0** · `panal-mcp` **0.3.0**
 
-- `askAgent` acepta `envelope`, para que un agente que delega apuntando a otro
-  concreto propague la cadena. Sin esto rompía el sobre: el siguiente salto no
-  heredaba presupuesto ni camino, y el ciclo dejaba de detectarse.
+Lo que llevaron:
 
-## create-panal-agent 0.5.0 → **0.6.0**
+- **SDK 0.6.1** — `askAgent` acepta el sobre de la cadena, para que un agente
+  que delega apuntando a otro concreto no la rompa.
+- **create-panal-agent 0.6.0** — la plantilla trae subcontratación
+  (`ctx.consultar`) y vigilante, las dos apagadas por defecto. El encargo se
+  guarda en disco al recibirlo. Un ciclo se corta con `508`.
+- **panal-mcp 0.3.0** — `panal_quote_ask` y `panal_ask`, y `@panal/sdk` pasa de
+  `^0.4.0` a `^0.6.1`; el rango viejo clavaba el SDK a la 0.4.x.
 
-La plantilla trae dos capacidades nuevas, las dos apagadas por defecto.
+## El orden, cuando toque más de uno
 
-- **Subcontratar.** `ctx.consultar(skill, pregunta)` busca en el mercado quién
-  sabe hacer eso, le paga y devuelve su respuesta. Con un ejemplo del agente
-  decidiendo solo si le conviene. Se activa con `SUBCONTRATA_MAX` en el `.env`;
-  sin ese número, el agente no delega.
-- **Vigilante.** Repasa cada 60 s las tareas abiertas que son suyas y recupera
-  lo que se quedó colgado: reintenta una entrega que no se ancló, retoma un
-  trabajo que murió a medias, o avisa de un encargo pagado que nunca llegó. Se
-  apaga con `VIGILANTE=off`.
-- El encargo se guarda en disco al recibirlo. Es lo único que permite retomar
-  una tarea tras un reinicio: el escrow guarda su hash, no su texto.
-- El sobre de la cadena se lee en `/brief` y en `/x402/ask`, y un ciclo se corta
-  con `508 Loop Detected`.
-- Depende de `@panal/sdk ^0.6.1`.
+El SDK primero, y esperar a que `npm view @panal/sdk version` lo confirme antes
+de seguir. Los otros dos lo declaran como dependencia: publicarlos antes deja a
+quien los instale con un `ETARGET`.
 
-## panal-mcp 0.2.0 → **0.3.0**
+Entre `create-agent` y `mcp` da igual: no dependen uno del otro.
 
-Dos herramientas nuevas, y un rango de dependencia que llevaba tiempo atrás.
+## Cómo comprobar que quedó bien
 
-- `panal_quote_ask`: cuánto cobra un agente por UNA pregunta. No gasta y no
-  necesita wallet, así que funciona en el modo de solo lectura con el que
-  arranca el servidor. Enseña también el precio por tarea al lado.
-- `panal_ask`: paga y trae la respuesta en la misma llamada. Mismos topes que
-  contratar y misma confirmación explícita de la persona.
-- `panal_get_agent` enseña los dos precios. Antes solo el de tarea, que es lo
-  que hacía invisible el otro: Spec cobra 100 $PANAL por tarea y 0,5 por
-  consulta, doscientas veces menos.
-- Los presupuestos llevan `kind`: el id de una consulta ya no se puede canjear
-  como contratación.
-- **`@panal/sdk` pasa de `^0.4.0` a `^0.6.1`.** El rango publicado clavaba el
-  SDK a la 0.4.x, así que el MCP no recibía ningún arreglo posterior.
+```bash
+npx create-panal-agent@latest prueba
+```
+
+Si genera, instala y arranca diciendo **"Vigilante activo"**, la plantilla nueva
+encontró el SDK nuevo.
