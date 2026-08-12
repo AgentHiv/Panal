@@ -117,7 +117,10 @@ function renderAgent(agent: Agent): string {
   return [
     `${agent.metadata.name || '(no name)'} — ${agent.address}`,
     `  Status: ${agent.active ? 'active' : 'DELISTED (does not take jobs)'}`,
-    `  Price: ${price} per task`,
+    // "Per task" y no "Price" a secas: hay dos precios (tarea por escrow y
+    // consulta por x402) y llamar "el precio" a uno de ellos fue justo lo que
+    // hizo invisible al otro.
+    `  Per task: ${price} (escrow, with deadline and dispute window)`,
     `  Skills: ${skills}`,
     agent.metadata.description ? `  Description: ${agent.metadata.description}` : null,
     agent.metadata.botUrl ? `  Endpoint: ${agent.metadata.botUrl}` : null,
@@ -191,7 +194,20 @@ const READ_TOOLS: Tool[] = [
     handler: async (args) => {
       const address = str(args.address);
       if (!address || !isAddress(address)) return 'I need a valid 0x address.';
-      return renderAgent(await panal.getAgent(address));
+      const agent = await panal.getAgent(address);
+      // El perfil es donde alguien mira el precio, así que aquí sí se paga la
+      // llamada al manifiesto del agente: enseñar solo el de tarea era la
+      // razón de que el precio por consulta fuese invisible desde aquí. En
+      // `panal_search_agents` no se hace, porque serían N llamadas HTTP a
+      // servidores ajenos por cada búsqueda.
+      let porLlamada: string;
+      try {
+        const q = await panal.quoteAgent(address, 'Price check.');
+        porLlamada = `  Per question: ${formatEther(BigInt(q.amount))} ${q.assetSymbol ?? symbolOf(q.asset)} (x402, answered on the spot)`;
+      } catch {
+        porLlamada = '  Per question: not offered (this agent only takes jobs through escrow)';
+      }
+      return `${renderAgent(agent)}\n${porLlamada}`;
     },
   },
   {
@@ -208,6 +224,74 @@ const READ_TOOLS: Tool[] = [
       const count = await panal.getTaskCount();
       if (BigInt(id) >= count) return `Task #${id} does not exist: there are ${count} so far.`;
       return renderTask(await panal.getTask(BigInt(id)));
+    },
+  },
+  {
+    name: 'panal_quote_ask',
+    description:
+      'Ask an agent what it charges for ONE question, answered on the spot (x402 per-call pricing). ' +
+      'Costs nothing and needs no wallet. This is a DIFFERENT price from the per-task price in the ' +
+      'agent profile: per-task means hiring a job through escrow, with a deadline and a dispute window. ' +
+      'The two can differ by a lot, so quote the one you actually mean to use.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        agent: { type: 'string', description: 'The agent 0x… address.' },
+        prompt: { type: 'string', description: 'The question, so the agent can price it if it prices per question.' },
+      },
+      required: ['agent', 'prompt'],
+    },
+    handler: async (args) => {
+      const address = str(args.agent);
+      const prompt = str(args.prompt);
+      if (!address || !isAddress(address)) return 'I need a valid 0x address for the agent.';
+      if (!prompt) return 'I need the question.';
+
+      const agent = await panal.getAgent(address);
+      const name = agent.metadata.name || address;
+      let quote;
+      try {
+        quote = await panal.quoteAgent(address, prompt);
+      } catch (err) {
+        // Cobrar por llamada es opcional: un agente puede trabajar solo por
+        // escrow. Se dice cuál es la alternativa en vez de dejarlo en error.
+        const msg = err instanceof Error ? err.message : String(err);
+        return (
+          `${name} does not answer per-question requests (${msg}).\n` +
+          `It can still be hired for a job: ${formatEther(agent.pricePerTask)} ${symbolOf(agent.currency)} ` +
+          `per task, via panal_quote_hire.`
+        );
+      }
+
+      const amount = BigInt(quote.amount);
+      const symbol = quote.assetSymbol ?? symbolOf(quote.asset);
+      const saved = quotes.issue({
+        kind: 'ask',
+        worker: agent.address,
+        agentName: name,
+        brief: prompt,
+        amount,
+        currency: quote.asset,
+        symbol,
+        botUrl: agent.metadata.botUrl,
+      });
+
+      return [
+        `${name} charges per question:`,
+        `  Price: ${formatEther(amount)} ${symbol} for this one question`,
+        `  Paid to: ${quote.payTo}`,
+        quote.description ? `  Covers: ${quote.description}` : null,
+        '',
+        `For comparison, hiring it for a job costs ${formatEther(agent.pricePerTask)} ${symbolOf(agent.currency)} ` +
+          'per task (escrow, with deadline and dispute window).',
+        '',
+        `quote_id: ${saved.id}  (valid for 5 minutes)`,
+        '',
+        'Show this price to the person. Only if they say yes, call panal_ask with that quote_id and ' +
+          'confirmed_by_user: true. This moves real money.',
+      ]
+        .filter((l) => l !== null)
+        .join('\n');
     },
   },
   {
@@ -292,6 +376,7 @@ const WRITE_TOOLS: Tool[] = [
       }
 
       const quote = quotes.issue({
+        kind: 'hire',
         worker: agent.address,
         agentName: agent.metadata.name || agent.address,
         brief,
@@ -312,6 +397,77 @@ const WRITE_TOOLS: Tool[] = [
         'Show this price to the person. Only if they say yes, call panal_hire with that quote_id ' +
           'and confirmed_by_user: true. This moves real money.',
       ].join('\n');
+    },
+  },
+  {
+    name: 'panal_ask',
+    description:
+      'Pay an agent for ONE question and get its answer in the same call (x402). Requires a quote_id from ' +
+      'panal_quote_ask and an explicit yes from the person. This spends real money. Unlike panal_hire ' +
+      'there is no escrow, no deadline and no dispute: once paid, it is paid.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        quote_id: { type: 'string', description: 'The id returned by panal_quote_ask.' },
+        confirmed_by_user: {
+          type: 'boolean',
+          description: 'true only if the person has seen the price and approved it.',
+        },
+      },
+      required: ['quote_id', 'confirmed_by_user'],
+    },
+    handler: async (args) => {
+      const blocked = writesBlockedReason();
+      if (blocked) return blocked;
+      if (args.confirmed_by_user !== true) {
+        return 'I will not pay without confirmed_by_user: true. Show the quote to the person and ask first.';
+      }
+      const id = str(args.quote_id);
+      if (!id) return 'The quote_id is missing. Ask for a quote with panal_quote_ask first.';
+
+      const redeemed = quotes.redeem(id, 'ask');
+      if ('error' in redeemed) return redeemed.error;
+      const quote = redeemed.quote;
+
+      // Los mismos topes que contratar. Una consulta es barata, pero nada
+      // impide encadenar mil: el presupuesto del día es lo que lo impide.
+      if (quote.amount > limits.maxPerTaskWei) {
+        return (
+          `That question costs ${formatEther(quote.amount)} ${quote.symbol} and this server per-item cap is ` +
+          `${formatEther(limits.maxPerTaskWei)}. Raise MCP_MAX_PER_TASK_WEI if that is intended.`
+        );
+      }
+      const spent = ledger.spentToday();
+      if (spent + quote.amount > limits.dailyBudgetWei) {
+        return (
+          `That would blow today's budget: ${formatEther(spent)} of ${formatEther(limits.dailyBudgetWei)} spent ` +
+          `and this costs ${formatEther(quote.amount)} ${quote.symbol}.`
+        );
+      }
+
+      try {
+        // `maxSpend` va atado al importe del presupuesto que la persona
+        // aprobó, no al tope del servidor: si el agente sube el precio entre
+        // el presupuesto y el sí, la firma no se produce.
+        const res = await panal.askAgent(quote.worker, quote.brief, { maxSpend: quote.amount });
+        // Se registra lo REALMENTE pagado, que es lo que devuelve el SDK.
+        ledger.record(res.paid);
+        log(`consulta pagada a ${quote.worker}: ${formatEther(res.paid)} ${quote.symbol}`);
+
+        return [
+          `Paid ${formatEther(res.paid)} ${quote.symbol} to ${quote.agentName}.`,
+          res.txHash ? `  tx: ${EXPLORER}/tx/${res.txHash}` : null,
+          '',
+          'Answer:',
+          res.answer,
+        ]
+          .filter((l) => l !== null)
+          .join('\n');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log(`fallo al pagar la consulta: ${msg}`);
+        return `Could not pay for the question: ${msg}`;
+      }
     },
   },
   {
@@ -339,7 +495,7 @@ const WRITE_TOOLS: Tool[] = [
       const id = str(args.quote_id);
       if (!id) return 'The quote_id is missing. Ask for a quote with panal_quote_hire first.';
 
-      const redeemed = quotes.redeem(id);
+      const redeemed = quotes.redeem(id, 'hire');
       if ('error' in redeemed) return redeemed.error;
       const quote = redeemed.quote;
 

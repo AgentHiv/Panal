@@ -14,8 +14,20 @@ import type { Address } from 'viem';
 /** Vida de un presupuesto. Corto a propósito: el precio del agente puede cambiar. */
 const QUOTE_TTL_MS = 5 * 60 * 1000;
 
+/**
+ * Las dos maneras de pagar a un agente, y no son intercambiables.
+ *
+ * `hire` bloquea el pago en el escrow y abre una tarea con plazo, entrega y
+ * disputa. `ask` paga una consulta suelta por x402 y se resuelve en la misma
+ * llamada HTTP. Los precios son distintos —Spec cobra 100 $PANAL por tarea y
+ * 0,5 por consulta—, así que canjear un presupuesto por el camino que no es
+ * cobraría doscientas veces de más.
+ */
+export type QuoteKind = 'hire' | 'ask';
+
 export interface Quote {
   id: string;
+  kind: QuoteKind;
   worker: Address;
   agentName: string;
   brief: string;
@@ -42,15 +54,28 @@ export class QuoteBook {
     return quote;
   }
 
-  /** Devuelve el presupuesto, o el motivo por el que no vale. */
-  redeem(id: string): { quote: Quote } | { error: string } {
+  /**
+   * Devuelve el presupuesto, o el motivo por el que no vale.
+   *
+   * `kind` no es decorativo: obliga a canjear cada presupuesto por el camino
+   * para el que se pidió. Sin esto, el id de una consulta de 0,5 $PANAL se
+   * podría canjear como contratación y bloquear los 100 $PANAL de la tarea.
+   */
+  redeem(id: string, kind: QuoteKind): { quote: Quote } | { error: string } {
     this.prune();
     const quote = this.quotes.get(id);
     if (!quote) {
       return {
         error:
           'That quote does not exist or has expired (they last 5 minutes). ' +
-          'Ask for a new one with panal_quote_hire and show it to the person before hiring.',
+          'Ask for a new one and show it to the person before spending.',
+      };
+    }
+    if (quote.kind !== kind) {
+      return {
+        error:
+          `That quote_id is for ${quote.kind === 'ask' ? 'a per-call question (panal_ask)' : 'hiring a job (panal_hire)'}, ` +
+          `not for this. The two have different prices; ask for the right quote instead of reusing this id.`,
       };
     }
     // De un solo uso: sin esto, un reintento del modelo contrataría dos veces.

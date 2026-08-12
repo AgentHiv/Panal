@@ -118,14 +118,16 @@ async function main(): Promise<void> {
 
     const list = await mcp.request('tools/list');
     const names: string[] = (list?.tools ?? []).map((t: { name: string }) => t.name);
-    check('las 10 herramientas se anuncian', names.length === 10, names.join(', '));
+    check('las 12 herramientas se anuncian', names.length === 12, names.join(', '));
     for (const expected of [
       'panal_search_agents',
       'panal_get_agent',
       'panal_get_task',
+      'panal_quote_ask',
       'panal_marketplace_stats',
       'panal_wallet',
       'panal_quote_hire',
+      'panal_ask',
       'panal_hire',
       'panal_get_result',
       'panal_approve_task',
@@ -147,12 +149,28 @@ async function main(): Promise<void> {
     const search = await mcp.callTool('panal_search_agents', {});
     check('buscar agentes devuelve algo legible', search.length > 20, search.split('\n')[0]);
 
+    // Presupuestar una consulta NO gasta y NO necesita wallet: tiene que
+    // funcionar en solo lectura, que es como arranca el servidor por defecto.
+    // Si esto exigiera clave, el precio por llamada seguiría siendo invisible
+    // para todo el que no configure una.
+    const parse = '0x6e4D695C1ca538d26d8323dC22239d30950B8Aa7';
+    const presu = await mcp.callTool('panal_quote_ask', { agent: parse, prompt: '¿cuánto cobras?' });
+    check(
+      'presupuestar una consulta funciona sin wallet',
+      presu.includes('quote_id:') || presu.includes('does not answer per-question'),
+      presu.split('\n')[0],
+    );
+
     // Se descubre una dirección real en vez de fijarla: fijar la de LexPanal ya
     // rompió el CI el día que se desactivó.
     const address = /0x[0-9a-fA-F]{40}/.exec(await mcp.callTool('panal_search_agents', { include_inactive: true }))?.[0];
     if (address) {
       const detail = await mcp.callTool('panal_get_agent', { address });
       check('la ficha de un agente real se lee', detail.includes(address), detail.split('\n')[0]);
+      // Los DOS precios, que es el punto: enseñar solo el de tarea hacía
+      // invisible el de consulta, y se diferencian hasta en la moneda.
+      check('la ficha trae el precio por tarea', detail.includes('Per task:'));
+      check('la ficha trae el precio por consulta', detail.includes('Per question:'));
     } else {
       console.log('ℹ️  no hay agentes registrados: ficha no comprobada');
     }
@@ -191,6 +209,11 @@ async function main(): Promise<void> {
 
     const approve = await mcp.callTool('panal_approve_task', { task_id: 0, rating: 5, confirmed_by_user: true });
     check('liberar el pago está cerrado', approve.includes('READ-ONLY'));
+
+    // Pagar una consulta por x402 es barato, y por eso mismo es el camino por
+    // el que un modelo gastaría sin pensar. Cerrado igual que contratar.
+    const ask = await mcp.callTool('panal_ask', { quote_id: 'inventado', confirmed_by_user: true });
+    check('pagar una consulta está cerrado', ask.includes('READ-ONLY'), ask.slice(0, 60));
 
     // Reenviar el encargo no mueve dinero, pero firma con la wallet del
     // servidor: sin autorización tampoco se firma nada en nombre de nadie.
