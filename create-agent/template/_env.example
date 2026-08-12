@@ -1,58 +1,13 @@
-# Clave privada de la wallet DEDICADA de tu agente.
-# Es la que cobra y la que firma las entregas. No uses tu wallet personal:
-# esta vive en un servidor. Solo necesita un poco de MON para el gas.
-AGENT_PRIVATE_KEY=
-
-# Puerto del servidor. Muchos hostings lo inyectan solos.
-PORT=8787
-
-# Tu modelo, si tu agente usa uno. Cualquier API compatible con OpenAI:
-#   OpenAI     https://api.openai.com/v1        gpt-4o-mini
-#   DeepSeek   https://api.deepseek.com/v1      deepseek-chat
-#   Groq       https://api.groq.com/openai/v1   llama-3.3-70b-versatile
-LLM_BASE_URL=https://api.deepseek.com/v1
-LLM_API_KEY=
-LLM_MODEL=deepseek-chat
-
-# RPC propio, si el público se te queda corto (limita a ~15 llamadas/s).
-RPC_URL=
-
-# Dónde guardar los resultados entregados.
-DATA_DIR=./data
-
-# ---------------------------------------------------------------------------
-# COBRAR POR LLAMADA (x402). Opcional.
-# ---------------------------------------------------------------------------
-# Además de por encargo, tu agente puede cobrar por pregunta suelta: el cliente
-# firma una autorización de pago (gratis, sin gas) y tú cobras y respondes en la
-# misma llamada HTTP. Sin X402_PRICE la ruta no existe y tu agente funciona
-# igual solo con encargos del escrow.
+# Este archivo NO es el que acaba en el proyecto generado.
 #
-# Es un precio DISTINTO del que pusiste al registrarte: aquel es por tarea, con
-# plazo y disputa; este es por consulta. Pueden diferir mucho, y deben.
+# El `.env.example` de verdad lo escribe `writeEnvExample()` en src/index.ts, a
+# partir del catálogo de idiomas (src/i18n.ts), porque sus comentarios van
+# traducidos a los diez idiomas. Este de aquí solo existe porque el copiador
+# exige encontrarlo, y se sobrescribe justo después.
 #
-# Solo en un ERC-20 con EIP-2612, nunca en MON: el esquema se apoya en `permit`
-# y la moneda nativa no lo tiene.
-X402_PRICE=
-
-# ---------------------------------------------------------------------------
-# SUBCONTRATAR a otros agentes. Opcional, y apagado por defecto.
-# ---------------------------------------------------------------------------
-# Con esto tu agente puede pagar a otro por lo que no sepa hacer (`ctx.consultar`
-# en agent.ts). Es dinero suyo saliendo, así que sin un número aquí no delega.
+# Si añades una variable nueva, va en DOS sitios y ninguno es este:
+#   1. `env` del catálogo en src/i18n.ts, en los diez idiomas
+#   2. `writeEnvExample()` en src/index.ts
 #
-# Va en la moneda del x402 ($PANAL por defecto) y NO se deduce de lo que cobras
-# por tarea: una tarea se cobra en MON y una consulta se paga en $PANAL, y
-# convertir una en otra a ojo sería inventarse el presupuesto.
-#
-# Que tu agente tenga saldo de ese token es cosa tuya: sin fondos, la consulta
-# falla y tu agente entrega lo que sepa por su cuenta.
-SUBCONTRATA_MAX=
-SUBCONTRATA_SALTOS=2
-
-# El vigilante repasa las tareas abiertas y recupera lo que se quedó a medias.
-# VIGILANTE=off lo apaga. VIGILANTE_SEGUNDOS cambia cada cuánto mira (mínimo 15).
-VIGILANTE_SEGUNDOS=60
-
-# Tu URL pública, para el aviso de encargo perdido: https://tuagente.com
-PUBLIC_URL=
+# Documentarla aquí no la enseña a nadie: se pisa antes de que el usuario la
+# vea. Pasó con SUBCONTRATA_MAX y con el vigilante.

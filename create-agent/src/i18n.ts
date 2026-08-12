@@ -74,6 +74,8 @@ export interface Catalog {
     rpc: string;
     data: string;
     x402: string;
+    subcontrata: string;
+    vigilante: string;
   };
   /** README que se escribe dentro del proyecto generado. */
   readme: string;
@@ -120,6 +122,8 @@ The language is taken from --lang, then PANAL_LANG, then your system locale.`,
     rpc: 'Your own RPC, if the public one falls short (it caps at ~15 calls/s).',
     data: 'Where to store delivered results.',
     x402: 'Charge per call (optional). Leave it empty and your agent only takes escrow jobs.\nThe price is per request, in an EIP-2612 token — it cannot be MON, the scheme needs `permit`.',
+    subcontrata: "Subcontracting (optional, off by default). Your agent can pay another one for what it cannot do itself (see ctx.consultar in agent.ts). Without a number here it never delegates.\nIt is in the x402 currency, NOT a cut of what you charge per task: a task is paid in MON and a question in $PANAL, and converting one into the other by eye would be inventing the budget.",
+    vigilante: "The watchman. Every 60 s it reviews your open tasks and recovers what got stuck: a delivery that was never anchored, work that died halfway, or a job that was paid for and never arrived.\nVIGILANTE=off turns it off. PUBLIC_URL is your https endpoint, used in the lost-job warning.",
   },
   readme: `# {name}
 
@@ -211,6 +215,8 @@ El idioma sale de --lang, luego de PANAL_LANG, y si no del locale del sistema.`,
     rpc: 'RPC propio, si el público se te queda corto (limita a ~15 llamadas/s).',
     data: 'Dónde guardar los resultados entregados.',
     x402: 'Cobro por llamada (opcional). Déjalo vacío y tu agente solo acepta encargos del escrow.\nEl precio es por petición, en un token EIP-2612: no puede ser MON, el esquema necesita `permit`.',
+    subcontrata: "Subcontratar (opcional, apagado por defecto). Tu agente puede pagar a otro por lo que no sepa hacer (ver ctx.consultar en agent.ts). Sin un numero aqui, no delega nunca.\nVa en la moneda del x402 y NO se deduce de lo que cobras por tarea: una tarea se cobra en MON y una consulta en $PANAL, y convertir una en otra a ojo seria inventarse el presupuesto.",
+    vigilante: "El vigilante. Cada 60 s repasa tus tareas abiertas y recupera lo que se quedo colgado: una entrega que no llego a anclarse, un trabajo que murio a medias, o un encargo pagado que nunca llego.\nVIGILANTE=off lo apaga. PUBLIC_URL es tu endpoint https, para el aviso de encargo perdido.",
   },
   readme: `# {name}
 
@@ -303,6 +309,8 @@ const zh: Catalog = {
     rpc: '你自己的 RPC，当公共节点不够用时（其上限约为每秒 15 次调用）。',
     data: '交付结果的存放位置。',
     x402: '按次收费（可选）。留空则你的代理只接受托管订单。\n价格按每次请求计算，使用支持 EIP-2612 的代币——不能是 MON，该方案依赖 `permit`。',
+    subcontrata: "转包（可选，默认关闭）。你的代理可以为自己做不了的事付钱给另一个代理（见 agent.ts 的 ctx.consultar）。这里没有数字就永远不会转包。\n它使用 x402 的币种，不是按任务收入的比例：任务用 MON 结算，提问用 $PANAL，凭感觉换算等于凭空编造预算。",
+    vigilante: "守望者。每 60 秒检查一次你未完成的任务，并挽回卡住的部分：没有上链的交付、中途死掉的工作，或已付款却从未送达的委托。\nVIGILANTE=off 可关闭。PUBLIC_URL 是你的 https 端点，用于丢失委托的提醒。",
   },
   readme: `# {name}
 
@@ -390,6 +398,8 @@ const hi: Catalog = {
     rpc: 'अपना RPC, अगर सार्वजनिक कम पड़े (इसकी सीमा ~15 कॉल/सेकंड है)।',
     data: 'दिए गए परिणाम कहाँ सहेजें।',
     x402: 'प्रति कॉल शुल्क (वैकल्पिक)। खाली छोड़ें तो आपका एजेंट केवल एस्क्रो वाले काम लेगा।\nकीमत प्रति अनुरोध है, EIP-2612 टोकन में — MON नहीं चल सकता, इस योजना को `permit` चाहिए।',
+    subcontrata: "सबकॉन्ट्रैक्टिंग (वैकल्पिक, डिफ़ॉल्ट रूप से बंद)। आपका एजेंट जो खुद नहीं कर सकता, उसके लिए दूसरे को भुगतान कर सकता है (agent.ts में ctx.consultar देखें)। यहाँ संख्या के बिना वह कभी नहीं सौंपता।\nयह x402 की मुद्रा में है, प्रति कार्य आय का हिस्सा नहीं: कार्य MON में और प्रश्न $PANAL में चुकाया जाता है।",
+    vigilante: "प्रहरी। हर 60 सेकंड में आपके खुले कार्यों की जाँच करता है और जो अटक गया उसे वापस लाता है: वह डिलीवरी जो चेन पर दर्ज नहीं हुई, अधूरा रह गया काम, या भुगतान किया गया आदेश जो कभी नहीं पहुँचा।\nVIGILANTE=off इसे बंद करता है। PUBLIC_URL आपका https एंडपॉइंट है।",
   },
   readme: `# {name}
 
@@ -481,6 +491,8 @@ const ar: Catalog = {
     rpc: 'عقدة RPC خاصة بك، إن لم تكفِ العامة (حدّها نحو 15 طلبًا في الثانية).',
     data: 'مكان حفظ النتائج المُسلَّمة.',
     x402: 'التحصيل لكل استدعاء (اختياري). اتركه فارغًا فيقبل وكيلك مهام الضمان فقط.\nالسعر لكل طلب، بعملة تدعم EIP-2612 — لا يصلح MON، فالمخطط يحتاج `permit`.',
+    subcontrata: "التعاقد من الباطن (اختياري، معطل افتراضيا). يمكن لوكيلك ان يدفع لوكيل اخر مقابل ما لا يجيده (انظر ctx.consultar في agent.ts). بدون رقم هنا لن يفوض ابدا.\nيكون بعملة x402، وليس نسبة مما تتقاضاه عن المهمة: المهمة تدفع بـ MON والسؤال بـ $PANAL.",
+    vigilante: "الحارس. كل 60 ثانية يراجع مهامك المفتوحة ويستعيد ما تعطل: تسليم لم يثبت على السلسلة، او عمل مات في منتصفه، او طلب مدفوع لم يصل قط.\nVIGILANTE=off يوقفه. PUBLIC_URL هو نقطة الوصول https لديك.",
   },
   readme: `# {name}
 
@@ -571,6 +583,8 @@ La langue vient de --lang, puis de PANAL_LANG, puis de la locale du système.`,
     rpc: 'Votre propre RPC, si le public ne suffit pas (limité à ~15 appels/s).',
     data: 'Où stocker les résultats livrés.',
     x402: "Facturation à l'appel (facultatif). Laissez vide et votre agent ne prend que des missions sous entiercement.\nLe prix est par requête, dans un jeton EIP-2612 : pas de MON, le schéma exige `permit`.",
+    subcontrata: "Sous-traitance (optionnelle, desactivee par defaut). Votre agent peut payer un autre pour ce qu il ne sait pas faire (voir ctx.consultar dans agent.ts). Sans un nombre ici, il ne delegue jamais.\nC est dans la devise x402, PAS une part de ce que vous facturez par tache : une tache se paie en MON et une question en $PANAL.",
+    vigilante: "La sentinelle. Toutes les 60 s, elle passe en revue vos taches ouvertes et recupere ce qui est reste bloque : une livraison jamais ancree, un travail mort a mi-chemin, ou une commande payee qui n est jamais arrivee.\nVIGILANTE=off la desactive. PUBLIC_URL est votre endpoint https.",
   },
   readme: `# {name}
 
@@ -665,6 +679,8 @@ O idioma vem de --lang, depois de PANAL_LANG e, por fim, do locale do sistema.`,
     rpc: 'RPC próprio, se o público não chegar (limita a ~15 chamadas/s).',
     data: 'Onde guardar os resultados entregues.',
     x402: 'Cobrança por chamada (opcional). Deixe vazio e o seu agente só aceita trabalhos do escrow.\nO preço é por pedido, num token EIP-2612: não pode ser MON, o esquema precisa de `permit`.',
+    subcontrata: "Subcontratar (opcional, desligado por omissao). O seu agente pode pagar a outro pelo que nao sabe fazer (ver ctx.consultar em agent.ts). Sem um numero aqui, nunca delega.\nVai na moeda do x402 e NAO e uma fatia do que cobra por tarefa: uma tarefa paga-se em MON e uma pergunta em $PANAL.",
+    vigilante: "O vigia. A cada 60 s reve as suas tarefas abertas e recupera o que ficou preso: uma entrega que nunca foi ancorada, trabalho que morreu a meio, ou uma encomenda paga que nunca chegou.\nVIGILANTE=off desliga-o. PUBLIC_URL e o seu endpoint https.",
   },
   readme: `# {name}
 
@@ -757,6 +773,8 @@ const ru: Catalog = {
     rpc: 'Свой RPC, если публичного не хватает (лимит ~15 запросов/с).',
     data: 'Где хранить сданные результаты.',
     x402: 'Плата за вызов (необязательно). Оставьте пустым — агент будет брать только заказы через эскроу.\nЦена за один запрос, в токене с EIP-2612: MON не подходит, схеме нужен `permit`.',
+    subcontrata: "Субподряд (необязательно, по умолчанию выключен). Ваш агент может заплатить другому за то, чего не умеет сам (см. ctx.consultar в agent.ts). Без числа здесь он никогда не делегирует.\nУказывается в валюте x402, а НЕ долей от оплаты за задачу: задача оплачивается в MON, а вопрос в $PANAL.",
+    vigilante: "Сторож. Каждые 60 с проверяет ваши открытые задачи и вытаскивает то, что застряло: доставку, которая не попала в блокчейн, работу, оборвавшуюся на середине, или оплаченный заказ, который так и не пришел.\nVIGILANTE=off выключает его. PUBLIC_URL ваш https-эндпоинт.",
   },
   readme: `# {name}
 
@@ -850,6 +868,8 @@ const bn: Catalog = {
     rpc: 'নিজস্ব RPC, যদি সর্বজনীনটি যথেষ্ট না হয় (সীমা প্রায় ১৫ কল/সেকেন্ড)।',
     data: 'সরবরাহ করা ফলাফল কোথায় রাখা হবে।',
     x402: 'প্রতি কলে চার্জ (ঐচ্ছিক)। ফাঁকা রাখলে আপনার এজেন্ট কেবল এসক্রো কাজ নেবে।\nদাম প্রতি অনুরোধে, EIP-2612 টোকেনে — MON চলবে না, স্কিমটির `permit` দরকার।',
+    subcontrata: "সাবকন্ট্রাক্টিং (ঐচ্ছিক, ডিফল্টে বন্ধ)। আপনার এজেন্ট যা নিজে পারে না, তার জন্য অন্যকে অর্থ দিতে পারে (agent.ts-এ ctx.consultar দেখুন)। এখানে সংখ্যা না থাকলে সে কখনও দায়িত্ব দেয় না।\nএটি x402-এর মুদ্রায়, কাজপ্রতি আয়ের অংশ নয়: কাজের দাম MON-এ আর প্রশ্নের দাম $PANAL-এ।",
+    vigilante: "প্রহরী। প্রতি ৬০ সেকেন্ডে আপনার খোলা কাজগুলি দেখে এবং আটকে যাওয়া জিনিস উদ্ধার করে: চেইনে না ওঠা ডেলিভারি, মাঝপথে মরে যাওয়া কাজ, বা টাকা দেওয়া হয়েছে অথচ কখনও পৌঁছায়নি এমন আদেশ।\nVIGILANTE=off এটি বন্ধ করে। PUBLIC_URL আপনার https এন্ডপয়েন্ট।",
   },
   readme: `# {name}
 
@@ -940,6 +960,8 @@ const ur: Catalog = {
     rpc: 'اپنا RPC، اگر عوامی کم پڑ جائے (حد تقریباً 15 کالز فی سیکنڈ)۔',
     data: 'فراہم کردہ نتائج کہاں محفوظ ہوں۔',
     x402: 'فی کال وصولی (اختیاری)۔ خالی چھوڑ دیں تو آپ کا ایجنٹ صرف ایسکرو کے کام لے گا۔\nقیمت فی درخواست ہے، EIP-2612 ٹوکن میں — MON نہیں چل سکتا، اس اسکیم کو `permit` چاہیے۔',
+    subcontrata: "سب کنٹریکٹنگ (اختیاری، بذریعہ ڈیفالٹ بند)۔ آپ کا ایجنٹ جو خود نہیں کر سکتا اس کے لیے دوسرے کو ادائیگی کر سکتا ہے (agent.ts میں ctx.consultar دیکھیں)۔ یہاں نمبر کے بغیر وہ کبھی نہیں سونپتا۔\nیہ x402 کی کرنسی میں ہے، فی ٹاسک آمدنی کا حصہ نہیں: ٹاسک MON میں اور سوال $PANAL میں ادا ہوتا ہے۔",
+    vigilante: "نگہبان۔ ہر 60 سیکنڈ میں آپ کے کھلے کام دیکھتا ہے اور جو اٹکا ہے اسے بچاتا ہے: وہ ڈیلیوری جو چین پر درج نہ ہوئی، وہ کام جو بیچ میں مر گیا، یا ادا شدہ آرڈر جو کبھی نہ پہنچا۔\nVIGILANTE=off اسے بند کرتا ہے۔ PUBLIC_URL آپ کا https اینڈ پوائنٹ ہے۔",
   },
   readme: `# {name}
 

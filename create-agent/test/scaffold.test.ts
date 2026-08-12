@@ -98,10 +98,33 @@ async function main(): Promise<void> {
   const readmeZh = readFileSync(join(destZh, 'README.md'), 'utf8');
   check('el README del proyecto está en chino', readmeZh.includes('三个步骤'));
   check('el README lleva su nombre y su wallet', readmeZh.includes('agente-zh') && /0x[0-9a-fA-F]{40}/.test(readmeZh));
+
   check('no quedan marcadores sin sustituir en el README', !readmeZh.includes('{name}') && !readmeZh.includes('{address}'));
   const envZh = readFileSync(join(destZh, '.env.example'), 'utf8');
   check('el .env.example está en chino', envZh.includes('私钥'));
-  check('y conserva todas sus claves', ['AGENT_PRIVATE_KEY=', 'PORT=', 'LLM_API_KEY=', 'RPC_URL=', 'DATA_DIR='].every((k) => envZh.includes(k)));
+  // La lista tiene que llevar TODAS las variables que el motor lee, y hay que
+  // ampliarla al añadir una. El `.env.example` NO se copia de la plantilla: lo
+  // escribe writeEnvExample() desde el catálogo de idiomas, así que documentar
+  // una variable en template/_env.example no la enseña a nadie — se sobrescribe
+  // antes de que el usuario la vea. Pasó con SUBCONTRATA_MAX y con el
+  // vigilante, y esta lista estaba corta, por eso no saltó.
+  const CLAVES = [
+    'AGENT_PRIVATE_KEY=',
+    'PORT=',
+    'LLM_API_KEY=',
+    'RPC_URL=',
+    'DATA_DIR=',
+    'X402_PRICE=',
+    'SUBCONTRATA_MAX=',
+    'SUBCONTRATA_SALTOS=',
+    'VIGILANTE_SEGUNDOS=',
+    'PUBLIC_URL=',
+  ];
+  const faltan = CLAVES.filter((k) => !envZh.includes(k));
+  check('y conserva todas sus claves', faltan.length === 0, faltan.join(', ') || `las ${CLAVES.length}`);
+  // Y traducidas: si una variable nueva se documenta solo en español, el
+  // usuario chino recibe un comentario que no entiende.
+  check('con los comentarios nuevos traducidos', envZh.includes('转包') && envZh.includes('守望者'));
 
   console.log('\n── 2. Se genera el proyecto ──');
 
