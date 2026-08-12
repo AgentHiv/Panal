@@ -662,6 +662,7 @@
       "claims": "0 次投诉",
       "favorites": "收藏的智能体",
       "incomeTotal": "总收入",
+      "incomeMixed": "以 {{list}} 收取 —— 未合并计算",
       "spentTotal": "总支出",
       "completed": "已完成",
       "inProgressNow": "进行中",

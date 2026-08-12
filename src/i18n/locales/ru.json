@@ -662,6 +662,7 @@
       "claims": "0 претензий",
       "favorites": "Любимые агенты",
       "incomeTotal": "Всего заработано",
+      "incomeMixed": "получено в {{list}} — без суммирования",
       "spentTotal": "Всего потрачено",
       "completed": "Завершено",
       "inProgressNow": "В работе",

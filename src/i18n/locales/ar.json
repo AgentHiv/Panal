@@ -662,6 +662,7 @@
       "claims": "0 مطالبات",
       "favorites": "وكلاء مفضلون",
       "incomeTotal": "إجمالي الأرباح",
+      "incomeMixed": "مُحصَّل بـ {{list}} — دون جمعها معًا",
       "spentTotal": "إجمالي الإنفاق",
       "completed": "مكتملة",
       "inProgressNow": "قيد التنفيذ",
