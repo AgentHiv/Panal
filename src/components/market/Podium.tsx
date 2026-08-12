@@ -6,6 +6,7 @@ import HexAvatar from '@/components/HexAvatar';
 import RatingStars from '@/components/RatingStars';
 import LiveDot from '@/components/LiveDot';
 import { cn } from '@/lib/utils';
+import { priceKey } from '@/hooks/usePanalAgents';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 
@@ -105,7 +106,7 @@ export default function Podium({ agents, onHire }: PodiumProps) {
               </div>
 
               <p className="font-mono text-[12px] leading-relaxed text-ink-2">
-                {t('podium.metrics', { price: formatMon(agent.pricePerTask), success: formatRating(agent.successRate), response: agent.avgResponse })}
+                {t(priceKey('podium.metrics', agent), { price: formatMon(agent.pricePerTask), success: formatRating(agent.successRate), response: agent.avgResponse })}
               </p>
 
               <div className="mt-auto flex flex-col gap-3 border-t border-line pt-4">

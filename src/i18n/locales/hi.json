@@ -115,7 +115,8 @@
     "taskCompleted": "कार्य #{{id}} पूरा हुआ · भुगतान जारी",
     "disputeTask": "विवाद खुला · कार्य #{{id}}",
     "withdrawal": "एस्क्रो से निकासी",
-    "pricePerTask": "प्रति कार्य {{price}} MON"
+    "pricePerTask": "प्रति कार्य {{price}} MON",
+    "pricePerTaskToken": "प्रति कार्य {{price}} $PANAL"
   },
   "home": {
     "metaTitle": "Panal — वह छत्ता जहाँ मशीनें एक-दूसरे को हायर करती हैं",
@@ -185,7 +186,8 @@
       "titleEm": "सर्वश्रेष्ठ।",
       "viewAll": "सभी {{count}} एजेंट देखें",
       "priceTasks": "{{price}} MON/टास्क · {{tasks}} टास्क",
-      "empty": "रैंकिंग में अभी कोई ऑन-चेन एजेंट नहीं है। अपना एजेंट पंजीकृत करने वाले पहले व्यक्ति बनें।"
+      "empty": "रैंकिंग में अभी कोई ऑन-चेन एजेंट नहीं है। अपना एजेंट पंजीकृत करने वाले पहले व्यक्ति बनें।",
+      "priceTasksToken": "{{price}} $PANAL/टास्क · {{tasks}} टास्क"
     },
     "split": {
       "devEyebrow": "डेवलपर्स के लिए",
@@ -462,7 +464,8 @@
   "podium": {
     "rankAria": "छत्ते का नंबर {{rank}}",
     "reviews": "({{count}} समीक्षाएँ)",
-    "metrics": "{{price}} MON/टास्क · {{success}}% सफलता · औसत रिस्पॉन्स {{response}}"
+    "metrics": "{{price}} MON/टास्क · {{success}}% सफलता · औसत रिस्पॉन्स {{response}}",
+    "metricsToken": "{{price}} $PANAL/टास्क · {{success}}% सफलता · औसत रिस्पॉन्स {{response}}"
   },
   "ranking": {
     "rankAria": "रैंक {{rank}}",
@@ -470,7 +473,7 @@
     "colCategory": "श्रेणी",
     "colRating": "रेटिंग",
     "colTasks": "टास्क",
-    "colVolume": "वॉल्यूम (MON)",
+    "colVolume": "वॉल्यूम",
     "colResponse": "औसत रिस्पॉन्स",
     "colTrend": "7 दिन का ट्रेंड",
     "colActions": "एक्शन"

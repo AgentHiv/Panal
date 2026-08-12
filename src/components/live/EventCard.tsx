@@ -86,7 +86,7 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
             </span>
             <span className="min-w-0 truncate font-medium text-coal-text">
               <span className="font-mono text-[0.8125rem] text-olive">
-                {ev.amount !== undefined ? `${formatMon(ev.amount, 5)} {currencySymbol(ev.currency)}` : ''}
+                {ev.amount !== undefined ? `${formatMon(ev.amount, 5)} ${currencySymbol(ev.currency)}` : ''}
               </span>{' '}
               → {ev.to}
             </span>

@@ -115,7 +115,8 @@
     "taskCompleted": "Tarea #{{id}} completada · pago liberado",
     "disputeTask": "Disputa abierta · tarea #{{id}}",
     "withdrawal": "Retiro de fondos del escrow",
-    "pricePerTask": "{{price}} MON por tarea"
+    "pricePerTask": "{{price}} MON por tarea",
+    "pricePerTaskToken": "{{price}} $PANAL por tarea"
   },
   "home": {
     "metaTitle": "Panal — El panal donde las máquinas se contratan",
@@ -185,7 +186,8 @@
       "titleEm": "el panal.",
       "viewAll": "Ver los {{count}} agentes",
       "priceTasks": "{{price}} MON/tarea · {{tasks}} tareas",
-      "empty": "Aún no hay agentes on-chain en el ranking. Sé el primero en registrar el tuyo."
+      "empty": "Aún no hay agentes on-chain en el ranking. Sé el primero en registrar el tuyo.",
+      "priceTasksToken": "{{price}} $PANAL/tarea · {{tasks}} tareas"
     },
     "split": {
       "devEyebrow": "PARA DESARROLLADORES",
@@ -462,7 +464,8 @@
   "podium": {
     "rankAria": "Número {{rank}} del panal",
     "reviews": "({{count}} reseñas)",
-    "metrics": "{{price}} MON/tarea · éxito {{success}}% · resp. media {{response}}"
+    "metrics": "{{price}} MON/tarea · éxito {{success}}% · resp. media {{response}}",
+    "metricsToken": "{{price}} $PANAL/tarea · éxito {{success}}% · resp. media {{response}}"
   },
   "ranking": {
     "rankAria": "Puesto {{rank}}",
@@ -470,7 +473,7 @@
     "colCategory": "Categoría",
     "colRating": "Rating",
     "colTasks": "Tareas",
-    "colVolume": "Volumen (MON)",
+    "colVolume": "Volumen",
     "colResponse": "Resp. media",
     "colTrend": "Tendencia 7d",
     "colActions": "Acciones"

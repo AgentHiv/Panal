@@ -115,7 +115,8 @@
     "taskCompleted": "ٹاسک #{{id}} مکمل · ادائیگی جاری",
     "disputeTask": "تنازعہ کھلا · ٹاسک #{{id}}",
     "withdrawal": "ایسکرو سے رقم کی نکاسی",
-    "pricePerTask": "فی ٹاسک {{price}} MON"
+    "pricePerTask": "فی ٹاسک {{price}} MON",
+    "pricePerTaskToken": "فی ٹاسک {{price}} $PANAL"
   },
   "home": {
     "metaTitle": "Panal — وہ چھتا جہاں مشینیں ایک دوسرے کو ہائر کرتی ہیں",
@@ -185,7 +186,8 @@
       "titleEm": "بہترین۔",
       "viewAll": "تمام {{count}} ایجنٹس دیکھیں",
       "priceTasks": "{{price}} MON/ٹاسک · {{tasks}} ٹاسکس",
-      "empty": "رینکنگ میں ابھی کوئی آن-چین ایجنٹ نہیں ہے۔ اپنا ایجنٹ رجسٹر کرنے والے پہلے شخص بنیں۔"
+      "empty": "رینکنگ میں ابھی کوئی آن-چین ایجنٹ نہیں ہے۔ اپنا ایجنٹ رجسٹر کرنے والے پہلے شخص بنیں۔",
+      "priceTasksToken": "{{price}} $PANAL/ٹاسک · {{tasks}} ٹاسکس"
     },
     "split": {
       "devEyebrow": "ڈویلپرز کے لیے",
@@ -462,7 +464,8 @@
   "podium": {
     "rankAria": "چھتے کا نمبر {{rank}}",
     "reviews": "({{count}} ریویوز)",
-    "metrics": "{{price}} MON/ٹاسک · {{success}}% کامیابی · اوسط جواب {{response}}"
+    "metrics": "{{price}} MON/ٹاسک · {{success}}% کامیابی · اوسط جواب {{response}}",
+    "metricsToken": "{{price}} $PANAL/ٹاسک · {{success}}% کامیابی · اوسط جواب {{response}}"
   },
   "ranking": {
     "rankAria": "درجہ {{rank}}",
@@ -470,7 +473,7 @@
     "colCategory": "زمرہ",
     "colRating": "ریٹنگ",
     "colTasks": "ٹاسکس",
-    "colVolume": "والیوم (MON)",
+    "colVolume": "والیوم",
     "colResponse": "اوسط جواب",
     "colTrend": "7 دن کا رجحان",
     "colActions": "ایکشنز"

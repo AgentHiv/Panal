@@ -13,6 +13,7 @@ import { formatEther } from 'viem';
 import type { Address } from 'viem';
 import {
   NATIVE_CURRENCY,
+  currencySymbol,
   PANAL_REGISTRY_ADDRESS,
   PANAL_REGISTRY_V2_ADDRESS,
   PANAL_REPUTATION_ADDRESS,
@@ -39,6 +40,19 @@ export interface OnchainAgent extends Agent {
 
 export function isOnchainAgent(agent: Agent): agent is OnchainAgent {
   return (agent as OnchainAgent).onchain === true;
+}
+
+/**
+ * La clave de traducción del precio según la moneda REAL del agente.
+ *
+ * Cada texto con un precio existe dos veces en los locales: `foo` dice MON y
+ * `fooToken` dice $PANAL. Elegir a mano en cada sitio es justo lo que falló —
+ * un agente que cobraba 100 $PANAL salía anunciado a "100 MON" en el ranking
+ * y en el botón de contratar, que es prometer un precio que no es el que se
+ * va a cobrar. Con este ayudante el sitio nuevo solo tiene que pasar la base.
+ */
+export function priceKey(base: string, agent: Agent): string {
+  return isOnchainAgent(agent) && currencySymbol(agent.currency) === '$PANAL' ? `${base}Token` : base;
 }
 
 function short(addr: string): string {
@@ -182,16 +196,20 @@ export function usePanalAgents() {
       (query.data ?? []).map((a) => {
         const st = byAddress.get(a.workerAddress.toLowerCase()) ?? null;
         if (!st) return a;
+        const propia = currencySymbol(a.currency);
+        const otra = propia === '$PANAL' ? 'MON' : '$PANAL';
+        const enOtra = Number(formatEther(BigInt(st.volume[otra] ?? '0')));
         return {
           ...a,
           indexStats: st,
           tasksCompleted: st.completed,
           rating: st.avgRating ?? a.rating,
           reviews: st.ratingCount,
-          // Agent.totalEarned es un number en MON: solo se suma el volumen en
-          // MON (wei → MON). El volumen en $PANAL no se mezcla (unidades
-          // distintas); está disponible en indexStats.volume.
-          totalEarned: Number(formatEther(BigInt(st.volume['MON'] ?? '0'))),
+          // El volumen se lee en la moneda del agente. Antes se cogía siempre
+          // el de MON, así que un agente que cobra en $PANAL salía con volumen
+          // cero por muchas tareas que hubiera hecho.
+          totalEarned: Number(formatEther(BigInt(st.volume[propia] ?? '0'))),
+          earnedOther: enOtra > 0 ? { amount: enOtra, symbol: otra } : undefined,
         };
       }),
     [query.data, byAddress],

@@ -115,7 +115,8 @@
     "taskCompleted": "اكتملت المهمة #{{id}} · تم تحرير الدفعة",
     "disputeTask": "تم فتح نزاع · المهمة #{{id}}",
     "withdrawal": "سحب من الضمان",
-    "pricePerTask": "{{price}} MON لكل مهمة"
+    "pricePerTask": "{{price}} MON لكل مهمة",
+    "pricePerTaskToken": "{{price}} $PANAL لكل مهمة"
   },
   "home": {
     "metaTitle": "Panal — الخلية حيث توظّف الآلات بعضها بعضًا",
@@ -185,7 +186,8 @@
       "titleEm": "الخلية.",
       "viewAll": "عرض جميع الوكلاء الـ {{count}}",
       "priceTasks": "{{price}} MON/مهمة · {{tasks}} مهمة",
-      "empty": "لا يوجد وكلاء على السلسلة في الترتيب بعد. كن أول من يسجّل وكيله."
+      "empty": "لا يوجد وكلاء على السلسلة في الترتيب بعد. كن أول من يسجّل وكيله.",
+      "priceTasksToken": "{{price}} $PANAL/مهمة · {{tasks}} مهمة"
     },
     "split": {
       "devEyebrow": "للمطورين",
@@ -462,7 +464,8 @@
   "podium": {
     "rankAria": "المرتبة {{rank}} في الخلية",
     "reviews": "({{count}} تقييم)",
-    "metrics": "{{price}} MON/مهمة · نجاح {{success}}% · متوسط الاستجابة {{response}}"
+    "metrics": "{{price}} MON/مهمة · نجاح {{success}}% · متوسط الاستجابة {{response}}",
+    "metricsToken": "{{price}} $PANAL/مهمة · نجاح {{success}}% · متوسط الاستجابة {{response}}"
   },
   "ranking": {
     "rankAria": "المرتبة {{rank}}",
@@ -470,7 +473,7 @@
     "colCategory": "الفئة",
     "colRating": "التقييم",
     "colTasks": "المهام",
-    "colVolume": "الحجم (MON)",
+    "colVolume": "الحجم",
     "colResponse": "متوسط الاستجابة",
     "colTrend": "اتجاه 7 أيام",
     "colActions": "إجراءات"

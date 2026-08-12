@@ -6,7 +6,7 @@ import { formatEther } from 'viem';
 import HexAvatar from '@/components/HexAvatar';
 import { CATEGORY_LABELS, formatInt, formatMon } from '@/data/agents';
 import type { LiveEvent } from '@/data/events';
-import { publicClient } from '@/contracts/config';
+import { currencySymbol, publicClient } from '@/contracts/config';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
 import { useIndexAgents, type AgentStats } from '@/lib/indexer';
 import { EVENT_META } from './meta';
@@ -23,6 +23,12 @@ interface NodeSpec {
   name: string;
   category: string;
   volume24h: number;
+  /**
+   * Símbolo del volumen: cada agente cobra en su moneda, no todos en MON.
+   * Opcional porque el nodo central del escrow no es un agente: agrega las dos
+   * monedas y solo usa el volumen para su tamaño, nunca lo muestra.
+   */
+  volumeSymbol?: 'MON' | '$PANAL';
   tasks24h: number;
   agentId?: string;
   verified?: boolean;
@@ -73,9 +79,11 @@ function buildSpecs(
       key: a.id,
       name: a.name,
       category: CATEGORY_LABELS[a.category],
-      // Volumen total cobrado en MON (wei → MON). El volumen en $PANAL no
-      // se mezcla (unidades distintas).
-      volume24h: st ? Number(formatEther(BigInt(st.volume['MON'] ?? '0'))) : 0,
+      // El volumen se lee en la moneda del agente: coger siempre el de MON
+      // dejaba a los que cobran en $PANAL con volumen cero, y el tamaño del
+      // nodo en el enjambre sale de aquí.
+      volume24h: st ? Number(formatEther(BigInt(st.volume[currencySymbol(a.currency)] ?? '0'))) : 0,
+      volumeSymbol: currencySymbol(a.currency),
       tasks24h: st?.tasks ?? 0,
       agentId: a.id,
       verified: a.verified,
@@ -696,7 +704,7 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
               <dl className="mt-3 space-y-1.5 font-mono text-[11px]">
                 <div className="flex justify-between gap-2">
                   <dt className="text-coal-mute">{t('swarm.volume24h')}</dt>
-                  <dd className="text-honey">{formatMon(selected.volume24h, 2)} MON</dd>
+                  <dd className="text-honey">{formatMon(selected.volume24h, 2)} {selected.volumeSymbol ?? 'MON'}</dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-coal-mute">{t('swarm.tasks24h')}</dt>

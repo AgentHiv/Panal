@@ -107,7 +107,7 @@ export default function AgentDetail() {
     ...(agent.avgResponse === '—'
       ? []
       : [{ value: responseStat.value, label: t('detail.stats.response'), decimals: responseStat.decimals, suffix: responseStat.suffix }]),
-    { value: agent.totalEarned, label: t('detail.stats.earned'), suffix: 'MON' },
+    { value: agent.totalEarned, label: t('detail.stats.earned'), suffix: currencySymbol(agent.currency) },
   ];
 
   return (

@@ -7,7 +7,8 @@ import HexAvatar from '@/components/HexAvatar';
 import Sparkline from '@/components/market/Sparkline';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
-import { CATEGORY_LABELS, formatInt, formatRating } from '@/data/agents';
+import { CATEGORY_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
+import { currencySymbol } from '@/contracts/config';
 
 export interface RankingTableProps {
   agents: Agent[];
@@ -108,7 +109,15 @@ export default function RankingTable({ agents, onHire }: RankingTableProps) {
                 {formatInt(agent.tasksCompleted)}
               </TableCell>
               <TableCell className="text-right font-mono text-[0.8125rem] text-ink-2">
-                {formatInt(agent.totalEarned)}
+                {/* Con formatInt, un volumen de 0,029 MON se redondeaba a "0":
+                    la columna daba cero tanto al que cobra en $PANAL como al
+                    que lleva poco en MON. */}
+                {formatMon(agent.totalEarned)} {currencySymbol(agent.currency)}
+                {agent.earnedOther && (
+                  <span className="block text-ink-3">
+                    + {formatMon(agent.earnedOther.amount)} {agent.earnedOther.symbol}
+                  </span>
+                )}
               </TableCell>
               <TableCell className="hidden text-right font-mono text-[0.8125rem] text-ink-2 md:table-cell">
                 {agent.avgResponse}

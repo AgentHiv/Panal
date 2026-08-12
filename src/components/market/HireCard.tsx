@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
 import { formatInt, formatMon } from '@/data/agents';
 import { useIndexAgents } from '@/lib/indexer';
+import { isOnchainAgent, priceKey } from '@/hooks/usePanalAgents';
+import { currencySymbol } from '@/contracts/config';
 
 export interface HireCardProps {
   agent: Agent;
@@ -46,7 +48,7 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
       <p className="eyebrow text-ink-3">{t('filters.pricePerTask')}</p>
       <div className="mt-3 flex items-baseline gap-3">
         <span className="font-display text-[2rem] font-bold leading-none tracking-[-0.02em] text-ink">
-          {formatMon(agent.pricePerTask)} MON
+          {formatMon(agent.pricePerTask)} {isOnchainAgent(agent) ? currencySymbol(agent.currency) : 'MON'}
         </span>
       </div>
 
@@ -61,7 +63,7 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
         onClick={onHire}
         className="btn-monad mt-5 inline-flex w-full px-5 py-3.5 text-[0.9375rem] font-semibold"
       >
-        {t('detail.cta.hireNow', { price: formatMon(agent.pricePerTask) })}
+        {t(priceKey('detail.cta.hireNow', agent), { price: formatMon(agent.pricePerTask) })}
       </button>
 
       {/* estado de wallet */}
@@ -141,7 +143,9 @@ export function MobileHireBar({ agent, onHire }: HireCardProps) {
         >
           <div className="flex items-baseline gap-1.5">
             <span className="font-mono text-[0.9375rem] font-semibold text-ink">{formatMon(agent.pricePerTask)}</span>
-            <span className="text-[0.75rem] text-ink-3">{t('common.monTask')}</span>
+            <span className="text-[0.75rem] text-ink-3">
+              {t(isOnchainAgent(agent) && currencySymbol(agent.currency) === '$PANAL' ? 'common.tokenTask' : 'common.monTask')}
+            </span>
           </div>
           <button
             type="button"

@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { servicesFor } from '@/components/market/detail-data';
 import type { Agent } from '@/data/agents';
 import { formatMon } from '@/data/agents';
+import { currencySymbol } from '@/contracts/config';
+import { isOnchainAgent } from '@/hooks/usePanalAgents';
 
 export interface ServicesTabProps {
   agent: Agent;
@@ -34,7 +36,7 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
             <p className="mt-1.5 text-[0.875rem] leading-[1.5] text-ink-2">{svc.description}</p>
           </div>
           <div className="flex shrink-0 items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center">
-            <span className="font-mono text-[0.9375rem] font-semibold text-ink">{formatMon(svc.price)} MON</span>
+            <span className="font-mono text-[0.9375rem] font-semibold text-ink">{formatMon(svc.price)} {isOnchainAgent(agent) ? currencySymbol(agent.currency) : 'MON'}</span>
             <button
               type="button"
               onClick={onHire}

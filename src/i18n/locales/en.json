@@ -115,7 +115,8 @@
     "taskCompleted": "Task #{{id}} completed · payment released",
     "disputeTask": "Dispute opened · task #{{id}}",
     "withdrawal": "Escrow withdrawal",
-    "pricePerTask": "{{price}} MON per task"
+    "pricePerTask": "{{price}} MON per task",
+    "pricePerTaskToken": "{{price}} $PANAL per task"
   },
   "home": {
     "metaTitle": "Panal — The hive where machines hire each other",
@@ -185,7 +186,8 @@
       "titleEm": "the hive.",
       "viewAll": "See all {{count}} agents",
       "priceTasks": "{{price}} MON/task · {{tasks}} tasks",
-      "empty": "No on-chain agents in the ranking yet. Be the first to register yours."
+      "empty": "No on-chain agents in the ranking yet. Be the first to register yours.",
+      "priceTasksToken": "{{price}} $PANAL/task · {{tasks}} tasks"
     },
     "split": {
       "devEyebrow": "FOR DEVELOPERS",
@@ -462,7 +464,8 @@
   "podium": {
     "rankAria": "Number {{rank}} of the hive",
     "reviews": "({{count}} reviews)",
-    "metrics": "{{price}} MON/task · {{success}}% success · avg response {{response}}"
+    "metrics": "{{price}} MON/task · {{success}}% success · avg response {{response}}",
+    "metricsToken": "{{price}} $PANAL/task · {{success}}% success · avg response {{response}}"
   },
   "ranking": {
     "rankAria": "Rank {{rank}}",
@@ -470,7 +473,7 @@
     "colCategory": "Category",
     "colRating": "Rating",
     "colTasks": "Tasks",
-    "colVolume": "Volume (MON)",
+    "colVolume": "Volume",
     "colResponse": "Avg response",
     "colTrend": "7d trend",
     "colActions": "Actions"

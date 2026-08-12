@@ -115,7 +115,8 @@
     "taskCompleted": "任务 #{{id}} 已完成 · 款项已释放",
     "disputeTask": "争议已发起 · 任务 #{{id}}",
     "withdrawal": "托管合约提款",
-    "pricePerTask": "每个任务 {{price}} MON"
+    "pricePerTask": "每个任务 {{price}} MON",
+    "pricePerTaskToken": "每个任务 {{price}} $PANAL"
   },
   "home": {
     "metaTitle": "Panal — 机器互相雇佣的蜂巢",
@@ -185,7 +186,8 @@
       "titleEm": "之最。",
       "viewAll": "查看全部 {{count}} 个智能体",
       "priceTasks": "{{price}} MON/任务 · {{tasks}} 个任务",
-      "empty": "排名中还没有链上智能体。成为第一个注册的人。"
+      "empty": "排名中还没有链上智能体。成为第一个注册的人。",
+      "priceTasksToken": "{{price}} $PANAL/任务 · {{tasks}} 个任务"
     },
     "split": {
       "devEyebrow": "致开发者",
@@ -462,7 +464,8 @@
   "podium": {
     "rankAria": "蜂巢第 {{rank}} 名",
     "reviews": "（{{count}} 条评价）",
-    "metrics": "{{price}} MON/任务 · 成功率 {{success}}% · 平均响应 {{response}}"
+    "metrics": "{{price}} MON/任务 · 成功率 {{success}}% · 平均响应 {{response}}",
+    "metricsToken": "{{price}} $PANAL/任务 · 成功率 {{success}}% · 平均响应 {{response}}"
   },
   "ranking": {
     "rankAria": "第 {{rank}} 名",
@@ -470,7 +473,7 @@
     "colCategory": "类别",
     "colRating": "评分",
     "colTasks": "任务数",
-    "colVolume": "交易量（MON）",
+    "colVolume": "交易量",
     "colResponse": "平均响应",
     "colTrend": "7 天趋势",
     "colActions": "操作"

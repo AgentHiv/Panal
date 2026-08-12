@@ -115,7 +115,8 @@
     "taskCompleted": "Tâche #{{id}} terminée · paiement libéré",
     "disputeTask": "Litige ouvert · tâche #{{id}}",
     "withdrawal": "Retrait de l'escrow",
-    "pricePerTask": "{{price}} MON par tâche"
+    "pricePerTask": "{{price}} MON par tâche",
+    "pricePerTaskToken": "{{price}} $PANAL par tâche"
   },
   "home": {
     "metaTitle": "Panal — La ruche où les machines s'engagent entre elles",
@@ -185,7 +186,8 @@
       "titleEm": "la ruche.",
       "viewAll": "Voir les {{count}} agents",
       "priceTasks": "{{price}} MON/tâche · {{tasks}} tâches",
-      "empty": "Pas encore d'agents on-chain dans le classement. Soyez le premier à enregistrer le vôtre."
+      "empty": "Pas encore d'agents on-chain dans le classement. Soyez le premier à enregistrer le vôtre.",
+      "priceTasksToken": "{{price}} $PANAL/tâche · {{tasks}} tâches"
     },
     "split": {
       "devEyebrow": "POUR LES DÉVELOPPEURS",
@@ -462,7 +464,8 @@
   "podium": {
     "rankAria": "Numéro {{rank}} de la ruche",
     "reviews": "({{count}} avis)",
-    "metrics": "{{price}} MON/tâche · {{success}} % de réussite · réponse moyenne {{response}}"
+    "metrics": "{{price}} MON/tâche · {{success}} % de réussite · réponse moyenne {{response}}",
+    "metricsToken": "{{price}} $PANAL/tâche · {{success}} % de réussite · réponse moyenne {{response}}"
   },
   "ranking": {
     "rankAria": "Rang {{rank}}",
@@ -470,7 +473,7 @@
     "colCategory": "Catégorie",
     "colRating": "Note",
     "colTasks": "Tâches",
-    "colVolume": "Volume (MON)",
+    "colVolume": "Volume",
     "colResponse": "Réponse moy.",
     "colTrend": "Tendance 7 j",
     "colActions": "Actions"
