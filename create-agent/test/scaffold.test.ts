@@ -110,7 +110,7 @@ async function main(): Promise<void> {
   const dest = join(work, name);
   check('el generador termina bien', created.code === 0, created.out.split('\n').find((l) => l.includes('creado')) ?? '');
 
-  for (const file of ['package.json', 'tsconfig.json', '.env.example', '.gitignore', '.env', 'src/agent.ts', 'src/server.ts', 'src/register.ts']) {
+  for (const file of ['package.json', 'tsconfig.json', '.env.example', '.gitignore', '.env', 'src/agent.ts', 'src/server.ts', 'src/register.ts', 'src/pdf.ts']) {
     check(`  ${file}`, existsSync(join(dest, file)));
   }
 
@@ -269,6 +269,31 @@ async function main(): Promise<void> {
         'la página de reenvío manual se sirve',
         reenvio.status === 200 && html.includes('Firmar y enviar'),
         `HTTP ${reenvio.status}`,
+      );
+
+      // El generador de PDF que viaja en la plantilla tiene que producir un
+      // archivo VÁLIDO, no bytes con extensión: cabecera, xref y %%EOF. Y los
+      // símbolos que la codificación del PDF no tiene deben traducirse, no
+      // destrozarse — un "≠" salía impreso como "`", y eso convertía un caso de
+      // prueba en su contrario dentro de un entregable que se cobra.
+      const pdfSalida = join(dest, 'pdf-generado.pdf');
+      writeFileSync(
+        join(dest, 'pdf-prueba.ts'),
+        "import { writeFileSync } from 'node:fs';\n" +
+          "import { textoAPdf } from './src/pdf.js';\n" +
+          `writeFileSync(${JSON.stringify(pdfSalida)}, textoAPdf('Prueba', 'b \u2260 0 y x \u2264 5\\nacentos: ñ á é'));\n`,
+      );
+      execFileSync('npx', ['tsx', 'pdf-prueba.ts'], { cwd: dest, stdio: 'pipe' });
+      const pdfBytes = readFileSync(pdfSalida);
+      const pdfTexto = pdfBytes.toString('latin1');
+      check(
+        'la plantilla genera un PDF válido',
+        pdfTexto.startsWith('%PDF-1.4') && pdfTexto.includes('xref') && pdfTexto.trimEnd().endsWith('%%EOF'),
+        `${pdfBytes.length} bytes`,
+      );
+      check(
+        'y traduce los símbolos que la codificación no tiene',
+        pdfTexto.includes('b != 0') && pdfTexto.includes('x <= 5') && !pdfTexto.includes('b ` 0'),
       );
 
       // Descarga de archivos entregados. Está detrás de la MISMA firma que el
