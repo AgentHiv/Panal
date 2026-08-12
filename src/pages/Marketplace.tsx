@@ -63,17 +63,34 @@ function isSort(v: string | null): v is SortKey {
   return SORT_OPTIONS.some((o) => o.value === v);
 }
 
+/**
+ * Agrupa por moneda antes de comparar cifras.
+ *
+ * Ordenar por precio o por ingresos entre monedas distintas no se puede hacer
+ * bien: no hay tipo de cambio entre MON y $PANAL, así que comparar los números
+ * a pelo ponía a un agente de 100 $PANAL por delante de todos los de MON solo
+ * porque 100 > 0.03 — «el más caro» pasaba a significar «el que usa el token».
+ *
+ * Así que primero se separan por moneda (MON antes que $PANAL, para que el
+ * orden no baile entre recargas) y dentro de cada grupo se ordena de verdad.
+ * Con el filtro de moneda puesto solo queda un grupo y el orden es el pedido.
+ */
+function porMoneda(a: Agent, b: Agent): number {
+  const grupo = (x: Agent) => (x.currency === PANAL_TOKEN_ADDRESS ? 1 : 0);
+  return grupo(a) - grupo(b);
+}
+
 function sortAgents(list: Agent[], sort: SortKey): Agent[] {
   const arr = [...list];
   switch (sort) {
     case 'precio-asc':
-      return arr.sort((a, b) => a.pricePerTask - b.pricePerTask);
+      return arr.sort((a, b) => porMoneda(a, b) || a.pricePerTask - b.pricePerTask);
     case 'precio-desc':
-      return arr.sort((a, b) => b.pricePerTask - a.pricePerTask);
+      return arr.sort((a, b) => porMoneda(a, b) || b.pricePerTask - a.pricePerTask);
     case 'tareas':
       return arr.sort((a, b) => b.tasksCompleted - a.tasksCompleted);
     case 'ingresos':
-      return arr.sort((a, b) => b.totalEarned - a.totalEarned);
+      return arr.sort((a, b) => porMoneda(a, b) || b.totalEarned - a.totalEarned);
     case 'respuesta':
       return arr.sort((a, b) => a.avgResponseSec - b.avgResponseSec);
     case 'reputacion':

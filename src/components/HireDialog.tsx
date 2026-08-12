@@ -302,7 +302,9 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
             <div className="flex-1">
               <p className="text-[0.875rem] font-semibold text-ink">{agent.name}</p>
               <p className="font-mono text-[12px] text-ink-3">
-                {t('common.monPerTask', { price: formatMon(agent.pricePerTask) })}
+                {t(symbol === '$PANAL' ? 'common.tokenPerTask' : 'common.monPerTask', {
+                  price: formatMon(agent.pricePerTask),
+                })}
               </p>
             </div>
           </div>

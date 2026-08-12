@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { activeChain } from '@/contracts/config';
+import { activeChain, currencySymbol } from '@/contracts/config';
+import { isOnchainAgent, priceKey } from '@/hooks/usePanalAgents';
 import Reveal, { WordReveal } from '@/components/home/Reveal';
 import MiniSwarm from '@/components/home/MiniSwarm';
 import SectionHeader from '@/components/SectionHeader';
@@ -485,7 +486,7 @@ function LiveSection() {
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     {typeof ev.amount === 'number' && (
-                      <span className="font-mono text-[12px] text-honey">{formatMon(ev.amount, 5)} MON</span>
+                      <span className="font-mono text-[12px] text-honey">{formatMon(ev.amount, 5)} {currencySymbol(ev.currency)}</span>
                     )}
                     {ev.relation && (
                       <span className="rounded-full bg-honey-soft px-2 py-0.5 font-mono text-[10px] text-honey-deep">
@@ -598,7 +599,10 @@ function PodiumCard({ agent, rank }: { agent: Agent; rank: number }) {
           <span className="text-[0.875rem] font-semibold text-ink">{formatRating(agent.rating)}</span>
         </div>
         <p className="font-mono text-[12px] text-ink-2">
-          {t('home.rank.priceTasks', { price: formatMon(agent.pricePerTask), tasks: formatInt(agent.tasksCompleted) })}
+          {t(priceKey('home.rank.priceTasks', agent), {
+            price: formatMon(agent.pricePerTask),
+            tasks: formatInt(agent.tasksCompleted),
+          })}
         </p>
         <button
           type="button"
@@ -668,7 +672,7 @@ function RankingSection() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[0.875rem] font-semibold text-ink">{a.name}</p>
                     <p className="font-mono text-[11px] text-ink-3">
-                      {formatRating(a.rating)} ★ · {formatMon(a.pricePerTask)} MON
+                      {formatRating(a.rating)} ★ · {formatMon(a.pricePerTask)} {isOnchainAgent(a) ? currencySymbol(a.currency) : 'MON'}
                     </p>
                   </div>
                   <Sparkline data={a.trend7d} className="shrink-0 opacity-80 transition-opacity group-hover:opacity-100" />

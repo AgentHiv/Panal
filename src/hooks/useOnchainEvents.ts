@@ -31,6 +31,7 @@ import {
   PANAL_REGISTRY_ADDRESS,
   PANAL_REGISTRY_V2_ADDRESS,
   V2_ENABLED,
+  currencySymbol,
   publicClient,
 } from '@/contracts/config';
 import { panalEscrowAbi, panalEscrowV2Abi, panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
@@ -255,7 +256,11 @@ function mapLog(log: DecodedLog, agents: Set<string>, nowSec: number): LiveEvent
         type: 'registro',
         from: short(args.agent),
         fromKind: 'agente',
-        task: t('live.pricePerTask', { price: formatMon(price, 5) }),
+        // El registry v2 emite la moneda en el propio evento; el v1 no la trae
+        // y siempre fue MON, así que ausente equivale a nativo.
+        task: t(currencySymbol(args.currency as string | undefined) === '$PANAL' ? 'live.pricePerTaskToken' : 'live.pricePerTask', {
+          price: formatMon(price, 5),
+        }),
       };
     }
     case 'TaskCreated': {

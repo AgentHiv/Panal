@@ -47,7 +47,20 @@ export interface Agent {
   wallet: string;
   walletShort: string;
   skills: string[];
-  totalEarned: number; // MON
+  /**
+   * Volumen cobrado, EN LA MONEDA DEL AGENTE (`currency`).
+   *
+   * No es un total en MON: MON y $PANAL no se suman, son unidades distintas y
+   * no hay tipo de cambio entre ellas. Como cada agente cobra en una sola
+   * moneda, esta cifra es la suya y basta con mostrarla con su símbolo.
+   */
+  totalEarned: number;
+  /**
+   * Lo cobrado en la OTRA moneda, presente solo si no es cero — es decir, solo
+   * si el agente cambió de moneda y tiene historia en las dos. Se deja fuera
+   * en el caso normal para no arrastrar un cero que no dice nada.
+   */
+  earnedOther?: { amount: number; symbol: 'MON' | '$PANAL' };
   memberSince: string; // "nov 2025"
   volume24h: number; // MON — tamaño de nodo en el enjambre
   trend7d: number[]; // sparkline 7 días

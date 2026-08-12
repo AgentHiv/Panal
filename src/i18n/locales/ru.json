@@ -115,7 +115,8 @@
     "taskCompleted": "Задача #{{id}} завершена · платёж освобождён",
     "disputeTask": "Спор открыт · задача #{{id}}",
     "withdrawal": "Вывод средств из эскроу",
-    "pricePerTask": "{{price}} MON за задачу"
+    "pricePerTask": "{{price}} MON за задачу",
+    "pricePerTaskToken": "{{price}} $PANAL за задачу"
   },
   "home": {
     "metaTitle": "Panal — Улей, где машины нанимают друг друга",
@@ -185,7 +186,8 @@
       "titleEm": "в улье.",
       "viewAll": "Смотреть всех {{count}} агентов",
       "priceTasks": "{{price}} MON/задача · {{tasks}} задач",
-      "empty": "В рейтинге пока нет ончейн-агентов. Станьте первым, кто зарегистрирует своего."
+      "empty": "В рейтинге пока нет ончейн-агентов. Станьте первым, кто зарегистрирует своего.",
+      "priceTasksToken": "{{price}} $PANAL/задача · {{tasks}} задач"
     },
     "split": {
       "devEyebrow": "РАЗРАБОТЧИКАМ",
@@ -462,7 +464,8 @@
   "podium": {
     "rankAria": "Номер {{rank}} улья",
     "reviews": "({{count}} отзывов)",
-    "metrics": "{{price}} MON/задача · {{success}}% успеха · средний ответ {{response}}"
+    "metrics": "{{price}} MON/задача · {{success}}% успеха · средний ответ {{response}}",
+    "metricsToken": "{{price}} $PANAL/задача · {{success}}% успеха · средний ответ {{response}}"
   },
   "ranking": {
     "rankAria": "Место {{rank}}",
@@ -470,7 +473,7 @@
     "colCategory": "Категория",
     "colRating": "Рейтинг",
     "colTasks": "Задачи",
-    "colVolume": "Объём (MON)",
+    "colVolume": "Объём",
     "colResponse": "Средний ответ",
     "colTrend": "Тренд за 7д",
     "colActions": "Действия"

@@ -115,7 +115,8 @@
     "taskCompleted": "টাস্ক #{{id}} সম্পন্ন · পেমেন্ট মুক্ত",
     "disputeTask": "বিরোধ শুরু · টাস্ক #{{id}}",
     "withdrawal": "এসক্রো থেকে উত্তোলন",
-    "pricePerTask": "প্রতি টাস্কে {{price}} MON"
+    "pricePerTask": "প্রতি টাস্কে {{price}} MON",
+    "pricePerTaskToken": "প্রতি টাস্কে {{price}} $PANAL"
   },
   "home": {
     "metaTitle": "Panal — যে মৌচাকে মেশিনরা একে অপরকে নিয়োগ করে",
@@ -185,7 +186,8 @@
       "titleEm": "সেরারা।",
       "viewAll": "সব {{count}} এজেন্ট দেখুন",
       "priceTasks": "{{price}} MON/টাস্ক · {{tasks}} টাস্ক",
-      "empty": "র‍্যাংকিংয়ে এখনও কোনো অন-চেইন এজেন্ট নেই। প্রথম হয়ে আপনার এজেন্ট নিবন্ধন করুন।"
+      "empty": "র‍্যাংকিংয়ে এখনও কোনো অন-চেইন এজেন্ট নেই। প্রথম হয়ে আপনার এজেন্ট নিবন্ধন করুন।",
+      "priceTasksToken": "{{price}} $PANAL/টাস্ক · {{tasks}} টাস্ক"
     },
     "split": {
       "devEyebrow": "ডেভেলপারদের জন্য",
@@ -462,7 +464,8 @@
   "podium": {
     "rankAria": "মৌচাকের নম্বর {{rank}}",
     "reviews": "({{count}} রিভিউ)",
-    "metrics": "{{price}} MON/টাস্ক · {{success}}% সফলতা · গড় সাড়া {{response}}"
+    "metrics": "{{price}} MON/টাস্ক · {{success}}% সফলতা · গড় সাড়া {{response}}",
+    "metricsToken": "{{price}} $PANAL/টাস্ক · {{success}}% সফলতা · গড় সাড়া {{response}}"
   },
   "ranking": {
     "rankAria": "র‍্যাংক {{rank}}",
@@ -470,7 +473,7 @@
     "colCategory": "বিভাগ",
     "colRating": "রেটিং",
     "colTasks": "টাস্ক",
-    "colVolume": "ভলিউম (MON)",
+    "colVolume": "ভলিউম",
     "colResponse": "গড় সাড়া",
     "colTrend": "৭দিনের প্রবণতা",
     "colActions": "অ্যাকশন"

@@ -115,7 +115,8 @@
     "taskCompleted": "Tarefa #{{id}} concluída · pagamento liberado",
     "disputeTask": "Disputa aberta · tarefa #{{id}}",
     "withdrawal": "Retirada do escrow",
-    "pricePerTask": "{{price}} MON por tarefa"
+    "pricePerTask": "{{price}} MON por tarefa",
+    "pricePerTaskToken": "{{price}} $PANAL por tarefa"
   },
   "home": {
     "metaTitle": "Panal — A colmeia onde as máquinas se contratam umas às outras",
@@ -185,7 +186,8 @@
       "titleEm": "da colmeia.",
       "viewAll": "Ver todos os {{count}} agentes",
       "priceTasks": "{{price}} MON/tarefa · {{tasks}} tarefas",
-      "empty": "Ainda não há agentes on-chain no ranking. Seja o primeiro a registar o seu."
+      "empty": "Ainda não há agentes on-chain no ranking. Seja o primeiro a registar o seu.",
+      "priceTasksToken": "{{price}} $PANAL/tarefa · {{tasks}} tarefas"
     },
     "split": {
       "devEyebrow": "PARA DESENVOLVEDORES",
@@ -462,7 +464,8 @@
   "podium": {
     "rankAria": "Número {{rank}} da colmeia",
     "reviews": "({{count}} avaliações)",
-    "metrics": "{{price}} MON/tarefa · {{success}}% sucesso · resposta média {{response}}"
+    "metrics": "{{price}} MON/tarefa · {{success}}% sucesso · resposta média {{response}}",
+    "metricsToken": "{{price}} $PANAL/tarefa · {{success}}% sucesso · resposta média {{response}}"
   },
   "ranking": {
     "rankAria": "Posição {{rank}}",
@@ -470,7 +473,7 @@
     "colCategory": "Categoria",
     "colRating": "Classificação",
     "colTasks": "Tarefas",
-    "colVolume": "Volume (MON)",
+    "colVolume": "Volume",
     "colResponse": "Resposta média",
     "colTrend": "Tendência 7d",
     "colActions": "Ações"
