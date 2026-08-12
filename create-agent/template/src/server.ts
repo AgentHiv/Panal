@@ -47,6 +47,7 @@ import { isAddress, keccak256, parseEther, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
 import { handleTask } from './agent.js';
 import type { TaskContext, TaskFile, TaskResult } from './agent.js';
+import { arrancarVigilante } from './vigilante.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const DATA_DIR = process.env.DATA_DIR ?? './data';
@@ -173,6 +174,32 @@ function loadResult(taskId: bigint): string | null {
 }
 
 /**
+ * El encargo recibido, guardado en cuanto llega y antes de trabajar.
+ *
+ * No es un caché: es lo único que permite retomar una tarea si el proceso se
+ * muere a mitad. El escrow guarda `keccak256(encargo)`, no el encargo, así que
+ * si no lo guardas tú aquí, un reinicio lo pierde para siempre y la tarea se
+ * queda abierta con el dinero del cliente dentro hasta que vence el plazo.
+ */
+const briefPath = (taskId: bigint) => join(DATA_DIR, `brief-${taskId}.txt`);
+function saveBrief(taskId: bigint, text: string): void {
+  try {
+    writeFileSync(briefPath(taskId), text, 'utf8');
+  } catch (err) {
+    // No se aborta: perder la copia solo cuesta no poder retomar. Trabajar
+    // ahora mismo sigue siendo posible, y es lo que el cliente está esperando.
+    console.error(`[panal] #${taskId} no se pudo guardar el encargo: ${err instanceof Error ? err.message : err}`);
+  }
+}
+function loadBrief(taskId: bigint): string | null {
+  try {
+    return readFileSync(briefPath(taskId), 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Guarda en disco los archivos de una entrega y devuelve su manifiesto.
  *
  * El nombre se limpia con `sanitizeFileName` ANTES de tocar el disco: llega en
@@ -292,6 +319,9 @@ async function work(taskId: bigint, brief: string, sobre: CallEnvelope | null): 
   if (inFlight.has(key)) return;
   inFlight.add(key);
   try {
+    // Lo PRIMERO, antes de trabajar: si el proceso muere a mitad, esto es lo
+    // único que permite retomarlo. Guardarlo después sería guardarlo nunca.
+    saveBrief(taskId, brief);
     const task = await panal.getTask(taskId);
     const salida = await handleTask(
       brief,
@@ -743,3 +773,28 @@ const server = createServer((req, res) => {
 });
 
 server.listen(PORT);
+
+// El vigilante. Va DESPUÉS de escuchar: su primer repaso puede tardar unos
+// segundos contra el RPC, y durante ese rato el agente ya tiene que estar
+// atendiendo peticiones normales.
+arrancarVigilante({
+  panal,
+  yo: account.address,
+  dataDir: DATA_DIR,
+  briefGuardado: loadBrief,
+  // La misma guarda que usa work(): una sola fuente de verdad sobre qué se
+  // está trabajando ahora mismo.
+  enCurso: (taskId) => inFlight.has(taskId.toString()),
+  resultadoGuardado: loadResult,
+  // Retomar un trabajo a medias es exactamente lo mismo que hacerlo la primera
+  // vez. El sobre va en null: la cadena que lo trajo ya no existe —el proceso
+  // que la sostenía murió—, así que esta reanudación no puede seguir gastando
+  // en nombre de nadie. Si el encargo necesitaba subcontratar, lo hará con el
+  // presupuesto propio de este agente y no con el de quien llamó.
+  trabajar: (taskId, brief) => work(taskId, brief, null),
+  reentregar: async (taskId, texto) => {
+    const { txHash } = await panal.deliverResult(taskId, texto);
+    console.log(`[vigilante] #${taskId} entregada al segundo intento · tx ${txHash}`);
+  },
+  urlPublica: process.env.PUBLIC_URL?.trim(),
+});
