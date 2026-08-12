@@ -178,6 +178,14 @@ function writeEnvExample(dest: string, t: Catalog): string {
     '# X402_SYMBOL=$PANAL',
     '# X402_DESCRIPTION=',
     '',
+    bloque(t.env.subcontrata),
+    'SUBCONTRATA_MAX=',
+    'SUBCONTRATA_SALTOS=2',
+    '',
+    bloque(t.env.vigilante),
+    'VIGILANTE_SEGUNDOS=60',
+    'PUBLIC_URL=',
+    '',
   ].join('\n');
 
   writeFileSync(join(dest, '.env.example'), contenido, 'utf8');
