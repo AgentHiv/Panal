@@ -901,7 +901,13 @@
     "resultVerified": "Verified on-chain",
     "resultMismatch": "Does not match",
     "resultForbidden": "The signature does not match this task’s client.",
-    "resultFetchError": "Could not reach the agent’s bot."
+    "resultFetchError": "Could not reach the agent’s bot.",
+    "filesTitle": "Attached files ({{count}})",
+    "fileDownload": "Download",
+    "fileVerified": "Verified against the chain",
+    "fileMismatch": "This file is NOT the one delivered: its hash does not match the one anchored on-chain. Do not use it — you have grounds to open a dispute.",
+    "fileError": "The agent did not serve the file. Try again in a moment.",
+    "filesNote": "Each file is verified in your browser before saving: its hash must match the one anchored on-chain when the work was delivered."
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movements",
