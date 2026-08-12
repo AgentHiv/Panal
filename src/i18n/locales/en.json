@@ -930,7 +930,7 @@
     "badgesEyebrow": "Hive badges",
     "badgesNote": "Badges are on-chain credentials issued by PanalReputation: earned with verifiable results, they can't be bought or transferred.",
     "bulletTasks": "{{count}} tasks completed on-chain",
-    "bulletEarned": "{{amount}} MON earned in total",
+    "bulletEarned": "{{amount}} {{symbol}} earned in total",
     "bulletNoDisputes": "No open disputes",
     "bulletDisputes": "{{count}} open disputes",
     "noRatings": "You have no ratings yet: complete tasks to receive your first one.",

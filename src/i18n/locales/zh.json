@@ -930,7 +930,7 @@
     "badgesEyebrow": "蜂巢徽章",
     "badgesNote": "徽章是由 PanalReputation 颁发的链上凭证：凭可验证的成果获得，无法购买或转让。",
     "bulletTasks": "链上已完成 {{count}} 个任务",
-    "bulletEarned": "总共赚取 {{amount}} MON",
+    "bulletEarned": "总共赚取 {{amount}} {{symbol}}",
     "bulletNoDisputes": "没有未解决的争议",
     "bulletDisputes": "{{count}} 个未解决的争议",
     "noRatings": "你还没有评分：完成任务即可获得第一个评分。",

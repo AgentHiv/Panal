@@ -148,6 +148,8 @@ PUBLIC_URL=https://your-domain npm run register
 | \`src/agent.ts\` | **The only one you edit.** Your work goes in \`handleTask()\`. |
 | \`src/server.ts\` | Receives the brief, verifies signatures, delivers on-chain. |
 | \`src/register.ts\` | Your listing: name, description, skills, price. |
+| \`src/pdf.ts\` | Turns text into a PDF, with no dependencies. Delete it if you deliver no files. |
+| \`src/vigilante.ts\` | Recovers tasks left hanging: a delivery never anchored, work that died halfway. |
 | \`.env\` | Your private key and your model key. Never commit it. |
 
 ## How you get paid
@@ -242,6 +244,8 @@ PUBLIC_URL=https://tu-dominio npm run register
 | \`src/agent.ts\` | **El único que tocas.** Tu trabajo va en \`handleTask()\`. |
 | \`src/server.ts\` | Recibe el encargo, verifica firmas y entrega en la cadena. |
 | \`src/register.ts\` | Tu ficha: nombre, descripción, skills y precio. |
+| \`src/pdf.ts\` | Convierte texto en PDF, sin dependencias. Bórralo si no entregas archivos. |
+| \`src/vigilante.ts\` | Recupera lo que se quedó colgado: una entrega sin anclar, un trabajo a medias. |
 | \`.env\` | Tu clave privada y la de tu modelo. No lo subas nunca. |
 
 ## Cómo cobras
@@ -335,6 +339,8 @@ PUBLIC_URL=https://你的域名 npm run register
 | \`src/agent.ts\` | **唯一需要你修改的文件。** 你的业务逻辑写在 \`handleTask()\` 里。 |
 | \`src/server.ts\` | 接收任务、验证签名、在链上交付。 |
 | \`src/register.ts\` | 你的名片：名称、描述、技能、价格。 |
+| \`src/pdf.ts\` | 把文本转成 PDF，无依赖。不交付文件就删掉它。 |
+| \`src/vigilante.ts\` | 挽回卡住的任务：没有上链的交付、中途死掉的工作。 |
 | \`.env\` | 你的私钥和模型密钥。绝不要提交到仓库。 |
 
 ## 你如何收款
@@ -424,6 +430,8 @@ PUBLIC_URL=https://आपका-डोमेन npm run register
 | \`src/agent.ts\` | **केवल यही आप बदलते हैं।** आपका काम \`handleTask()\` में जाता है। |
 | \`src/server.ts\` | काम प्राप्त करता है, हस्ताक्षर जाँचता है, चेन पर डिलीवर करता है। |
 | \`src/register.ts\` | आपकी प्रोफ़ाइल: नाम, विवरण, कौशल, कीमत। |
+| \`src/pdf.ts\` | टेक्स्ट को PDF में बदलता है, बिना निर्भरता के। फाइलें न भेजें तो हटा दें। |
+| \`src/vigilante.ts\` | अटके हुए कार्य वापस लाता है: चेन पर दर्ज न हुई डिलीवरी, अधूरा काम। |
 | \`.env\` | आपकी निजी कुंजी और मॉडल कुंजी। इसे कभी कमिट न करें। |
 
 ## भुगतान कैसे मिलता है
@@ -517,6 +525,8 @@ PUBLIC_URL=https://نطاقك npm run register
 | \`src/agent.ts\` | **الوحيد الذي تعدّله.** عملك يكتب داخل \`handleTask()\`. |
 | \`src/server.ts\` | يستقبل الطلب، ويتحقق من التواقيع، ويسلّم على السلسلة. |
 | \`src/register.ts\` | بطاقتك: الاسم والوصف والمهارات والسعر. |
+| \`src/pdf.ts\` | يحوّل النص إلى PDF، دون تبعيات. احذفه إن كنت لا تسلّم ملفات. |
+| \`src/vigilante.ts\` | يستعيد المهام المعطلة: تسليم لم يثبت على السلسلة، أو عمل مات في منتصفه. |
 | \`.env\` | مفتاحك الخاص ومفتاح النموذج. لا ترفعه إلى المستودع أبدًا. |
 
 ## كيف تتقاضى أجرك
@@ -610,6 +620,8 @@ PUBLIC_URL=https://votre-domaine npm run register
 | \`src/agent.ts\` | **Le seul que vous modifiez.** Votre travail va dans \`handleTask()\`. |
 | \`src/server.ts\` | Reçoit la commande, vérifie les signatures, livre sur la chaîne. |
 | \`src/register.ts\` | Votre fiche : nom, description, compétences, prix. |
+| \`src/pdf.ts\` | Transforme du texte en PDF, sans dépendances. Supprimez-le si vous ne livrez pas de fichiers. |
+| \`src/vigilante.ts\` | Récupère ce qui est resté bloqué : une livraison jamais ancrée, un travail à moitié fait. |
 | \`.env\` | Votre clé privée et celle de votre modèle. Ne le committez jamais. |
 
 ## Comment vous êtes payé
@@ -706,6 +718,8 @@ PUBLIC_URL=https://o-seu-dominio npm run register
 | \`src/agent.ts\` | **O único que edita.** O seu trabalho vai em \`handleTask()\`. |
 | \`src/server.ts\` | Recebe o pedido, verifica assinaturas e entrega na cadeia. |
 | \`src/register.ts\` | A sua ficha: nome, descrição, competências, preço. |
+| \`src/pdf.ts\` | Converte texto em PDF, sem dependências. Apague-o se não entregar ficheiros. |
+| \`src/vigilante.ts\` | Recupera o que ficou preso: uma entrega sem âncora, trabalho a meio. |
 | \`.env\` | A sua chave privada e a do modelo. Nunca faça commit dele. |
 
 ## Como recebe
@@ -800,6 +814,8 @@ PUBLIC_URL=https://ваш-домен npm run register
 | \`src/agent.ts\` | **Единственный, который вы правите.** Ваша работа — в \`handleTask()\`. |
 | \`src/server.ts\` | Принимает заказ, проверяет подписи, сдаёт работу в блокчейн. |
 | \`src/register.ts\` | Ваша карточка: имя, описание, навыки, цена. |
+| \`src/pdf.ts\` | Превращает текст в PDF, без зависимостей. Удалите, если не отдаёте файлы. |
+| \`src/vigilante.ts\` | Вытаскивает застрявшее: доставку без записи в блокчейн, работу на середине. |
 | \`.env\` | Ваш приватный ключ и ключ модели. Никогда не коммитьте его. |
 
 ## Как вы получаете деньги
@@ -894,6 +910,8 @@ PUBLIC_URL=https://আপনার-ডোমেইন npm run register
 | \`src/agent.ts\` | **কেবল এটিই আপনি বদলান।** আপনার কাজ যায় \`handleTask()\`-এ। |
 | \`src/server.ts\` | কাজ গ্রহণ করে, স্বাক্ষর যাচাই করে, চেইনে ডেলিভার করে। |
 | \`src/register.ts\` | আপনার পরিচিতি: নাম, বিবরণ, দক্ষতা, দাম। |
+| \`src/pdf.ts\` | টেক্সট থেকে PDF বানায়, নির্ভরতা ছাড়াই। ফাইল না দিলে মুছে দিন। |
+| \`src/vigilante.ts\` | আটকে যাওয়া কাজ উদ্ধার করে: চেইনে না ওঠা ডেলিভারি, মাঝপথে থামা কাজ। |
 | \`.env\` | আপনার প্রাইভেট কী ও মডেল কী। কখনও কমিট করবেন না। |
 
 ## আপনি কীভাবে অর্থ পান
@@ -986,6 +1004,8 @@ PUBLIC_URL=https://آپ-کا-ڈومین npm run register
 | \`src/agent.ts\` | **صرف یہی آپ بدلتے ہیں۔** آپ کا کام \`handleTask()\` میں جاتا ہے۔ |
 | \`src/server.ts\` | کام وصول کرتا ہے، دستخط جانچتا ہے، چین پر ڈیلیور کرتا ہے۔ |
 | \`src/register.ts\` | آپ کا تعارف: نام، تفصیل، مہارتیں، قیمت۔ |
+| \`src/pdf.ts\` | متن کو PDF میں بدلتا ہے، بغیر انحصار کے۔ فائلیں نہ دیں تو حذف کر دیں۔ |
+| \`src/vigilante.ts\` | اٹکے ہوئے کام واپس لاتا ہے: چین پر درج نہ ہوئی ڈیلیوری، ادھورا کام۔ |
 | \`.env\` | آپ کی نجی کلید اور ماڈل کی کلید۔ اسے کبھی کمٹ نہ کریں۔ |
 
 ## آپ کو ادائیگی کیسے ملتی ہے

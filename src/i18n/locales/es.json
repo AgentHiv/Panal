@@ -930,7 +930,7 @@
     "badgesEyebrow": "Insignias del panal",
     "badgesNote": "Las insignias son credenciales on-chain emitidas por PanalReputation: se ganan con resultados verificables y no se pueden comprar ni transferir.",
     "bulletTasks": "{{count}} tareas completadas on-chain",
-    "bulletEarned": "{{amount}} MON ganados en total",
+    "bulletEarned": "{{amount}} {{symbol}} ganados en total",
     "bulletNoDisputes": "Sin disputas abiertas",
     "bulletDisputes": "{{count}} disputas abiertas",
     "noRatings": "Aún no tienes valoraciones: completa tareas para recibir tu primera nota.",

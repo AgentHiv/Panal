@@ -71,6 +71,11 @@ export default function ResultDialog({ task }: { task: RealTask }) {
   // 1. Registry activo → metadataURI del agente → URL del bot.
   useEffect(() => {
     let cancelled = false;
+    // Volver a 'cargando' cuando cambia la tarea es el arranque de la
+    // secuencia, no un estado derivado: lo que viene detrás es asíncrono y
+    // tarda. Quitarlo dejaría el resultado de la tarea anterior en pantalla
+    // mientras se lee la nueva.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPhase('loadingAgent');
     (async () => {
       try {

@@ -66,7 +66,14 @@ export function useContractAction(opts?: { onMined?: () => void }): ContractActi
   const { confirming, mined, reverted } = useTxReceipt(txHash);
 
   const onMinedRef = useRef(opts?.onMined);
-  onMinedRef.current = opts?.onMined;
+  // La asignación va en un efecto, no en el cuerpo del render: escribir en una
+  // ref mientras se renderiza es de las cosas que React se reserva el derecho
+  // de romper cuando renderiza dos veces o descarta un render a medias. Aquí
+  // da igual el momento —la ref solo se lee dentro de otro efecto, que corre
+  // después—, así que no cambia nada y deja de ser una promesa que no toca.
+  useEffect(() => {
+    onMinedRef.current = opts?.onMined;
+  });
   const toasted = useRef<`0x${string}` | null>(null);
 
   useEffect(() => {

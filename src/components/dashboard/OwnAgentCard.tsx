@@ -200,7 +200,7 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
         </div>
         <div className="flex flex-col gap-0.5">
           <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">{t('dash.kpi.incomeTotal')}</span>
-          <span className="font-mono text-[0.875rem] font-medium text-ink">{formatMonEs(Number(formatEther(rep.totalEarned)))} MON</span>
+          <span className="font-mono text-[0.875rem] font-medium text-ink">{formatMonEs(Number(formatEther(rep.totalEarned)))} {currencySymbol(agent?.currency ?? NATIVE_CURRENCY)}</span>
         </div>
         <div className="flex flex-col gap-0.5">
           <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-ink-3">Rating</span>
