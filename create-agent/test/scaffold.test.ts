@@ -270,6 +270,24 @@ async function main(): Promise<void> {
         reenvio.status === 200 && html.includes('Firmar y enviar'),
         `HTTP ${reenvio.status}`,
       );
+
+      // Descarga de archivos entregados. Está detrás de la MISMA firma que el
+      // resultado, así que sin ella tiene que cortar antes de mirar el disco.
+      const archivoSinFirma = await fetch(`http://127.0.0.1:${port}/files/7/informe.pdf`);
+      check('un archivo sin firma no se entrega', archivoSinFirma.status === 400, `HTTP ${archivoSinFirma.status}`);
+
+      // Y el nombre viene de la URL, o sea de fuera. Si el 400 de arriba
+      // llegara a fallar algún día, esto es lo que impide que la ruta sirva de
+      // lectura arbitraria del disco del agente.
+      const travesia = await fetch(
+        `http://127.0.0.1:${port}/files/7/${encodeURIComponent('../../.env')}?address=0x0000000000000000000000000000000000000001&signature=0x00`,
+      );
+      const cuerpoTravesia = await travesia.text();
+      check(
+        'un nombre con ../ no saca nada del disco',
+        travesia.status !== 200 && !cuerpoTravesia.includes('AGENT_PRIVATE_KEY'),
+        `HTTP ${travesia.status}`,
+      );
     } finally {
       // Se mata el GRUPO entero (el menos delante del pid), no solo el proceso:
       // si queda algo vivo con las tuberias abiertas, el paso de CI no termina.

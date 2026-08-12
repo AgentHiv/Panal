@@ -25,20 +25,24 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  appendFilesManifest,
   buildQuote,
   createPanalClient,
   MAINNET_ADDRESSES,
   parsePaymentHeader,
   permitNonce,
   readPermitDomain,
+  sanitizeFileName,
   TaskStatus,
   verifyAndSettle,
+  type DeliveredFile,
   type PermitDomain,
 } from '@panal/sdk';
 import { privateKeyToAccount } from 'viem/accounts';
 import { isAddress, keccak256, parseEther, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
 import { handleTask } from './agent.js';
+import type { TaskFile, TaskResult } from './agent.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const DATA_DIR = process.env.DATA_DIR ?? './data';
@@ -113,6 +117,8 @@ async function dominioPermit(): Promise<PermitDomain> {
 
 mkdirSync(DATA_DIR, { recursive: true });
 const resultPath = (taskId: bigint) => join(DATA_DIR, `result-${taskId}.txt`);
+/** Carpeta de los archivos de una tarea. Una por tarea, para no mezclarlas. */
+const filesDir = (taskId: bigint) => join(DATA_DIR, 'files', taskId.toString());
 
 function saveResult(taskId: bigint, text: string): void {
   writeFileSync(resultPath(taskId), text, 'utf8');
@@ -123,6 +129,46 @@ function loadResult(taskId: bigint): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Guarda en disco los archivos de una entrega y devuelve su manifiesto.
+ *
+ * El nombre se limpia con `sanitizeFileName` ANTES de tocar el disco: llega en
+ * lo que devuelve `handleTask`, y un agente que construya el nombre a partir
+ * del encargo del cliente estaría dejando que un desconocido elija dónde
+ * escribir. Un `../../.env` acabaría en la raíz del proyecto.
+ */
+function saveFiles(taskId: bigint, files: TaskFile[]): DeliveredFile[] {
+  const dir = filesDir(taskId);
+  mkdirSync(dir, { recursive: true });
+
+  return files.map((f) => {
+    const name = sanitizeFileName(f.name);
+    const bytes = typeof f.data === 'string' ? new TextEncoder().encode(f.data) : new Uint8Array(f.data);
+    writeFileSync(join(dir, name), bytes);
+    return {
+      name,
+      size: bytes.byteLength,
+      ...(f.mime ? { mime: f.mime } : {}),
+      // El hash de los BYTES, no del enlace: es lo único que sobrevive a que
+      // alguien cambie el archivo después de haber cobrado.
+      hash: keccak256(bytes),
+      path: `/files/${taskId}/${encodeURIComponent(name)}`,
+    };
+  });
+}
+
+/**
+ * Deja lo que devolvió `handleTask` en una forma sola.
+ *
+ * Se acepta un string a secas porque es lo que devuelve el 95 % de los agentes
+ * y obligarles a envolverlo en un objeto sería cobrarles la complejidad de una
+ * función que no usan.
+ */
+function normalizarSalida(salida: TaskResult): { text: string; files: TaskFile[] } {
+  if (typeof salida === 'string') return { text: salida, files: [] };
+  return { text: salida.text, files: salida.files ?? [] };
 }
 
 /** Tareas que se están procesando ahora mismo: evita trabajar dos veces. */
@@ -154,12 +200,18 @@ async function work(taskId: bigint, brief: string): Promise<void> {
   inFlight.add(key);
   try {
     const task = await panal.getTask(taskId);
-    const text = await handleTask(brief, {
+    const salida = await handleTask(brief, {
       taskId,
       client: task.client,
       amount: task.amount,
       deadline: task.deadline,
     });
+
+    // Tu handleTask puede devolver un texto a secas —lo normal— o un texto con
+    // archivos. Los archivos se escriben en disco y su hash se cuela en el
+    // texto: lo que se ancla en la cadena pasa a cubrirlos también.
+    const { text: cuerpo, files } = normalizarSalida(salida);
+    const text = files.length ? appendFilesManifest(cuerpo, saveFiles(taskId, files)) : cuerpo;
 
     // Primero se guarda y luego se entrega: si el orden fuera al revés y el
     // proceso muriera entre medias, el hash estaría anclado on-chain y el texto
@@ -379,12 +431,23 @@ const server = createServer((req, res) => {
       // Ya está cobrado: pase lo que pase a partir de aquí, hay que responder
       // algo. Si el modelo revienta, se dice; callarse sería quedarse el dinero.
       try {
-        const answer = await handleTask(prompt, {
+        const salida = await handleTask(prompt, {
           taskId: null,
           client: leido.payment.payer,
           amount: cobro.amount,
           deadline: 0n,
         });
+        // En una llamada x402 no hay tarea, así que no hay nada que anclar ni
+        // ninguna firma con la que proteger una descarga: los archivos no
+        // tienen dónde agarrarse. Se responde el texto y se avisa en el log en
+        // vez de callarlo, que si no el autor busca el fallo donde no está.
+        const { text: answer, files } = normalizarSalida(salida);
+        if (files.length) {
+          console.error(
+            `[x402] tu handleTask devolvió ${files.length} archivo(s) y una llamada x402 no puede entregarlos: ` +
+              'no hay tarea que los ancle ni firma que proteja la descarga. Solo va el texto.',
+          );
+        }
         res.setHeader('x-payment-tx', cobro.txHash);
         json(res, 200, { answer, paid: { txHash: cobro.txHash, amount: cobro.amount.toString(), asset: X402_TOKEN } });
       } catch (err) {
@@ -492,6 +555,60 @@ const server = createServer((req, res) => {
         return;
       }
       json(res, 200, { resultText: text });
+      return;
+    }
+
+    // ---- El cliente se baja los archivos de su entrega ----------------------
+    //
+    // Se protege igual que el resultado, y con LA MISMA firma: `Panal resultado
+    // #<id>` abre el texto y todos sus archivos. Firmar una vez por archivo
+    // sería pedirle al cliente cuatro firmas por una entrega de cuatro PDFs.
+    const archivo = /^\/files\/(\d+)\/([^/]+)$/.exec(url.pathname);
+    if (archivo && req.method === 'GET') {
+      const taskId = BigInt(archivo[1]!);
+      const address = url.searchParams.get('address');
+      const signature = url.searchParams.get('signature');
+      if (!address || !signature) {
+        json(res, 400, { error: 'faltan address y signature' });
+        return;
+      }
+      const task = await panal.getTask(taskId);
+      if (address.toLowerCase() !== task.client.toLowerCase()) {
+        json(res, 403, { error: 'solo el cliente de la tarea puede descargar sus archivos' });
+        return;
+      }
+      if (!(await signedBy(resultSignMessage(taskId), signature, task.client))) {
+        json(res, 401, { error: 'firma inválida' });
+        return;
+      }
+
+      // El nombre viene de la URL, o sea de fuera: se limpia igual que al
+      // escribirlo. Sin esto, `/files/31/..%2F..%2F.env` leería el .env.
+      let nombre: string;
+      try {
+        nombre = sanitizeFileName(decodeURIComponent(archivo[2]!));
+      } catch {
+        json(res, 400, { error: 'nombre de archivo inválido' });
+        return;
+      }
+
+      let bytes: Buffer;
+      try {
+        bytes = readFileSync(join(filesDir(taskId), nombre));
+      } catch {
+        json(res, 404, { error: 'esa tarea no tiene ese archivo' });
+        return;
+      }
+
+      res.writeHead(200, {
+        'content-type': 'application/octet-stream',
+        'content-length': bytes.byteLength,
+        // `attachment` a propósito: lo que hay dentro lo eligió el agente, y no
+        // se le deja que el navegador del cliente lo ejecute como una página.
+        'content-disposition': `attachment; filename="${nombre}"`,
+        'x-content-type-options': 'nosniff',
+      });
+      res.end(bytes);
       return;
     }
 

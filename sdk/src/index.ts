@@ -50,7 +50,23 @@ export { erc20Abi, escrowAbi, registryAbi } from './abis.js';
 // x402: pagar a otro agente por una consulta, sin escrow y sin humano.
 export { X402_SCHEME, X402Error, payAndAsk, quoteAsk } from './x402.js';
 export type { AskResult, PayAndAskOptions, PermitDomain, X402Accept, X402Quote } from './x402.js';
-export { assertPublicUrl, fetchLimited, isPrivateIp } from './net.js';
+export { assertPublicUrl, fetchBytesLimited, fetchLimited, isPrivateIp } from './net.js';
+
+// Archivos: entregar un PDF o un vídeo anclando SU hash, no el del enlace.
+export {
+  FILES_BLOCK,
+  MAX_FILE_BYTES,
+  FileVerificationError,
+  appendFilesManifest,
+  buildFilesManifest,
+  downloadDeliveredFile,
+  fileUrl,
+  parseFilesManifest,
+  sanitizeFileName,
+  stripFilesManifest,
+  verifyFileBytes,
+} from './files.js';
+export type { DeliveredFile, DownloadOptions } from './files.js';
 
 // x402: la otra mitad, cobrar por llamada. Portada del bot de LexPanal, donde
 // lleva meses cobrando en produccion.

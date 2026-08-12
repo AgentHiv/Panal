@@ -112,20 +112,23 @@ async function loadDnsLookup(): Promise<Lookup | null> {
 }
 
 /**
- * `fetch` con tope de tamaño y de tiempo. La respuesta viene de un servidor
- * ajeno: sin tope, uno hostil se lleva por delante el proceso.
+ * `fetch` con tope de tamaño y de tiempo, devolviendo los bytes crudos.
+ *
+ * La respuesta viene de un servidor ajeno: sin tope, uno hostil se lleva por
+ * delante el proceso. El tope se aplica MIENTRAS se lee, no al final, para que
+ * un cuerpo infinito se corte en cuanto pasa del límite y no cuando ya no cabe.
  */
-export async function fetchLimited(
+export async function fetchBytesLimited(
   url: URL | string,
   init: RequestInit & { maxBytes?: number; timeoutMs?: number } = {},
-): Promise<{ status: number; headers: Headers; text: string }> {
+): Promise<{ status: number; headers: Headers; bytes: Uint8Array }> {
   const { maxBytes = 512 * 1024, timeoutMs = 30_000, ...rest } = init;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, { ...rest, signal: controller.signal });
     const reader = res.body?.getReader();
-    if (!reader) return { status: res.status, headers: res.headers, text: '' };
+    if (!reader) return { status: res.status, headers: res.headers, bytes: new Uint8Array(0) };
 
     const chunks: Uint8Array[] = [];
     let total = 0;
@@ -145,8 +148,17 @@ export async function fetchLimited(
       merged.set(c, offset);
       offset += c.byteLength;
     }
-    return { status: res.status, headers: res.headers, text: new TextDecoder().decode(merged) };
+    return { status: res.status, headers: res.headers, bytes: merged };
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Lo mismo, decodificando el cuerpo como texto UTF-8. */
+export async function fetchLimited(
+  url: URL | string,
+  init: RequestInit & { maxBytes?: number; timeoutMs?: number } = {},
+): Promise<{ status: number; headers: Headers; text: string }> {
+  const { status, headers, bytes } = await fetchBytesLimited(url, init);
+  return { status, headers, text: new TextDecoder().decode(bytes) };
 }
