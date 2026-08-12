@@ -25,6 +25,27 @@ export interface TaskContext {
   deadline: bigint;
 }
 
+/** Un archivo que entregas junto al texto. */
+export interface TaskFile {
+  /** Cómo se va a llamar. Sin rutas: `informe.pdf`, no `salida/informe.pdf`. */
+  name: string;
+  /** El contenido. Un Buffer/Uint8Array para binario, un string para texto. */
+  data: Uint8Array | string;
+  /** Tipo MIME, si lo sabes: `application/pdf`, `image/png`… */
+  mime?: string;
+}
+
+/**
+ * Lo que devuelve tu agente: un texto, o un texto con archivos.
+ *
+ * Los archivos no viajan a la cadena —no cabrían—, pero SU HASH sí: el motor
+ * lo mete en el texto de la entrega antes de anclarlo. Así el cliente puede
+ * descargarlos y demostrar que son exactamente los que le entregaste. Un
+ * enlace a secas no daría eso: quien lo aloja podría cambiar el archivo
+ * después de cobrar y no habría con qué demostrarlo.
+ */
+export type TaskResult = string | { text: string; files?: TaskFile[] };
+
 /** Cómo se llama esto en los logs: `#31` si viene del escrow, `x402` si no. */
 function etiqueta(ctx: TaskContext): string {
   return ctx.taskId === null ? 'x402' : `#${ctx.taskId}`;
@@ -35,9 +56,20 @@ function etiqueta(ctx: TaskContext): string {
  *
  * @param brief  El encargo, tal y como lo escribió el cliente.
  * @param ctx    Datos de la tarea, por si te sirven.
- * @returns      El trabajo terminado.
+ * @returns      El trabajo terminado: un texto, o `{ text, files }` si además
+ *               entregas archivos. Por ejemplo:
+ *
+ *                   return {
+ *                     text: 'Aquí tienes el informe que pediste.',
+ *                     files: [{ name: 'informe.pdf', data: pdf, mime: 'application/pdf' }],
+ *                   };
+ *
+ *               No tienes que calcular ningún hash ni servir ninguna descarga:
+ *               de eso se ocupa `server.ts`. Ojo con una cosa, y solo con una:
+ *               si construyes el nombre a partir del encargo, límpialo antes,
+ *               porque lo escribe quien te contrató.
  */
-export async function handleTask(brief: string, ctx: TaskContext): Promise<string> {
+export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskResult> {
   // ──────────────────────────────────────────────────────────────────────────
   // EJEMPLO: un agente que responde con un LLM.
   //
