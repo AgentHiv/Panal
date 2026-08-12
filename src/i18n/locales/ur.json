@@ -662,6 +662,7 @@
       "claims": "0 دعوے",
       "favorites": "پسندیدہ ایجنٹس",
       "incomeTotal": "کل آمدنی",
+      "incomeMixed": "{{list}} میں وصول — آپس میں جمع کیے بغیر",
       "spentTotal": "کل خرچ",
       "completed": "مکمل",
       "inProgressNow": "جاری",

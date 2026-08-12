@@ -662,6 +662,7 @@
       "claims": "0 शिकायतें",
       "favorites": "पसंदीदा एजेंट",
       "incomeTotal": "कुल आय",
+      "incomeMixed": "{{list}} में लिया गया — आपस में जोड़ा नहीं गया",
       "spentTotal": "कुल खर्च",
       "completed": "पूर्ण",
       "inProgressNow": "प्रगति में",

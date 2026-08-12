@@ -31,12 +31,33 @@ import ArbitrationCard from '@/components/dashboard/ArbitrationCard';
 import ReputationSection from '@/components/dashboard/ReputationSection';
 import { EarningsAreaChart } from '@/components/dashboard/charts';
 import type { EarningsPoint, Perspective } from '@/components/dashboard/data';
-import { formatRatingEs } from '@/components/dashboard/data';
+import { formatMonEs, formatRatingEs } from '@/components/dashboard/data';
 import { TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { avgRating, useMyAgentProfile } from '@/hooks/useMyAgentProfile';
+import { NATIVE_CURRENCY, currencySymbol } from '@/contracts/config';
 
 type RangeKey = '7' | '30' | '90';
+
+/**
+ * Suma los importes de unas tareas SEPARADOS POR MONEDA.
+ *
+ * Sumarlos en una sola cifra es lo que hacía antes el KPI de gasto: 100 $PANAL
+ * más 0,01 MON le salían "100,01 MON". Son monedas distintas y sin tipo de
+ * cambio, así que no hay una cifra honesta que las junte; se enseñan las dos.
+ */
+function sumaPorMoneda(tareas: RealTask[]): { symbol: string; amount: number }[] {
+  const porMoneda = new Map<string, bigint>();
+  for (const tk of tareas) {
+    const s = currencySymbol(tk.currency);
+    porMoneda.set(s, (porMoneda.get(s) ?? 0n) + tk.amountWei);
+  }
+  return [...porMoneda]
+    .map(([symbol, wei]) => ({ symbol, amount: Number(formatEther(wei)) }))
+    .filter((x) => x.amount > 0)
+    // MON primero por ser la nativa; con una sola moneda da igual el orden.
+    .sort((a, b) => (a.symbol === currencySymbol(NATIVE_CURRENCY) ? -1 : b.symbol === currencySymbol(NATIVE_CURRENCY) ? 1 : 0));
+}
 
 const RANGE_LABELS: { key: RangeKey; label: string }[] = [
   { key: '7', label: '7D' },
@@ -151,6 +172,11 @@ export default function Dashboard() {
 
   /* ---------- KPIs reales (sin deltas inventados) ---------- */
   const kpis: KpiCard[] = useMemo(() => {
+    // Moneda REAL del agente (v1 no la tenía: allí todo era MON).
+    const monedaDelAgente = currencySymbol(profile.agent?.currency ?? NATIVE_CURRENCY);
+    const monedasCobradas = sumaPorMoneda(
+      workerTasks.filter((tk) => tk.status === TASK_STATUS.Completed),
+    );
     if (perspective === 'proveedor') {
       return [
         {
@@ -158,7 +184,16 @@ export default function Dashboard() {
           label: t('dash.kpi.incomeTotal'),
           value: Number(formatEther(rep.totalEarned)),
           decimals: 2,
-          suffix: 'MON',
+          // PanalReputation guarda `totalEarned` SIN moneda: recordCompletion
+          // recibe solo (agent, rating, earned). La cifra sola no dice en qué
+          // se cobró, y antes se etiquetaba "MON" a ciegas — un agente que
+          // cobra en $PANAL veía sus ingresos anunciados en la moneda que no
+          // era. La moneda la declara él en su registro, que es donde vive.
+          ...(monedasCobradas.length > 1
+            ? // Cambió de moneda con updatePrice en algún momento: la cifra
+              // mezcla las dos y no hay etiqueta honesta. Se dice cuáles son.
+              { sub: t('dash.kpi.incomeMixed', { list: monedasCobradas.map((m) => m.symbol).join(' + ') }) }
+            : { suffix: monedaDelAgente }),
         },
         {
           id: 'activas',
@@ -180,14 +215,20 @@ export default function Dashboard() {
         },
       ];
     }
-    const spent = clientTasks.reduce((s, tk) => s + tk.amountWei, 0n);
+    // Antes: clientTasks.reduce((s, tk) => s + tk.amountWei) con sufijo "MON"
+    // fijo. Quien contrataba a un agente de $PANAL y a otro de MON veía las dos
+    // cifras sumadas y anunciadas como MON. Ahora van separadas.
+    const gastos = sumaPorMoneda(clientTasks);
+    const [principal, ...resto] = gastos;
     return [
       {
         id: 'gastado',
         label: t('dash.kpi.spentTotal'),
-        value: Number(formatEther(spent)),
+        value: principal?.amount ?? 0,
         decimals: 2,
-        suffix: 'MON',
+        suffix: principal?.symbol ?? currencySymbol(NATIVE_CURRENCY),
+        // La segunda moneda no cabe en el número: va debajo, sin sumarse.
+        sub: resto.length > 0 ? resto.map((r) => `+ ${formatMonEs(r.amount)} ${r.symbol}`).join(' · ') : undefined,
       },
       { id: 'pedidas', label: t('dash.kpi.requested'), value: clientTasks.length },
       {
@@ -201,7 +242,7 @@ export default function Dashboard() {
         value: clientTasks.filter((tk) => tk.status === TASK_STATUS.Completed).length,
       },
     ];
-  }, [perspective, rep, rating, workerTasks, clientTasks, t]);
+  }, [perspective, rep, rating, workerTasks, clientTasks, profile.agent?.currency, t]);
 
   /* ---------- Serie real de gasto (cliente) ---------- */
   const spendSeries = useMemo(

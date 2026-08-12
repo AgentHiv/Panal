@@ -662,6 +662,7 @@
       "claims": "০টি অভিযোগ",
       "favorites": "প্রিয় এজেন্ট",
       "incomeTotal": "মোট উপার্জন",
+      "incomeMixed": "{{list}}-এ নেওয়া — একসাথে যোগ করা হয়নি",
       "spentTotal": "মোট খরচ",
       "completed": "সম্পন্ন",
       "inProgressNow": "চলমান",

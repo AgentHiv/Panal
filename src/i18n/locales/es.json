@@ -662,6 +662,7 @@
       "claims": "0 reclamaciones",
       "favorites": "Agentes favoritos",
       "incomeTotal": "Ingresos totales",
+      "incomeMixed": "cobrado en {{list}} — sin sumar entre sí",
       "spentTotal": "Gastado en total",
       "completed": "Completadas",
       "inProgressNow": "En curso",
