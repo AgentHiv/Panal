@@ -11,6 +11,8 @@
  * anclado en la cadena al entregar. Si luego sirves otra cosa, se nota.
  */
 
+import { textoAPdf } from './pdf.js';
+
 export interface TaskContext {
   /**
    * El id de la tarea en el escrow, o `null` si esto es una llamada x402: ahí
@@ -98,7 +100,7 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
     const problema = revisar(brief, texto);
     if (!problema) {
       console.log(`[agente] ${etiqueta(ctx)} resuelta: ${texto.length} caracteres`);
-      return texto;
+      return conPdfSiLoPidio(brief, texto, ctx);
     }
     console.error(`[agente] ${etiqueta(ctx)} intento ${intento}: ${problema}`);
     // A la segunda se entrega igual. Tu revisión puede equivocarse, y un falso
@@ -106,7 +108,7 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
     // entregar algo imperfecto y que él decida, que dejarlo sin nada.
     if (intento === 2) {
       console.error(`[agente] ${etiqueta(ctx)} se entrega pese a: ${problema}`);
-      return texto;
+      return conPdfSiLoPidio(brief, texto, ctx);
     }
     queja = problema;
   }
@@ -144,7 +146,40 @@ function revisar(brief: string, resultado: string): string | null {
     return 'la respuesta lleva Markdown (**, # o ```) y el cliente lo verá en crudo: devuélvela en texto plano';
   }
 
+  // Si el cliente pide "y mándamelo en PDF", el modelo tiende a contestar que
+  // él no genera archivos — mientras el archivo va adjunto. Prohibírselo en el
+  // prompt reduce el problema pero no lo cierra: llegó a salir "no menciono el
+  // PDF porque no debo". Se comprueba, y se reintenta.
+  //
+  // Se busca la palabra JUNTO A una frase autorreferencial, no la palabra
+  // suelta: alguien puede encargar de verdad trabajo sobre PDFs, y ahí la
+  // palabra es el encargo.
+  const meta = /(no (puedo|incluyo|voy a|debo|menciono|se adjunt|se genera)|el sistema (se encarg|lo adjunt)|i (cannot|can't|am not)|the system will)/i;
+  for (const linea of resultado.split('\n')) {
+    if (/\b(pdf|archivo|fichero|adjunto|attachment|file)\b/i.test(linea) && meta.test(linea)) {
+      return 'has comentado que no generas archivos; el agente los adjunta solo. Reescríbelo sin ninguna referencia a archivos, PDFs ni adjuntos: solo el trabajo';
+    }
+  }
+
   return null;
+}
+
+/**
+ * Adjunta el trabajo en PDF si el encargo lo pedía. El texto se entrega igual.
+ *
+ * Se mira el encargo en vez de mandarlo siempre: a un agente también lo llaman
+ * otros programas, y adjuntarles un archivo que no pidieron es peso muerto.
+ *
+ * Bórralo si tu agente no entrega PDFs, o cámbialo por lo que tú generes: una
+ * imagen, un CSV, un ZIP. El motor calcula el hash de lo que devuelvas aquí y
+ * lo ancla en la cadena, así que el cliente puede demostrar que el archivo que
+ * se baja es exactamente el que le entregaste.
+ */
+function conPdfSiLoPidio(brief: string, texto: string, ctx: TaskContext): TaskResult {
+  if (!/\bpdf\b/i.test(brief)) return texto;
+  const pdf = textoAPdf(`Panal - entrega ${etiqueta(ctx)}`, texto);
+  console.log(`[agente] ${etiqueta(ctx)} PDF de ${pdf.byteLength} bytes adjunto`);
+  return { text: texto, files: [{ name: 'entrega.pdf', data: pdf, mime: 'application/pdf' }] };
 }
 
 async function pedirAlModelo(brief: string, apiKey: string, queja: string | null): Promise<string> {
@@ -171,7 +206,11 @@ async function pedirAlModelo(brief: string, apiKey: string, queja: string | null
             'You are a professional agent on the Panal marketplace. ' +
             'RULE 1: detect the language of the request and reply in that exact same language; never switch. ' +
             'RULE 2: plain text only, never Markdown — no # headings, no ** bold, no backticks. ' +
-            'RULE 3: deliver finished professional work, with no preamble or meta-commentary.',
+            'RULE 3: deliver finished professional work, with no preamble or meta-commentary.\n' +
+            // El agente adjunta el archivo por su cuenta; el modelo no se entera
+            // y, sin esta regla, se disculpa por no poder generarlo.
+            'RULE 4: the client may ask for the result as a PDF or a file. The agent attaches it after ' +
+            'you answer. Never mention files, PDFs or attachments — not even to say you cannot make them.',
         },
         { role: 'user', content: brief },
         // La corrección va como un mensaje más: decirle QUÉ falló acierta mucho
