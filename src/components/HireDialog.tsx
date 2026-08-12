@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ExternalLink, Loader2, Timer, TriangleAlert } from 'lucide-react';
-import { useSignMessage, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useSignMessage, useSwitchChain, useWriteContract } from 'wagmi';
 import { keccak256, parseEventLogs, toBytes } from 'viem';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { saveTaskBrief } from '@/lib/taskBriefs';
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
 import { formatMon } from '@/data/agents';
 import { PROTOCOL_FEE, ESCROW_AUTO_RELEASE_H } from '@/data/protocol';
+import { useTxReceipt } from '@/hooks/useTxReceipt';
 import { useWallet } from '@/hooks/useWallet';
 import { isOnchainAgent } from '@/hooks/usePanalAgents';
 import {
@@ -93,7 +94,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     error: writeError,
     reset: resetWrite,
   } = useWriteContract();
-  const { isLoading: confirming, isSuccess: mined, data: receipt } = useWaitForTransactionReceipt({ hash: realTxHash });
+  const { confirming, mined, reverted, receipt } = useTxReceipt(realTxHash);
 
   /* Paso approve previo (solo agentes en $PANAL): approve(escrowV2, price) */
   const [approvePhase, setApprovePhase] = useState<'idle' | 'approving' | 'approved'>('idle');
@@ -104,9 +105,11 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     error: approveError,
     reset: resetApprove,
   } = useWriteContract();
-  const { isLoading: approveConfirming, isSuccess: approveMined } = useWaitForTransactionReceipt({
-    hash: approveTxHash,
-  });
+  const {
+    confirming: approveConfirming,
+    mined: approveMined,
+    reverted: approveReverted,
+  } = useTxReceipt(approveTxHash);
 
   const hireOnchain = async () => {
     if (!isOnchainAgent(agent)) return;
@@ -584,6 +587,49 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                           type="button"
                           onClick={() => {
                             resetWrite();
+                            setStep(1);
+                          }}
+                          className="flex-1 btn-monad px-5 py-3 text-[0.875rem] font-semibold"
+                        >
+                          {t('hire.step3.retry')}
+                        </button>
+                      </div>
+                    </>
+                  ) : reverted || approveReverted ? (
+                    /* Minada pero revertida: gastó gas y no creó ninguna tarea.
+                       Va ANTES de los dos spinners a propósito — `mined` ya no
+                       se pondrá nunca a true, así que sin esta rama el diálogo
+                       giraba para siempre sobre una contratación que no existe.
+                       El recibo no dice por qué revirtió, así que no se inventa
+                       un motivo: se dice qué pasó y se ofrece reintentar. */
+                    <>
+                      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-terra/10 text-terra">
+                        <TriangleAlert size={28} />
+                      </span>
+                      <div>
+                        <p className="display-m text-ink">{t('hire.step3.txReverted')}</p>
+                        <p className="mt-1 max-w-sm text-[0.875rem] text-ink-2">
+                          {t('hire.step3.txRevertedDesc')}
+                        </p>
+                      </div>
+                      {(realTxHash ?? approveTxHash) && (
+                        <a
+                          href={EXPLORER_TX((realTxHash ?? approveTxHash)!)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 font-mono text-[12px] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+                        >
+                          {t('hire.step3.viewTx')}
+                          <ExternalLink size={13} />
+                        </a>
+                      )}
+                      <div className="flex w-full flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            resetWrite();
+                            resetApprove();
+                            setApprovePhase('idle');
                             setStep(1);
                           }}
                           className="flex-1 btn-monad px-5 py-3 text-[0.875rem] font-semibold"

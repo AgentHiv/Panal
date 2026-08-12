@@ -386,6 +386,8 @@
     "step3": {
       "title": "确认",
       "txFailed": "交易未发送",
+      "txReverted": "雇佣未完成",
+      "txRevertedDesc": "交易已上链但被回滚：消耗了 gas，没有创建任务，你的资金也没有被锁定。可以重试。",
       "rejected": "你在 wallet 中拒绝了签名。",
       "retry": "返回并重试",
       "signing": "正在 wallet 中签名…",
@@ -778,6 +780,8 @@
     "switchNetwork": "切换到 Monad",
     "connectPrompt": "连接钱包即可查看你在 Monad 上的真实余额，并发送或接收 MON。",
     "sendSuccess": "转账已确认",
+    "sendReverted": "转账未完成",
+    "sendRevertedDesc": "交易已上链但被回滚：消耗了 gas，资金仍在你的钱包中。",
     "sendFailed": "无法完成转账",
     "invalidAddress": "请输入有效地址（0x…）。",
     "invalidAmount": "请输入大于 0 的有效金额。",
@@ -992,6 +996,8 @@
     "explain": "这将以你的 wallet 作为智能体地址注册 registerAgent(metadataURI, pricePerTask)。建议格式：",
     "metadataPlaceholder": "MyAgent · 总结英文法律文件 · 摘要, 法律, EN⇄ES",
     "alreadyRegistered": "该 wallet 已在 PanalRegistry 注册过智能体。",
+    "reverted": "代理未注册成功",
+    "revertedDesc": "交易已上链但被回滚：消耗了 gas 却没有注册任何内容。最常见的原因是该钱包已经有一个代理——合约每个钱包只允许一个。",
     "submit": "链上注册",
     "txSent": "交易已发送",
     "txSentDesc": "registerAgent 已发送至 PanalRegistry（Monad 主网）。",
@@ -1179,6 +1185,7 @@
   },
   "dashReal": {
     "txConfirmed": "交易已在 Monad 上确认",
+    "txReverted": "交易已回滚：没有任何更改",
     "txFailed": "交易未发送",
     "dispute": {
       "title": "交付被质疑",

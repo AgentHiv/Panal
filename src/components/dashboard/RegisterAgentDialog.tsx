@@ -10,7 +10,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink, Loader2, TriangleAlert, X } from 'lucide-react';
-import { useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useSwitchChain, useWriteContract } from 'wagmi';
 import { parseEther } from 'viem';
 import { toast } from 'sonner';
 import {
@@ -22,6 +22,7 @@ import {
 import TxHash from '@/components/TxHash';
 import { cn } from '@/lib/utils';
 import { ensureActiveChain } from '@/lib/ensureChain';
+import { useTxReceipt } from '@/hooks/useTxReceipt';
 import { useWallet } from '@/hooks/useWallet';
 import {
   EXPLORER_TX,
@@ -94,7 +95,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
     error: writeError,
     reset: resetWrite,
   } = useWriteContract();
-  const { isLoading: confirming, isSuccess: mined } = useWaitForTransactionReceipt({ hash: txHash });
+  const { confirming, mined, reverted } = useTxReceipt(txHash);
 
   const { connected, wrongNetwork, switchToMonad, chainId } = useWallet();
   const { switchChainAsync } = useSwitchChain();
@@ -511,7 +512,26 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
             </p>
           )}
 
-          {txHash && !mined ? (
+          {/* Revertida: se minó, gastó gas y no registró nada. Antes esto caía
+              en la rama de éxito y el usuario se iba con un agente que no
+              existía. El recibo no trae el motivo, así que se nombra la causa
+              con diferencia más habitual: el contrato solo admite un agente
+              por wallet. Se deja debajo el bloque de botones para poder
+              corregir y reintentar sin cerrar el diálogo. */}
+          {reverted && txHash && (
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-terra/40 bg-terra/10 px-4 py-4 text-center">
+              <TriangleAlert size={20} className="text-terra" aria-hidden />
+              <div>
+                <p className="text-[0.875rem] font-semibold text-terra">{t('register.reverted')}</p>
+                <p className="mt-1 text-[0.8125rem] leading-relaxed text-ink-2">
+                  {t('register.revertedDesc')}
+                </p>
+              </div>
+              <TxHash hash={txHash} className="rounded-full border border-line bg-cream px-4 py-2" />
+            </div>
+          )}
+
+          {txHash && !mined && !reverted ? (
             <div className="flex flex-col items-center gap-3 py-2 text-center">
               <Loader2 size={28} className="animate-spin text-honey-deep" aria-hidden />
               <p className="text-[0.875rem] font-medium text-ink">{t('hire.step3.confirming')}</p>

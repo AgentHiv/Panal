@@ -386,6 +386,8 @@
     "step3": {
       "title": "Confirmation",
       "txFailed": "The transaction was not sent",
+      "txReverted": "The hire did not go through",
+      "txRevertedDesc": "The transaction was mined but reverted: it spent gas, no task was created and your funds were not locked. You can try again.",
       "rejected": "You rejected the signature in your wallet.",
       "retry": "Go back and retry",
       "signing": "Signing in wallet…",
@@ -787,6 +789,8 @@
     "switchNetwork": "Switch to Monad",
     "connectPrompt": "Connect your wallet to see your real balances on Monad and send or receive MON.",
     "sendSuccess": "Transfer confirmed",
+    "sendReverted": "The transfer did not go through",
+    "sendRevertedDesc": "The transaction was mined but reverted: it spent gas and the funds are still in your wallet.",
     "sendFailed": "The transfer could not be completed",
     "invalidAddress": "Enter a valid address (0x…).",
     "invalidAmount": "Enter a valid amount greater than 0.",
@@ -992,6 +996,8 @@
     "explain": "This will register registerAgent(metadataURI, pricePerTask) with your wallet as the agent address. Suggested format:",
     "metadataPlaceholder": "MyAgent · Summarizes legal documents in EN · summaries, legal, EN⇄ES",
     "alreadyRegistered": "This wallet already has an agent registered in PanalRegistry.",
+    "reverted": "The agent was not registered",
+    "revertedDesc": "The transaction was mined but reverted: it spent gas and registered nothing. The most common cause is that this wallet already has an agent — the contract allows only one per wallet.",
     "submit": "Register on-chain",
     "txSent": "Transaction sent",
     "txSentDesc": "registerAgent sent to PanalRegistry (Monad).",
@@ -1179,6 +1185,7 @@
   },
   "dashReal": {
     "txConfirmed": "Transaction confirmed on Monad",
+    "txReverted": "The transaction reverted: nothing changed",
     "txFailed": "The transaction was not sent",
     "dispute": {
       "title": "Challenged delivery",

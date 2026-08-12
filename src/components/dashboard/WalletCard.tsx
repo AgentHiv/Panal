@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import { ArrowDownLeft, ArrowUpRight, Check, Copy, ExternalLink, Loader2, TriangleAlert, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
-import { useBalance, useReadContract, useSendTransaction, useSwitchChain, useWaitForTransactionReceipt } from 'wagmi';
+import { useBalance, useReadContract, useSendTransaction, useSwitchChain } from 'wagmi';
 import { panalEscrowV2Abi, panalTokenAbi } from '@/contracts/abis';
 import { formatEther, formatUnits, isAddress, parseAbiItem, parseEther } from 'viem';
 import {
@@ -27,6 +27,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TxHash from '@/components/TxHash';
+import { useTxReceipt } from '@/hooks/useTxReceipt';
 import { useWallet } from '@/hooks/useWallet';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { EXPLORER_TX, NATIVE_CURRENCY, PANAL_ESCROW_ADDRESS, PANAL_ESCROW_V2_ADDRESS, activeChain, publicClient , IS_MAINNET, PANAL_TOKEN_ADDRESS, V2_ENABLED } from '@/contracts/config';
@@ -294,17 +295,27 @@ export default function WalletCard() {
   /* ---------- Envío real ---------- */
 
   const { sendTransaction, data: txHash, isPending: signing, reset: resetSend } = useSendTransaction();
-  const { isLoading: confirming, isSuccess: mined } = useWaitForTransactionReceipt({ hash: txHash });
+  const { confirming, mined, reverted } = useTxReceipt(txHash);
   const toastedHash = useRef<string | null>(null);
 
   useEffect(() => {
-    if (mined && txHash && toastedHash.current !== txHash) {
+    if (!txHash || toastedHash.current === txHash) return;
+    // Una tx revertida también llega con recibo: decir "enviado" ahí es
+    // decirle al usuario que se movió un dinero que sigue en su wallet.
+    if (reverted) {
+      toastedHash.current = txHash;
+      toast(t('wallet.sendReverted'), {
+        description: <TxHash hash={txHash} className="text-[0.75rem]" />,
+      });
+      return;
+    }
+    if (mined) {
       toastedHash.current = txHash;
       toast(t('wallet.sendSuccess'), {
         description: <TxHash hash={txHash} className="text-[0.75rem]" />,
       });
     }
-  }, [mined, txHash, t]);
+  }, [mined, reverted, txHash, t]);
 
   const destTrim = dest.trim();
   const amountStr = amount.replace(',', '.').trim();
@@ -429,6 +440,29 @@ export default function WalletCard() {
                           {t('common.close')}
                         </button>
                       </div>
+                    </div>
+                  ) : reverted && txHash ? (
+                    /* Revertida: se minó y no movió nada. Sin esta rama caía en
+                       el spinner de abajo y giraba para siempre, porque `mined`
+                       ya nunca se pone a true. */
+                    <div className="flex flex-col items-center gap-4 py-2 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-terra/50 bg-terra/10">
+                        <TriangleAlert size={22} className="text-terra" aria-hidden />
+                      </div>
+                      <div>
+                        <p className="font-display text-ink">{t('wallet.sendReverted')}</p>
+                        <p className="mt-1 text-[0.8125rem] leading-relaxed text-ink-2">
+                          {t('wallet.sendRevertedDesc')}
+                        </p>
+                      </div>
+                      <TxHash hash={txHash} className="rounded-full border border-line bg-cream px-4 py-2" />
+                      <button
+                        type="button"
+                        onClick={() => closeSend(false)}
+                        className="w-full rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
+                      >
+                        {t('common.close')}
+                      </button>
                     </div>
                   ) : txHash ? (
                     <div className="flex flex-col items-center gap-3 py-2 text-center">
