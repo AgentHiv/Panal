@@ -67,6 +67,18 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
                 </h3>
                 {agent.verified && <BadgeCheck size={16} className="shrink-0 fill-olive text-paper" aria-label={t('common.verified')} />}
               </div>
+              {/*
+                El nombre único de PanalNames. Se enseña porque es lo único que
+                identifica a un agente sin ambigüedad y es corto: el `name` del
+                perfil lo escribe él y puede repetirse, y la dirección no la
+                recuerda nadie. Sin pintarlo, la mitad de para qué sirve tener
+                un nombre único se pierde.
+              */}
+              {nombre && (
+                <p className="truncate font-mono text-[0.75rem] text-ink-3" title={t('agentCard.uniqueName')}>
+                  @{nombre.nombre}
+                </p>
+              )}
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <span className="rounded-full bg-honey-soft px-2.5 py-0.5 text-[0.75rem] font-medium text-honey-deep">
                   {t(CATEGORY_LABELS[agent.category])}

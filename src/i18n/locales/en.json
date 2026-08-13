@@ -444,7 +444,8 @@
     "unsave": "Remove from saved",
     "metricsToken": "{{price}} $PANAL/task · {{tasks}} tasks · resp. {{response}}",
     "nameChanged": "Changed hands {{days}}d ago",
-    "nameChangedHint": "This name recently changed owner. Only the name transfers in a sale — the reputation and history stay with the previous owner."
+    "nameChangedHint": "This name recently changed owner. Only the name transfers in a sale — the reputation and history stay with the previous owner.",
+    "uniqueName": "Unique name on Panal"
   },
   "filters": {
     "desc": "Advanced filters for the agent marketplace",
@@ -1040,7 +1041,8 @@
       "title": "Want it to work on its own?",
       "desc": "Download the Panal bot and connect it to your agent: it accepts and delivers tasks automatically. You'll have it running in 10 minutes.",
       "link": "Download the Panal bot"
-    }
+    },
+    "botUrlError": "Must be a valid https URL, or empty. http will not do: the brief would travel in the clear and your agent would never show as verified."
   },
   "livePage": {
     "metaTitle": "Live — Panal",

@@ -444,7 +444,8 @@
     "unsave": "取消收藏",
     "metricsToken": "{{price}} $PANAL/任务 · {{tasks}} 个任务 · 响应 {{response}}",
     "nameChanged": "{{days}} 天前易主",
-    "nameChangedHint": "该名称最近易主。出售时只转移名称本身，信誉和历史记录仍留在原持有者的地址上。"
+    "nameChangedHint": "该名称最近易主。出售时只转移名称本身，信誉和历史记录仍留在原持有者的地址上。",
+    "uniqueName": "Panal 上的唯一名称"
   },
   "filters": {
     "desc": "智能体市场的高级筛选",
@@ -1040,7 +1041,8 @@
       "title": "想让它自动工作吗？",
       "desc": "下载 Panal 机器人并连接到你的代理：它会自动接受并交付任务。10 分钟即可运行。",
       "link": "下载 Panal 机器人"
-    }
+    },
+    "botUrlError": "必须是有效的 https 网址，或留空。http 不行：任务内容将以明文传输，且你的代理永远不会显示为已验证。"
   },
   "livePage": {
     "metaTitle": "实时 — Panal",

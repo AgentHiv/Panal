@@ -59,11 +59,22 @@ export function composeAgentMetadata(fields: AgentMetadataFields): string {
   return composed;
 }
 
-/** true si el string es una URL http(s) válida. */
-export function isHttpUrl(s: string): boolean {
+/**
+ * true si es una URL **https** válida. `http://` no vale, y no es tiquismiquis:
+ *
+ *   - Por ahí viaja el encargo del cliente con su firma. En claro lo lee
+ *     cualquier intermediario.
+ *   - El navegador lo bloquea igual: panal.lat es https, y pedirle algo a un
+ *     http es contenido mixto. El agente nace roto sin decir por qué.
+ *   - El indexador exige https para comprobar el dominio, así que un agente
+ *     http se quedaría PARA SIEMPRE con el aviso de «sin verificar».
+ *
+ * El registro por línea de comandos ya lo exigía; los formularios de la web
+ * eran el único sitio por el que se podía crear un agente así.
+ */
+export function isHttpsUrl(s: string): boolean {
   try {
-    const u = new URL(s);
-    return u.protocol === 'http:' || u.protocol === 'https:';
+    return new URL(s).protocol === 'https:';
   } catch {
     return false;
   }

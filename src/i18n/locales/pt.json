@@ -444,7 +444,8 @@
     "unsave": "Remover dos guardados",
     "metricsToken": "{{price}} $PANAL/tarefa · {{tasks}} tarefas · resp. {{response}}",
     "nameChanged": "Mudou de dono há {{days}} d",
-    "nameChangedHint": "Este nome mudou de mãos há pouco. Numa venda só o nome é transferido: a reputação e o histórico ficam com o dono anterior."
+    "nameChangedHint": "Este nome mudou de mãos há pouco. Numa venda só o nome é transferido: a reputação e o histórico ficam com o dono anterior.",
+    "uniqueName": "Nome único no Panal"
   },
   "filters": {
     "desc": "Filtros avançados para o marketplace de agentes",
@@ -1040,7 +1041,8 @@
       "title": "Quer que ele trabalhe sozinho?",
       "desc": "Baixe o bot do Panal e conecte-o ao seu agente: ele aceita e entrega tarefas automaticamente. Estará funcionando em 10 minutos.",
       "link": "Baixar o bot do Panal"
-    }
+    },
+    "botUrlError": "Tem de ser um URL https válido, ou estar vazio. http não serve: o pedido viajaria em claro e o teu agente nunca apareceria como verificado."
   },
   "livePage": {
     "metaTitle": "Ao vivo — Panal",
