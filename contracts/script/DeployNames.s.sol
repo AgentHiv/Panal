@@ -24,7 +24,8 @@ import "../src/PanalNames.sol";
 ///   REGISTRY     - default 0x89a8...Ac51 (PanalRegistryV2)
 ///   OWNER        - default 0xc384...1Fe0 (PanalMultisig, el `arbitrator` del escrow)
 ///   TREASURY     - default = OWNER
-///   FEE_SHORT / FEE_MEDIUM / FEE_LONG - tarifas en wei de $PANAL
+///   CAP_SHORT / CAP_MEDIUM / CAP_LONG - techo inmutable de cada tarifa
+///   FEE_SHORT / FEE_MEDIUM / FEE_LONG - lo que se cobra al arrancar (default 0)
 ///   FEE_BPS      - comision de reventa en puntos basicos (default 50 = 0,5%)
 ///
 /// DESPUES DE DESPLEGAR:
@@ -42,11 +43,26 @@ contract DeployNames is Script {
     /// llamandole a txCount() y leyendo sus tres owners.
     address constant MULTISIG_DEFAULT = 0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0;
 
-    /// Tarifa de reclamar, una sola vez y por longitud. Los de 1-2 caracteres
-    /// no se reparten: `MIN_LARGO` los rechaza.
-    uint256 constant FEE_SHORT_DEFAULT = 5e18; // 3 caracteres
-    uint256 constant FEE_MEDIUM_DEFAULT = 3e18; // 4 caracteres
-    uint256 constant FEE_LONG_DEFAULT = 1e18; // 5 o mas
+    /// Techo inmutable de cada tarifa. Es diez veces lo que se penso cobrar
+    /// (5 / 3 / 1 $PANAL), que deja margen si el token se mueve y sigue lejos
+    /// de un precio que expulse a nadie.
+    uint256 constant CAP_SHORT_DEFAULT = 50e18; // 3 caracteres
+    uint256 constant CAP_MEDIUM_DEFAULT = 30e18; // 4 caracteres
+    uint256 constant CAP_LONG_DEFAULT = 10e18; // 5 o mas
+
+    /// LO QUE SE COBRA AL ARRANCAR: NADA.
+    ///
+    /// Un agente recien creado tiene MON para gas y cero $PANAL —hoy, de los
+    /// cuatro registrados, solo uno tiene saldo, y porque cobra en token—. Con
+    /// tarifa desde el primer dia, el registro automatico del nombre fallaria
+    /// para casi todos y los nombres se los quedaria quien ya tuviera tokens.
+    ///
+    /// Se sube con `fijarTarifas` cuando el $PANAL circule, con dos firmas del
+    /// multisig y sin pasar del techo de arriba.
+    uint256 constant FEE_SHORT_DEFAULT = 0;
+    uint256 constant FEE_MEDIUM_DEFAULT = 0;
+    uint256 constant FEE_LONG_DEFAULT = 0;
+
     uint256 constant FEE_BPS_DEFAULT = 50; // 0,5% de cada reventa
 
     /// @notice Si una direccion es de verdad un contrato.
@@ -76,9 +92,16 @@ contract DeployNames is Script {
         address owner = vm.envOr("OWNER", MULTISIG_DEFAULT);
         address treasury = vm.envOr("TREASURY", owner);
 
-        uint256 corto = vm.envOr("FEE_SHORT", FEE_SHORT_DEFAULT);
-        uint256 medio = vm.envOr("FEE_MEDIUM", FEE_MEDIUM_DEFAULT);
-        uint256 largo = vm.envOr("FEE_LONG", FEE_LONG_DEFAULT);
+        uint256[3] memory topes = [
+            vm.envOr("CAP_SHORT", CAP_SHORT_DEFAULT),
+            vm.envOr("CAP_MEDIUM", CAP_MEDIUM_DEFAULT),
+            vm.envOr("CAP_LONG", CAP_LONG_DEFAULT)
+        ];
+        uint256[3] memory tarifas = [
+            vm.envOr("FEE_SHORT", FEE_SHORT_DEFAULT),
+            vm.envOr("FEE_MEDIUM", FEE_MEDIUM_DEFAULT),
+            vm.envOr("FEE_LONG", FEE_LONG_DEFAULT)
+        ];
         uint256 bps = vm.envOr("FEE_BPS", FEE_BPS_DEFAULT);
 
         // Que el registry sea un contrato se comprueba AQUI y no despues: con
@@ -91,17 +114,17 @@ contract DeployNames is Script {
         require(_esContrato(owner), "OWNER no es un contrato: revisa que sea el multisig");
 
         vm.startBroadcast(pk);
-        PanalNames names = new PanalNames(token, registry, owner, treasury, corto, medio, largo, bps);
+        PanalNames names = new PanalNames(token, registry, owner, treasury, topes, tarifas, bps);
         vm.stopBroadcast();
 
         console2.log("PanalNames    ", address(names));
         console2.log("  owner       ", names.owner());
         console2.log("  tesoreria   ", names.tesoreria());
-        console2.log("  3 letras    ", names.tarifaCorto());
-        console2.log("  4 letras    ", names.tarifaMedio());
-        console2.log("  5 o mas     ", names.tarifaLargo());
+        console2.log("  tarifa hoy  ", names.tarifaLargo(), "(0 = nombres gratis al arrancar)");
+        console2.log("  techo 3     ", names.TOPE_CORTO());
+        console2.log("  techo 4     ", names.TOPE_MEDIO());
+        console2.log("  techo 5+    ", names.TOPE_LARGO());
         console2.log("  comision bps", names.comisionBps());
-        console2.log("  tope tarifas", names.TOPE_LARGO());
         console2.log("");
         console2.log("Ahora: PANAL_NAMES_ADDRESS=<direccion> en el .env del indexador y reiniciarlo.");
     }

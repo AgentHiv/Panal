@@ -84,6 +84,9 @@ contract PanalNames {
     /// hoy es una apuesta sobre una cotizacion futura. El owner puede mover la
     /// tarifa —incluso a cero— pero nunca por encima de esto, asi que el error
     /// se puede corregir y no se puede convertir en un arma.
+    ///
+    /// Se fija aparte de la tarifa inicial: Panal arranca con los nombres
+    /// gratis, y un tope derivado de multiplicar cero seria cero.
     uint256 public immutable TOPE_CORTO;
     uint256 public immutable TOPE_MEDIO;
     uint256 public immutable TOPE_LARGO;
@@ -136,38 +139,51 @@ contract PanalNames {
     ///        BLOQUE: desplegar y transferir despues deja una ventana en la que
     ///        una sola clave manda, y un `transferOwnership` a una direccion
     ///        equivocada no tiene vuelta atras.
+    /// @param topes Techo inmutable de cada tarifa: [3 letras, 4 letras, 5+].
+    ///        Va SEPARADO de lo que se cobra al arrancar, y no derivado de
+    ///        ello, porque Panal sale con los nombres GRATIS: un agente recien
+    ///        creado tiene MON para gas y cero $PANAL, asi que cobrarle desde
+    ///        el primer dia seria dejar sin nombre a casi todos. Si el tope se
+    ///        calculara multiplicando la tarifa inicial, arrancar en cero lo
+    ///        dejaria en cero y no se podria cobrar NUNCA.
+    /// @param tarifas Lo que se cobra al arrancar. Cero es un valor legitimo.
+    /// @param owner_ Quien podra mover tarifas y comision. Se pasa en vez de
+    ///        usar `msg.sender` para que sea el multisig DESDE EL PRIMER
+    ///        BLOQUE: desplegar y transferir despues deja una ventana en la que
+    ///        una sola clave manda.
     constructor(
         address panal,
         address registry,
         address owner_,
         address tesoreria_,
-        uint256 tarifaCorto_,
-        uint256 tarifaMedio_,
-        uint256 tarifaLargo_,
+        uint256[3] memory topes,
+        uint256[3] memory tarifas,
         uint256 comisionBps_
     ) {
         require(panal != address(0) && registry != address(0), "PanalNames: zero address");
         require(owner_ != address(0), "PanalNames: zero owner");
         require(tesoreria_ != address(0), "PanalNames: zero treasury");
         require(comisionBps_ <= TOPE_COMISION_BPS, "PanalNames: over cap");
+        require(
+            tarifas[0] <= topes[0] && tarifas[1] <= topes[1] && tarifas[2] <= topes[2],
+            "PanalNames: fee over cap"
+        );
 
         PANAL = IERC20(panal);
         REGISTRY = IPanalRegistry(registry);
         tesoreria = tesoreria_;
         owner = owner_;
 
-        tarifaCorto = tarifaCorto_;
-        tarifaMedio = tarifaMedio_;
-        tarifaLargo = tarifaLargo_;
+        TOPE_CORTO = topes[0];
+        TOPE_MEDIO = topes[1];
+        TOPE_LARGO = topes[2];
+
+        tarifaCorto = tarifas[0];
+        tarifaMedio = tarifas[1];
+        tarifaLargo = tarifas[2];
         comisionBps = comisionBps_;
 
-        // El tope es 10x lo inicial: sitio de sobra para seguir a un token que
-        // se mueve, sin que quepa un precio que expulse a todo el mundo.
-        TOPE_CORTO = tarifaCorto_ * 10;
-        TOPE_MEDIO = tarifaMedio_ * 10;
-        TOPE_LARGO = tarifaLargo_ * 10;
-
-        emit TarifasFijadas(tarifaCorto_, tarifaMedio_, tarifaLargo_);
+        emit TarifasFijadas(tarifas[0], tarifas[1], tarifas[2]);
         emit ComisionFijada(comisionBps_);
         emit TesoreriaFijada(tesoreria_);
         emit OwnershipTransferred(address(0), owner_);

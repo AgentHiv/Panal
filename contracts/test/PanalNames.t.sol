@@ -61,7 +61,15 @@ contract PanalNamesTest is Test {
     function setUp() public {
         token = new TokenFalso();
         registry = new RegistryFalso();
-        names = new PanalNames(address(token), address(registry), address(this), tesoreria, CORTO, MEDIO, LARGO, COMISION);
+        names = new PanalNames(
+            address(token),
+            address(registry),
+            address(this),
+            tesoreria,
+            [CORTO * 10, MEDIO * 10, LARGO * 10],
+            [CORTO, MEDIO, LARGO],
+            COMISION
+        );
 
         registry.setActivo(agente, true);
         registry.setActivo(otro, true);
@@ -285,7 +293,13 @@ contract PanalNamesTest is Test {
     function test_el_dueno_es_el_del_constructor_no_el_que_despliega() public {
         address multisig = makeAddr("multisig");
         PanalNames otro_ = new PanalNames(
-            address(token), address(registry), multisig, tesoreria, CORTO, MEDIO, LARGO, COMISION
+            address(token),
+            address(registry),
+            multisig,
+            tesoreria,
+            [CORTO * 10, MEDIO * 10, LARGO * 10],
+            [CORTO, MEDIO, LARGO],
+            COMISION
         );
 
         assertEq(otro_.owner(), multisig, "el owner es el multisig");
@@ -349,9 +363,61 @@ contract PanalNamesTest is Test {
         names.aceptarPropiedad();
     }
 
+    /// Asi sale Panal a produccion: nombres GRATIS, pero con el tope puesto.
+    ///
+    /// Si el tope se derivara de la tarifa inicial —multiplicandola por diez,
+    /// como estaba antes— arrancar en cero lo dejaria en cero y no se podria
+    /// cobrar nunca. Por eso van separados en el constructor.
+    function test_se_arranca_gratis_y_se_puede_cobrar_despues() public {
+        PanalNames gratis = new PanalNames(
+            address(token),
+            address(registry),
+            address(this),
+            tesoreria,
+            [CORTO, MEDIO, LARGO], // el techo
+            [uint256(0), 0, 0], // lo que se cobra hoy
+            COMISION
+        );
+
+        // Un agente recien creado, sin un solo $PANAL, consigue su nombre.
+        address nuevo = makeAddr("recienCreado");
+        registry.setActivo(nuevo, true);
+        vm.prank(nuevo);
+        gratis.reclamar("traductor");
+        assertEq(gratis.resolver("traductor"), nuevo, "gratis y sin saldo");
+
+        // Y el dia de mañana el multisig puede cobrar, hasta el techo.
+        gratis.fijarTarifas(CORTO, MEDIO, LARGO);
+        assertEq(gratis.tarifaLargo(), LARGO);
+
+        vm.expectRevert("PanalNames: over cap");
+        gratis.fijarTarifas(CORTO + 1, MEDIO, LARGO);
+    }
+
+    function test_no_se_despliega_con_tarifa_por_encima_del_tope() public {
+        vm.expectRevert("PanalNames: fee over cap");
+        new PanalNames(
+            address(token),
+            address(registry),
+            address(this),
+            tesoreria,
+            [CORTO, MEDIO, LARGO],
+            [CORTO + 1, MEDIO, LARGO],
+            COMISION
+        );
+    }
+
     function test_no_se_despliega_sin_dueno() public {
         vm.expectRevert("PanalNames: zero owner");
-        new PanalNames(address(token), address(registry), address(0), tesoreria, CORTO, MEDIO, LARGO, COMISION);
+        new PanalNames(
+            address(token),
+            address(registry),
+            address(0),
+            tesoreria,
+            [CORTO * 10, MEDIO * 10, LARGO * 10],
+            [CORTO, MEDIO, LARGO],
+            COMISION
+        );
     }
 
     function test_solo_el_owner_toca_la_comision() public {
