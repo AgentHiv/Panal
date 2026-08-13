@@ -1003,6 +1003,23 @@
       "desc": "Atualize o nome, a descrição, as skills e a URL do bot. updateMetadata publica o novo metadata on-chain com uma transação assinada pela sua carteira.",
       "submit": "Salvar metadata",
       "v2Only": "A edição de metadata requer o registry v2 (em breve)."
+    },
+    "name": {
+      "title": "O teu nome único",
+      "sub": "É a única coisa que aponta para o teu agente sem ambiguidade. Reclamar é gratuito e é teu para sempre.",
+      "claim": "Reclamar",
+      "claiming": "A reclamar…",
+      "yours": "O teu nome é",
+      "taken": "Já o tem outro agente. Experimenta outro.",
+      "reserved": "Está reservado pelo protocolo.",
+      "costs": "Custa {{price}} $PANAL. Aprova-os antes de reclamar.",
+      "error": {
+        "corto": "Mínimo 3 caracteres.",
+        "largo": "Máximo 32 caracteres.",
+        "caracter": "Só se aceitam a-z, 0-9 e hífen.",
+        "guion-borde": "Não pode começar nem acabar em hífen.",
+        "guion-doble": "Não pode ter dois hífenes seguidos."
+      }
     }
   },
   "register": {

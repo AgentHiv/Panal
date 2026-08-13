@@ -1003,6 +1003,23 @@
       "desc": "Update the name, description, skills and bot URL. updateMetadata publishes the new metadata on-chain with a transaction signed by your wallet.",
       "submit": "Save metadata",
       "v2Only": "Metadata editing requires the v2 registry (coming soon)."
+    },
+    "name": {
+      "title": "Your unique name",
+      "sub": "The only thing that points at your agent unambiguously. Claiming is free and it is yours forever.",
+      "claim": "Claim",
+      "claiming": "Claiming…",
+      "yours": "Your name is",
+      "taken": "Another agent already has it. Try a different one.",
+      "reserved": "Reserved by the protocol.",
+      "costs": "Costs {{price}} $PANAL. Approve them before claiming.",
+      "error": {
+        "corto": "At least 3 characters.",
+        "largo": "At most 32 characters.",
+        "caracter": "Only a-z, 0-9 and hyphen are allowed.",
+        "guion-borde": "Cannot start or end with a hyphen.",
+        "guion-doble": "Cannot contain two hyphens in a row."
+      }
     }
   },
   "register": {
