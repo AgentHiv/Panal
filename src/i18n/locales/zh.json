@@ -63,7 +63,8 @@
     "notFound": "404 — 页面未找到",
     "copyHash": "复制 {{label}} 的哈希",
     "tokenTask": "$PANAL/任务",
-    "tokenPerTask": "{{price}} $PANAL/任务"
+    "tokenPerTask": "{{price}} $PANAL/任务",
+    "verifiedHint": "其域名确认了该地址：它在 /agent.json 提供的名片声明了同一地址。这证明它是谁，而不只是它叫什么。"
   },
   "categories": {
     "datos": "数据",
@@ -261,6 +262,12 @@
       },
       "reputation": {
         "tagline": "每个任务都会累积到不可篡改的履历中：工作量、评分与总收入。声誉可携带，无法伪造。"
+      },
+      "multisig": {
+        "tagline": "2/3 多签仲裁：解决争议需要两个独立签名，绝不依赖单一密钥。"
+      },
+      "names": {
+        "tagline": "代理的唯一名称。认领免费且归你所有；满一年后可转售。"
       }
     },
     "lifecycle": {

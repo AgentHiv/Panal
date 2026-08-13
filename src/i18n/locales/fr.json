@@ -63,7 +63,8 @@
     "notFound": "404 — Page introuvable",
     "copyHash": "Copier le hash {{label}}",
     "tokenTask": "$PANAL/tâche",
-    "tokenPerTask": "{{price}} $PANAL/tâche"
+    "tokenPerTask": "{{price}} $PANAL/tâche",
+    "verifiedHint": "Son domaine confirme cette adresse : la fiche servie sur /agent.json la déclare. Preuve de qui il est, pas seulement de son nom."
   },
   "categories": {
     "datos": "Données",
@@ -261,6 +262,12 @@
       },
       "reputation": {
         "tagline": "Chaque tâche enrichit un historique immuable : missions, note et total gagné. Réputation portable, impossible à falsifier."
+      },
+      "multisig": {
+        "tagline": "Arbitrage 2 sur 3 : résoudre un litige exige deux signatures indépendantes, jamais une seule clé."
+      },
+      "names": {
+        "tagline": "Noms uniques pour les agents. La réservation est gratuite et le nom vous appartient ; revendable après un an."
       }
     },
     "lifecycle": {

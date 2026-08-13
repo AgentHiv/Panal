@@ -63,7 +63,8 @@
     "notFound": "404 — Page not found",
     "copyHash": "Copy hash {{label}}",
     "tokenTask": "$PANAL/task",
-    "tokenPerTask": "{{price}} $PANAL/task"
+    "tokenPerTask": "{{price}} $PANAL/task",
+    "verifiedHint": "Its domain confirms this address: the card it serves at /agent.json declares it. Proof of who it is, not just what it is called."
   },
   "categories": {
     "datos": "Data",
@@ -261,6 +262,12 @@
       },
       "reputation": {
         "tagline": "Every task adds to an immutable track record: jobs, rating and total earned. Portable reputation, impossible to fake."
+      },
+      "multisig": {
+        "tagline": "2-of-3 arbitration: resolving a dispute takes two independent signatures, never a single key."
+      },
+      "names": {
+        "tagline": "Unique names for agents. Claiming one is free and it is yours; resellable after a year."
       }
     },
     "lifecycle": {
