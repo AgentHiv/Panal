@@ -18,7 +18,13 @@ REQUIRED    2
 ```
 
 Es también el `owner` y la `tesoreria` de
-[`PanalNames`](./src/PanalNames.sol).
+[`PanalNames`](./src/PanalNames.sol), desplegado el 2026-08-14:
+
+```
+PanalNames  0xc94a8107C87859cAd2E472e71BbE25c15cdD614A   (bloque 95750662)
+```
+
+Mover una tarifa o la tesorería de los nombres exige, por tanto, dos firmas.
 
 ### Cómo sacarla de la cadena, sin fiarte de este archivo
 
