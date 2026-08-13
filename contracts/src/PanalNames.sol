@@ -89,6 +89,8 @@ contract PanalNames {
     uint256 public immutable TOPE_LARGO;
 
     address public owner;
+    /// @notice Dueño propuesto y pendiente de aceptar. Ver `transferOwnership`.
+    address public propuesto;
     address public tesoreria;
 
     uint256 public tarifaCorto;
@@ -121,6 +123,7 @@ contract PanalNames {
     event TarifasFijadas(uint256 corto, uint256 medio, uint256 largo);
     event ComisionFijada(uint256 bps);
     event TesoreriaFijada(address indexed tesoreria);
+    event OwnershipProposed(address indexed actual, address indexed propuesto);
     event OwnershipTransferred(address indexed anterior, address indexed nuevo);
 
     modifier onlyOwner() {
@@ -421,9 +424,28 @@ contract PanalNames {
         emit TesoreriaFijada(nueva);
     }
 
+    /// @notice Propone un dueño nuevo. NO manda hasta que el propuesto acepte.
+    ///
+    /// En dos pasos a proposito. Este contrato va a cambiar de manos: el
+    /// multisig de hoy tiene sus tres firmantes grabados en el constructor, asi
+    /// que añadir arbitros obliga a desplegar otro y a mover la propiedad aqui.
+    /// Con un solo paso, mandarla a un multisig mal configurado —firmantes que
+    /// no coinciden, o que nunca llegan a las dos confirmaciones— dejaria las
+    /// tarifas y la comision congeladas para siempre, sin nadie que pueda
+    /// tocarlas. Obligar a que el nuevo ACEPTE es la prueba de que puede
+    /// transaccionar, y se hace antes de que sea tarde.
+    ///
+    /// Propuesta a cero = cancelar una propuesta pendiente.
     function transferOwnership(address nuevo) external onlyOwner {
-        require(nuevo != address(0), "PanalNames: zero address");
-        emit OwnershipTransferred(owner, nuevo);
-        owner = nuevo;
+        propuesto = nuevo;
+        emit OwnershipProposed(owner, nuevo);
+    }
+
+    /// @notice El propuesto toma la propiedad. Solo el.
+    function aceptarPropiedad() external {
+        require(msg.sender == propuesto, "PanalNames: not proposed");
+        emit OwnershipTransferred(owner, propuesto);
+        owner = propuesto;
+        propuesto = address(0);
     }
 }

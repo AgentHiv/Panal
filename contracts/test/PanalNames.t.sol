@@ -299,6 +299,56 @@ contract PanalNamesTest is Test {
         assertEq(otro_.tarifaLargo(), 0);
     }
 
+    // ── el traspaso de propiedad, que va a pasar de verdad ─────────────────
+
+    /// Se migrará: el multisig de hoy tiene los firmantes grabados en el
+    /// constructor, así que añadir árbitros obliga a desplegar otro.
+    function test_el_traspaso_necesita_que_el_nuevo_acepte() public {
+        address multisigNuevo = makeAddr("multisigNuevo");
+
+        names.transferOwnership(multisigNuevo);
+        assertEq(names.owner(), address(this), "todavia no manda el nuevo");
+        assertEq(names.propuesto(), multisigNuevo);
+
+        // Y el viejo sigue mandando mientras tanto.
+        names.fijarComision(10);
+
+        vm.prank(multisigNuevo);
+        names.aceptarPropiedad();
+
+        assertEq(names.owner(), multisigNuevo, "ahora si");
+        assertEq(names.propuesto(), address(0), "la propuesta se consume");
+
+        vm.expectRevert("PanalNames: not owner");
+        names.fijarComision(20);
+    }
+
+    function test_solo_acepta_el_propuesto() public {
+        names.transferOwnership(otro);
+
+        vm.prank(agente);
+        vm.expectRevert("PanalNames: not proposed");
+        names.aceptarPropiedad();
+    }
+
+    /// Lo que salva el traspaso a un multisig mal configurado: si el destino no
+    /// puede transaccionar, nunca acepta y la propiedad no se pierde.
+    function test_si_el_nuevo_no_acepta_el_viejo_sigue_mandando() public {
+        names.transferOwnership(makeAddr("multisigRoto"));
+
+        names.fijarTarifas(1, 1, 1);
+        assertEq(names.tarifaLargo(), 1, "el dueno de siempre sigue pudiendo");
+    }
+
+    function test_una_propuesta_se_puede_cancelar() public {
+        names.transferOwnership(otro);
+        names.transferOwnership(address(0));
+
+        vm.prank(otro);
+        vm.expectRevert("PanalNames: not proposed");
+        names.aceptarPropiedad();
+    }
+
     function test_no_se_despliega_sin_dueno() public {
         vm.expectRevert("PanalNames: zero owner");
         new PanalNames(address(token), address(registry), address(0), tesoreria, CORTO, MEDIO, LARGO, COMISION);
