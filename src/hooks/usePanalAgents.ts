@@ -1,10 +1,21 @@
 /**
- * Panal — Lectura on-chain de agentes registrados (sin wallet).
- * Usa el publicClient de viem contra PanalRegistry + PanalReputation
- * (Monad mainnet) y enriquece cada agente con las stats REALES del
- * indexador (useIndexAgents: tareas completadas, rating medio, nº de
- * ratings, volumen cobrado en MON). Si el indexador no responde, los
- * campos derivados quedan con los valores on-chain/cero (fallback honesto).
+ * Panal — Los agentes del mercado.
+ *
+ * Salen del CATÁLOGO del indexador: una petición HTTP, con nombre, skills,
+ * precio y estadísticas ya dentro.
+ *
+ * Antes se leían del registro con `getAgents(0, 50)` y dos llamadas RPC por
+ * agente. Eso tenía dos problemas y ninguno avisaba: el agente 51 en adelante
+ * NO EXISTÍA para el mercado —ni en el listado, ni en el buscador, ni en las
+ * categorías, ni en el podio—, y cada carga de página costaba 100 llamadas
+ * contra un RPC público que corta cerca de 50 concurrentes.
+ *
+ * Esa lectura sigue aquí como RESPALDO, y salta si el indexador no responde o
+ * va más de diez minutos por detrás de la cadena. Es peor —vuelve a ver solo
+ * los 50 primeros— pero un mercado pobre es mejor que un mercado vacío.
+ *
+ * El volumen cobrado por moneda lo sigue poniendo `useIndexAgents`, que es una
+ * consulta compartida con el resto de la web.
  */
 
 import { useMemo } from 'react';
@@ -23,7 +34,7 @@ import {
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
 import type { Agent, AgentCategory } from '@/data/agents';
-import { useIndexAgents, type AgentStats } from '@/lib/indexer';
+import { fetchCatalogo, useIndexAgents, type AgentStats, type CatalogAgent } from '@/lib/indexer';
 
 /** Agent del mercado enriquecido con datos reales on-chain + indexador. */
 export interface OnchainAgent extends Agent {
@@ -119,6 +130,69 @@ interface RawAgentTuple {
   registeredAt: bigint;
   /** solo registry v2 (ausente en v1) */
   currency?: Address;
+}
+
+/**
+ * El catálogo del indexador, ya con la forma que consume el mercado.
+ *
+ * Es el camino normal. La lectura directa del registro (`fetchOnchainAgents`,
+ * aquí abajo) pasa a ser el respaldo: funciona, pero solo ve los 50 primeros
+ * agentes y cuesta 100 llamadas RPC por carga.
+ */
+function delCatalogo(fichas: CatalogAgent[]): OnchainAgent[] {
+  return fichas
+    .filter((f) => f.active)
+    .map((f) => {
+      const addr = f.address as Address;
+      const priceWei = BigInt(f.pricePerTask);
+      // El rating sale del indexador y no de getScore: es el mismo dato —los
+      // dos salen de PanalReputation— y así no hay que preguntar por cada uno.
+      const rating = f.stats?.avgRating ?? 0;
+      return {
+        id: `onchain-${f.address}`,
+        name: f.name || `Agente ${short(addr)}`,
+        category: categoriaDe(f.skills, f.description),
+        type: 'ia',
+        tagline: f.description || 'Agente registrado on-chain en PanalRegistry.',
+        description: f.description || 'Agente registrado directamente en PanalRegistry (Monad mainnet).',
+        pricePerTask: Number(formatEther(priceWei)),
+        rating: rating > 0 ? Math.min(5, rating) : 0,
+        reviews: f.stats?.ratingCount ?? 0,
+        tasksCompleted: f.stats?.completed ?? 0,
+        avgResponse: '—',
+        avgResponseSec: Number.MAX_SAFE_INTEGER,
+        successRate: 100,
+        status: 'en-linea',
+        verified: false,
+        acceptsSubcontracting: false,
+        wallet: addr,
+        walletShort: short(addr),
+        skills: f.skills,
+        totalEarned: 0,
+        memberSince: new Date(f.registeredAt * 1000).toLocaleDateString('es-ES', {
+          month: 'short',
+          year: 'numeric',
+        }),
+        volume24h: 0,
+        trend7d: [0, 0, 0, 0, 0, 0, 0],
+        onchain: true,
+        workerAddress: addr,
+        priceWei,
+        currency: (f.currency || NATIVE_CURRENCY) as Address,
+        indexStats: f.stats,
+      } satisfies OnchainAgent;
+    });
+}
+
+async function fetchAgents(): Promise<OnchainAgent[]> {
+  // El catálogo primero: una petición HTTP en vez de 100 llamadas RPC, y sin
+  // el techo de 50 agentes. Si el indexador no responde o va atrasado, se lee
+  // el registro como siempre: peor —solo los 50 primeros— pero nunca un
+  // mercado vacío.
+  const cabeza = await publicClient.getBlockNumber().catch(() => undefined);
+  const fichas = await fetchCatalogo(cabeza);
+  if (fichas !== null) return delCatalogo(fichas);
+  return fetchOnchainAgents();
 }
 
 async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
@@ -217,7 +291,7 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
 export function usePanalAgents() {
   const query = useQuery({
     queryKey: ['panal-agents', V2_ENABLED],
-    queryFn: fetchOnchainAgents,
+    queryFn: fetchAgents,
     staleTime: 30_000,
     retry: 3,
     retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 10_000),

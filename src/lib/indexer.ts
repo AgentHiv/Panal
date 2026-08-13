@@ -129,6 +129,70 @@ export async function fetchTaskIdsOf(address: string, cabezaCadena?: bigint): Pr
   return ids;
 }
 
+/** La ficha de un agente en el catálogo del indexador. */
+export interface CatalogAgent {
+  address: string;
+  owner: string;
+  name: string;
+  description: string;
+  skills: string[];
+  botUrl: string | null;
+  /** En unidades mínimas. String porque no cabe en un number. */
+  pricePerTask: string;
+  currency: string;
+  coin: string;
+  active: boolean;
+  registeredAt: number;
+  stats: AgentStats | null;
+}
+
+/**
+ * El catálogo completo, paginando hasta un tope.
+ *
+ * Sustituye al `getAgents(0, 50)` de la cadena, que tenía dos problemas: el
+ * agente 51 en adelante NO EXISTÍA para el mercado —ni en el listado, ni en el
+ * buscador, ni en las categorías, y sin ningún aviso—, y leerlos costaba dos
+ * llamadas RPC por agente, o sea 100 en cada carga de página.
+ *
+ * Se traen TODOS y se sigue filtrando en el navegador, que es lo que hace que
+ * el mercado responda al instante al escribir. Con mil agentes son cinco
+ * peticiones y unos 400 KB; el día que sean diez mil, el filtrado tendrá que
+ * mudarse al indexador y esta función pasará a pedir una página.
+ *
+ * Devuelve null —no una lista vacía— si el indexador no responde o va
+ * atrasado: quien llama tiene que poder distinguir «no hay agentes» de «no lo
+ * sé», porque en el segundo caso toca leer la cadena.
+ */
+export async function fetchCatalogo(cabezaCadena?: bigint, tope = 1000): Promise<CatalogAgent[] | null> {
+  const LIMITE = 200;
+  const out: CatalogAgent[] = [];
+
+  for (let page = 0; out.length < tope; page++) {
+    const res = await fetchJson<{
+      agents?: CatalogAgent[];
+      total?: unknown;
+      hasMore?: boolean;
+      lastBlock?: number;
+    }>(`/index/agents?page=${page}&limit=${LIMITE}`);
+
+    if (!res || !Array.isArray(res.agents)) return null;
+    // `total` solo lo devuelve la respuesta del catálogo: un indexador viejo
+    // ignora `page` y `limit` y responde su lista de stats de siempre, que no
+    // trae ni nombre ni skills. Sin esta marca, el mercado se llenaría de
+    // agentes sin nombre.
+    if (typeof res.total !== 'number') return null;
+
+    // Solo en la primera página: si va atrasado, no vale ninguna.
+    if (page === 0 && cabezaCadena !== undefined && typeof res.lastBlock === 'number') {
+      if (cabezaCadena - BigInt(res.lastBlock) > 2000n) return null;
+    }
+
+    out.push(...res.agents);
+    if (!res.hasMore || res.agents.length === 0) break;
+  }
+  return out;
+}
+
 /* ---------- Hooks react-query ---------- */
 
 /** Stats globales del índice (refresh 30 s). null si el indexador no responde. */
