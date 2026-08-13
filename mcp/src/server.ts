@@ -111,12 +111,48 @@ function symbolOf(currency: Address): string {
   return currency.toLowerCase() === NATIVE_CURRENCY.toLowerCase() ? 'MON' : '$PANAL';
 }
 
+/** Días desde un timestamp en segundos. */
+function daysSince(ts: number): number {
+  return Math.max(0, Math.floor(Date.now() / 1000 - ts) / 86_400);
+}
+
+/**
+ * Lo que hay que saber de un agente ANTES de contratarlo, no después.
+ *
+ * Un nombre no prueba nada: cualquiera puede registrarse como "Lint" con la
+ * misma descripción, y cuesta una transacción. Lo que sí es de alguien es su
+ * dominio, así que se dice si lo confirma. Y si su nombre acaba de cambiar de
+ * manos, también: en una venta lo único que viaja es el nombre, la reputación
+ * se queda con el vendedor.
+ *
+ * Va en la ficha y no en un campo aparte porque quien lee esto elige por su
+ * cuenta, y lo que no está delante no se mira.
+ */
+function trustLine(agent: Agent): string | null {
+  const partes: string[] = [];
+
+  if (agent.verificado === true) partes.push('domain verified (its endpoint declares this same address)');
+  else partes.push('DOMAIN NOT VERIFIED — the name alone proves nothing about who this is');
+
+  if (agent.nombre && agent.nombre.origen !== 'reclamado') {
+    const dias = Math.round(daysSince(agent.nombre.desdeTs));
+    if (dias <= 30) {
+      partes.push(
+        `its name "${agent.nombre.nombre}" changed hands ${dias}d ago — reputation stays with the previous owner`,
+      );
+    }
+  }
+
+  return `  Trust: ${partes.join('; ')}`;
+}
+
 function renderAgent(agent: Agent): string {
   const price = `${formatEther(agent.pricePerTask)} ${symbolOf(agent.currency)}`;
   const skills = agent.metadata.skills.length ? agent.metadata.skills.join(', ') : '(no skills declared)';
   return [
     `${agent.metadata.name || '(no name)'} — ${agent.address}`,
     `  Status: ${agent.active ? 'active' : 'DELISTED (does not take jobs)'}`,
+    trustLine(agent),
     // "Per task" y no "Price" a secas: hay dos precios (tarea por escrow y
     // consulta por x402) y llamar "el precio" a uno de ellos fue justo lo que
     // hizo invisible al otro.

@@ -85,6 +85,24 @@ export interface HireResult {
   taskHash: Hex;
 }
 
+/**
+ * ¿Esto que manda el indexador es un nombre de PanalNames?
+ *
+ * Se valida como todo lo que llega de un servicio: si viene a medias se
+ * descarta, porque un `origen` inventado haria que la web avisara de una venta
+ * que no existio, o peor, que callara una que si.
+ */
+function esNombre(v: unknown): v is { nombre: string; desdeTs: number; origen: 'reclamado' | 'comprado' | 'recibido' } {
+  if (v === null || typeof v !== 'object') return false;
+  const n = v as Record<string, unknown>;
+  return (
+    typeof n.nombre === 'string' &&
+    n.nombre.length > 0 &&
+    typeof n.desdeTs === 'number' &&
+    (n.origen === 'reclamado' || n.origen === 'comprado' || n.origen === 'recibido')
+  );
+}
+
 export class PanalClient {
   readonly network: PanalNetwork;
   readonly addresses: PanalAddresses;
@@ -222,6 +240,11 @@ export class PanalClient {
           registeredAt,
           metadataURI: formatAgentMetadata(metadata),
           metadata,
+          // Solo `true` cuenta como verificado. Un indexador viejo no manda el
+          // campo, y tratar «no lo sé» como «sí» es justo al revés de lo que
+          // hay que hacer con una insignia de confianza.
+          verificado: raw.verificado === true,
+          ...(esNombre(raw.nombre) ? { nombre: raw.nombre } : {}),
         });
       }
       return out;

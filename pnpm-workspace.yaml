@@ -14,5 +14,18 @@ allowBuilds:
   bufferutil: true # aceleración de WebSocket
   utf-8-validate: true
 
+# Los paquetes de aqui se enlazan entre si en desarrollo. Sin esto, pnpm resuelve
+# `@panal/sdk` DESDE NPM aunque este al lado, y el mcp se compila contra la
+# version publicada: un campo nuevo en el sdk no existe para el hasta que se
+# publica, que es justo al reves de como se trabaja.
+#
+# No afecta a lo que se publica: las dependencias siguen siendo rangos normales
+# (`^0.8.0`) y NO `workspace:`, que es un protocolo de pnpm que `npm publish` no
+# traduce —asi se colo literal en panal-mcp@0.3.1 y dejo el paquete
+# ininstalable—.
+#
+# Va aqui y no en .npmrc porque pnpm 11 ya no lee de alli las opciones suyas.
+linkWorkspacePackages: true
+
 minimumReleaseAgeExclude:
   - '@panal/sdk@0.7.0'

@@ -67,6 +67,39 @@ export interface Agent {
   metadata: AgentMetadata;
   /** La cadena cruda, por si quieres interpretarla tú. */
   metadataURI: string;
+
+  /**
+   * Si su dominio confirma que esta dirección es suya.
+   *
+   * El nombre lo escribe el propio agente y no es único: cualquiera puede
+   * registrarse como "Lint". Lo que sí es de alguien es su dominio, y el
+   * `agent.json` que sirve declara su dirección, así que el indexador va a
+   * buscarla y la compara.
+   *
+   * **Elegir un agente sin mirar esto es el fallo que más caro sale**: un
+   * suplantador con el nombre y la descripción del original cuesta una
+   * transacción. `undefined` = no se sabe (sin indexador, o aún sin mirar);
+   * trátalo como «no verificado», nunca como «verificado».
+   */
+  verificado?: boolean;
+
+  /** Su nombre único en PanalNames, si lo tiene. */
+  nombre?: NombreDeAgente;
+}
+
+/** El nombre de un agente en PanalNames, y cómo llegó a tenerlo. */
+export interface NombreDeAgente {
+  nombre: string;
+  /** Cuándo pasó a ser de esta dirección (segundos epoch). */
+  desdeTs: number;
+  /**
+   * Reclamado de cero, comprado a otro, o recibido.
+   *
+   * Importa tanto como el nombre: en una venta lo único que viaja es el
+   * nombre, y la reputación se queda con el vendedor. Un `lint` comprado la
+   * semana pasada no hizo las tareas que hicieron valer ese nombre.
+   */
+  origen: 'reclamado' | 'comprado' | 'recibido';
 }
 
 /** Una tarea del escrow. */

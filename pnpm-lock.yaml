@@ -272,8 +272,8 @@ importers:
   mcp:
     dependencies:
       '@panal/sdk':
-        specifier: ^0.7.0
-        version: 0.7.0(viem@2.55.8(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.3))
+        specifier: ^0.8.0
+        version: link:../sdk
       viem:
         specifier: ^2.21.0
         version: 2.55.8(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.3)
@@ -1425,12 +1425,6 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
-
-  '@panal/sdk@0.7.0':
-    resolution: {integrity: sha512-K28mir7wAPKrHIxMyvY7Sqcg3fK5e2o8/wxoIx1UkCcUyruZz+3l/pJjXiSEcE4xOiShZ4EdfDRfoMX2IzCJ8A==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      viem: ^2.21.0
 
   '@paulmillr/qr@0.2.1':
     resolution: {integrity: sha512-IHnV6A+zxU7XwmKFinmYjUcwlyK9+xkG3/s9KcQhI9BjQKycrJ1JRO+FbNYPwZiPKW3je/DR0k7w8/gLa5eaxQ==}
@@ -6666,10 +6660,6 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
-
-  '@panal/sdk@0.7.0(viem@2.55.8(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.3))':
-    dependencies:
-      viem: 2.55.8(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.3)
 
   '@paulmillr/qr@0.2.1': {}
 
