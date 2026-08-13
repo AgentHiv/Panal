@@ -27,12 +27,26 @@ export const monadTestnet = defineChain({
   testnet: true,
 });
 
+/**
+ * El RPC, configurable sin recompilar.
+ *
+ * Estaba escrito en el codigo, y eso significaba que el dia que el publico se
+ * degradara no habria forma de reaccionar sin un despliegue. Con miles de
+ * agentes ese dia llega: medido, el publico sirve rafagas de ~50 llamadas
+ * concurrentes y a las 150 rechaza mas de la mitad con 429 — y una sola carga
+ * del mercado ya gasta ~100.
+ *
+ * Se pone VITE_RPC_URL en el entorno del despliegue y se recarga. Sin ella,
+ * el publico, que es lo que hay hoy.
+ */
+const RPC_MAINNET = import.meta.env.VITE_RPC_URL?.trim() || 'https://rpc.monad.xyz';
+
 export const monadMainnet = defineChain({
   id: 143,
   name: 'Monad',
   nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
   rpcUrls: {
-    default: { http: ['https://rpc.monad.xyz'] },
+    default: { http: [RPC_MAINNET] },
   },
   blockExplorers: {
     default: { name: 'MonadVision', url: 'https://monadvision.com' },

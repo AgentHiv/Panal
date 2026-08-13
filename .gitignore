@@ -2,5 +2,9 @@ node_modules
 dist
 .DS_Store
 dist-mainnet/
+# Los .env locales nunca. El .env.example SI se versiona: es la
+# documentacion de que variables existen.
+.env
+.env.local
 bot/.env
 bot/data/
