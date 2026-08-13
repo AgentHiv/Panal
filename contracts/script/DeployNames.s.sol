@@ -85,6 +85,68 @@ contract DeployNames is Script {
         return true;
     }
 
+    /**
+     * Los nombres que nadie puede reclamar.
+     *
+     * La marca, y las tres palabras con las que se suplanta a un proyecto
+     * —soporte, oficial, ayuda— en los diez idiomas en los que se publica
+     * Panal. Un agente llamado `soporte` que pida la clave privada a un
+     * cliente es el fraude mas barato que existe aqui, y una vez reclamado el
+     * nombre no hay forma de recuperarlo.
+     *
+     * EN SEIS DE LOS DIEZ IDIOMAS NO HAY PALABRA QUE RESERVAR. El contrato
+     * solo acepta `a-z0-9-`, asi que 支持, поддержка o دعم no se pueden
+     * escribir como nombre y nadie puede reclamarlas. Lo que si es reclamable
+     * es su transliteracion, y es lo que va aqui: `zhichi`, `podderzhka`,
+     * `daam`.
+     *
+     * Reservar de mas tiene un coste real: un agente legitimo que se llame asi
+     * se queda sin su nombre. Por eso la lista es corta y no incluye variantes
+     * dudosas.
+     */
+    function _reservados() private pure returns (string[] memory) {
+        string[] memory r = new string[](27);
+        uint256 i;
+
+        // La marca.
+        r[i++] = "panal";
+        r[i++] = "panal-lat";
+
+        // soporte
+        r[i++] = "soporte"; // es, pt (suporte aparte)
+        r[i++] = "suporte"; // pt
+        r[i++] = "support"; // en, fr
+        r[i++] = "podderzhka"; // ru, поддержка
+        r[i++] = "sahayata"; // hi/bn, सहायता / সহায়তা
+        r[i++] = "daam"; // ar, دعم
+        r[i++] = "zhichi"; // zh, 支持
+        r[i++] = "madad"; // ur/hi, مدد / मदद (vale tambien por "ayuda")
+
+        // oficial
+        r[i++] = "oficial"; // es, pt
+        r[i++] = "official"; // en
+        r[i++] = "officiel"; // fr
+        r[i++] = "ofitsialnyy"; // ru, официальный
+        r[i++] = "adhikarik"; // hi, आधिकारिक
+        r[i++] = "rasmi"; // ar, رسمي
+        r[i++] = "ofisiyal"; // bn, অফিসিয়াল
+        r[i++] = "guanfang"; // zh, 官方
+        r[i++] = "sarkari"; // ur, سرکاری
+
+        // ayuda
+        r[i++] = "ayuda"; // es
+        r[i++] = "ajuda"; // pt
+        r[i++] = "help"; // en
+        r[i++] = "aide"; // fr
+        r[i++] = "pomoshch"; // ru, помощь
+        r[i++] = "musaada"; // ar, مساعدة
+        r[i++] = "sahajjo"; // bn, সাহায্য
+        r[i++] = "bangzhu"; // zh, 帮助
+
+        require(i == r.length, "lista de reservados descuadrada");
+        return r;
+    }
+
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address token = vm.envOr("PANAL_TOKEN", PANAL_TOKEN_DEFAULT);
@@ -114,7 +176,18 @@ contract DeployNames is Script {
         require(_esContrato(owner), "OWNER no es un contrato: revisa que sea el multisig");
 
         vm.startBroadcast(pk);
-        PanalNames names = new PanalNames(token, registry, owner, treasury, topes, tarifas, bps);
+        PanalNames names = new PanalNames(
+            PanalNames.Config({
+                panal: token,
+                registry: registry,
+                owner: owner,
+                tesoreria: treasury,
+                topes: topes,
+                tarifas: tarifas,
+                comisionBps: bps
+            }),
+            _reservados()
+        );
         vm.stopBroadcast();
 
         console2.log("PanalNames    ", address(names));

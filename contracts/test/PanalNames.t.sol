@@ -58,17 +58,23 @@ contract PanalNamesTest is Test {
 
     uint256 constant SALDO = 10_000e18;
 
+    /// La mayoría de pruebas no necesitan reservas; las suyas las declaran.
+    string[] SIN_RESERVAS;
+
     function setUp() public {
         token = new TokenFalso();
         registry = new RegistryFalso();
         names = new PanalNames(
-            address(token),
-            address(registry),
-            address(this),
-            tesoreria,
-            [CORTO * 10, MEDIO * 10, LARGO * 10],
-            [CORTO, MEDIO, LARGO],
-            COMISION
+            PanalNames.Config({
+                panal: address(token),
+                registry: address(registry),
+                owner: address(this),
+                tesoreria: tesoreria,
+                topes: [CORTO * 10, MEDIO * 10, LARGO * 10],
+                tarifas: [CORTO, MEDIO, LARGO],
+                comisionBps: COMISION
+            }),
+            SIN_RESERVAS
         );
 
         registry.setActivo(agente, true);
@@ -293,13 +299,16 @@ contract PanalNamesTest is Test {
     function test_el_dueno_es_el_del_constructor_no_el_que_despliega() public {
         address multisig = makeAddr("multisig");
         PanalNames otro_ = new PanalNames(
-            address(token),
-            address(registry),
-            multisig,
-            tesoreria,
-            [CORTO * 10, MEDIO * 10, LARGO * 10],
-            [CORTO, MEDIO, LARGO],
-            COMISION
+            PanalNames.Config({
+                panal: address(token),
+                registry: address(registry),
+                owner: multisig,
+                tesoreria: tesoreria,
+                topes: [CORTO * 10, MEDIO * 10, LARGO * 10],
+                tarifas: [CORTO, MEDIO, LARGO],
+                comisionBps: COMISION
+            }),
+            SIN_RESERVAS
         );
 
         assertEq(otro_.owner(), multisig, "el owner es el multisig");
@@ -370,13 +379,16 @@ contract PanalNamesTest is Test {
     /// cobrar nunca. Por eso van separados en el constructor.
     function test_se_arranca_gratis_y_se_puede_cobrar_despues() public {
         PanalNames gratis = new PanalNames(
-            address(token),
-            address(registry),
-            address(this),
-            tesoreria,
-            [CORTO, MEDIO, LARGO], // el techo
-            [uint256(0), 0, 0], // lo que se cobra hoy
-            COMISION
+            PanalNames.Config({
+                panal: address(token),
+                registry: address(registry),
+                owner: address(this),
+                tesoreria: tesoreria,
+                topes: [CORTO, MEDIO, LARGO], // el techo
+                tarifas: [uint256(0), 0, 0], // lo que se cobra hoy
+                comisionBps: COMISION
+            }),
+            SIN_RESERVAS
         );
 
         // Un agente recien creado, sin un solo $PANAL, consigue su nombre.
@@ -397,26 +409,145 @@ contract PanalNamesTest is Test {
     function test_no_se_despliega_con_tarifa_por_encima_del_tope() public {
         vm.expectRevert("PanalNames: fee over cap");
         new PanalNames(
-            address(token),
-            address(registry),
-            address(this),
-            tesoreria,
-            [CORTO, MEDIO, LARGO],
-            [CORTO + 1, MEDIO, LARGO],
-            COMISION
+            PanalNames.Config({
+                panal: address(token),
+                registry: address(registry),
+                owner: address(this),
+                tesoreria: tesoreria,
+                topes: [CORTO, MEDIO, LARGO],
+                tarifas: [CORTO + 1, MEDIO, LARGO],
+                comisionBps: COMISION
+            }),
+            SIN_RESERVAS
         );
+    }
+
+    // ── nombres reservados ─────────────────────────────────────────────────
+
+    function _conReservas() private returns (PanalNames) {
+        string[] memory r = new string[](3);
+        r[0] = "panal";
+        r[1] = "soporte";
+        r[2] = "bangzhu";
+        return new PanalNames(
+            PanalNames.Config({
+                panal: address(token),
+                registry: address(registry),
+                owner: address(this),
+                tesoreria: tesoreria,
+                topes: [CORTO * 10, MEDIO * 10, LARGO * 10],
+                tarifas: [uint256(0), 0, 0],
+                comisionBps: COMISION
+            }),
+            r
+        );
+    }
+
+    /// Reservados DESDE EL CONSTRUCTOR: si se hiciera en una llamada aparte,
+    /// un bot que vigile despliegues se lleva `panal` en el hueco.
+    function test_lo_reservado_no_lo_reclama_nadie_desde_el_primer_bloque() public {
+        PanalNames n = _conReservas();
+
+        vm.prank(agente);
+        vm.expectRevert("PanalNames: reserved");
+        n.reclamar("panal");
+
+        vm.prank(agente);
+        vm.expectRevert("PanalNames: reserved");
+        n.reclamar("bangzhu");
+
+        assertFalse(n.disponible("soporte"), "no figura como disponible");
+        assertTrue(n.estaReservado("soporte"), "y se puede saber POR QUE");
+
+        // Lo que no esta en la lista sigue libre.
+        vm.prank(agente);
+        n.reclamar("traductor");
+        assertEq(n.resolver("traductor"), agente);
+    }
+
+    /// La condicion que impide que esto sea un registro centralizado: reservar
+    /// no le puede quitar a nadie el nombre que ya tiene.
+    function test_reservar_no_puede_confiscar() public {
+        vm.prank(agente);
+        names.reclamar("traductor");
+
+        string[] memory r = new string[](1);
+        r[0] = "traductor";
+        vm.expectRevert("PanalNames: taken");
+        names.reservar(r, true);
+
+        assertEq(names.resolver("traductor"), agente, "sigue siendo suyo");
+    }
+
+    function test_el_owner_puede_reservar_y_soltar() public {
+        string[] memory r = new string[](1);
+        r[0] = "juzgado";
+
+        names.reservar(r, true);
+        vm.prank(agente);
+        vm.expectRevert("PanalNames: reserved");
+        names.reclamar("juzgado");
+
+        names.reservar(r, false);
+        vm.prank(agente);
+        names.reclamar("juzgado");
+        assertEq(names.resolver("juzgado"), agente);
+    }
+
+    function test_solo_el_owner_reserva() public {
+        string[] memory r = new string[](1);
+        r[0] = "juzgado";
+        vm.prank(agente);
+        vm.expectRevert("PanalNames: not owner");
+        names.reservar(r, true);
+    }
+
+    /// Para que `panal` acabe en el agente oficial: el multisig no es un agente
+    /// registrado, asi que no puede reclamar y tiene que asignar.
+    function test_asignar_un_reservado_al_agente_oficial() public {
+        PanalNames n = _conReservas();
+
+        n.asignarReservado("panal", agente);
+        assertEq(n.resolver("panal"), agente);
+        assertEq(n.nombreDe(agente), "panal");
+        assertFalse(n.estaReservado("panal"), "deja de estar reservado");
+    }
+
+    function test_asignar_solo_vale_para_reservados_y_agentes_activos() public {
+        PanalNames n = _conReservas();
+
+        vm.expectRevert("PanalNames: not reserved");
+        n.asignarReservado("traductor", agente);
+
+        vm.expectRevert("PanalNames: not an active agent");
+        n.asignarReservado("panal", cualquiera);
+
+        vm.prank(agente);
+        n.reclamar("traductor");
+        vm.expectRevert("PanalNames: already has a name");
+        n.asignarReservado("panal", agente);
+    }
+
+    function test_no_se_reserva_un_nombre_invalido() public {
+        string[] memory r = new string[](1);
+        r[0] = "Soporte"; // mayuscula: nadie podria reclamarlo, es una errata
+        vm.expectRevert("PanalNames: bad char");
+        names.reservar(r, true);
     }
 
     function test_no_se_despliega_sin_dueno() public {
         vm.expectRevert("PanalNames: zero owner");
         new PanalNames(
-            address(token),
-            address(registry),
-            address(0),
-            tesoreria,
-            [CORTO * 10, MEDIO * 10, LARGO * 10],
-            [CORTO, MEDIO, LARGO],
-            COMISION
+            PanalNames.Config({
+                panal: address(token),
+                registry: address(registry),
+                owner: address(0),
+                tesoreria: tesoreria,
+                topes: [CORTO * 10, MEDIO * 10, LARGO * 10],
+                tarifas: [CORTO, MEDIO, LARGO],
+                comisionBps: COMISION
+            }),
+            SIN_RESERVAS
         );
     }
 
