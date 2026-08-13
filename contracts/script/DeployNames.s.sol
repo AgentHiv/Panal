@@ -17,8 +17,17 @@ import "../src/PanalNames.sol";
 /// manda una sola clave, y un `transferOwnership` equivocado no tiene vuelta
 /// atras. El multisig es 2 de 3, asi que mover una tarifa exigira dos firmas.
 ///
-/// Env requeridas:
-///   PRIVATE_KEY  - key del que despliega. NO queda como dueño de nada.
+/// COMO SE FIRMA. Sin PRIVATE_KEY, se usa el firmante que le pases a forge, que
+/// es lo preferible en mainnet: la clave no acaba en el historial del shell ni
+/// en una variable de entorno que se queda dando vueltas.
+///
+///   forge script ... --broadcast --interactive        (te la pide y no se guarda)
+///   forge script ... --broadcast --account <keystore> (clave cifrada en disco)
+///   forge script ... --broadcast --ledger             (hardware)
+///
+/// Env opcionales:
+///   PRIVATE_KEY  - alternativa a lo anterior. Quien despliega NO queda como
+///                  dueño de nada: el owner es el multisig.
 /// Env opcionales (los defaults son los de Monad mainnet, ya verificados):
 ///   PANAL_TOKEN  - default 0x2e2e...7777 ($PANAL)
 ///   REGISTRY     - default 0x89a8...Ac51 (PanalRegistryV2)
@@ -148,7 +157,6 @@ contract DeployNames is Script {
     }
 
     function run() external {
-        uint256 pk = vm.envUint("PRIVATE_KEY");
         address token = vm.envOr("PANAL_TOKEN", PANAL_TOKEN_DEFAULT);
         address registry = vm.envOr("REGISTRY", REGISTRY_DEFAULT);
         address owner = vm.envOr("OWNER", MULTISIG_DEFAULT);
@@ -175,7 +183,11 @@ contract DeployNames is Script {
         // el multisig, y el 2-de-3 que se decidio no existiria.
         require(_esContrato(owner), "OWNER no es un contrato: revisa que sea el multisig");
 
-        vm.startBroadcast(pk);
+        // Con PRIVATE_KEY se usa esa; sin ella, el firmante de forge
+        // (--interactive, --account, --ledger).
+        uint256 pk = vm.envOr("PRIVATE_KEY", uint256(0));
+        if (pk == 0) vm.startBroadcast();
+        else vm.startBroadcast(pk);
         PanalNames names = new PanalNames(
             PanalNames.Config({
                 panal: token,
