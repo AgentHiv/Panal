@@ -178,7 +178,11 @@ export function createIndexServer(deps: IndexServerDeps): Server {
           limit = n;
         }
         const tasks = store.tasksOf(address, { role: roleRaw ?? undefined, limit });
-        json(res, 200, { tasks, count: tasks.length, address: address.toLowerCase() });
+        // `lastBlock` viaja con la respuesta a proposito: un indexador vivo
+        // pero atrasado es peor que uno caido, porque quien pregunta se fia de
+        // una lista incompleta. Con esto puede decidir por si mismo, y sin
+        // pagar otra peticion.
+        json(res, 200, { tasks, count: tasks.length, address: address.toLowerCase(), lastBlock: store.lastBlock });
         return;
       }
 

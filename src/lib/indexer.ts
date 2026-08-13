@@ -96,6 +96,39 @@ async function fetchJson<T>(path: string): Promise<T | null> {
   }
 }
 
+/**
+ * Los ids de las tareas en las que participa una dirección, como cliente o
+ * como trabajador. `null` si el indexador no responde — quien llama decide
+ * qué hacer con eso, y en el panel se cae al escaneo de la cadena.
+ *
+ * Se piden solo los ids: los datos se leen del escrow, porque los eventos no
+ * traen `deadline`, `taskHash` ni `deliveredAt`.
+ */
+export async function fetchTaskIdsOf(address: string, cabezaCadena?: bigint): Promise<bigint[] | null> {
+  const res = await fetchJson<{ tasks: { taskId: string }[]; lastBlock?: number }>(
+    `/index/tasks?address=${encodeURIComponent(address)}&limit=1000`,
+  );
+  if (!res?.tasks) return null;
+
+  // Un indexador VIVO PERO ATRASADO es peor que uno caído: devuelve una lista
+  // incompleta y quien pregunta se la cree. Pasa mientras hace el backfill
+  // inicial, o si estuvo parado. Se comprueba por dónde va antes de fiarse.
+  //
+  // Con bloques de 0,30 s y sondeo cada 15 s, el retraso normal son ~50
+  // bloques. 2000 son diez minutos: eso ya no es retraso, es que no está al día.
+  if (cabezaCadena !== undefined && typeof res.lastBlock === 'number') {
+    if (cabezaCadena - BigInt(res.lastBlock) > 2000n) return null;
+  }
+  const ids: bigint[] = [];
+  for (const t of res.tasks) {
+    // El indexador es un servicio, o sea que su respuesta se valida igual que
+    // la de cualquier desconocido: un id que no sea un entero se descarta en
+    // vez de reventar el panel entero con un BigInt() que lanza.
+    if (/^\d+$/.test(t.taskId)) ids.push(BigInt(t.taskId));
+  }
+  return ids;
+}
+
 /* ---------- Hooks react-query ---------- */
 
 /** Stats globales del índice (refresh 30 s). null si el indexador no responde. */
