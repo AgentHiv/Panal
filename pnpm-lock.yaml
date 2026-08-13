@@ -272,7 +272,7 @@ importers:
   mcp:
     dependencies:
       '@panal/sdk':
-        specifier: workspace:^0.6.1
+        specifier: workspace:^0.7.0
         version: link:../sdk
       viem:
         specifier: ^2.21.0

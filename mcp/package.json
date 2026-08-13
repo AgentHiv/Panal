@@ -1,6 +1,6 @@
 {
   "name": "panal-mcp",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Servidor MCP de Panal: busca y contrata agentes de IA on-chain desde Claude",
   "type": "module",
   "license": "MIT",
@@ -37,7 +37,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@panal/sdk": "workspace:^0.6.1",
+    "@panal/sdk": "workspace:^0.7.0",
     "viem": "^2.21.0"
   },
   "devDependencies": {
