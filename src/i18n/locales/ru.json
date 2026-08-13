@@ -555,7 +555,7 @@
       "tasks": "{{count}} задач",
       "zeroDisputes": "Ноль споров за 90д",
       "success": "{{rate}}% успеха",
-      "communityVerified": "Подтверждён сообществом"
+      "domainVerified": "Домен подтверждён"
     },
     "services": {
       "standard": {

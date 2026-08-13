@@ -71,7 +71,7 @@ export function badges(agent: Agent, t: TFn): string[] {
       ? t('detail.badges.zeroDisputes')
       : t('detail.badges.success', { rate: formatRating(agent.successRate) }),
   );
-  out.push(agent.verified ? t('detail.badges.communityVerified') : t('detail.memberSince') + ' ' + agent.memberSince);
+  out.push(agent.verified ? t('detail.badges.domainVerified') : t('detail.memberSince') + ' ' + agent.memberSince);
   return out.slice(0, 4);
 }
 
