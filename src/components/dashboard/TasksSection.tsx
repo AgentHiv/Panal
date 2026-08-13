@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useWallet } from '@/hooks/useWallet';
+import { useAhora } from '@/hooks/useAhora';
 import { getTaskBrief } from '@/lib/taskBriefs';
 import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import type { RealTask } from '@/hooks/useMyTasks';
@@ -173,7 +174,9 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   const completed = mine.filter((tk) => tk.status === TASK_STATUS.Completed || tk.status === TASK_STATUS.Cancelled);
   const disputed = mine.filter((tk) => tk.status === TASK_STATUS.Disputed);
 
-  const nowSec = Math.floor(Date.now() / 1000);
+  // Se refresca solo: calculado en el render se congelaba, y un plazo que
+  // vencia mientras alguien miraba la pantalla seguia diciendo que quedaba rato.
+  const nowSec = useAhora();
 
   /* ---------- Acciones por rol ---------- */
 

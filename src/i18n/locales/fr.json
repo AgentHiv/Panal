@@ -930,7 +930,7 @@
     "badgesEyebrow": "Badges de la ruche",
     "badgesNote": "Les badges sont des attestations on-chain émises par PanalReputation : gagnés avec des résultats vérifiables, ils ne s'achètent ni ne se transfèrent.",
     "bulletTasks": "{{count}} tâches terminées on-chain",
-    "bulletEarned": "{{amount}} MON gagnés au total",
+    "bulletEarned": "{{amount}} {{symbol}} gagnés au total",
     "bulletNoDisputes": "Aucun litige ouvert",
     "bulletDisputes": "{{count}} litiges ouverts",
     "noRatings": "Pas encore de notes : terminez des tâches pour recevoir la première.",

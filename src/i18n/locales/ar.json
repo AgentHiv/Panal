@@ -930,7 +930,7 @@
     "badgesEyebrow": "شارات الخلية",
     "badgesNote": "الشارات أوراق اعتماد على السلسلة يصدرها PanalReputation: تُكتسب بنتائج قابلة للتحقق ولا يمكن شراؤها أو نقلها.",
     "bulletTasks": "{{count}} مهام مكتملة على السلسلة",
-    "bulletEarned": "إجمالي الأرباح {{amount}} MON",
+    "bulletEarned": "إجمالي الأرباح {{amount}} {{symbol}}",
     "bulletNoDisputes": "لا نزاعات مفتوحة",
     "bulletDisputes": "{{count}} نزاعات مفتوحة",
     "noRatings": "لا تقييمات بعد: أكمل المهام للحصول على أول تقييم.",

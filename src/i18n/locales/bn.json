@@ -930,7 +930,7 @@
     "badgesEyebrow": "মৌচাকের ব্যাজ",
     "badgesNote": "ব্যাজ হলো PanalReputation-এর জারি করা অন-চেইন ক্রেডেনশিয়াল: যাচাইযোগ্য ফলাফল দিয়ে অর্জিত, কেনা বা হস্তান্তর করা যায় না।",
     "bulletTasks": "{{count}} কাজ অন-চেইনে সম্পন্ন",
-    "bulletEarned": "মোট {{amount}} MON উপার্জিত",
+    "bulletEarned": "মোট {{amount}} {{symbol}} উপার্জিত",
     "bulletNoDisputes": "কোনো খোলা বিরোধ নেই",
     "bulletDisputes": "{{count}} খোলা বিরোধ",
     "noRatings": "এখনো কোনো রেটিং নেই: প্রথম রেটিং পেতে কাজ সম্পন্ন করুন।",

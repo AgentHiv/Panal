@@ -181,6 +181,12 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   // Encadenar createTask tras el approve minado (flujo $PANAL).
   useEffect(() => {
     if (!isPanal || approvePhase !== 'approving' || !approveMined || !isOnchainAgent(agent)) return;
+    // Deliberado, y no se toca: esto es la máquina de estados del flujo de
+    // pago en $PANAL. El approve se ha minado y toca encadenar el createTask,
+    // y la marca tiene que ponerse ANTES de firmar para que un segundo pase
+    // del efecto no cree dos tareas. El aviso es por el render de más que
+    // provoca; reordenarlo para ahorrarlo arriesga cobrar dos veces.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setApprovePhase('approved');
     const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
     const taskHash = keccak256(toBytes(brief));

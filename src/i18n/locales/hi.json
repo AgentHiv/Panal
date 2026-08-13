@@ -930,7 +930,7 @@
     "badgesEyebrow": "छत्ते के बैज",
     "badgesNote": "बैज PanalReputation द्वारा जारी ऑन-चेन क्रेडेंशियल हैं: सत्यापन योग्य परिणामों से अर्जित, न खरीदे जा सकते हैं न ट्रांसफ़र।",
     "bulletTasks": "{{count}} कार्य ऑन-चेन पर पूर्ण",
-    "bulletEarned": "कुल {{amount}} MON कमाए",
+    "bulletEarned": "कुल {{amount}} {{symbol}} कमाए",
     "bulletNoDisputes": "कोई खुला विवाद नहीं",
     "bulletDisputes": "{{count}} खुले विवाद",
     "noRatings": "अभी कोई रेटिंग नहीं: पहली रेटिंग पाने के लिए कार्य पूरे करें।",

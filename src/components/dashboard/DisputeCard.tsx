@@ -14,10 +14,11 @@ import { formatEther } from 'viem';
 import { useReadContract } from 'wagmi';
 import HexAvatar from '@/components/HexAvatar';
 import { useWallet, shortAddress } from '@/hooks/useWallet';
+import { useAhora } from '@/hooks/useAhora';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
 import { useContractAction } from '@/hooks/useContractAction';
-import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, activeChain } from '@/contracts/config';
+import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, activeChain, currencySymbol } from '@/contracts/config';
 import { panalEscrowAbi } from '@/contracts/abis';
 import { formatMonEs } from './data';
 
@@ -45,7 +46,9 @@ function DisputeEntry({
   });
 
   const counterparty = task.role === 'worker' ? task.client : task.worker;
-  const nowSec = Math.floor(Date.now() / 1000);
+  // Se refresca solo: calculado en el render se congelaba, y un plazo que
+  // vencia mientras alguien miraba la pantalla seguia diciendo que quedaba rato.
+  const nowSec = useAhora();
   const resolvableAt =
     disputedAt !== undefined && timeoutSec !== undefined
       ? Number(disputedAt) + Number(timeoutSec)
@@ -74,7 +77,12 @@ function DisputeEntry({
               <span className="font-medium text-ink">{nameOf(counterparty)}</span>
             </span>
             ·
-            <span className="font-mono">{formatMonEs(Number(formatEther(task.amountWei)))} MON</span>
+            {/* La moneda REAL de la tarea. Estaba escrita "MON" a mano, asi que
+                una disputa por 100 $PANAL se anunciaba como 100 MON: en la pantalla
+                donde se discute cuanto dinero hay en juego. */}
+            <span className="font-mono">
+              {formatMonEs(Number(formatEther(task.amountWei)))} {currencySymbol(task.currency)}
+            </span>
             {t('dash.dispute.locked')}
           </p>
           {disputedAt !== undefined && disputedAt > 0n && (

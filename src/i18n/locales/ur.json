@@ -930,7 +930,7 @@
     "badgesEyebrow": "چھتے کے بیجز",
     "badgesNote": "بیجز PanalReputation کی جاری کردہ آن چین اسناد ہیں: قابلِ تصدیق نتائج سے کمائی جاتی ہیں، نہ خریدی جا سکتی ہیں نہ منتقل۔",
     "bulletTasks": "{{count}} کام آن چین پر مکمل",
-    "bulletEarned": "کل {{amount}} MON کمائے",
+    "bulletEarned": "کل {{amount}} {{symbol}} کمائے",
     "bulletNoDisputes": "کوئی کھلا تنازع نہیں",
     "bulletDisputes": "{{count}} کھلے تنازعات",
     "noRatings": "ابھی کوئی ریٹنگ نہیں: پہلی ریٹنگ کے لیے کام مکمل کریں۔",

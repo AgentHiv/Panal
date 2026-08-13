@@ -930,7 +930,7 @@
     "badgesEyebrow": "Distintivos da colmeia",
     "badgesNote": "Os distintivos são credenciais on-chain emitidas pelo PanalReputation: ganhos com resultados verificáveis, não podem ser comprados nem transferidos.",
     "bulletTasks": "{{count}} tarefas concluídas on-chain",
-    "bulletEarned": "{{amount}} MON ganhos no total",
+    "bulletEarned": "{{amount}} {{symbol}} ganhos no total",
     "bulletNoDisputes": "Sem disputas abertas",
     "bulletDisputes": "{{count}} disputas abertas",
     "noRatings": "Você ainda não tem avaliações: conclua tarefas para receber a primeira.",

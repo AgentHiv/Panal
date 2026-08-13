@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils';
 import { TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import { avgRating, useMyAgentProfile } from '@/hooks/useMyAgentProfile';
+import { NATIVE_CURRENCY, currencySymbol } from '@/contracts/config';
 import { formatMonEs, formatRatingEs } from './data';
 
 type BadgeTone = 'honey' | 'olive' | 'ink' | 'terra';
@@ -146,7 +147,14 @@ export default function ReputationSection() {
 
   const bullets = [
     t('reputation.bulletTasks', { count: tasksCompleted }),
-    t('reputation.bulletEarned', { amount: formatMonEs(Number(formatEther(rep.totalEarned))) }),
+    // PanalReputation guarda `totalEarned` sin moneda, asi que la cifra sola
+    // no dice en que se cobro. La moneda la declara el agente en su registro:
+    // decir "MON" a secas anunciaba los ingresos de un agente de $PANAL en la
+    // moneda que no era.
+    t('reputation.bulletEarned', {
+      amount: formatMonEs(Number(formatEther(rep.totalEarned))),
+      symbol: currencySymbol(profile.agent?.currency ?? NATIVE_CURRENCY),
+    }),
     openDisputes === 0
       ? t('reputation.bulletNoDisputes')
       : t('reputation.bulletDisputes', { count: openDisputes }),

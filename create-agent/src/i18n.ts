@@ -74,6 +74,7 @@ export interface Catalog {
     rpc: string;
     data: string;
     x402: string;
+    seguridad: string;
     subcontrata: string;
     vigilante: string;
   };
@@ -124,6 +125,7 @@ The language is taken from --lang, then PANAL_LANG, then your system locale.`,
     x402: 'Charge per call (optional). Leave it empty and your agent only takes escrow jobs.\nThe price is per request, in an EIP-2612 token — it cannot be MON, the scheme needs `permit`.',
     subcontrata: "Subcontracting (optional, off by default). Your agent can pay another one for what it cannot do itself (see ctx.consultar in agent.ts). Without a number here it never delegates.\nIt is in the x402 currency, NOT a cut of what you charge per task: a task is paid in MON and a question in $PANAL, and converting one into the other by eye would be inventing the budget.",
     vigilante: "The watchman. Every 60 s it reviews your open tasks and recovers what got stuck: a delivery that was never anchored, work that died halfway, or a job that was paid for and never arrived.\nVIGILANTE=off turns it off. PUBLIC_URL is your https endpoint, used in the lost-job warning.",
+    seguridad: "Hardening. LIMITE_POR_MINUTO caps requests per IP (0 disables it); every unauthenticated request costs one RPC call, so without a cap a curl loop leaves your agent unable to deliver.\nTRAS_PROXY=1 only if a reverse proxy sits in front, so x-forwarded-for can be trusted. AUTH_ESTRICTA=1 rejects download signatures with no expiry (the old format).",
   },
   readme: `# {name}
 
@@ -148,6 +150,8 @@ PUBLIC_URL=https://your-domain npm run register
 | \`src/agent.ts\` | **The only one you edit.** Your work goes in \`handleTask()\`. |
 | \`src/server.ts\` | Receives the brief, verifies signatures, delivers on-chain. |
 | \`src/register.ts\` | Your listing: name, description, skills, price. |
+| \`src/pdf.ts\` | Turns text into a PDF, with no dependencies. Delete it if you deliver no files. |
+| \`src/vigilante.ts\` | Recovers tasks left hanging: a delivery never anchored, work that died halfway. |
 | \`.env\` | Your private key and your model key. Never commit it. |
 
 ## How you get paid
@@ -217,6 +221,7 @@ El idioma sale de --lang, luego de PANAL_LANG, y si no del locale del sistema.`,
     x402: 'Cobro por llamada (opcional). Déjalo vacío y tu agente solo acepta encargos del escrow.\nEl precio es por petición, en un token EIP-2612: no puede ser MON, el esquema necesita `permit`.',
     subcontrata: "Subcontratar (opcional, apagado por defecto). Tu agente puede pagar a otro por lo que no sepa hacer (ver ctx.consultar en agent.ts). Sin un numero aqui, no delega nunca.\nVa en la moneda del x402 y NO se deduce de lo que cobras por tarea: una tarea se cobra en MON y una consulta en $PANAL, y convertir una en otra a ojo seria inventarse el presupuesto.",
     vigilante: "El vigilante. Cada 60 s repasa tus tareas abiertas y recupera lo que se quedo colgado: una entrega que no llego a anclarse, un trabajo que murio a medias, o un encargo pagado que nunca llego.\nVIGILANTE=off lo apaga. PUBLIC_URL es tu endpoint https, para el aviso de encargo perdido.",
+    seguridad: "Endurecimiento. LIMITE_POR_MINUTO acota las peticiones por IP (0 lo desactiva); cada petición sin autenticar cuesta una llamada al RPC, así que sin tope un bucle de curl deja a tu agente sin poder entregar.\nTRAS_PROXY=1 solo si tienes un proxy delante, para poder fiarte de x-forwarded-for. AUTH_ESTRICTA=1 rechaza las firmas de descarga sin caducidad (el formato antiguo).",
   },
   readme: `# {name}
 
@@ -242,6 +247,8 @@ PUBLIC_URL=https://tu-dominio npm run register
 | \`src/agent.ts\` | **El único que tocas.** Tu trabajo va en \`handleTask()\`. |
 | \`src/server.ts\` | Recibe el encargo, verifica firmas y entrega en la cadena. |
 | \`src/register.ts\` | Tu ficha: nombre, descripción, skills y precio. |
+| \`src/pdf.ts\` | Convierte texto en PDF, sin dependencias. Bórralo si no entregas archivos. |
+| \`src/vigilante.ts\` | Recupera lo que se quedó colgado: una entrega sin anclar, un trabajo a medias. |
 | \`.env\` | Tu clave privada y la de tu modelo. No lo subas nunca. |
 
 ## Cómo cobras
@@ -311,6 +318,7 @@ const zh: Catalog = {
     x402: '按次收费（可选）。留空则你的代理只接受托管订单。\n价格按每次请求计算，使用支持 EIP-2612 的代币——不能是 MON，该方案依赖 `permit`。',
     subcontrata: "转包（可选，默认关闭）。你的代理可以为自己做不了的事付钱给另一个代理（见 agent.ts 的 ctx.consultar）。这里没有数字就永远不会转包。\n它使用 x402 的币种，不是按任务收入的比例：任务用 MON 结算，提问用 $PANAL，凭感觉换算等于凭空编造预算。",
     vigilante: "守望者。每 60 秒检查一次你未完成的任务，并挽回卡住的部分：没有上链的交付、中途死掉的工作，或已付款却从未送达的委托。\nVIGILANTE=off 可关闭。PUBLIC_URL 是你的 https 端点，用于丢失委托的提醒。",
+    seguridad: "加固。LIMITE_POR_MINUTO 限制每个 IP 的请求数（0 表示关闭）；每个未认证请求都要消耗一次 RPC 调用，没有上限时一个 curl 循环就能让你的代理无法交付。\nTRAS_PROXY=1 仅在前面有反向代理时使用，这样才能信任 x-forwarded-for。AUTH_ESTRICTA=1 拒绝没有有效期的下载签名（旧格式）。",
   },
   readme: `# {name}
 
@@ -335,6 +343,8 @@ PUBLIC_URL=https://你的域名 npm run register
 | \`src/agent.ts\` | **唯一需要你修改的文件。** 你的业务逻辑写在 \`handleTask()\` 里。 |
 | \`src/server.ts\` | 接收任务、验证签名、在链上交付。 |
 | \`src/register.ts\` | 你的名片：名称、描述、技能、价格。 |
+| \`src/pdf.ts\` | 把文本转成 PDF，无依赖。不交付文件就删掉它。 |
+| \`src/vigilante.ts\` | 挽回卡住的任务：没有上链的交付、中途死掉的工作。 |
 | \`.env\` | 你的私钥和模型密钥。绝不要提交到仓库。 |
 
 ## 你如何收款
@@ -400,6 +410,7 @@ const hi: Catalog = {
     x402: 'प्रति कॉल शुल्क (वैकल्पिक)। खाली छोड़ें तो आपका एजेंट केवल एस्क्रो वाले काम लेगा।\nकीमत प्रति अनुरोध है, EIP-2612 टोकन में — MON नहीं चल सकता, इस योजना को `permit` चाहिए।',
     subcontrata: "सबकॉन्ट्रैक्टिंग (वैकल्पिक, डिफ़ॉल्ट रूप से बंद)। आपका एजेंट जो खुद नहीं कर सकता, उसके लिए दूसरे को भुगतान कर सकता है (agent.ts में ctx.consultar देखें)। यहाँ संख्या के बिना वह कभी नहीं सौंपता।\nयह x402 की मुद्रा में है, प्रति कार्य आय का हिस्सा नहीं: कार्य MON में और प्रश्न $PANAL में चुकाया जाता है।",
     vigilante: "प्रहरी। हर 60 सेकंड में आपके खुले कार्यों की जाँच करता है और जो अटक गया उसे वापस लाता है: वह डिलीवरी जो चेन पर दर्ज नहीं हुई, अधूरा रह गया काम, या भुगतान किया गया आदेश जो कभी नहीं पहुँचा।\nVIGILANTE=off इसे बंद करता है। PUBLIC_URL आपका https एंडपॉइंट है।",
+    seguridad: "सुरक्षा सख्ती। LIMITE_POR_MINUTO प्रति IP अनुरोध सीमित करता है (0 से बंद); हर बिना प्रमाणित अनुरोध एक RPC कॉल खर्च करता है, इसलिए बिना सीमा के एक curl लूप आपके एजेंट को डिलीवर करने से रोक सकता है।\nTRAS_PROXY=1 केवल तभी जब आगे रिवर्स प्रॉक्सी हो। AUTH_ESTRICTA=1 बिना समय-सीमा वाले डाउनलोड हस्ताक्षर अस्वीकार करता है।",
   },
   readme: `# {name}
 
@@ -424,6 +435,8 @@ PUBLIC_URL=https://आपका-डोमेन npm run register
 | \`src/agent.ts\` | **केवल यही आप बदलते हैं।** आपका काम \`handleTask()\` में जाता है। |
 | \`src/server.ts\` | काम प्राप्त करता है, हस्ताक्षर जाँचता है, चेन पर डिलीवर करता है। |
 | \`src/register.ts\` | आपकी प्रोफ़ाइल: नाम, विवरण, कौशल, कीमत। |
+| \`src/pdf.ts\` | टेक्स्ट को PDF में बदलता है, बिना निर्भरता के। फाइलें न भेजें तो हटा दें। |
+| \`src/vigilante.ts\` | अटके हुए कार्य वापस लाता है: चेन पर दर्ज न हुई डिलीवरी, अधूरा काम। |
 | \`.env\` | आपकी निजी कुंजी और मॉडल कुंजी। इसे कभी कमिट न करें। |
 
 ## भुगतान कैसे मिलता है
@@ -493,6 +506,7 @@ const ar: Catalog = {
     x402: 'التحصيل لكل استدعاء (اختياري). اتركه فارغًا فيقبل وكيلك مهام الضمان فقط.\nالسعر لكل طلب، بعملة تدعم EIP-2612 — لا يصلح MON، فالمخطط يحتاج `permit`.',
     subcontrata: "التعاقد من الباطن (اختياري، معطل افتراضيا). يمكن لوكيلك ان يدفع لوكيل اخر مقابل ما لا يجيده (انظر ctx.consultar في agent.ts). بدون رقم هنا لن يفوض ابدا.\nيكون بعملة x402، وليس نسبة مما تتقاضاه عن المهمة: المهمة تدفع بـ MON والسؤال بـ $PANAL.",
     vigilante: "الحارس. كل 60 ثانية يراجع مهامك المفتوحة ويستعيد ما تعطل: تسليم لم يثبت على السلسلة، او عمل مات في منتصفه، او طلب مدفوع لم يصل قط.\nVIGILANTE=off يوقفه. PUBLIC_URL هو نقطة الوصول https لديك.",
+    seguridad: "تقوية. LIMITE_POR_MINUTO يحد الطلبات لكل IP (0 يعطله)؛ كل طلب غير موثق يكلف استدعاء RPC، فبدون حد يكفي حلقة curl لتترك وكيلك عاجزا عن التسليم.\nTRAS_PROXY=1 فقط إذا كان أمامه بروكسي عكسي. AUTH_ESTRICTA=1 يرفض تواقيع التنزيل بلا انتهاء صلاحية.",
   },
   readme: `# {name}
 
@@ -517,6 +531,8 @@ PUBLIC_URL=https://نطاقك npm run register
 | \`src/agent.ts\` | **الوحيد الذي تعدّله.** عملك يكتب داخل \`handleTask()\`. |
 | \`src/server.ts\` | يستقبل الطلب، ويتحقق من التواقيع، ويسلّم على السلسلة. |
 | \`src/register.ts\` | بطاقتك: الاسم والوصف والمهارات والسعر. |
+| \`src/pdf.ts\` | يحوّل النص إلى PDF، دون تبعيات. احذفه إن كنت لا تسلّم ملفات. |
+| \`src/vigilante.ts\` | يستعيد المهام المعطلة: تسليم لم يثبت على السلسلة، أو عمل مات في منتصفه. |
 | \`.env\` | مفتاحك الخاص ومفتاح النموذج. لا ترفعه إلى المستودع أبدًا. |
 
 ## كيف تتقاضى أجرك
@@ -585,6 +601,7 @@ La langue vient de --lang, puis de PANAL_LANG, puis de la locale du système.`,
     x402: "Facturation à l'appel (facultatif). Laissez vide et votre agent ne prend que des missions sous entiercement.\nLe prix est par requête, dans un jeton EIP-2612 : pas de MON, le schéma exige `permit`.",
     subcontrata: "Sous-traitance (optionnelle, desactivee par defaut). Votre agent peut payer un autre pour ce qu il ne sait pas faire (voir ctx.consultar dans agent.ts). Sans un nombre ici, il ne delegue jamais.\nC est dans la devise x402, PAS une part de ce que vous facturez par tache : une tache se paie en MON et une question en $PANAL.",
     vigilante: "La sentinelle. Toutes les 60 s, elle passe en revue vos taches ouvertes et recupere ce qui est reste bloque : une livraison jamais ancree, un travail mort a mi-chemin, ou une commande payee qui n est jamais arrivee.\nVIGILANTE=off la desactive. PUBLIC_URL est votre endpoint https.",
+    seguridad: "Durcissement. LIMITE_POR_MINUTO limite les requêtes par IP (0 le désactive) ; chaque requête non authentifiée coûte un appel RPC, donc sans plafond une boucle curl empêche votre agent de livrer.\nTRAS_PROXY=1 seulement avec un proxy devant. AUTH_ESTRICTA=1 rejette les signatures de téléchargement sans expiration.",
   },
   readme: `# {name}
 
@@ -610,6 +627,8 @@ PUBLIC_URL=https://votre-domaine npm run register
 | \`src/agent.ts\` | **Le seul que vous modifiez.** Votre travail va dans \`handleTask()\`. |
 | \`src/server.ts\` | Reçoit la commande, vérifie les signatures, livre sur la chaîne. |
 | \`src/register.ts\` | Votre fiche : nom, description, compétences, prix. |
+| \`src/pdf.ts\` | Transforme du texte en PDF, sans dépendances. Supprimez-le si vous ne livrez pas de fichiers. |
+| \`src/vigilante.ts\` | Récupère ce qui est resté bloqué : une livraison jamais ancrée, un travail à moitié fait. |
 | \`.env\` | Votre clé privée et celle de votre modèle. Ne le committez jamais. |
 
 ## Comment vous êtes payé
@@ -681,6 +700,7 @@ O idioma vem de --lang, depois de PANAL_LANG e, por fim, do locale do sistema.`,
     x402: 'Cobrança por chamada (opcional). Deixe vazio e o seu agente só aceita trabalhos do escrow.\nO preço é por pedido, num token EIP-2612: não pode ser MON, o esquema precisa de `permit`.',
     subcontrata: "Subcontratar (opcional, desligado por omissao). O seu agente pode pagar a outro pelo que nao sabe fazer (ver ctx.consultar em agent.ts). Sem um numero aqui, nunca delega.\nVai na moeda do x402 e NAO e uma fatia do que cobra por tarefa: uma tarefa paga-se em MON e uma pergunta em $PANAL.",
     vigilante: "O vigia. A cada 60 s reve as suas tarefas abertas e recupera o que ficou preso: uma entrega que nunca foi ancorada, trabalho que morreu a meio, ou uma encomenda paga que nunca chegou.\nVIGILANTE=off desliga-o. PUBLIC_URL e o seu endpoint https.",
+    seguridad: "Endurecimento. LIMITE_POR_MINUTO limita os pedidos por IP (0 desativa); cada pedido não autenticado custa uma chamada RPC, por isso sem limite um ciclo de curl deixa o seu agente sem poder entregar.\nTRAS_PROXY=1 só com um proxy à frente. AUTH_ESTRICTA=1 rejeita assinaturas de descarga sem validade.",
   },
   readme: `# {name}
 
@@ -706,6 +726,8 @@ PUBLIC_URL=https://o-seu-dominio npm run register
 | \`src/agent.ts\` | **O único que edita.** O seu trabalho vai em \`handleTask()\`. |
 | \`src/server.ts\` | Recebe o pedido, verifica assinaturas e entrega na cadeia. |
 | \`src/register.ts\` | A sua ficha: nome, descrição, competências, preço. |
+| \`src/pdf.ts\` | Converte texto em PDF, sem dependências. Apague-o se não entregar ficheiros. |
+| \`src/vigilante.ts\` | Recupera o que ficou preso: uma entrega sem âncora, trabalho a meio. |
 | \`.env\` | A sua chave privada e a do modelo. Nunca faça commit dele. |
 
 ## Como recebe
@@ -775,6 +797,7 @@ const ru: Catalog = {
     x402: 'Плата за вызов (необязательно). Оставьте пустым — агент будет брать только заказы через эскроу.\nЦена за один запрос, в токене с EIP-2612: MON не подходит, схеме нужен `permit`.',
     subcontrata: "Субподряд (необязательно, по умолчанию выключен). Ваш агент может заплатить другому за то, чего не умеет сам (см. ctx.consultar в agent.ts). Без числа здесь он никогда не делегирует.\nУказывается в валюте x402, а НЕ долей от оплаты за задачу: задача оплачивается в MON, а вопрос в $PANAL.",
     vigilante: "Сторож. Каждые 60 с проверяет ваши открытые задачи и вытаскивает то, что застряло: доставку, которая не попала в блокчейн, работу, оборвавшуюся на середине, или оплаченный заказ, который так и не пришел.\nVIGILANTE=off выключает его. PUBLIC_URL ваш https-эндпоинт.",
+    seguridad: "Усиление защиты. LIMITE_POR_MINUTO ограничивает запросы с одного IP (0 отключает); каждый неаутентифицированный запрос стоит одного вызова RPC, поэтому без лимита цикл curl лишает агента возможности сдавать работу.\nTRAS_PROXY=1 только если впереди стоит обратный прокси. AUTH_ESTRICTA=1 отклоняет подписи скачивания без срока действия.",
   },
   readme: `# {name}
 
@@ -800,6 +823,8 @@ PUBLIC_URL=https://ваш-домен npm run register
 | \`src/agent.ts\` | **Единственный, который вы правите.** Ваша работа — в \`handleTask()\`. |
 | \`src/server.ts\` | Принимает заказ, проверяет подписи, сдаёт работу в блокчейн. |
 | \`src/register.ts\` | Ваша карточка: имя, описание, навыки, цена. |
+| \`src/pdf.ts\` | Превращает текст в PDF, без зависимостей. Удалите, если не отдаёте файлы. |
+| \`src/vigilante.ts\` | Вытаскивает застрявшее: доставку без записи в блокчейн, работу на середине. |
 | \`.env\` | Ваш приватный ключ и ключ модели. Никогда не коммитьте его. |
 
 ## Как вы получаете деньги
@@ -870,6 +895,7 @@ const bn: Catalog = {
     x402: 'প্রতি কলে চার্জ (ঐচ্ছিক)। ফাঁকা রাখলে আপনার এজেন্ট কেবল এসক্রো কাজ নেবে।\nদাম প্রতি অনুরোধে, EIP-2612 টোকেনে — MON চলবে না, স্কিমটির `permit` দরকার।',
     subcontrata: "সাবকন্ট্রাক্টিং (ঐচ্ছিক, ডিফল্টে বন্ধ)। আপনার এজেন্ট যা নিজে পারে না, তার জন্য অন্যকে অর্থ দিতে পারে (agent.ts-এ ctx.consultar দেখুন)। এখানে সংখ্যা না থাকলে সে কখনও দায়িত্ব দেয় না।\nএটি x402-এর মুদ্রায়, কাজপ্রতি আয়ের অংশ নয়: কাজের দাম MON-এ আর প্রশ্নের দাম $PANAL-এ।",
     vigilante: "প্রহরী। প্রতি ৬০ সেকেন্ডে আপনার খোলা কাজগুলি দেখে এবং আটকে যাওয়া জিনিস উদ্ধার করে: চেইনে না ওঠা ডেলিভারি, মাঝপথে মরে যাওয়া কাজ, বা টাকা দেওয়া হয়েছে অথচ কখনও পৌঁছায়নি এমন আদেশ।\nVIGILANTE=off এটি বন্ধ করে। PUBLIC_URL আপনার https এন্ডপয়েন্ট।",
+    seguridad: "কঠোরকরণ। LIMITE_POR_MINUTO প্রতি IP অনুরোধ সীমিত করে (0 দিলে বন্ধ); প্রতিটি অননুমোদিত অনুরোধে একটি RPC কল খরচ হয়, তাই সীমা ছাড়া একটি curl লুপ আপনার এজেন্টকে ডেলিভারি করতে অক্ষম করে দেয়।\nTRAS_PROXY=1 কেবল সামনে রিভার্স প্রক্সি থাকলে। AUTH_ESTRICTA=1 মেয়াদহীন ডাউনলোড স্বাক্ষর প্রত্যাখ্যান করে।",
   },
   readme: `# {name}
 
@@ -894,6 +920,8 @@ PUBLIC_URL=https://আপনার-ডোমেইন npm run register
 | \`src/agent.ts\` | **কেবল এটিই আপনি বদলান।** আপনার কাজ যায় \`handleTask()\`-এ। |
 | \`src/server.ts\` | কাজ গ্রহণ করে, স্বাক্ষর যাচাই করে, চেইনে ডেলিভার করে। |
 | \`src/register.ts\` | আপনার পরিচিতি: নাম, বিবরণ, দক্ষতা, দাম। |
+| \`src/pdf.ts\` | টেক্সট থেকে PDF বানায়, নির্ভরতা ছাড়াই। ফাইল না দিলে মুছে দিন। |
+| \`src/vigilante.ts\` | আটকে যাওয়া কাজ উদ্ধার করে: চেইনে না ওঠা ডেলিভারি, মাঝপথে থামা কাজ। |
 | \`.env\` | আপনার প্রাইভেট কী ও মডেল কী। কখনও কমিট করবেন না। |
 
 ## আপনি কীভাবে অর্থ পান
@@ -962,6 +990,7 @@ const ur: Catalog = {
     x402: 'فی کال وصولی (اختیاری)۔ خالی چھوڑ دیں تو آپ کا ایجنٹ صرف ایسکرو کے کام لے گا۔\nقیمت فی درخواست ہے، EIP-2612 ٹوکن میں — MON نہیں چل سکتا، اس اسکیم کو `permit` چاہیے۔',
     subcontrata: "سب کنٹریکٹنگ (اختیاری، بذریعہ ڈیفالٹ بند)۔ آپ کا ایجنٹ جو خود نہیں کر سکتا اس کے لیے دوسرے کو ادائیگی کر سکتا ہے (agent.ts میں ctx.consultar دیکھیں)۔ یہاں نمبر کے بغیر وہ کبھی نہیں سونپتا۔\nیہ x402 کی کرنسی میں ہے، فی ٹاسک آمدنی کا حصہ نہیں: ٹاسک MON میں اور سوال $PANAL میں ادا ہوتا ہے۔",
     vigilante: "نگہبان۔ ہر 60 سیکنڈ میں آپ کے کھلے کام دیکھتا ہے اور جو اٹکا ہے اسے بچاتا ہے: وہ ڈیلیوری جو چین پر درج نہ ہوئی، وہ کام جو بیچ میں مر گیا، یا ادا شدہ آرڈر جو کبھی نہ پہنچا۔\nVIGILANTE=off اسے بند کرتا ہے۔ PUBLIC_URL آپ کا https اینڈ پوائنٹ ہے۔",
+    seguridad: "سختی۔ LIMITE_POR_MINUTO فی IP درخواستیں محدود کرتا ہے (0 سے بند)؛ ہر غیر تصدیق شدہ درخواست ایک RPC کال خرچ کرتی ہے، اس لیے حد کے بغیر ایک curl لوپ آپ کے ایجنٹ کو ڈیلیور کرنے سے روک سکتا ہے۔\nTRAS_PROXY=1 صرف اس صورت جب آگے ریورس پراکسی ہو۔ AUTH_ESTRICTA=1 بغیر میعاد والے ڈاؤن لوڈ دستخط مسترد کرتا ہے۔",
   },
   readme: `# {name}
 
@@ -986,6 +1015,8 @@ PUBLIC_URL=https://آپ-کا-ڈومین npm run register
 | \`src/agent.ts\` | **صرف یہی آپ بدلتے ہیں۔** آپ کا کام \`handleTask()\` میں جاتا ہے۔ |
 | \`src/server.ts\` | کام وصول کرتا ہے، دستخط جانچتا ہے، چین پر ڈیلیور کرتا ہے۔ |
 | \`src/register.ts\` | آپ کا تعارف: نام، تفصیل، مہارتیں، قیمت۔ |
+| \`src/pdf.ts\` | متن کو PDF میں بدلتا ہے، بغیر انحصار کے۔ فائلیں نہ دیں تو حذف کر دیں۔ |
+| \`src/vigilante.ts\` | اٹکے ہوئے کام واپس لاتا ہے: چین پر درج نہ ہوئی ڈیلیوری، ادھورا کام۔ |
 | \`.env\` | آپ کی نجی کلید اور ماڈل کی کلید۔ اسے کبھی کمٹ نہ کریں۔ |
 
 ## آپ کو ادائیگی کیسے ملتی ہے

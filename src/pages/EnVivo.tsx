@@ -10,6 +10,7 @@ import type { StreamFilter } from '@/components/live/StreamControls';
 import SwarmCanvas from '@/components/live/SwarmCanvas';
 import { useLiveStream } from '@/components/live/useLiveStream';
 import { useNetworkStats } from '@/hooks/useNetworkStats';
+import { useAhora } from '@/hooks/useAhora';
 import type { StreamEntry } from '@/components/live/useLiveStream';
 import { formatMon } from '@/data/agents';
 import { formatEther } from 'viem';
@@ -90,37 +91,36 @@ function LiveStat({
   label: string;
 }) {
   const reduced = usePrefersReduced();
-  const [target, setTarget] = useState(base);
   const [display, setDisplay] = useState(base);
   const prevRef = useRef(base);
 
-  // Dato real: el valor objetivo es exactamente `base` (sin fluctuación
-  // simulada); la transición suaviza los cambios cuando llegan nuevos datos.
-  useEffect(() => {
-    setTarget(base);
-  }, [base]);
-
+  // Dato real: el objetivo es exactamente `base` (sin fluctuación simulada); la
+  // transición solo suaviza los cambios cuando llegan datos nuevos.
+  //
+  // Antes había un `target` en estado que un efecto igualaba a `base`. Era
+  // estado derivado: siempre acababa valiendo lo mismo, un render más tarde.
+  // Costaba un render de más por cada dato que llegaba y no aportaba nada.
   useEffect(() => {
     if (reduced) return; // con reduced-motion se muestra el valor final directo
     const from = prevRef.current;
-    prevRef.current = target;
+    prevRef.current = base;
     let raf = 0;
     const t0 = performance.now();
     const tick = (now: number) => {
       const t = Math.min(1, (now - t0) / 400);
       const e = 1 - Math.pow(1 - t, 2);
-      setDisplay(from + (target - from) * e);
+      setDisplay(from + (base - from) * e);
       if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [target, reduced]);
+  }, [base, reduced]);
 
   const { i18n } = useTranslation();
   const text = new Intl.NumberFormat(i18n.language, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-  }).format(reduced ? target : display);
+  }).format(reduced ? base : display);
 
   return (
     <div className="flex flex-col gap-2">
@@ -327,6 +327,9 @@ function BigContracts() {
   const { t } = useTranslation();
   const reduced = usePrefersReduced();
   const { data: topTasks, isLoading } = useTopTasks(5);
+  // "hace 3 minutos" tiene que seguir contando. Calculado en el render se
+  // quedaba clavado en el momento en que se pinto la tabla.
+  const ahora = useAhora();
   const maxWei = topTasks && topTasks.length > 0 ? topTasks[0].amountWei : 0n;
   return (
     <section className="border-t border-coal-line">
@@ -397,7 +400,7 @@ function BigContracts() {
                     )}
                   </td>
                   <td className="hidden py-4 text-right font-mono text-[11px] text-coal-mute sm:table-cell">
-                    {timeAgo(Math.max(0, Math.floor(Date.now() / 1000) - Number(c.createdAt)), t)}
+                    {timeAgo(Math.max(0, ahora - Number(c.createdAt)), t)}
                   </td>
                 </motion.tr>
               ))}

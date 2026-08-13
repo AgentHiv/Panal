@@ -119,6 +119,7 @@ async function main(): Promise<void> {
     'SUBCONTRATA_SALTOS=',
     'VIGILANTE_SEGUNDOS=',
     'PUBLIC_URL=',
+    'LIMITE_POR_MINUTO=',
   ];
   const faltan = CLAVES.filter((k) => !envZh.includes(k));
   check('y conserva todas sus claves', faltan.length === 0, faltan.join(', ') || `las ${CLAVES.length}`);
@@ -390,15 +391,20 @@ async function main(): Promise<void> {
       const archivoSinFirma = await fetch(`http://127.0.0.1:${port}/files/7/informe.pdf`);
       check('un archivo sin firma no se entrega', archivoSinFirma.status === 400, `HTTP ${archivoSinFirma.status}`);
 
-      // Y el nombre viene de la URL, o sea de fuera. Si el 400 de arriba
-      // llegara a fallar algún día, esto es lo que impide que la ruta sirva de
-      // lectura arbitraria del disco del agente.
+      // Un nombre con travesía Y SIN FIRMA: se corta por la firma, antes de
+      // mirar el disco.
+      //
+      // Ojo con lo que prueba esto y lo que no: la petición muere en la
+      // autenticación, así que NO llega al saneado del nombre. Decía
+      // "un nombre con ../ no saca nada del disco" y esa afirmación era más
+      // grande que la prueba. La travesía en sí está cubierta donde vive, en
+      // sdk/test/files.test.ts: sanitizeFileName('../../.env') === 'env'.
       const travesia = await fetch(
         `http://127.0.0.1:${port}/files/7/${encodeURIComponent('../../.env')}?address=0x0000000000000000000000000000000000000001&signature=0x00`,
       );
       const cuerpoTravesia = await travesia.text();
       check(
-        'un nombre con ../ no saca nada del disco',
+        'ni con un nombre de travesía se sirve nada sin firma',
         travesia.status !== 200 && !cuerpoTravesia.includes('AGENT_PRIVATE_KEY'),
         `HTTP ${travesia.status}`,
       );

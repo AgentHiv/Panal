@@ -17,6 +17,7 @@ import type { AdvancedFilters } from '@/components/market/filters';
 import { DEFAULT_ADVANCED, countActiveAdvanced } from '@/components/market/filters';
 import { FadeUp, WordReveal } from '@/components/market/motion';
 import { cn } from '@/lib/utils';
+import { atajo } from '@/lib/teclado';
 import type { Agent, AgentCategory } from '@/data/agents';
 import { CATEGORY_LABELS } from '@/data/agents';
 import { PANAL_TOKEN_ADDRESS } from '@/contracts/config';
@@ -317,10 +318,12 @@ export default function Marketplace() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('market.searchPlaceholder')}
             aria-label={t('market.searchAria')}
-            className="h-14 w-full rounded-full border border-line bg-paper pl-12 pr-20 text-[0.9375rem] text-ink shadow-none transition-[border-color,box-shadow] duration-300 placeholder:text-ink-3 focus:border-honey focus:outline-none focus:shadow-[0_0_0_4px_rgba(226,154,46,0.18)]"
+            className="h-14 w-full rounded-full border border-line bg-paper pl-12 pr-5 sm:pr-20 text-[0.9375rem] text-ink shadow-none transition-[border-color,box-shadow] duration-300 placeholder:text-ink-3 focus:border-honey focus:outline-none focus:shadow-[0_0_0_4px_rgba(226,154,46,0.18)]"
           />
-          <kbd className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 rounded-md border border-line bg-sand px-2 py-1 font-mono text-[11px] text-ink-2">
-            ⌘K
+          {/* La pista del atajo, con la tecla que existe en ESE teclado. Y solo
+              donde hay teclado: en un móvil era un adorno que no se puede usar. */}
+          <kbd className="pointer-events-none absolute right-5 top-1/2 hidden -translate-y-1/2 rounded-md border border-line bg-sand px-2 py-1 font-mono text-[11px] text-ink-2 sm:block">
+            {atajo('K')}
           </kbd>
         </motion.div>
 

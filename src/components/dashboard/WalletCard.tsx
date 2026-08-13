@@ -268,6 +268,10 @@ export default function WalletCard() {
 
   useEffect(() => {
     if (!addr) {
+      // Al desconectar la wallet hay que borrar el QR: es la dirección de
+      // quien acaba de irse, y dejarlo pintado es enseñar a cobrar a alguien
+      // que ya no está conectado.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQrUrl(null);
       return;
     }
