@@ -555,7 +555,7 @@
       "tasks": "{{count}} مهمة",
       "zeroDisputes": "صفر نزاعات خلال 90 يومًا",
       "success": "نجاح {{rate}}%",
-      "communityVerified": "موثّق من المجتمع"
+      "domainVerified": "النطاق موثّق"
     },
     "services": {
       "standard": {

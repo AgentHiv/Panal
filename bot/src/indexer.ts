@@ -35,6 +35,7 @@ import type { BotConfig } from './config.js';
 import { escrowAbi, politePause, withRetry, type ChainClients } from './chain.js';
 import type { StopSignal } from './notifier.js';
 import { IndexStore, type IndexedEvent } from './indexer-store.js';
+import { verificarDominio } from './verificar-dominio.js';
 
 // ---------------------------------------------------------------------------
 // ABIs y eventos (firmas exactas de contracts/src/v2/).
@@ -119,6 +120,14 @@ const BOOTSTRAP_HALF_WINDOW = 120n;
 const INITIAL_LOG_RANGE = 100n;
 /** Ventanas de barrido procesadas como máximo por tick del loop principal. */
 const SWEEP_BATCH_PER_TICK = 20;
+/**
+ * Cada cuánto se vuelve a mirar el dominio de un agente ya verificado.
+ *
+ * Seis horas. Un dominio caduca, se vende o deja de apuntar donde apuntaba, y
+ * una insignia ganada hace meses no dice nada de hoy; pero repasarlo en cada
+ * tick serían miles de peticiones diarias contra servidores ajenos.
+ */
+const VERIFICAR_CADA_S = 6 * 60 * 60;
 /** Reintentos por ventana de getLogs ante errores NO relacionados con el rango. */
 const WINDOW_ATTEMPTS = 3;
 
@@ -591,6 +600,41 @@ async function refrescarFichas(cfg: BotConfig, clients: ChainClients, store: Ind
   }
 }
 
+/**
+ * Comprueba que el dominio de cada agente lo respalda.
+ *
+ * Va aparte de `refrescarFichas` a proposito: aquella lee la cadena, que
+ * responde rapido y es de fiar; esta pide a servidores de terceros, que pueden
+ * tardar, colgarse o no existir. Mezclarlas dejaria el catalogo entero a merced
+ * del endpoint mas lento.
+ *
+ * De cinco en cinco por vuelta y como mucho cada VERIFICAR_CADA_S por agente:
+ * con mil agentes, pedirles la tarjeta a todos en cada tick serian mil
+ * peticiones cada quince segundos contra dominios ajenos, que es un ataque, no
+ * una comprobacion.
+ */
+async function verificarDominios(store: IndexStore): Promise<void> {
+  const tanda = store.pendientesDeVerificar(VERIFICAR_CADA_S, 5);
+  if (tanda.length === 0) return;
+
+  let cambios = 0;
+  await Promise.all(
+    tanda.map(async (p) => {
+      const antes = p.verificado;
+      const { ok, motivo } = await verificarDominio(p.botUrl!, p.address);
+      store.marcarVerificacion(p.address, ok, motivo);
+      if (antes !== ok) {
+        cambios += 1;
+        console.log(
+          `[index] ${p.name || p.address.slice(0, 10)}: ${ok ? 'dominio verificado' : `sin verificar (${motivo})`}`,
+        );
+      }
+    }),
+  );
+
+  if (cambios === 0) console.log(`[index] dominios repasados: ${tanda.length}, sin cambios`);
+}
+
 /** Bucle principal del modo indexer. */
 export async function runIndexer(
   cfg: BotConfig,
@@ -616,6 +660,7 @@ export async function runIndexer(
       const newHead = await withRetry('getBlockNumber', () => clients.publicClient.getBlockNumber());
       await incremental(cfg, clients, store, newHead);
       await refrescarFichas(cfg, clients, store);
+      await verificarDominios(store);
       await sweepBackwards(cfg, clients, store);
       store.saveState();
     } catch (err) {

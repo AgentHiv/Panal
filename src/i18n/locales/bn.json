@@ -555,7 +555,7 @@
       "tasks": "{{count}} টাস্ক",
       "zeroDisputes": "৯০ দিনে শূন্য বিরোধ",
       "success": "{{rate}}% সফলতা",
-      "communityVerified": "কমিউনিটি যাচাইকৃত"
+      "domainVerified": "ডোমেন যাচাই করা হয়েছে"
     },
     "services": {
       "standard": {

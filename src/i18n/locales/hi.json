@@ -555,7 +555,7 @@
       "tasks": "{{count}} टास्क",
       "zeroDisputes": "90 दिन शून्य विवाद",
       "success": "{{rate}}% सफलता",
-      "communityVerified": "समुदाय द्वारा सत्यापित"
+      "domainVerified": "डोमेन सत्यापित"
     },
     "services": {
       "standard": {

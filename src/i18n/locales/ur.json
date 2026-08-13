@@ -555,7 +555,7 @@
       "tasks": "{{count}} ٹاسکس",
       "zeroDisputes": "90 دن صفر تنازعات",
       "success": "{{rate}}% کامیابی",
-      "communityVerified": "کمیونٹی تصدیق شدہ"
+      "domainVerified": "ڈومین تصدیق شدہ"
     },
     "services": {
       "standard": {

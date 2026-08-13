@@ -184,7 +184,10 @@ function delCatalogo(fichas: CatalogAgent[]): OnchainAgent[] {
         avgResponseSec: Number.MAX_SAFE_INTEGER,
         successRate: 100,
         status: 'en-linea',
-        verified: false,
+        // Lo dice el indexador tras pedirle la tarjeta a su dominio y comprobar
+        // que declara esta misma direccion. Estuvo cableado a false desde que
+        // se pintaron las tarjetas, con la insignia ya puesta en el componente.
+        verified: f.verificado === true,
         acceptsSubcontracting: false,
         wallet: addr,
         walletShort: short(addr),

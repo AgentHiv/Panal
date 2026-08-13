@@ -137,6 +137,20 @@ export interface AgentProfile {
   registeredAt: number;
   /** Cuándo se leyó del registry, para saber si toca refrescarla. */
   fetchedTs: number;
+
+  /**
+   * Si su dominio declara esta misma dirección en `/agent.json`.
+   *
+   * El nombre lo escribe el propio agente y no es único, así que por sí solo no
+   * prueba nada: cualquiera puede registrarse como "Lint". El dominio sí es de
+   * alguien, y la tarjeta que sirve declara su dirección. `undefined` mientras
+   * no se haya mirado todavía.
+   */
+  verificado?: boolean;
+  /** Por qué no está verificado, para poder enseñarlo. */
+  verificadoMotivo?: string;
+  /** Cuándo se comprobó, para no repetirlo en cada vuelta. */
+  verificadoTs?: number;
 }
 
 export interface DayStats {
@@ -631,8 +645,52 @@ export class IndexStore {
   private readonly sucios = new Set<string>();
 
   upsertProfile(profile: AgentProfile): void {
-    this.profiles.set(profile.address.toLowerCase(), profile);
-    this.sucios.delete(profile.address.toLowerCase());
+    const clave = profile.address.toLowerCase();
+    // La verificación del dominio NO viene del registry, va por su cuenta y es
+    // cara (una petición HTTP a un tercero). Si se dejara pisar aquí, cada
+    // relectura de la ficha la borraría y habría que rehacerla entera.
+    const antes = this.profiles.get(clave);
+    if (antes && profile.verificado === undefined) {
+      profile.verificado = antes.verificado;
+      profile.verificadoMotivo = antes.verificadoMotivo;
+      profile.verificadoTs = antes.verificadoTs;
+    }
+    // Salvo que haya cambiado de endpoint: entonces lo anterior ya no dice nada
+    // de la URL nueva y hay que volver a mirarlo.
+    if (antes && antes.botUrl !== profile.botUrl) {
+      profile.verificado = undefined;
+      profile.verificadoMotivo = undefined;
+      profile.verificadoTs = undefined;
+    }
+    this.profiles.set(clave, profile);
+    this.sucios.delete(clave);
+  }
+
+  /** Guarda el resultado de mirar el dominio de un agente. */
+  marcarVerificacion(address: string, ok: boolean, motivo: string): void {
+    const p = this.profiles.get(address.toLowerCase());
+    if (!p) return;
+    p.verificado = ok;
+    p.verificadoMotivo = ok ? undefined : motivo;
+    p.verificadoTs = Math.floor(Date.now() / 1000);
+  }
+
+  /**
+   * Los que toca (re)verificar: sin mirar todavía, o mirados hace rato.
+   *
+   * Se rehace cada tanto y no una sola vez porque un dominio caduca, se vende o
+   * deja de apuntar donde apuntaba, y una insignia de verificado que se ganó
+   * hace ocho meses no dice nada de hoy.
+   */
+  pendientesDeVerificar(maxEdadS: number, tope: number): AgentProfile[] {
+    const ahora = Math.floor(Date.now() / 1000);
+    const toca = [...this.profiles.values()].filter(
+      (p) => p.botUrl && (p.verificadoTs === undefined || ahora - p.verificadoTs > maxEdadS),
+    );
+    // Primero los que nunca se han mirado: un agente recién llegado sin
+    // insignia se ve peor que uno cuya insignia es de ayer.
+    toca.sort((a, b) => (a.verificadoTs ?? 0) - (b.verificadoTs ?? 0));
+    return toca.slice(0, tope);
   }
 
   /** Marca una ficha como vieja. La llama el indexador al ver un evento suyo. */

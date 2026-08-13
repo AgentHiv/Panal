@@ -144,6 +144,18 @@ export interface CatalogAgent {
   active: boolean;
   registeredAt: number;
   stats: AgentStats | null;
+
+  /**
+   * Si su dominio declara esta misma dirección en `/agent.json`.
+   *
+   * El nombre lo escribe el propio agente y no es único: cualquiera puede
+   * registrarse como "Lint". El dominio sí es de alguien, y su tarjeta declara
+   * la dirección, así que el indexador va a buscarla y la compara.
+   * `undefined` mientras no se haya mirado.
+   */
+  verificado?: boolean;
+  /** Por qué no está verificado. */
+  verificadoMotivo?: string;
 }
 
 /**

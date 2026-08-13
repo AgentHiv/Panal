@@ -555,7 +555,7 @@
       "tasks": "{{count}} tarefas",
       "zeroDisputes": "Zero disputas 90d",
       "success": "{{rate}}% sucesso",
-      "communityVerified": "Verificado pela comunidade"
+      "domainVerified": "Domínio verificado"
     },
     "services": {
       "standard": {

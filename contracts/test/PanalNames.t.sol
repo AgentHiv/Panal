@@ -48,208 +48,274 @@ contract PanalNamesTest is Test {
     address tesoreria = makeAddr("tesoreria");
     address agente = makeAddr("agente");
     address otro = makeAddr("otro");
+    address tercero = makeAddr("tercero");
     address cualquiera = makeAddr("cualquiera");
 
-    uint256 constant CORTO = 200_000e18;
-    uint256 constant MEDIO = 40_000e18;
-    uint256 constant LARGO = 10_000e18;
+    uint256 constant CORTO = 5e18;
+    uint256 constant MEDIO = 3e18;
+    uint256 constant LARGO = 1e18;
+    uint256 constant COMISION = 50; // 0,5%
+
+    uint256 constant SALDO = 10_000e18;
 
     function setUp() public {
         token = new TokenFalso();
         registry = new RegistryFalso();
-        names = new PanalNames(address(token), address(registry), tesoreria, CORTO, MEDIO, LARGO);
+        names = new PanalNames(address(token), address(registry), tesoreria, CORTO, MEDIO, LARGO, COMISION);
 
         registry.setActivo(agente, true);
         registry.setActivo(otro, true);
+        registry.setActivo(tercero, true);
 
         _fondear(agente);
         _fondear(otro);
+        _fondear(tercero);
         _fondear(cualquiera);
     }
 
     function _fondear(address a) private {
-        token.dar(a, 5_000_000e18);
+        token.dar(a, SALDO);
         vm.prank(a);
         token.approve(address(names), type(uint256).max);
     }
 
     // ── reclamar ────────────────────────────────────────────────────────────
 
-    function test_reclamar_cobra_y_apunta_en_los_dos_sentidos() public {
+    function test_reclamar_cobra_una_vez_y_apunta_en_los_dos_sentidos() public {
         vm.prank(agente);
-        names.reclamar("traductor", 1);
+        names.reclamar("traductor");
 
         assertEq(names.resolver("traductor"), agente);
         assertEq(names.nombreDe(agente), "traductor");
-        assertEq(token.balanceOf(tesoreria), LARGO, "el alquiler va al tesoro");
+        assertEq(token.balanceOf(tesoreria), LARGO, "la tarifa va al tesoro");
+    }
+
+    /// Es para siempre: no caduca ni hay que renovar.
+    function test_el_nombre_no_caduca() public {
+        vm.prank(agente);
+        names.reclamar("traductor");
+
+        vm.warp(block.timestamp + 3650 days);
+        assertEq(names.resolver("traductor"), agente);
+        assertEq(names.nombreDe(agente), "traductor");
+        assertFalse(names.disponible("traductor"));
     }
 
     function test_solo_un_agente_activo_puede_reclamar() public {
-        vm.prank(cualquiera); // no esta en el registry
+        vm.prank(cualquiera);
         vm.expectRevert("PanalNames: not an active agent");
-        names.reclamar("traductor", 1);
+        names.reclamar("traductor");
     }
 
     function test_un_nombre_por_direccion() public {
         vm.startPrank(agente);
-        names.reclamar("traductor", 1);
+        names.reclamar("traductor");
         vm.expectRevert("PanalNames: already has a name");
-        names.reclamar("revisor", 1);
+        names.reclamar("revisor");
         vm.stopPrank();
     }
 
-    /// Si se te pasa el plazo y nadie te lo quita, no te quedas atrapado sin
-    /// poder pedir ninguno.
-    function test_si_caduca_del_todo_puede_pedir_otro_sin_liberar_antes() public {
+    function test_un_nombre_ocupado_no_se_puede_reclamar() public {
         vm.prank(agente);
-        names.reclamar("traductor", 1);
+        names.reclamar("traductor");
 
-        vm.warp(block.timestamp + 365 days + 90 days + 1);
+        vm.prank(otro);
+        vm.expectRevert("PanalNames: taken");
+        names.reclamar("traductor");
+    }
+
+    function test_precio_por_tramo() public view {
+        assertEq(names.tarifaDe("abc"), CORTO);
+        assertEq(names.tarifaDe("abcd"), MEDIO);
+        assertEq(names.tarifaDe("abcde"), LARGO);
+        assertEq(names.tarifaDe("abcdefghijk"), LARGO);
+    }
+
+    // ── el candado del año ──────────────────────────────────────────────────
+
+    function test_antes_del_ano_no_se_vende() public {
+        vm.prank(agente);
+        names.reclamar("traductor");
+
+        vm.warp(block.timestamp + 364 days);
+        vm.prank(agente);
+        vm.expectRevert("PanalNames: locked");
+        names.ponerEnVenta(100e18);
+    }
+
+    function test_antes_del_ano_tampoco_se_regala() public {
+        vm.prank(agente);
+        names.reclamar("traductor");
+
+        vm.warp(block.timestamp + 364 days);
+        vm.prank(agente);
+        vm.expectRevert("PanalNames: locked");
+        names.transferir(otro);
+    }
+
+    function test_cumplido_el_ano_ya_se_puede_poner_en_venta() public {
+        vm.prank(agente);
+        names.reclamar("traductor");
+
+        vm.warp(block.timestamp + 365 days);
+        vm.prank(agente);
+        names.ponerEnVenta(100e18);
+
+        (,, uint256 precio, bool transferible) = names.fichaDe("traductor");
+        assertEq(precio, 100e18);
+        assertTrue(transferible);
+    }
+
+    /// El candado se reinicia con cada dueño: comprar barato para revender la
+    /// semana siguiente no funciona.
+    function test_el_candado_vuelve_a_empezar_con_el_comprador() public {
+        _vender("traductor", agente, otro, 100e18);
+
+        vm.prank(otro);
+        vm.expectRevert("PanalNames: locked");
+        names.ponerEnVenta(500e18);
+
+        vm.warp(block.timestamp + 365 days);
+        vm.prank(otro);
+        names.ponerEnVenta(500e18);
+        (,, uint256 precio,) = names.fichaDe("traductor");
+        assertEq(precio, 500e18);
+    }
+
+    // ── venta ───────────────────────────────────────────────────────────────
+
+    function test_vender_cobra_el_medio_por_ciento_y_el_resto_al_vendedor() public {
+        uint256 precio = 1_000e18;
+        uint256 comision = precio * COMISION / 10_000; // 5e18
+
+        uint256 antesVendedor = token.balanceOf(agente);
+        _vender("traductor", agente, otro, precio);
+
+        assertEq(names.resolver("traductor"), otro, "cambia de dueno");
+        assertEq(names.nombreDe(agente), "", "el vendedor se queda sin nombre");
+        assertEq(names.nombreDe(otro), "traductor");
+
+        assertEq(token.balanceOf(tesoreria), LARGO + comision, "la tarifa inicial mas la comision");
+        // Menos LARGO porque el vendedor pago su tarifa al reclamarlo.
+        assertEq(
+            token.balanceOf(agente), antesVendedor - LARGO + precio - comision, "al vendedor, menos la comision"
+        );
+        assertEq(token.balanceOf(otro), SALDO - precio, "el comprador paga el precio entero");
+    }
+
+    function test_tras_vender_el_vendedor_puede_pedir_otro_nombre() public {
+        _vender("traductor", agente, otro, 100e18);
 
         vm.prank(agente);
-        names.reclamar("revisor", 1);
-
+        names.reclamar("revisor");
         assertEq(names.nombreDe(agente), "revisor");
-        assertTrue(names.disponible("traductor"), "el viejo queda libre para otros");
     }
 
-    function test_si_caduca_del_todo_puede_recuperar_el_suyo() public {
+    function test_no_se_compra_lo_que_no_esta_en_venta() public {
         vm.prank(agente);
-        names.reclamar("traductor", 1);
+        names.reclamar("traductor");
 
-        vm.warp(block.timestamp + 365 days + 90 days + 1);
-
-        vm.prank(agente);
-        names.reclamar("traductor", 1);
-        assertEq(names.resolver("traductor"), agente);
+        vm.prank(otro);
+        vm.expectRevert("PanalNames: not for sale");
+        names.comprar("traductor");
     }
 
-    /// En gracia todavia es suyo: lo que toca es renovar, no pedir otro.
-    function test_en_gracia_no_se_le_suelta_el_nombre() public {
+    function test_el_comprador_tiene_que_ser_agente_activo_y_sin_nombre() public {
         vm.prank(agente);
-        names.reclamar("traductor", 1);
+        names.reclamar("traductor");
+        vm.warp(block.timestamp + 365 days);
+        vm.prank(agente);
+        names.ponerEnVenta(100e18);
 
-        vm.warp(block.timestamp + 365 days + 89 days);
+        vm.prank(cualquiera);
+        vm.expectRevert("PanalNames: not an active agent");
+        names.comprar("traductor");
+
+        vm.prank(otro);
+        names.reclamar("revisor");
+        vm.prank(otro);
+        vm.expectRevert("PanalNames: already has a name");
+        names.comprar("traductor");
+    }
+
+    function test_quitar_de_venta() public {
+        vm.prank(agente);
+        names.reclamar("traductor");
+        vm.warp(block.timestamp + 365 days);
+
+        vm.prank(agente);
+        names.ponerEnVenta(100e18);
+        vm.prank(agente);
+        names.quitarDeVenta();
+
+        vm.prank(otro);
+        vm.expectRevert("PanalNames: not for sale");
+        names.comprar("traductor");
+    }
+
+    /// Vendido una vez, deja de estar en venta: si no, el siguiente lo compraria
+    /// al mismo precio al comprador que acaba de pagarlo.
+    function test_tras_venderse_deja_de_estar_en_venta() public {
+        _vender("traductor", agente, otro, 100e18);
+
+        vm.prank(tercero);
+        vm.expectRevert("PanalNames: not for sale");
+        names.comprar("traductor");
+    }
+
+    function test_comision_a_cero_no_toca_la_tesoreria() public {
+        names.fijarComision(0);
+
+        _vender("traductor", agente, otro, 1_000e18);
+        // Solo la tarifa de reclamarlo: de la venta no se llevo nada.
+        assertEq(token.balanceOf(tesoreria), LARGO, "sin comision");
+    }
+
+    /// El tope de la comision no se puede pasar: quien mande en el contrato no
+    /// puede quedarse con las ventas.
+    function test_la_comision_tiene_tope() public {
+        names.fijarComision(200); // el tope, vale
+        vm.expectRevert("PanalNames: over cap");
+        names.fijarComision(201);
+    }
+
+    function test_solo_el_owner_toca_la_comision() public {
+        vm.prank(agente);
+        vm.expectRevert("PanalNames: not owner");
+        names.fijarComision(0);
+    }
+
+    // ── transferir y liberar ────────────────────────────────────────────────
+
+    function test_transferir_pasado_el_ano() public {
+        vm.prank(agente);
+        names.reclamar("traductor");
+        vm.warp(block.timestamp + 365 days);
+
+        vm.prank(agente);
+        names.transferir(otro);
+
+        assertEq(names.resolver("traductor"), otro);
+        assertEq(names.nombreDe(agente), "");
+        assertEq(names.nombreDe(otro), "traductor");
+    }
+
+    function test_no_se_transfiere_a_quien_ya_tiene_nombre() public {
+        vm.prank(agente);
+        names.reclamar("traductor");
+        vm.prank(otro);
+        names.reclamar("revisor");
+        vm.warp(block.timestamp + 365 days);
 
         vm.prank(agente);
         vm.expectRevert("PanalNames: already has a name");
-        names.reclamar("revisor", 1);
+        names.transferir(otro);
     }
 
-    function test_un_nombre_ocupado_no_se_puede_robar() public {
+    /// Soltarlo no es venderlo: no hay que esperar el año.
+    function test_liberar_no_espera_al_ano() public {
         vm.prank(agente);
-        names.reclamar("traductor", 1);
-
-        vm.prank(otro);
-        vm.expectRevert("PanalNames: taken");
-        names.reclamar("traductor", 1);
-    }
-
-    /// El caso que hace que el alquiler tenga sentido: lo abandonado vuelve al
-    /// mercado, y el dueño anterior deja de tener nombre.
-    function test_pasada_la_gracia_lo_coge_otro_y_el_anterior_se_queda_sin_nombre() public {
-        vm.prank(agente);
-        names.reclamar("traductor", 1);
-
-        vm.warp(block.timestamp + 365 days + 90 days + 1);
-        assertTrue(names.disponible("traductor"));
-
-        vm.prank(otro);
-        names.reclamar("traductor", 1);
-
-        assertEq(names.resolver("traductor"), otro);
-        assertEq(names.nombreDe(agente), "", "el anterior ya no lo tiene");
-
-        // Y al quedarse sin nombre puede pedir otro.
-        vm.prank(agente);
-        names.reclamar("revisor", 1);
-        assertEq(names.nombreDe(agente), "revisor");
-    }
-
-    function test_en_gracia_todavia_no_lo_coge_nadie() public {
-        vm.prank(agente);
-        names.reclamar("traductor", 1);
-
-        vm.warp(block.timestamp + 365 days + 89 days);
-        assertFalse(names.disponible("traductor"));
-
-        vm.prank(otro);
-        vm.expectRevert("PanalNames: taken");
-        names.reclamar("traductor", 1);
-    }
-
-    /// Caducado no resuelve, aunque siga en gracia: si dejo de pagar, sus
-    /// clientes no deben seguir mandandole encargos.
-    function test_caducado_no_resuelve_aunque_este_en_gracia() public {
-        vm.prank(agente);
-        names.reclamar("traductor", 1);
-
-        vm.warp(block.timestamp + 365 days + 1);
-        assertEq(names.resolver("traductor"), address(0));
-        assertEq(names.nombreDe(agente), "");
-
-        (,, bool vigente, bool enGracia) = names.fichaDe("traductor");
-        assertFalse(vigente);
-        assertTrue(enGracia);
-    }
-
-    // ── renovar ─────────────────────────────────────────────────────────────
-
-    function test_renueva_cualquiera_no_solo_el_dueno() public {
-        vm.prank(agente);
-        names.reclamar("traductor", 1);
-
-        vm.prank(cualquiera); // ni es el dueño ni es agente registrado
-        names.renovar("traductor", 1);
-
-        assertEq(names.resolver("traductor"), agente, "sigue siendo del mismo");
-        assertEq(token.balanceOf(cualquiera), 5_000_000e18 - LARGO, "pago el que renovo");
-    }
-
-    function test_renovar_antes_de_tiempo_no_pierde_lo_que_quedaba() public {
-        vm.prank(agente);
-        names.reclamar("traductor", 1);
-        (, uint64 primera,,) = names.fichaDe("traductor");
-
-        vm.warp(block.timestamp + 100 days);
-        vm.prank(agente);
-        names.renovar("traductor", 1);
-
-        (, uint64 segunda,,) = names.fichaDe("traductor");
-        assertEq(segunda, primera + 365 days, "suma sobre el vencimiento, no sobre hoy");
-    }
-
-    function test_pasada_la_gracia_ya_no_se_renueva() public {
-        vm.prank(agente);
-        names.reclamar("traductor", 1);
-
-        vm.warp(block.timestamp + 365 days + 90 days + 1);
-        vm.prank(agente);
-        vm.expectRevert("PanalNames: expired");
-        names.renovar("traductor", 1);
-    }
-
-    function test_no_se_puede_asegurar_un_nombre_un_siglo() public {
-        vm.prank(agente);
-        vm.expectRevert("PanalNames: bad years");
-        names.reclamar("traductor", 6);
-    }
-
-    /// Renovando de cinco en cinco tampoco se acumula mas alla del tope.
-    function test_renovar_no_acumula_por_encima_del_tope() public {
-        vm.prank(agente);
-        names.reclamar("traductor", 5);
-
-        vm.prank(agente);
-        vm.expectRevert("PanalNames: too far");
-        names.renovar("traductor", 5);
-    }
-
-    // ── liberar ─────────────────────────────────────────────────────────────
-
-    function test_liberar_lo_deja_libre_en_el_acto() public {
-        vm.prank(agente);
-        names.reclamar("traductor", 1);
+        names.reclamar("traductor");
 
         vm.prank(agente);
         names.liberar();
@@ -258,7 +324,7 @@ contract PanalNamesTest is Test {
         assertEq(names.nombreDe(agente), "");
 
         vm.prank(otro);
-        names.reclamar("traductor", 1);
+        names.reclamar("traductor");
         assertEq(names.resolver("traductor"), otro);
     }
 
@@ -276,77 +342,56 @@ contract PanalNamesTest is Test {
         for (uint256 i = 0; i < malos.length; i++) {
             vm.prank(agente);
             vm.expectRevert("PanalNames: bad char");
-            names.reclamar(malos[i], 1);
+            names.reclamar(malos[i]);
         }
     }
 
     function test_rechaza_guiones_que_enganan() public {
         vm.prank(agente);
         vm.expectRevert("PanalNames: edge hyphen");
-        names.reclamar("-lint", 1);
+        names.reclamar("-lint");
 
         vm.prank(agente);
         vm.expectRevert("PanalNames: edge hyphen");
-        names.reclamar("lint-", 1);
+        names.reclamar("lint-");
 
         vm.prank(agente);
         vm.expectRevert("PanalNames: double hyphen");
-        names.reclamar("li--nt", 1);
+        names.reclamar("li--nt");
     }
 
     function test_rechaza_largos_fuera_de_rango() public {
         vm.prank(agente);
         vm.expectRevert("PanalNames: bad length");
-        names.reclamar("ab", 1);
+        names.reclamar("ab");
 
         vm.prank(agente);
         vm.expectRevert("PanalNames: bad length");
-        names.reclamar("abcdefghijklmnopqrstuvwxyz1234567", 1); // 33
+        names.reclamar("abcdefghijklmnopqrstuvwxyz1234567"); // 33
     }
 
     function test_acepta_guion_interior_y_digitos() public {
         vm.prank(agente);
-        names.reclamar("lex-panal2", 1);
+        names.reclamar("lex-panal2");
         assertEq(names.resolver("lex-panal2"), agente);
     }
 
     // ── tarifas ─────────────────────────────────────────────────────────────
 
-    function test_precio_por_tramo() public view {
-        assertEq(names.tarifaDe("abc"), CORTO);
-        assertEq(names.tarifaDe("abcd"), MEDIO);
-        assertEq(names.tarifaDe("abcde"), LARGO);
-        assertEq(names.tarifaDe("abcdefghijk"), LARGO);
-    }
-
-    function test_varios_anios_multiplican() public {
-        vm.prank(agente);
-        names.reclamar("traductor", 3);
-        assertEq(token.balanceOf(tesoreria), LARGO * 3);
-    }
-
-    function test_el_multisig_puede_bajar_hasta_cero() public {
+    function test_el_owner_puede_bajar_hasta_cero() public {
         names.fijarTarifas(0, 0, 0);
 
         vm.prank(agente);
-        names.reclamar("traductor", 1);
+        names.reclamar("traductor");
         assertEq(token.balanceOf(tesoreria), 0, "gratis, sin tocar el token");
         assertEq(names.resolver("traductor"), agente);
     }
 
-    /// El tope grabado al desplegar: se puede corregir el precio, no se puede
-    /// convertir en un arma.
     function test_no_se_puede_pasar_del_tope() public {
         names.fijarTarifas(CORTO * 10, MEDIO * 10, LARGO * 10); // justo el tope, vale
 
         vm.expectRevert("PanalNames: over cap");
         names.fijarTarifas(CORTO * 10 + 1, MEDIO, LARGO);
-    }
-
-    function test_solo_el_owner_toca_las_tarifas() public {
-        vm.prank(agente);
-        vm.expectRevert("PanalNames: not owner");
-        names.fijarTarifas(0, 0, 0);
     }
 
     function test_sin_saldo_no_hay_nombre() public {
@@ -357,6 +402,18 @@ contract PanalNamesTest is Test {
 
         vm.prank(pobre);
         vm.expectRevert("balance");
-        names.reclamar("traductor", 1);
+        names.reclamar("traductor");
+    }
+
+    // ── utilidad ────────────────────────────────────────────────────────────
+
+    function _vender(string memory nombre, address de, address a, uint256 precio) private {
+        vm.prank(de);
+        names.reclamar(nombre);
+        vm.warp(block.timestamp + 365 days);
+        vm.prank(de);
+        names.ponerEnVenta(precio);
+        vm.prank(a);
+        names.comprar(nombre);
     }
 }

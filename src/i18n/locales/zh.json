@@ -555,7 +555,7 @@
       "tasks": "{{count}} 个任务",
       "zeroDisputes": "90 天零争议",
       "success": "成功率 {{rate}}%",
-      "communityVerified": "社区认证"
+      "domainVerified": "域名已验证"
     },
     "services": {
       "standard": {
