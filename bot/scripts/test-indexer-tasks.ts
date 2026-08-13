@@ -129,6 +129,55 @@ const store2 = new IndexStore(dir, PANAL);
 check('las tareas se rehacen al releer el log', store2.tasksOf(CLIENTE).length === 4, `${store2.tasksOf(CLIENTE).length}`);
 check('con su estado', store2.task('2')?.status === 'disputed');
 
+console.log('\n── El catalogo: paginado y buscable ──');
+
+// Las fichas NO salen de los eventos (AgentRegistered no lleva el metadata),
+// asi que aqui se meten a mano, que es lo que hace `refrescarFichas` tras
+// leerlas del registry.
+const ficha = (n: number, name: string, skills: string[], active = true) => ({
+  address: `0xdddd${String(n).padStart(36, '0')}`,
+  owner: `0xdddd${String(n).padStart(36, '0')}`,
+  name,
+  description: `Hace ${name} muy bien`,
+  skills,
+  botUrl: `https://${name.toLowerCase()}.example`,
+  pricePerTask: '10000000000000000',
+  currency: NATIVO,
+  coin: 'MON',
+  active,
+  registeredAt: 1_700_000_000 + n,
+  fetchedTs: 1_700_000_100,
+});
+store.upsertProfile(ficha(1, 'Lint', ['code', 'review', 'seguridad']));
+store.upsertProfile(ficha(2, 'Parse', ['json', 'datos', 'extraccion']));
+store.upsertProfile(ficha(3, 'LexPanal', ['legal', 'contratos']));
+store.upsertProfile(ficha(4, 'Viejo', ['legal'], false));
+
+check('el catalogo excluye a los dados de baja', store.catalogo().total === 3, `${store.catalogo().total}`);
+check('salvo que se pidan', store.catalogo({ includeInactive: true }).total === 4);
+
+check('buscar por skill encuentra', store.catalogo({ skill: 'legal' }).total === 1);
+check('y no se cuela por la descripcion', store.catalogo({ skill: 'muy bien' }).total === 0);
+check('la busqueda libre SI mira la descripcion', store.catalogo({ q: 'muy bien' }).total === 3);
+check('con dos palabras tienen que estar las dos', store.catalogo({ q: 'json datos' }).total === 1);
+check('y si una no esta, no sale', store.catalogo({ q: 'json legal' }).total === 0);
+
+const p1 = store.catalogo({ limit: 2, offset: 0 });
+const p2 = store.catalogo({ limit: 2, offset: 2 });
+check('pagina 1 trae 2', p1.agents.length === 2);
+check('pagina 2 trae el resto', p2.agents.length === 1);
+check('el total es el mismo en las dos', p1.total === 3 && p2.total === 3);
+check(
+  'y ninguna se repite entre paginas',
+  new Set([...p1.agents, ...p2.agents].map((a) => a.address)).size === 3,
+);
+
+check(
+  'cada ficha viene con sus stats si las tiene',
+  store.catalogo({ q: 'Lint' }).agents[0]!.stats === null,
+  'sin actividad todavia: null, no un cero inventado',
+);
+
 rmSync(dir, { recursive: true, force: true });
 
 console.log(

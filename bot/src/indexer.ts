@@ -477,6 +477,120 @@ async function sweepBackwards(
   }
 }
 
+/**
+ * "Nombre · descripcion · skill1, skill2 · bot:https://…" -> campos.
+ *
+ * Se reimplementa aqui en vez de importarlo de @panal/sdk por lo mismo que el
+ * frontend reimplementa los ABIs: el bot es un paquete INDEPENDIENTE, con su
+ * propio lockfile, y solo depende de dotenv y viem. Añadir el SDK entero por
+ * quince lineas traeria cliente, cadenas y un import('node:dns') que aqui no
+ * pinta nada. Si cambia el formato, cambia en los dos sitios.
+ */
+function leerMetadata(metadataURI: string): {
+  name: string;
+  description: string;
+  skills: string[];
+  botUrl: string | null;
+} {
+  const segmentos = metadataURI
+    .split('\u00b7')
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+  let botUrl: string | null = null;
+  const resto: string[] = [];
+  for (const seg of segmentos) {
+    const candidato = seg.toLowerCase().startsWith('bot:') ? seg.slice(4).trim() : null;
+    if (candidato && /^https?:\/\//i.test(candidato)) {
+      botUrl = candidato;
+      continue;
+    }
+    resto.push(seg);
+  }
+  // Los campos que falten quedan vacios en vez de desplazar a los siguientes:
+  // un agente sin descripcion no debe acabar con sus skills de descripcion.
+  const [name = '', description = '', skillsRaw = ''] = resto;
+  return {
+    name,
+    description,
+    skills: skillsRaw.split(',').map((x) => x.trim()).filter(Boolean),
+    botUrl,
+  };
+}
+
+/**
+ * Relee del registry las fichas que hayan dejado de valer.
+ *
+ * `AgentRegistered` no lleva el metadataURI, asi que el catalogo no se puede
+ * construir solo con eventos: hay que preguntarle al contrato. Lo que si dicen
+ * los eventos es CUANDO preguntar, y eso es lo que evita releer el registro
+ * entero en cada vuelta.
+ *
+ * De pocos en pocos y con pausa: esto compite por el mismo RPC que el sondeo
+ * de eventos, que es el que no puede descolgarse.
+ */
+async function refrescarFichas(cfg: BotConfig, clients: ChainClients, store: IndexStore): Promise<void> {
+  const pendientes = store.pendientesDeFicha();
+  if (pendientes.length === 0) return;
+
+  // Tope por vuelta: con mil agentes nuevos de golpe, leerlos todos aqui
+  // dejaria al indexador sin atender la cadena. Se van haciendo por tandas.
+  const tanda = pendientes.slice(0, 25);
+  let leidas = 0;
+
+  for (let i = 0; i < tanda.length; i += 5) {
+    const trozo = tanda.slice(i, i + 5);
+    await Promise.all(
+      trozo.map(async (address) => {
+        try {
+          const ag = (await clients.publicClient.readContract({
+            address: cfg.registryAddress,
+            abi: registryAbi,
+            functionName: 'getAgent',
+            args: [address as Address],
+          })) as {
+            owner: Address;
+            metadataURI: string;
+            pricePerTask: bigint;
+            active: boolean;
+            registeredAt: bigint;
+            currency?: Address;
+          };
+          // registeredAt en cero = esa direccion no esta registrada. Pasa si un
+          // evento nombra a alguien que ya se dio de baja del registro.
+          if (ag.registeredAt === 0n) return;
+          const meta = leerMetadata(ag.metadataURI);
+          const currency = (ag.currency ?? '0x0000000000000000000000000000000000000000') as string;
+          store.upsertProfile({
+            address: address.toLowerCase(),
+            owner: ag.owner.toLowerCase(),
+            name: meta.name,
+            description: meta.description,
+            skills: meta.skills,
+            botUrl: meta.botUrl,
+            pricePerTask: ag.pricePerTask.toString(),
+            currency,
+            coin: currency.toLowerCase() === cfg.panalTokenAddress.toLowerCase() ? '$PANAL' : 'MON',
+            active: ag.active,
+            registeredAt: Number(ag.registeredAt),
+            fetchedTs: Math.floor(Date.now() / 1000),
+          });
+          leidas += 1;
+        } catch {
+          // Que falle una ficha no puede tumbar el tick: se reintenta en la
+          // proxima vuelta, porque sigue marcada como pendiente.
+        }
+      }),
+    );
+    if (i + 5 < tanda.length) await politePause(300);
+  }
+
+  if (leidas > 0) {
+    const quedan = store.pendientesDeFicha().length;
+    console.log(`[index] catalogo: ${leidas} fichas al dia${quedan ? `, quedan ${quedan}` : ''}`);
+  }
+}
+
 /** Bucle principal del modo indexer. */
 export async function runIndexer(
   cfg: BotConfig,
@@ -501,6 +615,7 @@ export async function runIndexer(
     try {
       const newHead = await withRetry('getBlockNumber', () => clients.publicClient.getBlockNumber());
       await incremental(cfg, clients, store, newHead);
+      await refrescarFichas(cfg, clients, store);
       await sweepBackwards(cfg, clients, store);
       store.saveState();
     } catch (err) {
