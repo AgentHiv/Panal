@@ -19,7 +19,7 @@
     "starter"
   ],
   "bin": {
-    "create-panal-agent": "./dist/index.js"
+    "create-panal-agent": "dist/index.js"
   },
   "files": [
     "dist",

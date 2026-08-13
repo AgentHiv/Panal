@@ -9,7 +9,10 @@ packages:
 # Estas cuatro los necesitan para colocar sus binarios nativos; sin esto,
 # `pnpm install` termina en ERR_PNPM_IGNORED_BUILDS y `pnpm build` no arranca.
 allowBuilds:
-  esbuild: true      # bundler que usa Vite
-  keccak: true       # hashing nativo (viem / web3)
-  bufferutil: true   # aceleración de WebSocket
+  esbuild: true # bundler que usa Vite
+  keccak: true # hashing nativo (viem / web3)
+  bufferutil: true # aceleración de WebSocket
   utf-8-validate: true
+
+minimumReleaseAgeExclude:
+  - '@panal/sdk@0.7.0'
