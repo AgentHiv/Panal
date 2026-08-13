@@ -14,7 +14,7 @@
 import 'dotenv/config';
 import { createPanalClient, formatAgentMetadata, NATIVE_CURRENCY } from '@panal/sdk';
 import { privateKeyToAccount } from 'viem/accounts';
-import { formatEther, parseEther } from 'viem';
+import { createPublicClient, createWalletClient, formatEther, http, parseEther } from 'viem';
 
 // ────────────────────────────────────────────────────────────────────────────
 //  RELLENA ESTO. Es tu escaparate: lo que verá quien busque un agente.
@@ -214,8 +214,136 @@ async function main(): Promise<void> {
     console.log('Registrado.');
   }
 
+  // El nombre va DESPUÉS del registro y no puede tumbarlo: `reclamar` exige
+  // estar registrado y activo, así que el orden es obligatorio, y si algo falla
+  // —nombre cogido, sin saldo, contrato no desplegado— el agente ya está
+  // trabajando igual. El nombre es un extra, no un requisito.
+  await reclamaTuNombre(account, PERFIL.name);
+
   console.log(`\nYa apareces en https://panal.lat/market`);
   console.log(`Compruébalo desde Claude: "¿qué agentes hay en Panal?"`);
+}
+
+/**
+ * Convierte el nombre del perfil en un handle válido para PanalNames.
+ *
+ * El contrato solo acepta `a-z`, `0-9` y `-`, y ahí es donde mueren los
+ * homoglifos: la `а` cirílica no colisiona con la latina, es que no se puede
+ * escribir. Así que "LexPanal" pasa a `lexpanal` y "Traductor ES→DE" a
+ * `traductor-es-de`.
+ *
+ * Los acentos se quitan descomponiendo el texto (NFD) y tirando las marcas:
+ * "Ágil" -> `agil`. Transliterar a ojo cada idioma sería inventar.
+ */
+export function aHandle(nombre: string): string {
+  return nombre
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 32)
+    .replace(/-+$/, '');
+}
+
+/**
+ * PanalNames en Monad mainnet. Vacío mientras no esté desplegado, y entonces
+ * este paso no hace nada — que es lo correcto: no hay contrato al que pedirle.
+ * Se puede apuntar a otro con PANAL_NAMES_ADDRESS.
+ */
+const PANAL_NAMES = '';
+
+const NOMBRES_ABI = [
+  {
+    type: 'function',
+    name: 'disponible',
+    stateMutability: 'view',
+    inputs: [{ name: 'nombre', type: 'string' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'nombreDe',
+    stateMutability: 'view',
+    inputs: [{ name: 'agente', type: 'address' }],
+    outputs: [{ name: '', type: 'string' }],
+  },
+  {
+    type: 'function',
+    name: 'tarifaDe',
+    stateMutability: 'view',
+    inputs: [{ name: 'nombre', type: 'string' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'reclamar',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'nombre', type: 'string' }],
+    outputs: [],
+  },
+] as const;
+
+/**
+ * Reclama tu nombre único en PanalNames, si se puede.
+ *
+ * NUNCA lanza. Todo lo que puede salir mal aquí —que el contrato no esté
+ * desplegado, que el nombre esté cogido, que no tengas saldo— es un extra que
+ * no sale, y el agente ya está registrado y trabajando. Se avisa y se sigue.
+ *
+ * Se hace en el mismo comando a propósito: si hay que volver días después a
+ * reclamarlo, para entonces se lo habrá quedado otro.
+ */
+async function reclamaTuNombre(account: ReturnType<typeof privateKeyToAccount>, nombre: string): Promise<void> {
+  const contrato = process.env.PANAL_NAMES_ADDRESS?.trim() || PANAL_NAMES;
+  if (!contrato || !/^0x[0-9a-fA-F]{40}$/.test(contrato)) return;
+
+  const handle = aHandle(nombre);
+  if (handle.length < 3) {
+    // Pasa con los nombres en alfabetos no latinos: el contrato solo acepta
+    // `a-z0-9-`, que es lo que impide los homoglifos, así que de "日本語" no
+    // sale nada. No es un fallo, pero hay que decir qué hacer.
+    console.log(`\nNo te reclamo nombre: de "${nombre}" no sale un handle de 3 letras o más.`);
+    console.log(`Los nombres solo admiten a-z, 0-9 y guion. Elige uno a mano desde https://panal.lat/dashboard`);
+    return;
+  }
+
+  try {
+    const rpc = process.env.RPC_URL?.trim() || 'https://rpc.monad.xyz';
+    const chain = { id: 143, name: 'Monad', nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 }, rpcUrls: { default: { http: [rpc] } } } as const;
+    const publico = createPublicClient({ transport: http(rpc) });
+    const cartera = createWalletClient({ account, chain, transport: http(rpc) });
+    const donde = contrato as `0x${string}`;
+
+    const yaTengo = await publico.readContract({ address: donde, abi: NOMBRES_ABI, functionName: 'nombreDe', args: [account.address] });
+    if (yaTengo) {
+      console.log(`\nTu nombre en Panal ya es: ${yaTengo}`);
+      return;
+    }
+
+    const libre = await publico.readContract({ address: donde, abi: NOMBRES_ABI, functionName: 'disponible', args: [handle] });
+    if (!libre) {
+      console.log(`\nEl nombre "${handle}" ya está cogido. Puedes reclamar otro desde https://panal.lat/dashboard`);
+      return;
+    }
+
+    const tarifa = await publico.readContract({ address: donde, abi: NOMBRES_ABI, functionName: 'tarifaDe', args: [handle] });
+    if (tarifa > 0n) {
+      // Con tarifa hay que aprobar el gasto antes, y eso es otra firma y otra
+      // decision. No se hace a tus espaldas: se te dice y lo haces tu.
+      console.log(`\nTu nombre "${handle}" está libre, pero cuesta ${formatEther(tarifa)} $PANAL.`);
+      console.log(`Reclámalo desde https://panal.lat/dashboard cuando quieras.`);
+      return;
+    }
+
+    const hash = await cartera.writeContract({ address: donde, abi: NOMBRES_ABI, functionName: 'reclamar', args: [handle], chain });
+    await publico.waitForTransactionReceipt({ hash });
+    console.log(`\nTu nombre único en Panal: ${handle}`);
+  } catch (err) {
+    // Un fallo aqui no es grave: el agente ya esta registrado y puede trabajar.
+    console.log(`\nNo pude reclamarte el nombre (${err instanceof Error ? err.message.split('\n')[0] : err}).`);
+    console.log(`Puedes hacerlo luego desde https://panal.lat/dashboard`);
+  }
 }
 
 main().catch((err) => {

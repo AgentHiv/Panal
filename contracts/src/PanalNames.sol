@@ -84,11 +84,16 @@ contract PanalNames {
     /// hoy es una apuesta sobre una cotizacion futura. El owner puede mover la
     /// tarifa —incluso a cero— pero nunca por encima de esto, asi que el error
     /// se puede corregir y no se puede convertir en un arma.
+    ///
+    /// Se fija aparte de la tarifa inicial: Panal arranca con los nombres
+    /// gratis, y un tope derivado de multiplicar cero seria cero.
     uint256 public immutable TOPE_CORTO;
     uint256 public immutable TOPE_MEDIO;
     uint256 public immutable TOPE_LARGO;
 
     address public owner;
+    /// @notice Dueño propuesto y pendiente de aceptar. Ver `transferOwnership`.
+    address public propuesto;
     address public tesoreria;
 
     uint256 public tarifaCorto;
@@ -97,6 +102,9 @@ contract PanalNames {
 
     /// @notice Lo que se lleva la tesoreria de cada venta, en puntos basicos.
     uint256 public comisionBps;
+
+    /// @notice Nombres que no puede reclamar nadie. Ver `reservar`.
+    mapping(bytes32 => bool) private _reservado;
 
     mapping(bytes32 => Nombre) private _nombres;
     /// @dev El texto original, para poder mostrarlo sin guardar el hash en la web.
@@ -118,9 +126,12 @@ contract PanalNames {
     );
     event Transferido(bytes32 indexed hash, string nombre, address indexed de, address indexed a);
     event Liberado(bytes32 indexed hash, string nombre, address indexed dueno);
+    event Reservado(bytes32 indexed hash, string nombre, bool valor);
+    event Asignado(bytes32 indexed hash, string nombre, address indexed a);
     event TarifasFijadas(uint256 corto, uint256 medio, uint256 largo);
     event ComisionFijada(uint256 bps);
     event TesoreriaFijada(address indexed tesoreria);
+    event OwnershipProposed(address indexed actual, address indexed propuesto);
     event OwnershipTransferred(address indexed anterior, address indexed nuevo);
 
     modifier onlyOwner() {
@@ -128,39 +139,63 @@ contract PanalNames {
         _;
     }
 
-    constructor(
-        address panal,
-        address registry,
-        address tesoreria_,
-        uint256 tarifaCorto_,
-        uint256 tarifaMedio_,
-        uint256 tarifaLargo_,
-        uint256 comisionBps_
-    ) {
-        require(panal != address(0) && registry != address(0), "PanalNames: zero address");
-        require(tesoreria_ != address(0), "PanalNames: zero treasury");
-        require(comisionBps_ <= TOPE_COMISION_BPS, "PanalNames: over cap");
+    /// @param owner_ Quien podra mover tarifas y comision. Se pasa en vez de
+    ///        usar `msg.sender` para que sea el multisig DESDE EL PRIMER
+    ///        BLOQUE: desplegar y transferir despues deja una ventana en la que
+    ///        una sola clave manda, y un `transferOwnership` a una direccion
+    ///        equivocada no tiene vuelta atras.
+    /// @notice Todo lo que se fija al desplegar, junto. Agrupado en una
+    ///         estructura porque como parametros sueltos el constructor no
+    ///         compila: "stack too deep".
+    struct Config {
+        address panal;
+        address registry;
+        address owner;
+        address tesoreria;
+        /// Techo inmutable de cada tarifa: [3 letras, 4 letras, 5+].
+        uint256[3] topes;
+        /// Lo que se cobra al arrancar. Cero es legitimo, y es como sale Panal.
+        uint256[3] tarifas;
+        uint256 comisionBps;
+    }
 
-        PANAL = IERC20(panal);
-        REGISTRY = IPanalRegistry(registry);
-        tesoreria = tesoreria_;
-        owner = msg.sender;
+    constructor(Config memory cfg, string[] memory reservados) {
+        require(cfg.panal != address(0) && cfg.registry != address(0), "PanalNames: zero address");
+        require(cfg.owner != address(0), "PanalNames: zero owner");
+        require(cfg.tesoreria != address(0), "PanalNames: zero treasury");
+        require(cfg.comisionBps <= TOPE_COMISION_BPS, "PanalNames: over cap");
+        require(
+            cfg.tarifas[0] <= cfg.topes[0] && cfg.tarifas[1] <= cfg.topes[1] && cfg.tarifas[2] <= cfg.topes[2],
+            "PanalNames: fee over cap"
+        );
 
-        tarifaCorto = tarifaCorto_;
-        tarifaMedio = tarifaMedio_;
-        tarifaLargo = tarifaLargo_;
-        comisionBps = comisionBps_;
+        PANAL = IERC20(cfg.panal);
+        REGISTRY = IPanalRegistry(cfg.registry);
+        tesoreria = cfg.tesoreria;
+        owner = cfg.owner;
 
-        // El tope es 10x lo inicial: sitio de sobra para seguir a un token que
-        // se mueve, sin que quepa un precio que expulse a todo el mundo.
-        TOPE_CORTO = tarifaCorto_ * 10;
-        TOPE_MEDIO = tarifaMedio_ * 10;
-        TOPE_LARGO = tarifaLargo_ * 10;
+        TOPE_CORTO = cfg.topes[0];
+        TOPE_MEDIO = cfg.topes[1];
+        TOPE_LARGO = cfg.topes[2];
 
-        emit TarifasFijadas(tarifaCorto_, tarifaMedio_, tarifaLargo_);
-        emit ComisionFijada(comisionBps_);
-        emit TesoreriaFijada(tesoreria_);
-        emit OwnershipTransferred(address(0), msg.sender);
+        tarifaCorto = cfg.tarifas[0];
+        tarifaMedio = cfg.tarifas[1];
+        tarifaLargo = cfg.tarifas[2];
+        comisionBps = cfg.comisionBps;
+
+        for (uint256 i = 0; i < reservados.length; i++) {
+            // Se validan igual que si se reclamaran: reservar un nombre que
+            // nadie podria escribir seria una reserva que no protege de nada,
+            // y asi una errata se ve al desplegar y no meses despues.
+            bytes32 h = _validar(reservados[i]);
+            _reservado[h] = true;
+            emit Reservado(h, reservados[i], true);
+        }
+
+        emit TarifasFijadas(cfg.tarifas[0], cfg.tarifas[1], cfg.tarifas[2]);
+        emit ComisionFijada(cfg.comisionBps);
+        emit TesoreriaFijada(cfg.tesoreria);
+        emit OwnershipTransferred(address(0), cfg.owner);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -195,6 +230,7 @@ contract PanalNames {
         require(_deAgente[msg.sender] == bytes32(0), "PanalNames: already has a name");
 
         bytes32 hash = _validar(nombre);
+        require(!_reservado[hash], "PanalNames: reserved");
         require(_nombres[hash].dueno == address(0), "PanalNames: taken");
 
         uint256 precio = tarifaDe(nombre);
@@ -327,7 +363,7 @@ contract PanalNames {
     /// El guion no puede abrir ni cerrar, ni ir doble: `-lint`, `lint-` y
     /// `li--nt` se leen como `lint` de un vistazo, que es justo el engaño que se
     /// intenta evitar.
-    function _validar(string calldata nombre) private pure returns (bytes32) {
+    function _validar(string memory nombre) private pure returns (bytes32) {
         bytes memory b = bytes(nombre);
         uint256 largo = b.length;
         require(largo >= MIN_LARGO && largo <= MAX_LARGO, "PanalNames: bad length");
@@ -385,7 +421,15 @@ contract PanalNames {
 
     /// @notice Si se puede reclamar ahora mismo.
     function disponible(string calldata nombre) external view returns (bool) {
-        return _nombres[keccak256(bytes(nombre))].dueno == address(0);
+        bytes32 hash = keccak256(bytes(nombre));
+        return !_reservado[hash] && _nombres[hash].dueno == address(0);
+    }
+
+    /// @notice Si el nombre esta reservado. Se expone aparte de `disponible`
+    ///         para poder decirle al usuario POR QUE no puede tenerlo: "esta
+    ///         reservado" y "ya lo cogio alguien" son cosas distintas.
+    function estaReservado(string calldata nombre) external view returns (bool) {
+        return _reservado[keccak256(bytes(nombre))];
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -402,6 +446,42 @@ contract PanalNames {
         emit TarifasFijadas(corto, medio, largo);
     }
 
+    /// @notice Reserva o libera nombres.
+    ///
+    /// Solo sobre nombres LIBRES: reservar no puede quitarle a nadie el suyo.
+    /// Sin esa condicion, quien mande en el contrato podria confiscar cualquier
+    /// nombre ya reclamado, y eso convierte esto en un registro centralizado.
+    function reservar(string[] calldata nombres, bool valor) external onlyOwner {
+        for (uint256 i = 0; i < nombres.length; i++) {
+            bytes32 hash = _validar(nombres[i]);
+            require(_nombres[hash].dueno == address(0), "PanalNames: taken");
+            _reservado[hash] = valor;
+            emit Reservado(hash, nombres[i], valor);
+        }
+    }
+
+    /// @notice Entrega un nombre reservado a un agente. Solo los reservados.
+    ///
+    /// Para que `panal` pueda acabar en el agente oficial. No sirve para tocar
+    /// nombres de nadie: si no esta reservado y libre, revierte. Se asigna en
+    /// vez de reclamarse porque el dueño es el multisig, que no es un agente
+    /// registrado y por tanto no puede reclamar.
+    function asignarReservado(string calldata nombre, address a) external onlyOwner {
+        bytes32 hash = _validar(nombre);
+        require(_reservado[hash], "PanalNames: not reserved");
+        require(_nombres[hash].dueno == address(0), "PanalNames: taken");
+        require(REGISTRY.isActiveAgent(a), "PanalNames: not an active agent");
+        require(_deAgente[a] == bytes32(0), "PanalNames: already has a name");
+
+        _reservado[hash] = false;
+        _nombres[hash] = Nombre({dueno: a, desde: uint64(block.timestamp), precio: 0});
+        _textos[hash] = nombre;
+        _deAgente[a] = hash;
+
+        emit Reservado(hash, nombre, false);
+        emit Asignado(hash, nombre, a);
+    }
+
     function fijarComision(uint256 bps) external onlyOwner {
         require(bps <= TOPE_COMISION_BPS, "PanalNames: over cap");
         comisionBps = bps;
@@ -414,9 +494,28 @@ contract PanalNames {
         emit TesoreriaFijada(nueva);
     }
 
+    /// @notice Propone un dueño nuevo. NO manda hasta que el propuesto acepte.
+    ///
+    /// En dos pasos a proposito. Este contrato va a cambiar de manos: el
+    /// multisig de hoy tiene sus tres firmantes grabados en el constructor, asi
+    /// que añadir arbitros obliga a desplegar otro y a mover la propiedad aqui.
+    /// Con un solo paso, mandarla a un multisig mal configurado —firmantes que
+    /// no coinciden, o que nunca llegan a las dos confirmaciones— dejaria las
+    /// tarifas y la comision congeladas para siempre, sin nadie que pueda
+    /// tocarlas. Obligar a que el nuevo ACEPTE es la prueba de que puede
+    /// transaccionar, y se hace antes de que sea tarde.
+    ///
+    /// Propuesta a cero = cancelar una propuesta pendiente.
     function transferOwnership(address nuevo) external onlyOwner {
-        require(nuevo != address(0), "PanalNames: zero address");
-        emit OwnershipTransferred(owner, nuevo);
-        owner = nuevo;
+        propuesto = nuevo;
+        emit OwnershipProposed(owner, nuevo);
+    }
+
+    /// @notice El propuesto toma la propiedad. Solo el.
+    function aceptarPropiedad() external {
+        require(msg.sender == propuesto, "PanalNames: not proposed");
+        emit OwnershipTransferred(owner, propuesto);
+        owner = propuesto;
+        propuesto = address(0);
     }
 }
