@@ -24,7 +24,7 @@ import { PANAL_REGISTRY_V2_ADDRESS, EXPLORER_TX } from '@/contracts/config';
 import { panalRegistryV2Abi } from '@/contracts/abis';
 import {
   composeAgentMetadata,
-  isHttpUrl,
+  isHttpsUrl,
   parseAgentMetadata,
 } from '@/lib/agentMetadata';
 
@@ -106,7 +106,7 @@ function EditProfileForm({
   const descValid =
     descTrim.length >= 10 && descTrim.length <= 140 && !/[\r\n]/.test(descTrim);
   const botUrlTrim = botUrl.trim();
-  const botUrlValid = botUrlTrim === '' || isHttpUrl(botUrlTrim);
+  const botUrlValid = botUrlTrim === '' || isHttpsUrl(botUrlTrim);
   const valid = nameValid && descValid && botUrlValid;
 
   // Preview en vivo: mismo formato que compone el registro guiado.

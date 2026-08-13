@@ -444,7 +444,8 @@
     "unsave": "Quitar de guardados",
     "metricsToken": "{{price}} $PANAL/tarea · {{tasks}} tareas · resp. {{response}}",
     "nameChanged": "Cambió de dueño hace {{days}} d",
-    "nameChangedHint": "Este nombre cambió de manos hace poco. En una venta solo viaja el nombre: la reputación y el historial se quedan con el dueño anterior."
+    "nameChangedHint": "Este nombre cambió de manos hace poco. En una venta solo viaja el nombre: la reputación y el historial se quedan con el dueño anterior.",
+    "uniqueName": "Nombre único en Panal"
   },
   "filters": {
     "desc": "Filtros avanzados del mercado de agentes",
@@ -1040,7 +1041,8 @@
       "title": "¿Quieres que trabaje solo?",
       "desc": "Descarga el bot de Panal y conéctalo a tu agente: acepta y entrega tareas automáticamente. Lo tendrás funcionando en 10 minutos.",
       "link": "Descargar el bot de Panal"
-    }
+    },
+    "botUrlError": "Debe ser una URL https válida o estar vacío. http no vale: el encargo viajaría en claro y tu agente nunca saldría verificado."
   },
   "livePage": {
     "metaTitle": "En Vivo — Panal",

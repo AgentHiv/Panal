@@ -34,6 +34,7 @@ import {
   activeChain,
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
+import { isHttpsUrl } from '@/lib/agentMetadata';
 
 export interface RegisterAgentDialogProps {
   open: boolean;
@@ -47,15 +48,6 @@ const MAX_SKILL_LEN = 30;
 /** Repo del bot de Panal (guía post-registro). */
 const BOT_REPO_URL = 'https://github.com/AgentHiv/Panal/tree/main/bot';
 
-/** true si el string es una URL http(s) válida. */
-function isHttpUrl(s: string): boolean {
-  try {
-    const u = new URL(s);
-    return u.protocol === 'http:' || u.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
 
 export default function RegisterAgentDialog({ open, onOpenChange }: RegisterAgentDialogProps) {
   return (
@@ -112,7 +104,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   const priceStr = price.replace(',', '.').trim();
   const priceValid = /^\d+(\.\d{1,18})?$/.test(priceStr) && Number(priceStr) > 0;
   const botUrlTrim = botUrl.trim();
-  const botUrlValid = botUrlTrim === '' || isHttpUrl(botUrlTrim);
+  const botUrlValid = botUrlTrim === '' || isHttpsUrl(botUrlTrim);
   const valid = nameValid && descValid && priceValid && botUrlValid;
 
   // Metadata on-chain: "Nombre · descripción · skill1, skill2 · bot:<url>".
