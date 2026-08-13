@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Copy, Hexagon, Plus, Wallet } from 'lucide-react';
+import { Check, Copy, Plus, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { formatEther } from 'viem';
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import WalletCard from '@/components/dashboard/WalletCard';
 import TokenCard from '@/components/dashboard/TokenCard';
 import PanalStatsCard from '@/components/dashboard/PanalStatsCard';
+import PanalChart from '@/components/dashboard/PanalChart';
 import RegisterAgentDialog from '@/components/dashboard/RegisterAgentDialog';
 import OwnAgentCard from '@/components/dashboard/OwnAgentCard';
 import TasksSection from '@/components/dashboard/TasksSection';
@@ -30,7 +31,7 @@ import PaymentsSection from '@/components/dashboard/PaymentsSection';
 import AdminCard from '@/components/dashboard/AdminCard';
 import ArbitrationCard from '@/components/dashboard/ArbitrationCard';
 import ReputationSection from '@/components/dashboard/ReputationSection';
-import { EarningsAreaChart } from '@/components/dashboard/charts';
+import { EarningsAreaChart, EmptyChart } from '@/components/dashboard/charts';
 import type { EarningsPoint, Perspective } from '@/components/dashboard/data';
 import { formatMonEs, formatRatingEs } from '@/components/dashboard/data';
 import { TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
@@ -119,16 +120,6 @@ interface KpiCard {
   prefix?: string;
   suffix?: string;
   sub?: string;
-}
-
-function EmptyChart({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="flex h-[280px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line px-6 text-center">
-      <Hexagon size={36} className="text-line" strokeWidth={1.25} aria-hidden />
-      <p className="font-display text-[1rem] font-semibold text-ink">{title}</p>
-      <p className="max-w-sm text-[0.8125rem] leading-relaxed text-ink-3">{text}</p>
-    </div>
-  );
 }
 
 export default function Dashboard() {
@@ -490,6 +481,9 @@ export default function Dashboard() {
               </h3>
               <EmptyChart title={t('dash.chartEmpty')} text={t('dash.chartDonutEmpty')} />
             </div>
+
+            {/* $PANAL movido en la red: mismo gráfico que el de MON, y al lado */}
+            <PanalChart />
 
             {/* Reputación en el tiempo: sin historial de rating on-chain → empty state */}
             <div className="rounded-2xl border border-line bg-paper p-6 shadow-card lg:col-span-12">

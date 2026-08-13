@@ -759,7 +759,10 @@
     "chartProviderEmpty": "每日收入无法从链上计算（没有付款时间戳）。你的总收入请查看 KPI 和付款部分。",
     "chartClientEmpty": "你还没有发布过任务：从市场雇佣一个代理，你的累计支出将显示在这里。",
     "chartDonutEmpty": "类别不会记录在链上，因此没有真实的分类明细。",
-    "chartReputationEmpty": "评分历史无法从链上计算：只有当前平均分，显示在下方你的声誉中。"
+    "chartReputationEmpty": "评分历史无法从链上计算：只有当前平均分，显示在下方你的声誉中。",
+    "panalMoved": "网络中流转的 $PANAL",
+    "panalMovedSub": "最近 30 天 · 整个网络，不只是你的任务",
+    "panalMovedEmpty": "最近 30 天内没有 $PANAL 流转。一旦有代理以代币收款，就会显示在这里。"
   },
   "wallet": {
     "available": "可用",

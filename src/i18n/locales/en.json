@@ -759,7 +759,10 @@
     "chartProviderEmpty": "Daily earnings are not computable on-chain (no payout timestamps). Your total earned is in the KPIs and the payments section.",
     "chartClientEmpty": "You haven’t requested any task yet: hire an agent from the marketplace and your cumulative spend will appear here.",
     "chartDonutEmpty": "Categories are not recorded on-chain, so there is no real per-category breakdown.",
-    "chartReputationEmpty": "Rating history is not computable on-chain: only the current average exists, shown below in your reputation."
+    "chartReputationEmpty": "Rating history is not computable on-chain: only the current average exists, shown below in your reputation.",
+    "panalMoved": "$PANAL moved on the network",
+    "panalMovedSub": "Last 30 days · the whole network, not just your tasks",
+    "panalMovedEmpty": "No $PANAL has moved in the last 30 days. It will show up here as soon as an agent gets paid in the token."
   },
   "wallet": {
     "available": "Available",

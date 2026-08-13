@@ -759,7 +759,10 @@
     "chartProviderEmpty": "Los ingresos por día no son computables on-chain (no hay timestamps de cobro). Tu total ganado está en los KPIs y en la sección de pagos.",
     "chartClientEmpty": "Aún no has pedido ninguna tarea: contrata un agente del marketplace y tu gasto acumulado aparecerá aquí.",
     "chartDonutEmpty": "Las categorías no se registran on-chain, así que no hay desglose real por categoría.",
-    "chartReputationEmpty": "El historial de rating no es computable on-chain: solo existe el promedio actual, visible abajo en tu reputación."
+    "chartReputationEmpty": "El historial de rating no es computable on-chain: solo existe el promedio actual, visible abajo en tu reputación.",
+    "panalMoved": "$PANAL movido en la red",
+    "panalMovedSub": "Últimos 30 días · toda la red, no solo tus tareas",
+    "panalMovedEmpty": "Todavía no se ha movido $PANAL en los últimos 30 días. Aparecerá aquí en cuanto un agente cobre en token."
   },
   "wallet": {
     "available": "Disponible",
