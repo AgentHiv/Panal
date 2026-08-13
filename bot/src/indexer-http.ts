@@ -90,6 +90,14 @@ const EVENTS_MAX_LIMIT = 200;
 const TASKS_DEFAULT_LIMIT = 200;
 const TASKS_MAX_LIMIT = 1000;
 
+/**
+ * Pagina del catalogo. 50 por defecto porque es lo que cabe en una pantalla
+ * sin hacer scroll infinito; el tope de 200 acota lo que un cliente puede
+ * pedir de una vez.
+ */
+const AGENTS_DEFAULT_LIMIT = 50;
+const AGENTS_MAX_LIMIT = 200;
+
 export function createIndexServer(deps: IndexServerDeps): Server {
   const maxUrlLength = deps.maxUrlLength ?? 2_048;
   const { store } = deps;
@@ -186,8 +194,74 @@ export function createIndexServer(deps: IndexServerDeps): Server {
         return;
       }
 
+      // ---- El catalogo -------------------------------------------------------
+      //
+      // La web leia el registro con getAgents(0, 50) y dos llamadas mas por
+      // agente: 100 llamadas RPC por carga de pagina, y el agente 51 en
+      // adelante no existia para nadie — ni en el listado, ni en el buscador,
+      // ni en las categorias. Sin error y sin aviso.
+      //
+      // `skill` esta separado de `q` a proposito: es lo que pregunta un AGENTE
+      // cuando quiere delegar, y ahi encontrar a alguien porque la palabra
+      // aparece en su descripcion no sirve.
+      //
+      // SIN parametros devuelve las stats de siempre, con la misma forma: hay
+      // clientes publicados leyendo esto y romperlos no arregla nada.
       case '/index/agents': {
-        json(res, 200, { agents: store.agentStats(), count: store.agentStats().length });
+        const q = url.searchParams.get('q')?.trim() || undefined;
+        const skill = url.searchParams.get('skill')?.trim() || undefined;
+        const pagina = url.searchParams.has('page') || url.searchParams.has('limit');
+
+        if (!q && !skill && !pagina) {
+          const agents = store.agentStats();
+          json(res, 200, { agents, count: agents.length });
+          return;
+        }
+
+        for (const [nombre, valor] of [['q', q], ['skill', skill]] as const) {
+          if (valor !== undefined && valor.length > 100) {
+            json(res, 400, { error: `${nombre} too long` });
+            return;
+          }
+        }
+
+        let limit = AGENTS_DEFAULT_LIMIT;
+        const limitRaw = url.searchParams.get('limit');
+        if (limitRaw !== null) {
+          const n = Number.parseInt(limitRaw, 10);
+          if (!Number.isFinite(n) || n < 1 || n > AGENTS_MAX_LIMIT) {
+            json(res, 400, { error: `bad limit (1..${AGENTS_MAX_LIMIT})` });
+            return;
+          }
+          limit = n;
+        }
+        let page = 0;
+        const pageRaw = url.searchParams.get('page');
+        if (pageRaw !== null) {
+          const n = Number.parseInt(pageRaw, 10);
+          if (!Number.isFinite(n) || n < 0) {
+            json(res, 400, { error: 'bad page (>= 0)' });
+            return;
+          }
+          page = n;
+        }
+
+        const { agents, total } = store.catalogo({
+          q,
+          skill,
+          includeInactive: url.searchParams.get('include_inactive') === 'true',
+          offset: page * limit,
+          limit,
+        });
+        json(res, 200, {
+          agents,
+          count: agents.length,
+          total,
+          page,
+          limit,
+          hasMore: page * limit + agents.length < total,
+          lastBlock: store.lastBlock,
+        });
         return;
       }
 

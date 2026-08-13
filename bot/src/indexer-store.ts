@@ -111,6 +111,34 @@ export interface IndexedTask {
   updatedTs: number;
 }
 
+/**
+ * La ficha de un agente en el catálogo.
+ *
+ * NO sale de los eventos: `AgentRegistered` no lleva el metadata, así que hay
+ * que leer `getAgent()` del registry. Se lee una vez por agente y se refresca
+ * cuando cambia (MetadataUpdated, PriceUpdated, ActiveUpdated).
+ *
+ * Existe para que el mercado deje de leer el registro entero en cada visita.
+ * La web pedía `getAgents(0, 50)` y luego dos llamadas por agente: 100 en cada
+ * carga de página, y los agentes 51 en adelante no existían para nadie.
+ */
+export interface AgentProfile {
+  address: string;
+  owner: string;
+  name: string;
+  description: string;
+  skills: string[];
+  botUrl: string | null;
+  /** Precio por tarea en unidades mínimas (string: no cabe en un number). */
+  pricePerTask: string;
+  currency: string;
+  coin: string;
+  active: boolean;
+  registeredAt: number;
+  /** Cuándo se leyó del registry, para saber si toca refrescarla. */
+  fetchedTs: number;
+}
+
 export interface DayStats {
   /** YYYY-MM-DD (UTC). */
   date: string;
@@ -124,6 +152,9 @@ export interface DayStats {
 }
 
 const NATIVE = '0x0000000000000000000000000000000000000000';
+
+/** Eventos tras los que la ficha del registry deja de estar al dia. */
+const AFECTAN_A_LA_FICHA = new Set(['AgentRegistered', 'MetadataUpdated', 'PriceUpdated', 'ActiveUpdated']);
 
 function dayKey(tsSec: number): string {
   return new Date(tsSec * 1000).toISOString().slice(0, 10);
@@ -466,7 +497,17 @@ export class IndexStore {
     appendFileSync(this.eventsFile, lines, 'utf8');
     this.events.push(...fresh);
     this.sortEvents();
-    for (const ev of fresh) this.stats.add(ev);
+    for (const ev of fresh) {
+      this.stats.add(ev);
+      // La ficha del registry no sale de los eventos, pero los eventos SI
+      // dicen cuando ha dejado de valer. Se marca aqui, dentro de append, y no
+      // en cada sitio que ingiere: asi da igual si el evento vino del arranque,
+      // del bootstrap o del sondeo incremental.
+      if (AFECTAN_A_LA_FICHA.has(ev.event)) {
+        const quien = ev.args['agent'];
+        if (typeof quien === 'string') this.marcarSucio(quien);
+      }
+    }
     this.state.totalEvents = this.stats.total;
     this.state.byType = { ...this.stats.byType };
     this.state.updatedAt = Date.now();
@@ -576,6 +617,84 @@ export class IndexStore {
 
   agentStats(): AgentStats[] {
     return this.stats.agentList();
+  }
+
+  /**
+   * El catálogo: la ficha de cada agente unida a sus estadísticas.
+   *
+   * Vive fuera de StatsBuilder a propósito: las stats se reconstruyen rejugando
+   * el log, y esto no sale del log — sale de leer el registry. Rejugar no
+   * puede inventárselo.
+   */
+  private readonly profiles = new Map<string, AgentProfile>();
+  /** Agentes cuya ficha hay que releer: nuevos, o que cambiaron algo. */
+  private readonly sucios = new Set<string>();
+
+  upsertProfile(profile: AgentProfile): void {
+    this.profiles.set(profile.address.toLowerCase(), profile);
+    this.sucios.delete(profile.address.toLowerCase());
+  }
+
+  /** Marca una ficha como vieja. La llama el indexador al ver un evento suyo. */
+  marcarSucio(address: string): void {
+    this.sucios.add(address.toLowerCase());
+  }
+
+  /** Los que hay que releer del registry: sin ficha todavía, o cambiados. */
+  pendientesDeFicha(): string[] {
+    const fuera = new Set(this.sucios);
+    for (const a of this.stats.agents.keys()) if (!this.profiles.has(a)) fuera.add(a);
+    return [...fuera];
+  }
+
+  profile(address: string): AgentProfile | null {
+    return this.profiles.get(address.toLowerCase()) ?? null;
+  }
+
+  /**
+   * El catálogo filtrado y paginado.
+   *
+   * `q` busca en nombre, descripción y skills; `skill` solo en skills, que es
+   * lo que pregunta un agente cuando quiere delegar y no le sirve encontrarse
+   * a sí mismo en la descripción de otro.
+   */
+  catalogo(opts: {
+    q?: string;
+    skill?: string;
+    includeInactive?: boolean;
+    offset?: number;
+    limit?: number;
+  } = {}): { agents: (AgentProfile & { stats: AgentStats | null })[]; total: number } {
+    const stats = new Map(this.stats.agentList().map((a) => [a.address, a]));
+    let lista = [...this.profiles.values()];
+
+    if (!opts.includeInactive) lista = lista.filter((a) => a.active);
+
+    if (opts.skill) {
+      const aguja = opts.skill.toLowerCase();
+      lista = lista.filter((a) => a.skills.some((s) => s.toLowerCase().includes(aguja)));
+    }
+    if (opts.q) {
+      // Todas las palabras tienen que aparecer en algún sitio: buscar "json
+      // legal" y que salga todo lo que tenga una de las dos no es buscar.
+      const agujas = opts.q.toLowerCase().split(/\s+/).filter(Boolean);
+      lista = lista.filter((a) => {
+        const pajar = [a.name, a.description, ...a.skills].join(' ').toLowerCase();
+        return agujas.every((n) => pajar.includes(n));
+      });
+    }
+
+    // Orden estable: sin él, dos páginas seguidas pueden repetir o saltarse
+    // agentes cuando el catálogo cambia entre una y otra.
+    lista.sort((a, b) => a.registeredAt - b.registeredAt || a.address.localeCompare(b.address));
+
+    const total = lista.length;
+    const offset = Math.max(0, opts.offset ?? 0);
+    const limit = opts.limit ?? total;
+    return {
+      agents: lista.slice(offset, offset + limit).map((a) => ({ ...a, stats: stats.get(a.address) ?? null })),
+      total,
+    };
   }
 
   dailyStats(days: number): DayStats[] {

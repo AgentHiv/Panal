@@ -41,6 +41,20 @@ export interface PanalClientOptions {
   account?: Account;
   /** Sobrescribe direcciones concretas (para pruebas o un despliegue propio). */
   addresses?: Partial<PanalAddresses>;
+  /**
+   * Indexador desde el que buscar agentes. `https://api.panal.lat` por defecto.
+   *
+   * Buscar leyendo el registro entero deja de funcionar justo cuando más falta
+   * hace: `searchAgents` pagina hasta 500 agentes y luego lanza 500 lecturas a
+   * la vez, y el RPC público corta a partir de ~50 concurrentes. O sea que
+   * cuantos más agentes hay, MENOS puede un agente encontrar a otro.
+   *
+   * Con el indexador es una petición. Si no responde, se vuelve al registro:
+   * peor y con tope, pero nunca sin respuesta.
+   *
+   * `null` lo desactiva y lee siempre de la cadena.
+   */
+  indexerUrl?: string | null;
 }
 
 /** Cuántos agentes se leen por llamada al registry. */
@@ -82,6 +96,8 @@ export class PanalClient {
    * cliente se creó sin cuenta, o sea en modo solo lectura.
    */
   readonly walletClient?: WalletClient;
+  /** Indexador para buscar agentes, o null si se lee siempre de la cadena. */
+  readonly indexerUrl: string | null;
 
   constructor(options: PanalClientOptions = {}) {
     this.network = options.network ?? 'mainnet';
@@ -94,6 +110,8 @@ export class PanalClient {
           'Usa network: "mainnet", o pasa `addresses` con los tuyos.',
       );
     }
+
+    this.indexerUrl = options.indexerUrl === undefined ? 'https://api.panal.lat' : options.indexerUrl;
 
     const transport = http(options.rpcUrl ?? chain.rpcUrls.default.http[0]);
     this.publicClient = createPublicClient({ chain, transport });
@@ -139,6 +157,79 @@ export class PanalClient {
     return Promise.all(addresses.map((address) => this.getAgent(address)));
   }
 
+  /**
+   * Los agentes que dice el indexador, o null si no se puede contar con él.
+   *
+   * Devuelve null —y no una lista vacía— cuando no responde, va atrasado o
+   * contesta algo raro: quien llama tiene que poder distinguir «no hay
+   * ninguno» de «no lo sé», porque en el segundo caso toca leer la cadena.
+   */
+  private async buscarEnIndice(
+    query: string | undefined,
+    options: { includeInactive?: boolean; skill?: string; limit?: number },
+  ): Promise<Agent[] | null> {
+    if (!this.indexerUrl) return null;
+    try {
+      const url = new URL('/index/agents', this.indexerUrl);
+      if (query?.trim()) url.searchParams.set('q', query.trim());
+      if (options.skill?.trim()) url.searchParams.set('skill', options.skill.trim());
+      if (options.includeInactive) url.searchParams.set('include_inactive', 'true');
+      url.searchParams.set('limit', String(Math.min(options.limit ?? 50, 200)));
+
+      const res = await fetchLimited(url.toString(), { timeoutMs: 8000 });
+      if (res.status !== 200) return null;
+      const cuerpo = JSON.parse(res.text) as { agents?: unknown; total?: unknown };
+      if (!Array.isArray(cuerpo.agents)) return null;
+
+      // `total` solo lo devuelve la respuesta del CATÁLOGO. Sin esta
+      // comprobación, un indexador viejo —que no entiende `q` ni `skill` pero
+      // responde igual con su lista de siempre— hacía creer que había filtrado:
+      // toda búsqueda devolvía todos los agentes, incluida una imposible.
+      // Un servidor que no entiende la pregunta y contesta es peor que uno que
+      // calla, porque no hay forma de notarlo desde fuera. Aquí sí.
+      if (typeof cuerpo.total !== 'number') return null;
+
+      const out: Agent[] = [];
+      for (const raw of cuerpo.agents as Record<string, unknown>[]) {
+        // El indexador es un servicio, o sea que su respuesta se valida como
+        // la de cualquier desconocido: una ficha rota se descarta sin llevarse
+        // la búsqueda entera por delante.
+        const address = typeof raw.address === 'string' ? raw.address : null;
+        if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address)) continue;
+        const skills = Array.isArray(raw.skills) ? raw.skills.filter((x): x is string => typeof x === 'string') : [];
+        let pricePerTask: bigint;
+        let registeredAt: bigint;
+        try {
+          pricePerTask = BigInt(String(raw.pricePerTask ?? '0'));
+          registeredAt = BigInt(Number(raw.registeredAt ?? 0));
+        } catch {
+          continue;
+        }
+        const metadata: AgentMetadata = {
+          name: typeof raw.name === 'string' ? raw.name : '',
+          description: typeof raw.description === 'string' ? raw.description : '',
+          skills,
+          botUrl: typeof raw.botUrl === 'string' ? raw.botUrl : null,
+        };
+        out.push({
+          address: getAddress(address),
+          owner: getAddress(typeof raw.owner === 'string' && /^0x[0-9a-fA-F]{40}$/.test(raw.owner) ? raw.owner : address),
+          pricePerTask,
+          currency: getAddress(
+            typeof raw.currency === 'string' && /^0x[0-9a-fA-F]{40}$/.test(raw.currency) ? raw.currency : NATIVE_CURRENCY,
+          ),
+          active: raw.active !== false,
+          registeredAt,
+          metadataURI: formatAgentMetadata(metadata),
+          metadata,
+        });
+      }
+      return out;
+    } catch {
+      return null;
+    }
+  }
+
   /** Un agente concreto, con su metadata ya interpretada. */
   async getAgent(address: Address): Promise<Agent> {
     const raw = (await this.publicClient.readContract({
@@ -174,7 +265,17 @@ export class PanalClient {
    * porque el registry no indexa texto: son pocos agentes y una lectura
    * paginada sale más barata que montar un índice.
    */
-  async searchAgents(query?: string, options: { includeInactive?: boolean } = {}): Promise<Agent[]> {
+  async searchAgents(
+    query?: string,
+    options: { includeInactive?: boolean; skill?: string; limit?: number } = {},
+  ): Promise<Agent[]> {
+    // Por el indexador primero. Leer el registro entero para buscar deja de
+    // funcionar justo cuando más falta hace: son 500 lecturas a la vez contra
+    // un RPC que corta a partir de ~50 concurrentes, y con más de 500 agentes
+    // ni siquiera los ve. Aquí es una petición.
+    const delIndice = await this.buscarEnIndice(query, options);
+    if (delIndice !== null) return delIndice;
+
     const all = await this.listAgents();
     const pool = options.includeInactive ? all : all.filter((a) => a.active);
     if (!query?.trim()) return pool;
@@ -552,7 +653,10 @@ export class PanalClient {
     const tope = remainingBudget(options.envelope ?? null, options.maxSpend);
     if (tope <= 0n) throw new X402Error('El presupuesto de la cadena está agotado: no se puede delegar más.');
 
-    const candidates = (await this.searchAgents(skill))
+    // Se busca por SKILL, no por texto libre: encontrar a alguien porque la
+    // palabra aparece en su descripción no sirve para delegar. Si el indexador
+    // no está, `searchAgents` cae solo a la cadena con su texto libre.
+    const candidates = (await this.searchAgents(skill, { skill }))
       .filter((a) => !excluded.has(a.address.toLowerCase()) && a.metadata.botUrl)
       .slice(0, options.maxCandidates ?? 5);
 
