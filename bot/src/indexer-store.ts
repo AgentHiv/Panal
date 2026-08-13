@@ -80,6 +80,37 @@ export interface AgentStats {
   lastSeenTs: number;
 }
 
+/**
+ * Una tarea del escrow, montada juntando sus eventos.
+ *
+ * Existe para que un cliente pueda encontrar SUS tareas sin escanear la
+ * cadena. El dashboard lo hacía leyendo las 200 últimas del escrow y
+ * filtrando en el navegador: con 200 tareas en total funcionaba, y a partir
+ * de ahí un cliente que contrató ayer deja de ver la suya. No puede
+ * aprobarla, ni disputarla, ni descargar su resultado — y a las 72 h el pago
+ * se libera solo sin que se haya enterado.
+ *
+ * La tarea NO es un evento: es lo que queda después de aplicarle todos los
+ * suyos por orden. Por eso se agrega aquí y no se sirve el log en crudo.
+ */
+export interface IndexedTask {
+  taskId: string;
+  /** Ambas en minúsculas: se usan como clave de búsqueda. */
+  client: string;
+  worker: string;
+  /** Bloqueado en el escrow, en unidades mínimas. */
+  amount: string;
+  currency: string;
+  /** Etiqueta legible de la moneda: 'MON' | '$PANAL'. */
+  coin: string;
+  status: 'open' | 'delivered' | 'completed' | 'disputed' | 'cancelled';
+  resultHash?: string;
+  /** Nota que puso el cliente al aprobar, si llegó a aprobarse. */
+  rating?: number;
+  createdTs: number;
+  updatedTs: number;
+}
+
 export interface DayStats {
   /** YYYY-MM-DD (UTC). */
   date: string;
@@ -115,6 +146,14 @@ class StatsBuilder {
   readonly byType: Record<string, number> = {};
   /** taskId -> currency address (para atribuir volúmenes de TaskCompleted). */
   private readonly taskCurrency = new Map<string, string>();
+  /** taskId -> tarea montada. El orden de inserción es el de creación. */
+  readonly tasks = new Map<string, IndexedTask>();
+  /**
+   * Índice inverso: dirección -> taskIds en los que participa, como cliente o
+   * como trabajador. Es lo que hace que buscar «mis tareas» sea instantáneo en
+   * vez de recorrerlas todas.
+   */
+  readonly tasksByAddress = new Map<string, Set<string>>();
   total = 0;
 
   constructor(private readonly panalToken: string) {}
@@ -139,6 +178,22 @@ class StatsBuilder {
     if (ts < a.firstSeenTs) a.firstSeenTs = ts;
     if (ts > a.lastSeenTs) a.lastSeenTs = ts;
     return a;
+  }
+
+  /** La tarea ya montada, o undefined si su TaskCreated aún no se ha visto. */
+  private task(taskId: string): IndexedTask | undefined {
+    return this.tasks.get(taskId);
+  }
+
+  /** Ata una dirección a una tarea en el índice inverso. */
+  private ligar(address: string, taskId: string): void {
+    const key = address.toLowerCase();
+    let set = this.tasksByAddress.get(key);
+    if (!set) {
+      set = new Set();
+      this.tasksByAddress.set(key, set);
+    }
+    set.add(taskId);
   }
 
   private day(ts: number): DayStats & { mon: bigint; panal: bigint; agents: Set<string> } {
@@ -184,11 +239,40 @@ class StatsBuilder {
         const currency = String(a['currency'] ?? NATIVE);
         if (a['taskId'] !== undefined) this.taskCurrency.set(String(a['taskId']), currency);
         if (a['amount'] !== undefined) this.move(d, coinOf(currency, this.panalToken), String(a['amount']));
+
+        // Nace la tarea, y se ata a sus DOS partes: el cliente la busca para
+        // aprobarla o disputarla, el trabajador para saber qué tiene pendiente.
+        if (a['taskId'] !== undefined && a['client'] !== undefined) {
+          const taskId = String(a['taskId']);
+          const client = String(a['client']).toLowerCase();
+          const w = worker.toLowerCase();
+          this.tasks.set(taskId, {
+            taskId,
+            client,
+            worker: w,
+            amount: String(a['amount'] ?? '0'),
+            currency,
+            coin: coinOf(currency, this.panalToken),
+            status: 'open',
+            createdTs: ev.ts,
+            updatedTs: ev.ts,
+          });
+          this.ligar(client, taskId);
+          if (w && w !== NATIVE) this.ligar(w, taskId);
+        }
         break;
       }
       case 'TaskClaimed': {
         const ag = this.agent(String(a['worker']), ev.ts);
         d.agents.add(ag.address);
+        // Una tarea abierta a cualquiera no tenía trabajador al nacer: al
+        // reclamarla hay que atárselo, o no la encontraría en «mis tareas».
+        const t = a['taskId'] !== undefined ? this.task(String(a['taskId'])) : undefined;
+        if (t) {
+          t.worker = ag.address;
+          t.updatedTs = ev.ts;
+          this.ligar(ag.address, t.taskId);
+        }
         break;
       }
       case 'TaskCompleted': {
@@ -206,6 +290,12 @@ class StatsBuilder {
           addWei(ag.volume, coin, String(a['workerPaid']));
           this.move(d, coin, String(a['workerPaid']));
         }
+        const tc = a['taskId'] !== undefined ? this.task(String(a['taskId'])) : undefined;
+        if (tc) {
+          tc.status = 'completed';
+          tc.updatedTs = ev.ts;
+          if (a['rating'] !== undefined) tc.rating = Number(a['rating']);
+        }
         break;
       }
       case 'DisputeResolved': {
@@ -213,6 +303,43 @@ class StatsBuilder {
         if (a['workerPaid'] !== undefined && a['taskId'] !== undefined) {
           const currency = this.taskCurrency.get(String(a['taskId']));
           this.move(d, coinOf(currency, this.panalToken), String(a['workerPaid']));
+        }
+        const tr = a['taskId'] !== undefined ? this.task(String(a['taskId'])) : undefined;
+        if (tr) {
+          tr.status = 'completed';
+          tr.updatedTs = ev.ts;
+          if (a['rating'] !== undefined) tr.rating = Number(a['rating']);
+        }
+        break;
+      }
+      // Estos tres se indexaban como eventos pero no tocaban ningún agregado.
+      // Sin ellos una tarea entregada seguía figurando como abierta, que es
+      // justo la diferencia que el cliente necesita ver: si está entregada
+      // tiene que aprobarla o disputarla, y si no hace nada el pago se libera
+      // solo a las 72 horas.
+      case 'TaskDelivered': {
+        const t = a['taskId'] !== undefined ? this.task(String(a['taskId'])) : undefined;
+        if (t) {
+          // Solo desde abierta: una disputa posterior no debe volver atrás.
+          if (t.status === 'open') t.status = 'delivered';
+          if (a['resultHash'] !== undefined) t.resultHash = String(a['resultHash']);
+          t.updatedTs = ev.ts;
+        }
+        break;
+      }
+      case 'TaskDisputed': {
+        const t = a['taskId'] !== undefined ? this.task(String(a['taskId'])) : undefined;
+        if (t) {
+          t.status = 'disputed';
+          t.updatedTs = ev.ts;
+        }
+        break;
+      }
+      case 'TaskCancelled': {
+        const t = a['taskId'] !== undefined ? this.task(String(a['taskId'])) : undefined;
+        if (t) {
+          t.status = 'cancelled';
+          t.updatedTs = ev.ts;
         }
         break;
       }
@@ -453,5 +580,36 @@ export class IndexStore {
 
   dailyStats(days: number): DayStats[] {
     return this.stats.dailySeries(days);
+  }
+
+  /**
+   * Las tareas de una dirección, como cliente o como trabajador.
+   *
+   * Sale del índice inverso, así que cuesta lo que cuestan SUS tareas y no lo
+   * que cuestan todas. Es la diferencia entre que el panel funcione con veinte
+   * mil tareas en el escrow o deje de encontrar las tuyas.
+   *
+   * Se devuelven de la más reciente a la más antigua: lo que hay que atender
+   * está siempre arriba.
+   */
+  tasksOf(address: string, opts: { role?: 'client' | 'worker'; limit?: number } = {}): IndexedTask[] {
+    const ids = this.stats.tasksByAddress.get(address.toLowerCase());
+    if (!ids) return [];
+    const yo = address.toLowerCase();
+    const out: IndexedTask[] = [];
+    for (const id of ids) {
+      const t = this.stats.tasks.get(id);
+      if (!t) continue;
+      if (opts.role === 'client' && t.client !== yo) continue;
+      if (opts.role === 'worker' && t.worker !== yo) continue;
+      out.push(t);
+    }
+    out.sort((a, b) => b.createdTs - a.createdTs || Number(b.taskId) - Number(a.taskId));
+    return opts.limit !== undefined ? out.slice(0, opts.limit) : out;
+  }
+
+  /** Una tarea suelta, para consultarla por id sin leer la cadena. */
+  task(taskId: string): IndexedTask | null {
+    return this.stats.tasks.get(taskId) ?? null;
   }
 }

@@ -81,6 +81,14 @@ export interface IndexServerDeps {
 
 const EVENTS_DEFAULT_LIMIT = 50;
 const EVENTS_MAX_LIMIT = 200;
+/**
+ * Cuantas tareas se devuelven de una direccion. Generoso a proposito: el panel
+ * las quiere TODAS para poder contar las activas y las cerradas, y quien tiene
+ * mil tareas es justo a quien no se le puede pedir que pagine para ver si le
+ * falta aprobar algo.
+ */
+const TASKS_DEFAULT_LIMIT = 200;
+const TASKS_MAX_LIMIT = 1000;
 
 export function createIndexServer(deps: IndexServerDeps): Server {
   const maxUrlLength = deps.maxUrlLength ?? 2_048;
@@ -138,6 +146,39 @@ export function createIndexServer(deps: IndexServerDeps): Server {
         const before = url.searchParams.get('before') ?? undefined;
         const { events, next } = store.queryEvents(limit, before);
         json(res, 200, { events, count: events.length, next });
+        return;
+      }
+
+      // ---- Las tareas de una direccion -------------------------------------
+      //
+      // Existe porque el panel las buscaba escaneando las 200 ultimas tareas
+      // del escrow y filtrando en el navegador. Con 200 en total funcionaba;
+      // pasadas esas, un cliente que contrato ayer deja de ver la suya y no
+      // puede aprobarla, disputarla ni descargar su resultado — y a las 72 h
+      // el pago se libera solo sin que se haya enterado.
+      case '/index/tasks': {
+        const address = url.searchParams.get('address');
+        if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address)) {
+          json(res, 400, { error: 'address required (0x + 40 hex)' });
+          return;
+        }
+        const roleRaw = url.searchParams.get('role');
+        if (roleRaw !== null && roleRaw !== 'client' && roleRaw !== 'worker') {
+          json(res, 400, { error: "bad role (client | worker)" });
+          return;
+        }
+        const limitRaw = url.searchParams.get('limit');
+        let limit = TASKS_DEFAULT_LIMIT;
+        if (limitRaw !== null) {
+          const n = Number.parseInt(limitRaw, 10);
+          if (!Number.isFinite(n) || n < 1 || n > TASKS_MAX_LIMIT) {
+            json(res, 400, { error: `bad limit (1..${TASKS_MAX_LIMIT})` });
+            return;
+          }
+          limit = n;
+        }
+        const tasks = store.tasksOf(address, { role: roleRaw ?? undefined, limit });
+        json(res, 200, { tasks, count: tasks.length, address: address.toLowerCase() });
         return;
       }
 

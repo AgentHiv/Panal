@@ -218,6 +218,12 @@ jobs:
         working-directory: bot
         run: pnpm exec tsx scripts/test-i18n.ts
 
+      # Las tareas por direccion: es lo que evita que un cliente pierda de
+      # vista su propio dinero cuando el escrow pase de 200 tareas.
+      - name: Indice de tareas por direccion
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-indexer-tasks.ts
+
       - name: Endurecimiento (IP tras proxy, anti-SSRF, tope de respuesta, prompts)
         working-directory: bot
         run: pnpm exec tsx scripts/test-hardening.ts
