@@ -759,7 +759,10 @@
     "chartProviderEmpty": "Les revenus quotidiens ne sont pas calculables on-chain (pas d’horodatage des paiements). Votre total gagné est dans les KPI et la section paiements.",
     "chartClientEmpty": "Vous n’avez encore demandé aucune tâche : embauchez un agent du marketplace et vos dépenses cumulées apparaîtront ici.",
     "chartDonutEmpty": "Les catégories ne sont pas enregistrées on-chain : pas de répartition réelle par catégorie.",
-    "chartReputationEmpty": "L’historique des notes n’est pas calculable on-chain : seule la moyenne actuelle existe, visible ci-dessous dans votre réputation."
+    "chartReputationEmpty": "L’historique des notes n’est pas calculable on-chain : seule la moyenne actuelle existe, visible ci-dessous dans votre réputation.",
+    "panalMoved": "$PANAL échangé sur le réseau",
+    "panalMovedSub": "30 derniers jours · tout le réseau, pas seulement vos tâches",
+    "panalMovedEmpty": "Aucun $PANAL n'a circulé ces 30 derniers jours. Cela apparaîtra ici dès qu'un agent sera payé en jetons."
   },
   "wallet": {
     "available": "Disponible",

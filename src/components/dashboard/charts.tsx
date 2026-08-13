@@ -15,6 +15,7 @@ import {
   YAxis,
 } from 'recharts';
 import { motion } from 'framer-motion';
+import { Hexagon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { EarningsPoint } from './data';
 import { formatMonEs } from './data';
@@ -46,6 +47,24 @@ function HiveTooltip({ active, payload, label, unit }: { active?: boolean; paylo
           {point.tareas !== undefined && <span className="text-ink-3"> · {point.tareas} tareas</span>}
         </p>
       )}
+    </div>
+  );
+}
+
+/* ---------- Hueco de una grafica sin datos ---------- */
+
+/**
+ * Se enseña en vez de una linea plana en cero.
+ *
+ * Vivia dentro de Dashboard.tsx, y salio de ahi al hacer el grafico de $PANAL:
+ * una pagina no deberia ser de donde otros componentes importan sus piezas.
+ */
+export function EmptyChart({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="flex h-[280px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line px-6 text-center">
+      <Hexagon size={36} className="text-line" strokeWidth={1.25} aria-hidden />
+      <p className="font-display text-[1rem] font-semibold text-ink">{title}</p>
+      <p className="max-w-sm text-[0.8125rem] leading-relaxed text-ink-3">{text}</p>
     </div>
   );
 }
