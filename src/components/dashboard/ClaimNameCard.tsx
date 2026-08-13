@@ -12,7 +12,7 @@
  * revertir cuesta gas y no explica nada.
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AtSign, Check, Loader2 } from 'lucide-react';
 import { useReadContract } from 'wagmi';
@@ -27,8 +27,9 @@ import { cn } from '@/lib/utils';
 export default function ClaimNameCard({ nombrePerfil }: { nombrePerfil: string }) {
   const { t } = useTranslation();
   const { address, connected } = useWallet();
-  const [handle, setHandle] = useState('');
-  const [tocado, setTocado] = useState(false);
+  // Lo que el usuario ha escrito. `null` = todavía no ha tocado nada, y
+  // entonces se propone el que sale de su nombre de perfil.
+  const [escrito, setEscrito] = useState<string | null>(null);
 
   const agente = (address ?? null) as `0x${string}` | null;
 
@@ -43,11 +44,10 @@ export default function ClaimNameCard({ nombrePerfil }: { nombrePerfil: string }
     query: { enabled: Boolean(agente), staleTime: 30_000 },
   });
 
-  // Se propone el handle que sale de su nombre de perfil, que es el que casi
-  // siempre quiere. Solo mientras no lo haya tocado.
-  useEffect(() => {
-    if (!tocado) setHandle(aHandle(nombrePerfil));
-  }, [nombrePerfil, tocado]);
+  // Derivado, no sincronizado con un efecto: copiar el nombre del perfil al
+  // estado dentro de un `useEffect` dispara renders en cascada, y además deja
+  // un frame en el que el campo esta vacio.
+  const handle = escrito ?? aHandle(nombrePerfil);
 
   const motivo = handle ? revisaHandle(handle) : null;
   const consultable = handle.length > 0 && motivo === null;
@@ -120,10 +120,7 @@ export default function ClaimNameCard({ nombrePerfil }: { nombrePerfil: string }
           <span className="font-mono text-[0.875rem] text-ink-3">@</span>
           <input
             value={handle}
-            onChange={(e) => {
-              setTocado(true);
-              setHandle(aHandle(e.target.value));
-            }}
+            onChange={(e) => setEscrito(aHandle(e.target.value))}
             maxLength={HANDLE_MAX}
             spellCheck={false}
             autoCapitalize="none"
