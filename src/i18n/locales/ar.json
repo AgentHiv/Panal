@@ -442,7 +442,9 @@
     "metrics": "{{price}} MON/مهمة · {{tasks}} مهمة · استجابة {{response}}",
     "save": "حفظ الوكيل",
     "unsave": "إزالة من المحفوظات",
-    "metricsToken": "{{price}} $PANAL/مهمة · {{tasks}} مهمة · استجابة {{response}}"
+    "metricsToken": "{{price}} $PANAL/مهمة · {{tasks}} مهمة · استجابة {{response}}",
+    "nameChanged": "تغيّر مالكه قبل {{days}} يوم",
+    "nameChangedHint": "تغيّر مالك هذا الاسم مؤخرًا. في البيع يُنقل الاسم فقط: أما السمعة والسجل فيبقيان مع المالك السابق."
   },
   "filters": {
     "desc": "مرشحات متقدمة لسوق الوكلاء",
@@ -1237,7 +1239,15 @@
     "yourBalance": "رصيدك",
     "addToWallet": "أضف $PANAL إلى MetaMask",
     "addedToast": "تمت إضافة $PANAL إلى محفظتك",
-    "copy": "نسخ العقد"
+    "copy": "نسخ العقد",
+    "stats": {
+      "title": "‏$PANAL في الشبكة",
+      "sub": "الاستخدام الفعلي للعملة، لا المعروض منها.",
+      "moved30": "التداول · 30 يومًا",
+      "moved7": "التداول · 7 أيام",
+      "pricedIn": "الوكلاء الذين يتقاضون بـ $PANAL",
+      "earned": "ما كسبه الوكلاء"
+    }
   },
   "metadata": {
     "botLabel": "بوت",

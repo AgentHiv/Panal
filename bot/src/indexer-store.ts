@@ -26,7 +26,7 @@ import { join, resolve } from 'node:path';
 export interface IndexedEvent {
   /** `${txHash}-${logIndex}` — clave de dedup. */
   id: string;
-  contract: 'registry' | 'escrow';
+  contract: 'registry' | 'escrow' | 'names';
   event: string;
   blockNumber: number;
   logIndex: number;
@@ -153,6 +153,25 @@ export interface AgentProfile {
   verificadoTs?: number;
 }
 
+/**
+ * El nombre que tiene un agente en PanalNames, y cómo llegó a tenerlo.
+ *
+ * El «cómo» importa tanto como el nombre. Los nombres se pueden vender, y lo
+ * único que viaja con ellos es el nombre: la reputación, el historial y la
+ * verificación del dominio se quedan en la dirección. Así que quien compra
+ * `lint` hereda el nombre y ninguna de las 200 tareas que lo hicieron valer, y
+ * el cliente que lo busca por el nombre tiene derecho a enterarse.
+ */
+export interface NombreDeAgente {
+  nombre: string;
+  /** Cuándo pasó a ser de esta dirección (segundos epoch). */
+  desdeTs: number;
+  /** Reclamado de cero, comprado a otro, o recibido sin pagar. */
+  origen: 'reclamado' | 'comprado' | 'recibido';
+  /** Lo que se pagó, en unidades mínimas. Solo si se compró. */
+  precio?: string;
+}
+
 export interface DayStats {
   /** YYYY-MM-DD (UTC). */
   date: string;
@@ -191,6 +210,8 @@ class StatsBuilder {
   readonly byType: Record<string, number> = {};
   /** taskId -> currency address (para atribuir volúmenes de TaskCompleted). */
   private readonly taskCurrency = new Map<string, string>();
+  /** Quién tiene cada nombre de PanalNames, y cómo lo consiguió. */
+  private readonly nombres = new Map<string, NombreDeAgente>();
   /** taskId -> tarea montada. El orden de inserción es el de creación. */
   readonly tasks = new Map<string, IndexedTask>();
   /**
@@ -254,6 +275,10 @@ class StatsBuilder {
   private move(day: ReturnType<StatsBuilder['day']>, coin: string, amount: string): void {
     if (coin === 'MON') day.mon += BigInt(amount);
     else if (coin === '$PANAL') day.panal += BigInt(amount);
+  }
+
+  nombreDe(address: string): NombreDeAgente | null {
+    return this.nombres.get(address.toLowerCase()) ?? null;
   }
 
   add(ev: IndexedEvent): void {
@@ -388,6 +413,42 @@ class StatsBuilder {
         }
         break;
       }
+      // ── PanalNames ──────────────────────────────────────────────────────
+      // Se guarda quién tiene cada nombre Y cómo lo consiguió. Un nombre
+      // comprado ayer y uno reclamado hace un año valen lo mismo como
+      // identificador y no valen lo mismo como señal.
+      case 'Reclamado': {
+        const dueno = String(ev.args.dueno ?? '').toLowerCase();
+        const nombre = String(ev.args.nombre ?? '');
+        if (dueno && nombre) {
+          this.nombres.set(dueno, { nombre, desdeTs: ev.ts, origen: 'reclamado' });
+        }
+        break;
+      }
+      case 'Vendido':
+      case 'Transferido': {
+        const de = String(ev.args.de ?? '').toLowerCase();
+        const a = String(ev.args.a ?? '').toLowerCase();
+        const nombre = String(ev.args.nombre ?? '');
+        // El vendedor se queda sin nombre: el contrato solo deja uno por
+        // dirección, así que dejarle el viejo apuntando sería mentira.
+        if (de) this.nombres.delete(de);
+        if (a && nombre) {
+          this.nombres.set(a, {
+            nombre,
+            desdeTs: ev.ts,
+            origen: ev.event === 'Vendido' ? 'comprado' : 'recibido',
+            ...(ev.event === 'Vendido' ? { precio: String(ev.args.precio ?? '0') } : {}),
+          });
+        }
+        break;
+      }
+      case 'Liberado': {
+        const dueno = String(ev.args.dueno ?? '').toLowerCase();
+        if (dueno) this.nombres.delete(dueno);
+        break;
+      }
+
       case 'Withdrawal': {
         const to = String(a['to']);
         const ag = this.agent(to, ev.ts);
@@ -693,6 +754,11 @@ export class IndexStore {
     return toca.slice(0, tope);
   }
 
+  /** El nombre de un agente en PanalNames, o null si no tiene. */
+  nombre(address: string): NombreDeAgente | null {
+    return this.stats.nombreDe(address);
+  }
+
   /** Marca una ficha como vieja. La llama el indexador al ver un evento suyo. */
   marcarSucio(address: string): void {
     this.sucios.add(address.toLowerCase());
@@ -722,7 +788,7 @@ export class IndexStore {
     includeInactive?: boolean;
     offset?: number;
     limit?: number;
-  } = {}): { agents: (AgentProfile & { stats: AgentStats | null })[]; total: number } {
+  } = {}): { agents: (AgentProfile & { stats: AgentStats | null; nombre: NombreDeAgente | null })[]; total: number } {
     const stats = new Map(this.stats.agentList().map((a) => [a.address, a]));
     let lista = [...this.profiles.values()];
 
@@ -750,7 +816,11 @@ export class IndexStore {
     const offset = Math.max(0, opts.offset ?? 0);
     const limit = opts.limit ?? total;
     return {
-      agents: lista.slice(offset, offset + limit).map((a) => ({ ...a, stats: stats.get(a.address) ?? null })),
+      agents: lista.slice(offset, offset + limit).map((a) => ({
+        ...a,
+        stats: stats.get(a.address) ?? null,
+        nombre: this.stats.nombreDe(a.address),
+      })),
       total,
     };
   }

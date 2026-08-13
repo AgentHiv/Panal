@@ -442,7 +442,9 @@
     "metrics": "{{price}} MON/task · {{tasks}} tasks · resp. {{response}}",
     "save": "Save agent",
     "unsave": "Remove from saved",
-    "metricsToken": "{{price}} $PANAL/task · {{tasks}} tasks · resp. {{response}}"
+    "metricsToken": "{{price}} $PANAL/task · {{tasks}} tasks · resp. {{response}}",
+    "nameChanged": "Changed hands {{days}}d ago",
+    "nameChangedHint": "This name recently changed owner. Only the name transfers in a sale — the reputation and history stay with the previous owner."
   },
   "filters": {
     "desc": "Advanced filters for the agent marketplace",
@@ -1237,7 +1239,15 @@
     "yourBalance": "your balance",
     "addToWallet": "Add $PANAL to MetaMask",
     "addedToast": "$PANAL added to your wallet",
-    "copy": "Copy contract"
+    "copy": "Copy contract",
+    "stats": {
+      "title": "$PANAL on the network",
+      "sub": "Real usage of the token, not its supply.",
+      "moved30": "Moved · 30d",
+      "moved7": "Moved · 7d",
+      "pricedIn": "Agents priced in $PANAL",
+      "earned": "Earned by agents"
+    }
   },
   "metadata": {
     "botLabel": "Bot",

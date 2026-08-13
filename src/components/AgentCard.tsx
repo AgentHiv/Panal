@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BadgeCheck, Bookmark } from 'lucide-react';
+import { ArrowLeftRight, BadgeCheck, Bookmark } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
 import LiveDot from '@/components/LiveDot';
 import RatingStars from '@/components/RatingStars';
 import HireDialog from '@/components/HireDialog';
 import { cn } from '@/lib/utils';
 import { currencySymbol } from '@/contracts/config';
-import { isOnchainAgent } from '@/hooks/usePanalAgents';
+import { cambioReciente, isOnchainAgent } from '@/hooks/usePanalAgents';
+import { useAhora } from '@/hooks/useAhora';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 
@@ -36,6 +37,14 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
   const offline = agent.status === 'desconectado';
   /** Símbolo del precio: MON por defecto, $PANAL si el agente v2 lo fijó en token. */
   const priceSymbol = isOnchainAgent(agent) ? currencySymbol(agent.currency) : 'MON';
+
+  // El aviso caduca solo, asi que necesita saber que hora es. useAhora lo
+  // refresca cada 30 s; sin el, una pestaña abierta toda la tarde seguiria
+  // diciendo "hace 29 dias" para siempre.
+  const ahora = useAhora();
+  const nombre = isOnchainAgent(agent) ? agent.nombreOnchain : null;
+  const reciente = cambioReciente(nombre, ahora);
+  const diasDesde = nombre ? Math.max(0, Math.floor((ahora - nombre.desdeTs) / 86_400)) : 0;
 
   return (
     <>
@@ -65,6 +74,21 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
                 <span className="rounded-full bg-sand px-2.5 py-0.5 text-[0.75rem] font-medium text-ink-2">
                   {agent.type === 'ia' ? t('common.typeIa') : t('common.typeHuman')}
                 </span>
+                {/*
+                  Un nombre que acaba de cambiar de manos. En una venta lo unico
+                  que viaja es el nombre: la reputacion y el historial se quedan
+                  en la direccion del vendedor. Quien busca a `lint` por su
+                  nombre merece saber que el `lint` de hoy no hizo esas tareas.
+                */}
+                {reciente && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-terra/15 px-2.5 py-0.5 text-[0.75rem] font-medium text-terra"
+                    title={t('agentCard.nameChangedHint')}
+                  >
+                    <ArrowLeftRight size={12} className="shrink-0" />
+                    {t('agentCard.nameChanged', { days: diasDesde })}
+                  </span>
+                )}
               </div>
             </div>
           </div>

@@ -156,6 +156,26 @@ export interface CatalogAgent {
   verificado?: boolean;
   /** Por qué no está verificado. */
   verificadoMotivo?: string;
+
+  /** Su nombre en PanalNames, si lo tiene y el contrato está desplegado. */
+  nombre?: NombreDeAgente | null;
+}
+
+/**
+ * El nombre de un agente en PanalNames, y cómo llegó a tenerlo.
+ *
+ * El «cómo» importa tanto como el nombre. Los nombres se venden, y lo único que
+ * viaja con ellos es el nombre: la reputación, el historial y la verificación
+ * del dominio se quedan en la dirección. Quien compra `lint` hereda el nombre y
+ * ninguna de las tareas que lo hicieron valer.
+ */
+export interface NombreDeAgente {
+  nombre: string;
+  /** Cuándo pasó a ser de esta dirección (segundos epoch). */
+  desdeTs: number;
+  origen: 'reclamado' | 'comprado' | 'recibido';
+  /** Lo pagado, en unidades mínimas. Solo si se compró. */
+  precio?: string;
 }
 
 /**

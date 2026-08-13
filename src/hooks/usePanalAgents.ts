@@ -34,7 +34,13 @@ import {
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
 import type { Agent, AgentCategory } from '@/data/agents';
-import { fetchCatalogo, useIndexAgents, type AgentStats, type CatalogAgent } from '@/lib/indexer';
+import {
+  fetchCatalogo,
+  useIndexAgents,
+  type AgentStats,
+  type CatalogAgent,
+  type NombreDeAgente,
+} from '@/lib/indexer';
 
 /** Agent del mercado enriquecido con datos reales on-chain + indexador. */
 export interface OnchainAgent extends Agent {
@@ -47,6 +53,24 @@ export interface OnchainAgent extends Agent {
   currency: Address;
   /** stats del indexador para esta address (null si aún no tiene actividad) */
   indexStats: AgentStats | null;
+  /** Su nombre en PanalNames, con cómo y cuándo lo consiguió. */
+  nombreOnchain: NombreDeAgente | null;
+}
+
+/**
+ * ¿Este nombre acaba de cambiar de manos?
+ *
+ * Treinta días. Un nombre comprado la semana pasada y uno reclamado hace un año
+ * valen lo mismo como identificador y no valen lo mismo como señal: lo único
+ * que viaja en una venta es el nombre, y la reputación se queda en la dirección
+ * del vendedor. Quien busca a `lint` por su nombre merece saber que el `lint`
+ * de hoy no es el que hizo esas tareas.
+ */
+export const DIAS_CAMBIO_RECIENTE = 30;
+
+export function cambioReciente(n: NombreDeAgente | null, ahoraS: number): boolean {
+  if (!n || n.origen === 'reclamado') return false;
+  return ahoraS - n.desdeTs < DIAS_CAMBIO_RECIENTE * 86_400;
 }
 
 export function isOnchainAgent(agent: Agent): agent is OnchainAgent {
@@ -203,6 +227,7 @@ function delCatalogo(fichas: CatalogAgent[]): OnchainAgent[] {
         priceWei,
         currency: (f.currency || NATIVE_CURRENCY) as Address,
         indexStats: f.stats,
+        nombreOnchain: f.nombre ?? null,
         // El volumen se calcula AQUÍ porque la ficha del catálogo ya lo trae:
         // pedirlo otra vez a `/index/agents` seria traerse dos veces lo mismo,
         // y esa segunda consulta devuelve el mercado entero sin paginar.
@@ -302,6 +327,9 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       priceWei,
       currency: data.currency ?? NATIVE_CURRENCY,
       indexStats: null,
+      // Este camino lee el registry directamente, sin indexador; los nombres
+      // salen de sus eventos, asi que aqui no hay ninguno que poner.
+      nombreOnchain: null,
     };
   };
 

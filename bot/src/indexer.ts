@@ -105,6 +105,24 @@ const ESCROW_EVENTS = [
   parseAbiItem('event Withdrawal(address indexed to, address indexed token, uint256 amount)'),
 ];
 
+/**
+ * PanalNames. Solo interesan los cambios de dueño: quien tiene cada nombre y
+ * como lo consiguio.
+ *
+ * `Vendido` y `Transferido` son lo que hace falta vigilar. Un nombre se puede
+ * vender, y lo unico que viaja con el es el nombre: la reputacion, el historial
+ * y la verificacion del dominio se quedan en la direccion. Quien compra `lint`
+ * hereda el nombre y ninguna de las tareas que lo hicieron valer.
+ */
+const NAMES_EVENTS = [
+  parseAbiItem('event Reclamado(bytes32 indexed hash, string nombre, address indexed dueno, uint256 pagado)'),
+  parseAbiItem(
+    'event Vendido(bytes32 indexed hash, string nombre, address indexed de, address indexed a, uint256 precio, uint256 comision)',
+  ),
+  parseAbiItem('event Transferido(bytes32 indexed hash, string nombre, address indexed de, address indexed a)'),
+  parseAbiItem('event Liberado(bytes32 indexed hash, string nombre, address indexed dueno)'),
+];
+
 /** Log decodificado por viem al pasar `events` al getLogs. */
 interface DecodedLog {
   eventName?: string;
@@ -154,7 +172,7 @@ function parseRangeLimit(err: unknown): bigint | null {
 async function fetchWindow(
   clients: ChainClients,
   address: Address,
-  events: typeof REGISTRY_EVENTS | typeof ESCROW_EVENTS,
+  events: typeof REGISTRY_EVENTS | typeof ESCROW_EVENTS | typeof NAMES_EVENTS,
   fromBlock: bigint,
   toBlock: bigint,
 ): Promise<DecodedLog[]> {
@@ -177,7 +195,7 @@ async function fetchWindow(
 async function getLogsChunked(
   clients: ChainClients,
   address: Address,
-  events: typeof REGISTRY_EVENTS | typeof ESCROW_EVENTS,
+  events: typeof REGISTRY_EVENTS | typeof ESCROW_EVENTS | typeof NAMES_EVENTS,
   fromBlock: bigint,
   toBlock: bigint,
 ): Promise<DecodedLog[]> {
@@ -207,16 +225,21 @@ async function getLogsChunked(
   return out;
 }
 
-/** getLogs de ambos contratos en un rango (registry + escrow). */
+/** getLogs de los contratos en un rango (registry + escrow + names si lo hay). */
 async function getLogsBoth(
   clients: ChainClients,
   cfg: BotConfig,
   fromBlock: bigint,
   toBlock: bigint,
-): Promise<{ registry: DecodedLog[]; escrow: DecodedLog[] }> {
+): Promise<{ registry: DecodedLog[]; escrow: DecodedLog[]; names: DecodedLog[] }> {
   const registry = await getLogsChunked(clients, cfg.registryAddress, REGISTRY_EVENTS, fromBlock, toBlock);
   const escrow = await getLogsChunked(clients, cfg.escrowAddress, ESCROW_EVENTS, fromBlock, toBlock);
-  return { registry, escrow };
+  // Sin PanalNames desplegado no se pide nada: seria una llamada RPC por
+  // ventana, en cada vuelta, a un contrato que no existe.
+  const names = cfg.namesAddress
+    ? await getLogsChunked(clients, cfg.namesAddress, NAMES_EVENTS, fromBlock, toBlock)
+    : [];
+  return { registry, escrow, names };
 }
 
 // ---------------------------------------------------------------------------
@@ -358,7 +381,7 @@ function serializeArg(value: unknown): string | number | boolean {
 
 async function toIndexedEvents(
   clients: ChainClients,
-  contract: 'registry' | 'escrow',
+  contract: 'registry' | 'escrow' | 'names',
   logs: DecodedLog[],
 ): Promise<IndexedEvent[]> {
   if (logs.length === 0) return [];
@@ -405,10 +428,12 @@ async function bootstrapByPoints(
     const b = await blockAtTime(clients, ts, head);
     const from = b > BOOTSTRAP_HALF_WINDOW ? b - BOOTSTRAP_HALF_WINDOW : 0n;
     const to = b + BOOTSTRAP_HALF_WINDOW < head ? b + BOOTSTRAP_HALF_WINDOW : head;
-    const { registry, escrow } = await getLogsBoth(clients, cfg, from, to);
+    const { registry, escrow, names } = await getLogsBoth(clients, cfg, from, to);
     const events = [
       ...(await toIndexedEvents(clients, 'registry', registry)),
       ...(await toIndexedEvents(clients, 'escrow', escrow)),
+    ...(await toIndexedEvents(clients, 'names', names)),
+      ...(await toIndexedEvents(clients, 'names', names)),
     ];
     const added = store.append(events);
     total += added;
@@ -431,10 +456,11 @@ async function incremental(
 ): Promise<number> {
   const from = BigInt(store.lastBlock) + 1n;
   if (from > head) return 0;
-  const { registry, escrow } = await getLogsBoth(clients, cfg, from, head);
+  const { registry, escrow, names } = await getLogsBoth(clients, cfg, from, head);
   const events = [
     ...(await toIndexedEvents(clients, 'registry', registry)),
     ...(await toIndexedEvents(clients, 'escrow', escrow)),
+    ...(await toIndexedEvents(clients, 'names', names)),
   ];
   const added = store.append(events);
   store.setLastBlock(Number(head));
@@ -462,10 +488,12 @@ async function sweepBackwards(
   while (used < SWEEP_BATCH_PER_TICK && used < budget && floor > 0) {
     const to: bigint = BigInt(floor) - 1n;
     const from: bigint = to + 1n > maxLogRange ? to + 1n - maxLogRange : 0n;
-    const { registry, escrow } = await getLogsBoth(clients, cfg, from, to);
+    const { registry, escrow, names } = await getLogsBoth(clients, cfg, from, to);
     const events = [
       ...(await toIndexedEvents(clients, 'registry', registry)),
       ...(await toIndexedEvents(clients, 'escrow', escrow)),
+    ...(await toIndexedEvents(clients, 'names', names)),
+      ...(await toIndexedEvents(clients, 'names', names)),
     ];
     const added = store.append(events);
     floor = Number(from);
