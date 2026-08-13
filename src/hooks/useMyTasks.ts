@@ -1,15 +1,30 @@
 /**
  * Panal — Mis tareas REALES on-chain (PanalEscrow).
  *
- * Lee `getTaskCount()` y luego el getter público `tasks(i)` para cada id,
- * en lotes de 5 con pausa de 300 ms entre lotes (el RPC público limita a
- * ~15 req/s). Filtra las tareas donde la wallet conectada es client o
- * worker y añade `deliveredAt(i)` solo para las mías en estado Delivered
- * (necesario para saber si `autoRelease` ya está disponible).
+ * CUÁLES son tuyas lo dice el indexador; QUÉ dicen, la cadena.
  *
- * Límite: si existen más de 200 tareas on-chain solo se leen las 200 más
- * recientes (las antiguas ya están Completed/Cancelled y no cambian; así
- * acotamos el número de eth_call por refetch). Documentado aquí a propósito.
+ * Antes se resolvían las dos preguntas escaneando el escrow: leer las 200
+ * últimas tareas y quedarse con las que te nombran. Con 200 tareas en total
+ * funcionaba, y a partir de ahí quien contrató ayer DEJABA DE VER LA SUYA — no
+ * podía aprobarla, ni disputarla, ni descargar su resultado, y a las 72 h el
+ * pago se liberaba solo sin que se hubiera enterado.
+ *
+ * Ahora el indexador devuelve la lista de ids que te nombran, completa y sin
+ * ventana, y de la cadena se leen SOLO esos. Se pasa de 200 lecturas fijas a
+ * tantas como tareas tengas.
+ *
+ * Los datos siguen saliendo de la cadena y no del indexador, y no es por
+ * desconfianza: sus eventos no traen `deadline`, `taskHash` ni `deliveredAt`,
+ * que es justo lo que hace falta para saber si puedes cancelar, si el texto
+ * que recibes es el que encargaste y cuándo se libera el pago solo.
+ *
+ * Y dos cosas que hay que respetar:
+ *
+ *   - El indexador va 15 s por detrás. Una tarea recién creada todavía no está
+ *     en su lista, así que se le suma SIEMPRE una ventana corta del final del
+ *     escrow. Sin eso, contratas y tu tarea no aparece.
+ *   - Si el indexador no responde, se vuelve al escaneo de antes. Peor, pero
+ *     nunca un panel en blanco: es la pantalla donde la gente va a cobrar.
  *
  * Nombres de agente: el mapeo worker→nombre se hace en los componentes a
  * partir de `usePanalAgents` (si no hay agente registrado con esa address,
@@ -28,6 +43,7 @@ import {
 } from '@/contracts/config';
 import { panalEscrowAbi, panalEscrowV2Abi } from '@/contracts/abis';
 import { useWallet } from '@/hooks/useWallet';
+import { fetchTaskIdsOf } from '@/lib/indexer';
 
 /** Escrow y ABI activos (v2 dual-moneda cuando V2_ENABLED). */
 export const ACTIVE_ESCROW_ADDRESS = V2_ENABLED ? PANAL_ESCROW_V2_ADDRESS : PANAL_ESCROW_ADDRESS;
@@ -61,8 +77,18 @@ export interface RealTask {
 
 const CHUNK = 5;
 const CHUNK_SLEEP_MS = 300;
-/** Máximo de tareas leídas (las más recientes) — ver docstring del módulo. */
+/** Tope del escaneo de respaldo, cuando el indexador no responde. */
 const MAX_TASKS_SCAN = 200;
+
+/**
+ * Cuántas tareas del final del escrow se miran SIEMPRE, además de las que
+ * diga el indexador.
+ *
+ * Cubre su retraso: sondea cada 15 s, así que una tarea recién creada aún no
+ * está en su lista. 25 son varios minutos de mercado incluso con actividad
+ * alta, y cuestan 25 lecturas.
+ */
+const VENTANA_RECIENTE = 25;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -89,10 +115,30 @@ async function fetchMyTasks(me: Address): Promise<RealTask[]> {
   const total = Number(count);
   if (total === 0) return [];
 
-  // Solo las últimas MAX_TASKS_SCAN tareas si el contador es enorme.
-  const start = Math.max(0, total - MAX_TASKS_SCAN);
-  const ids: bigint[] = [];
-  for (let i = start; i < total; i++) ids.push(BigInt(i));
+  // Los ids que me nombran, según el indexador. null = no respondió, o va
+  // tan atrasado que su lista estaría incompleta.
+  const cabeza = await publicClient.getBlockNumber().catch(() => undefined);
+  const delIndice = await fetchTaskIdsOf(me, cabeza);
+
+  const aLeer = new Set<string>();
+  if (delIndice !== null) {
+    for (const id of delIndice) aLeer.add(id.toString());
+    // Su lista va 15 s por detrás, así que se le suma el final del escrow: sin
+    // esto, contratas y tu tarea recién creada no aparece en el panel.
+    for (let i = Math.max(0, total - VENTANA_RECIENTE); i < total; i++) aLeer.add(String(i));
+  } else {
+    // Sin indexador se vuelve al escaneo de antes. Peor —solo ve las últimas
+    // MAX_TASKS_SCAN— pero es mejor que dejar en blanco la pantalla donde la
+    // gente aprueba y cobra.
+    for (let i = Math.max(0, total - MAX_TASKS_SCAN); i < total; i++) aLeer.add(String(i));
+  }
+
+  const ids = [...aLeer]
+    .map((x) => BigInt(x))
+    // Un id que ya no existe en el escrow (indexador de otra red, o adelantado)
+    // haría reventar la lectura del lote entero.
+    .filter((id) => id < count)
+    .sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
 
   const meLc = me.toLowerCase();
   const mine: RealTask[] = [];
