@@ -45,6 +45,50 @@ jobs:
       - name: Paridad de locales
         run: node scripts/check-i18n.mjs
 
+  web:
+    name: La web compila y pasa el linter
+    runs-on: ubuntu-latest
+    # El trabajo que faltaba. Todo el repo tenia su puerta menos la parte que
+    # ve el usuario, y es la que se rompio dos veces el mismo dia en
+    # produccion: un hook detras de un return condicional que dejo el panel en
+    # negro —eslint lo llevaba reportando y nadie leia la lista— y un
+    # `tsc --noEmit` que pasaba mientras `tsc -b` fallaba.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      # El SDK primero: la web no lo importa, pero `tsc -b` recorre el
+      # workspace entero y necesita sus tipos compilados.
+      - name: Compilar el SDK
+        run: pnpm --filter @panal/sdk build
+
+      # `tsc -b`, NO `tsc --noEmit`. La diferencia no es de estilo: el segundo
+      # daba verde con un tipo roto que el primero cazaba, y el error llego a
+      # main.
+      - name: Typecheck del proyecto entero
+        run: pnpm exec tsc -b
+
+      # Puerta DURA: cero errores. Se puede exigir porque hoy hay cero. Un
+      # baseline con "los de siempre" se comprueba mirando el numero y deja de
+      # ser una revision; asi fue como paso desapercibido el del panel.
+      - name: Linter
+        run: pnpm exec eslint src/
+
+      - name: Build de produccion
+        run: pnpm exec vite build
+
   packages:
     name: SDK y MCP contra Monad mainnet (solo lectura)
     runs-on: ubuntu-latest

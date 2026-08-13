@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { porReputacion } from '@/lib/reputacion';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Lock, Timer } from 'lucide-react';
@@ -112,8 +113,10 @@ export function SimilarAgentsCard({ agent }: { agent: Agent }) {
   // Misma categoría primero (por rating); si no hay suficientes, el resto.
   const others = agents.filter((a) => a.id !== agent.id);
   const similares = [
-    ...others.filter((a) => a.category === agent.category).sort((a, b) => b.rating - a.rating),
-    ...others.filter((a) => a.category !== agent.category).sort((a, b) => b.rating - a.rating),
+    // Misma reputación ajustada que el mercado: la media cruda se fabrica por
+    // el precio del gas, y estas sugerencias también son un escaparate.
+    ...others.filter((a) => a.category === agent.category).sort(porReputacion(others)),
+    ...others.filter((a) => a.category !== agent.category).sort(porReputacion(others)),
   ].slice(0, 3);
   if (similares.length === 0) return null;
   return (
