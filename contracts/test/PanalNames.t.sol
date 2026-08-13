@@ -61,7 +61,7 @@ contract PanalNamesTest is Test {
     function setUp() public {
         token = new TokenFalso();
         registry = new RegistryFalso();
-        names = new PanalNames(address(token), address(registry), tesoreria, CORTO, MEDIO, LARGO, COMISION);
+        names = new PanalNames(address(token), address(registry), address(this), tesoreria, CORTO, MEDIO, LARGO, COMISION);
 
         registry.setActivo(agente, true);
         registry.setActivo(otro, true);
@@ -277,6 +277,31 @@ contract PanalNamesTest is Test {
         names.fijarComision(200); // el tope, vale
         vm.expectRevert("PanalNames: over cap");
         names.fijarComision(201);
+    }
+
+    /// El dueño es quien se le pasa al constructor, no quien despliega. En
+    /// mainnet sera el multisig, y desde el primer bloque: desplegar y
+    /// transferir despues deja una ventana en la que manda una sola clave.
+    function test_el_dueno_es_el_del_constructor_no_el_que_despliega() public {
+        address multisig = makeAddr("multisig");
+        PanalNames otro_ = new PanalNames(
+            address(token), address(registry), multisig, tesoreria, CORTO, MEDIO, LARGO, COMISION
+        );
+
+        assertEq(otro_.owner(), multisig, "el owner es el multisig");
+
+        // Y quien lo desplego no manda.
+        vm.expectRevert("PanalNames: not owner");
+        otro_.fijarTarifas(0, 0, 0);
+
+        vm.prank(multisig);
+        otro_.fijarTarifas(0, 0, 0);
+        assertEq(otro_.tarifaLargo(), 0);
+    }
+
+    function test_no_se_despliega_sin_dueno() public {
+        vm.expectRevert("PanalNames: zero owner");
+        new PanalNames(address(token), address(registry), address(0), tesoreria, CORTO, MEDIO, LARGO, COMISION);
     }
 
     function test_solo_el_owner_toca_la_comision() public {

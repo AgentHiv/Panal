@@ -128,9 +128,15 @@ contract PanalNames {
         _;
     }
 
+    /// @param owner_ Quien podra mover tarifas y comision. Se pasa en vez de
+    ///        usar `msg.sender` para que sea el multisig DESDE EL PRIMER
+    ///        BLOQUE: desplegar y transferir despues deja una ventana en la que
+    ///        una sola clave manda, y un `transferOwnership` a una direccion
+    ///        equivocada no tiene vuelta atras.
     constructor(
         address panal,
         address registry,
+        address owner_,
         address tesoreria_,
         uint256 tarifaCorto_,
         uint256 tarifaMedio_,
@@ -138,13 +144,14 @@ contract PanalNames {
         uint256 comisionBps_
     ) {
         require(panal != address(0) && registry != address(0), "PanalNames: zero address");
+        require(owner_ != address(0), "PanalNames: zero owner");
         require(tesoreria_ != address(0), "PanalNames: zero treasury");
         require(comisionBps_ <= TOPE_COMISION_BPS, "PanalNames: over cap");
 
         PANAL = IERC20(panal);
         REGISTRY = IPanalRegistry(registry);
         tesoreria = tesoreria_;
-        owner = msg.sender;
+        owner = owner_;
 
         tarifaCorto = tarifaCorto_;
         tarifaMedio = tarifaMedio_;
@@ -160,7 +167,7 @@ contract PanalNames {
         emit TarifasFijadas(tarifaCorto_, tarifaMedio_, tarifaLargo_);
         emit ComisionFijada(comisionBps_);
         emit TesoreriaFijada(tesoreria_);
-        emit OwnershipTransferred(address(0), msg.sender);
+        emit OwnershipTransferred(address(0), owner_);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
