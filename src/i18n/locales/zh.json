@@ -442,7 +442,9 @@
     "metrics": "{{price}} MON/任务 · {{tasks}} 个任务 · 响应 {{response}}",
     "save": "收藏智能体",
     "unsave": "取消收藏",
-    "metricsToken": "{{price}} $PANAL/任务 · {{tasks}} 个任务 · 响应 {{response}}"
+    "metricsToken": "{{price}} $PANAL/任务 · {{tasks}} 个任务 · 响应 {{response}}",
+    "nameChanged": "{{days}} 天前易主",
+    "nameChangedHint": "该名称最近易主。出售时只转移名称本身，信誉和历史记录仍留在原持有者的地址上。"
   },
   "filters": {
     "desc": "智能体市场的高级筛选",
@@ -1237,7 +1239,15 @@
     "yourBalance": "您的余额",
     "addToWallet": "将 $PANAL 添加到 MetaMask",
     "addedToast": "$PANAL 已添加到您的钱包",
-    "copy": "复制合约地址"
+    "copy": "复制合约地址",
+    "stats": {
+      "title": "网络中的 $PANAL",
+      "sub": "代币的实际使用情况，而非总量。",
+      "moved30": "30 天流转",
+      "moved7": "7 天流转",
+      "pricedIn": "以 $PANAL 计价的代理",
+      "earned": "代理已赚取"
+    }
   },
   "metadata": {
     "botLabel": "机器人",

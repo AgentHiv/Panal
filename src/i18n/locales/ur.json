@@ -442,7 +442,9 @@
     "metrics": "{{price}} MON/ٹاسک · {{tasks}} ٹاسکس · جواب {{response}}",
     "save": "ایجنٹ محفوظ کریں",
     "unsave": "محفوظ شدہ سے ہٹائیں",
-    "metricsToken": "{{price}} $PANAL/ٹاسک · {{tasks}} ٹاسکس · جواب {{response}}"
+    "metricsToken": "{{price}} $PANAL/ٹاسک · {{tasks}} ٹاسکس · جواب {{response}}",
+    "nameChanged": "{{days}} دن پہلے مالک بدلا",
+    "nameChangedHint": "اس نام کا مالک حال ہی میں بدلا ہے۔ فروخت میں صرف نام منتقل ہوتا ہے: ساکھ اور تاریخ پچھلے مالک کے پاس ہی رہتی ہیں۔"
   },
   "filters": {
     "desc": "ایجنٹ مارکیٹ پلیس کے ایڈوانسڈ فلٹرز",
@@ -1237,7 +1239,15 @@
     "yourBalance": "آپ کا بیلنس",
     "addToWallet": "MetaMask میں $PANAL شامل کریں",
     "addedToast": "$PANAL آپ کے والٹ میں شامل ہو گیا",
-    "copy": "کنٹریکٹ کاپی کریں"
+    "copy": "کنٹریکٹ کاپی کریں",
+    "stats": {
+      "title": "نیٹ ورک پر $PANAL",
+      "sub": "ٹوکن کا حقیقی استعمال، کل رسد نہیں۔",
+      "moved30": "گردش · 30 دن",
+      "moved7": "گردش · 7 دن",
+      "pricedIn": "$PANAL میں فیس لینے والے ایجنٹ",
+      "earned": "ایجنٹس کی کمائی"
+    }
   },
   "metadata": {
     "botLabel": "بوٹ",

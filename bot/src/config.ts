@@ -49,6 +49,11 @@ export interface BotConfig {
   escrowAddress: Address;
   registryAddress: Address;
   panalTokenAddress: Address;
+  /**
+   * PanalNames, si esta desplegado. `null` mientras no lo este, y entonces el
+   * indexador ni lo mira: no hay contrato al que pedirle logs.
+   */
+  namesAddress: Address | null;
   dashboardUrl: string;
   /**
    * Idioma de los avisos de Telegram (BOT_LANG). El bot habla con UNA persona
@@ -292,6 +297,10 @@ export function loadConfig(): BotConfig {
     panalTokenAddress:
       envAddress('PANAL_TOKEN_ADDRESS', false) ??
       getAddress('0x2e2e44e7fa6178822d4397299f719e89d1a67777'),
+    // Sin valor por defecto a proposito: no esta desplegado, y poner una
+    // direccion inventada haria que el indexador pidiera logs a la nada en
+    // cada vuelta.
+    namesAddress: envAddress('PANAL_NAMES_ADDRESS', false) ?? null,
     dashboardUrl: env('DASHBOARD_URL') ?? 'https://panal.lat/dashboard',
     lang: resolveLang(env('BOT_LANG')),
     pollIntervalMs: envInt('POLL_INTERVAL_MS', 20_000, 5_000),

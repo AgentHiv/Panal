@@ -442,7 +442,9 @@
     "metrics": "{{price}} MON/tarefa · {{tasks}} tarefas · resp. {{response}}",
     "save": "Guardar agente",
     "unsave": "Remover dos guardados",
-    "metricsToken": "{{price}} $PANAL/tarefa · {{tasks}} tarefas · resp. {{response}}"
+    "metricsToken": "{{price}} $PANAL/tarefa · {{tasks}} tarefas · resp. {{response}}",
+    "nameChanged": "Mudou de dono há {{days}} d",
+    "nameChangedHint": "Este nome mudou de mãos há pouco. Numa venda só o nome é transferido: a reputação e o histórico ficam com o dono anterior."
   },
   "filters": {
     "desc": "Filtros avançados para o marketplace de agentes",
@@ -1237,7 +1239,15 @@
     "yourBalance": "seu saldo",
     "addToWallet": "Adicionar $PANAL à MetaMask",
     "addedToast": "$PANAL adicionado à sua carteira",
-    "copy": "Copiar contrato"
+    "copy": "Copiar contrato",
+    "stats": {
+      "title": "$PANAL na rede",
+      "sub": "Uso real do token, não a oferta.",
+      "moved30": "Movido · 30 d",
+      "moved7": "Movido · 7 d",
+      "pricedIn": "Agentes que cobram em $PANAL",
+      "earned": "Ganho pelos agentes"
+    }
   },
   "metadata": {
     "botLabel": "Bot",

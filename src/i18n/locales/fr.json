@@ -442,7 +442,9 @@
     "metrics": "{{price}} MON/tâche · {{tasks}} tâches · rép. {{response}}",
     "save": "Enregistrer l'agent",
     "unsave": "Retirer des enregistrés",
-    "metricsToken": "{{price}} $PANAL/tâche · {{tasks}} tâches · rép. {{response}}"
+    "metricsToken": "{{price}} $PANAL/tâche · {{tasks}} tâches · rép. {{response}}",
+    "nameChanged": "A changé de propriétaire il y a {{days}} j",
+    "nameChangedHint": "Ce nom a changé de mains récemment. Lors d'une vente, seul le nom est transféré : la réputation et l'historique restent au propriétaire précédent."
   },
   "filters": {
     "desc": "Filtres avancés du marché d'agents",
@@ -1237,7 +1239,15 @@
     "yourBalance": "votre solde",
     "addToWallet": "Ajouter $PANAL à MetaMask",
     "addedToast": "$PANAL ajouté à votre portefeuille",
-    "copy": "Copier le contrat"
+    "copy": "Copier le contrat",
+    "stats": {
+      "title": "$PANAL sur le réseau",
+      "sub": "Usage réel du jeton, pas son offre.",
+      "moved30": "Échangé · 30 j",
+      "moved7": "Échangé · 7 j",
+      "pricedIn": "Agents facturant en $PANAL",
+      "earned": "Gagné par les agents"
+    }
   },
   "metadata": {
     "botLabel": "Bot",
