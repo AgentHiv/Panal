@@ -422,6 +422,77 @@ contract PanalNamesTest is Test {
         );
     }
 
+    // ── la pausa ───────────────────────────────────────────────────────────
+
+    function test_pausado_no_entra_ningun_nombre_nuevo() public {
+        names.pausar(true);
+
+        vm.prank(agente);
+        vm.expectRevert("PanalNames: paused");
+        names.reclamar("traductor");
+
+        names.pausar(false);
+        vm.prank(agente);
+        names.reclamar("traductor");
+        assertEq(names.resolver("traductor"), agente);
+    }
+
+    function test_pausado_no_se_compra_ni_se_transfiere() public {
+        vm.prank(agente);
+        names.reclamar("traductor");
+        vm.warp(block.timestamp + 365 days);
+        vm.prank(agente);
+        names.ponerEnVenta(100e18);
+
+        names.pausar(true);
+
+        vm.prank(otro);
+        vm.expectRevert("PanalNames: paused");
+        names.comprar("traductor");
+
+        vm.prank(agente);
+        vm.expectRevert("PanalNames: paused");
+        names.transferir(otro);
+    }
+
+    /// Lo que la mantiene acotada: pausar no le quita nada a nadie.
+    function test_pausado_lo_ya_reclamado_sigue_intacto() public {
+        vm.prank(agente);
+        names.reclamar("traductor");
+
+        names.pausar(true);
+
+        assertEq(names.resolver("traductor"), agente, "sigue resolviendo");
+        assertEq(names.nombreDe(agente), "traductor");
+    }
+
+    /// Pausado se puede soltar el nombre y retirarlo de la venta: es justo lo
+    /// que querria hacer quien desconfie, y no se le puede impedir.
+    function test_pausado_todavia_se_libera_y_se_retira_de_la_venta() public {
+        vm.prank(agente);
+        names.reclamar("traductor");
+        vm.warp(block.timestamp + 365 days);
+        vm.prank(agente);
+        names.ponerEnVenta(100e18);
+
+        names.pausar(true);
+
+        vm.prank(agente);
+        names.quitarDeVenta();
+        (,, uint256 precio,) = names.fichaDe("traductor");
+        assertEq(precio, 0);
+
+        vm.prank(agente);
+        names.liberar();
+        assertEq(names.nombreDe(agente), "");
+    }
+
+    function test_solo_el_owner_pausa() public {
+        vm.prank(agente);
+        vm.expectRevert("PanalNames: not owner");
+        names.pausar(true);
+    }
+
     // ── nombres reservados ─────────────────────────────────────────────────
 
     function _conReservas() private returns (PanalNames) {

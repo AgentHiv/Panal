@@ -91,6 +91,20 @@ contract PanalNames {
     uint256 public immutable TOPE_MEDIO;
     uint256 public immutable TOPE_LARGO;
 
+    /// @notice Con esto puesto no cambia de manos ningun nombre.
+    ///
+    /// Es el unico freno posible si aparece un fallo: el contrato es inmutable,
+    /// asi que arreglarlo es desplegar otro, y mientras tanto alguien que sepa
+    /// que vas a migrar puede reclamar mil nombres o explotar el fallo. Pausar
+    /// da tiempo a reemplazarlo.
+    ///
+    /// LO QUE NO PUEDE HACER, que es lo que lo mantiene acotado: no toca ningun
+    /// nombre ya reclamado, no cambia duenos, y los nombres siguen resolviendo
+    /// con normalidad. Y `liberar` y `quitarDeVenta` siguen funcionando
+    /// pausado: nunca se le impide a nadie soltar lo suyo o retirarlo de la
+    /// venta, que es justo lo que querria hacer quien desconfie.
+    bool public pausado;
+
     address public owner;
     /// @notice Dueño propuesto y pendiente de aceptar. Ver `transferOwnership`.
     address public propuesto;
@@ -131,11 +145,18 @@ contract PanalNames {
     event TarifasFijadas(uint256 corto, uint256 medio, uint256 largo);
     event ComisionFijada(uint256 bps);
     event TesoreriaFijada(address indexed tesoreria);
+    event Pausado(bool valor);
     event OwnershipProposed(address indexed actual, address indexed propuesto);
     event OwnershipTransferred(address indexed anterior, address indexed nuevo);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "PanalNames: not owner");
+        _;
+    }
+
+    /// Se aplica a todo lo que cambia de dueno un nombre, y a nada mas.
+    modifier enMarcha() {
+        require(!pausado, "PanalNames: paused");
         _;
     }
 
@@ -223,7 +244,7 @@ contract PanalNames {
         _reclamar(nombre);
     }
 
-    function _reclamar(string calldata nombre) private {
+    function _reclamar(string calldata nombre) private enMarcha {
         // Solo agentes registrados y activos. Es un `require` que no cuesta
         // nada y convierte "acaparo cien nombres" en "monto cien agentes".
         require(REGISTRY.isActiveAgent(msg.sender), "PanalNames: not an active agent");
@@ -273,7 +294,7 @@ contract PanalNames {
     ///
     /// El comprador tiene que ser tambien un agente activo sin nombre: estos
     /// nombres son para trabajar, no un activo que coleccionar.
-    function comprar(string calldata nombre) external {
+    function comprar(string calldata nombre) external enMarcha {
         bytes32 hash = keccak256(bytes(nombre));
         Nombre storage n = _nombres[hash];
 
@@ -309,7 +330,7 @@ contract PanalNames {
     /// esquivar el 0,5% puede pagar por fuera y usar esto; es el mismo agujero
     /// que tienen las regalias de cualquier NFT y no se puede cerrar desde el
     /// contrato.
-    function transferir(address a) external {
+    function transferir(address a) external enMarcha {
         require(a != address(0) && a != msg.sender, "PanalNames: bad recipient");
         bytes32 hash = _mio();
         require(_pasoElCandado(hash), "PanalNames: locked");
@@ -466,7 +487,7 @@ contract PanalNames {
     /// nombres de nadie: si no esta reservado y libre, revierte. Se asigna en
     /// vez de reclamarse porque el dueño es el multisig, que no es un agente
     /// registrado y por tanto no puede reclamar.
-    function asignarReservado(string calldata nombre, address a) external onlyOwner {
+    function asignarReservado(string calldata nombre, address a) external onlyOwner enMarcha {
         bytes32 hash = _validar(nombre);
         require(_reservado[hash], "PanalNames: not reserved");
         require(_nombres[hash].dueno == address(0), "PanalNames: taken");
@@ -480,6 +501,12 @@ contract PanalNames {
 
         emit Reservado(hash, nombre, false);
         emit Asignado(hash, nombre, a);
+    }
+
+    /// @notice Para o reanuda los cambios de dueno. Ver `pausado`.
+    function pausar(bool valor) external onlyOwner {
+        pausado = valor;
+        emit Pausado(valor);
     }
 
     function fijarComision(uint256 bps) external onlyOwner {
