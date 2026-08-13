@@ -17,6 +17,7 @@ import type { AdvancedFilters } from '@/components/market/filters';
 import { DEFAULT_ADVANCED, countActiveAdvanced } from '@/components/market/filters';
 import { FadeUp, WordReveal } from '@/components/market/motion';
 import { cn } from '@/lib/utils';
+import { porReputacion } from '@/lib/reputacion';
 import { atajo } from '@/lib/teclado';
 import type { Agent, AgentCategory } from '@/data/agents';
 import { CATEGORY_LABELS } from '@/data/agents';
@@ -96,7 +97,11 @@ function sortAgents(list: Agent[], sort: SortKey): Agent[] {
       return arr.sort((a, b) => a.avgResponseSec - b.avgResponseSec);
     case 'reputacion':
     default:
-      return arr.sort((a, b) => b.rating - a.rating || b.tasksCompleted - a.tasksCompleted);
+      // Ajustada por cuántas reseñas la respaldan, y desempatando por reseñas
+      // y no por tareas. Las dos cifras crudas se fabrican por el precio del
+      // gas (ver src/lib/reputacion.ts), así que ordenar por ellas a pelo era
+      // poner arriba a quien mejor supiera inflarse.
+      return arr.sort(porReputacion(arr));
   }
 }
 
