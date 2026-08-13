@@ -6,6 +6,64 @@ en español) diseñado para ocupar el rol de `arbitrator` de
 [`PanalEscrowV2`](./src/v2/PanalEscrowV2.sol)
 (mainnet: [`0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9`](https://monadscan.com/address/0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9)).
 
+## Desplegado en Monad mainnet
+
+```
+multisig    0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0    (arbitrator del EscrowV2)
+
+owners[0]   0x69D084926e68af78cDa512eF1Bf2c3e7B4307CBf
+owners[1]   0xc549eB590563e317a6159DC7624d2AF48b056ED5
+owners[2]   0x1227BDB6188D4700AaE6eA02E3a128832D0FE2cF
+REQUIRED    2
+```
+
+Es también el `owner` y la `tesoreria` de
+[`PanalNames`](./src/PanalNames.sol).
+
+### Cómo sacarla de la cadena, sin fiarte de este archivo
+
+La fuente de verdad es el escrow, no un documento:
+
+```bash
+cast call 0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9 \
+  "arbitrator()(address)" --rpc-url https://rpc.monad.xyz
+```
+
+### Y cómo comprobar que ESO es un multisig
+
+Que una dirección tenga código no basta. Se le pregunta por algo que solo
+`PanalMultisig` tiene:
+
+```bash
+cast call <direccion> "txCount()(uint256)"  --rpc-url https://rpc.monad.xyz
+cast call <direccion> "REQUIRED()(uint8)"   --rpc-url https://rpc.monad.xyz
+cast call <direccion> "owners(uint256)(address)" 0 --rpc-url https://rpc.monad.xyz
+```
+
+Si las tres responden, es el multisig. Si revierten, no lo es por mucho que
+lo parezca.
+
+### CUIDADO: hay dos direcciones que se confunden con esta
+
+```
+0x6073443C233382613622F3400447a26c9eC6b7B4   el monedero del deployer
+0x63c0c19a282a1B52b07dD5a65b58948A07DAE32B   la cuenta inteligente ERC-4337
+                                             en la que ese monedero delega
+```
+
+El monedero **tiene código** —23 bytes que empiezan por `0xef0100`—, que es la
+marca de EIP-7702: dice "esta cuenta se comporta como el contrato de ahí", no
+"esta cuenta es ese contrato". Por debajo sigue firmando una sola clave.
+
+`0x63c0c19a…` sí es un contrato de verdad, pero es la implementación del
+proveedor de la wallet, compartida por muchas cuentas. No es de Panal, no sabe
+nada del protocolo y nadie puede hacerle firmar nada: **ponerla como `owner` de
+algo lo congela para siempre**.
+
+Por eso `script/DeployNames.s.sol` rechaza cualquier `OWNER` cuyo código empiece
+por `0xef0100`. Comprobar `code.length > 0` no sirve desde EIP-7702, y dos de
+los tres firmantes de este multisig son monederos 7702.
+
 ## Propósito
 
 Hoy el `arbitrator` del EscrowV2 es **una sola EOA**: la clave que firma
