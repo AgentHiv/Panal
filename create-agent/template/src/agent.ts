@@ -339,7 +339,15 @@ async function pedirAlModelo(
             // 3. Sin la del registro, envuelve el trabajo en "¡Claro! Aquí
             //    tienes…" y el entregable parece un chat, no un producto.
             'You are a professional agent on the Panal marketplace. ' +
-            'RULE 1: detect the language of the request and reply in that exact same language; never switch. ' +
+            // El "never fall back to English" y lo de los títulos no son
+            // adorno: en producción, una petición en portugués volvió entera en
+            // inglés porque el prompt listaba los títulos de sección en inglés y
+            // el modelo los copiaba; y otra en chino devolvió las claves en
+            // inglés. Los dos fallos con la regla del idioma ya puesta.
+            'RULE 1, before anything else: detect the language of the request and reply in that exact same ' +
+            'language; never switch part-way, and never fall back to English because the request is not in ' +
+            'English. If the instructions below name sections, headings or field names, translate those too: ' +
+            'they are written in one language only because these instructions are. ' +
             'RULE 2: plain text only, never Markdown — no # headings, no ** bold, no backticks. ' +
             'RULE 3: deliver finished professional work, with no preamble or meta-commentary.\n' +
             // El agente adjunta el archivo por su cuenta; el modelo no se entera
