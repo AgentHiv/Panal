@@ -63,12 +63,30 @@ export interface VigilanteDeps {
   urlPublica?: string;
 }
 
-/** Cada cuánto se mira, en segundos. */
+/** Cada cuánto se mira cuando hay movimiento, en segundos. */
 const CADA = (() => {
   const n = Number(process.env.VIGILANTE_SEGUNDOS?.trim() || '60');
   // Menos de 15 s no aporta nada y sí gasta el límite del RPC.
   return Number.isFinite(n) && n >= 15 ? Math.floor(n) : 60;
 })();
+
+/**
+ * Cuántas vueltas en blanco antes de bajar el ritmo, y a cuánto se baja.
+ *
+ * Un agente parado pregunta `getTaskCount()` cada 60 s aunque no pase nada.
+ * Una gota. Pero el RPC público es COMPARTIDO y corta cerca de 50 llamadas
+ * concurrentes: con mil agentes son 16,7 llamadas/s permanentes, y entre
+ * todos ahogan el pozo del que bebe también el indexador — que es de quien
+ * depende el catálogo entero del mercado.
+ *
+ * Así que tras un rato sin encontrar nada —el caso normal— se pasa a mirar
+ * cada cinco minutos. Al primer hallazgo se vuelve al ritmo corto.
+ *
+ * Lo que cuesta: un encargo perdido se detecta en cinco minutos en vez de en
+ * uno. Los plazos se miden en horas, así que no cambia nada para nadie.
+ */
+const VUELTAS_EN_BLANCO = 20;
+const CADA_TRANQUILO = Math.max(CADA, 300);
 
 /**
  * Cuánto se espera antes de dar por perdido un encargo.
@@ -112,7 +130,8 @@ export function arrancarVigilante(deps: VigilanteDeps): { parar: () => void } {
     }
   };
 
-  async function repasar(): Promise<void> {
+  /** true si encontro algo que atender: eso es lo que decide el ritmo. */
+  async function repasar(): Promise<boolean> {
     const total = await deps.panal.getTaskCount();
     const marca = leerMarca();
     // La primera vez se miran las últimas REPASO_INICIAL en vez de las 30.000
@@ -124,11 +143,11 @@ export function arrancarVigilante(deps: VigilanteDeps): { parar: () => void } {
     for (let i = desde; i < total; i++) pendientes.add(i.toString());
     if (pendientes.size === 0) {
       escribirMarca(total - 1n);
-      return;
+      return false;
     }
 
     for (const id of pendientes) {
-      if (parado) return;
+      if (parado) return true;
       const taskId = BigInt(id);
       try {
         await revisarUna(taskId);
@@ -137,6 +156,8 @@ export function arrancarVigilante(deps: VigilanteDeps): { parar: () => void } {
       }
     }
     escribirMarca(total - 1n);
+    // Habia algo que mirar, aunque no fuera nuestro: no es una vuelta en blanco.
+    return true;
   }
 
   async function revisarUna(taskId: bigint): Promise<void> {
@@ -228,17 +249,48 @@ export function arrancarVigilante(deps: VigilanteDeps): { parar: () => void } {
   // se perdió mientras el proceso estaba caído.
   void repasar().catch((err) => console.error(`[vigilante] primer repaso: ${err instanceof Error ? err.message : err}`));
 
-  const timer = setInterval(() => {
-    void repasar().catch((err) => console.error(`[vigilante] ${err instanceof Error ? err.message : err}`));
-  }, CADA * 1000);
-  // Sin unref, este intervalo mantiene vivo el proceso para siempre aunque
-  // todo lo demás haya terminado.
-  timer.unref?.();
+  // El ritmo se reprograma en vez de usar un intervalo fijo: así puede
+  // aflojar solo cuando lleva un rato sin encontrar nada.
+  let enBlanco = 0;
+  let tranquilo = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const programar = (ms: number): void => {
+    timer = setTimeout(() => {
+      void (async () => {
+        let hizoAlgo = false;
+        try {
+          hizoAlgo = await repasar();
+        } catch (err) {
+          console.error(`[vigilante] ${err instanceof Error ? err.message : err}`);
+        }
+
+        if (hizoAlgo) {
+          enBlanco = 0;
+          if (tranquilo) {
+            tranquilo = false;
+            console.log(`[vigilante] hay movimiento: vuelvo a mirar cada ${CADA} s`);
+          }
+        } else if (++enBlanco >= VUELTAS_EN_BLANCO && !tranquilo) {
+          tranquilo = true;
+          console.log(
+            `[vigilante] ${VUELTAS_EN_BLANCO} vueltas sin nada: paso a mirar cada ${CADA_TRANQUILO} s ` +
+              'para no cargar el RPC compartido. Vuelvo al ritmo corto en cuanto haya algo.',
+          );
+        }
+        if (!parado) programar((tranquilo ? CADA_TRANQUILO : CADA) * 1000);
+      })();
+    }, ms);
+    // Sin unref, este temporizador mantiene vivo el proceso para siempre
+    // aunque todo lo demás haya terminado.
+    timer.unref?.();
+  };
+  programar(CADA * 1000);
 
   return {
     parar: () => {
       parado = true;
-      clearInterval(timer);
+      if (timer) clearTimeout(timer);
     },
   };
 }

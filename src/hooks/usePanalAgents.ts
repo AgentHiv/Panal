@@ -139,6 +139,27 @@ interface RawAgentTuple {
  * aquí abajo) pasa a ser el respaldo: funciona, pero solo ve los 50 primeros
  * agentes y cuesta 100 llamadas RPC por carga.
  */
+/**
+ * Lo cobrado, en la moneda del agente, y lo cobrado en la otra si la hay.
+ *
+ * Una tarea se paga en MON y una consulta en $PANAL, y no hay tipo de cambio:
+ * sumarlas en una cifra seria inventarse un numero. Se enseña la del agente y
+ * la otra aparte.
+ */
+function volumenDe(
+  st: AgentStats | null,
+  currency: Address,
+): { totalEarned: number; earnedOther?: { amount: number; symbol: 'MON' | '$PANAL' } } {
+  if (!st) return { totalEarned: 0 };
+  const propia = currencySymbol(currency);
+  const otra: 'MON' | '$PANAL' = propia === '$PANAL' ? 'MON' : '$PANAL';
+  const enOtra = Number(formatEther(BigInt(st.volume[otra] ?? '0')));
+  return {
+    totalEarned: Number(formatEther(BigInt(st.volume[propia] ?? '0'))),
+    ...(enOtra > 0 ? { earnedOther: { amount: enOtra, symbol: otra } } : {}),
+  };
+}
+
 function delCatalogo(fichas: CatalogAgent[]): OnchainAgent[] {
   return fichas
     .filter((f) => f.active)
@@ -168,7 +189,6 @@ function delCatalogo(fichas: CatalogAgent[]): OnchainAgent[] {
         wallet: addr,
         walletShort: short(addr),
         skills: f.skills,
-        totalEarned: 0,
         memberSince: new Date(f.registeredAt * 1000).toLocaleDateString('es-ES', {
           month: 'short',
           year: 'numeric',
@@ -180,6 +200,10 @@ function delCatalogo(fichas: CatalogAgent[]): OnchainAgent[] {
         priceWei,
         currency: (f.currency || NATIVE_CURRENCY) as Address,
         indexStats: f.stats,
+        // El volumen se calcula AQUÍ porque la ficha del catálogo ya lo trae:
+        // pedirlo otra vez a `/index/agents` seria traerse dos veces lo mismo,
+        // y esa segunda consulta devuelve el mercado entero sin paginar.
+        ...volumenDe(f.stats, (f.currency || NATIVE_CURRENCY) as Address),
       } satisfies OnchainAgent;
     });
 }
@@ -303,6 +327,10 @@ export function usePanalAgents() {
   const agents = useMemo<OnchainAgent[]>(
     () =>
       (query.data ?? []).map((a) => {
+        // Los del CATALOGO ya vienen completos: su ficha trae las stats y el
+        // volumen. La fusion es solo para los del respaldo, que salen del
+        // registro y no saben nada del indexador.
+        if (a.indexStats !== null) return a;
         const st = byAddress.get(a.workerAddress.toLowerCase()) ?? null;
         if (!st) return a;
         const propia = currencySymbol(a.currency);

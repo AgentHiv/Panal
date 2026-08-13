@@ -211,10 +211,26 @@ export function useIndexStats() {
  * Agentes con stats agregadas (refresh 60 s). Devuelve la lista y un mapa
  * por address lowercase para cruzar con los agentes del registry on-chain.
  */
+/**
+ * Las estadísticas de cada agente, por dirección.
+ *
+ * Va por el catálogo PAGINADO. La ruta sin parámetros devuelve el mercado
+ * entero de una vez, y con mil agentes eso son cientos de kilobytes en cada
+ * carga de página, para tres componentes que solo miran unos pocos.
+ *
+ * Si el indexador es viejo y no entiende la paginación, se pide como antes:
+ * peor, pero no deja a la web sin estadísticas.
+ */
 export function useIndexAgents() {
   const query = useQuery({
     queryKey: ['indexer', 'agents'],
-    queryFn: () => fetchJson<AgentsResponse>('/index/agents'),
+    queryFn: async (): Promise<AgentsResponse | null> => {
+      const catalogo = await fetchCatalogo();
+      if (catalogo !== null) {
+        return { agents: catalogo.map((f) => f.stats).filter((x): x is AgentStats => x !== null), count: catalogo.length };
+      }
+      return fetchJson<AgentsResponse>('/index/agents');
+    },
     refetchInterval: 60_000,
     staleTime: 30_000,
     retry: 1,
