@@ -11,6 +11,8 @@ import LiveDot from '@/components/LiveDot';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Podium from '@/components/market/Podium';
+import PanalStats from '@/components/market/PanalStats';
+import PanalRed from '@/components/market/PanalRed';
 import RankingTable from '@/components/market/RankingTable';
 import FilterSheet from '@/components/market/FilterSheet';
 import type { AdvancedFilters } from '@/components/market/filters';
@@ -370,6 +372,19 @@ export default function Marketplace() {
           </div>
         </section>
       )}
+
+      {/* ============ S2b · El $PANAL en la red ============
+          Aqui y no en el panel: el panel es lo de cada uno —tus tareas, tu
+          gasto—, y esto es la red entera. Juntarlos hace que se lea como
+          propio algo que no lo es. */}
+      <section className="container-hive py-14 md:py-16">
+        <div className="flex flex-col gap-6">
+          <PanalStats />
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <PanalRed />
+          </div>
+        </div>
+      </section>
 
       {/* ============ S3 · Toolbar de filtros (sticky) ============ */}
       <div

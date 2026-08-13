@@ -14,6 +14,7 @@ import { Check, Copy, Plus, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { formatEther } from 'viem';
+import type { Address } from 'viem';
 import HexAvatar from '@/components/HexAvatar';
 import SectionHeader from '@/components/SectionHeader';
 import StatBlock from '@/components/StatBlock';
@@ -21,8 +22,6 @@ import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
 import WalletCard from '@/components/dashboard/WalletCard';
 import TokenCard from '@/components/dashboard/TokenCard';
-import PanalStatsCard from '@/components/dashboard/PanalStatsCard';
-import PanalChart from '@/components/dashboard/PanalChart';
 import RegisterAgentDialog from '@/components/dashboard/RegisterAgentDialog';
 import OwnAgentCard from '@/components/dashboard/OwnAgentCard';
 import TasksSection from '@/components/dashboard/TasksSection';
@@ -37,7 +36,7 @@ import { formatMonEs, formatRatingEs } from '@/components/dashboard/data';
 import { TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { avgRating, useMyAgentProfile } from '@/hooks/useMyAgentProfile';
-import { NATIVE_CURRENCY, currencySymbol } from '@/contracts/config';
+import { NATIVE_CURRENCY, PANAL_TOKEN_ADDRESS, currencySymbol } from '@/contracts/config';
 
 type RangeKey = '7' | '30' | '90';
 
@@ -85,15 +84,25 @@ const flipItem = {
 };
 
 /** Serie REAL acumulada por día a partir de createdAt de las tareas (gasto del cliente). */
-function buildCumulativeSeries(tasks: RealTask[], days: number): EarningsPoint[] {
+/**
+ * Serie acumulada de gasto, DE UNA SOLA MONEDA.
+ *
+ * El filtro por moneda no es un detalle: antes se sumaban todas las tareas y el
+ * total se etiquetaba como MON, así que quien pagara una tarea de 100 $PANAL y
+ * otra de 0,01 MON veía «100,01 MON» gastados. Sumar dos monedas distintas no
+ * da un número, da una mentira.
+ */
+function buildCumulativeSeries(tasks: RealTask[], days: number, currency: Address): EarningsPoint[] {
   const DAY = 86_400;
   const now = Math.floor(Date.now() / 1000);
   const end = now - (now % DAY) + DAY; // final del día actual
   const start = end - days * DAY;
-  const amounts = tasks.map((tk) => ({
-    t: Number(tk.createdAt),
-    mon: Number(formatEther(tk.amountWei)),
-  }));
+  const amounts = tasks
+    .filter((tk) => tk.currency.toLowerCase() === currency.toLowerCase())
+    .map((tk) => ({
+      t: Number(tk.createdAt),
+      mon: Number(formatEther(tk.amountWei)),
+    }));
   const out: EarningsPoint[] = [];
   let acc = amounts.filter((a) => a.t < start).reduce((s, a) => s + a.mon, 0);
   for (let d = 0; d < days; d++) {
@@ -102,7 +111,7 @@ function buildCumulativeSeries(tasks: RealTask[], days: number): EarningsPoint[]
     const dayTasks = amounts.filter((a) => a.t >= dayStart && a.t < dayEnd);
     acc += dayTasks.reduce((s, a) => s + a.mon, 0);
     out.push({
-      label: new Date(dayStart * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
+      label: new Date(dayStart * 1000).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
       mon: Math.round(acc * 1e6) / 1e6,
       tareas: dayTasks.length,
     });
@@ -237,13 +246,21 @@ export default function Dashboard() {
   }, [perspective, rep, rating, workerTasks, clientTasks, profile.agent?.currency, t]);
 
   /* ---------- Serie real de gasto (cliente) ---------- */
-  const spendSeries = useMemo(
-    () =>
-      perspective === 'cliente' && clientTasks.length > 0
-        ? buildCumulativeSeries(clientTasks, RANGE_DAYS[range])
-        : null,
-    [perspective, clientTasks, range],
-  );
+  // Una serie por moneda. Se pintan las dos por separado, y la de una moneda
+  // en la que no gastaste nada no se pinta: un gráfico plano en cero ocupa lo
+  // mismo que uno con datos y no dice nada.
+  const seriesPorMoneda = useMemo(() => {
+    if (perspective !== 'cliente' || clientTasks.length === 0) return [];
+    return ([NATIVE_CURRENCY, PANAL_TOKEN_ADDRESS] as Address[])
+      .map((moneda) => ({
+        moneda,
+        simbolo: currencySymbol(moneda),
+        datos: buildCumulativeSeries(clientTasks, RANGE_DAYS[range], moneda),
+      }))
+      .filter((s) => s.datos.some((p) => p.mon > 0));
+  }, [perspective, clientTasks, range]);
+
+  const spendSeries = seriesPorMoneda.length > 0 ? seriesPorMoneda : null;
 
   const memberSince = profile.agent
     ? new Date(Number(profile.agent.registeredAt) * 1000).toLocaleDateString(i18n.language, {
@@ -433,7 +450,6 @@ export default function Dashboard() {
             <div className="mt-6 flex flex-col gap-4">
               <WalletCard />
               <TokenCard />
-              <PanalStatsCard />
             </div>
           </div>
         </motion.section>
@@ -468,7 +484,22 @@ export default function Dashboard() {
               {perspective === 'proveedor' ? (
                 <EmptyChart title={t('dash.chartEmpty')} text={t('dash.chartProviderEmpty')} />
               ) : spendSeries ? (
-                <EarningsAreaChart data={spendSeries} rangeKey={`cliente-${range}`} />
+                // Una gráfica por moneda. Antes era una sola que sumaba MON y
+                // $PANAL en el mismo número y lo etiquetaba como MON.
+                <div className="flex flex-col gap-8">
+                  {spendSeries.map((serie) => (
+                    <div key={serie.moneda}>
+                      <p className="mb-2 font-mono text-[0.75rem] uppercase tracking-wide text-ink-3">
+                        {serie.simbolo}
+                      </p>
+                      <EarningsAreaChart
+                        data={serie.datos}
+                        rangeKey={`cliente-${serie.simbolo}-${range}`}
+                        unit={serie.simbolo}
+                      />
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <EmptyChart title={t('dash.chartEmpty')} text={t('dash.chartClientEmpty')} />
               )}
@@ -481,9 +512,6 @@ export default function Dashboard() {
               </h3>
               <EmptyChart title={t('dash.chartEmpty')} text={t('dash.chartDonutEmpty')} />
             </div>
-
-            {/* $PANAL movido en la red: mismo gráfico que el de MON, y al lado */}
-            <PanalChart />
 
             {/* Reputación en el tiempo: sin historial de rating on-chain → empty state */}
             <div className="rounded-2xl border border-line bg-paper p-6 shadow-card lg:col-span-12">

@@ -1,10 +1,11 @@
 /**
  * Panal — cómo se está usando el $PANAL en la red.
  *
- * `TokenCard` responde "qué es el token y cuánto tengo": supply y saldo. Eso no
- * dice si el token se usa. Estas cuatro cifras sí, y todas salen de datos que
- * ya existen —los días del indexador y el volumen por moneda de cada agente—,
- * así que no cuestan ni una llamada RPC de más.
+ * Van en el MERCADO, no en el panel: son de la red, no de quien mira. El panel
+ * responde "qué he gastado yo"; esto responde "se usa esto de verdad".
+ *
+ * Las cuatro salen de datos que ya existen —los días del indexador y el volumen
+ * por moneda de cada agente—, así que no cuestan ni una llamada RPC de más.
  *
  * NO se enseña el supply como si fuera circulante. Son mil millones, y hoy casi
  * todos están en una sola cartera: pintarlo como si circulara sería el tipo de
@@ -28,7 +29,7 @@ function sumaWei(dias: { panalMoved: string }[]): number {
   return Number(formatEther(total));
 }
 
-export default function PanalStatsCard() {
+export default function PanalStats() {
   const { t } = useTranslation();
   const { stats } = useIndexStats();
   const { agents } = usePanalAgents();

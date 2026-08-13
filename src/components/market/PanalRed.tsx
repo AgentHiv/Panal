@@ -1,11 +1,9 @@
 /**
  * Panal — cuánto $PANAL se mueve en la red, día a día.
  *
- * Es el gemelo del gráfico de MON, con el mismo componente y la misma forma,
- * para que se lean juntos sin tener que aprender dos cosas. La diferencia es de
- * dónde salen los datos: el de MON son las tareas de QUIEN MIRA, y este es la
- * red entera, porque el $PANAL solo lo mueve hoy un agente y una serie por
- * usuario saldría vacía para casi todo el mundo.
+ * Vive en el MERCADO y no en el panel a propósito. El panel es lo tuyo: tus
+ * tareas, tu gasto, tus agentes. Esto es la red entera, y mezclarlo con lo
+ * propio hace que se lea como si fuera tuyo.
  *
  * Los días sin movimiento se dibujan igual, en cero. Saltárselos comprimiría el
  * eje y haría parecer continuo lo que fue un pico suelto.
