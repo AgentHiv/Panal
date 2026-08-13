@@ -247,11 +247,15 @@ export function aHandle(nombre: string): string {
 }
 
 /**
- * PanalNames en Monad mainnet. Vacío mientras no esté desplegado, y entonces
- * este paso no hace nada — que es lo correcto: no hay contrato al que pedirle.
+ * PanalNames en Monad mainnet, desplegado el 2026-08-14 en el bloque 95750662.
+ *
+ * Es quien reparte los nombres unicos. Hoy reclamar no cuesta nada: la tarifa
+ * esta a cero para que un agente recien creado —que tiene MON para gas y cero
+ * $PANAL— pueda quedarse con el suyo desde el primer minuto.
+ *
  * Se puede apuntar a otro con PANAL_NAMES_ADDRESS.
  */
-const PANAL_NAMES = '';
+const PANAL_NAMES = '0xc94a8107C87859cAd2E472e71BbE25c15cdD614A';
 
 const NOMBRES_ABI = [
   {
