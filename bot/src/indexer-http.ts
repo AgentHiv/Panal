@@ -96,7 +96,15 @@ const TASKS_MAX_LIMIT = 1000;
  * pedir de una vez.
  */
 const AGENTS_DEFAULT_LIMIT = 50;
-const AGENTS_MAX_LIMIT = 200;
+/**
+ * Tope de página del catálogo.
+ *
+ * 500 fichas son unos 430 KB, que se montan en memoria y se sirven de una. Se
+ * subió de 200 porque con miles de agentes el mercado tenía que pedir quince
+ * páginas por carga, y el limitador son 60 peticiones por minuto y por IP: a
+ * cuatro cargas se quedaba sin presupuesto.
+ */
+const AGENTS_MAX_LIMIT = 500;
 
 export function createIndexServer(deps: IndexServerDeps): Server {
   const maxUrlLength = deps.maxUrlLength ?? 2_048;

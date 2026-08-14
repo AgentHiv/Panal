@@ -15,6 +15,36 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
+/**
+ * Cuántos agentes llega a traerse el mercado.
+ *
+ * A 861 bytes por ficha —medido, no estimado— son unos 2,5 MB. Es mucho para
+ * un móvil, y es el motivo real por el que esto tiene tope: la cadena y el
+ * indexador aguantan de sobra, quien no aguanta es el navegador, que se lo
+ * carga entero en memoria para poder filtrar sin ir y volver.
+ *
+ * Cuando este número se quede corto, subirlo NO es la solución: toca buscar y
+ * ordenar en el indexador, que para eso tiene el índice, y traerse solo la
+ * página que se está mirando.
+ */
+export const TOPE_CATALOGO = 3000;
+
+/**
+ * Tamaño de página.
+ *
+ * Importa por el limitador del indexador: 60 peticiones por minuto y por IP,
+ * así que cada carga del mercado gasta `TOPE_CATALOGO / PAGINA` de ese
+ * presupuesto. Con 3.000 agentes, 500 son seis peticiones y 200 son quince.
+ *
+ * Se empieza pidiendo 500 y se cae a 200 si el indexador de turno aún no lo
+ * acepta —responde 400—. Así esto funciona contra el que está desplegado hoy y
+ * mejora solo en cuanto se actualice, sin tener que sincronizar los dos
+ * despliegues en el mismo minuto.
+ */
+const PAGINA_MAX = 500;
+const PAGINA_SEGURA = 200;
+let PAGINA = PAGINA_MAX;
+
 export const INDEXER_URL: string = import.meta.env.VITE_INDEXER_URL ?? 'https://api.panal.lat';
 
 /* ---------- Tipos (réplica exacta de bot/src/indexer-store.ts) ---------- */
@@ -195,35 +225,89 @@ export interface NombreDeAgente {
  * atrasado: quien llama tiene que poder distinguir «no hay agentes» de «no lo
  * sé», porque en el segundo caso toca leer la cadena.
  */
-export async function fetchCatalogo(cabezaCadena?: bigint, tope = 1000): Promise<CatalogAgent[] | null> {
-  const LIMITE = 200;
-  const out: CatalogAgent[] = [];
+export async function fetchCatalogo(cabezaCadena?: bigint, tope = TOPE_CATALOGO): Promise<CatalogAgent[] | null> {
+  const pagina = await unaPagina(0);
+  if (!pagina) return null;
 
-  for (let page = 0; out.length < tope; page++) {
-    const res = await fetchJson<{
-      agents?: CatalogAgent[];
-      total?: unknown;
-      hasMore?: boolean;
-      lastBlock?: number;
-    }>(`/index/agents?page=${page}&limit=${LIMITE}`);
-
-    if (!res || !Array.isArray(res.agents)) return null;
-    // `total` solo lo devuelve la respuesta del catálogo: un indexador viejo
-    // ignora `page` y `limit` y responde su lista de stats de siempre, que no
-    // trae ni nombre ni skills. Sin esta marca, el mercado se llenaría de
-    // agentes sin nombre.
-    if (typeof res.total !== 'number') return null;
-
-    // Solo en la primera página: si va atrasado, no vale ninguna.
-    if (page === 0 && cabezaCadena !== undefined && typeof res.lastBlock === 'number') {
-      if (cabezaCadena - BigInt(res.lastBlock) > 2000n) return null;
-    }
-
-    out.push(...res.agents);
-    if (!res.hasMore || res.agents.length === 0) break;
+  // Solo en la primera página: si el indexador va atrasado, no vale ninguna.
+  if (cabezaCadena !== undefined && typeof pagina.lastBlock === 'number') {
+    if (cabezaCadena - BigInt(pagina.lastBlock) > 2000n) return null;
   }
-  return out;
+
+  const total = Math.min(pagina.total, tope);
+  if (pagina.agents.length >= total || !pagina.hasMore) return pagina.agents.slice(0, tope);
+
+  // EN PARALELO, no una detrás de otra. `total` viene en la primera página, así
+  // que se sabe cuántas faltan sin ir descubriéndolas: con 3.000 agentes eso es
+  // la diferencia entre un viaje y catorce viajes seguidos.
+  const cuantas = Math.ceil(total / PAGINA) - 1;
+  const restantes = await Promise.all(
+    Array.from({ length: cuantas }, (_, i) => unaPagina(i + 1)),
+  );
+
+  const out = [...pagina.agents];
+  for (const r of restantes) {
+    // Una página que falla invalida el catálogo entero: servir 1.800 agentes de
+    // 3.000 sin decirlo es peor que caer al respaldo, porque el que falta no
+    // parece ausente, parece que no existe.
+    if (!r) return null;
+    out.push(...r.agents);
+  }
+  return out.slice(0, tope);
 }
+
+interface PaginaCatalogo {
+  agents: CatalogAgent[];
+  total: number;
+  hasMore: boolean;
+  lastBlock?: number;
+}
+
+/**
+ * Una página del catálogo, validada.
+ *
+ * `total` solo lo devuelve la respuesta del catálogo: un indexador viejo ignora
+ * `page` y `limit` y responde su lista de stats de siempre, que no trae ni
+ * nombre ni skills. Sin esa marca, el mercado se llenaría de agentes sin nombre.
+ */
+async function unaPagina(page: number): Promise<PaginaCatalogo | null> {
+  const res = await pideJson(page);
+  if (!res) return null;
+  if (!Array.isArray(res.agents)) return null;
+  if (typeof res.total !== 'number') return null;
+  return {
+    agents: res.agents,
+    total: res.total,
+    hasMore: res.hasMore === true,
+    lastBlock: typeof res.lastBlock === 'number' ? res.lastBlock : undefined,
+  };
+}
+
+interface RespuestaCatalogo {
+  agents?: CatalogAgent[];
+  total?: unknown;
+  hasMore?: boolean;
+  lastBlock?: number;
+}
+
+/**
+ * Pide una página, bajando el tamaño si el indexador no acepta el grande.
+ *
+ * SOLO en la página 0. Si el tamaño cambiara a mitad de las peticiones
+ * paralelas, «página 3» pasaría a señalar un tramo distinto del catálogo y
+ * saldrían agentes repetidos y otros ausentes, sin ningún error de por medio.
+ * A partir de la primera, un fallo es un fallo.
+ */
+async function pideJson(page: number): Promise<RespuestaCatalogo | null> {
+  const res = await fetchJson<RespuestaCatalogo>(`/index/agents?page=${page}&limit=${PAGINA}`);
+  if (res || page !== 0 || PAGINA === PAGINA_SEGURA) return res;
+
+  // Se recuerda para el resto de la sesión: reintentar en cada página costaría
+  // el doble de peticiones contra un limitador que las cuenta.
+  PAGINA = PAGINA_SEGURA;
+  return fetchJson<RespuestaCatalogo>(`/index/agents?page=0&limit=${PAGINA}`);
+}
+
 
 /* ---------- Hooks react-query ---------- */
 
