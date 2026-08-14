@@ -26,7 +26,15 @@ interface DeepDiveCopy {
   snippet: string;
 }
 
-const DEEP_DIVE_COPY: Record<ContractInfo['id'], DeepDiveCopy> = {
+/**
+ * Solo los contratos que tienen bloque grande en esta pagina.
+ *
+ * `Partial` a proposito: el multisig y los nombres salen en las fichas y en el
+ * pie —que es donde importa que se puedan ir a comprobar— pero no tienen aqui
+ * su propio bloque ilustrado. Exigir una entrada para cada contrato obligaria a
+ * escribir texto de relleno para que compilara.
+ */
+const DEEP_DIVE_COPY: Partial<Record<ContractInfo['id'], DeepDiveCopy>> = {
   registry: {
     h3: 'deepdive.registry.h3',
     text: 'deepdive.registry.text',
@@ -213,6 +221,12 @@ function DeepDiveBlock({ contract, reversed }: { contract: ContractInfo; reverse
     { scope: frameRef },
   );
 
+
+  // Despues de los hooks, nunca antes: un `return` a media lista de hooks
+  // cambia su orden entre renders y tumba el arbol entero. El padre ya filtra
+  // por imagen, asi que esto solo es el estrechamiento de tipos.
+  if (!copy || !contract.image) return null;
+
   return (
     <article className="grid items-center gap-10 lg:grid-cols-12 lg:gap-6">
       {/* Imagen 3D */}
@@ -277,7 +291,8 @@ export default function DeepDiveSection() {
     <section className="relative overflow-hidden bg-coal py-24 text-coal-text md:py-32">
       <div className="grain-overlay-dark absolute inset-0" aria-hidden />
       <div className="container-hive relative flex flex-col gap-24 md:gap-32">
-        {CONTRACTS.map((contract, i) => (
+        {/* Solo los que tienen ilustracion: los demas salen en las fichas y el pie. */}
+        {CONTRACTS.filter((c) => c.image).map((contract, i) => (
           <DeepDiveBlock key={contract.id} contract={contract} reversed={i % 2 === 1} />
         ))}
       </div>

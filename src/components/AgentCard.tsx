@@ -65,7 +65,9 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
                 <h3 className="truncate font-display text-[1.05rem] font-semibold tracking-[-0.015em] text-ink">
                   {agent.name}
                 </h3>
-                {agent.verified && <BadgeCheck size={16} className="shrink-0 fill-olive text-paper" aria-label={t('common.verified')} />}
+                {agent.verified && <span className="inline-flex shrink-0" title={t('common.verifiedHint')}>
+                    <BadgeCheck size={16} className="fill-olive text-paper" aria-label={t('common.verified')} />
+                  </span>}
               </div>
               {/*
                 El nombre único de PanalNames. Se enseña porque es lo único que

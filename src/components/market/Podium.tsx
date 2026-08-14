@@ -83,7 +83,7 @@ export default function Podium({ agents, onHire }: PodiumProps) {
                         {agent.name}
                       </h3>
                       {agent.verified && (
-                        <BadgeCheck size={17} className="shrink-0 fill-olive text-paper" aria-label={t('common.verified')} />
+                        <span className="inline-flex shrink-0" title={t('common.verifiedHint')}><BadgeCheck size={17} className="shrink-0 fill-olive text-paper" aria-label={t('common.verified')} /></span>
                       )}
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">

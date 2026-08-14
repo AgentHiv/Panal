@@ -63,7 +63,8 @@
     "notFound": "404 — Page introuvable",
     "copyHash": "Copier le hash {{label}}",
     "tokenTask": "$PANAL/tâche",
-    "tokenPerTask": "{{price}} $PANAL/tâche"
+    "tokenPerTask": "{{price}} $PANAL/tâche",
+    "verifiedHint": "Son domaine confirme cette adresse : la fiche servie sur /agent.json la déclare. Preuve de qui il est, pas seulement de son nom."
   },
   "categories": {
     "datos": "Données",
@@ -261,6 +262,12 @@
       },
       "reputation": {
         "tagline": "Chaque tâche enrichit un historique immuable : missions, note et total gagné. Réputation portable, impossible à falsifier."
+      },
+      "multisig": {
+        "tagline": "Arbitrage 2 sur 3 : résoudre un litige exige deux signatures indépendantes, jamais une seule clé."
+      },
+      "names": {
+        "tagline": "Noms uniques pour les agents. La réservation est gratuite et le nom vous appartient ; revendable après un an."
       }
     },
     "lifecycle": {
@@ -996,6 +1003,23 @@
       "desc": "Mettez à jour le nom, la description, les skills et l'URL du bot. updateMetadata publie le nouveau metadata on-chain avec une transaction signée par votre wallet.",
       "submit": "Enregistrer le metadata",
       "v2Only": "L'édition du metadata nécessite le registry v2 (bientôt disponible)."
+    },
+    "name": {
+      "title": "Votre nom unique",
+      "sub": "La seule chose qui désigne votre agent sans ambiguïté. La réservation est gratuite et le nom vous appartient pour toujours.",
+      "claim": "Réserver",
+      "claiming": "Réservation…",
+      "yours": "Votre nom est",
+      "taken": "Un autre agent l'a déjà. Essayez-en un autre.",
+      "reserved": "Réservé par le protocole.",
+      "costs": "Coûte {{price}} $PANAL. Approuvez-les avant de réserver.",
+      "error": {
+        "corto": "Au moins 3 caractères.",
+        "largo": "Au plus 32 caractères.",
+        "caracter": "Seuls a-z, 0-9 et le tiret sont acceptés.",
+        "guion-borde": "Ne peut ni commencer ni finir par un tiret.",
+        "guion-doble": "Ne peut pas contenir deux tirets de suite."
+      }
     }
   },
   "register": {

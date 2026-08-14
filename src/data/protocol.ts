@@ -13,11 +13,15 @@ import {
   ScanSearch,
   Coins,
   Network,
+  Users,
+  AtSign,
 } from 'lucide-react';
 import {
   PANAL_ESCROW_ADDRESS,
   PANAL_ESCROW_V2_ADDRESS,
   PANAL_REGISTRY_ADDRESS,
+  PANAL_MULTISIG_ADDRESS,
+  PANAL_NAMES_ADDRESS,
   PANAL_REGISTRY_V2_ADDRESS,
   PANAL_REPUTATION_ADDRESS,
   PANAL_REPUTATION_V2_ADDRESS,
@@ -49,13 +53,22 @@ export const ESCROW_AUTO_RELEASE_H = 72;
 /* ---------- Contratos ---------- */
 
 export interface ContractInfo {
-  id: 'registry' | 'escrow' | 'reputation';
+  id: 'registry' | 'escrow' | 'reputation' | 'multisig' | 'names';
   name: string;
   address: string;
   addressShort: string;
   icon: LucideIcon;
   tagline: string;
-  image: string;
+  /**
+   * Ilustración del bloque grande de la página de protocolo.
+   *
+   * Opcional: los contratos que no la traen salen igual en las fichas y en el
+   * pie —que es donde importa que estén, porque son direcciones que cualquiera
+   * debería poder ir a comprobar— pero se saltan ese bloque. Antes era
+   * obligatoria, y eso dejaba fuera de la web a un contrato desplegado por no
+   * tener una imagen dibujada.
+   */
+  image?: string;
 }
 
 export const CONTRACTS: ContractInfo[] = [
@@ -85,6 +98,22 @@ export const CONTRACTS: ContractInfo[] = [
     icon: Award,
     tagline: 'protocol.contracts.reputation.tagline',
     image: '/reputation-laurel.webp',
+  },
+  {
+    id: 'multisig',
+    name: 'PanalMultisig',
+    address: PANAL_MULTISIG_ADDRESS,
+    addressShort: shortAddr(PANAL_MULTISIG_ADDRESS),
+    icon: Users,
+    tagline: 'protocol.contracts.multisig.tagline',
+  },
+  {
+    id: 'names',
+    name: 'PanalNames',
+    address: PANAL_NAMES_ADDRESS,
+    addressShort: shortAddr(PANAL_NAMES_ADDRESS),
+    icon: AtSign,
+    tagline: 'protocol.contracts.names.tagline',
   },
 ];
 

@@ -51,6 +51,9 @@ export default function AgentDetail() {
   // Solo agentes on-chain (id `onchain-0x…`), con stats reales del indexador.
   const { top: onchainAgents, loading: onchainLoading } = useTopAgents();
   const agent = onchainAgents.find((a) => a.id === id);
+  // Su nombre en PanalNames, si lo tiene. `agent` puede no existir todavia,
+  // asi que no se puede leer directo.
+  const nombreUnico = agent && isOnchainAgent(agent) ? agent.nombreOnchain : null;
   const [tab, setTab] = useState<TabValue>('resumen');
   const [hireOpen, setHireOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -155,7 +158,23 @@ export default function AgentDetail() {
                       <WordReveal mode="chars" segments={[{ text: agent.name }]} />
                     </h1>
                     {agent.verified && (
-                      <BadgeCheck size={26} className="shrink-0 fill-olive text-paper" aria-label={t('common.verified')} />
+                      <span className="inline-flex shrink-0" title={t('common.verifiedHint')}>
+                        <BadgeCheck size={26} className="fill-olive text-paper" aria-label={t('common.verified')} />
+                      </span>
+                    )}
+                    {/*
+                      El nombre unico. Va aqui ademas de en la tarjeta porque
+                      esta es la pagina donde alguien decide contratar, y es lo
+                      unico que senala a este agente sin ambiguedad: el titulo
+                      de arriba lo escribe el propio agente y puede repetirse.
+                    */}
+                    {nombreUnico && (
+                      <span
+                        className="rounded-full bg-sand px-3 py-1 font-mono text-[0.8125rem] text-ink-2"
+                        title={t('agentCard.uniqueName')}
+                      >
+                        @{nombreUnico.nombre}
+                      </span>
                     )}
                   </div>
                   {/* chips con stagger .05 */}

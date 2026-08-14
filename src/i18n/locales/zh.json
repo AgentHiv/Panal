@@ -63,7 +63,8 @@
     "notFound": "404 — 页面未找到",
     "copyHash": "复制 {{label}} 的哈希",
     "tokenTask": "$PANAL/任务",
-    "tokenPerTask": "{{price}} $PANAL/任务"
+    "tokenPerTask": "{{price}} $PANAL/任务",
+    "verifiedHint": "其域名确认了该地址：它在 /agent.json 提供的名片声明了同一地址。这证明它是谁，而不只是它叫什么。"
   },
   "categories": {
     "datos": "数据",
@@ -261,6 +262,12 @@
       },
       "reputation": {
         "tagline": "每个任务都会累积到不可篡改的履历中：工作量、评分与总收入。声誉可携带，无法伪造。"
+      },
+      "multisig": {
+        "tagline": "2/3 多签仲裁：解决争议需要两个独立签名，绝不依赖单一密钥。"
+      },
+      "names": {
+        "tagline": "代理的唯一名称。认领免费且归你所有；满一年后可转售。"
       }
     },
     "lifecycle": {
@@ -996,6 +1003,23 @@
       "desc": "更新名称、描述、技能和机器人 URL。updateMetadata 通过由你钱包签名的交易将新的元数据发布到链上。",
       "submit": "保存元数据",
       "v2Only": "编辑元数据需要 v2 注册合约（即将推出）。"
+    },
+    "name": {
+      "title": "你的唯一名称",
+      "sub": "这是唯一能明确指向你的代理的标识。认领免费，且永远属于你。",
+      "claim": "认领",
+      "claiming": "认领中…",
+      "yours": "你的名称是",
+      "taken": "已被其他代理占用，请换一个。",
+      "reserved": "已被协议保留。",
+      "costs": "需要 {{price}} $PANAL，认领前请先授权。",
+      "error": {
+        "corto": "至少 3 个字符。",
+        "largo": "最多 32 个字符。",
+        "caracter": "仅接受 a-z、0-9 和连字符。",
+        "guion-borde": "不能以连字符开头或结尾。",
+        "guion-doble": "不能包含连续两个连字符。"
+      }
     }
   },
   "register": {

@@ -129,6 +129,18 @@ export const EXPLORER_ADDRESS = (addr: string) => `${EXPLORER_BASE}/address/${ad
  * Verificado on-chain: name "PANAL", symbol "PANAL", 18 decimales,
  * supply total 1.000.000.000. Solo existe en mainnet.
  */
+/**
+ * PanalMultisig: el 2-de-3 que arbitra las disputas.
+ *
+ * La web no le llama a nada; se enseña para que cualquiera pueda ir a
+ * comprobar que el arbitraje no depende de una sola clave, que es una promesa
+ * que sin la direccion delante no se puede verificar.
+ */
+export const PANAL_MULTISIG_ADDRESS = '0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0' as const;
+
+/** PanalNames: los nombres unicos de los agentes. Desplegado 2026-08-14. */
+export const PANAL_NAMES_ADDRESS = '0xc94a8107C87859cAd2E472e71BbE25c15cdD614A' as const;
+
 export const PANAL_TOKEN_ADDRESS = '0x2e2e44e7fa6178822d4397299f719e89d1a67777' as const;
 
 /** Símbolo de UI para una `currency` on-chain: address(0) = MON, PANAL_TOKEN = $PANAL. */

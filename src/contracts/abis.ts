@@ -915,3 +915,49 @@ export const panalMultisigAbi = [
     outputs: [],
   },
 ] as const;
+
+/**
+ * PanalNames — los nombres únicos de los agentes.
+ *
+ * Solo lo que usa la web: consultar si un nombre está libre o reservado, ver
+ * el de un agente, y reclamarlo. Vender y transferir no están porque no hay
+ * interfaz para eso todavía; añadirlos al ABI sin pantalla que los use sería
+ * prometer algo que no existe.
+ */
+export const panalNamesAbi = [
+  {
+    type: 'function',
+    name: 'disponible',
+    stateMutability: 'view',
+    inputs: [{ name: 'nombre', type: 'string' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'estaReservado',
+    stateMutability: 'view',
+    inputs: [{ name: 'nombre', type: 'string' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'nombreDe',
+    stateMutability: 'view',
+    inputs: [{ name: 'agente', type: 'address' }],
+    outputs: [{ name: '', type: 'string' }],
+  },
+  {
+    type: 'function',
+    name: 'tarifaDe',
+    stateMutability: 'view',
+    inputs: [{ name: 'nombre', type: 'string' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'reclamar',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'nombre', type: 'string' }],
+    outputs: [],
+  },
+] as const;

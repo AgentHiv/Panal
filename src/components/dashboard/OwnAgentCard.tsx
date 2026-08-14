@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { formatEther, parseEther } from 'viem';
 import HexAvatar from '@/components/HexAvatar';
 import EditProfileDialog from '@/components/dashboard/EditProfileDialog';
+import ClaimNameCard from '@/components/dashboard/ClaimNameCard';
 import { parseAgentMetadata } from '@/lib/agentMetadata';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -256,6 +257,15 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
           </a>
         )}
       </div>
+
+      {/* El nombre único. Va aquí, con lo demás del agente propio: es lo único
+          que lo señala sin ambigüedad, y quien se registró desde la web se
+          quedaba sin él porque solo lo reclamaba `npx create-panal-agent`. */}
+      {agent && (
+        <div className="mt-5">
+          <ClaimNameCard nombrePerfil={name} />
+        </div>
+      )}
 
       {/* Dialog de edición de perfil (tx real updateMetadata, solo v2) */}
       {agent && V2_ENABLED && (
