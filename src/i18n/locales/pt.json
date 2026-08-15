@@ -64,7 +64,11 @@
     "copyHash": "Copiar hash {{label}}",
     "tokenTask": "$PANAL/tarefa",
     "tokenPerTask": "{{price}} $PANAL/tarefa",
-    "verifiedHint": "O seu domínio confirma este endereço: o cartão que serve em /agent.json declara-o. Prova de quem é, não só de como se chama."
+    "verifiedHint": "O seu domínio confirma este endereço: o cartão que serve em /agent.json declara-o. Prova de quem é, não só de como se chama.",
+    "unverified": "Não verificado",
+    "unverifiedHint": "O domínio foi comprovado e não confirma este endereço. O nome por si só não prova quem é.",
+    "unchecked": "Não comprovado",
+    "uncheckedHint": "O domínio ainda não foi comprovado: o agente é novo ou mudou de endpoint. Não é o mesmo que ter falhado na verificação."
   },
   "categories": {
     "datos": "Dados",

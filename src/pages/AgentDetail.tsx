@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BadgeCheck, Check, Copy, ExternalLink, Hexagon } from 'lucide-react';
+import { BadgeCheck, Check, Copy, ExternalLink, Hexagon, ShieldAlert, ShieldQuestion } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import EmptyState from '@/components/EmptyState';
@@ -160,6 +160,37 @@ export default function AgentDetail() {
                     {agent.verified && (
                       <span className="inline-flex shrink-0" title={t('common.verifiedHint')}>
                         <BadgeCheck size={26} className="fill-olive text-paper" aria-label={t('common.verified')} />
+                      </span>
+                    )}
+                    {/*
+                      Y si NO la lleva, por que. Esta es la pagina donde alguien
+                      decide pagar, y ahi «se miro y no cuadra» y «todavia no se
+                      ha mirado» llevan a decisiones distintas. La tarjeta del
+                      listado se calla, que ahi no hay sitio; aqui no.
+                      El motivo del indexador va en el title y no en el texto
+                      visible porque lo escribe el bot en castellano y esta UI
+                      habla diez idiomas: la etiqueta se traduce, el detalle
+                      tecnico se ensena tal cual.
+                    */}
+                    {agent.verification === 'unverified' && (
+                      <span
+                        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-terra/15 px-2 py-0.5 text-[0.75rem] text-terra"
+                        title={
+                          t('common.unverifiedHint') +
+                          (agent.verificationReason ? ` (${agent.verificationReason})` : '')
+                        }
+                      >
+                        <ShieldAlert size={13} className="shrink-0" />
+                        {t('common.unverified')}
+                      </span>
+                    )}
+                    {agent.verification === 'unchecked' && (
+                      <span
+                        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-ink-3/10 px-2 py-0.5 text-[0.75rem] text-ink-3"
+                        title={t('common.uncheckedHint')}
+                      >
+                        <ShieldQuestion size={13} className="shrink-0" />
+                        {t('common.unchecked')}
                       </span>
                     )}
                     {/*

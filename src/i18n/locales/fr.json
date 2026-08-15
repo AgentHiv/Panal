@@ -64,7 +64,11 @@
     "copyHash": "Copier le hash {{label}}",
     "tokenTask": "$PANAL/tâche",
     "tokenPerTask": "{{price}} $PANAL/tâche",
-    "verifiedHint": "Son domaine confirme cette adresse : la fiche servie sur /agent.json la déclare. Preuve de qui il est, pas seulement de son nom."
+    "verifiedHint": "Son domaine confirme cette adresse : la fiche servie sur /agent.json la déclare. Preuve de qui il est, pas seulement de son nom.",
+    "unverified": "Non vérifié",
+    "unverifiedHint": "Son domaine a été contrôlé et ne confirme pas cette adresse. Le nom seul ne prouve pas de qui il s'agit.",
+    "unchecked": "Non contrôlé",
+    "uncheckedHint": "Son domaine n'a pas encore été contrôlé : l'agent est nouveau ou a changé d'endpoint. Ce n'est pas la même chose qu'un échec de vérification."
   },
   "categories": {
     "datos": "Données",
