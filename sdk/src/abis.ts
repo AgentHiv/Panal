@@ -174,6 +174,16 @@ export const escrowAbi = [
     inputs: [{ name: 'taskId', type: 'uint256' }],
     outputs: [],
   },
+  // Lo unico que detiene el autoRelease de 3 dias. Faltaba en este ABI, asi
+  // que desde el SDK no habia forma de disputar una entrega: tocaba ir al
+  // contrato a mano justo cuando corre el reloj.
+  {
+    type: 'function',
+    name: 'openDispute',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [],
+  },
 ] as const;
 
 export const erc20Abi = [

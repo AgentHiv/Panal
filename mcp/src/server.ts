@@ -38,7 +38,14 @@ import {
   type PanalClient,
 } from '@panal/sdk';
 import { QuoteBook, SpendLedger, limitsFromEnv } from './limits.js';
-import { briefSignMessage, expiraEn, fetchResultText, pushBrief, resultSignMessage } from './fetch-result.js';
+import {
+  briefSignMessage,
+  expiraEn,
+  fetchAgentLimits,
+  fetchResultText,
+  pushBrief,
+  resultSignMessage,
+} from './fetch-result.js';
 
 const SERVER_NAME = 'panal';
 /**
@@ -378,12 +385,21 @@ const WRITE_TOOLS: Tool[] = [
       const address = account!.address;
       const [balance, spent] = [await panal.publicClient.getBalance({ address }), ledger.spentToday()];
       const left = limits.dailyBudgetWei > spent ? limits.dailyBudgetWei - spent : 0n;
+      // Lo acreditado en el escrow no aparece en el balance de la wallet: es
+      // pull payment, así que un reembolso se queda ahí quieto hasta que se
+      // reclama. Sin decirlo, el dinero devuelto es indistinguible del perdido.
+      const pending = await panal.getPendingWithdrawal(address).catch(() => 0n);
       return [
         `Wallet: ${address}`,
         `Balance: ${formatEther(balance)} MON`,
         `Per-job cap: ${formatEther(limits.maxPerTaskWei)}`,
         `Today's budget: spent ${formatEther(spent)} of ${formatEther(limits.dailyBudgetWei)} · ${formatEther(left)} left`,
-      ].join('\n');
+        pending > 0n
+          ? `Waiting in the escrow: ${formatEther(pending)} MON — collect it with panal_withdraw`
+          : null,
+      ]
+        .filter(Boolean)
+        .join('\n');
     },
   },
   {
@@ -424,6 +440,22 @@ const WRITE_TOOLS: Tool[] = [
           `That would blow today's budget: ${formatEther(spent)} of ${formatEther(limits.dailyBudgetWei)} spent ` +
           `and this costs ${formatEther(amount)} ${symbol}.`
         );
+      }
+
+      // El tope del brief se pregunta ANTES de presupuestar. Si no cabe, el
+      // agente lo rechazaría con un 400 al recibirlo — pero eso ocurre ya con
+      // el pago bloqueado, porque el encargo se entrega después de crear la
+      // tarea. Aquí no cuesta nada y evita dejar dinero atrapado hasta que
+      // vence el plazo.
+      if (agent.metadata.botUrl) {
+        const { maxBriefChars } = await fetchAgentLimits(agent.metadata.botUrl);
+        if (maxBriefChars !== null && brief.length > maxBriefChars) {
+          return (
+            `That job does not fit: ${agent.metadata.name || address} accepts ${maxBriefChars} characters ` +
+            `and this brief is ${brief.length}. Nothing was quoted and nothing was spent. ` +
+            `Shorten it by ${brief.length - maxBriefChars} characters and ask again.`
+          );
+        }
       }
 
       const quote = quotes.issue({
@@ -742,6 +774,109 @@ const WRITE_TOOLS: Tool[] = [
         return `Payment released for task #${id} with a ${rating}/5 rating.\n  tx: ${EXPLORER}/tx/${hash}`;
       } catch (err) {
         return `Could not approve: ${err instanceof Error ? err.message : err}`;
+      }
+    },
+  },
+  {
+    name: 'panal_cancel_task',
+    description:
+      'Cancel a job that never started and get the locked payment back. Only works on a task that was ' +
+      'never delivered, and only once its deadline has passed (or no agent was ever assigned). ' +
+      'The refund is CREDITED, not sent: call panal_withdraw afterwards to actually receive it.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'number', description: 'Id of the task to cancel.' },
+        confirmed_by_user: { type: 'boolean', description: 'true only if the person asked to cancel it.' },
+      },
+      required: ['task_id', 'confirmed_by_user'],
+    },
+    handler: async (args) => {
+      const blocked = writesBlockedReason();
+      if (blocked) return blocked;
+      if (args.confirmed_by_user !== true) {
+        return 'I will not cancel a job without confirmed_by_user: true.';
+      }
+      const id = Number(args.task_id);
+      if (!Number.isInteger(id) || id < 0) return 'The task id is an integer.';
+
+      try {
+        const hash = await panal.cancelTask(BigInt(id));
+        return [
+          `Task #${id} cancelled and the payment refunded.`,
+          `  tx: ${EXPLORER}/tx/${hash}`,
+          '',
+          'The refund is credited in the escrow, not in the wallet yet: call panal_withdraw to collect it.',
+        ].join('\n');
+      } catch (err) {
+        return `Could not cancel: ${err instanceof Error ? err.message : err}`;
+      }
+    },
+  },
+  {
+    name: 'panal_open_dispute',
+    description:
+      'Dispute a delivered result and STOP the clock. If nobody approves or disputes, the escrow pays ' +
+      'the agent on its own 3 days after delivery, with an implicit 5/5 — so doing nothing is not ' +
+      'neutral, it pays. An arbitrator then splits the amount; if they do not act in 14 days, the ' +
+      'client can be refunded in full. Use it when the delivery is wrong or never arrived.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'number', description: 'Id of the delivered task.' },
+        confirmed_by_user: { type: 'boolean', description: 'true only if the person asked to dispute it.' },
+      },
+      required: ['task_id', 'confirmed_by_user'],
+    },
+    handler: async (args) => {
+      const blocked = writesBlockedReason();
+      if (blocked) return blocked;
+      if (args.confirmed_by_user !== true) {
+        return 'I will not open a dispute without confirmed_by_user: true. Show the person the result first.';
+      }
+      const id = Number(args.task_id);
+      if (!Number.isInteger(id) || id < 0) return 'The task id is an integer.';
+
+      try {
+        const hash = await panal.openDispute(BigInt(id));
+        return [
+          `Dispute opened on task #${id}. The automatic release is stopped.`,
+          `  tx: ${EXPLORER}/tx/${hash}`,
+          '',
+          'An arbitrator decides how to split it. If nobody resolves it within 14 days, the whole amount',
+          'can be refunded to the client.',
+        ].join('\n');
+      } catch (err) {
+        return `Could not open the dispute: ${err instanceof Error ? err.message : err}`;
+      }
+    },
+  },
+  {
+    name: 'panal_withdraw',
+    description:
+      'Collect what the escrow owes this wallet — refunds from cancelled jobs. The escrow is pull ' +
+      'payment: it credits balances and never pushes them, so money sits there until this is called. ' +
+      'Call panal_wallet first to see whether there is anything to collect.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        confirmed_by_user: { type: 'boolean', description: 'true only if the person asked to collect it.' },
+      },
+      required: ['confirmed_by_user'],
+    },
+    handler: async (args) => {
+      const blocked = writesBlockedReason();
+      if (blocked) return blocked;
+      if (args.confirmed_by_user !== true) {
+        return 'I will not move funds without confirmed_by_user: true.';
+      }
+      try {
+        const pending = await panal.getPendingWithdrawal(account!.address);
+        if (pending === 0n) return 'The escrow owes this wallet nothing: there is nothing to collect.';
+        const hash = await panal.withdraw();
+        return `Collected ${formatEther(pending)} MON from the escrow.\n  tx: ${EXPLORER}/tx/${hash}`;
+      } catch (err) {
+        return `Could not withdraw: ${err instanceof Error ? err.message : err}`;
       }
     },
   },

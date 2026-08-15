@@ -444,6 +444,69 @@ export class PanalClient {
     return hash;
   }
 
+  /**
+   * Cancela una tarea que nunca arrancó y recupera lo bloqueado.
+   *
+   * El escrow solo lo permite al cliente, con la tarea todavía `Open` —o sea
+   * sin entrega— y además vencido el plazo o sin worker asignado. Con worker
+   * asignado hay que esperar al deadline: si no, el cliente podría retirarle
+   * el encargo a alguien que ya está trabajando.
+   *
+   * Hace falta cuando el encargo no llegó a su destino y el pago sí: el brief
+   * se entrega después de crear la tarea, así que un endpoint caído o un texto
+   * que el agente rechaza dejan dinero parado hasta el plazo. Sin esto, la
+   * única salida era llamar al contrato a mano.
+   *
+   * OJO: el escrow es pull payment. Esto ACREDITA el reembolso, no lo envía.
+   * Para tenerlo en la wallet hay que llamar después a `withdraw()`.
+   */
+  async cancelTask(taskId: bigint): Promise<Hex> {
+    const wallet = this.wallet();
+    const task = await this.getTask(taskId);
+    if (task.status !== TaskStatus.Open) {
+      throw new Error(`La tarea #${taskId} está "${TaskStatus[task.status]}": solo se cancela lo que sigue abierto.`);
+    }
+    const hash = await wallet.writeContract({
+      address: this.addresses.escrow,
+      abi: escrowAbi,
+      functionName: 'cancelTask',
+      args: [taskId],
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash });
+    return hash;
+  }
+
+  /**
+   * Abre una disputa sobre una entrega, y con ello para el reloj.
+   *
+   * Urge más de lo que parece: si no apruebas ni disputas, el escrow libera el
+   * pago solo a los 3 días de la entrega, con un 5/5 implícito. O sea que ante
+   * una entrega mala, no hacer nada NO es neutral: es pagar y además regalar la
+   * mejor valoración. Disputar es lo único que detiene esa cuenta atrás.
+   *
+   * La resuelve el arbitrator repartiendo el importe. Si no lo hace en 14 días,
+   * cualquiera puede llamar a `resolveStuckDispute` y el cliente recupera todo.
+   */
+  async openDispute(taskId: bigint): Promise<Hex> {
+    const wallet = this.wallet();
+    const task = await this.getTask(taskId);
+    if (task.status !== TaskStatus.Delivered) {
+      throw new Error(`La tarea #${taskId} está "${TaskStatus[task.status]}": solo se disputa lo entregado.`);
+    }
+    const hash = await wallet.writeContract({
+      address: this.addresses.escrow,
+      abi: escrowAbi,
+      functionName: 'openDispute',
+      args: [taskId],
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash });
+    return hash;
+  }
+
   // -------------------------------------------------------------------------
   // Lado del AGENTE — darse de alta, trabajar y entregar.
   // -------------------------------------------------------------------------

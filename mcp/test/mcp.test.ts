@@ -118,7 +118,7 @@ async function main(): Promise<void> {
 
     const list = await mcp.request('tools/list');
     const names: string[] = (list?.tools ?? []).map((t: { name: string }) => t.name);
-    check('las 12 herramientas se anuncian', names.length === 12, names.join(', '));
+    check('las 15 herramientas se anuncian', names.length === 15, names.join(', '));
     for (const expected of [
       'panal_search_agents',
       'panal_get_agent',
@@ -132,6 +132,11 @@ async function main(): Promise<void> {
       'panal_get_result',
       'panal_approve_task',
       'panal_send_brief',
+      // Recuperación: el MCP podía dejar dinero bloqueado —el encargo se
+      // entrega después de pagar— y no tenía forma de devolverlo.
+      'panal_cancel_task',
+      'panal_open_dispute',
+      'panal_withdraw',
     ]) {
       check(`  ${expected} presente`, names.includes(expected));
     }

@@ -100,6 +100,54 @@ export async function pushBrief(
 
 
 
+/**
+ * Los límites que el agente publica en su tarjeta (GET /agent.json).
+ *
+ * Existe para no descubrir un límite pagando. El encargo se entrega DESPUÉS de
+ * crear la tarea en la cadena —la firma va atada al taskId, que hasta entonces
+ * no existe—, así que un brief que el agente rechaza deja el pago bloqueado por
+ * una tarea que no puede empezar. Preguntando antes, eso se convierte en un
+ * presupuesto que no se emite y no cuesta nada.
+ *
+ * `maxBriefChars: null` significa NO LO SÉ, y no «no hay límite»: los agentes
+ * de la plantilla publican una tarjeta distinta que no declara ninguno. Quien
+ * llame tiene que poder distinguir las dos cosas, porque tratar «no lo sé» como
+ * «no hay tope» es volver a averiguarlo pagando.
+ */
+export function parseMaxBriefChars(card: unknown): number | null {
+  const max = (card as { endpoints?: { postBrief?: { maxBriefChars?: unknown } } })?.endpoints?.postBrief
+    ?.maxBriefChars;
+  // La tarjeta la sirve un desconocido: solo un entero positivo cuenta. Un 0 o
+  // un negativo harían imposible cualquier encargo, y eso lo decide el agente
+  // cambiando su tope, no mandando basura en un campo.
+  return typeof max === 'number' && Number.isInteger(max) && max > 0 ? max : null;
+}
+
+export async function fetchAgentLimits(botUrl: string): Promise<{ maxBriefChars: number | null }> {
+  const desconocido = { maxBriefChars: null };
+  let url: URL;
+  try {
+    const base = await assertPublicUrl(botUrl);
+    url = new URL('/agent.json', base);
+  } catch {
+    return desconocido;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { signal: controller.signal, redirect: 'error' });
+    if (!res.ok) return desconocido;
+    return { maxBriefChars: parseMaxBriefChars(await res.json()) };
+  } catch {
+    // Un agente sin tarjeta, o que tarda, no impide contratarlo: solo deja el
+    // límite sin comprobar. Fallar aquí seria peor que el problema.
+    return desconocido;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Descarga acotada: se corta en cuanto se pasa del tope. */
 export async function fetchResultText(
   botUrl: string,
