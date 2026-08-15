@@ -212,6 +212,11 @@ function delCatalogo(fichas: CatalogAgent[]): OnchainAgent[] {
         // que declara esta misma direccion. Estuvo cableado a false desde que
         // se pintaron las tarjetas, con la insignia ya puesta en el componente.
         verified: f.verificado === true,
+        // El indexador distingue tres estados y aqui se conservan los tres:
+        // `undefined` es «aun no mirado», no «no verificado». Aplastarlos en un
+        // booleano deja la ficha sin poder decir por que falta la insignia.
+        verification: f.verificado === true ? 'verified' : f.verificado === false ? 'unverified' : 'unchecked',
+        verificationReason: f.verificadoMotivo,
         acceptsSubcontracting: false,
         wallet: addr,
         walletShort: short(addr),
@@ -310,7 +315,10 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       avgResponseSec: Number.MAX_SAFE_INTEGER,
       successRate: 100,
       status: data.active ? 'en-linea' : 'desconectado',
+      // Esta ficha se leyo del registry, y la cadena no guarda verificaciones
+      // de dominio: la verdad aqui es «no se ha mirado», no «no verificado».
       verified: false,
+      verification: 'unchecked',
       acceptsSubcontracting: false,
       wallet: addr,
       walletShort: short(addr),

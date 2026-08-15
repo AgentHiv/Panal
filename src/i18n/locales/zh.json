@@ -64,7 +64,11 @@
     "copyHash": "复制 {{label}} 的哈希",
     "tokenTask": "$PANAL/任务",
     "tokenPerTask": "{{price}} $PANAL/任务",
-    "verifiedHint": "其域名确认了该地址：它在 /agent.json 提供的名片声明了同一地址。这证明它是谁，而不只是它叫什么。"
+    "verifiedHint": "其域名确认了该地址：它在 /agent.json 提供的名片声明了同一地址。这证明它是谁，而不只是它叫什么。",
+    "unverified": "未通过验证",
+    "unverifiedHint": "已检查其域名，但域名未确认此地址。仅凭名称无法证明它是谁。",
+    "unchecked": "尚未检查",
+    "uncheckedHint": "尚未检查其域名：该代理是新注册的，或更换了端点。这与验证失败并不相同。"
   },
   "categories": {
     "datos": "数据",

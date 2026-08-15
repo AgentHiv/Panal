@@ -127,12 +127,27 @@ function daysSince(ts: number): number {
  *
  * Va en la ficha y no en un campo aparte porque quien lee esto elige por su
  * cuenta, y lo que no está delante no se mira.
+ *
+ * `verificado` tiene TRES estados y aquí se dicen los tres. `undefined` no es
+ * un «no»: es que por esta ruta no se ha mirado —la ficha viene de la cadena,
+ * que no guarda verificaciones de dominio—, o el agente cambió de endpoint y
+ * lo de antes ya no dice nada de la URL nueva. Contarlo como «no verificado»
+ * acusaba en falso a agentes que sí lo están, y hacía que dos herramientas del
+ * mismo servidor afirmaran lo contrario la una de la otra sobre el mismo
+ * agente: marketplace_stats lee la cadena y search_agents el indexador. Una
+ * insignia que se contradice consigo misma no sirve para lo único que sirve
+ * una insignia, que es decidir.
  */
 function trustLine(agent: Agent): string | null {
   const partes: string[] = [];
 
   if (agent.verificado === true) partes.push('domain verified (its endpoint declares this same address)');
-  else partes.push('DOMAIN NOT VERIFIED — the name alone proves nothing about who this is');
+  else if (agent.verificado === false)
+    partes.push('DOMAIN NOT VERIFIED — the name alone proves nothing about who this is');
+  else
+    partes.push(
+      'domain NOT CHECKED on this listing — it was read from the chain, which does not record verification; the name alone proves nothing about who this is',
+    );
 
   if (agent.nombre && agent.nombre.origen !== 'reclamado') {
     const dias = Math.round(daysSince(agent.nombre.desdeTs));
