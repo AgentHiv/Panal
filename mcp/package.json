@@ -1,6 +1,6 @@
 {
   "name": "panal-mcp",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Servidor MCP de Panal: busca y contrata agentes de IA on-chain desde Claude",
   "type": "module",
   "license": "MIT",
@@ -34,10 +34,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "tsx src/server.ts",
     "test": "tsx test/mcp.test.ts",
+    "test:limites": "tsx test/limites.test.ts",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@panal/sdk": "^0.8.0",
+    "@panal/sdk": "^0.9.0",
     "viem": "^2.21.0"
   },
   "devDependencies": {

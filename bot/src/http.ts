@@ -13,7 +13,7 @@
  *
  * Rutas:
  *   POST /brief/:taskId   body {"brief","address","signature"}
- *     1. Valida el body (brief no vacío, máx. 4000 chars; 400 si no).
+ *     1. Valida el body (brief no vacío, máx. MAX_BRIEF_CHARS; 400 si no).
  *     2. Lee `tasks(taskId)` del escrow v2 (con el retry/backoff de chain.ts).
  *     3. verifyMessage() de viem contra task.client → 403 {"error":"not client"}.
  *     4. Rechaza tareas cerradas (Completed/Cancelled) → 409 {"error":"task closed"}.
@@ -78,10 +78,32 @@ import {
 } from './chain.js';
 import type { Store } from './store.js';
 
-/** Mensaje exacto que firma el cliente (debe coincidir con el frontend). */
+/**
+ * Mensaje que firma el cliente para descargar, formato ANTIGUO: sin caducidad.
+ *
+ * Una firma sin caducidad es un pase permanente. Se sigue aceptando para no
+ * romper a los clientes ya publicados que firman así —el propio bot, en mcp.ts
+ * y a2a.ts—, pero lo nuevo debe usar `resultSignMessageConCaducidad`.
+ */
 export function resultSignMessage(taskId: bigint): string {
   return `Panal resultado #${taskId.toString()}`;
 }
+
+/**
+ * Mensaje que firma el cliente para descargar, con caducidad dentro.
+ *
+ * Este es el que manda `panal-mcp`, y el que la plantilla de agentes ya
+ * aceptaba. Sin él, LexPanal era inalcanzable desde el MCP: la firma no
+ * cuadraba, y como además las credenciales viajan en cabeceras y aquí solo se
+ * leían de la query, ni siquiera llegaba a compararse. El resultado de una
+ * tarea pagada quedaba ilegible para el cliente que la pagó.
+ */
+export function resultSignMessageConCaducidad(taskId: bigint, expira: number): string {
+  return `Panal resultado #${taskId.toString()} · ${expira}`;
+}
+
+/** Lo máximo que puede durar una firma de descarga: abre toda la entrega. */
+const MAX_VENTANA_S = 15 * 60;
 
 /**
  * Mensaje que firma el cliente para entregar el brief (POST /brief).
@@ -124,14 +146,50 @@ function rateLimitOk(ip: string): boolean {
 // precio (leídos del registry on-chain) y pasos para contratarlo M2M.
 // ---------------------------------------------------------------------------
 
-/** Límite del brief aceptado por POST /brief (chars). */
-export const MAX_BRIEF_CHARS = 4_000;
-/** Límite del body HTTP de POST /brief (bytes). */
-const MAX_BODY_BYTES = 16_384;
+/**
+ * Límite del brief aceptado por POST /brief (chars).
+ *
+ * 4.000 se quedaba corto para lo que la gente manda de verdad: un contrato o
+ * un fichero de código pasan de ahí sin esfuerzo, y el cliente solo se entera
+ * DESPUÉS de bloquear el pago, porque el encargo se entrega cuando la tarea ya
+ * está en la cadena. 32.000 son ~8k tokens, holgados para el contexto del LLM.
+ */
+export const MAX_BRIEF_CHARS = 32_000;
+
+/**
+ * Tope del body de POST /brief (bytes), DERIVADO del límite de chars y no
+ * elegido aparte.
+ *
+ * Un char no es un byte: el brief viaja dentro de un JSON, y entre UTF-8
+ * (hasta 4 bytes por char) y el escapado (`\n`, `\"`) el cuerpo crece sobre el
+ * texto. Cuando los dos topes se eligen a mano, el más bajo manda en silencio
+ * y rechaza por un motivo que no es el que se anuncia: con 4.000 chars y 16 KB
+ * no se notaba, pero subir uno solo deja al otro cortando por su cuenta.
+ */
+const MAX_BRIEF_BODY_BYTES = MAX_BRIEF_CHARS * 4 + 4_096;
+
+/**
+ * Tope del body de POST /x402/ask. Va aparte a propósito: ahí se cobra una
+ * tarifa fija por pregunta, así que un prompt enorme lo acaba pagando el
+ * agente en tokens. Compartir constante con /brief ataba dos límites que
+ * responden a economías distintas, y subir el de los encargos habría subido
+ * este sin que nadie lo decidiera.
+ */
+const MAX_ASK_BODY_BYTES = 16_384;
 
 export interface AgentJson {
   name: string;
   description: string;
+  /**
+   * La dirección del agente, con el nombre que usa todo el mundo menos este
+   * bot. Los agentes de la plantilla publican `agent`, este publicaba solo
+   * `agentAddress`, y el verificador de dominios lleva desde entonces un
+   * `card.agent ?? card.agentAddress` para tragarse las dos formas. Se
+   * publican ambas: la nueva para no obligar a nadie a conocer la historia,
+   * la vieja porque quitarla rompería a quien ya la lee.
+   */
+  agent: Address;
+  /** @deprecated Usa `agent`. Se mantiene por compatibilidad. */
   agentAddress: Address;
   chainId: number;
   contracts: { escrow: Address; registry: Address; token: Address };
@@ -141,7 +199,21 @@ export interface AgentJson {
   endpoints: {
     /** URL pública base del bot (BOT_HTTP_PUBLIC_URL), null si no se publicó. */
     base: string | null;
-    postBrief: { method: 'POST'; path: '/brief/:taskId'; signMessage: string; body: string };
+    postBrief: {
+      method: 'POST';
+      path: '/brief/:taskId';
+      signMessage: string;
+      body: string;
+      /**
+       * El tope real, en un campo y no dentro de la frase de `body`.
+       *
+       * Estaba solo ahí, en prosa y con el número escrito a mano, así que
+       * ningún cliente podía leerlo: se enteraba del límite cuando el agente
+       * le devolvía un 400 —y para entonces el pago ya estaba bloqueado en el
+       * escrow, porque el encargo se entrega después de crear la tarea.
+       */
+      maxBriefChars: number;
+    };
     getResult: { method: 'GET'; path: '/result/:taskId?address&signature'; signMessage: string };
     /**
      * Cobro por llamada (x402). Presente solo si el agente lo tiene activado.
@@ -231,6 +303,7 @@ export async function buildAgentJson(
   return {
     name: meta.name ?? `Agente Panal ${cfg.agentAddress}`,
     description: meta.description ?? 'Agente autónomo del marketplace Panal (Monad).',
+    agent: cfg.agentAddress,
     agentAddress: cfg.agentAddress,
     chainId: monad.id,
     contracts: {
@@ -253,7 +326,8 @@ export async function buildAgentJson(
         method: 'POST',
         path: '/brief/:taskId',
         signMessage: 'Panal brief #<taskId>  (EIP-191, firmado por el cliente de la tarea)',
-        body: '{"brief": string (máx. 4000 chars), "address": "0x…", "signature": "0x…"}',
+        body: `{"brief": string (máx. ${MAX_BRIEF_CHARS} chars), "address": "0x…", "signature": "0x…"}`,
+        maxBriefChars: MAX_BRIEF_CHARS,
       },
       getResult: {
         method: 'GET',
@@ -362,10 +436,25 @@ export interface X402Endpoint {
 export function createResultServer(deps: ResultServerDeps): Server {
   const maxUrlLength = deps.maxUrlLength ?? 2_048;
 
-  // ---- GET /result/:taskId?address&signature --------------------------------
-  const handleGetResult = async (taskId: bigint, url: URL, res: ServerResponse): Promise<void> => {
-    const addressParam = url.searchParams.get('address') ?? '';
-    const signatureParam = url.searchParams.get('signature') ?? '';
+  // ---- GET /result/:taskId  (credenciales en cabeceras, o en la query) ------
+  const handleGetResult = async (
+    taskId: bigint,
+    url: URL,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> => {
+    // Las cabeceras van PRIMERO y la query es el respaldo. La query acaba en el
+    // log del proxy, y una firma en un log es una credencial escrita en un
+    // fichero de texto. Leer solo de la query era además incompatible con
+    // panal-mcp, que solo manda cabeceras: no fallaba la firma, es que no
+    // llegaba a haberla.
+    const cabecera = (n: string): string | null => {
+      const v = req.headers[n];
+      return typeof v === 'string' ? v : Array.isArray(v) ? (v[0] ?? null) : null;
+    };
+    const addressParam = cabecera('x-panal-address') ?? url.searchParams.get('address') ?? '';
+    const signatureParam = cabecera('x-panal-signature') ?? url.searchParams.get('signature') ?? '';
+    const expiraCrudo = cabecera('x-panal-expira') ?? url.searchParams.get('expira');
     if (!isAddress(addressParam)) {
       json(res, 400, { error: 'bad address' });
       return;
@@ -389,14 +478,24 @@ export function createResultServer(deps: ResultServerDeps): Server {
       return;
     }
 
-    // Verifica la firma EIP-191 contra el cliente de la task
+    // Verifica la firma EIP-191 contra el cliente de la task. Se aceptan los
+    // dos formatos: con caducidad (el que manda panal-mcp y el que usa la
+    // plantilla de agentes) y el antiguo sin ella, que siguen firmando los
+    // clientes ya publicados. Con caducidad se comprueba la ventana, porque un
+    // plazo que no se mira no es un plazo.
     let signerOk = false;
     try {
-      signerOk = await verifyMessage({
-        address,
-        message: resultSignMessage(taskId),
-        signature,
-      });
+      if (expiraCrudo !== null) {
+        const expira = Number(expiraCrudo);
+        const ahora = Math.floor(Date.now() / 1000);
+        signerOk =
+          Number.isInteger(expira) &&
+          expira > ahora &&
+          expira <= ahora + MAX_VENTANA_S &&
+          (await verifyMessage({ address, message: resultSignMessageConCaducidad(taskId, expira), signature }));
+      } else {
+        signerOk = await verifyMessage({ address, message: resultSignMessage(taskId), signature });
+      }
     } catch {
       signerOk = false;
     }
@@ -420,7 +519,7 @@ export function createResultServer(deps: ResultServerDeps): Server {
 
   // ---- POST /brief/:taskId  {"brief","address","signature"} -----------------
   const handlePostBrief = async (taskId: bigint, req: IncomingMessage, res: ServerResponse): Promise<void> => {
-    const raw = await readBody(req, MAX_BODY_BYTES);
+    const raw = await readBody(req, MAX_BRIEF_BODY_BYTES);
     if (raw === null) {
       json(res, 413, { error: 'body too large' });
       return;
@@ -499,7 +598,7 @@ export function createResultServer(deps: ResultServerDeps): Server {
       return;
     }
 
-    const raw = await readBody(req, MAX_BODY_BYTES);
+    const raw = await readBody(req, MAX_ASK_BODY_BYTES);
     if (raw === null) {
       json(res, 413, { error: 'body too large' });
       return;
@@ -651,7 +750,7 @@ export function createResultServer(deps: ResultServerDeps): Server {
     const briefMatch = /^\/brief\/(\d{1,20})$/.exec(url.pathname);
 
     if (resultMatch && req.method === 'GET') {
-      await handleGetResult(BigInt(resultMatch[1]!), url, res);
+      await handleGetResult(BigInt(resultMatch[1]!), url, req, res);
       return;
     }
     if (briefMatch && req.method === 'POST') {
