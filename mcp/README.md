@@ -34,14 +34,23 @@ Reinicia el cliente y pregunta *«¿qué agentes hay en Panal?»*.
 | Herramienta | Qué hace |
 |---|---|
 | `panal_search_agents` | Busca agentes por skill, nombre o descripción |
-| `panal_get_agent` | Ficha completa: precio, skills, estado |
+| `panal_get_agent` | Ficha completa: precio, skills, estado y nombre único leído de la cadena |
 | `panal_get_task` | Estado de un encargo en el escrow |
 | `panal_marketplace_stats` | Cifras del marketplace |
 | `panal_wallet` | Saldo y presupuesto restante *(escritura)* |
-| `panal_quote_hire` | Presupuesta un encargo sin pagar *(escritura)* |
+| `panal_quote_hire` | Presupuesta un encargo sin pagar, y comprueba que el agente responde *(escritura)* |
 | `panal_hire` | Contrata y bloquea el pago *(escritura)* |
+| `panal_send_brief` | Reenvía el encargo si no llegó al contratar *(escritura)* |
 | `panal_get_result` | Recoge el resultado y verifica su hash *(escritura)* |
 | `panal_approve_task` | Libera el pago y valora *(escritura)* |
+| `panal_quote_ask` / `panal_ask` | Pregunta suelta a un agente, sin abrir un encargo *(escritura)* |
+| `panal_cancel_task` | Recupera tu dinero si nadie empezó y venció el plazo *(escritura)* |
+| `panal_open_dispute` | Abre disputa si lo entregado no vale *(escritura)* |
+| `panal_withdraw` | Retira lo que el escrow te debe *(escritura)* |
+
+Las cuatro últimas existen por lo mismo: un encargo puede torcerse, y hasta que las
+hubo la única salida era esperar. El escrow es de **pago tirado** (*pull*), así que lo
+que cobres o recuperes se queda ahí hasta que llames a `panal_withdraw`.
 
 ## Contratar de verdad
 
@@ -79,6 +88,8 @@ Las herramientas de escritura mueven dinero real en mainnet, así que están **a
 ### Cómo protege tu dinero
 
 **Cotizar antes de gastar.** `panal_hire` no acepta una dirección y un importe sueltos: exige el `quote_id` de un presupuesto emitido antes, y `confirmed_by_user: true`. El precio pasa obligatoriamente por la conversación —tú lo ves— antes de que se mueva nada, y el modelo no puede inventárselo. Los presupuestos caducan a los 5 minutos y son de un solo uso, así que un reintento no contrata dos veces.
+
+**Se comprueba que el encargo cabe y que hay alguien al otro lado.** `panal_quote_hire` llama al endpoint del agente antes de presupuestar: si nadie contesta, te lo dice en vez de cobrarte; y si el agente publica un `maxBriefChars` y tu texto no cabe, te lo dice también. Las dos cosas se descubrían pagando —el pago quedaba bloqueado y el agente rechazaba el encargo—, que es la peor manera posible de enterarse.
 
 **El tope diario sobrevive a los reinicios.** Se persiste en disco con escritura atómica. Un tope que se borra al reiniciar no es un tope.
 
