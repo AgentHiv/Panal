@@ -421,7 +421,7 @@ async function work(taskId: bigint, brief: string, sobre: CallEnvelope | null): 
     // Lo PRIMERO, antes de trabajar: si el proceso muere a mitad, esto es lo
     // único que permite retomarlo. Guardarlo después sería guardarlo nunca.
     saveBrief(taskId, brief);
-    const task = await panal.getTask(taskId);
+    const task = await leerTarea(taskId);
     const salida = await handleTask(
       brief,
       contexto({ taskId, client: task.client, amount: task.amount, deadline: task.deadline }, sobre),
@@ -608,12 +608,65 @@ function pasaDelLimite(req: IncomingMessage): boolean {
 const CACHE_TAREA_MS = 5_000;
 const tareasCache = new Map<string, { cliente: Address; hasta: number }>();
 
+/**
+ * La tarea existe en la cadena, pero el nodo que consultamos aún no la ve.
+ *
+ * NO es un error del agente ni del cliente, y por eso tiene su propio tipo:
+ * quien llama necesita poder distinguir «todavía no» de «se rompió algo», que
+ * son dos cosas con reacciones opuestas —una se reintenta, la otra no.
+ */
+class TareaAunNoVisible extends Error {
+  constructor(readonly taskId: bigint) {
+    super(`la tarea #${taskId} todavía no es visible en este nodo RPC`);
+    this.name = 'TareaAunNoVisible';
+  }
+}
+
+/**
+ * ¿Este fallo es «esa tarea no existe (todavía)»?
+ *
+ * `tasks` es un array público, así que su getter solo puede revertir por
+ * índice fuera de rango. Cualquier otro fallo —RPC caído, timeout, red— tiene
+ * otra forma y NO se disfraza de esto: tragárselo escondería una avería real.
+ */
+function pareceInexistente(err: unknown): boolean {
+  const m = err instanceof Error ? `${err.message}` : String(err);
+  return /revert|out-of-bounds|out of bounds|0x32/i.test(m);
+}
+
+/**
+ * Lee la tarea aguantando el desfase entre nodos.
+ *
+ * POR QUÉ EXISTE. El cliente mina `createTask` contra SU RPC y, en cuanto
+ * tiene el recibo, nos manda el encargo. Nosotros validamos leyendo la tarea
+ * contra el NUESTRO, que es otro nodo y puede ir un bloque por detrás: para él
+ * esa tarea aún no existe, el getter revierte y el envío se caía con un 500.
+ * El cliente veía «no se pudo enviar el brief» y tenía que reintentar a mano,
+ * con su dinero ya bloqueado. Fallaba a la primera y funcionaba a la segunda,
+ * que es la firma de una carrera, no de una avería.
+ *
+ * Cuatro intentos con espera creciente cubren de sobra un bloque de Monad
+ * (~800 ms) sin castigar al RPC compartido.
+ */
+async function leerTarea(taskId: bigint): ReturnType<typeof panal.getTask> {
+  for (let intento = 1; intento <= 4; intento++) {
+    try {
+      return await panal.getTask(taskId);
+    } catch (err) {
+      if (!pareceInexistente(err)) throw err;
+      if (intento === 4) break;
+      await new Promise((r) => setTimeout(r, 250 * intento));
+    }
+  }
+  throw new TareaAunNoVisible(taskId);
+}
+
 async function clienteDeTarea(taskId: bigint): Promise<Address> {
   const k = taskId.toString();
   const ahora = Date.now();
   const cacheada = tareasCache.get(k);
   if (cacheada && cacheada.hasta > ahora) return cacheada.cliente;
-  const task = await panal.getTask(taskId);
+  const task = await leerTarea(taskId);
   if (tareasCache.size > 1_000) for (const [kk, v] of tareasCache) if (v.hasta <= ahora) tareasCache.delete(kk);
   tareasCache.set(k, { cliente: task.client, hasta: ahora + CACHE_TAREA_MS });
   return task.client;
@@ -829,7 +882,9 @@ const server = createServer((req, res) => {
         throw err;
       }
 
-      const task = await panal.getTask(taskId);
+      // Con reintentos: el cliente acaba de minar la tarea contra otro nodo y
+      // el nuestro puede ir por detrás. Ver `leerTarea`.
+      const task = await leerTarea(taskId);
 
       // Cuatro comprobaciones, y las cuatro importan: que la tarea sea tuya,
       // que siga abierta, que quien dice firmar sea el cliente que pagó, y que
@@ -956,6 +1011,16 @@ const server = createServer((req, res) => {
 
     json(res, 404, { error: 'no existe' });
   })().catch((err) => {
+    // «Todavía no la veo» NO es un 500. Con 425 (Too Early) quien llama sabe
+    // que reintentar tiene sentido; con 500 parecía una avería del agente y el
+    // dashboard se rendía dejando al cliente reenviando a mano. Se responde
+    // rápido y sin ruido en el log: no hay nada roto que mirar.
+    if (err instanceof TareaAunNoVisible) {
+      if (!res.headersSent) {
+        json(res, 425, { error: err.message, reintentable: true });
+      } else res.end();
+      return;
+    }
     console.error(`[http] ${err instanceof Error ? err.message : err}`);
     if (!res.headersSent) json(res, 500, { error: 'error interno' });
     else res.end();
