@@ -18,7 +18,7 @@
 
 import { createPublicClient, createWalletClient, formatEther, getAddress, http, keccak256, toBytes } from 'viem';
 import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem';
-import { erc20Abi, escrowAbi, registryAbi } from './abis.js';
+import { erc20Abi, escrowAbi, namesAbi, registryAbi } from './abis.js';
 import { assertPublicUrl, fetchLimited } from './net.js';
 import { X402Error, payAndAsk, quoteAsk, type AskResult, type X402Accept } from './x402.js';
 import { descend, newEnvelope, remainingBudget, type CallEnvelope } from './envelope.js';
@@ -29,6 +29,7 @@ import {
   parseAgentMetadata,
   type Agent,
   type AgentMetadata,
+  type NombreDeAgente,
   type Task,
 } from './types.js';
 
@@ -172,7 +173,11 @@ export class PanalClient {
       if (page.length < Number(REGISTRY_PAGE)) break;
     }
 
-    return Promise.all(addresses.map((address) => this.getAgent(address)));
+    // `leerAgente` y no `getAgent`: este listado ya son N lecturas en paralelo
+    // contra un RPC que corta sobre 50 concurrentes, y buscar el nombre de cada
+    // uno las triplicaria. Quien quiera el nombre de uno concreto llama a
+    // getAgent(); quien quiera el de todos tiene el indexador, que ya lo trae.
+    return Promise.all(addresses.map((address) => this.leerAgente(address)));
   }
 
   /**
@@ -253,8 +258,30 @@ export class PanalClient {
     }
   }
 
-  /** Un agente concreto, con su metadata ya interpretada. */
+  /**
+   * Un agente concreto, con su metadata interpretada y su nombre único.
+   *
+   * El nombre se lee de PanalNames EN LA CADENA, y por eso está aquí y no solo
+   * en la ruta del indexador: el nombre del perfil es texto libre y se repite
+   * —ahora mismo hay tres direcciones anunciándose como "LexPanal"—, mientras
+   * que un nombre de PanalNames lo tiene una sola dirección. Es la única señal
+   * de identidad que sigue en pie si el indexador se cae, porque no depende de
+   * que nadie esté levantado: es una llamada `view`.
+   *
+   * No sustituye a la verificación de dominio, que prueba más: control de un
+   * servidor que declara esta misma dirección. Prueba unicidad, no quién hay
+   * detrás. Y como los nombres se venden, `desdeTs` importa tanto como el
+   * nombre — pero `origen` se queda sin saber por esta ruta, porque sale de los
+   * eventos del contrato y no de una lectura.
+   */
   async getAgent(address: Address): Promise<Agent> {
+    const base = await this.leerAgente(address);
+    const nombre = await this.nombreEnCadena(address);
+    return nombre ? { ...base, nombre } : base;
+  }
+
+  /** La ficha del registry, sin las lecturas de más. Lo que usa `listAgents`. */
+  private async leerAgente(address: Address): Promise<Agent> {
     const raw = (await this.publicClient.readContract({
       address: this.addresses.registry,
       abi: registryAbi,
@@ -279,6 +306,42 @@ export class PanalClient {
       metadataURI: raw.metadataURI,
       metadata: parseAgentMetadata(raw.metadataURI),
     };
+  }
+
+  /**
+   * El nombre de PanalNames de una dirección, o null si no tiene.
+   *
+   * Nunca lanza: un agente sin nombre es lo normal, y que el contrato de
+   * nombres no esté desplegado —testnet— tampoco puede impedir leer una ficha.
+   * Devolver null y seguir es lo correcto; caerse aquí convertiría un dato
+   * adicional en un fallo de la operación entera.
+   */
+  private async nombreEnCadena(address: Address): Promise<NombreDeAgente | null> {
+    const names = this.addresses.names;
+    if (!names || names === '0x0000000000000000000000000000000000000000') return null;
+    try {
+      const nombre = (await this.publicClient.readContract({
+        address: names,
+        abi: namesAbi,
+        functionName: 'nombreDe',
+        args: [getAddress(address)],
+      })) as string;
+      if (!nombre) return null;
+
+      const ficha = (await this.publicClient.readContract({
+        address: names,
+        abi: namesAbi,
+        functionName: 'fichaDe',
+        args: [nombre],
+      })) as readonly [Address, bigint, bigint, boolean];
+
+      // `origen` a propósito ausente: por esta ruta no se sabe, y ponerle
+      // 'reclamado' seria inventarse justo la parte que avisa de una compra
+      // reciente.
+      return { nombre, desdeTs: Number(ficha[1]) };
+    } catch {
+      return null;
+    }
   }
 
   /**

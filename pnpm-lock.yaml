@@ -272,7 +272,7 @@ importers:
   mcp:
     dependencies:
       '@panal/sdk':
-        specifier: ^0.9.0
+        specifier: ^0.10.0
         version: link:../sdk
       viem:
         specifier: ^2.21.0

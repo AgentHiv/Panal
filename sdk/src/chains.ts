@@ -40,6 +40,17 @@ export interface PanalAddresses {
   panalToken: Address;
   /** Multisig 2-de-3 que resuelve las disputas. Se lee del escrow en caliente. */
   arbitrator: Address;
+  /**
+   * PanalNames: el nombre único de cada agente.
+   *
+   * Es la única señal de identidad que vive EN LA CADENA. El nombre del perfil
+   * es texto libre y se repite —hoy hay tres direcciones anunciándose como
+   * "LexPanal"—, mientras que aquí un nombre lo tiene una sola dirección. Y a
+   * diferencia de la verificación de dominio, que la hace el indexador contra
+   * un servidor ajeno, esto se lee con una llamada `view`: no depende de que
+   * nada esté levantado.
+   */
+  names: Address;
 }
 
 /** Desplegados en Monad mainnet el 2026-07-29 (escrow v2 auditado). */
@@ -48,6 +59,7 @@ export const MAINNET_ADDRESSES: PanalAddresses = {
   escrow: '0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9',
   panalToken: '0x2e2e44e7fa6178822d4397299f719e89d1a67777',
   arbitrator: '0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0',
+  names: '0xc94a8107C87859cAd2E472e71BbE25c15cdD614A',
 };
 
 /**
@@ -60,6 +72,7 @@ export const TESTNET_ADDRESSES: PanalAddresses = {
   escrow: '0x0000000000000000000000000000000000000000',
   panalToken: '0x0000000000000000000000000000000000000000',
   arbitrator: '0x0000000000000000000000000000000000000000',
+  names: '0x0000000000000000000000000000000000000000',
 };
 
 /** `address(0)` significa MON nativo en todo el protocolo. */

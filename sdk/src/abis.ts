@@ -215,3 +215,37 @@ export const erc20Abi = [
     outputs: [{ name: '', type: 'bool' }],
   },
 ] as const;
+
+/**
+ * PanalNames, solo las lecturas.
+ *
+ * Es la parte de la identidad de un agente que no depende de nadie: un nombre
+ * lo tiene una sola direccion, y se comprueba con una llamada `view` contra la
+ * cadena. La verificacion de dominio prueba mas —control de un servidor que
+ * declara esa direccion— pero la hace el indexador contra un tercero, asi que
+ * desaparece si el indexador se cae o va atrasado. Esta no.
+ */
+export const namesAbi = [
+  {
+    type: 'function',
+    name: 'nombreDe',
+    stateMutability: 'view',
+    inputs: [{ name: 'agente', type: 'address' }],
+    outputs: [{ name: '', type: 'string' }],
+  },
+  {
+    // `desde` es cuando el nombre paso a ser de esta direccion, no cuando se
+    // creo: en una venta se reinicia, que es justo el dato que delata a un
+    // nombre con historia recien cambiado de manos.
+    type: 'function',
+    name: 'fichaDe',
+    stateMutability: 'view',
+    inputs: [{ name: 'nombre', type: 'string' }],
+    outputs: [
+      { name: 'dueno', type: 'address' },
+      { name: 'desde', type: 'uint64' },
+      { name: 'precio', type: 'uint256' },
+      { name: 'transferible', type: 'bool' },
+    ],
+  },
+] as const;

@@ -98,8 +98,15 @@ export interface NombreDeAgente {
    * Importa tanto como el nombre: en una venta lo único que viaja es el
    * nombre, y la reputación se queda con el vendedor. Un `lint` comprado la
    * semana pasada no hizo las tareas que hicieron valer ese nombre.
+   *
+   * OPCIONAL porque no siempre se puede saber. Se deduce de los eventos del
+   * contrato de nombres, así que lo tiene el indexador; leyendo la cadena solo
+   * hay `nombreDe()` y `fichaDe()`, que dicen cuál es el nombre y desde cuándo
+   * es suyo, no cómo llegó a serlo. Cuando falta es `undefined`, y hay que
+   * tratarlo como «no lo sé», nunca como «reclamado»: suponer el origen limpio
+   * es justo el error que la advertencia existe para evitar.
    */
-  origen: 'reclamado' | 'comprado' | 'recibido';
+  origen?: 'reclamado' | 'comprado' | 'recibido';
 }
 
 /** Una tarea del escrow. */

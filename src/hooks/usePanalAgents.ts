@@ -25,6 +25,7 @@ import type { Address } from 'viem';
 import {
   NATIVE_CURRENCY,
   currencySymbol,
+  PANAL_NAMES_ADDRESS,
   PANAL_REGISTRY_ADDRESS,
   PANAL_REGISTRY_V2_ADDRESS,
   PANAL_REPUTATION_ADDRESS,
@@ -32,7 +33,7 @@ import {
   V2_ENABLED,
   publicClient,
 } from '@/contracts/config';
-import { panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
+import { panalNamesAbi, panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
 import type { Agent, AgentCategory } from '@/data/agents';
 import {
   fetchCatalogo,
@@ -69,7 +70,11 @@ export interface OnchainAgent extends Agent {
 export const DIAS_CAMBIO_RECIENTE = 30;
 
 export function cambioReciente(n: NombreDeAgente | null, ahoraS: number): boolean {
-  if (!n || n.origen === 'reclamado') return false;
+  // Sin `origen` NO se avisa. Es `undefined` cuando la ficha se leyó de la
+  // cadena, que sabe el nombre y desde cuándo pero no cómo se consiguió.
+  // Avisar ahí acusaría de una compra que no consta, y esta advertencia solo
+  // sirve si cuando aparece es verdad.
+  if (!n || !n.origen || n.origen === 'reclamado') return false;
   return ahoraS - n.desdeTs < DIAS_CAMBIO_RECIENTE * 86_400;
 }
 
@@ -252,6 +257,42 @@ async function fetchAgents(): Promise<OnchainAgent[]> {
   return fetchOnchainAgents();
 }
 
+/**
+ * El nombre de PanalNames de una dirección, leído de la cadena.
+ *
+ * Dos llamadas y no una: `nombreDe` da el nombre y `fichaDe` la fecha desde la
+ * que es suyo, que es lo que permite avisar de un nombre recién cambiado de
+ * manos. La segunda solo se pide si hay nombre, así que la mayoría de agentes
+ * pagan una sola lectura.
+ *
+ * Nunca lanza: no tener nombre es lo normal, y un dato de más no puede tumbar
+ * la carga del mercado entero.
+ */
+async function leerNombreOnchain(addr: Address): Promise<NombreDeAgente | null> {
+  try {
+    const nombre = (await publicClient.readContract({
+      address: PANAL_NAMES_ADDRESS,
+      abi: panalNamesAbi,
+      functionName: 'nombreDe',
+      args: [addr],
+    })) as string;
+    if (!nombre) return null;
+
+    const ficha = (await publicClient.readContract({
+      address: PANAL_NAMES_ADDRESS,
+      abi: panalNamesAbi,
+      functionName: 'fichaDe',
+      args: [nombre],
+    })) as readonly [Address, bigint, bigint, boolean];
+
+    // Sin `origen` a propósito: la cadena no lo sabe, y ponerle 'reclamado'
+    // sería inventarse justo la parte que avisa de una compra reciente.
+    return { nombre, desdeTs: Number(ficha[1]) };
+  } catch {
+    return null;
+  }
+}
+
 async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
   // Con V2_ENABLED se lee del registry v2 (mismo formato + currency al final).
   const registryAddr = V2_ENABLED ? PANAL_REGISTRY_V2_ADDRESS : PANAL_REGISTRY_ADDRESS;
@@ -278,7 +319,7 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
   const BATCH = 4;
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const readOne = async (addr: Address): Promise<OnchainAgent | null> => {
-    const [data, score] = await Promise.all([
+    const [data, score, nombreOnchain] = await Promise.all([
       publicClient.readContract({
         address: registryAddr,
         abi: registryAbi,
@@ -291,6 +332,15 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
         functionName: 'getScore',
         args: [addr],
       }).catch(() => 0n),
+      // El nombre único, leído de la cadena.
+      //
+      // Esta ruta solo corre cuando el indexador no responde, y es justo
+      // entonces cuando más falta hace: sin él se pierde también `verificado`,
+      // así que la tarjeta se quedaba sin UNA SOLA señal de identidad. El
+      // nombre del perfil es texto libre y se repite —hay tres direcciones
+      // anunciándose como "LexPanal"—; este lo tiene una sola dirección y no
+      // depende de que nada esté levantado.
+      leerNombreOnchain(addr),
     ]);
 
     const meta = parseMetadata(data.metadataURI, addr);
@@ -335,9 +385,10 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       priceWei,
       currency: data.currency ?? NATIVE_CURRENCY,
       indexStats: null,
-      // Este camino lee el registry directamente, sin indexador; los nombres
-      // salen de sus eventos, asi que aqui no hay ninguno que poner.
-      nombreOnchain: null,
+      // El nombre SÍ se puede leer sin indexador: está en PanalNames, que es un
+      // contrato. Lo que no se puede saber por aquí es su `origen`, porque eso
+      // sale de los eventos — y por eso `cambioReciente` no avisa sin ese dato.
+      nombreOnchain,
     };
   };
 

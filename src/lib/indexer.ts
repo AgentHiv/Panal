@@ -203,7 +203,17 @@ export interface NombreDeAgente {
   nombre: string;
   /** Cuándo pasó a ser de esta dirección (segundos epoch). */
   desdeTs: number;
-  origen: 'reclamado' | 'comprado' | 'recibido';
+  /**
+   * Cómo llegó a tenerlo, si se sabe.
+   *
+   * OPCIONAL porque sale de los eventos del contrato, y eso solo lo tiene el
+   * indexador. Leyendo la cadena directamente están `nombreDe()` y `fichaDe()`,
+   * que dicen cuál es el nombre y desde cuándo es suyo, pero no cómo llegó a
+   * serlo. Sin dato es `undefined`, y hay que tratarlo como «no lo sé», nunca
+   * como «reclamado»: dar por bueno el origen limpio es justo lo que la
+   * advertencia existe para evitar.
+   */
+  origen?: 'reclamado' | 'comprado' | 'recibido';
   /** Lo pagado, en unidades mínimas. Solo si se compró. */
   precio?: string;
 }
