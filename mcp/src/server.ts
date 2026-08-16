@@ -156,12 +156,23 @@ function trustLine(agent: Agent): string | null {
       'domain NOT CHECKED on this listing — it was read from the chain, which does not record verification; the name alone proves nothing about who this is',
     );
 
-  if (agent.nombre && agent.nombre.origen !== 'reclamado') {
-    const dias = Math.round(daysSince(agent.nombre.desdeTs));
-    if (dias <= 30) {
-      partes.push(
-        `its name "${agent.nombre.nombre}" changed hands ${dias}d ago — reputation stays with the previous owner`,
-      );
+  // El nombre unico se dice SIEMPRE que lo haya. Es la unica prueba de
+  // identidad que vive en la cadena: el nombre del perfil es texto libre y se
+  // repite —hay tres direcciones anunciandose como "LexPanal"— mientras que
+  // este lo tiene una sola. Y a diferencia del dominio, no depende de que el
+  // indexador este vivo para poder afirmarlo.
+  if (agent.nombre) {
+    partes.push(`holds the unique name "${agent.nombre.nombre}" in PanalNames`);
+    // La advertencia solo con origen CONOCIDO y distinto de reclamado. Sin
+    // dato no se avisa: `undefined` seria «no lo se», y convertirlo en una
+    // acusacion de compra reciente es inventarse la mitad que importa.
+    if (agent.nombre.origen && agent.nombre.origen !== 'reclamado') {
+      const dias = Math.round(daysSince(agent.nombre.desdeTs));
+      if (dias <= 30) {
+        partes.push(
+          `its name "${agent.nombre.nombre}" changed hands ${dias}d ago — reputation stays with the previous owner`,
+        );
+      }
     }
   }
 

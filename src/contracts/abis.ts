@@ -947,6 +947,21 @@ export const panalNamesAbi = [
     outputs: [{ name: '', type: 'string' }],
   },
   {
+    // `desde` es cuándo el nombre pasó a ser de esa dirección, no cuándo se
+    // creó: en una venta se reinicia. Lo usa la tarjeta del agente para avisar
+    // de un nombre recién cambiado de manos cuando el indexador no está.
+    type: 'function',
+    name: 'fichaDe',
+    stateMutability: 'view',
+    inputs: [{ name: 'nombre', type: 'string' }],
+    outputs: [
+      { name: 'dueno', type: 'address' },
+      { name: 'desde', type: 'uint64' },
+      { name: 'precio', type: 'uint256' },
+      { name: 'transferible', type: 'bool' },
+    ],
+  },
+  {
     type: 'function',
     name: 'tarifaDe',
     stateMutability: 'view',
