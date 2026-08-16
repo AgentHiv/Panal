@@ -85,3 +85,38 @@ export function cabecerasFirma(address: string, signature: string, expira: numbe
 export function buildBriefUrl(botUrl: string, taskId: bigint): string {
   return `${botUrl.replace(/\/+$/, '')}/brief/${taskId.toString()}`;
 }
+
+/**
+ * Manda el brief reintentando mientras el agente diga «todavia no».
+ *
+ * POR QUE. El encargo se envia justo despues de minar `createTask`, y el
+ * agente valida leyendo la tarea contra SU nodo RPC, que no es el nuestro y
+ * puede ir un bloque por detras: para el, esa tarea aun no existe. Responde 425
+ * (Too Early) con `reintentable: true`, y rendirse ahi deja al cliente con el
+ * pago bloqueado y el encargo sin entregar, reenviandolo a mano. Paso de
+ * verdad, en mainnet, con el encargo #39.
+ *
+ * SOLO se reintenta el 425. Un 401, un 403 o un 409 son respuestas firmes —la
+ * firma no cuadra, la tarea no es suya, ya no esta abierta— y repetirlas solo
+ * retrasa la misma noticia. Un fallo de red tampoco: ahi no sabemos si el POST
+ * llego, y reenviar a ciegas un encargo que quiza ya entro es peor que avisar.
+ *
+ * Tres intentos, con 1 s y 2 s de espera. El agente ya absorbe la carrera por
+ * su cuenta (reintenta su lectura ~1,5 s), asi que esto es la segunda red:
+ * cubre un nodo especialmente rezagado sin que el cliente haga nada.
+ */
+export async function enviarBriefConReintento(
+  url: string,
+  init: RequestInit,
+  dormir: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+): Promise<Response> {
+  const esperas = [1_000, 2_000];
+  let res = await fetch(url, init);
+  for (const espera of esperas) {
+    if (res.status !== 425) return res;
+    console.warn(`[panal] el agente aun no ve la tarea (425); reintento en ${espera} ms`);
+    await dormir(espera);
+    res = await fetch(url, init);
+  }
+  return res;
+}

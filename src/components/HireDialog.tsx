@@ -8,7 +8,7 @@ import { useSignMessage, useSwitchChain, useWriteContract } from 'wagmi';
 import { keccak256, parseEventLogs, toBytes } from 'viem';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { saveTaskBrief } from '@/lib/taskBriefs';
-import { briefSignMessage, buildBriefUrl, extractBotUrl } from '@/lib/botEndpoint';
+import { briefSignMessage, buildBriefUrl, enviarBriefConReintento, extractBotUrl } from '@/lib/botEndpoint';
 import {
   Dialog,
   DialogContent,
@@ -248,7 +248,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
       }
       const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
       const signature = await signMessageAsync({ message: briefSignMessage(taskId) });
-      const res = await fetch(buildBriefUrl(botUrl, taskId), {
+      const res = await enviarBriefConReintento(buildBriefUrl(botUrl, taskId), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ brief, address, signature }),
