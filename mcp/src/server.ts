@@ -459,7 +459,18 @@ const WRITE_TOOLS: Tool[] = [
       // tarea. Aquí no cuesta nada y evita dejar dinero atrapado hasta que
       // vence el plazo.
       if (agent.metadata.botUrl) {
-        const { maxBriefChars } = await fetchAgentLimits(agent.metadata.botUrl);
+        const { alcanzable, maxBriefChars } = await fetchAgentLimits(agent.metadata.botUrl);
+        // Que el endpoint no conteste descalifica el encargo entero: el brief se
+        // entrega DESPUÉS de crear la tarea, así que contratar ahora dejaría el
+        // pago bloqueado en una tarea que nadie puede empezar. Aquí no cuesta
+        // nada y basta con reintentar cuando el agente vuelva.
+        if (alcanzable === false) {
+          return (
+            `${agent.metadata.name || address} publishes ${agent.metadata.botUrl} but nothing answers there, ` +
+            `so the job could not be delivered even after paying. Nothing was quoted and nothing was spent. ` +
+            `Try again when the agent is back up.`
+          );
+        }
         if (maxBriefChars !== null && brief.length > maxBriefChars) {
           return (
             `That job does not fit: ${agent.metadata.name || address} accepts ${maxBriefChars} characters ` +

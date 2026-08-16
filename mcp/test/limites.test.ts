@@ -39,17 +39,37 @@ check('una tarjeta que no es objeto no rompe', parseMaxBriefChars(null) === null
 
 const url = process.env.TEST_AGENT_URL;
 if (url) {
-  const { maxBriefChars } = await fetchAgentLimits(url);
+  const { alcanzable, maxBriefChars } = await fetchAgentLimits(url);
   check(
     `${url} contesta sin romper (tope: ${maxBriefChars ?? 'no declarado'})`,
     maxBriefChars === null || maxBriefChars > 0,
   );
+  check(`${url} sale como alcanzable`, alcanzable === true);
 }
 
-// Una URL que el guard SSRF rechaza no puede tumbar un presupuesto: se queda
-// sin comprobar, que es distinto de fallar.
+// --- ¿llega el encargo a alguna parte? --------------------------------------
+
+// Un agente vivo. Que conteste es lo que permite contratarlo sin dejar el pago
+// bloqueado en una tarea que nadie puede empezar.
+const vivo = await fetchAgentLimits('https://bot.panal.lat');
+check('un agente que responde es alcanzable', vivo.alcanzable === true);
+check('  y publica su tope', vivo.maxBriefChars === 32_000, String(vivo.maxBriefChars));
+
+// Un dominio que no resuelve: nadie va a recibir el encargo, y eso SÍ descalifica.
+const muerto = await fetchAgentLimits('https://este-dominio-no-existe-panal-test.invalid');
+check('un dominio que no resuelve sale como inalcanzable', muerto.alcanzable === false);
+
+// Una URL que el guard rechaza tampoco puede recibir nada: inalcanzable, no
+// «no lo sé». Es la misma consecuencia práctica.
 const interna = await fetchAgentLimits('http://127.0.0.1:1/');
-check('una URL interna no revienta, solo deja el tope sin saber', interna.maxBriefChars === null);
+check('una URL interna sale como inalcanzable', interna.alcanzable === false);
+check('  y sin tope, sin reventar', interna.maxBriefChars === null);
+
+// `alcanzable: null` es para cuando NO se llega a preguntar, y eso lo decide
+// quien llama: server.ts solo entra aquí si el agente publica endpoint, porque
+// no publicarlo es un modo soportado y no puede bloquear una contratación. Una
+// URL vacía sí llega hasta el guard, que la rechaza.
+check('una URL vacía la rechaza el guard (no es el caso «sin endpoint»)', (await fetchAgentLimits('')).alcanzable === false);
 
 console.log(fallos === 0 ? '\n✅ Todas las comprobaciones de límites pasaron' : `\n❌ ${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

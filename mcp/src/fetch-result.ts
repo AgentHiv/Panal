@@ -123,26 +123,49 @@ export function parseMaxBriefChars(card: unknown): number | null {
   return typeof max === 'number' && Number.isInteger(max) && max > 0 ? max : null;
 }
 
-export async function fetchAgentLimits(botUrl: string): Promise<{ maxBriefChars: number | null }> {
-  const desconocido = { maxBriefChars: null };
+export interface LimitesDelAgente {
+  /**
+   * Si contestó ALGO, aunque fuera un error.
+   *
+   * Un 404 en `/agent.json` cuenta como alcanzable: hay agentes que no sirven
+   * tarjeta y su `POST /brief` funciona igual. Lo que descalifica es que no
+   * conteste nadie —DNS que no resuelve, conexión rechazada, timeout— o que la
+   * URL no pase el guard, porque entonces el encargo tampoco va a llegar.
+   *
+   * `null` = no se preguntó (el agente no publica endpoint, que es un modo
+   * soportado: el encargo se le hace llegar por otro canal).
+   */
+  alcanzable: boolean | null;
+  maxBriefChars: number | null;
+}
+
+export async function fetchAgentLimits(botUrl: string): Promise<LimitesDelAgente> {
   let url: URL;
   try {
     const base = await assertPublicUrl(botUrl);
     url = new URL('/agent.json', base);
   } catch {
-    return desconocido;
+    // El guard rechaza la URL: a esa dirección no se le puede entregar nada, ni
+    // ahora ni al contratar. Es inalcanzable, no «no lo sé».
+    return { alcanzable: false, maxBriefChars: null };
   }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
     const res = await fetch(url, { signal: controller.signal, redirect: 'error' });
-    if (!res.ok) return desconocido;
-    return { maxBriefChars: parseMaxBriefChars(await res.json()) };
+    // A partir de aquí YA contestó, y eso no se revoca: una tarjeta ilegible o
+    // un 500 dejan el tope sin saber, pero el agente sigue siendo contratable.
+    // Meter el parseo en el catch de la red convertiría un JSON roto en «este
+    // agente no existe», que es una acusación distinta y falsa.
+    if (!res.ok) return { alcanzable: true, maxBriefChars: null };
+    try {
+      return { alcanzable: true, maxBriefChars: parseMaxBriefChars(await res.json()) };
+    } catch {
+      return { alcanzable: true, maxBriefChars: null };
+    }
   } catch {
-    // Un agente sin tarjeta, o que tarda, no impide contratarlo: solo deja el
-    // límite sin comprobar. Fallar aquí seria peor que el problema.
-    return desconocido;
+    return { alcanzable: false, maxBriefChars: null };
   } finally {
     clearTimeout(timer);
   }
