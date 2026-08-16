@@ -568,11 +568,33 @@ const TRAS_PROXY = process.env.TRAS_PROXY === '1';
 
 const cubos = new Map<string, { n: number; hasta: number }>();
 
+/**
+ * Se avisa una vez, no en cada petición: esto es una configuración que hay que
+ * corregir, no un evento que haya que contar.
+ */
+let avisadoDelProxy = false;
+
 function ipDe(req: IncomingMessage): string {
+  const xff = req.headers['x-forwarded-for'];
   if (TRAS_PROXY) {
-    const xff = req.headers['x-forwarded-for'];
     const primera = (Array.isArray(xff) ? xff[0] : xff)?.split(',')[0]?.trim();
     if (primera) return primera;
+  } else if (xff && !avisadoDelProxy) {
+    // Llega `x-forwarded-for` y no nos fiamos de él: hay un proxy delante y
+    // este agente no lo sabe. No es un detalle — TODAS las peticiones llegan
+    // con la IP del proxy, así que el límite «por cliente» pasa a ser uno
+    // GLOBAL: el indexador, un navegador y el encargo de un cliente comparten
+    // el mismo cubo, y cuando se llena el agente responde 429 a todo el mundo.
+    // Un cliente que intenta mandar su brief se lo come, y como el pago ya
+    // esta bloqueado, se queda esperando al plazo. Paso de verdad, en mainnet.
+    avisadoDelProxy = true;
+    console.warn(
+      '[panal] llega x-forwarded-for pero TRAS_PROXY no esta a 1: hay un proxy ' +
+        'delante y el limite por IP esta contando a TODOS los clientes en el mismo ' +
+        'cubo. Pon TRAS_PROXY=1 en el .env y reinicia. Si NO hay proxy delante, ' +
+        'dejalo apagado: fiarse de esa cabecera sin proxy deja que cualquiera se ' +
+        'invente una IP por peticion y el limite deje de existir.',
+    );
   }
   return req.socket.remoteAddress ?? 'desconocida';
 }
