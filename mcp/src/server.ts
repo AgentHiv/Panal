@@ -13,8 +13,14 @@
  *   MCP_PRIVATE_KEY=0x…      wallet dedicada del CLIENTE, con fondos
  *
  * Topes (todos opcionales, con valores conservadores por defecto):
- *   MCP_MAX_PER_TASK_WEI     por encargo    (default 1e18 = 1 MON/$PANAL)
- *   MCP_DAILY_BUDGET_WEI     por día UTC    (default 5e18)
+ *   MCP_MAX_PER_TASK_WEI          por encargo, en MON      (default 1e18)
+ *   MCP_DAILY_BUDGET_WEI          por día UTC, en MON      (default 5e18)
+ *   MCP_MAX_PER_TASK_PANAL_WEI    por encargo, en $PANAL   (default 1e18)
+ *   MCP_DAILY_BUDGET_PANAL_WEI    por día UTC, en $PANAL   (default 5e18)
+ *
+ * Cada moneda lleva su cuenta. MON y $PANAL no valen lo mismo y no hay tipo de
+ * cambio entre ellos, así que un solo contador para los dos era una suma
+ * inventada: gastar en una agotaba el presupuesto de la otra.
  *   MCP_TASK_DEADLINE_HOURS  plazo de entrega (default 24)
  *   MCP_SPEND_FILE           dónde persistir el gasto del día
  *
@@ -37,7 +43,7 @@ import {
   type Agent,
   type PanalClient,
 } from '@panal/sdk';
-import { QuoteBook, SpendLedger, limitsFromEnv } from './limits.js';
+import { QuoteBook, SpendLedger, limitFor, limitsFromEnv } from './limits.js';
 import {
   briefSignMessage,
   expiraEn,
@@ -116,6 +122,41 @@ function writesBlockedReason(): string | null {
 
 function symbolOf(currency: Address): string {
   return currency.toLowerCase() === NATIVE_CURRENCY.toLowerCase() ? 'MON' : '$PANAL';
+}
+
+/**
+ * ¿Cabe este gasto en el presupuesto de SU moneda? Devuelve el motivo, o null.
+ *
+ * Cada moneda lleva su cuenta. Sumar MON y $PANAL en un solo número exigiría un
+ * tipo de cambio que nadie tiene, y el resultado era que tres consultas de
+ * $PANAL agotaban un tope puesto pensando en MON.
+ *
+ * Sin presupuesto para una moneda, se dice que no. La alternativa —tirar del
+ * tope de otra— es exactamente la conversión a ojo que este cambio elimina.
+ */
+function revisarPresupuesto(currency: Address, amount: bigint, symbol: string): string | null {
+  const lim = limitFor(limits, currency);
+  if (!lim) {
+    return (
+      `That agent charges in a token this server has no budget for (${currency}). ` +
+      'Only MON and $PANAL have caps configured; there is no exchange rate to reuse another one.'
+    );
+  }
+  if (amount > lim.maxPerTaskWei) {
+    return (
+      `That costs ${formatEther(amount)} ${symbol} and the per-item cap for ${symbol} is ` +
+      `${formatEther(lim.maxPerTaskWei)}. Raise ${lim.envMaxPerTask} if that is intended.`
+    );
+  }
+  const spent = ledger.spentToday(currency);
+  if (spent + amount > lim.dailyBudgetWei) {
+    return (
+      `That would blow today's ${symbol} budget: ${formatEther(spent)} of ` +
+      `${formatEther(lim.dailyBudgetWei)} spent and this costs ${formatEther(amount)} ${symbol}. ` +
+      `Raise ${lim.envDailyBudget} if that is intended.`
+    );
+  }
+  return null;
 }
 
 /** Días desde un timestamp en segundos. */
@@ -394,8 +435,18 @@ const WRITE_TOOLS: Tool[] = [
       const blocked = writesBlockedReason();
       if (blocked) return blocked;
       const address = account!.address;
-      const [balance, spent] = [await panal.publicClient.getBalance({ address }), ledger.spentToday()];
-      const left = limits.dailyBudgetWei > spent ? limits.dailyBudgetWei - spent : 0n;
+      const balance = await panal.publicClient.getBalance({ address });
+      // Un presupuesto por moneda: MON y $PANAL no valen lo mismo y no hay
+      // tipo de cambio, así que se enseñan por separado o no se entienden.
+      const presupuestos = [...limits.porMoneda.entries()].map(([moneda, lim]) => {
+        const spent = ledger.spentToday(moneda as Address);
+        const left = lim.dailyBudgetWei > spent ? lim.dailyBudgetWei - spent : 0n;
+        const sym = symbolOf(moneda as Address);
+        return (
+          `  ${sym}: per job ${formatEther(lim.maxPerTaskWei)} · today ${formatEther(spent)} of ` +
+          `${formatEther(lim.dailyBudgetWei)} spent · ${formatEther(left)} left`
+        );
+      });
       // Lo acreditado en el escrow no aparece en el balance de la wallet: es
       // pull payment, así que un reembolso se queda ahí quieto hasta que se
       // reclama. Sin decirlo, el dinero devuelto es indistinguible del perdido.
@@ -403,8 +454,8 @@ const WRITE_TOOLS: Tool[] = [
       return [
         `Wallet: ${address}`,
         `Balance: ${formatEther(balance)} MON`,
-        `Per-job cap: ${formatEther(limits.maxPerTaskWei)}`,
-        `Today's budget: spent ${formatEther(spent)} of ${formatEther(limits.dailyBudgetWei)} · ${formatEther(left)} left`,
+        'Caps and budgets (each currency is counted on its own):',
+        ...presupuestos,
         pending > 0n
           ? `Waiting in the escrow: ${formatEther(pending)} MON — collect it with panal_withdraw`
           : null,
@@ -439,19 +490,8 @@ const WRITE_TOOLS: Tool[] = [
 
       const amount = agent.pricePerTask;
       const symbol = symbolOf(agent.currency);
-      if (amount > limits.maxPerTaskWei) {
-        return (
-          `That agent charges ${formatEther(amount)} ${symbol} and this server per-job cap is ` +
-          `${formatEther(limits.maxPerTaskWei)}. It cannot be hired unless the person raises MCP_MAX_PER_TASK_WEI.`
-        );
-      }
-      const spent = ledger.spentToday();
-      if (spent + amount > limits.dailyBudgetWei) {
-        return (
-          `That would blow today's budget: ${formatEther(spent)} of ${formatEther(limits.dailyBudgetWei)} spent ` +
-          `and this costs ${formatEther(amount)} ${symbol}.`
-        );
-      }
+      const negativa = revisarPresupuesto(agent.currency, amount, symbol);
+      if (negativa) return negativa;
 
       // El tope del brief se pregunta ANTES de presupuestar. Si no cabe, el
       // agente lo rechazaría con un 400 al recibirlo — pero eso ocurre ya con
@@ -536,27 +576,17 @@ const WRITE_TOOLS: Tool[] = [
 
       // Los mismos topes que contratar. Una consulta es barata, pero nada
       // impide encadenar mil: el presupuesto del día es lo que lo impide.
-      if (quote.amount > limits.maxPerTaskWei) {
-        return (
-          `That question costs ${formatEther(quote.amount)} ${quote.symbol} and this server per-item cap is ` +
-          `${formatEther(limits.maxPerTaskWei)}. Raise MCP_MAX_PER_TASK_WEI if that is intended.`
-        );
-      }
-      const spent = ledger.spentToday();
-      if (spent + quote.amount > limits.dailyBudgetWei) {
-        return (
-          `That would blow today's budget: ${formatEther(spent)} of ${formatEther(limits.dailyBudgetWei)} spent ` +
-          `and this costs ${formatEther(quote.amount)} ${quote.symbol}.`
-        );
-      }
+      const negativa = revisarPresupuesto(quote.currency, quote.amount, quote.symbol);
+      if (negativa) return negativa;
 
       try {
         // `maxSpend` va atado al importe del presupuesto que la persona
         // aprobó, no al tope del servidor: si el agente sube el precio entre
         // el presupuesto y el sí, la firma no se produce.
         const res = await panal.askAgent(quote.worker, quote.brief, { maxSpend: quote.amount });
-        // Se registra lo REALMENTE pagado, que es lo que devuelve el SDK.
-        ledger.record(res.paid);
+        // Se registra lo REALMENTE pagado, y en SU moneda: un gasto anotado en
+        // el contador equivocado agota un presupuesto que nadie tocó.
+        ledger.record(quote.currency, res.paid);
         log(`consulta pagada a ${quote.worker}: ${formatEther(res.paid)} ${quote.symbol}`);
 
         return [
@@ -606,15 +636,13 @@ const WRITE_TOOLS: Tool[] = [
 
       // Los topes se re-evalúan al contratar: entre el presupuesto y el "sí"
       // pueden haber pasado minutos y otros encargos.
-      const spent = ledger.spentToday();
-      if (spent + quote.amount > limits.dailyBudgetWei) {
-        return `Today's budget ran out in the meantime (${formatEther(spent)} of ${formatEther(limits.dailyBudgetWei)}).`;
-      }
+      const negativa = revisarPresupuesto(quote.currency, quote.amount, quote.symbol);
+      if (negativa) return negativa;
 
       const deadline = BigInt(Math.floor(Date.now() / 1000) + limits.deadlineHours * 3600);
       try {
         const result = await panal.hire({ agent: quote.worker, brief: quote.brief, deadline });
-        ledger.record(result.amount);
+        ledger.record(quote.currency, result.amount);
         log(`contratada #${result.taskId} a ${quote.worker} por ${formatEther(result.amount)} ${quote.symbol}`);
 
         // Contratar sin entregar el encargo deja la tarea a medias: el pago
