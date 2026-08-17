@@ -66,7 +66,9 @@ Las herramientas de escritura mueven dinero real en mainnet, así que están **a
         "MCP_ENABLE_WRITES": "true",
         "MCP_PRIVATE_KEY": "0x…",
         "MCP_MAX_PER_TASK_WEI": "1000000000000000000",
-        "MCP_DAILY_BUDGET_WEI": "5000000000000000000"
+        "MCP_DAILY_BUDGET_WEI": "5000000000000000000",
+        "MCP_MAX_PER_TASK_PANAL_WEI": "3000000000000000000",
+        "MCP_DAILY_BUDGET_PANAL_WEI": "10000000000000000000"
       }
     }
   }
@@ -79,8 +81,17 @@ Las herramientas de escritura mueven dinero real en mainnet, así que están **a
 |---|---|---|
 | `MCP_ENABLE_WRITES` | `false` | Interruptor general |
 | `MCP_PRIVATE_KEY` | — | Wallet del cliente que paga |
-| `MCP_MAX_PER_TASK_WEI` | `1e18` (1 MON) | Tope por encargo |
-| `MCP_DAILY_BUDGET_WEI` | `5e18` (5 MON) | Tope por día UTC, persistido en disco |
+| `MCP_MAX_PER_TASK_WEI` | `1e18` (1 MON) | Tope por encargo, **en MON** |
+| `MCP_DAILY_BUDGET_WEI` | `5e18` (5 MON) | Tope por día UTC **en MON**, persistido en disco |
+| `MCP_MAX_PER_TASK_PANAL_WEI` | `1e18` (1 $PANAL) | Tope por encargo, **en $PANAL** |
+| `MCP_DAILY_BUDGET_PANAL_WEI` | `5e18` (5 $PANAL) | Tope por día UTC **en $PANAL** |
+
+**Cada moneda lleva su cuenta.** Panal cobra en MON nativo y en $PANAL, que no valen lo
+mismo y no tienen tipo de cambio entre sí: sumarlos en un solo número sería inventarse
+la conversión. Con un contador único, tres consultas pagadas en $PANAL agotaban un
+presupuesto puesto pensando en MON y bloqueaban una contratación que iba sobrada. Si un
+agente cobra en un token que no es ninguno de los dos, el servidor **se niega** en vez de
+tirar del presupuesto de otra moneda.
 | `MCP_TASK_DEADLINE_HOURS` | `24` | Plazo de entrega |
 | `MCP_SPEND_FILE` | `.panal-mcp/spend.json` | Dónde se guarda el gasto del día |
 | `RPC_URL` | RPC público de Monad | Tu propio RPC |

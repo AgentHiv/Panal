@@ -89,12 +89,26 @@ export class QuoteBook {
   }
 }
 
+/** Clave de un contador: la dirección de la moneda, en minúsculas. */
+function clave(currency: Address): string {
+  return currency.toLowerCase();
+}
+
 /**
- * Registro de gasto diario, persistido en disco.
+ * Registro de gasto diario, persistido en disco y SEPARADO POR MONEDA.
  *
  * Un tope que se borra al reiniciar no es un tope: bastaría con reiniciar el
  * servidor para volver a gastar el presupuesto entero. Se guarda el día UTC
- * junto al importe, así que el contador se reinicia solo al cambiar de día.
+ * junto a los importes, así que el contador se reinicia solo al cambiar de día.
+ *
+ * POR QUÉ POR MONEDA
+ *
+ * Antes había un solo número. Panal cobra en dos monedas —MON nativo y $PANAL—
+ * y no hay tipo de cambio entre ellas, así que sumarlas era inventárselo: tres
+ * consultas de $PANAL agotaban un presupuesto puesto pensando en MON, y al
+ * revés, un tope generoso en $PANAL abría la mano con el MON sin que nadie lo
+ * hubiera decidido. La cuenta protegía de más, que es el lado bueno del fallo,
+ * pero un tope que no significa lo que dice no se puede ajustar.
  */
 export class SpendLedger {
   constructor(
@@ -110,26 +124,58 @@ export class SpendLedger {
     return new Date().toISOString().slice(0, 10);
   }
 
-  spentToday(): bigint {
+  /** Todo lo gastado hoy, por moneda. Vacío si el archivo es de otro día. */
+  private leer(): Map<string, bigint> {
+    const out = new Map<string, bigint>();
     try {
-      const raw = JSON.parse(readFileSync(this.file, 'utf8')) as { day?: string; spentWei?: string };
-      if (raw.day !== SpendLedger.utcDay()) return 0n;
-      return BigInt(raw.spentWei ?? '0');
+      const raw = JSON.parse(readFileSync(this.file, 'utf8')) as {
+        day?: string;
+        spentWei?: string;
+        spent?: Record<string, string>;
+      };
+      if (raw.day !== SpendLedger.utcDay()) return out;
+
+      // Formato antiguo: un solo número, sin moneda. Era el gasto de todo, pero
+      // en la práctica el que llevaba la cuenta era el nativo, así que se
+      // adopta ahí. Perderlo dejaría el tope del día a cero tras actualizar.
+      if (typeof raw.spentWei === 'string' && !raw.spent) {
+        try {
+          out.set(clave(NATIVO), BigInt(raw.spentWei));
+        } catch {
+          /* ilegible: se ignora */
+        }
+        return out;
+      }
+
+      for (const [k, v] of Object.entries(raw.spent ?? {})) {
+        try {
+          out.set(k.toLowerCase(), BigInt(v));
+        } catch {
+          /* una entrada corrupta no invalida las demás */
+        }
+      }
     } catch {
       // Sin archivo, ilegible o corrupto: se empieza de cero. Nunca lanza,
       // porque un ledger roto no debe dejar el servidor inservible.
-      return 0n;
     }
+    return out;
   }
 
-  record(wei: bigint): void {
-    const total = this.spentToday() + wei;
+  spentToday(currency: Address): bigint {
+    return this.leer().get(clave(currency)) ?? 0n;
+  }
+
+  record(currency: Address, wei: bigint): void {
+    const todo = this.leer();
+    todo.set(clave(currency), (todo.get(clave(currency)) ?? 0n) + wei);
+    const spent: Record<string, string> = {};
+    for (const [k, v] of todo) spent[k] = v.toString();
     try {
       mkdirSync(dirname(this.file), { recursive: true });
       // Escritura atómica: un corte a media escritura dejaría un JSON truncado
       // que se leería como 0 y borraría el tope del día.
       const tmp = `${this.file}.tmp`;
-      writeFileSync(tmp, JSON.stringify({ day: SpendLedger.utcDay(), spentWei: total.toString() }, null, 2));
+      writeFileSync(tmp, JSON.stringify({ day: SpendLedger.utcDay(), spent }, null, 2));
       renameSync(tmp, this.file);
     } catch (err) {
       this.onWarn(
@@ -140,10 +186,36 @@ export class SpendLedger {
   }
 }
 
-export interface Limits {
+/** El tope de una moneda concreta. */
+export interface CurrencyLimit {
   maxPerTaskWei: bigint;
   dailyBudgetWei: bigint;
+  /** El nombre de la variable de entorno, para poder decirle a alguien cuál subir. */
+  envMaxPerTask: string;
+  envDailyBudget: string;
+}
+
+export interface Limits {
   deadlineHours: number;
+  /** Topes por moneda, indexados por dirección en minúsculas. */
+  porMoneda: Map<string, CurrencyLimit>;
+}
+
+/** La moneda nativa en el escrow de Panal: la dirección cero. */
+const NATIVO = '0x0000000000000000000000000000000000000000' as Address;
+/** $PANAL en Monad mainnet. */
+const PANAL = '0x2e2e44e7fa6178822d4397299f719e89d1a67777' as Address;
+
+/**
+ * El tope de una moneda, o `null` si no hay ninguno puesto para ella.
+ *
+ * `null` significa NO HAY PRESUPUESTO, y quien llame debe negarse. Es
+ * deliberado: la alternativa sería reutilizar el tope de otra moneda, y eso
+ * exige un tipo de cambio que nadie tiene. Un agente que cobre en un token
+ * desconocido no se contrata hasta que alguien decida cuánto vale.
+ */
+export function limitFor(limits: Limits, currency: Address): CurrencyLimit | null {
+  return limits.porMoneda.get(clave(currency)) ?? null;
 }
 
 export function limitsFromEnv(): Limits {
@@ -158,9 +230,24 @@ export function limitsFromEnv(): Limits {
     }
   };
   const hours = Number(process.env.MCP_TASK_DEADLINE_HOURS?.trim() || '24');
-  return {
-    maxPerTaskWei: parse('MCP_MAX_PER_TASK_WEI', 10n ** 18n), // 1 MON / $PANAL
+
+  const porMoneda = new Map<string, CurrencyLimit>();
+  // MON conserva los nombres de siempre: quien ya tenía un .env sigue
+  // significando exactamente lo que creía.
+  porMoneda.set(clave(NATIVO), {
+    maxPerTaskWei: parse('MCP_MAX_PER_TASK_WEI', 10n ** 18n),
     dailyBudgetWei: parse('MCP_DAILY_BUDGET_WEI', 5n * 10n ** 18n),
-    deadlineHours: Number.isFinite(hours) && hours > 0 ? hours : 24,
-  };
+    envMaxPerTask: 'MCP_MAX_PER_TASK_WEI',
+    envDailyBudget: 'MCP_DAILY_BUDGET_WEI',
+  });
+  // $PANAL estrena las suyas, con los mismos números de antes. No se copian de
+  // MON porque no valen lo mismo: son dos presupuestos que se ajustan aparte.
+  porMoneda.set(clave(PANAL), {
+    maxPerTaskWei: parse('MCP_MAX_PER_TASK_PANAL_WEI', 10n ** 18n),
+    dailyBudgetWei: parse('MCP_DAILY_BUDGET_PANAL_WEI', 5n * 10n ** 18n),
+    envMaxPerTask: 'MCP_MAX_PER_TASK_PANAL_WEI',
+    envDailyBudget: 'MCP_DAILY_BUDGET_PANAL_WEI',
+  });
+
+  return { deadlineHours: Number.isFinite(hours) && hours > 0 ? hours : 24, porMoneda };
 }
