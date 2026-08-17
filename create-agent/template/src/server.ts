@@ -138,6 +138,22 @@ const SUBCONTRATA_SALTOS = (() => {
 
 if (SUBCONTRATA_MAX > 0n) {
   console.log(`Subcontratación activa: hasta ${process.env.SUBCONTRATA_MAX} ${X402_SYMBOL} por encargo`);
+
+  // Lo que te pagan por una consulta es el techo de lo que puedes gastarte en
+  // ella. Con SUBCONTRATA_MAX igual o mayor que X402_PRICE, un encargo en el
+  // que delegues te deja a cero o en pérdidas, y encima pones el gas. Lo malo
+  // de ese ajuste es que castiga justo lo que quieres que haga: cuanto mejor
+  // reconozca tu agente lo que no sabe, más veces trabaja gratis.
+  //
+  // No se corrige solo —es tu precio y tu decisión— pero se dice, porque el
+  // síntoma es un saldo que no sube y eso no se parece en nada a la causa.
+  if (X402_PRICE !== null && SUBCONTRATA_MAX >= X402_PRICE) {
+    console.warn(
+      `[panal] SUBCONTRATA_MAX (${process.env.SUBCONTRATA_MAX}) no es menor que X402_PRICE ` +
+        `(${process.env.X402_PRICE}) ${X402_SYMBOL}: cada consulta en la que delegues te deja sin ` +
+        `margen, o en pérdidas contando el gas. Ponlo en una fracción de lo que cobras.`,
+    );
+  }
 }
 
 /**
