@@ -15,7 +15,7 @@
 // implementaciones equivalentes de lo mismo —la del SDK y una aquí—, y dos
 // copias de un control de seguridad son una que se queda atrás sin que nadie
 // se entere el día que la otra mejora.
-import { assertPublicUrl } from '@panal/sdk';
+import { assertPublicUrl, leerMaxBriefChars } from '@panal/sdk';
 
 /** Tope de la respuesta. Sin esto, un endpoint hostil tumba el proceso. */
 const MAX_BYTES = 512 * 1024;
@@ -109,19 +109,16 @@ export async function pushBrief(
  * una tarea que no puede empezar. Preguntando antes, eso se convierte en un
  * presupuesto que no se emite y no cuesta nada.
  *
- * `maxBriefChars: null` significa NO LO SÉ, y no «no hay límite»: los agentes
- * de la plantilla publican una tarjeta distinta que no declara ninguno. Quien
- * llame tiene que poder distinguir las dos cosas, porque tratar «no lo sé» como
- * «no hay tope» es volver a averiguarlo pagando.
+ * `maxBriefChars: null` significa NO LO SÉ, y no «no hay límite». Sigue
+ * pasando: los agentes desplegados antes de que la plantilla lo publicara no
+ * declaran ninguno. Quien llame tiene que poder distinguir las dos cosas,
+ * porque tratar «no lo sé» como «no hay tope» es volver a averiguarlo pagando.
+ *
+ * La lectura vive en `@panal/sdk` para que haya UNA sola definición de qué es
+ * una ficha válida. Se reexporta con el nombre de aquí porque el servidor MCP
+ * ya lo usaba así.
  */
-export function parseMaxBriefChars(card: unknown): number | null {
-  const max = (card as { endpoints?: { postBrief?: { maxBriefChars?: unknown } } })?.endpoints?.postBrief
-    ?.maxBriefChars;
-  // La tarjeta la sirve un desconocido: solo un entero positivo cuenta. Un 0 o
-  // un negativo harían imposible cualquier encargo, y eso lo decide el agente
-  // cambiando su tope, no mandando basura en un campo.
-  return typeof max === 'number' && Number.isInteger(max) && max > 0 ? max : null;
-}
+export const parseMaxBriefChars = leerMaxBriefChars;
 
 export interface LimitesDelAgente {
   /**

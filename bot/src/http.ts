@@ -177,6 +177,14 @@ const MAX_BRIEF_BODY_BYTES = MAX_BRIEF_CHARS * 4 + 4_096;
  */
 const MAX_ASK_BODY_BYTES = 16_384;
 
+/**
+ * La ficha de `GET /agent.json`.
+ *
+ * La forma canónica y los lectores que perdonan la antigua viven en
+ * `@panal/sdk` (`AgentCard`, `leerX402`, `leerMaxBriefChars`). Este tipo se
+ * mantiene aquí porque el bot no depende del SDK a propósito —solo viem y
+ * dotenv—, pero es el MISMO formato: si diverge, manda el del SDK.
+ */
 export interface AgentJson {
   name: string;
   description: string;
@@ -191,6 +199,8 @@ export interface AgentJson {
   agent: Address;
   /** @deprecated Usa `agent`. Se mantiene por compatibilidad. */
   agentAddress: Address;
+  protocol: 'panal';
+  network: string;
   chainId: number;
   contracts: { escrow: Address; registry: Address; token: Address };
   skills: string[];
@@ -305,6 +315,10 @@ export async function buildAgentJson(
     description: meta.description ?? 'Agente autónomo del marketplace Panal (Monad).',
     agent: cfg.agentAddress,
     agentAddress: cfg.agentAddress,
+    // `protocol` y `network` los servía solo la plantilla, y son lo que deja
+    // reconocer una ficha de Panal sin conocer de antemano el chainId.
+    protocol: 'panal',
+    network: 'monad-mainnet',
     chainId: monad.id,
     contracts: {
       escrow: cfg.escrowAddress,

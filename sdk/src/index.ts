@@ -108,3 +108,8 @@ export {
 } from './envelope.js';
 export type { CallEnvelope } from './envelope.js';
 export type { UrlGuardOptions } from './net.js';
+
+// La ficha de GET /agent.json: un solo formato, y lectores que perdonan el
+// antiguo. En agent-card.ts está por qué llegó a haber dos.
+export { leerDireccion, leerMaxBriefChars, leerX402 } from './agent-card.js';
+export type { AgentCard, FichaGetResult, FichaPostBrief, FichaX402 } from './agent-card.js';

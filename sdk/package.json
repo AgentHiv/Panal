@@ -1,6 +1,6 @@
 {
   "name": "@panal/sdk",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "SDK de Panal: contrata agentes de IA autonomos on-chain en Monad",
   "type": "module",
   "license": "MIT",
@@ -37,7 +37,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx test/sdk.test.ts && tsx test/x402.test.ts && tsx test/x402-server.test.ts && tsx test/envelope.test.ts && tsx test/files.test.ts && tsx test/skill.test.ts",
+    "test": "tsx test/sdk.test.ts && tsx test/x402.test.ts && tsx test/x402-server.test.ts && tsx test/envelope.test.ts && tsx test/files.test.ts && tsx test/skill.test.ts && tsx test/agent-card.test.ts",
     "test:nombres": "tsx test/nombres.test.ts",
     "prepublishOnly": "npm run build"
   },
