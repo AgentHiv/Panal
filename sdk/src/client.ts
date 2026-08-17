@@ -93,6 +93,34 @@ export interface HireResult {
  * descarta, porque un `origen` inventado haria que la web avisara de una venta
  * que no existio, o peor, que callara una que si.
  */
+/**
+ * La skill pedida y, detrás, versiones cada vez más generales de ella.
+ *
+ * `searchAgents` exige que TODAS las palabras aparezcan, así que cuantas más
+ * lleve la skill, menos gente la cumple. Quien escribe estas cadenas suele ser
+ * un modelo, y un modelo pide "Spanish tax law" donde el mercado vende "tax".
+ *
+ * Se recorta POR LA IZQUIERDA porque en inglés el núcleo del sintagma va al
+ * final: "Spanish tax law" → "tax law" → "law" sigue hablando de lo mismo.
+ * Recortar por la derecha dejaría "Spanish", que casa con cualquier cosa
+ * española y con nada de impuestos: peor que no encontrar a nadie, porque se
+ * pagaría al agente equivocado.
+ *
+ * Nunca baja de una palabra y nunca devuelve duplicados, así que en el caso
+ * normal —una o dos palabras, que es lo que el prompt pide— esto es una sola
+ * búsqueda y no cambia nada.
+ */
+export function variantesDeSkill(skill: string): string[] {
+  const palabras = skill.trim().split(/\s+/).filter(Boolean);
+  if (palabras.length <= 1) return [skill.trim()].filter(Boolean);
+  const out: string[] = [];
+  for (let i = 0; i < palabras.length; i++) {
+    const v = palabras.slice(i).join(' ');
+    if (!out.includes(v)) out.push(v);
+  }
+  return out;
+}
+
 function esNombre(v: unknown): v is { nombre: string; desdeTs: number; origen: 'reclamado' | 'comprado' | 'recibido' } {
   if (v === null || typeof v !== 'object') return false;
   const n = v as Record<string, unknown>;
@@ -790,7 +818,7 @@ export class PanalClient {
       /** Saltos permitidos al abrir una cadena nueva. */
       depth?: number;
     },
-  ): Promise<AskResult & { agent: Address }> {
+  ): Promise<AskResult & { agent: Address; skill: string }> {
     const wallet = this.wallet();
     const excluded = new Set(
       [...(options.exclude ?? []), this.account!.address].map((a) => getAddress(a).toLowerCase()),
@@ -805,11 +833,34 @@ export class PanalClient {
     // Se busca por SKILL, no por texto libre: encontrar a alguien porque la
     // palabra aparece en su descripción no sirve para delegar. Si el indexador
     // no está, `searchAgents` cae solo a la cadena con su texto libre.
-    const candidates = (await this.searchAgents(skill, { skill }))
-      .filter((a) => !excluded.has(a.address.toLowerCase()) && a.metadata.botUrl)
-      .slice(0, options.maxCandidates ?? 5);
+    //
+    // La búsqueda exige que TODAS las palabras casen, así que una skill de más
+    // de dos palabras no encuentra a nadie casi nunca: quien la escribe es un
+    // modelo, y un modelo pide "Spanish tax law" donde el mercado vende "tax".
+    // Se reintenta quitando palabras POR LA IZQUIERDA porque en inglés el
+    // núcleo va al final: "Spanish tax law" → "tax law" → "law". Así se
+    // generaliza sin perder de qué se estaba hablando; recortar por la derecha
+    // dejaría "Spanish", que casaría con cualquier cosa española.
+    let candidates: Agent[] = [];
+    let usada = skill;
+    for (const intento of variantesDeSkill(skill)) {
+      candidates = (await this.searchAgents(intento, { skill: intento }))
+        .filter((a) => !excluded.has(a.address.toLowerCase()) && a.metadata.botUrl)
+        .slice(0, options.maxCandidates ?? 5);
+      if (candidates.length) {
+        usada = intento;
+        break;
+      }
+    }
 
-    if (!candidates.length) throw new X402Error(`Ningún agente activo con la skill "${skill}" publica endpoint.`);
+    if (!candidates.length) {
+      throw new X402Error(
+        `Ningún agente activo con la skill "${skill}" publica endpoint.` +
+          (variantesDeSkill(skill).length > 1
+            ? ` Se probó también con ${variantesDeSkill(skill).slice(1).map((v) => `"${v}"`).join(' y ')}.`
+            : ''),
+      );
+    }
 
     const quotes: { agent: Agent; endpoint: string; accept: X402Accept }[] = [];
     const rechazos: string[] = [];
@@ -849,7 +900,10 @@ export class PanalClient {
       quote: elegido.accept,
       envelope: siguiente,
     });
-    return { ...result, agent: elegido.agent.address };
+    // `skill` es la que de verdad encontró al vendedor, que puede no ser la que
+    // pediste: quien llama necesita poder decirlo en su log, o cada búsqueda
+    // ensanchada es un cambio de comportamiento invisible.
+    return { ...result, agent: elegido.agent.address, skill: usada };
   }
 
   /**
