@@ -19,6 +19,7 @@
 import { createPublicClient, createWalletClient, formatEther, getAddress, http, keccak256, toBytes } from 'viem';
 import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, namesAbi, registryAbi } from './abis.js';
+import { leerX402 } from './agent-card.js';
 import { assertPublicUrl, fetchLimited } from './net.js';
 import { X402Error, payAndAsk, quoteAsk, type AskResult, type X402Accept } from './x402.js';
 import { descend, newEnvelope, remainingBudget, type CallEnvelope } from './envelope.js';
@@ -926,8 +927,11 @@ export class PanalClient {
       const url = await assertPublicUrl(new URL('/agent.json', base).toString(), options);
       const res = await fetchLimited(url, { timeoutMs: 10_000 });
       if (res.status === 200) {
-        const card = JSON.parse(res.text) as { endpoints?: { x402Ask?: { url?: string; path?: string } } };
-        const anunciado = card.endpoints?.x402Ask;
+        // `leerX402` entiende las dos formas. Antes esto solo miraba
+        // `endpoints.x402Ask`, así que con la ficha de un agente de plantilla
+        // no encontraba nada y caía a la convención: funcionaba de casualidad,
+        // y solo mientras el agente escuchara justo en /x402/ask.
+        const anunciado = leerX402(JSON.parse(res.text));
         if (anunciado?.url) return anunciado.url;
         if (anunciado?.path) return new URL(anunciado.path, base).toString();
       }

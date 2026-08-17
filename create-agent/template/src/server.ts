@@ -31,6 +31,7 @@ import {
   createPanalClient,
   LoopDetected,
   MAINNET_ADDRESSES,
+  monad,
   parseEnvelope,
   parsePaymentHeader,
   permitNonce,
@@ -53,6 +54,21 @@ const PORT = Number(process.env.PORT ?? 8787);
 const DATA_DIR = process.env.DATA_DIR ?? './data';
 /** Tope del cuerpo de una petición: sin esto, cualquiera te tumba el proceso. */
 const MAX_BODY = 256 * 1024;
+
+/**
+ * Tope del encargo, en CARACTERES, y anunciado en `/agent.json`.
+ *
+ * Va en caracteres y no en bytes porque es lo que el cliente puede contar
+ * antes de pagar: el tope de cuerpo de arriba protege el proceso, pero nadie
+ * sabe cuántos kilobytes ocupa su texto. Sin un número publicado, un encargo
+ * demasiado largo se descubre PAGANDO —el pago queda bloqueado, el agente
+ * responde 400, y el cliente espera al plazo para recuperarlo.
+ *
+ * El límite real lo pone MAX_BODY; este número queda holgadamente por debajo
+ * (32k caracteres son unos 128 KB incluso en el peor caso de UTF-8) para que
+ * lo que se promete se cumpla siempre, y no solo con texto latino.
+ */
+const MAX_BRIEF_CHARS = 32_000;
 
 const key = process.env.AGENT_PRIVATE_KEY?.trim();
 if (!key || !/^0x[0-9a-fA-F]{64}$/.test(key)) {
@@ -743,24 +759,47 @@ const server = createServer((req, res) => {
     // LexPanal tuvo x402 funcionando y nadie lo usó, sencillamente porque no
     // salía en su tarjeta: un cobro que nadie puede descubrir no existe.
     if (url.pathname === '/agent.json' && req.method === 'GET') {
+      const base = process.env.PUBLIC_URL?.trim().replace(/\/+$/, '') || null;
+      const x402 =
+        X402_PRICE !== null
+          ? {
+              method: 'POST' as const,
+              path: '/x402/ask',
+              ...(base ? { url: `${base}/x402/ask` } : {}),
+              scheme: 'eip2612-permit',
+              asset: X402_TOKEN,
+              assetSymbol: X402_SYMBOL,
+              amount: X402_PRICE.toString(),
+              payTo: account.address,
+              howTo: 'POST {"prompt":"…"} and you get a 402 with the quote. Sign it and repeat with X-Payment.',
+            }
+          : null;
+
       json(res, 200, {
         agent: account.address,
         protocol: 'panal',
         network: 'monad-mainnet',
-        ...(X402_PRICE !== null
-          ? {
-              x402Ask: {
-                method: 'POST',
-                path: '/x402/ask',
-                scheme: 'eip2612-permit',
-                asset: X402_TOKEN,
-                assetSymbol: X402_SYMBOL,
-                amount: X402_PRICE.toString(),
-                payTo: account.address,
-                howTo: 'POST {"prompt":"…"} and you get a 402 with the quote. Sign it and repeat with X-Payment.',
-              },
-            }
-          : {}),
+        chainId: monad.id,
+        endpoints: {
+          base,
+          postBrief: {
+            method: 'POST',
+            path: '/brief/:taskId',
+            signMessage: 'Panal brief #<taskId>  (EIP-191, firmado por el cliente de la tarea)',
+            body: `{"brief": string (máx. ${MAX_BRIEF_CHARS} chars), "address": "0x…", "signature": "0x…"}`,
+            maxBriefChars: MAX_BRIEF_CHARS,
+          },
+          getResult: {
+            method: 'GET',
+            path: '/result/:taskId',
+            signMessage: 'Panal resultado #<taskId> · <epoch>  (EIP-191, cabeceras X-Panal-*)',
+          },
+          ...(x402 ? { x402Ask: x402 } : {}),
+        },
+        // ALIAS ANTIGUO, en la raíz. Aquí es donde esta plantilla lo publicaba
+        // antes, y hay clientes ahí fuera que solo miran este sitio. Se sirve
+        // por compatibilidad y desaparecerá; lo que se lee es `endpoints`.
+        ...(x402 ? { x402Ask: x402 } : {}),
       });
       return;
     }
@@ -900,6 +939,16 @@ const server = createServer((req, res) => {
       const idCrudo = rutaBrief[1] ?? body.taskId;
       if (idCrudo === undefined || !body.brief || !body.signature) {
         json(res, 400, { error: 'faltan taskId, brief o signature' });
+        return;
+      }
+      // El tope que anuncia /agent.json, aplicado. Se dice el número en la
+      // respuesta: el cliente ya pagó, y saber cuánto recortar es la
+      // diferencia entre reenviarlo y perder el encargo.
+      if (body.brief.length > MAX_BRIEF_CHARS) {
+        json(res, 400, {
+          error: `el encargo son ${body.brief.length} caracteres y el tope es ${MAX_BRIEF_CHARS}`,
+          maxBriefChars: MAX_BRIEF_CHARS,
+        });
         return;
       }
       const taskId = BigInt(idCrudo);
