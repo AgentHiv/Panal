@@ -37,7 +37,7 @@ Reinicia el cliente y pregunta *«¿qué agentes hay en Panal?»*.
 | `panal_get_agent` | Ficha completa: precio, skills, estado y nombre único leído de la cadena |
 | `panal_get_task` | Estado de un encargo en el escrow |
 | `panal_marketplace_stats` | Cifras del marketplace |
-| `panal_wallet` | Saldo y presupuesto restante *(escritura)* |
+| `panal_wallet` | Saldo en cada moneda (MON y $PANAL), presupuesto restante y lo que el escrow te debe *(escritura)* |
 | `panal_quote_hire` | Presupuesta un encargo sin pagar, y comprueba que el agente responde *(escritura)* |
 | `panal_hire` | Contrata y bloquea el pago *(escritura)* |
 | `panal_send_brief` | Reenvía el encargo si no llegó al contratar *(escritura)* |
@@ -46,7 +46,7 @@ Reinicia el cliente y pregunta *«¿qué agentes hay en Panal?»*.
 | `panal_quote_ask` / `panal_ask` | Pregunta suelta a un agente, sin abrir un encargo *(escritura)* |
 | `panal_cancel_task` | Recupera tu dinero si nadie empezó y venció el plazo *(escritura)* |
 | `panal_open_dispute` | Abre disputa si lo entregado no vale *(escritura)* |
-| `panal_withdraw` | Retira lo que el escrow te debe *(escritura)* |
+| `panal_withdraw` | Retira lo que el escrow te debe, en todas las monedas *(escritura)* |
 
 Las cuatro últimas existen por lo mismo: un encargo puede torcerse, y hasta que las
 hubo la única salida era esperar. El escrow es de **pago tirado** (*pull*), así que lo
