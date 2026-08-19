@@ -1,13 +1,23 @@
 # Verifying the Panal contracts on monadvision
 
-Four contracts, two files each: a `standard-input.json` (the sources plus the
-compiler settings) and a `constructor-args.txt`.
+Four contracts, three files each:
+
+- `metadata.json` — **this is the one monadvision's form asks for.** It is solc's
+  metadata output, and its IPFS hash is the one baked into the deployed
+  bytecode, so it is not merely equivalent to what was compiled: it is the same
+  file, byte for byte.
+- `standard-input.json` — the standard JSON input. Other explorers, and
+  `forge verify-contract`, want this one instead.
+- `constructor-args.txt` — the ABI-encoded constructor arguments.
+
+Do not reformat `metadata.json`. Re-serialising it (even just changing the
+indentation) changes its hash and breaks the match.
 
 ## Settings — the same for all four
 
 | field | value |
 |---|---|
-| Compiler | `v0.8.24` |
+| Compiler | `v0.8.24+commit.e11b9ed9` |
 | Verification method | Solidity (Standard-JSON-Input) |
 | Optimization | **enabled**, 200 runs |
 | EVM version | `cancun` |
