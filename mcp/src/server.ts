@@ -40,6 +40,7 @@ import {
   NATIVE_CURRENCY,
   TaskStatus,
   createPanalClient,
+  erc20Abi,
   type Agent,
   type PanalClient,
 } from '@panal/sdk';
@@ -120,8 +121,40 @@ function writesBlockedReason(): string | null {
 // Presentación
 // ---------------------------------------------------------------------------
 
+/** ¿Es la moneda nativa de la cadena, o un token? */
+function esNativa(currency: Address): boolean {
+  return currency.toLowerCase() === NATIVE_CURRENCY.toLowerCase();
+}
+
 function symbolOf(currency: Address): string {
-  return currency.toLowerCase() === NATIVE_CURRENCY.toLowerCase() ? 'MON' : '$PANAL';
+  return esNativa(currency) ? 'MON' : '$PANAL';
+}
+
+/** Las monedas que este servidor sabe manejar: las que tienen presupuesto. */
+function monedasConocidas(): Address[] {
+  return [...limits.porMoneda.keys()] as Address[];
+}
+
+/**
+ * Saldo de una wallet en una moneda: a la cadena si es la nativa, al contrato
+ * del token si es un ERC-20.
+ *
+ * `null` es «no se pudo leer», y se distingue de cero a propósito. Enseñar 0
+ * cuando la consulta falla es afirmar que no hay fondos, que es una respuesta
+ * distinta: llevaría a no intentar un pago que sí se podía hacer.
+ */
+async function saldoDe(owner: Address, currency: Address): Promise<bigint | null> {
+  try {
+    if (esNativa(currency)) return await panal.publicClient.getBalance({ address: owner });
+    return (await panal.publicClient.readContract({
+      address: currency,
+      abi: erc20Abi,
+      functionName: 'balanceOf',
+      args: [owner],
+    })) as bigint;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -428,37 +461,61 @@ const WRITE_TOOLS: Tool[] = [
   {
     name: 'panal_wallet',
     description:
-      'State of the wallet this server would pay with: address, balance, and how much of today\'s budget ' +
-      'is left. Call it before hiring to know whether there are funds.',
+      'State of the wallet this server would pay with: address, the balance of EVERY currency Panal ' +
+      'takes (MON and $PANAL), and how much of today\'s budget is left. Call it before hiring to know ' +
+      'whether there are funds.',
     inputSchema: { type: 'object', properties: {} },
     handler: async () => {
       const blocked = writesBlockedReason();
       if (blocked) return blocked;
       const address = account!.address;
-      const balance = await panal.publicClient.getBalance({ address });
+      const monedas = monedasConocidas();
+
+      // Un saldo por moneda, no solo el nativo. Antes se leía únicamente MON y
+      // justo debajo se listaban los topes de $PANAL: quien lo leía daba por
+      // comprobado un saldo que nadie había mirado, y podía contratar en $PANAL
+      // sin tener con qué pagar. Las lecturas son independientes, así que van
+      // en paralelo.
+      const [saldos, pendientes] = await Promise.all([
+        Promise.all(monedas.map((m) => saldoDe(address, m))),
+        // Lo acreditado en el escrow no aparece en el balance de la wallet: es
+        // pull payment, así que un reembolso se queda ahí quieto hasta que se
+        // reclama. Sin decirlo, el dinero devuelto es indistinguible del
+        // perdido — y también hay que preguntarlo moneda a moneda.
+        Promise.all(monedas.map((m) => panal.getPendingWithdrawal(address, m).catch(() => null))),
+      ]);
+
+      const importe = (v: bigint | null): string => (v === null ? 'could not be read' : formatEther(v));
+
+      const balances = monedas.map((m, i) => `  ${symbolOf(m)}: ${importe(saldos[i] ?? null)}`);
+
       // Un presupuesto por moneda: MON y $PANAL no valen lo mismo y no hay
       // tipo de cambio, así que se enseñan por separado o no se entienden.
-      const presupuestos = [...limits.porMoneda.entries()].map(([moneda, lim]) => {
-        const spent = ledger.spentToday(moneda as Address);
+      const presupuestos = monedas.map((moneda) => {
+        const lim = limitFor(limits, moneda)!;
+        const spent = ledger.spentToday(moneda);
         const left = lim.dailyBudgetWei > spent ? lim.dailyBudgetWei - spent : 0n;
-        const sym = symbolOf(moneda as Address);
         return (
-          `  ${sym}: per job ${formatEther(lim.maxPerTaskWei)} · today ${formatEther(spent)} of ` +
+          `  ${symbolOf(moneda)}: per job ${formatEther(lim.maxPerTaskWei)} · today ${formatEther(spent)} of ` +
           `${formatEther(lim.dailyBudgetWei)} spent · ${formatEther(left)} left`
         );
       });
-      // Lo acreditado en el escrow no aparece en el balance de la wallet: es
-      // pull payment, así que un reembolso se queda ahí quieto hasta que se
-      // reclama. Sin decirlo, el dinero devuelto es indistinguible del perdido.
-      const pending = await panal.getPendingWithdrawal(address).catch(() => 0n);
+
+      // Solo se nombra lo que hay que cobrar, o lo que no se pudo comprobar. Un
+      // «0» por cada moneda sería ruido en la respuesta más leída del servidor.
+      const enEscrow = monedas
+        .map((m, i) => ({ sym: symbolOf(m), v: pendientes[i] ?? null }))
+        .filter(({ v }) => v === null || v > 0n)
+        .map(({ sym, v }) => `  ${sym}: ${importe(v)}`);
+
       return [
         `Wallet: ${address}`,
-        `Balance: ${formatEther(balance)} MON`,
+        'Balance:',
+        ...balances,
         'Caps and budgets (each currency is counted on its own):',
         ...presupuestos,
-        pending > 0n
-          ? `Waiting in the escrow: ${formatEther(pending)} MON — collect it with panal_withdraw`
-          : null,
+        enEscrow.length ? 'Waiting in the escrow — collect it with panal_withdraw:' : null,
+        ...enEscrow,
       ]
         .filter(Boolean)
         .join('\n');
@@ -904,9 +961,9 @@ const WRITE_TOOLS: Tool[] = [
   {
     name: 'panal_withdraw',
     description:
-      'Collect what the escrow owes this wallet — refunds from cancelled jobs. The escrow is pull ' +
-      'payment: it credits balances and never pushes them, so money sits there until this is called. ' +
-      'Call panal_wallet first to see whether there is anything to collect.',
+      'Collect what the escrow owes this wallet — refunds from cancelled jobs — in EVERY currency it ' +
+      'holds, one transaction each. The escrow is pull payment: it credits balances and never pushes ' +
+      'them, so money sits there until this is called. Call panal_wallet first to see what is waiting.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -921,10 +978,36 @@ const WRITE_TOOLS: Tool[] = [
         return 'I will not move funds without confirmed_by_user: true.';
       }
       try {
-        const pending = await panal.getPendingWithdrawal(account!.address);
-        if (pending === 0n) return 'The escrow owes this wallet nothing: there is nothing to collect.';
-        const hash = await panal.withdraw();
-        return `Collected ${formatEther(pending)} MON from the escrow.\n  tx: ${EXPLORER}/tx/${hash}`;
+        // Se retira MONEDA A MONEDA. El escrow lleva un saldo por cada una y
+        // `withdraw` solo vacía la que se le pide; preguntando únicamente por
+        // la nativa, un reembolso en $PANAL quedaba invisible y esta misma
+        // herramienta contestaba que no había nada que cobrar. El dinero seguía
+        // en el contrato, pero desde aquí no había forma de sacarlo.
+        const monedas = monedasConocidas();
+        const pendientes: Array<{ moneda: Address; importe: bigint }> = [];
+        for (const moneda of monedas) {
+          const importe = await panal.getPendingWithdrawal(account!.address, moneda);
+          if (importe > 0n) pendientes.push({ moneda, importe });
+        }
+        if (!pendientes.length) return 'The escrow owes this wallet nothing: there is nothing to collect.';
+
+        // Cada moneda es una transacción aparte, y si una falla se sigue con
+        // las demás: quedarse sin cobrar el $PANAL porque el MON se quedó sin
+        // gas es perder dos veces.
+        const lineas: string[] = [];
+        for (const { moneda, importe } of pendientes) {
+          const sym = symbolOf(moneda);
+          try {
+            const hash = await panal.withdraw(moneda);
+            lineas.push(`Collected ${formatEther(importe)} ${sym} from the escrow.\n  tx: ${EXPLORER}/tx/${hash}`);
+          } catch (err) {
+            lineas.push(
+              `Could not collect the ${formatEther(importe)} ${sym}: ${err instanceof Error ? err.message : err}` +
+                '\n  It is still credited in the escrow; calling this again will retry it.',
+            );
+          }
+        }
+        return lineas.join('\n');
       } catch (err) {
         return `Could not withdraw: ${err instanceof Error ? err.message : err}`;
       }

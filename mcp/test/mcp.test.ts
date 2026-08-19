@@ -225,7 +225,48 @@ async function main(): Promise<void> {
     const reenvio = await mcp.callTool('panal_send_brief', { task_id: 0, brief: 'lo que sea' });
     check('reenviar el encargo también está cerrado', reenvio.includes('READ-ONLY'), reenvio.slice(0, 60));
 
-    console.log('\n── 6. Disciplina de stdio ──');
+    console.log('\n── 6. El informe de la wallet mira TODAS las monedas ──');
+    // La regresión que motiva esto: `panal_wallet` leía solo el saldo nativo y
+    // debajo listaba los topes de MON y de $PANAL. Quien lo leía daba por
+    // comprobado un saldo que nadie había mirado, y contrataba en $PANAL sin
+    // tener con qué pagar.
+    //
+    // La clave es la primera de anvil, pública y sin fondos: aquí solo sirve
+    // para tener una dirección que consultar. `panal_wallet` no firma nada.
+    const conWallet = McpHarness.start({
+      MCP_ENABLE_WRITES: 'true',
+      MCP_PRIVATE_KEY: '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d',
+    });
+    try {
+      await conWallet.request('initialize', { protocolVersion: '2025-06-18', capabilities: {} });
+      const informe = await conWallet.callTool('panal_wallet');
+      const saldos = informe
+        .slice(informe.indexOf('Balance:'), informe.indexOf('Caps and budgets'))
+        .split('\n')
+        .filter((l) => l.startsWith('  '));
+      const topes = informe
+        .slice(informe.indexOf('Caps and budgets'))
+        .split('\n')
+        .filter((l) => l.startsWith('  ') && l.includes('per job'));
+
+      check('el informe trae el saldo en MON', saldos.some((l) => l.trim().startsWith('MON:')), saldos.join(' | '));
+      check('y también el saldo en $PANAL', saldos.some((l) => l.trim().startsWith('$PANAL:')), saldos.join(' | '));
+      // Estructural a propósito: si mañana se acepta una tercera moneda, este
+      // test falla hasta que su saldo se lea también. Es justo lo que se quiere.
+      check(
+        'hay un saldo por cada moneda con presupuesto',
+        saldos.length === topes.length && topes.length > 0,
+        `${saldos.length} saldos vs ${topes.length} presupuestos`,
+      );
+
+      // Cobrar sin que nadie lo haya pedido no se hace, ni con la wallet puesta.
+      const sinPermiso = await conWallet.callTool('panal_withdraw', {});
+      check('no se retira sin confirmación explícita', sinPermiso.includes('confirmed_by_user'), sinPermiso.slice(0, 60));
+    } finally {
+      conWallet.stop();
+    }
+
+    console.log('\n── 7. Disciplina de stdio ──');
     check(
       'stdout lleva SOLO protocolo',
       mcp.stdoutGarbage.length === 0,
