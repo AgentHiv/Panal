@@ -33,6 +33,11 @@
  * on-chain, no contra algo que venga en el texto. Así un agente no puede
  * mandar a su cliente a un tercero. `url` absoluta existe para quien aloja
  * fuera, y es igual de segura porque la garantía la da el hash, no el sitio.
+ *
+ * La segunda mitad del archivo hace lo mismo en la otra dirección: los
+ * adjuntos que el CLIENTE manda con su encargo —una foto, un PDF que hay que
+ * revisar— anunciados dentro del brief con `[panal-attach/1]`, para que el
+ * hash de la tarea los cubra desde el momento del pago.
  */
 
 import { keccak256 } from 'viem';
@@ -45,16 +50,27 @@ export const FILES_BLOCK = '[panal-files/1]';
 /** Tope por defecto de una descarga: 25 MB. */
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
-/** Un archivo anunciado en la entrega. */
-export interface DeliveredFile {
+/**
+ * Lo que hace falta para reconocer unos bytes sin fiarse de quien los sirve.
+ *
+ * Es lo único que comparten las dos direcciones —el archivo que el agente
+ * entrega y la foto que el cliente adjunta—, y por eso `verifyFileBytes` pide
+ * esto y no un `DeliveredFile`: la comprobación es la misma en los dos
+ * sentidos, y el sitio de descarga no pinta nada en ella.
+ */
+export interface HashedFile {
   /** Nombre del archivo, sin rutas. */
   name: string;
   /** Tamaño en bytes. Se comprueba junto al hash. */
   size: number;
-  /** Tipo MIME, si el agente lo declaró. */
+  /** Tipo MIME, si quien lo mandó lo declaró. */
   mime?: string;
   /** keccak256 de los bytes. Es la garantía; todo lo demás es logística. */
   hash: Hex;
+}
+
+/** Un archivo anunciado en la entrega. */
+export interface DeliveredFile extends HashedFile {
   /** Ruta relativa, a resolver contra el botUrl registrado del agente. */
   path?: string;
   /** URL absoluta, para quien aloja fuera de su propio servidor. */
@@ -118,6 +134,54 @@ export function appendFilesManifest(text: string, files: DeliveredFile[]): strin
 }
 
 /**
+ * Lee los bloques `clave: valor` que van bajo una cabecera dada.
+ *
+ * Lo comparten el manifiesto de entrega y el de adjuntos: los dos se anclan en
+ * la cadena y los dos tienen que leerse igual en todas partes. Un bloque
+ * termina en la primera línea vacía o que ya no es `clave: valor`, y eso basta
+ * para que dos manifiestos pegados no se contaminen: ninguna cabecera lleva
+ * dos puntos.
+ */
+function parseBloques(text: string, tag: string): Record<string, string>[] {
+  const out: Record<string, string>[] = [];
+  const lineas = text.split(/\r?\n/);
+
+  for (let i = 0; i < lineas.length; i++) {
+    if (lineas[i]!.trim() !== tag) continue;
+
+    const campos: Record<string, string> = {};
+    for (let j = i + 1; j < lineas.length; j++) {
+      const linea = lineas[j]!;
+      if (!linea.trim()) break;
+      const sep = linea.indexOf(':');
+      if (sep === -1) break;
+      campos[linea.slice(0, sep).trim().toLowerCase()] = linea.slice(sep + 1).trim();
+    }
+    out.push(campos);
+  }
+  return out;
+}
+
+/** Lo común a los dos manifiestos: un nombre limpio, un tamaño y un hash. */
+function parseComun(campos: Record<string, string>): HashedFile | null {
+  const { name, size, hash, mime } = campos;
+  if (!name || !hash || !/^0x[0-9a-fA-F]{64}$/.test(hash)) return null;
+  const bytes = Number(size);
+  if (!Number.isInteger(bytes) || bytes < 0) return null;
+  try {
+    return {
+      name: sanitizeFileName(name),
+      size: bytes,
+      hash: hash.toLowerCase() as Hex,
+      ...(mime ? { mime } : {}),
+    };
+  } catch {
+    // Nombre inservible: se descarta ese archivo, no el manifiesto entero.
+    return null;
+  }
+}
+
+/**
  * Lee los archivos anunciados en el texto de una entrega.
  *
  * Nunca lanza por un bloque mal formado: devuelve los que sí se entienden. Un
@@ -126,38 +190,15 @@ export function appendFilesManifest(text: string, files: DeliveredFile[]): strin
  */
 export function parseFilesManifest(text: string): DeliveredFile[] {
   const out: DeliveredFile[] = [];
-  const lineas = text.split(/\r?\n/);
 
-  for (let i = 0; i < lineas.length; i++) {
-    if (lineas[i]!.trim() !== FILES_BLOCK) continue;
-
-    const campos: Record<string, string> = {};
-    for (let j = i + 1; j < lineas.length; j++) {
-      const linea = lineas[j]!;
-      if (!linea.trim() || linea.trim() === FILES_BLOCK) break;
-      const sep = linea.indexOf(':');
-      if (sep === -1) break;
-      campos[linea.slice(0, sep).trim().toLowerCase()] = linea.slice(sep + 1).trim();
-    }
-
-    const { name, size, hash, mime, path, url } = campos;
-    if (!name || !hash || !/^0x[0-9a-fA-F]{64}$/.test(hash)) continue;
-    const bytes = Number(size);
-    if (!Number.isInteger(bytes) || bytes < 0) continue;
+  for (const campos of parseBloques(text, FILES_BLOCK)) {
+    const comun = parseComun(campos);
+    if (!comun) continue;
+    // Sin `path` ni `url` el archivo no se puede bajar de ningún sitio, y
+    // anunciarlo sólo serviría para prometer algo que no se puede cumplir.
+    const { path, url } = campos;
     if (!path && !url) continue;
-
-    try {
-      out.push({
-        name: sanitizeFileName(name),
-        size: bytes,
-        hash: hash.toLowerCase() as Hex,
-        ...(mime ? { mime } : {}),
-        ...(path ? { path } : {}),
-        ...(url ? { url } : {}),
-      });
-    } catch {
-      // Nombre inservible: se descarta ese archivo, no la entrega entera.
-    }
+    out.push({ ...comun, ...(path ? { path } : {}), ...(url ? { url } : {}) });
   }
   return out;
 }
@@ -174,7 +215,7 @@ export function stripFilesManifest(text: string): string {
   let dentro = false;
 
   for (const linea of lineas) {
-    if (linea.trim() === FILES_BLOCK) {
+    if (linea.trim() === FILES_BLOCK || linea.trim() === ATTACH_BLOCK) {
       dentro = true;
       continue;
     }
@@ -189,7 +230,7 @@ export function stripFilesManifest(text: string): string {
 }
 
 /** Comprueba unos bytes contra lo que el manifiesto prometía. Lanza si no cuadra. */
-export function verifyFileBytes(file: DeliveredFile, bytes: Uint8Array): void {
+export function verifyFileBytes(file: HashedFile, bytes: Uint8Array): void {
   if (bytes.byteLength !== file.size) {
     throw new FileVerificationError(
       `"${file.name}" mide ${bytes.byteLength} bytes y la entrega anunciaba ${file.size}.`,
@@ -284,4 +325,119 @@ export async function downloadDeliveredFile(
 
   verifyFileBytes(file, bytes);
   return bytes;
+}
+
+// ---------------------------------------------------------------------------
+// La otra dirección: lo que el CLIENTE adjunta a su encargo.
+//
+// El escrow ancla `keccak256(brief)` al contratar, y el agente rechaza el
+// encargo si el texto que le llega no da exactamente ese hash. Eso deja el
+// brief cerrado, que es justo lo que se quiere… y también significa que una
+// foto no puede viajar dentro: no cabe en 32.000 caracteres, y meterla en
+// base64 cambiaría el texto que ya se hasheó.
+//
+// Se hace lo mismo que en la entrega, en espejo. El navegador calcula el hash
+// de la foto ANTES de pagar y lo anuncia dentro del brief; los bytes suben
+// después, por su cuenta. La cadena de custodia queda cerrada igual:
+//
+//     taskHash on-chain → texto del brief → hash del adjunto → bytes
+//
+// Y hay una propiedad que sale gratis y es la que de verdad importa para el
+// agente: puede RECHAZAR cualquier byte que no estuviera anunciado. Nadie le
+// deja archivos en el disco; sólo entran los que el cliente pagó por anunciar.
+//
+// No lleva `path` ni `url`, y no es un olvido: el cliente es un navegador y no
+// aloja nada. Por eso es un bloque aparte y no un `[panal-files/1]` sin ruta —
+// un manifiesto de entrega sin sitio de descarga es una promesa rota, y ahí
+// conviene seguir rechazándolo.
+// ---------------------------------------------------------------------------
+
+/** Cabecera del bloque de adjuntos. Versionada: se ancla en la cadena. */
+export const ATTACH_BLOCK = '[panal-attach/1]';
+
+/** Un archivo que el cliente adjunta al encargo. */
+export type AttachedFile = HashedFile;
+
+/**
+ * Describe unos bytes para anunciarlos en el brief.
+ *
+ * El nombre se limpia aquí y no al recibirlo: lo que se anuncia tiene que ser
+ * lo mismo que luego se busca, y un nombre saneado a medias haría que el
+ * agente no reconociera su propio adjunto.
+ */
+export function attachmentFrom(name: string, bytes: Uint8Array, mime?: string): AttachedFile {
+  return {
+    name: sanitizeFileName(name),
+    size: bytes.byteLength,
+    hash: keccak256(bytes),
+    ...(mime ? { mime } : {}),
+  };
+}
+
+/**
+ * Construye el bloque de adjuntos.
+ *
+ * Orden de claves fijo y `\n`, por lo mismo que en la entrega: este texto entra
+ * en el brief, y el brief se hashea. Un espacio de más y el agente rechaza el
+ * encargo con el pago ya bloqueado.
+ */
+export function buildAttachmentsManifest(files: AttachedFile[]): string {
+  return files
+    .map((f) => {
+      const lineas = [ATTACH_BLOCK, `name: ${sanitizeFileName(f.name)}`, `size: ${f.size}`];
+      if (f.mime) lineas.push(`mime: ${f.mime}`);
+      lineas.push(`hash: ${f.hash}`);
+      return lineas.join('\n');
+    })
+    .join('\n\n');
+}
+
+/** El encargo con los adjuntos anunciados al final. Esto es lo que se hashea. */
+export function appendAttachmentsManifest(brief: string, files: AttachedFile[]): string {
+  if (files.length === 0) return brief;
+  return `${brief.trimEnd()}\n\n${buildAttachmentsManifest(files)}\n`;
+}
+
+/** Lee los adjuntos anunciados en un encargo. No lanza por un bloque roto. */
+export function parseAttachmentsManifest(brief: string): AttachedFile[] {
+  const out: AttachedFile[] = [];
+  for (const campos of parseBloques(brief, ATTACH_BLOCK)) {
+    const comun = parseComun(campos);
+    if (comun) out.push(comun);
+  }
+  return out;
+}
+
+/**
+ * ¿Estos bytes son alguno de los adjuntos anunciados?
+ *
+ * Es la guarda del agente al recibir una subida: se busca por HASH, no por
+ * nombre, porque el nombre lo elige quien sube y el hash no. Devuelve el
+ * adjunto tal y como se anunció —con su nombre ya limpio— o `null`, y un
+ * `null` significa exactamente una cosa: esos bytes no se pagaron, no se
+ * escriben.
+ *
+ * `name` sólo desempata cuando el mismo archivo se adjuntó dos veces con
+ * nombres distintos; los bytes son los mismos, así que cualquiera valdría,
+ * pero devolver el que pidieron evita guardarlo con el nombre del otro.
+ */
+export function matchAttachment(
+  files: AttachedFile[],
+  bytes: Uint8Array,
+  name?: string,
+): AttachedFile | null {
+  const real = keccak256(bytes).toLowerCase();
+  const iguales = files.filter((f) => f.hash.toLowerCase() === real && f.size === bytes.byteLength);
+  if (iguales.length === 0) return null;
+  if (name) {
+    let limpio: string | null = null;
+    try {
+      limpio = sanitizeFileName(name);
+    } catch {
+      limpio = null;
+    }
+    const exacto = limpio ? iguales.find((f) => f.name === limpio) : undefined;
+    if (exacto) return exacto;
+  }
+  return iguales[0]!;
 }
