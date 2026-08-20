@@ -16,6 +16,25 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    /**
+     * Firma v1 ADEMAS de v2.
+     *
+     * Con `minSdk >= 24` el plugin de Gradle desactiva la v1 por su cuenta: da
+     * por hecho que cualquier telefono que llegue a instalar esto entiende la
+     * v2, y sobre el papel es correcto. En la practica es una causa conocida de
+     * "app no instalada, error en el paquete" en fabricantes con su propio
+     * verificador, y ahi el mensaje no dice nada de firmas: parece un archivo
+     * corrupto.
+     *
+     * Activarla cuesta unos kilobytes y quita de en medio una clase entera de
+     * fallos que no se pueden diagnosticar desde fuera del telefono.
+     */
+    signingConfigs {
+        debug {
+            enableV1Signing = true
+            enableV2Signing = true
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
