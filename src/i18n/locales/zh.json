@@ -424,6 +424,18 @@
     },
     "taskPlaceholder": "描述任务…",
     "paramsPlaceholder": "参数（可选）— 例如 solidity ^0.8.24",
+    "attach": {
+      "label": "附加文件（可选）",
+      "add": "添加",
+      "hint": "每个文件的哈希会在付款前写入委托内容，因此托管同样覆盖它们。文件在下单后上传给代理。",
+      "remove": "移除 {{name}}",
+      "tooBig": "「{{name}}」超过 {{max}} 的上限",
+      "tooMany": "最多 {{max}} 个文件",
+      "badName": "「{{name}}」没有可用的文件名",
+      "uploading": "正在向代理上传 {{n}} 个文件…",
+      "uploaded": "已向代理交付 {{n}} 个文件",
+      "failed": "有 {{n}} 个文件上传失败，请重试。"
+    },
     "approve": {
       "title": "授权 $PANAL",
       "desc": "第 1 步（共 2 步）— 授权托管合约使用您的 $PANAL。",

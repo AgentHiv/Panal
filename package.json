@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "check:i18n": "node scripts/check-i18n.mjs",
     "test:brief-retry": "tsx scripts/test-brief-retry.ts",
+    "test:adjuntos": "tsx scripts/test-adjuntos.ts",
     "preview": "vite preview"
   },
   "dependencies": {

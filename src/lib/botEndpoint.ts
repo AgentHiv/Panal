@@ -87,6 +87,22 @@ export function buildBriefUrl(botUrl: string, taskId: bigint): string {
 }
 
 /**
+ * URL de subida de un adjunto (POST /upload/:taskId).
+ *
+ * Va DESPUÉS del brief, nunca antes: el agente sólo acepta bytes que su
+ * encargo anuncie, y hasta tener el encargo no sabe cuáles son.
+ *
+ * Se firma con el MISMO `Panal brief #<id>` que abrió el encargo, y eso no es
+ * un atajo: lo que decide qué entra es el manifiesto que la cadena ya cubre,
+ * no la firma. Pedir una firma por archivo serían tres popups más a alguien
+ * que ya pagó, y en el navegador de una wallet cada popup es una ocasión de
+ * perder el encargo.
+ */
+export function buildUploadUrl(botUrl: string, taskId: bigint): string {
+  return `${botUrl.replace(/\/+$/, '')}/upload/${taskId.toString()}`;
+}
+
+/**
  * Manda el brief reintentando mientras el agente diga «todavia no».
  *
  * POR QUE. El encargo se envia justo despues de minar `createTask`, y el

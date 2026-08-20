@@ -877,9 +877,15 @@ const server = createServer((req, res) => {
       res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
       // Las credenciales van en cabeceras propias, y esas NO son simples: sin
       // declararlas aquí el navegador bloquea la descarga en el preflight.
+      //
+      // Cada cabecera nueva hay que añadirla A ESTA LISTA. Se olvidó con
+      // `x-panal-filename` al añadir los adjuntos, y el efecto es de los que
+      // no se ven leyendo el código: el servidor está bien, la ruta está bien,
+      // y el navegador se niega a hacer la petición sin dejar rastro en el log
+      // del agente.
       res.setHeader(
         'access-control-allow-headers',
-        'content-type, x-panal-address, x-panal-signature, x-panal-expira, x-payment, x-payment-payer',
+        'content-type, x-panal-address, x-panal-signature, x-panal-expira, x-panal-filename, x-payment, x-payment-payer',
       );
       res.setHeader('access-control-max-age', '86400');
       res.writeHead(204).end();
@@ -1254,7 +1260,17 @@ const server = createServer((req, res) => {
       // La guarda. Se busca por hash, así que el nombre que venga en la
       // cabecera no decide nada: sólo desempata si el mismo archivo se
       // adjuntó dos veces.
-      const nombre = typeof req.headers['x-panal-filename'] === 'string' ? req.headers['x-panal-filename'] : undefined;
+      // El nombre viene percent-encoded: una cabecera HTTP no admite
+      // caracteres fuera de latin-1, y «recibo ñ.png» es un nombre normal.
+      let nombre: string | undefined;
+      const cabecera = req.headers['x-panal-filename'];
+      if (typeof cabecera === 'string') {
+        try {
+          nombre = decodeURIComponent(cabecera);
+        } catch {
+          nombre = cabecera;
+        }
+      }
       const anunciado = matchAttachment(anunciados, bytes, nombre);
       if (!anunciado) {
         json(res, 403, {

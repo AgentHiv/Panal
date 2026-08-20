@@ -419,6 +419,15 @@ async function main(): Promise<void> {
       const subirA = (taskId: number, init: RequestInit = {}) =>
         fetch(`http://127.0.0.1:${port}/upload/${taskId}`, { method: 'POST', body: 'xx', ...init });
 
+      // 0. El preflight. Esto no es ceremonia: el dashboard vive en otro
+      //    dominio y manda el nombre en `x-panal-filename`, que no es una
+      //    cabecera simple. Si no está en la lista, el navegador se niega a
+      //    hacer la petición y el agente no ve nada en su log — la función
+      //    entera falla en silencio. Se olvidó al escribirla.
+      const preflight = await fetch(`http://127.0.0.1:${port}/upload/1`, { method: 'OPTIONS' });
+      const permitidas = preflight.headers.get('access-control-allow-headers') ?? '';
+      check('el preflight permite la cabecera del nombre', permitidas.includes('x-panal-filename'), permitidas);
+
       // 1. Sin encargo guardado no se acepta nada: sin él, el agente no sabe
       //    qué bytes tiene derecho a recibir.
       const sinBrief = await subirA(4242);
