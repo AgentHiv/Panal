@@ -105,7 +105,17 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
               /user rejected|user closed|modal closed|connection request reset/i.test(err.message ?? '');
             setWcOpen(false);
             setWcUri(null);
-            if (!cancelado) toast.error(t('wallet.connectError'));
+            if (!cancelado) {
+              // El motivo va EN EL AVISO, no solo en la consola.
+              //
+              // "No se pudo conectar, inténtalo de nuevo" es lo mismo para un
+              // projectId mal puesto, un relé caído y una wallet que no
+              // responde, y quien lo lee no tiene forma de saber cuál es ni de
+              // contárselo a nadie. Se recorta porque algunos errores de
+              // WalletConnect traen un volcado entero.
+              const motivo = (err.message ?? '').split('\n')[0]?.slice(0, 160);
+              toast.error(t('wallet.connectError'), motivo ? { description: motivo } : undefined);
+            }
           },
         },
       );
