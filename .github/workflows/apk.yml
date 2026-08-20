@@ -20,6 +20,9 @@ on:
   push:
     tags: ['apk-v*']
 
+permissions:
+  contents: write
+
 jobs:
   android:
     name: Compilar el APK
@@ -75,12 +78,35 @@ jobs:
           cp android/app/build/outputs/apk/debug/app-debug.apk \
              "panal-${GITHUB_REF_NAME//\//-}.apk"
 
+      # El artefacto se descarga SIEMPRE dentro de un .zip; eso lo decide
+      # GitHub y no se puede cambiar. En un teléfono es un problema real: al
+      # tocarlo, Android abre el zip con lo que tenga asociado —un editor de
+      # código, por ejemplo— y no hay forma de instalar nada. Sirve desde un
+      # ordenador, donde descomprimir es trivial.
       - uses: actions/upload-artifact@v4
         with:
           name: apk
           path: panal-*.apk
           # Suficiente para repartirlo y probarlo; no es un almacén de releases.
           retention-days: 30
+
+      # Para el teléfono, una RELEASE. Sus adjuntos se descargan tal cual, así
+      # que tocar el enlace en Android baja un .apk de verdad y el sistema
+      # ofrece instalarlo. Es la diferencia entre repartir la app y repartir un
+      # zip que nadie sabe abrir.
+      #
+      # Solo al publicar una etiqueta: una ejecución a mano no crea releases,
+      # que si no la lista se llena de versiones que no son versiones.
+      - name: Publicar la release con el APK
+        if: startsWith(github.ref, 'refs/tags/apk-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "panal-${GITHUB_REF_NAME}.apk" \
+            --title "Panal Android $GITHUB_REF_NAME" \
+            --notes "APK firmado en depuración. En el móvil: descárgalo y ábrelo; Android pedirá permiso para instalar de orígenes desconocidos.
+
+          La app carga https://panal.lat, así que se actualiza sola con la web y no hace falta reinstalar salvo que cambie el envoltorio."
 
       # Cuando toque publicar en la Play Store, aquí va la firma de release.
       # Necesita un keystore propio, guardado como secreto del repositorio:
