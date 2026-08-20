@@ -14,6 +14,7 @@ import {
   buildUploadUrl,
   enviarBriefConReintento,
   extractBotUrl,
+  leerCapacidades,
 } from '@/lib/botEndpoint';
 import {
   MAX_ADJUNTOS,
@@ -97,6 +98,24 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   );
   const inputArchivos = useRef<HTMLInputElement>(null);
   /**
+   * ¿Este agente acepta archivos?
+   *
+   * Se pregunta a su tarjeta antes de ofrecer el clip. Un agente con la
+   * plantilla anterior aceptaría el encargo igual —el manifiesto va dentro del
+   * brief, así que el hash cuadra— y trabajaría sin la foto: entrega, ancla y
+   * cobra, y el cliente no ve un solo error por ninguna parte.
+   */
+  const [aceptaAdjuntos, setAceptaAdjuntos] = useState<'comprobando' | 'si' | 'no'>('comprobando');
+  const [topeAdjunto, setTopeAdjunto] = useState(MAX_ADJUNTO_BYTES);
+  /**
+   * El endpoint del agente, leído al abrir.
+   *
+   * Se guarda para no volver a leerlo justo después de pagar: esa lectura va
+   * en el camino crítico del envío del brief, y si el RPC falla ahí el
+   * encargo no llega con el pago ya bloqueado.
+   */
+  const botUrlRef = useRef<string | null>(null);
+  /**
    * El encargo TAL Y COMO se hasheó al contratar.
    *
    * `componerBrief()` lo compone a partir del estado, y el estado puede haber
@@ -141,6 +160,37 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     reverted: approveReverted,
   } = useTxReceipt(approveTxHash);
 
+  // Se pregunta una vez, al abrir. El diálogo se desmonta al cerrarse, así que
+  // volver a entrar vuelve a preguntar y un agente recién actualizado se nota
+  // sin recargar la página.
+  useEffect(() => {
+    if (!isOnchainAgent(agent)) return;
+    let vigente = true;
+    void (async () => {
+      try {
+        const meta = (await publicClient.readContract({
+          address: PANAL_REGISTRY_V2_ADDRESS,
+          abi: panalRegistryV2Abi,
+          functionName: 'getAgent',
+          args: [agent.workerAddress],
+        })) as { metadataURI?: string };
+        const botUrl = extractBotUrl(meta.metadataURI);
+        if (vigente) botUrlRef.current = botUrl;
+        // Sin endpoint publicado no hay a quién subirle nada.
+        const caps = botUrl ? await leerCapacidades(botUrl) : { adjuntos: false };
+        if (!vigente) return;
+        setAceptaAdjuntos(caps.adjuntos ? 'si' : 'no');
+        if (caps.maxAdjuntoBytes) setTopeAdjunto(Math.min(caps.maxAdjuntoBytes, MAX_ADJUNTO_BYTES));
+      } catch {
+        // Falla cerrado, igual que `leerCapacidades`.
+        if (vigente) setAceptaAdjuntos('no');
+      }
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [agent]);
+
   /**
    * El encargo, tal y como se va a hashear. Se compone AQUÍ y en ningún otro
    * sitio.
@@ -169,8 +219,10 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
       if (!lista || lista.length === 0) return;
       const nuevos: Adjunto[] = [];
       for (const file of Array.from(lista)) {
-        if (file.size > MAX_ADJUNTO_BYTES) {
-          toast.error(t('hire.attach.tooBig', { name: file.name, max: tamanoLegible(MAX_ADJUNTO_BYTES) }));
+        // El tope del AGENTE, que puede ser menor que el nuestro. Rechazarlo
+        // aquí evita que se descubra subiendo, con el pago ya bloqueado.
+        if (file.size > topeAdjunto) {
+          toast.error(t('hire.attach.tooBig', { name: file.name, max: tamanoLegible(topeAdjunto) }));
           continue;
         }
         try {
@@ -191,7 +243,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
         return todos;
       });
     },
-    [t],
+    [t, topeAdjunto],
   );
 
   const hireOnchain = async () => {
@@ -369,13 +421,20 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
         return;
       }
       // URL del bot del metadataURI on-chain del agente (token "bot:<url>").
-      const meta = (await publicClient.readContract({
-        address: PANAL_REGISTRY_V2_ADDRESS,
-        abi: panalRegistryV2Abi,
-        functionName: 'getAgent',
-        args: [agent.workerAddress],
-      })) as { metadataURI?: string };
-      const botUrl = extractBotUrl(meta.metadataURI);
+      // Normalmente ya se leyó al abrir el diálogo; se relee sólo si aquella
+      // lectura no llegó a completarse.
+      const botUrl =
+        botUrlRef.current ??
+        extractBotUrl(
+          (
+            (await publicClient.readContract({
+              address: PANAL_REGISTRY_V2_ADDRESS,
+              abi: panalRegistryV2Abi,
+              functionName: 'getAgent',
+              args: [agent.workerAddress],
+            })) as { metadataURI?: string }
+          ).metadataURI,
+        );
       if (!botUrl) {
         console.warn('[panal] el agente no publica "bot:<url>" en su metadata; no se pudo enviar el brief');
         setBriefEstado('fallo');
@@ -603,57 +662,65 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                   {/* Adjuntos. El hash de cada uno entra en el encargo ANTES de
                       pagar, así que el escrow los cubre igual que al texto: si
                       alguien cambiara el archivo por el camino, el agente lo
-                      vería. Los bytes se suben después de contratar. */}
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[0.8125rem] font-medium text-ink-2">{t('hire.attach.label')}</span>
-                      <button
-                        type="button"
-                        onClick={() => inputArchivos.current?.click()}
-                        disabled={adjuntos.length >= MAX_ADJUNTOS}
-                        className="flex items-center gap-1.5 rounded-full bg-sand px-3 py-1.5 text-[0.8125rem] text-ink-2 transition-colors hover:bg-honey-soft hover:text-honey-deep disabled:opacity-40"
-                      >
-                        <Paperclip size={13} aria-hidden />
-                        {t('hire.attach.add')}
-                      </button>
-                    </div>
-                    <input
-                      ref={inputArchivos}
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => {
-                        void anadirArchivos(e.target.files);
-                        // Se vacía para que volver a elegir el MISMO archivo
-                        // dispare el change otra vez; si no, quitarlo y
-                        // reañadirlo no funcionaría.
-                        e.target.value = '';
-                      }}
-                    />
-                    {adjuntos.length > 0 && (
-                      <ul className="flex flex-col gap-1.5">
-                        {adjuntos.map((a) => (
-                          <li
-                            key={a.hash}
-                            className="flex items-center gap-2 rounded-lg border border-line bg-cream px-3 py-2"
-                          >
-                            <Paperclip size={13} className="shrink-0 text-ink-3" aria-hidden />
-                            <span className="flex-1 truncate text-[0.8125rem] text-ink">{a.name}</span>
-                            <span className="shrink-0 font-mono text-[11px] text-ink-3">{tamanoLegible(a.size)}</span>
-                            <button
-                              type="button"
-                              onClick={() => setAdjuntos((prev) => prev.filter((x) => x.hash !== a.hash))}
-                              aria-label={t('hire.attach.remove', { name: a.name })}
-                              className="shrink-0 rounded-md p-1 text-ink-3 transition-colors hover:bg-sand hover:text-ink"
+                      vería. Los bytes se suben después de contratar.
+
+                      Sólo se enseña si el agente dice que sabe recibirlos. No
+                      se avisa cuando no: hoy la mayoría de los agentes
+                      registrados son anteriores a esto, y poner un cartel en
+                      cada uno sería ruido en casi todas las fichas. Quien no
+                      puede adjuntar sencillamente no ve la opción. */}
+                  {aceptaAdjuntos === 'si' && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[0.8125rem] font-medium text-ink-2">{t('hire.attach.label')}</span>
+                        <button
+                          type="button"
+                          onClick={() => inputArchivos.current?.click()}
+                          disabled={adjuntos.length >= MAX_ADJUNTOS}
+                          className="flex items-center gap-1.5 rounded-full bg-sand px-3 py-1.5 text-[0.8125rem] text-ink-2 transition-colors hover:bg-honey-soft hover:text-honey-deep disabled:opacity-40"
+                        >
+                          <Paperclip size={13} aria-hidden />
+                          {t('hire.attach.add')}
+                        </button>
+                      </div>
+                      <input
+                        ref={inputArchivos}
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          void anadirArchivos(e.target.files);
+                          // Se vacía para que volver a elegir el MISMO archivo
+                          // dispare el change otra vez; si no, quitarlo y
+                          // reañadirlo no funcionaría.
+                          e.target.value = '';
+                        }}
+                      />
+                      {adjuntos.length > 0 && (
+                        <ul className="flex flex-col gap-1.5">
+                          {adjuntos.map((a) => (
+                            <li
+                              key={a.hash}
+                              className="flex items-center gap-2 rounded-lg border border-line bg-cream px-3 py-2"
                             >
-                              <X size={13} aria-hidden />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
+                              <Paperclip size={13} className="shrink-0 text-ink-3" aria-hidden />
+                              <span className="flex-1 truncate text-[0.8125rem] text-ink">{a.name}</span>
+                              <span className="shrink-0 font-mono text-[11px] text-ink-3">{tamanoLegible(a.size)}</span>
+                              <button
+                                type="button"
+                                onClick={() => setAdjuntos((prev) => prev.filter((x) => x.hash !== a.hash))}
+                                aria-label={t('hire.attach.remove', { name: a.name })}
+                                className="shrink-0 rounded-md p-1 text-ink-3 transition-colors hover:bg-sand hover:text-ink"
+                              >
+                                <X size={13} aria-hidden />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
                     )}
                     <span className="text-[0.6875rem] text-ink-3">{t('hire.attach.hint')}</span>
                   </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => setStep(1)}
