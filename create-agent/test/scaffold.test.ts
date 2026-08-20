@@ -111,6 +111,7 @@ async function main(): Promise<void> {
   const CLAVES = [
     'AGENT_PRIVATE_KEY=',
     'PORT=',
+    'LLM_PROVIDER=',
     'LLM_API_KEY=',
     'RPC_URL=',
     'DATA_DIR=',
@@ -408,6 +409,39 @@ async function main(): Promise<void> {
         travesia.status !== 200 && !cuerpoTravesia.includes('AGENT_PRIVATE_KEY'),
         `HTTP ${travesia.status}`,
       );
+
+      // ── Adjuntos del cliente ────────────────────────────────────────────
+      //
+      // Las tres guardas que se pueden probar sin cadena, y son justo las que
+      // se cruzan antes de tocar el disco. La cuarta —que unos bytes no
+      // anunciados se rechazan— vive donde se decide, en
+      // sdk/test/attachments.test.ts.
+      const subirA = (taskId: number, init: RequestInit = {}) =>
+        fetch(`http://127.0.0.1:${port}/upload/${taskId}`, { method: 'POST', body: 'xx', ...init });
+
+      // 1. Sin encargo guardado no se acepta nada: sin él, el agente no sabe
+      //    qué bytes tiene derecho a recibir.
+      const sinBrief = await subirA(4242);
+      check('una subida sin encargo previo se rechaza', sinBrief.status === 409, `HTTP ${sinBrief.status}`);
+      check('y dice que mande antes el encargo', (await sinBrief.text()).includes('/brief/'));
+
+      // 2. Con encargo, pero uno que no anuncia adjuntos: no hay nada que subir.
+      const dataDir = join(dest, 'data');
+      mkdirSync(dataDir, { recursive: true });
+      writeFileSync(join(dataDir, 'brief-4243.txt'), 'Un encargo de texto y nada más.', 'utf8');
+      const sinAnuncio = await subirA(4243);
+      check('a un encargo sin adjuntos no se le cuela uno', sinAnuncio.status === 409, `HTTP ${sinAnuncio.status}`);
+
+      // 3. Con adjuntos anunciados, pero sin firma: corta antes del RPC.
+      const hashFalso = `0x${'ab'.repeat(32)}`;
+      writeFileSync(
+        join(dataDir, 'brief-4244.txt'),
+        `Léeme este recibo.\n\n[panal-attach/1]\nname: recibo.png\nsize: 2\nhash: ${hashFalso}\n`,
+        'utf8',
+      );
+      const subidaSinFirma = await subirA(4244);
+      check('una subida sin firma se rechaza', subidaSinFirma.status === 400, `HTTP ${subidaSinFirma.status}`);
+      check('y pide la firma del cliente', (await subidaSinFirma.text()).includes('signature'));
     } finally {
       // Se mata el GRUPO entero (el menos delante del pid), no solo el proceso:
       // si queda algo vivo con las tuberias abiertas, el paso de CI no termina.

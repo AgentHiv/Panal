@@ -25,6 +25,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  MAX_FILE_BYTES,
   appendFilesManifest,
   assertCanServe,
   buildQuote,
@@ -32,6 +33,8 @@ import {
   LoopDetected,
   MAINNET_ADDRESSES,
   monad,
+  matchAttachment,
+  parseAttachmentsManifest,
   parseEnvelope,
   parsePaymentHeader,
   permitNonce,
@@ -39,6 +42,7 @@ import {
   sanitizeFileName,
   TaskStatus,
   verifyAndSettle,
+  type AttachedFile,
   type CallEnvelope,
   type DeliveredFile,
   type PermitDomain,
@@ -47,7 +51,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { isAddress, keccak256, parseEther, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
 import { handleTask } from './agent.js';
-import type { TaskContext, TaskFile, TaskResult } from './agent.js';
+import type { AdjuntoRecibido, TaskContext, TaskFile, TaskResult } from './agent.js';
 import { arrancarVigilante } from './vigilante.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -193,6 +197,14 @@ mkdirSync(DATA_DIR, { recursive: true });
 const resultPath = (taskId: bigint) => join(DATA_DIR, `result-${taskId}.txt`);
 /** Carpeta de los archivos de una tarea. Una por tarea, para no mezclarlas. */
 const filesDir = (taskId: bigint) => join(DATA_DIR, 'files', taskId.toString());
+/**
+ * Carpeta de lo que MANDA el cliente, separada de lo que entrega el agente.
+ *
+ * Mezclarlas sería servir por `/files/:id/:name` un archivo que subió el
+ * cliente como si fuera parte de la entrega, con su hash anclado y todo. No lo
+ * es: son las dos direcciones del mismo mecanismo y no se tocan.
+ */
+const inboxDir = (taskId: bigint) => join(DATA_DIR, 'inbox', taskId.toString());
 
 function saveResult(taskId: bigint, text: string): void {
   writeFileSync(resultPath(taskId), text, 'utf8');
@@ -270,6 +282,76 @@ function normalizarSalida(salida: TaskResult): { text: string; files: TaskFile[]
   if (typeof salida === 'string') return { text: salida, files: [] };
   return { text: salida.text, files: salida.files ?? [] };
 }
+
+// ---------------------------------------------------------------------------
+// Adjuntos: lo que el cliente manda CON el encargo
+// ---------------------------------------------------------------------------
+//
+// El brief queda cerrado al contratar —el escrow ancla su keccak256 y más
+// abajo se rechaza cualquier texto que no lo dé—, así que una foto no puede
+// viajar dentro. Lo que viaja dentro es su HASH, anunciado en un bloque
+// `[panal-attach/1]`. Los bytes suben después, por `POST /upload/:taskId`.
+//
+// De ahí sale la única regla que hay que recordar aquí: SÓLO SE ESCRIBE LO QUE
+// EL ENCARGO ANUNCIÓ. Cualquier otro byte se rechaza sin llegar al disco. El
+// número de una tarea es público, y sin esa guarda tu agente sería un almacén
+// gratis para cualquiera que sepa contar.
+
+const adjuntoPath = (taskId: bigint, nombre: string) => join(inboxDir(taskId), nombre);
+
+/**
+ * Repasa qué adjuntos anunciados están ya en disco y cuáles faltan.
+ *
+ * El hash se comprueba AL LEER y no sólo al escribir. Entre las dos cosas hay
+ * un disco, a veces un reinicio y a veces un volumen que se vuelve a montar; y
+ * un trabajo hecho a partir de un archivo corrupto es peor que un trabajo sin
+ * hacer, porque se entrega y se ancla.
+ */
+function repasarAdjuntos(
+  taskId: bigint,
+  brief: string,
+): { recibidos: AdjuntoRecibido[]; faltan: AttachedFile[] } {
+  const recibidos: AdjuntoRecibido[] = [];
+  const faltan: AttachedFile[] = [];
+
+  for (const anunciado of parseAttachmentsManifest(brief)) {
+    let bytes: Buffer;
+    try {
+      bytes = readFileSync(adjuntoPath(taskId, anunciado.name));
+    } catch {
+      faltan.push(anunciado);
+      continue;
+    }
+    if (!matchAttachment([anunciado], bytes, anunciado.name)) {
+      console.error(`[panal] #${taskId} el adjunto "${anunciado.name}" en disco no da su hash: se pide de nuevo`);
+      faltan.push(anunciado);
+      continue;
+    }
+    recibidos.push({
+      name: anunciado.name,
+      ...(anunciado.mime ? { mime: anunciado.mime } : {}),
+      bytes: new Uint8Array(bytes),
+    });
+  }
+  return { recibidos, faltan };
+}
+
+/** Escribe un adjunto ya verificado. */
+function guardarAdjunto(taskId: bigint, nombre: string, bytes: Uint8Array): void {
+  mkdirSync(inboxDir(taskId), { recursive: true });
+  writeFileSync(adjuntoPath(taskId, nombre), bytes);
+}
+
+/**
+ * El sobre de una tarea que espera adjuntos.
+ *
+ * Cuando el encargo viene de otro agente y trae adjuntos, entre el brief y la
+ * última subida hay un rato en el que no se puede trabajar. El sobre lleva el
+ * presupuesto y el camino de la cadena, y perderlo significaría reanudar sin
+ * ellos. En memoria a propósito: si el proceso muere, la cadena que lo trajo
+ * murió con él, y reanudar sin sobre es exactamente lo que hace el vigilante.
+ */
+const sobrePendiente = new Map<string, CallEnvelope>();
 
 /** Tareas que se están procesando ahora mismo: evita trabajar dos veces. */
 const inFlight = new Set<string>();
@@ -415,7 +497,13 @@ async function credencialValida(
  * necesita ver en los logs.
  */
 function contexto(
-  base: { taskId: bigint | null; client: string; amount: bigint; deadline: bigint },
+  base: {
+    taskId: bigint | null;
+    client: string;
+    amount: bigint;
+    deadline: bigint;
+    adjuntos: AdjuntoRecibido[];
+  },
   sobre: CallEnvelope | null,
 ): TaskContext {
   return {
@@ -453,10 +541,36 @@ async function work(taskId: bigint, brief: string, sobre: CallEnvelope | null): 
     // Lo PRIMERO, antes de trabajar: si el proceso muere a mitad, esto es lo
     // único que permite retomarlo. Guardarlo después sería guardarlo nunca.
     saveBrief(taskId, brief);
+
+    // Si el encargo anuncia adjuntos, no se empieza hasta tenerlos todos.
+    //
+    // La guarda va AQUÍ y no en la ruta HTTP porque el vigilante también llama
+    // a `work` —al retomar una tarea tras un reinicio— y ahí no hay petición
+    // que mirar. Sin esto, un agente que se reinicia entre el brief y la
+    // subida se pondría a trabajar sin la foto, entregaría lo que pudiera y
+    // anclaría ese resultado a medias en la cadena.
+    const { recibidos, faltan } = repasarAdjuntos(taskId, brief);
+    if (faltan.length > 0) {
+      console.log(
+        `[panal] #${taskId} en espera de ${faltan.length} adjunto(s): ${faltan.map((f) => f.name).join(', ')}`,
+      );
+      return;
+    }
+    if (recibidos.length > 0) console.log(`[panal] #${taskId} con ${recibidos.length} adjunto(s) del cliente`);
+
     const task = await leerTarea(taskId);
     const salida = await handleTask(
       brief,
-      contexto({ taskId, client: task.client, amount: task.amount, deadline: task.deadline }, sobre),
+      contexto(
+        {
+          taskId,
+          client: task.client,
+          amount: task.amount,
+          deadline: task.deadline,
+          adjuntos: recibidos,
+        },
+        sobre,
+      ),
     );
 
     // Tu handleTask puede devolver un texto a secas —lo normal— o un texto con
@@ -561,6 +675,25 @@ $('#enviar').onclick = async function(){
 function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
+}
+
+/**
+ * El cuerpo en crudo, con su propio tope.
+ *
+ * Va aparte de `readBody` a propósito: los 256 KB de MAX_BODY protegen las
+ * rutas de texto y tienen que seguir siendo pequeños. Una foto no cabe ahí, y
+ * subirle el tope a todas las rutas para que quepa sería abrir la puerta que
+ * ese límite cierra.
+ */
+async function readBodyBytes(req: IncomingMessage, max: number): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for await (const chunk of req) {
+    total += (chunk as Buffer).length;
+    if (total > max) throw new Error(`cuerpo demasiado grande (tope ${max} bytes)`);
+    chunks.push(chunk as Buffer);
+  }
+  return Buffer.concat(chunks);
 }
 
 async function readBody(req: IncomingMessage): Promise<string> {
@@ -789,6 +922,15 @@ const server = createServer((req, res) => {
             body: `{"brief": string (máx. ${MAX_BRIEF_CHARS} chars), "address": "0x…", "signature": "0x…"}`,
             maxBriefChars: MAX_BRIEF_CHARS,
           },
+          postAttachment: {
+            method: 'POST',
+            path: '/upload/:taskId',
+            signMessage: 'Panal brief #<taskId>  (la MISMA firma que el encargo, no hace falta otra)',
+            body: 'los bytes en crudo; el nombre en la cabecera X-Panal-Filename',
+            howTo:
+              'anuncia cada adjunto en el brief con un bloque [panal-attach/1] ANTES de contratar, y sube los bytes aquí después. Sólo se aceptan los que el encargo anuncie.',
+            maxAttachmentBytes: MAX_FILE_BYTES,
+          },
           getResult: {
             method: 'GET',
             path: '/result/:taskId',
@@ -888,7 +1030,18 @@ const server = createServer((req, res) => {
       try {
         const salida = await handleTask(
           prompt,
-          contexto({ taskId: null, client: leido.payment.payer, amount: cobro.amount, deadline: 0n }, sobre),
+          contexto(
+            {
+              taskId: null,
+              client: leido.payment.payer,
+              amount: cobro.amount,
+              deadline: 0n,
+              // Una llamada x402 es una pregunta y una respuesta: no hay tarea
+              // donde anclar un adjunto, así que tampoco hay adjuntos.
+              adjuntos: [],
+            },
+            sobre,
+          ),
         );
         // En una llamada x402 no hay tarea, así que no hay nada que anclar ni
         // ninguna firma con la que proteger una descarga: los archivos no
@@ -1006,9 +1159,130 @@ const server = createServer((req, res) => {
         return;
       }
 
+      // El encargo se guarda YA, antes de contestar: la subida que viene
+      // detrás lo necesita en disco para saber qué bytes puede aceptar.
+      saveBrief(taskId, body.brief);
+      const { faltan } = repasarAdjuntos(taskId, body.brief);
+      if (faltan.length > 0) {
+        // No es un error: es la otra mitad del encargo, que aún viene de
+        // camino. Se contesta exactamente qué se espera para que el cliente lo
+        // suba sin tener que adivinarlo.
+        if (sobre) sobrePendiente.set(taskId.toString(), sobre);
+        json(res, 202, {
+          ok: true,
+          faltanAdjuntos: faltan.map((f) => ({ name: f.name, size: f.size, hash: f.hash })),
+          subirA: `/upload/${taskId}`,
+        });
+        return;
+      }
+
       json(res, 202, { ok: true });
       // Sin await: el cliente no debería esperar a que termines de trabajar.
       void work(taskId, body.brief, sobre);
+      return;
+    }
+
+    // ---- El cliente sube los adjuntos que su encargo anunció ----------------
+    //
+    // Se firma UNA vez, con el mismo `Panal brief #<id>` que abrió el encargo.
+    // Pedir una firma por archivo sería pedirle tres popups a alguien que ya
+    // pagó, y no compraría nada: lo que decide qué entra no es la firma, es el
+    // manifiesto que la cadena ya cubre.
+    const subida = /^\/upload\/(\d+)$/.exec(url.pathname);
+    if (subida && req.method === 'POST') {
+      const taskId = BigInt(subida[1]!);
+      /** Rechaza vaciando el cuerpo: si no, el cliente ve un reset en vez del motivo. */
+      const rechazar = (status: number, cuerpo: unknown): void => {
+        req.resume();
+        json(res, status, cuerpo);
+      };
+
+      // Lo local primero, que no cuesta ni RPC ni ancho de banda.
+      const brief = loadBrief(taskId);
+      if (!brief) {
+        rechazar(409, { error: 'manda antes el encargo a POST /brief/' + taskId });
+        return;
+      }
+      const anunciados = parseAttachmentsManifest(brief);
+      if (anunciados.length === 0) {
+        rechazar(409, { error: 'ese encargo no anuncia ningún adjunto' });
+        return;
+      }
+
+      const cred = credencialesDe(req, url);
+      if (!cred.address || !cred.signature) {
+        rechazar(400, { error: 'faltan address y signature (cabeceras x-panal-address / x-panal-signature)' });
+        return;
+      }
+
+      const task = await leerTarea(taskId);
+      if (task.worker.toLowerCase() !== account.address.toLowerCase()) {
+        rechazar(403, { error: 'esa tarea no es de este agente' });
+        return;
+      }
+      if (task.status !== TaskStatus.Open) {
+        rechazar(409, { error: `la tarea está ${TaskStatus[task.status]}` });
+        return;
+      }
+      if (cred.address.toLowerCase() !== task.client.toLowerCase()) {
+        rechazar(403, { error: 'solo el cliente de la tarea puede subirle adjuntos' });
+        return;
+      }
+      if (!(await signedBy(briefSignMessage(taskId), cred.signature, task.client))) {
+        rechazar(401, { error: 'la firma no es del cliente de esta tarea' });
+        return;
+      }
+
+      // Nada puede pesar más que el mayor de los adjuntos anunciados: el
+      // tamaño va DENTRO del manifiesto, o sea dentro de lo que la cadena
+      // cubre. Se mira antes de leer para no tragarse los bytes de nadie.
+      const tope = Math.min(MAX_FILE_BYTES, Math.max(...anunciados.map((f) => f.size)));
+      const declarado = Number(req.headers['content-length'] ?? 0);
+      if (declarado > tope) {
+        rechazar(413, { error: `ese archivo son ${declarado} bytes y el mayor que anunciaste mide ${tope}` });
+        return;
+      }
+
+      let bytes: Buffer;
+      try {
+        bytes = await readBodyBytes(req, tope);
+      } catch (err) {
+        json(res, 413, { error: err instanceof Error ? err.message : 'cuerpo demasiado grande' });
+        return;
+      }
+
+      // La guarda. Se busca por hash, así que el nombre que venga en la
+      // cabecera no decide nada: sólo desempata si el mismo archivo se
+      // adjuntó dos veces.
+      const nombre = typeof req.headers['x-panal-filename'] === 'string' ? req.headers['x-panal-filename'] : undefined;
+      const anunciado = matchAttachment(anunciados, bytes, nombre);
+      if (!anunciado) {
+        json(res, 403, {
+          error: 'esos bytes no son ninguno de los adjuntos que anuncia el encargo',
+          esperados: anunciados.map((f) => ({ name: f.name, size: f.size, hash: f.hash })),
+        });
+        return;
+      }
+
+      guardarAdjunto(taskId, anunciado.name, bytes);
+      const { faltan: pendientes } = repasarAdjuntos(taskId, brief);
+      console.log(
+        `[panal] #${taskId} adjunto "${anunciado.name}" recibido (${bytes.byteLength} bytes) · faltan ${pendientes.length}`,
+      );
+
+      json(res, 202, {
+        ok: true,
+        guardado: anunciado.name,
+        faltanAdjuntos: pendientes.map((f) => ({ name: f.name, size: f.size, hash: f.hash })),
+      });
+
+      // Con el último adjunto ya se puede trabajar. El encargo estaba en
+      // espera desde que llegó; esto es lo que lo suelta.
+      if (pendientes.length === 0) {
+        const sobreGuardado = sobrePendiente.get(taskId.toString()) ?? null;
+        sobrePendiente.delete(taskId.toString());
+        void work(taskId, brief, sobreGuardado);
+      }
       return;
     }
 
