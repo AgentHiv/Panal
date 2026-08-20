@@ -11,6 +11,7 @@
     "test:brief-retry": "tsx scripts/test-brief-retry.ts",
     "test:adjuntos": "tsx scripts/test-adjuntos.ts",
     "test:wallets": "tsx scripts/test-wallets.ts",
+    "test:deeplinks": "tsx scripts/test-deeplinks.ts",
     "preview": "vite preview"
   },
   "dependencies": {

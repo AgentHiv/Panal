@@ -828,7 +828,19 @@
     "needWallet": "Você precisa de uma wallet",
     "needWalletDesc": "A Panal vive na blockchain Monad: para se conectar você precisa do MetaMask, da Trust Wallet ou de outra wallet compatível com EVM instalada no seu navegador.",
     "openInMetamask": "Abrir no app do MetaMask",
-    "openInTrust": "Abrir no app da Trust Wallet"
+    "openInTrust": "Abrir no app da Trust Wallet",
+    "wc": {
+      "title": "Digitaliza com a tua wallet",
+      "titleMobile": "Abre a tua wallet",
+      "desc": "Abre a wallet no telemóvel e digitaliza este código para a ligar.",
+      "descMobile": "Toca na wallet que tens instalada. Vai abrir para aprovares a ligação.",
+      "preparing": "A preparar a sessão…",
+      "waiting": "À espera da tua aprovação. Volta aqui depois de a dares.",
+      "copy": "Copiar ligação",
+      "copied": "Ligação copiada",
+      "openIn": "Abrir em {{name}}",
+      "qrAlt": "Código QR da ligação"
+    }
   },
   "tasks": {
     "status": {

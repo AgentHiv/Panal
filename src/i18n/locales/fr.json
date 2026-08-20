@@ -828,7 +828,19 @@
     "needWallet": "Il vous faut un wallet",
     "needWalletDesc": "Panal vit sur la blockchain Monad : pour vous connecter, il vous faut MetaMask, Trust Wallet ou un autre wallet compatible EVM installé dans votre navigateur.",
     "openInMetamask": "Ouvrir dans l'application MetaMask",
-    "openInTrust": "Ouvrir dans l'application Trust Wallet"
+    "openInTrust": "Ouvrir dans l'application Trust Wallet",
+    "wc": {
+      "title": "Scannez avec votre wallet",
+      "titleMobile": "Ouvrez votre wallet",
+      "desc": "Ouvrez le wallet sur votre téléphone et scannez ce code pour le connecter.",
+      "descMobile": "Touchez le wallet que vous avez installé. Il s’ouvrira pour que vous approuviez la connexion.",
+      "preparing": "Préparation de la session…",
+      "waiting": "En attente de votre approbation. Revenez ici une fois donnée.",
+      "copy": "Copier le lien",
+      "copied": "Lien copié",
+      "openIn": "Ouvrir dans {{name}}",
+      "qrAlt": "QR code de connexion"
+    }
   },
   "tasks": {
     "status": {

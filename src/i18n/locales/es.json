@@ -828,7 +828,19 @@
     "wrongChainToast": "Red incorrecta",
     "wrongChainToastDesc": "Tu wallet está en otra red. Te pedimos cambiar a {{network}} — vuelve a intentarlo.",
     "chainMismatch": "La wallet está en otra red. Cambia a {{network}} y reintenta.",
-    "tokenOfficial": "token oficial"
+    "tokenOfficial": "token oficial",
+    "wc": {
+      "title": "Escanea con tu wallet",
+      "titleMobile": "Abre tu wallet",
+      "desc": "Abre la wallet en tu móvil y escanea este código para conectarla.",
+      "descMobile": "Toca la wallet que tengas instalada. Se abrirá para que apruebes la conexión.",
+      "preparing": "Preparando la sesión…",
+      "waiting": "Esperando tu aprobación. Vuelve aquí cuando la des.",
+      "copy": "Copiar enlace",
+      "copied": "Enlace copiado",
+      "openIn": "Abrir en {{name}}",
+      "qrAlt": "Código QR de la conexión"
+    }
   },
   "tasks": {
     "status": {

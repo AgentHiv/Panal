@@ -203,10 +203,16 @@ if (WC_PROJECT_ID) {
   connectors.push(
     walletConnect({
       projectId: WC_PROJECT_ID,
-      // El modal es el suyo: en escritorio pinta el QR y en móvil la lista de
-      // wallets con sus deep links. Escribirlo a mano sería mantener un
-      // directorio de wallets que cambia solo.
-      showQrModal: true,
+      // NO se usa el modal de Reown (AppKit). Con esto el conector se limita
+      // a emitir la URI de la sesión y la pantalla la pinta `WalletConnectDialog`.
+      //
+      // Se hizo así por lo que costó descubrir: el modal ajeno viene en inglés
+      // dentro de una web que se cuida en diez idiomas, trae su estética, y
+      // sobre todo descarga su catálogo de wallets de la API de AppKit, que
+      // exige tener el proyecto dado de alta para ESE producto. Con un
+      // projectId válido pero de otro tipo, el modal revienta al arrancar y el
+      // usuario ve "no se pudo conectar" sin que aparezca nada.
+      showQrModal: false,
       // Lo que la persona ve en la pantalla de aprobación de su wallet. La URL
       // sale del origen real para que no discrepe en los despliegues de
       // vista previa, donde una URL fija haría que la wallet avise.
