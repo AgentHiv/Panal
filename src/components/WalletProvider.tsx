@@ -54,7 +54,23 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
         { connector },
         {
           onSuccess: () => setPickerOpen(false),
-          onError: () => toast.error(t('wallet.connectError')),
+          onError: (err) => {
+            // El error se TIRABA. Con una wallet inyectada casi daba igual
+            // —el fallo suele ser que el usuario rechaza—, pero con
+            // WalletConnect el motivo vive en el lado de Reown: projectId
+            // equivocado, dominio no permitido, proyecto sin cuota. Sin esto
+            // el usuario ve "no se pudo conectar" y la consola, vacía, y no
+            // hay forma de saber cuál de los tres es.
+            console.error(`[panal] no se pudo conectar con ${connector.name}:`, err);
+
+            // Cerrar el QR o rechazar en la wallet NO es un fallo, y decirle
+            // "no se pudo conectar" a quien acaba de cambiar de idea es
+            // hacerle creer que la web está rota.
+            const cancelado =
+              err.name === 'UserRejectedRequestError' ||
+              /user rejected|user closed|modal closed|connection request reset/i.test(err.message ?? '');
+            if (!cancelado) toast.error(t('wallet.connectError'));
+          },
         },
       );
     },
