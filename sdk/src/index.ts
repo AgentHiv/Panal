@@ -53,20 +53,41 @@ export type { AskResult, PayAndAskOptions, PermitDomain, X402Accept, X402Quote }
 export { assertPublicUrl, fetchBytesLimited, fetchLimited, isPrivateIp } from './net.js';
 
 // Archivos: entregar un PDF o un vídeo anclando SU hash, no el del enlace.
+// Y en la otra dirección, adjuntar una foto al encargo con la misma garantía.
 export {
+  ATTACH_BLOCK,
   FILES_BLOCK,
   MAX_FILE_BYTES,
   FileVerificationError,
+  appendAttachmentsManifest,
   appendFilesManifest,
+  attachmentFrom,
+  buildAttachmentsManifest,
   buildFilesManifest,
   downloadDeliveredFile,
   fileUrl,
+  matchAttachment,
+  parseAttachmentsManifest,
   parseFilesManifest,
   sanitizeFileName,
   stripFilesManifest,
   verifyFileBytes,
 } from './files.js';
-export type { DeliveredFile, DownloadOptions } from './files.js';
+export type { AttachedFile, DeliveredFile, DownloadOptions, HashedFile } from './files.js';
+
+// El modelo, libre: tres dialectos de red y con esos tres se habla con todos
+// (Claude, Gemini, Kimi, Grok, GLM, DeepSeek, Groq, OpenAI, Ollama…).
+export {
+  MAX_IMAGEN_BYTES,
+  MIMES_IMAGEN,
+  PROVEEDORES,
+  LlmError,
+  dialectoDe,
+  esImagenSoportada,
+  llmChat,
+  resolverLlm,
+} from './llm.js';
+export type { LlmConfig, LlmDialecto, LlmImagen, LlmPeticion, LlmProveedor } from './llm.js';
 
 // x402: la otra mitad, cobrar por llamada. Portada del bot de LexPanal, donde
 // lleva meses cobrando en produccion.
