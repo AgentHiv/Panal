@@ -1,7 +1,15 @@
 /**
- * Panal — Provider del estado global de wallet REAL (wagmi · injected).
- * Soporta MetaMask, Trust Wallet y cualquier wallet EIP-6963: con varias
- * wallets instaladas se abre un picker; con una sola se conecta directo.
+ * Panal — Provider del estado global de wallet REAL (wagmi).
+ *
+ * Dos caminos, y hacen falta los dos:
+ *
+ *   - INYECTADA. MetaMask, Trust Wallet y cualquier wallet EIP-6963. Sirve en
+ *     un escritorio con extensión y dentro del navegador propio de una wallet.
+ *   - WALLETCONNECT. La única que sirve en el Chrome o el Safari de un
+ *     teléfono, donde no hay nada inyectado. Se activa con
+ *     VITE_WALLETCONNECT_PROJECT_ID.
+ *
+ * Con varias opciones se abre un picker; con una sola se conecta directo.
  * Añade detección de red incorrecta con acción para cambiar a la red activa
  * (Monad mainnet por defecto).
  */
@@ -17,9 +25,7 @@ import type { WalletState } from '@/hooks/useWallet';
 import InstallWalletDialog from '@/components/InstallWalletDialog';
 import WalletPickerDialog from '@/components/WalletPickerDialog';
 import { activeChain } from '@/contracts/config';
-
-/** ID del injected genérico (window.ethereum sin objetivo concreto). */
-const GENERIC_INJECTED_ID = 'injected';
+import { elegirWallets } from '@/lib/wallets';
 
 export default function WalletProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
@@ -34,23 +40,13 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
   const openInstallDialog = useCallback(() => setInstallOpen(true), []);
 
   /**
-   * Wallets ofrecibles: las detectadas (EIP-6963 / conector dirigido de
-   * Trust Wallet), deduplicadas por nombre — Trust Wallet puede llegar por
-   * ambas vías; se prefiere la entrada con icono (la descubierta). El
-   * injected genérico solo se ofrece cuando no hay ninguna específica.
+   * Wallets ofrecibles. El criterio vive en `@/lib/wallets`, con sus pruebas:
+   * decide si alguien puede entrar, y eso no se razona bien leyendo JSX.
    */
-  const walletOptions = useMemo<Connector[]>(() => {
-    const byName = new Map<string, Connector>();
-    for (const c of connectors) {
-      if (c.id === GENERIC_INJECTED_ID) continue;
-      const key = c.name.trim().toLowerCase();
-      const prev = byName.get(key);
-      if (!prev || (!prev.icon && c.icon)) byName.set(key, c);
-    }
-    const specific = [...byName.values()];
-    if (specific.length > 0) return specific;
-    return connectors.filter((c) => c.id === GENERIC_INJECTED_ID);
-  }, [connectors]);
+  const walletOptions = useMemo<Connector[]>(
+    () => elegirWallets(connectors, typeof window !== 'undefined' && !!window.ethereum),
+    [connectors],
+  );
 
   const connectWith = useCallback(
     (connector: Connector) => {
@@ -67,10 +63,16 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
 
   const doConnect = useCallback(() => {
     if (isConnected || connecting) return;
-    // Sin wallet EVM inyectada wagmi lanzaría ConnectorNotFoundError en silencio:
-    // mejor explicar al usuario cómo instalar una (MetaMask / Trust Wallet).
-    const hasInjected = typeof window !== 'undefined' && !!window.ethereum;
-    if (!hasInjected || walletOptions.length === 0) {
+    // Sin ninguna opción —ni wallet inyectada ni WalletConnect configurado—
+    // wagmi lanzaría ConnectorNotFoundError en silencio: mejor explicar cómo
+    // conseguir una wallet.
+    //
+    // La comprobación de `window.ethereum` que había aquí se movió a
+    // `walletOptions`: allí es donde se decide qué se puede ofrecer, y
+    // tenerla en dos sitios hacía que añadir WalletConnect —que no necesita
+    // nada inyectado— dejara este botón sin salida en un móvil, que es justo
+    // donde más falta hace.
+    if (walletOptions.length === 0) {
       setInstallOpen(true);
       return;
     }
