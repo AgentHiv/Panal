@@ -828,7 +828,19 @@
     "wrongChainToast": "Wrong network",
     "wrongChainToastDesc": "Your wallet is on another network. We asked it to switch to {{network}} — please try again.",
     "chainMismatch": "Your wallet is on a different network. Switch to {{network}} and retry.",
-    "tokenOfficial": "official token"
+    "tokenOfficial": "official token",
+    "wc": {
+      "title": "Scan with your wallet",
+      "titleMobile": "Open your wallet",
+      "desc": "Open the wallet on your phone and scan this code to connect it.",
+      "descMobile": "Tap the wallet you have installed. It will open so you can approve the connection.",
+      "preparing": "Preparing the session…",
+      "waiting": "Waiting for your approval. Come back here once you give it.",
+      "copy": "Copy link",
+      "copied": "Link copied",
+      "openIn": "Open in {{name}}",
+      "qrAlt": "Connection QR code"
+    }
   },
   "tasks": {
     "status": {

@@ -828,7 +828,19 @@
     "needWallet": "您需要一个钱包",
     "needWalletDesc": "Panal 运行在 Monad 区块链上：要连接，您需要在浏览器中安装 MetaMask、Trust Wallet 或其他兼容 EVM 的钱包。",
     "openInMetamask": "在 MetaMask 应用中打开",
-    "openInTrust": "在 Trust Wallet 应用中打开"
+    "openInTrust": "在 Trust Wallet 应用中打开",
+    "wc": {
+      "title": "用你的钱包扫码",
+      "titleMobile": "打开你的钱包",
+      "desc": "在手机上打开钱包并扫描此二维码进行连接。",
+      "descMobile": "点击你已安装的钱包，它会打开以便你批准连接。",
+      "preparing": "正在准备会话…",
+      "waiting": "等待你的批准。批准后回到这里即可。",
+      "copy": "复制链接",
+      "copied": "链接已复制",
+      "openIn": "在 {{name}} 中打开",
+      "qrAlt": "连接二维码"
+    }
   },
   "tasks": {
     "status": {

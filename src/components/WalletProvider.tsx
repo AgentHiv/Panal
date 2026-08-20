@@ -14,7 +14,7 @@
  * (Monad mainnet por defecto).
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -24,8 +24,9 @@ import { WalletContext, shortAddress } from '@/hooks/useWallet';
 import type { WalletState } from '@/hooks/useWallet';
 import InstallWalletDialog from '@/components/InstallWalletDialog';
 import WalletPickerDialog from '@/components/WalletPickerDialog';
+import WalletConnectDialog from '@/components/WalletConnectDialog';
 import { activeChain } from '@/contracts/config';
-import { elegirWallets } from '@/lib/wallets';
+import { elegirWallets, WALLETCONNECT_ID } from '@/lib/wallets';
 
 export default function WalletProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
@@ -36,6 +37,29 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
   const { switchChain } = useSwitchChain();
   const [installOpen, setInstallOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  /** La URI de la sesión de WalletConnect, mientras se espera aprobación. */
+  const [wcUri, setWcUri] = useState<string | null>(null);
+  const [wcOpen, setWcOpen] = useState(false);
+
+  /**
+   * La URI de WalletConnect llega por un evento, no por la promesa de
+   * `connect`.
+   *
+   * El conector la emite en cuanto levanta la sesión contra el relé, mucho
+   * antes de que nadie apruebe nada, y es lo único que se necesita para pintar
+   * el QR o abrir la app del teléfono. La suscripción vive aquí y no en el
+   * diálogo porque el diálogo se monta DESPUÉS de pulsar, y para entonces el
+   * evento ya podría haber pasado.
+   */
+  useEffect(() => {
+    const wc = connectors.find((c) => c.id === WALLETCONNECT_ID);
+    if (!wc) return;
+    const alMensaje = ({ type, data }: { type: string; data?: unknown }): void => {
+      if (type === 'display_uri' && typeof data === 'string') setWcUri(data);
+    };
+    wc.emitter.on('message', alMensaje);
+    return () => wc.emitter.off('message', alMensaje);
+  }, [connectors]);
 
   const openInstallDialog = useCallback(() => setInstallOpen(true), []);
 
@@ -50,10 +74,20 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
 
   const connectWith = useCallback(
     (connector: Connector) => {
+      // Con WalletConnect la pantalla se abre YA, sin URI todavía: levantar la
+      // sesión tarda un instante y un botón que no responde parece roto.
+      if (connector.id === WALLETCONNECT_ID) {
+        setWcUri(null);
+        setWcOpen(true);
+      }
       connect(
         { connector },
         {
-          onSuccess: () => setPickerOpen(false),
+          onSuccess: () => {
+            setPickerOpen(false);
+            setWcOpen(false);
+            setWcUri(null);
+          },
           onError: (err) => {
             // El error se TIRABA. Con una wallet inyectada casi daba igual
             // —el fallo suele ser que el usuario rechaza—, pero con
@@ -69,6 +103,8 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
             const cancelado =
               err.name === 'UserRejectedRequestError' ||
               /user rejected|user closed|modal closed|connection request reset/i.test(err.message ?? '');
+            setWcOpen(false);
+            setWcUri(null);
             if (!cancelado) toast.error(t('wallet.connectError'));
           },
         },
@@ -136,6 +172,7 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
         connecting={connecting}
         onSelect={connectWith}
       />
+      <WalletConnectDialog uri={wcUri} open={wcOpen} onOpenChange={setWcOpen} />
       <InstallWalletDialog open={installOpen} onOpenChange={setInstallOpen} />
     </WalletContext.Provider>
   );

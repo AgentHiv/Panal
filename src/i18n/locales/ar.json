@@ -828,7 +828,19 @@
     "needWallet": "تحتاج إلى محفظة",
     "needWalletDesc": "تعمل Panal على بلوكتشين Monad: للاتصال تحتاج إلى MetaMask أو Trust Wallet أو أي محفظة أخرى متوافقة مع EVM مثبّتة في متصفحك.",
     "openInMetamask": "الفتح في تطبيق MetaMask",
-    "openInTrust": "الفتح في تطبيق Trust Wallet"
+    "openInTrust": "الفتح في تطبيق Trust Wallet",
+    "wc": {
+      "title": "امسح الرمز بمحفظتك",
+      "titleMobile": "افتح محفظتك",
+      "desc": "افتح المحفظة في هاتفك وامسح هذا الرمز لتوصيلها.",
+      "descMobile": "اضغط على المحفظة المثبّتة لديك. ستُفتح لتوافق على الاتصال.",
+      "preparing": "جارٍ تجهيز الجلسة…",
+      "waiting": "في انتظار موافقتك. عد إلى هنا بعد أن تمنحها.",
+      "copy": "نسخ الرابط",
+      "copied": "تم نسخ الرابط",
+      "openIn": "الفتح في {{name}}",
+      "qrAlt": "رمز QR للاتصال"
+    }
   },
   "tasks": {
     "status": {
