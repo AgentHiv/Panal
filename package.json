@@ -16,6 +16,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.0",
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -79,6 +80,8 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
     "@types/qrcode": "^1.5.6",
