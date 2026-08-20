@@ -19,6 +19,11 @@ on:
   workflow_dispatch:
   push:
     tags: ['apk-v*']
+  # Crear la release desde la web de GitHub también crea la etiqueta, pero no
+  # siempre dispara el evento `push`. Escuchando los dos, el APK se adjunta
+  # tanto si la etiqueta se publica desde la terminal como desde el navegador.
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -102,11 +107,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "panal-${GITHUB_REF_NAME}.apk" \
-            --title "Panal Android $GITHUB_REF_NAME" \
-            --notes "APK firmado en depuración. En el móvil: descárgalo y ábrelo; Android pedirá permiso para instalar de orígenes desconocidos.
+          APK="panal-${GITHUB_REF_NAME}.apk"
+          NOTAS="APK firmado en depuración. En el móvil: descárgalo y ábrelo; Android pedirá permiso para instalar de orígenes desconocidos.
 
           La app carga https://panal.lat, así que se actualiza sola con la web y no hace falta reinstalar salvo que cambie el envoltorio."
+
+          # Crear o, si ya existe, adjuntar. Publicar la release desde la web
+          # de GitHub la crea ANTES de que este paso corra, y entonces
+          # `gh release create` falla con "already exists" y el APK se queda
+          # sin subir — con la release publicada y vacía, que es peor que no
+          # tenerla. `--clobber` deja reintentar la misma etiqueta.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$APK" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$APK" \
+              --title "Panal Android $GITHUB_REF_NAME" --notes "$NOTAS"
+          fi
 
       # Cuando toque publicar en la Play Store, aquí va la firma de release.
       # Necesita un keystore propio, guardado como secreto del repositorio:
