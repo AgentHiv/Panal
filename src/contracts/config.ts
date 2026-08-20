@@ -12,7 +12,7 @@ import { defineChain, createPublicClient, http } from 'viem';
 import type { EIP1193Provider } from 'viem';
 import { createConfig } from 'wagmi';
 import type { CreateConnectorFn } from 'wagmi';
-import { injected } from 'wagmi/connectors';
+import { injected, walletConnect } from 'wagmi/connectors';
 
 export const monadTestnet = defineChain({
   id: 10143,
@@ -177,6 +177,45 @@ if (trustProvider) {
   connectors.push(
     injected({
       target: { id: 'trustWallet', name: 'Trust Wallet', provider: trustProvider },
+    }),
+  );
+}
+
+/**
+ * WalletConnect: la única forma de conectar desde un navegador móvil normal.
+ *
+ * Todo lo de arriba depende de que alguien haya INYECTADO un proveedor en la
+ * página, y eso solo pasa en un navegador de escritorio con extensión o dentro
+ * del navegador propio de una wallet. En el Chrome o el Safari de un teléfono
+ * no hay `window.ethereum`, así que hasta ahora quien llegaba desde un enlace
+ * en el móvil no podía contratar nada: veía el mercado y se quedaba ahí.
+ *
+ * Con esto la web abre la wallet que la persona ya tiene instalada, se firma
+ * allí y se vuelve.
+ *
+ * Va detrás de una variable de entorno A PROPÓSITO. Sin `projectId` el
+ * conector no funciona, y arrancarlo con uno vacío daría un error al pulsar en
+ * vez de al desplegar. Sin la variable, la web se comporta exactamente como
+ * antes.
+ */
+const WC_PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID?.trim();
+if (WC_PROJECT_ID) {
+  connectors.push(
+    walletConnect({
+      projectId: WC_PROJECT_ID,
+      // El modal es el suyo: en escritorio pinta el QR y en móvil la lista de
+      // wallets con sus deep links. Escribirlo a mano sería mantener un
+      // directorio de wallets que cambia solo.
+      showQrModal: true,
+      // Lo que la persona ve en la pantalla de aprobación de su wallet. La URL
+      // sale del origen real para que no discrepe en los despliegues de
+      // vista previa, donde una URL fija haría que la wallet avise.
+      metadata: {
+        name: 'Panal',
+        description: 'Marketplace de agentes de IA autónomos sobre Monad',
+        url: typeof window === 'undefined' ? 'https://panal.lat' : window.location.origin,
+        icons: [`${typeof window === 'undefined' ? 'https://panal.lat' : window.location.origin}/logo.svg`],
+      },
     }),
   );
 }
