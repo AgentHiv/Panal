@@ -20,6 +20,7 @@ import {
   buildAttachmentsManifest as buildWeb,
   type Adjunto,
 } from '../src/lib/adjuntos.js';
+import { leerCapacidades } from '../src/lib/botEndpoint.js';
 import {
   appendAttachmentsManifest as appendSdk,
   buildAttachmentsManifest as buildSdk,
@@ -84,9 +85,52 @@ const tocada = new Uint8Array(FOTO);
 tocada[0] ^= 0x01;
 check('rechaza el mismo archivo con un byte cambiado', matchAttachment(leidos, tocada) === null);
 
+console.log('\n── Sólo se ofrece el clip a quien sabe recibirlo ──\n');
+
+/** Un fetch de mentira que devuelve la tarjeta que le pongas. */
+function conTarjeta(respuesta: { ok: boolean; body?: unknown } | 'revienta'): void {
+  globalThis.fetch = (async () => {
+    if (respuesta === 'revienta') throw new Error('red caída');
+    return {
+      ok: respuesta.ok,
+      json: async () => {
+        if (respuesta.body === undefined) throw new Error('no es JSON');
+        return respuesta.body;
+      },
+    } as Response;
+  }) as unknown as typeof fetch;
+}
+
+const original = globalThis.fetch;
+try {
+  conTarjeta({
+    ok: true,
+    body: { endpoints: { postAttachment: { path: '/upload/:taskId', maxAttachmentBytes: 26214400 } } },
+  });
+  const nuevo = await leerCapacidades('https://agente.example');
+  check('un agente actualizado acepta adjuntos', nuevo.adjuntos === true);
+  check('y se le hace caso a su tope', nuevo.maxAdjuntoBytes === 26214400, String(nuevo.maxAdjuntoBytes));
+
+  // El caso que motiva todo esto: la plantilla anterior responde su tarjeta
+  // tan feliz, sin `postAttachment`, y aceptaría el encargo igual.
+  conTarjeta({ ok: true, body: { endpoints: { postBrief: { path: '/brief/:taskId' } } } });
+  check('un agente anterior a la función NO', (await leerCapacidades('https://viejo.example')).adjuntos === false);
+
+  conTarjeta({ ok: false });
+  check('sin tarjeta que valga, no', (await leerCapacidades('https://roto.example')).adjuntos === false);
+
+  conTarjeta({ ok: true, body: undefined });
+  check('con la tarjeta ilegible, no', (await leerCapacidades('https://ilegible.example')).adjuntos === false);
+
+  conTarjeta('revienta');
+  check('y con el agente caído, tampoco', (await leerCapacidades('https://caido.example')).adjuntos === false);
+} finally {
+  globalThis.fetch = original;
+}
+
 console.log(
   fallos === 0
-    ? '\n✅ El navegador y el agente escriben y leen exactamente lo mismo\n'
+    ? '\n✅ El navegador y el agente escriben y leen lo mismo, y el clip sólo se ofrece a quien sabe recibirlo\n'
     : `\n❌ ${fallos} comprobación(es) fallidas: las dos implementaciones se han separado\n`,
 );
 process.exit(fallos === 0 ? 0 : 1);

@@ -87,6 +87,55 @@ export function buildBriefUrl(botUrl: string, taskId: bigint): string {
 }
 
 /**
+ * Lo que un agente dice que sabe hacer, leído de su tarjeta (`/agent.json`).
+ */
+export interface CapacidadesAgente {
+  /** ¿Acepta archivos del cliente? Un agente anterior a la función NO. */
+  adjuntos: boolean;
+  /** El tope por archivo que anuncia, si lo dice. */
+  maxAdjuntoBytes?: number;
+}
+
+/**
+ * Pregunta al agente si acepta adjuntos, ANTES de ofrecer el clip.
+ *
+ * Sin esto el fallo es caro y además invisible. Un agente con la plantilla
+ * anterior no tiene la ruta `/upload`, pero sí acepta el encargo: el
+ * manifiesto va DENTRO del brief, así que `keccak256(brief)` cuadra con el
+ * taskHash y la comprobación pasa. El agente trata el bloque como texto más,
+ * trabaja sin la foto, entrega y ancla el resultado. Para cuando la subida
+ * devuelve 404 el trabajo ya está hecho y cobrado.
+ *
+ * Nadie ve un error: el pago salió bien, el encargo llegó, el agente entregó.
+ * Sólo el resultado ignora la mitad de lo que se pidió, y la única salida es
+ * una disputa.
+ *
+ * Falla CERRADO. Si la tarjeta no contesta —agente caído, CORS mal puesto,
+ * red lenta— se asume que no acepta. Ante la duda es mejor no ofrecer algo
+ * que puede acabar en un cobro por trabajo no hecho.
+ */
+export async function leerCapacidades(botUrl: string, timeoutMs = 6_000): Promise<CapacidadesAgente> {
+  try {
+    const res = await fetch(`${botUrl.replace(/\/+$/, '')}/agent.json`, {
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return { adjuntos: false };
+    const card = (await res.json()) as {
+      endpoints?: { postAttachment?: { path?: string; maxAttachmentBytes?: number } };
+    };
+    const subida = card.endpoints?.postAttachment;
+    if (!subida?.path) return { adjuntos: false };
+    const tope = subida.maxAttachmentBytes;
+    return {
+      adjuntos: true,
+      ...(typeof tope === 'number' && tope > 0 ? { maxAdjuntoBytes: tope } : {}),
+    };
+  } catch {
+    return { adjuntos: false };
+  }
+}
+
+/**
  * URL de subida de un adjunto (POST /upload/:taskId).
  *
  * Va DESPUÉS del brief, nunca antes: el agente sólo acepta bytes que su
