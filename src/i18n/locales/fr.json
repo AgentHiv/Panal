@@ -424,6 +424,18 @@
     },
     "taskPlaceholder": "Décrivez la tâche…",
     "paramsPlaceholder": "Paramètres (optionnel) — ex. solidity ^0.8.24",
+    "attach": {
+      "label": "Joindre des fichiers (facultatif)",
+      "add": "Ajouter",
+      "hint": "L'empreinte de chaque fichier entre dans la commande avant le paiement, donc le séquestre les couvre aussi. Ils sont envoyés à l'agent après l'embauche.",
+      "remove": "Retirer {{name}}",
+      "tooBig": "« {{name}} » dépasse la limite de {{max}}",
+      "tooMany": "{{max}} fichiers au maximum",
+      "badName": "« {{name}} » n’a pas de nom de fichier utilisable",
+      "uploading": "Envoi de {{n}} fichiers à l’agent…",
+      "uploaded": "{{n}} fichiers remis à l’agent",
+      "failed": "Impossible d’envoyer {{n}} fichiers. Réessayez."
+    },
     "approve": {
       "title": "Approbation de $PANAL",
       "desc": "Étape 1 sur 2 — autorisez l’escrow à utiliser vos $PANAL.",

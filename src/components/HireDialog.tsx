@@ -3,12 +3,26 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ExternalLink, Loader2, Timer, TriangleAlert } from 'lucide-react';
+import { Check, ExternalLink, Loader2, Paperclip, Timer, TriangleAlert, X } from 'lucide-react';
 import { useSignMessage, useSwitchChain, useWriteContract } from 'wagmi';
 import { keccak256, parseEventLogs, toBytes } from 'viem';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { saveTaskBrief } from '@/lib/taskBriefs';
-import { briefSignMessage, buildBriefUrl, enviarBriefConReintento, extractBotUrl } from '@/lib/botEndpoint';
+import {
+  briefSignMessage,
+  buildBriefUrl,
+  buildUploadUrl,
+  enviarBriefConReintento,
+  extractBotUrl,
+} from '@/lib/botEndpoint';
+import {
+  MAX_ADJUNTOS,
+  MAX_ADJUNTO_BYTES,
+  appendAttachmentsManifest,
+  describirArchivo,
+  tamanoLegible,
+  type Adjunto,
+} from '@/lib/adjuntos';
 import {
   Dialog,
   DialogContent,
@@ -76,6 +90,22 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
   /** Plazo de la tarea en horas (deadline on-chain elegido por el cliente). */
   const [deadlineHours, setDeadlineHours] = useState(72);
   const [params, setParams] = useState('');
+  /** Lo que el cliente adjunta. Sus hashes viajan DENTRO del encargo. */
+  const [adjuntos, setAdjuntos] = useState<Adjunto[]>([]);
+  const [adjuntosEstado, setAdjuntosEstado] = useState<'pendiente' | 'subiendo' | 'subidos' | 'fallo'>(
+    'pendiente',
+  );
+  const inputArchivos = useRef<HTMLInputElement>(null);
+  /**
+   * El encargo TAL Y COMO se hasheó al contratar.
+   *
+   * `componerBrief()` lo compone a partir del estado, y el estado puede haber
+   * cambiado entre la firma y el envío. Hoy no hay forma de volver al paso 1
+   * con la tarea ya creada, así que no puede pasar — pero lo que hay en juego
+   * si algún día la hubiera es el pago del cliente, no un render feo, y una
+   * copia congelada cuesta una línea.
+   */
+  const briefFirmado = useRef<string | null>(null);
   const [accepted, setAccepted] = useState(false);
 
   /* ---------- contratación real (PanalEscrow) ---------- */
@@ -111,6 +141,59 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     reverted: approveReverted,
   } = useTxReceipt(approveTxHash);
 
+  /**
+   * El encargo, tal y como se va a hashear. Se compone AQUÍ y en ningún otro
+   * sitio.
+   *
+   * Estaba escrito tres veces —al contratar en MON, al encadenar el createTask
+   * del $PANAL y al mandárselo al agente— y las tres tenían que dar el mismo
+   * texto carácter a carácter. Con adjuntos eso deja de ser una duda teórica:
+   * si el manifiesto se compone distinto en cualquiera de ellas, el keccak256
+   * cambia, el agente rechaza el encargo por no coincidir con el taskHash, y
+   * el cliente se queda con el pago bloqueado hasta que venza el plazo.
+   */
+  const componerBrief = useCallback((): string => {
+    const texto = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
+    return appendAttachmentsManifest(texto, adjuntos);
+  }, [taskText, params, adjuntos]);
+
+  /**
+   * Añade archivos: los lee, los hashea y los deja listos para anunciarse.
+   *
+   * El hash se calcula ahora, ANTES de pagar, porque es lo que hace que el
+   * escrow cubra la foto. Un archivo elegido después de contratar ya no cabe
+   * en el encargo: habría que cancelar y volver a empezar.
+   */
+  const anadirArchivos = useCallback(
+    async (lista: FileList | null): Promise<void> => {
+      if (!lista || lista.length === 0) return;
+      const nuevos: Adjunto[] = [];
+      for (const file of Array.from(lista)) {
+        if (file.size > MAX_ADJUNTO_BYTES) {
+          toast.error(t('hire.attach.tooBig', { name: file.name, max: tamanoLegible(MAX_ADJUNTO_BYTES) }));
+          continue;
+        }
+        try {
+          nuevos.push(await describirArchivo(file));
+        } catch {
+          toast.error(t('hire.attach.badName', { name: file.name }));
+        }
+      }
+      setAdjuntos((previos) => {
+        // Por hash: el mismo archivo elegido dos veces es un adjunto, no dos.
+        const porHash = new Map(previos.map((a) => [a.hash, a]));
+        for (const a of nuevos) if (!porHash.has(a.hash)) porHash.set(a.hash, a);
+        const todos = [...porHash.values()];
+        if (todos.length > MAX_ADJUNTOS) {
+          toast.error(t('hire.attach.tooMany', { max: MAX_ADJUNTOS }));
+          return todos.slice(0, MAX_ADJUNTOS);
+        }
+        return todos;
+      });
+    },
+    [t],
+  );
+
   const hireOnchain = async () => {
     if (!isOnchainAgent(agent)) return;
     // Guarda de red: verificar la chain REAL de la wallet (eth_chainId), no
@@ -139,7 +222,8 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     } catch {
       // si el RPC falla, seguimos con el precio cacheado (misma fuente)
     }
-    const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
+    const brief = componerBrief();
+    briefFirmado.current = brief;
     const taskHash = keccak256(toBytes(brief));
     saveTaskBrief(taskHash, brief); // caché local: el trabajador verá QUÉ se pidió
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineHours * 3600);
@@ -188,7 +272,8 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     // provoca; reordenarlo para ahorrarlo arriesga cobrar dos veces.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setApprovePhase('approved');
-    const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
+    const brief = componerBrief();
+    briefFirmado.current = brief;
     const taskHash = keccak256(toBytes(brief));
     saveTaskBrief(taskHash, brief); // caché local: el trabajador verá QUÉ se pidió
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineHours * 3600);
@@ -211,6 +296,57 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
      puede entregar un resultado GENÉRICO. El brief también queda en
      localStorage y el operador puede cargarlo por Telegram como fallback. */
   const [briefEstado, setBriefEstado] = useState<'pendiente' | 'enviando' | 'enviado' | 'fallo'>('pendiente');
+
+  /**
+   * Sube los bytes de cada adjunto, uno a uno.
+   *
+   * Va DESPUÉS del brief y no puede ir antes: el agente sólo acepta lo que su
+   * encargo anuncia, y hasta tener el encargo no sabe cuáles son.
+   *
+   * Si uno falla se sigue con los demás y se avisa al final. El agente no
+   * empieza hasta tenerlos todos, así que los que sí subieron no se pierden:
+   * quedan en su disco y un reintento sólo tiene que completar el resto.
+   *
+   * El nombre va percent-encoded porque una cabecera HTTP no admite caracteres
+   * fuera de latin-1, y «recibo ñ.png» es un nombre perfectamente normal.
+   */
+  const subirAdjuntos = useCallback(
+    async (botUrl: string, taskId: bigint, signature: string, quien: string): Promise<void> => {
+      setAdjuntosEstado('subiendo');
+      let fallos = 0;
+      for (const a of adjuntos) {
+        try {
+          const res = await fetch(buildUploadUrl(botUrl, taskId), {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/octet-stream',
+              'x-panal-address': quien,
+              'x-panal-signature': signature,
+              'x-panal-filename': encodeURIComponent(a.name),
+            },
+            body: new Blob([a.bytes]),
+          });
+          if (!res.ok) {
+            fallos += 1;
+            console.warn(`[panal] el agente rechazó el adjunto "${a.name}" con ${res.status}`);
+          }
+        } catch (err) {
+          fallos += 1;
+          console.warn(
+            `[panal] no se pudo subir "${a.name}": ${err instanceof Error ? err.message.split('\n')[0] : err}`,
+          );
+        }
+      }
+      if (fallos === 0) {
+        setAdjuntosEstado('subidos');
+        toast(t('hire.attach.uploaded', { n: adjuntos.length }));
+      } else {
+        setAdjuntosEstado('fallo');
+        toast.warning(t('hire.attach.failed', { n: fallos }));
+      }
+    },
+    [adjuntos, t],
+  );
 
   const enviarBrief = useCallback(async (): Promise<void> => {
     if (!receipt || !address || !isOnchainAgent(agent)) return;
@@ -246,7 +382,8 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
         toast.warning(t('hire.step3.briefNoEndpoint'));
         return;
       }
-      const brief = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
+      // El que se firmó, no el que compondría el estado de ahora.
+      const brief = briefFirmado.current ?? componerBrief();
       const signature = await signMessageAsync({ message: briefSignMessage(taskId) });
       const res = await enviarBriefConReintento(buildBriefUrl(botUrl, taskId), {
         method: 'POST',
@@ -256,6 +393,9 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
       if (res.ok) {
         setBriefEstado('enviado');
         toast(t('hire.step3.briefSent'));
+        // Y ahora los bytes, que el agente ya sabe cuáles espera. Con la MISMA
+        // firma: a quien acaba de pagar no se le pide nada más.
+        if (adjuntos.length > 0) await subirAdjuntos(botUrl, taskId, signature, address);
       } else {
         console.warn(`[panal] POST brief al bot respondió ${res.status}; el brief sigue en local`);
         setBriefEstado('fallo');
@@ -266,7 +406,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
       setBriefEstado('fallo');
       toast.warning(t('hire.step3.briefFailed'));
     }
-  }, [receipt, address, agent, taskText, params, signMessageAsync, t]);
+  }, [receipt, address, agent, componerBrief, adjuntos.length, subirAdjuntos, signMessageAsync, t]);
 
   /* Push del brief al bot del agente (entrega máquina-a-máquina, headless).
      Tras minarse createTask: si el agente publica "bot:<url>" en su metadata
@@ -460,6 +600,60 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                     placeholder={t('hire.paramsPlaceholder')}
                     className="w-full rounded-xl border border-line bg-paper px-4 py-2.5 font-mono text-[12px] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
                   />
+                  {/* Adjuntos. El hash de cada uno entra en el encargo ANTES de
+                      pagar, así que el escrow los cubre igual que al texto: si
+                      alguien cambiara el archivo por el camino, el agente lo
+                      vería. Los bytes se suben después de contratar. */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.8125rem] font-medium text-ink-2">{t('hire.attach.label')}</span>
+                      <button
+                        type="button"
+                        onClick={() => inputArchivos.current?.click()}
+                        disabled={adjuntos.length >= MAX_ADJUNTOS}
+                        className="flex items-center gap-1.5 rounded-full bg-sand px-3 py-1.5 text-[0.8125rem] text-ink-2 transition-colors hover:bg-honey-soft hover:text-honey-deep disabled:opacity-40"
+                      >
+                        <Paperclip size={13} aria-hidden />
+                        {t('hire.attach.add')}
+                      </button>
+                    </div>
+                    <input
+                      ref={inputArchivos}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        void anadirArchivos(e.target.files);
+                        // Se vacía para que volver a elegir el MISMO archivo
+                        // dispare el change otra vez; si no, quitarlo y
+                        // reañadirlo no funcionaría.
+                        e.target.value = '';
+                      }}
+                    />
+                    {adjuntos.length > 0 && (
+                      <ul className="flex flex-col gap-1.5">
+                        {adjuntos.map((a) => (
+                          <li
+                            key={a.hash}
+                            className="flex items-center gap-2 rounded-lg border border-line bg-cream px-3 py-2"
+                          >
+                            <Paperclip size={13} className="shrink-0 text-ink-3" aria-hidden />
+                            <span className="flex-1 truncate text-[0.8125rem] text-ink">{a.name}</span>
+                            <span className="shrink-0 font-mono text-[11px] text-ink-3">{tamanoLegible(a.size)}</span>
+                            <button
+                              type="button"
+                              onClick={() => setAdjuntos((prev) => prev.filter((x) => x.hash !== a.hash))}
+                              aria-label={t('hire.attach.remove', { name: a.name })}
+                              className="shrink-0 rounded-md p-1 text-ink-3 transition-colors hover:bg-sand hover:text-ink"
+                            >
+                              <X size={13} aria-hidden />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <span className="text-[0.6875rem] text-ink-3">{t('hire.attach.hint')}</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setStep(1)}
@@ -731,16 +925,25 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                       {/* Envío manual del brief. Visible hasta que conste enviado:
                           en el navegador de una wallet el envío automático se
                           pierde a menudo, y sin brief el agente entrega genérico. */}
-                      {briefEstado !== 'enviado' && (
+                      {adjuntos.length > 0 && briefEstado === 'enviado' && adjuntosEstado !== 'pendiente' && (
+                        <p className="text-[0.8125rem] text-ink-2">
+                          {adjuntosEstado === 'subiendo'
+                            ? t('hire.attach.uploading', { n: adjuntos.length })
+                            : adjuntosEstado === 'subidos'
+                              ? t('hire.attach.uploaded', { n: adjuntos.length })
+                              : t('hire.attach.failed', { n: adjuntos.length })}
+                        </p>
+                      )}
+                      {(briefEstado !== 'enviado' || adjuntosEstado === 'fallo') && (
                         <button
                           type="button"
-                          disabled={briefEstado === 'enviando'}
+                          disabled={briefEstado === 'enviando' || adjuntosEstado === 'subiendo'}
                           onClick={() => void enviarBrief()}
                           className="btn-monad px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40"
                         >
-                          {briefEstado === 'enviando'
+                          {briefEstado === 'enviando' || adjuntosEstado === 'subiendo'
                             ? t('hire.step3.sendingBrief')
-                            : briefEstado === 'fallo'
+                            : briefEstado === 'fallo' || adjuntosEstado === 'fallo'
                               ? t('hire.step3.retryBrief')
                               : t('hire.step3.sendBrief')}
                         </button>
@@ -748,7 +951,10 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
                       <button
                         type="button"
                         onClick={() => {
-                          void navigator.clipboard.writeText(taskText.trim() + (params.trim() ? '\n' + params.trim() : ''));
+                          // Con el manifiesto dentro: la página de reenvío del
+                          // agente comprueba keccak256(brief) contra el
+                          // taskHash, y un texto sin adjuntos ya no cuadraría.
+                          void navigator.clipboard.writeText(componerBrief());
                           toast(t('hire.step3.briefCopied'));
                         }}
                         className="inline-flex items-center gap-2 rounded-full border border-monad/40 bg-monad/10 px-4 py-2 text-[0.8125rem] font-medium text-monad-mist transition-colors hover:border-monad"

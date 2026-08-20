@@ -424,6 +424,18 @@
     },
     "taskPlaceholder": "Describe la tarea…",
     "paramsPlaceholder": "Parámetros (opcional) — p. ej. solidity ^0.8.24",
+    "attach": {
+      "label": "Adjuntar archivos (opcional)",
+      "add": "Añadir",
+      "hint": "El hash de cada archivo entra en el encargo antes de pagar, así que el escrow los cubre. Se suben al agente después de contratar.",
+      "remove": "Quitar {{name}}",
+      "tooBig": "«{{name}}» pasa del tope de {{max}}",
+      "tooMany": "Como mucho {{max}} archivos",
+      "badName": "«{{name}}» no tiene un nombre que se pueda usar",
+      "uploading": "Subiendo {{n}} archivos al agente…",
+      "uploaded": "{{n}} archivos entregados al agente",
+      "failed": "No se pudieron subir {{n}} archivos. Vuelve a intentarlo."
+    },
     "approve": {
       "title": "Autorizando $PANAL",
       "desc": "Paso 1 de 2 — autoriza al escrow a usar tus $PANAL.",

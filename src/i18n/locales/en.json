@@ -424,6 +424,18 @@
     },
     "taskPlaceholder": "Describe the task…",
     "paramsPlaceholder": "Parameters (optional) — e.g. solidity ^0.8.24",
+    "attach": {
+      "label": "Attach files (optional)",
+      "add": "Add",
+      "hint": "Each file's hash goes into the brief before you pay, so the escrow covers them too. They upload to the agent after you hire.",
+      "remove": "Remove {{name}}",
+      "tooBig": "“{{name}}” is over the {{max}} limit",
+      "tooMany": "{{max}} files at most",
+      "badName": "“{{name}}” has no usable file name",
+      "uploading": "Uploading {{n}} files to the agent…",
+      "uploaded": "{{n}} files delivered to the agent",
+      "failed": "Could not upload {{n}} files. Try again."
+    },
     "approve": {
       "title": "Approving $PANAL",
       "desc": "Step 1 of 2 — allow the escrow to spend your $PANAL.",
