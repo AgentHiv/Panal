@@ -12,6 +12,7 @@
     "test:adjuntos": "tsx scripts/test-adjuntos.ts",
     "test:wallets": "tsx scripts/test-wallets.ts",
     "test:deeplinks": "tsx scripts/test-deeplinks.ts",
+    "test:pino-wc": "tsx scripts/test-pino-wc.ts",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -27,16 +27,28 @@ allowBuilds:
 # Va aqui y no en .npmrc porque pnpm 11 ya no lee de alli las opciones suyas.
 linkWorkspacePackages: true
 
-# WalletConnect arrastra `pino@7.11.0` por debajo, que tiene una
-# vulnerabilidad conocida. El propio conector de wagmi lo dice en su JSDoc y
-# pide este override: no lo arreglan ellos porque
-# `@walletconnect/ethereum-provider` cambió de licencia y no pueden actualizarlo
-# sin arrastrar la nueva.
+# AQUI NO VA UN OVERRIDE DE `pino`. Y hace falta explicarlo, porque el propio
+# JSDoc del conector de wagmi pide uno y parece lo correcto.
 #
-# Se comprueba con `pnpm why pino`: si vuelve a salir un 7.x, este override se
-# ha quedado atrás y la cadena entró por otro sitio.
-overrides:
-  '@walletconnect/logger>pino': '10.0.0'
+# WalletConnect arrastra `pino@7.11.0`, que tiene una vulnerabilidad conocida, y
+# wagmi recomienda forzar `'@walletconnect/logger>pino': '10.0.0'`. Se hizo, y
+# ROMPIO WalletConnect entero en el navegador con este error:
+#
+#     r.bindings is not a function
+#
+# El motivo esta en `@walletconnect/logger@2.1.2`, que resuelve el contexto asi:
+#
+#     typeof r.bindings > "u" ? contextoDelNavegador(r) : r.bindings().context
+#
+# Mira si `bindings` EXISTE y, si existe, lo LLAMA. El logger de navegador de
+# pino 7 no lo tiene y toma el otro camino; el de pino 8, 9 y 10 lo expone como
+# PROPIEDAD y no como funcion, asi que lo llama y revienta. Comprobado en las
+# tres versiones: ninguna sirve con este logger.
+#
+# La salida limpia seria subir `@walletconnect/logger` a 3.x, que ya viene hecho
+# para pino 10 — pero es un salto de major en una dependencia transitiva del
+# camino por el que se cobra, y eso pesa mas que una vulnerabilidad en un
+# logger. Se queda como estaba antes de tocarlo.
 
 minimumReleaseAgeExclude:
   - '@panal/sdk@0.7.0'
