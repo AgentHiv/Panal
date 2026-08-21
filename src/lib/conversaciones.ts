@@ -50,6 +50,13 @@ export interface EncargoEnHilo {
   entregado?: number;
   /** Lo que se pidió, si está en la caché de ESTE navegador. */
   brief: string | null;
+  /**
+   * El hash de lo que se pidió, que es lo único que viaja por la cadena.
+   *
+   * Va aquí porque es la llave del texto: sin él no se puede recuperar el
+   * brief para reenviárselo a un agente al que no le llegó.
+   */
+  taskHash: string;
   /** Lo bloqueado, en unidades mínimas y como texto. */
   importe: string;
   simbolo: string;
@@ -95,6 +102,7 @@ export function encargosDelCliente(
       cuando: Number(t.createdAt) * 1000,
       ...(t.deliveredAt && t.deliveredAt > 0n ? { entregado: Number(t.deliveredAt) * 1000 } : {}),
       brief: briefDe(t.taskHash),
+      taskHash: t.taskHash,
       importe: t.amountWei.toString(),
       simbolo: simboloDe(t.currency),
       estado: t.status,

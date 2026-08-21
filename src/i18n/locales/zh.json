@@ -1441,7 +1441,12 @@
       "cancelled": "已取消",
       "noBrief": "此委托的文本未保存在该浏览器中。",
       "locked": "已锁定 {{amount}}",
-      "follow": "在面板中跟进"
+      "follow": "在面板中跟进",
+      "notArrived": "如果代理没有收到这项委托，可以再发一次。不花钱：款项已经锁定。",
+      "resend": "重新发送委托",
+      "resendManual": "在代理页面重新发送",
+      "resent": "委托已送达代理",
+      "resendFailed": "无法重新发送委托"
     }
   }
 }
