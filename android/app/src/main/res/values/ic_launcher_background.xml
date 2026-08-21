@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- `paper`, el fondo de la web. Un icono blanco sobre una app oscura se
+         ve como de otra aplicación. -->
+    <color name="ic_launcher_background">#121019</color>
 </resources>
