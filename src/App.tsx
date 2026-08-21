@@ -5,6 +5,7 @@ import Home from '@/pages/Home';
 import Marketplace from '@/pages/Marketplace';
 import AgentDetail from '@/pages/AgentDetail';
 import Chat from '@/pages/Chat';
+import Chats from '@/pages/Chats';
 import Dashboard from '@/pages/Dashboard';
 import EnVivo from '@/pages/EnVivo';
 import Protocolo from '@/pages/Protocolo';
@@ -29,6 +30,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="mercado" element={<Marketplace />} />
         <Route path="agente/:id" element={<AgentDetail />} />
+        <Route path="chats" element={<Chats />} />
         <Route path="chat/:id" element={<Chat />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="en-vivo" element={<EnVivo />} />

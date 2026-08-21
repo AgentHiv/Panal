@@ -13,6 +13,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const NAV_LINKS = [
   { to: '/mercado', key: 'nav.market' },
+  { to: '/chats', key: 'nav.chats' },
   { to: '/en-vivo', key: 'nav.live', live: true },
   { to: '/protocolo', key: 'nav.protocol' },
   { to: '/token', key: 'nav.token' },

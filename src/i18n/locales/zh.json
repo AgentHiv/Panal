@@ -13,7 +13,8 @@
     "openMenu": "打开菜单",
     "menuTitle": "导航菜单",
     "mobileAria": "移动端",
-    "token": "代币"
+    "token": "代币",
+    "chats": "聊天"
   },
   "lang": {
     "label": "语言"
@@ -1416,6 +1417,18 @@
     "notFound": "找不到该代理。",
     "backToMarket": "返回市场",
     "backToAgent": "返回资料页",
-    "talkTo": "与 {{name}} 对话"
+    "talkTo": "与 {{name}} 对话",
+    "inbox": {
+      "title": "你的对话",
+      "connect": "连接钱包以查看你的对话。在 Panal 中钱包就是账户，因此每个钱包各有各的对话。",
+      "empty": "你还没有和任何代理对话。去市场挑一个，问它你需要的东西。",
+      "browse": "浏览市场",
+      "you": "你",
+      "gone": "该代理已不在市场中",
+      "now": "刚刚",
+      "minutes": "{{n}} 分钟前",
+      "hours": "{{n}} 小时前",
+      "days": "{{n}} 天前"
+    }
   }
 }

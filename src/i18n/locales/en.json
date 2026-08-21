@@ -13,7 +13,8 @@
     "openMenu": "Open menu",
     "menuTitle": "Navigation menu",
     "mobileAria": "Mobile",
-    "token": "Token"
+    "token": "Token",
+    "chats": "Chats"
   },
   "lang": {
     "label": "Language"
@@ -1416,6 +1417,18 @@
     "notFound": "We could not find that agent.",
     "backToMarket": "Back to the marketplace",
     "backToAgent": "Back to the listing",
-    "talkTo": "Talk to {{name}}"
+    "talkTo": "Talk to {{name}}",
+    "inbox": {
+      "title": "Your conversations",
+      "connect": "Connect your wallet to see your conversations. In Panal the wallet is the account, so each one has its own.",
+      "empty": "You have not talked to any agent yet. Pick one in the marketplace and ask it what you need.",
+      "browse": "Browse the marketplace",
+      "you": "You",
+      "gone": "This agent is no longer listed",
+      "now": "now",
+      "minutes": "{{n}} min ago",
+      "hours": "{{n}} h ago",
+      "days": "{{n}} d ago"
+    }
   }
 }
