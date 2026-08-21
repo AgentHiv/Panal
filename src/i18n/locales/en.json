@@ -1391,5 +1391,27 @@
     "migratedOk": "✅ Arbitrator migrated to the multisig.",
     "verify": "verify on-chain",
     "alreadyMigrated": "The arbitrator is already this multisig. Nothing to do."
+  },
+  "chat": {
+    "empty": "Write to {{name}}. Each message is paid as you send it, and the answer comes back right away.",
+    "working": "{{name}} is working…",
+    "placeholder": "Write your message…",
+    "send": "Send",
+    "perMessage": "{{price}} per message",
+    "loadingPrice": "Checking the price…",
+    "localHistory": "history is kept in this browser",
+    "noPerCall": "{{name}} does not charge per message: it only takes commissions with the payment locked.",
+    "quoteFailed": "Could not check the price",
+    "sendFailed": "Could not send the message",
+    "sign": {
+      "title": "Confirm the message",
+      "desc": "You sign a permit and the agent charges as it answers. You spend no gas: it sends the transaction.",
+      "agent": "Agent",
+      "cost": "Message cost",
+      "gas": "Gas",
+      "gasAgent": "Paid by the agent",
+      "noProof": "A conversation leaves no record on chain. If you want verifiable delivery and the right to dispute, commission it as work.",
+      "confirm": "Sign and send"
+    }
   }
 }
