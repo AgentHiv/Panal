@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Loader2, TriangleAlert } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
 import HiloChat from '@/components/chat/HiloChat';
+import HireDialog from '@/components/HireDialog';
 import { extractBotUrl } from '@/lib/botEndpoint';
 import { useTopAgents } from '@/hooks/useTopAgents';
 import { isOnchainAgent } from '@/hooks/usePanalAgents';
@@ -30,6 +31,14 @@ export default function Chat() {
 
   /** `undefined` mientras se lee el registro; `null` si no publica endpoint. */
   const [botUrl, setBotUrl] = useState<string | null | undefined>(undefined);
+  /**
+   * Contratar desde el hilo.
+   *
+   * El diálogo vive aquí y no dentro de HiloChat porque es esta pantalla la
+   * que tiene el agente entero; al hilo le basta con avisar de que se ha
+   * pulsado.
+   */
+  const [contratando, setContratando] = useState(false);
 
   useEffect(() => {
     if (!agent || !isOnchainAgent(agent)) return;
@@ -98,9 +107,16 @@ export default function Chat() {
             <Loader2 className="size-5 animate-spin text-ink-3" aria-hidden />
           </div>
         ) : (
-          <HiloChat agente={agent.workerAddress} nombre={agent.name} botUrl={botUrl} />
+          <HiloChat
+            agente={agent.workerAddress}
+            nombre={agent.name}
+            botUrl={botUrl}
+            onEncargar={() => setContratando(true)}
+          />
         )}
       </div>
+
+      <HireDialog agent={agent} open={contratando} onOpenChange={setContratando} />
     </div>
   );
 }

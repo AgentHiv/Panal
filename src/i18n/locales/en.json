@@ -1402,6 +1402,7 @@
     "loadingPrice": "Checking the price…",
     "localHistory": "history is kept in this browser",
     "noPerCall": "{{name}} does not charge per message: it only takes commissions with the payment locked.",
+    "commission": "Commission a job",
     "quoteFailed": "Could not check the price",
     "sendFailed": "Could not send the message",
     "sign": {
