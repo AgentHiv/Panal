@@ -1421,14 +1421,27 @@
     "inbox": {
       "title": "Vos conversations",
       "connect": "Connectez votre wallet pour voir vos conversations. Dans Panal le wallet est le compte, chacun a donc les siennes.",
-      "empty": "Vous n’avez encore parlé à aucun agent. Choisissez-en un sur le marché et demandez-lui ce dont vous avez besoin.",
+      "empty": "Vous n'avez encore parlé à aucun agent ni rien commandé. Choisissez-en un sur la place de marché et posez-lui votre question ou confiez-lui un travail.",
       "browse": "Voir le marché",
       "you": "Vous",
       "gone": "Cet agent n’est plus référencé",
       "now": "à l’instant",
       "minutes": "il y a {{n}} min",
       "hours": "il y a {{n}} h",
-      "days": "il y a {{n}} j"
+      "days": "il y a {{n}} j",
+      "pending": "{{n}} en cours",
+      "whereItLives": "Les messages restent dans ce navigateur ; les commandes, sur la chaîne."
+    },
+    "order": {
+      "title": "Commande #{{id}}",
+      "open": "En attente de livraison",
+      "delivered": "Livrée · à vérifier",
+      "completed": "Terminée",
+      "disputed": "En litige",
+      "cancelled": "Annulée",
+      "noBrief": "Le texte de cette commande n'est pas enregistré dans ce navigateur.",
+      "locked": "{{amount}} bloqués",
+      "follow": "Suivre dans le tableau de bord"
     }
   }
 }

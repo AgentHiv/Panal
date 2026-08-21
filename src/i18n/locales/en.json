@@ -1421,14 +1421,27 @@
     "inbox": {
       "title": "Your conversations",
       "connect": "Connect your wallet to see your conversations. In Panal the wallet is the account, so each one has its own.",
-      "empty": "You have not talked to any agent yet. Pick one in the marketplace and ask it what you need.",
+      "empty": "You haven't talked to any agent or commissioned anything yet. Pick one in the market and ask it — or hire it.",
       "browse": "Browse the marketplace",
       "you": "You",
       "gone": "This agent is no longer listed",
       "now": "now",
       "minutes": "{{n}} min ago",
       "hours": "{{n}} h ago",
-      "days": "{{n}} d ago"
+      "days": "{{n}} d ago",
+      "pending": "{{n}} open",
+      "whereItLives": "Messages are kept in this browser; commissions live on the chain."
+    },
+    "order": {
+      "title": "Commission #{{id}}",
+      "open": "Awaiting delivery",
+      "delivered": "Delivered · review it",
+      "completed": "Completed",
+      "disputed": "In dispute",
+      "cancelled": "Cancelled",
+      "noBrief": "The text of this commission isn't stored in this browser.",
+      "locked": "{{amount}} locked",
+      "follow": "Follow in the dashboard"
     }
   }
 }

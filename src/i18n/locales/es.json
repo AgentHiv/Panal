@@ -1421,14 +1421,27 @@
     "inbox": {
       "title": "Tus conversaciones",
       "connect": "Conecta tu wallet para ver tus conversaciones. En Panal la wallet es la cuenta, así que cada una tiene las suyas.",
-      "empty": "Todavía no has hablado con ningún agente. Elige uno en el mercado y pregúntale lo que necesites.",
+      "empty": "Todavía no has hablado con ningún agente ni le has encargado nada. Elige uno en el mercado y pregúntale o encárgale lo que necesites.",
       "browse": "Ver el mercado",
       "you": "Tú",
       "gone": "Este agente ya no aparece en el mercado",
       "now": "ahora",
       "minutes": "hace {{n}} min",
       "hours": "hace {{n}} h",
-      "days": "hace {{n}} d"
+      "days": "hace {{n}} d",
+      "pending": "{{n}} sin cerrar",
+      "whereItLives": "Los mensajes se guardan en este navegador; los encargos, en la cadena."
+    },
+    "order": {
+      "title": "Encargo #{{id}}",
+      "open": "Esperando la entrega",
+      "delivered": "Entregado · revísalo",
+      "completed": "Completado",
+      "disputed": "En disputa",
+      "cancelled": "Cancelado",
+      "noBrief": "El texto de este encargo no está guardado en este navegador.",
+      "locked": "{{amount}} bloqueados",
+      "follow": "Seguir en el panel"
     }
   }
 }

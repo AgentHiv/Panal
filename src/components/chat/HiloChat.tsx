@@ -16,7 +16,7 @@
  *      ve un error, y callarla es lo que convierte un fallo en desconfianza.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useWalletClient } from 'wagmi';
@@ -31,10 +31,14 @@ import {
   type CobroPorLlamada,
 } from '@/lib/chat';
 import { anadirMensaje, leerHilo, nuevoId, type Mensaje } from '@/lib/historial';
-import { activeChain } from '@/contracts/config';
+import { claveDeEntrada, encargosDelCliente, fusionarHilo } from '@/lib/conversaciones';
+import { getTaskBrief } from '@/lib/taskBriefs';
+import { useMyTasks } from '@/hooks/useMyTasks';
+import { activeChain, currencySymbol } from '@/contracts/config';
 import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
 import FirmarMensajeDialog from '@/components/chat/FirmarMensajeDialog';
+import TarjetaEncargo from '@/components/chat/TarjetaEncargo';
 
 export interface HiloChatProps {
   /** Dirección on-chain del agente. Es la mitad de la clave del hilo. */
@@ -48,6 +52,22 @@ export default function HiloChat({ agente, nombre, botUrl }: HiloChatProps) {
   const { t } = useTranslation();
   const { address, connected, connect } = useWallet();
   const { data: walletClient } = useWalletClient();
+  const { tasks } = useMyTasks();
+
+  /**
+   * Lo que le has ENCARGADO a este agente, que también es la conversación.
+   *
+   * Sale del escrow y no del historial local: el encargo ya está en la
+   * cadena, copiarlo aquí sólo serviría para que se quedara viejo. Por eso
+   * aparece aunque contrataras desde otro navegador.
+   */
+  const encargos = useMemo(
+    () =>
+      encargosDelCliente(tasks, currencySymbol, getTaskBrief).filter(
+        (e) => e.agente.toLowerCase() === agente.toLowerCase(),
+      ),
+    [tasks, agente],
+  );
 
   /**
    * Todo lo que depende de CON QUIÉN se habla y COMO QUIÉN.
@@ -76,6 +96,8 @@ export default function HiloChat({ agente, nombre, botUrl }: HiloChatProps) {
     setCotizacion(null);
   }
 
+  const entradas = useMemo(() => fusionarHilo(mensajes, encargos), [mensajes, encargos]);
+
   const estadoCobro = cobro === undefined ? 'leyendo' : cobro === null ? 'sin' : 'listo';
 
   // ¿Cobra por llamada este agente? Hay agentes que sólo aceptan encargos del
@@ -94,7 +116,7 @@ export default function HiloChat({ agente, nombre, botUrl }: HiloChatProps) {
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [mensajes.length, enviando]);
+  }, [entradas.length, enviando]);
 
   const precio = cobro ? `${formatUnits(cobro.amount, 18)} ${cobro.simbolo}` : '';
 
@@ -159,25 +181,30 @@ export default function HiloChat({ agente, nombre, botUrl }: HiloChatProps) {
     <div className="flex h-full flex-col">
       {/* Los mensajes */}
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-5">
-        {mensajes.length === 0 && (
+        {entradas.length === 0 && (
           <p className="mx-auto max-w-sm py-10 text-center text-[0.875rem] leading-relaxed text-ink-3">
             {t('chat.empty', { name: nombre })}
           </p>
         )}
 
-        {mensajes.map((m) => (
-          <div
-            key={m.id}
-            className={cn(
-              'max-w-[82%] rounded-2xl border px-3.5 py-2.5 text-[0.875rem] leading-relaxed',
-              m.de === 'yo'
-                ? 'ml-auto rounded-br-sm border-monad/40 bg-monad/15 text-ink'
-                : 'mr-auto rounded-bl-sm border-line bg-cream text-ink',
-            )}
-          >
-            <p className="whitespace-pre-wrap break-words">{m.texto}</p>
-          </div>
-        ))}
+        {/* Mensajes y encargos, en el orden en que pasaron. */}
+        {entradas.map((e) =>
+          e.clase === 'encargo' ? (
+            <TarjetaEncargo key={claveDeEntrada(e)} encargo={e.encargo} />
+          ) : (
+            <div
+              key={claveDeEntrada(e)}
+              className={cn(
+                'max-w-[82%] rounded-2xl border px-3.5 py-2.5 text-[0.875rem] leading-relaxed',
+                e.mensaje.de === 'yo'
+                  ? 'ml-auto rounded-br-sm border-monad/40 bg-monad/15 text-ink'
+                  : 'mr-auto rounded-bl-sm border-line bg-cream text-ink',
+              )}
+            >
+              <p className="whitespace-pre-wrap break-words">{e.mensaje.texto}</p>
+            </div>
+          ),
+        )}
 
         {enviando && (
           <div className="mr-auto flex max-w-[82%] items-center gap-2 rounded-2xl rounded-bl-sm border border-line bg-cream px-3.5 py-2.5 text-[0.8125rem] text-ink-3">
