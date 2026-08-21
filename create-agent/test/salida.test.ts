@@ -20,9 +20,9 @@
  * bueno.
  */
 
-import { comoArchivo, formatoPedido, textoADocx } from '../template/src/salida.js';
+import { comoArchivo, comoTabla, formatoPedido, textoADocx, textoAXlsx } from '../template/src/salida.js';
 import { leerZip } from '../template/src/zip.js';
-import { textoDeDocx } from '../template/src/adjuntos.js';
+import { textoDeDocx, textoDeXlsx } from '../template/src/adjuntos.js';
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -85,6 +85,54 @@ check('los caracteres de XML no rompen el archivo', !!escapado && escapado.inclu
 // entero, y no dice cuál era.
 const conControl = textoDeDocx(textoADocx('t', 'antesdespues'));
 check('un carácter de control se quita en vez de romper el archivo', !!conControl && conControl.includes('antesdespues'), String(conControl));
+
+console.log('\n── Excel ──\n');
+
+check('«dámelo en excel»', formatoPedido('dámelo en excel') === 'xlsx');
+// Quien pide una «hoja de cálculo» quiere abrirla y sumar, no un archivo de
+// texto con comas.
+check('«una hoja de cálculo» es Excel, no CSV', formatoPedido('quiero una hoja de cálculo') === 'xlsx');
+check('«spreadsheet» también', formatoPedido('give me a spreadsheet') === 'xlsx');
+check('pero «en csv» sigue siendo CSV', formatoPedido('sácame la tabla en csv') === 'csv');
+check('y el excel que ENTRA no cuenta', formatoPedido('lee el excel adjunto y devuélvemelo en pdf') === 'pdf');
+
+const xlsx = textoAXlsx('Factura', 'Concepto,Importe\nAuditoría,15000\n"Traducción, urgente",100');
+const releido = textoDeXlsx(xlsx);
+check('lo que se escribe se puede volver a leer', !!releido && releido.includes('Auditoría'), String(releido));
+check('un campo con coma dentro no se parte en dos', !!releido && releido.includes('Traducción, urgente'), String(releido));
+// Un número guardado como texto le pone a cada celda el triangulito verde de
+// «esto parece un número» y no deja sumar, que es justo para lo que se pide un
+// Excel. Se mira el XML de la hoja, no el resultado de volver a leerla.
+const hojaXml = new TextDecoder().decode(leerZip(xlsx).find((e) => e.nombre === 'xl/worksheets/sheet1.xml')!.bytes);
+check(
+  'un número se guarda COMO número',
+  hojaXml.includes('<c r="B2"><v>15000</v></c>'),
+  hojaXml.slice(hojaXml.indexOf('B2') - 10, hojaXml.indexOf('B2') + 60),
+);
+check(
+  'y el texto como texto',
+  /<c r="A2" t="inlineStr">/.test(hojaXml),
+);
+
+// De un resultado real y malo: se pidió una hoja de cálculo, el agente entregó
+// su JSON de siempre —correcto— y el Excel salió con UNA columna de frases.
+// Válido, y sin ningún valor para quien lo pidió para sumar.
+const conLista = JSON.stringify({
+  hallazgos: [
+    { concepto: 'Auditoría', importe: 15000 },
+    { concepto: 'Traducción', importe: 100 },
+  ],
+});
+const tabla = comoTabla(conLista);
+check('un JSON con lista de objetos se vuelve tabla', !!tabla && tabla.split('\n').length === 3, String(tabla));
+check('con las claves de cabecera', !!tabla && tabla.startsWith('concepto\timporte'), String(tabla));
+
+const xlsxDeJson = comoArchivo('xlsx', 'x', 'T', conLista, 'Concepto: Auditoría');
+const columnas = textoDeXlsx(xlsxDeJson.data as Uint8Array)?.split('\n')[0]?.split('\t').length;
+check('y el Excel sale con columnas, no con una sola', columnas === 2, `${columnas} columna(s)`);
+
+check('un texto que no es JSON no se fuerza a tabla', comoTabla('esto es prosa') === null);
+check('ni un JSON sin lista', comoTabla('{"a":1}') === null);
 
 console.log('\n── Lo que exige anclar el hash en la cadena ──\n');
 
