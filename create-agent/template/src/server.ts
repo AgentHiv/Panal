@@ -53,6 +53,7 @@ import type { Address } from 'viem';
 import { handleTask } from './agent.js';
 import type { AdjuntoRecibido, TaskContext, TaskFile, TaskResult } from './agent.js';
 import { arrancarVigilante } from './vigilante.js';
+import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const DATA_DIR = process.env.DATA_DIR ?? './data';
@@ -503,6 +504,7 @@ function contexto(
     amount: bigint;
     deadline: bigint;
     adjuntos: AdjuntoRecibido[];
+    historial: Turno[];
   },
   sobre: CallEnvelope | null,
 ): TaskContext {
@@ -568,6 +570,9 @@ async function work(taskId: bigint, brief: string, sobre: CallEnvelope | null): 
           amount: task.amount,
           deadline: task.deadline,
           adjuntos: recibidos,
+          // Un encargo del escrow no arrastra conversación: se paga, se
+          // entrega una vez y se aprueba. La memoria es de los chats.
+          historial: [],
         },
         sobre,
       ),
@@ -1045,6 +1050,11 @@ const server = createServer((req, res) => {
               // Una llamada x402 es una pregunta y una respuesta: no hay tarea
               // donde anclar un adjunto, así que tampoco hay adjuntos.
               adjuntos: [],
+              // Lo que ya se habló con ESTA persona. Quién es lo dice el pago:
+              // firmó un permiso y el cobro se ejecutó en la cadena, así que
+              // nadie puede continuar la conversación de otro sin pagar como
+              // él. Por eso no hace falta autenticar nada aquí.
+              historial: historialParaElModelo(DATA_DIR, leido.payment.payer),
             },
             sobre,
           ),
@@ -1062,6 +1072,12 @@ const server = createServer((req, res) => {
         }
         res.setHeader('x-payment-tx', cobro.txHash);
         json(res, 200, { answer, paid: { txHash: cobro.txHash, amount: cobro.amount.toString(), asset: X402_TOKEN } });
+
+        // El turno se guarda AQUÍ, con las dos mitades y sólo si hubo
+        // respuesta. Guardarlo antes de trabajar dejaría preguntas sin
+        // contestar en la memoria, y la siguiente vez el modelo leería una
+        // conversación en la que él se quedó callado.
+        recordarTurno(DATA_DIR, leido.payment.payer, { pregunta: prompt, respuesta: answer, cuando: Date.now() });
       } catch (err) {
         console.error(`[x402] cobrado pero falló al responder: ${err instanceof Error ? err.message : err}`);
         json(res, 502, {

@@ -120,6 +120,8 @@ async function main(): Promise<void> {
     'SUBCONTRATA_SALTOS=',
     'VIGILANTE_SEGUNDOS=',
     'PUBLIC_URL=',
+    'MEMORIA_TURNOS=',
+    'MEMORIA_CHARS=',
     'LIMITE_POR_MINUTO=',
   ];
   const faltan = CLAVES.filter((k) => !envZh.includes(k));

@@ -13,6 +13,7 @@
 
 import { esImagenSoportada, llmChat, resolverLlm, type CallEnvelope, type LlmConfig } from '@panal/sdk';
 import { textoAPdf } from './pdf.js';
+import { historialComoTexto, type Turno } from './memoria.js';
 
 /** Un archivo que el CLIENTE te mandó con el encargo. */
 export interface AdjuntoRecibido {
@@ -85,6 +86,23 @@ export interface TaskContext {
    * `consultar` ya lo respeta por su cuenta.
    */
   envelope: CallEnvelope | null;
+
+  /**
+   * LO QUE YA SE HABLÓ CON ESTA PERSONA.
+   *
+   * Sólo en llamadas x402, que son las que forman una conversación. En un
+   * encargo del escrow va vacío: un encargo tiene principio y fin, y
+   * arrastrarle memoria sería confundir dos cosas distintas.
+   *
+   * Quién es "esta persona" lo dice el PAGO, no una cabecera: firmó un permiso
+   * y el cobro se ejecutó en la cadena, así que nadie puede continuar la
+   * conversación de otro sin haber pagado como él.
+   *
+   * Va acotado por turnos y por caracteres (`MEMORIA_TURNOS`, `MEMORIA_CHARS`)
+   * porque entra en el prompt, y el prompt lo pagas TÚ mientras el cliente
+   * paga un precio fijo por mensaje.
+   */
+  historial: Turno[];
 }
 
 /** Un archivo que entregas junto al texto. */
@@ -177,7 +195,7 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
   // que entregues queda anclado en la cadena y ya no se puede rectificar.
   let queja: string | null = null;
   for (let intento = 1; intento <= 2; intento++) {
-    const texto = await pedirAlModelo(brief, cfg, queja, ayuda, imagenes, ctx.adjuntos);
+    const texto = await pedirAlModelo(brief, cfg, queja, ayuda, imagenes, ctx.adjuntos, ctx.historial);
     const problema = revisar(brief, texto);
     if (!problema) {
       console.log(`[agente] ${etiqueta(ctx)} resuelta: ${texto.length} caracteres`);
@@ -368,12 +386,23 @@ async function pedirAlModelo(
   ayuda: string | null,
   imagenes: { mime: string; bytes: Uint8Array }[],
   adjuntos: AdjuntoRecibido[],
+  historial: Turno[],
 ): Promise<string> {
   // Todo va en un solo turno de usuario, con cada parte etiquetada. Los tres
   // dialectos aceptan varios turnos, pero cada uno los cuenta a su manera, y
   // lo que aquí importa no es de quién es cada mensaje: es que el modelo no
   // confunda el material de apoyo con el encargo.
-  const partes = [brief];
+  const partes: string[] = [];
+
+  // Lo hablado antes va PRIMERO y marcado como tal. Sin la etiqueta, el modelo
+  // confunde una pregunta vieja con la de ahora y contesta a la equivocada;
+  // con ella entiende que es contexto y que lo último es lo que se le pide.
+  const antes = historialComoTexto(historial);
+  if (antes) {
+    partes.push(`Conversación anterior con este cliente, para que sepas de qué habláis:\n\n${antes}`);
+  }
+
+  partes.push(historial.length > 0 ? `Ahora te pide:\n${brief}` : brief);
 
   // Los adjuntos que el modelo NO puede mirar. Se nombran para que sepa que
   // existen: sin esto contesta como si el cliente no hubiera mandado nada, y
