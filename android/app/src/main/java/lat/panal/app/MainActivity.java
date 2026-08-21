@@ -26,6 +26,19 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Depuración remota del WebView, siempre.
+        //
+        // Sin esto, una pantalla en negro dentro de la app no se puede
+        // diagnosticar de ninguna forma: no hay consola, no hay mensaje, y
+        // desde fuera es indistinguible de que la app no arranque. Con esto,
+        // `chrome://inspect` desde un ordenador con el teléfono conectado
+        // enseña la consola de la página como si fuera una pestaña más.
+        //
+        // Android ya lo activa solo en compilaciones de depuración, pero
+        // ponerlo explícito hace que siga sirviendo el día que se firme una
+        // release, que es justo cuando cuesta más averiguar qué pasó.
+        WebView.setWebContentsDebuggingEnabled(true);
+
         // El dispatcher y no `onBackPressed()`: ese está desaprobado y con el
         // gesto predictivo de Android moderno deja de llamarse.
         getOnBackPressedDispatcher()
