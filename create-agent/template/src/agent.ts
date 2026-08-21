@@ -11,19 +11,18 @@
  * anclado en la cadena al entregar. Si luego sirves otra cosa, se nota.
  */
 
-import { esImagenSoportada, llmChat, resolverLlm, type CallEnvelope, type LlmConfig } from '@panal/sdk';
-import { textoAPdf } from './pdf.js';
+import { llmChat, resolverLlm, type CallEnvelope, type LlmConfig } from '@panal/sdk';
+import { leerAdjuntos, type AdjuntoRecibido, type AdjuntosLeidos } from './adjuntos.js';
+import { comoArchivo, formatoPedido } from './salida.js';
 import { historialComoTexto, type Turno } from './memoria.js';
 
-/** Un archivo que el CLIENTE te mandó con el encargo. */
-export interface AdjuntoRecibido {
-  /** Nombre ya limpio, tal y como lo anunció el encargo. */
-  name: string;
-  /** Tipo MIME, si lo declaró: `image/png`, `application/pdf`… */
-  mime?: string;
-  /** El contenido. Su hash ya se comprobó contra lo que la cadena cubre. */
-  bytes: Uint8Array;
-}
+/**
+ * Un archivo que el CLIENTE te mandó con el encargo.
+ *
+ * El tipo vive en `adjuntos.js`, que es quien sabe abrirlos; se reexporta aquí
+ * para tenerlo a mano sin salir de este archivo.
+ */
+export type { AdjuntoRecibido };
 
 export interface TaskContext {
   /**
@@ -45,8 +44,11 @@ export interface TaskContext {
    * pagara, así que estos bytes son exactamente los que la cadena cubre — si
    * alguien hubiera cambiado uno por el camino, no habría llegado hasta aquí.
    *
-   * Las imágenes se le pasan solas al modelo, si el tuyo sabe mirarlas. El
-   * resto lo tienes aquí en crudo para hacer lo que sepas hacer con ello.
+   * El motor los ABRE por ti antes de llamarte: las imágenes se le enseñan al
+   * modelo, y de un PDF, un Word, un Excel o una carpeta comprimida se saca el
+   * texto y entra en el encargo. Lo que no se pueda abrir se le NOMBRA al
+   * modelo en vez de callarlo. Aquí los tienes en crudo por si tu agente sabe
+   * hacer algo más con ellos.
    *
    * Vacío en una llamada x402: ahí no hay tarea donde anclar un adjunto.
    */
@@ -174,14 +176,12 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
     );
   }
 
-  // Lo que el cliente adjuntó y un modelo puede MIRAR. El resto de adjuntos
-  // sigue en `ctx.adjuntos` para que hagas con ellos lo que sepas hacer.
-  const imagenes = ctx.adjuntos
-    .filter((a) => esImagenSoportada(a.mime))
-    .map((a) => ({ mime: a.mime!, bytes: a.bytes }));
+  // Se abre TODO lo que mandó el cliente: imágenes para que las mire el
+  // modelo, y el texto de los PDF, Word, Excel y carpetas que vengan dentro.
+  const leido = await leerAdjuntos(ctx.adjuntos);
   if (ctx.adjuntos.length > 0) {
     console.log(
-      `[agente] ${etiqueta(ctx)} ${ctx.adjuntos.length} adjunto(s), ${imagenes.length} para el modelo: ` +
+      `[agente] ${etiqueta(ctx)} ${ctx.adjuntos.length} adjunto(s), ${leido.imagenes.length} para el modelo: ` +
         ctx.adjuntos.map((a) => a.name).join(', '),
     );
   }
@@ -195,11 +195,11 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
   // que entregues queda anclado en la cadena y ya no se puede rectificar.
   let queja: string | null = null;
   for (let intento = 1; intento <= 2; intento++) {
-    const texto = await pedirAlModelo(brief, cfg, queja, ayuda, imagenes, ctx.adjuntos, ctx.historial);
+    const texto = await pedirAlModelo(brief, cfg, queja, ayuda, leido, ctx.historial);
     const problema = revisar(brief, texto);
     if (!problema) {
       console.log(`[agente] ${etiqueta(ctx)} resuelta: ${texto.length} caracteres`);
-      return conPdfSiLoPidio(brief, texto, ctx);
+      return conArchivoSiLoPidio(brief, texto, ctx);
     }
     console.error(`[agente] ${etiqueta(ctx)} intento ${intento}: ${problema}`);
     // A la segunda se entrega igual. Tu revisión puede equivocarse, y un falso
@@ -207,7 +207,7 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
     // entregar algo imperfecto y que él decida, que dejarlo sin nada.
     if (intento === 2) {
       console.error(`[agente] ${etiqueta(ctx)} se entrega pese a: ${problema}`);
-      return conPdfSiLoPidio(brief, texto, ctx);
+      return conArchivoSiLoPidio(brief, texto, ctx);
     }
     queja = problema;
   }
@@ -372,11 +372,15 @@ function revisar(brief: string, resultado: string): string | null {
  * lo ancla en la cadena, así que el cliente puede demostrar que el archivo que
  * se baja es exactamente el que le entregaste.
  */
-function conPdfSiLoPidio(brief: string, texto: string, ctx: TaskContext): TaskResult {
-  if (!/\bpdf\b/i.test(brief)) return texto;
-  const pdf = textoAPdf(`Panal - entrega ${etiqueta(ctx)}`, texto);
-  console.log(`[agente] ${etiqueta(ctx)} PDF de ${pdf.byteLength} bytes adjunto`);
-  return { text: texto, files: [{ name: 'entrega.pdf', data: pdf, mime: 'application/pdf' }] };
+function conArchivoSiLoPidio(brief: string, texto: string, ctx: TaskContext): TaskResult {
+  const formato = formatoPedido(brief);
+  if (!formato) return texto;
+  const archivo = comoArchivo(formato, 'entrega', `Panal - entrega ${etiqueta(ctx)}`, texto);
+  const bytes = typeof archivo.data === 'string' ? archivo.data.length : archivo.data.byteLength;
+  console.log(`[agente] ${etiqueta(ctx)} ${archivo.name} de ${bytes} bytes adjunto`);
+  // El TEXTO se sigue entregando: es lo que se ancla en la cadena. El archivo
+  // va además, y su hash viaja dentro de la entrega.
+  return { text: texto, files: [archivo] };
 }
 
 async function pedirAlModelo(
@@ -384,8 +388,7 @@ async function pedirAlModelo(
   cfg: LlmConfig,
   queja: string | null,
   ayuda: string | null,
-  imagenes: { mime: string; bytes: Uint8Array }[],
-  adjuntos: AdjuntoRecibido[],
+  leido: AdjuntosLeidos,
   historial: Turno[],
 ): Promise<string> {
   // Todo va en un solo turno de usuario, con cada parte etiquetada. Los tres
@@ -404,17 +407,11 @@ async function pedirAlModelo(
 
   partes.push(historial.length > 0 ? `Ahora te pide:\n${brief}` : brief);
 
-  // Los adjuntos que el modelo NO puede mirar. Se nombran para que sepa que
-  // existen: sin esto contesta como si el cliente no hubiera mandado nada, y
-  // el cliente ve una respuesta que ignora la mitad de lo que pidió.
-  const noMirables = adjuntos.filter((a) => !imagenes.some((i) => i.bytes === a.bytes));
-  if (noMirables.length > 0) {
-    partes.push(
-      `[El cliente adjuntó estos archivos, que no puedes abrir: ${noMirables
-        .map((a) => `${a.name}${a.mime ? ` (${a.mime})` : ''}`)
-        .join(', ')}. El agente los tiene y los procesa aparte.]`,
-    );
-  }
+  // Lo que se pudo sacar de los adjuntos, ya etiquetado: el texto de un PDF,
+  // las filas de un Excel, los archivos de una carpeta. Y lo que NO se pudo
+  // abrir, nombrado — callarlo hace que el modelo conteste como si el cliente
+  // no hubiera mandado nada.
+  if (leido.texto) partes.push(leido.texto);
 
   // Lo que contestó el especialista, si se le preguntó. Va marcado como
   // material de apoyo y no como parte del encargo: sin esa aclaración el
@@ -465,7 +462,7 @@ async function pedirAlModelo(
         'say you cannot make them. This does NOT apply to images the client sent you: those you can ' +
         'and should refer to, because the client knows they sent them.',
       user: partes.join('\n\n'),
-      ...(imagenes.length > 0 ? { imagenes } : {}),
+      ...(leido.imagenes.length > 0 ? { imagenes: leido.imagenes } : {}),
     },
   );
 }
