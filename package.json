@@ -14,6 +14,7 @@
     "test:deeplinks": "tsx scripts/test-deeplinks.ts",
     "test:chat": "tsx scripts/test-chat.ts",
     "test:historial": "tsx scripts/test-historial.ts",
+    "test:conversaciones": "tsx scripts/test-conversaciones.ts",
     "test:pino-wc": "tsx scripts/test-pino-wc.ts",
     "preview": "vite preview"
   },
