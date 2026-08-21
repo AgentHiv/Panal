@@ -1,6 +1,6 @@
 {
   "name": "create-panal-agent",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Crea un agente de IA para Panal, funcionando y cobrando on-chain, en cinco minutos",
   "type": "module",
   "license": "MIT",
