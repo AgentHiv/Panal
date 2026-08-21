@@ -128,6 +128,105 @@ export function textoDeDocx(bytes: Uint8Array): string | null {
     .trim();
 }
 
+/** `A1` → 0, `B1` → 1, `AA7` → 26. Sirve para no descolocar una fila con huecos. */
+function columnaDe(ref: string): number {
+  const letras = /^([A-Z]+)/.exec(ref.toUpperCase())?.[1];
+  if (!letras) return 0;
+  let n = 0;
+  for (const c of letras) n = n * 26 + (c.charCodeAt(0) - 64);
+  return n - 1;
+}
+
+/** Lo que el XML trae escapado, de vuelta a texto. */
+function desescapar(s: string): string {
+  return s
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number(d)))
+    .replace(/&amp;/g, '&');
+}
+
+/**
+ * El contenido de un `.xlsx`, como filas de texto.
+ *
+ * Un Excel es otro ZIP con XML, como el .docx, pero con una vuelta de tuerca:
+ * las celdas de texto no suelen guardar el texto. Guardan un ÍNDICE a
+ * `sharedStrings.xml`, donde cada cadena aparece una sola vez aunque se repita
+ * en mil celdas. Sin resolver esa tabla, una hoja llena de nombres se lee como
+ * una lista de números.
+ *
+ * Y hay cuatro maneras de que una celda tenga texto, según quién escribiera el
+ * archivo: `t="s"` (la tabla), `t="str"` (resultado de fórmula), `t="inlineStr"`
+ * (el texto ahí mismo) y sin `t` (un número). Se contemplan las cuatro porque
+ * Excel, LibreOffice y las librerías no escogen la misma.
+ *
+ * Las filas salen separadas por tabuladores: es lo que un modelo lee como
+ * tabla sin tener que adivinar dónde acaba una celda, y no exige entrecomillar
+ * nada.
+ */
+export function textoDeXlsx(bytes: Uint8Array): string | null {
+  const partes = leerZip(bytes);
+  const hojas = partes
+    .filter((e) => /^xl\/worksheets\/sheet\d*\.xml$/.test(e.nombre))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  if (hojas.length === 0) return null;
+
+  // La tabla de cadenas compartidas, si la hay.
+  const compartidas: string[] = [];
+  const tabla = partes.find((e) => e.nombre === 'xl/sharedStrings.xml');
+  if (tabla) {
+    const xml = comoTexto(tabla.bytes) ?? '';
+    for (const si of xml.match(/<si>[\s\S]*?<\/si>/g) ?? []) {
+      // Una cadena puede venir partida en varios <t> cuando lleva formato
+      // dentro; se pegan sin separador, como en Word.
+      compartidas.push(desescapar([...si.matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map((m) => m[1] ?? '').join('')));
+    }
+  }
+
+  const salida: string[] = [];
+  for (const hoja of hojas) {
+    const xml = comoTexto(hoja.bytes);
+    if (!xml) continue;
+    const filas: string[] = [];
+
+    for (const fila of xml.match(/<row[^>]*>[\s\S]*?<\/row>/g) ?? []) {
+      const celdas: string[] = [];
+      for (const m of fila.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)) {
+        const attrs = m[1] ?? '';
+        const cuerpo = m[2] ?? '';
+        const tipo = /\bt="([^"]+)"/.exec(attrs)?.[1];
+        const ref = /\br="([^"]+)"/.exec(attrs)?.[1] ?? '';
+
+        let valor = '';
+        if (tipo === 'inlineStr') {
+          valor = desescapar([...cuerpo.matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map((x) => x[1] ?? '').join(''));
+        } else {
+          const v = /<v[^>]*>([\s\S]*?)<\/v>/.exec(cuerpo)?.[1] ?? '';
+          if (tipo === 's') valor = compartidas[Number(v)] ?? '';
+          else if (tipo === 'b') valor = v === '1' ? 'VERDADERO' : 'FALSO';
+          else valor = desescapar(v);
+        }
+
+        // Una fila puede saltarse columnas: `A1` y luego `D1`. Colocar cada
+        // valor en SU columna es lo que evita que una tabla con huecos salga
+        // desplazada y el modelo lea el dato de otra cabecera.
+        const col = ref ? columnaDe(ref) : celdas.length;
+        while (celdas.length < col) celdas.push('');
+        celdas[col] = valor;
+      }
+      if (celdas.some((c) => c !== '')) filas.push(celdas.join('\t'));
+    }
+
+    if (filas.length > 0) {
+      salida.push(hojas.length > 1 ? `[hoja ${salida.length + 1}]\n${filas.join('\n')}` : filas.join('\n'));
+    }
+  }
+
+  return salida.length > 0 ? salida.join('\n\n') : null;
+}
+
 /**
  * El texto de un PDF.
  *
@@ -203,9 +302,17 @@ export async function leerAdjuntos(adjuntos: AdjuntoRecibido[]): Promise<Adjunto
     }
 
     if (tipo === 'zip') {
+      // Word y Excel son ZIPs también, así que se prueban antes de tratarlo
+      // como una carpeta: leer un .xlsx entrada por entrada devolvería su XML
+      // en crudo, que para un modelo es ruido caro.
       const docx = textoDeDocx(a.bytes);
       if (docx) {
         anadir(`Documento adjunto: ${a.name}`, docx);
+        continue;
+      }
+      const xlsx = textoDeXlsx(a.bytes);
+      if (xlsx) {
+        anadir(`Hoja de cálculo adjunta (columnas separadas por tabulador): ${a.name}`, xlsx);
         continue;
       }
       // Un ZIP normal: una carpeta. Se leen los que sí sean texto y se
