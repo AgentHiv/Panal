@@ -30,9 +30,29 @@ import { elegirWallets, WALLETCONNECT_ID } from '@/lib/wallets';
 
 export default function WalletProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, status } = useAccount();
   const chainId = useChainId();
-  const { connect, connectors, isPending: connecting } = useConnect();
+  const { connect, connectors, isPending: conectando } = useConnect();
+
+  /**
+   * Recargar la página NO es desconectarse.
+   *
+   * wagmi guarda la sesión y al montar intenta recuperarla, y mientras lo hace
+   * `isConnected` es `false`. Sin mirar `status`, la barra no distinguía ese
+   * instante de no tener wallet: enseñaba «Conectar wallet» a alguien que ya
+   * estaba conectado y sólo tenía que esperar un momento.
+   *
+   * Y no era sólo cosmético. Pulsar ahí lanzaba un `connect` NUEVO por encima
+   * del que ya venía en camino, así que la wallet pedía aprobación otra vez
+   * para una sesión que iba a volver sola.
+   *
+   * Sólo `reconnecting`, no `connecting`: wagmi pone `connecting` también en
+   * la primera visita de quien nunca conectó nada, y ahí deshabilitar el botón
+   * sería estorbar sin motivo. `reconnecting` significa exactamente «había una
+   * sesión guardada y la estoy recuperando».
+   */
+  const reconectando = status === 'reconnecting';
+  const connecting = conectando || reconectando;
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const [installOpen, setInstallOpen] = useState(false);

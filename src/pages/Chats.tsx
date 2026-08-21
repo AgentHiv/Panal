@@ -48,7 +48,7 @@ function haceCuanto(cuando: number, t: (k: string, o?: Record<string, unknown>) 
 
 export default function Chats() {
   const { t } = useTranslation();
-  const { address, connected, connect } = useWallet();
+  const { address, connected, connecting, connect } = useWallet();
   const { agents, loading: cargandoAgentes } = usePanalAgents();
   const { tasks, loading: cargandoTareas } = useMyTasks();
 
@@ -67,6 +67,17 @@ export default function Chats() {
       return { ...c, nombre: agente?.name ?? null, ruta: agente ? `/chat/${agente.id}` : null };
     });
   }, [address, agents, tasks]);
+
+  // Al recargar, wagmi tarda un instante en recuperar la sesión. Enseñar
+  // «conecta tu wallet» en ese hueco es decirle a alguien que no tiene cuenta
+  // justo cuando está entrando en la suya.
+  if (!connected && connecting) {
+    return (
+      <div className="container-hive flex min-h-[60vh] items-center justify-center py-24">
+        <Loader2 className="size-6 animate-spin text-ink-3" aria-hidden />
+      </div>
+    );
+  }
 
   if (!connected) {
     return (
