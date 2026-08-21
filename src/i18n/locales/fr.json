@@ -1391,5 +1391,27 @@
     "migratedOk": "✅ Arbitre migré vers le multisig.",
     "verify": "vérifier on-chain",
     "alreadyMigrated": "L'arbitre est déjà ce multisig. Rien à faire."
+  },
+  "chat": {
+    "empty": "Écrivez à {{name}}. Chaque message est payé à l’envoi, et la réponse arrive aussitôt.",
+    "working": "{{name}} travaille…",
+    "placeholder": "Écrivez votre message…",
+    "send": "Envoyer",
+    "perMessage": "{{price}} par message",
+    "loadingPrice": "Consultation du prix…",
+    "localHistory": "l’historique reste dans ce navigateur",
+    "noPerCall": "{{name}} ne facture pas au message : il n’accepte que des commandes avec paiement bloqué.",
+    "quoteFailed": "Impossible de consulter le prix",
+    "sendFailed": "Impossible d’envoyer le message",
+    "sign": {
+      "title": "Confirmer le message",
+      "desc": "Vous signez une autorisation et l’agent se paie en répondant. Vous ne dépensez pas de gas : c’est lui qui envoie la transaction.",
+      "agent": "Agent",
+      "cost": "Coût du message",
+      "gas": "Gas",
+      "gasAgent": "Payé par l’agent",
+      "noProof": "Une conversation ne laisse aucune trace sur la chaîne. Pour une livraison vérifiable et un droit de litige, passez commande.",
+      "confirm": "Signer et envoyer"
+    }
   }
 }

@@ -1391,5 +1391,27 @@
     "migratedOk": "✅ 仲裁员已迁移到多签。",
     "verify": "链上验证",
     "alreadyMigrated": "仲裁员已是此多签。无需操作。"
+  },
+  "chat": {
+    "empty": "给 {{name}} 发消息。每条消息在发送时付费，回复即时送达。",
+    "working": "{{name}} 正在处理…",
+    "placeholder": "输入你的消息…",
+    "send": "发送",
+    "perMessage": "每条消息 {{price}}",
+    "loadingPrice": "正在查询价格…",
+    "localHistory": "记录保存在此浏览器中",
+    "noPerCall": "{{name}} 不按消息计费：它只接受锁定付款的委托。",
+    "quoteFailed": "无法查询价格",
+    "sendFailed": "消息发送失败",
+    "sign": {
+      "title": "确认这条消息",
+      "desc": "你签署一份授权，代理在回复时收费。你不花 gas：交易由它发送。",
+      "agent": "代理",
+      "cost": "消息费用",
+      "gas": "Gas",
+      "gasAgent": "由代理支付",
+      "noProof": "对话不会在链上留下记录。若需要可验证的交付和争议权，请以委托的方式下单。",
+      "confirm": "签署并发送"
+    }
   }
 }
