@@ -229,6 +229,28 @@ if (WC_PROJECT_ID) {
 export const wagmiConfig = createConfig({
   chains: [activeChain],
   connectors,
+  /**
+   * Recargar la página tiene que devolver la sesión, y sin esto no lo hacía.
+   *
+   * El nombre engaña: aquí no hay servidor que renderice nada. Lo que decide
+   * `ssr` es el ORDEN de dos cosas al arrancar, y ése era el fallo.
+   *
+   * Con `ssr: false` —el valor por defecto— wagmi lanza `reconnect()` durante
+   * el primer render. Pero el almacenamiento es asíncrono (`createStorage`
+   * expone `async getItem`), así que en ese instante el estado guardado
+   * todavía no ha llegado: `current` está vacío, wagmi marca el intento como
+   * `connecting` en vez de `reconnecting`, y los conectores que se anuncian
+   * por EIP-6963 —MetaMask entre ellos— se DESCARTAN, porque el registro los
+   * ignora mientras la hidratación no haya terminado. El resultado es que la
+   * wallet seguía autorizando el sitio pero la web no lo sabía: aparecía
+   * «Conectar wallet», y al pulsarlo entraba sin pedir firma, que es la señal
+   * de que la sesión estaba ahí todo el tiempo.
+   *
+   * Con `ssr: true`, el arranque pasa a un efecto y en el orden correcto:
+   * espera a la hidratación, vuelve a registrar los conectores descubiertos y
+   * sólo entonces reconecta.
+   */
+  ssr: true,
   transports: {
     // wagmi exige transport tipado para ambas cadenas de la unión;
     // en runtime solo se usa la de `activeChain`.
