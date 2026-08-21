@@ -32,13 +32,14 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx test/i18n.test.ts && tsx test/memoria.test.ts && tsx test/reintento.test.ts && tsx test/scaffold.test.ts",
+    "test": "tsx test/i18n.test.ts && tsx test/memoria.test.ts && tsx test/reintento.test.ts && tsx test/zip.test.ts && tsx test/adjuntos.test.ts && tsx test/salida.test.ts && tsx test/scaffold.test.ts",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
-    "@types/node": "^22.0.0"
+    "typescript": "^5.6.0",
+    "unpdf": "^1.8.1"
   },
   "dependencies": {
     "viem": "^2.21.0"
