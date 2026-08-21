@@ -55,6 +55,55 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!--
+      Red de seguridad para el arranque.
+
+      Si algo revienta antes de que React monte, lo que queda es `#root` vacío
+      sobre el fondo oscuro del sitio: una pantalla NEGRA, sin un solo mensaje.
+      Desde fuera es indistinguible de que la app no cargue, y sin consola
+      —dentro del WebView de un teléfono, por ejemplo— no hay forma de saber
+      qué pasó. Ocurrió de verdad, y costó varias vueltas.
+
+      Esto no arregla ningún fallo: lo enseña. Solo se activa si el error deja
+      la página vacía, así que en funcionamiento normal no existe.
+    -->
+    <script>
+      (function () {
+        var pintado = false;
+        function mostrar(motivo) {
+          var root = document.getElementById('root');
+          // Si React ya montó algo, el error es de otra cosa y no toca la
+          // pantalla: tapar una app que funciona sería peor que el error.
+          if (pintado || !root || root.childNodes.length > 0) return;
+          pintado = true;
+          root.innerHTML =
+            '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;' +
+            'padding:24px;font:14px/1.6 system-ui,-apple-system,sans-serif;background:#0C0A12;color:#e8e8ea">' +
+            '<div style="max-width:34rem">' +
+            '<p style="font-size:1.15rem;margin:0 0 .5rem">Panal no ha podido arrancar aquí.</p>' +
+            '<p style="color:#9a9aa2;margin:0 0 1rem">Esto es lo que ha fallado. Si lo compartes, se puede arreglar:</p>' +
+            '<pre style="white-space:pre-wrap;word-break:break-word;background:#17141f;border:1px solid #2a2536;' +
+            'border-radius:10px;padding:12px;margin:0;font-size:12px">' +
+            String(motivo).replace(/[<>&]/g, function (c) {
+              return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c];
+            }) +
+            '</pre></div></div>';
+        }
+        window.addEventListener('error', function (e) {
+          mostrar((e.message || 'error') + (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          mostrar((e.reason && e.reason.message) || e.reason || 'promesa rechazada');
+        });
+        // Y el caso mudo: ningún error, pero nada montado. Pasa cuando un
+        // módulo no llega a evaluarse siquiera.
+        setTimeout(function () {
+          mostrar('La página cargó pero no llegó a arrancar, y no dio ningún error.\n\nNavegador: ' + navigator.userAgent);
+        }, 12000);
+      })();
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
