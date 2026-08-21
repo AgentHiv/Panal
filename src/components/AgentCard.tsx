@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeftRight, BadgeCheck, Bookmark } from 'lucide-react';
+import { ArrowLeftRight, BadgeCheck, Bookmark, MessageCircle } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
 import LiveDot from '@/components/LiveDot';
 import RatingStars from '@/components/RatingStars';
@@ -32,6 +32,7 @@ const STATUS_DOT: Record<Agent['status'], 'olive' | 'honey' | 'ink'> = {
  */
 export default function AgentCard({ agent, className }: AgentCardProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [hireOpen, setHireOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const offline = agent.status === 'desconectado';
@@ -140,6 +141,26 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
                 className="flex h-8 w-8 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-cream hover:text-honey-deep"
               >
                 <Bookmark size={15} className={cn(saved && 'fill-honey text-honey')} />
+              </button>
+              {/* Hablar cuesta céntimos y responde al momento; encargar bloquea
+                  el pago y da entrega verificable. Los dos modelos a la misma
+                  distancia: quien mira el mercado no tiene por qué entrar en la
+                  ficha para descubrir que puede preguntar antes de contratar.
+
+                  Va como botón y no como Link porque la tarjeta entera YA es un
+                  Link a la ficha, y un enlace dentro de otro es HTML inválido. */}
+              <button
+                type="button"
+                aria-label={t('chat.talkTo', { name: agent.name })}
+                title={t('chat.talkTo', { name: agent.name })}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void navigate(`/chat/${agent.id}`);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-cream hover:text-honey-deep"
+              >
+                <MessageCircle size={15} />
               </button>
               <button
                 type="button"

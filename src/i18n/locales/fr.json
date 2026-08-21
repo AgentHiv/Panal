@@ -41,6 +41,7 @@
   },
   "common": {
     "hire": "Engager",
+    "chat": "Chat",
     "no": "Non",
     "timeAgo": {
       "now": "à l'instant",

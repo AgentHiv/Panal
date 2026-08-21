@@ -15,13 +15,14 @@ import {
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { activeChain, currencySymbol } from '@/contracts/config';
-import { isOnchainAgent, priceKey } from '@/hooks/usePanalAgents';
+import { priceKey } from '@/hooks/usePanalAgents';
 import Reveal, { WordReveal } from '@/components/home/Reveal';
 import MiniSwarm from '@/components/home/MiniSwarm';
 import SectionHeader from '@/components/SectionHeader';
 import StatBlock from '@/components/StatBlock';
 import LiveDot from '@/components/LiveDot';
 import RatingStars from '@/components/RatingStars';
+import AgentCard from '@/components/AgentCard';
 import HexAvatar from '@/components/HexAvatar';
 import HireDialog from '@/components/HireDialog';
 import Magnetic from '@/components/Magnetic';
@@ -531,22 +532,6 @@ function LiveSection() {
 /* ============================================================
  * S6 · Ranking semanal (claro)
  * ============================================================ */
-function Sparkline({ data, className }: { data: number[]; className?: string }) {
-  const w = 80;
-  const h = 24;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const pts = data
-    .map((v, i) => `${((i / (data.length - 1)) * (w - 4) + 2).toFixed(1)},${(h - 3 - ((v - min) / range) * (h - 6)).toFixed(1)}`)
-    .join(' ');
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className={className} width={w} height={h} aria-hidden>
-      <polyline points={pts} fill="none" stroke="#E29A2E" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 function RankBadge({ rank }: { rank: number }) {
   return (
     <span
@@ -622,13 +607,26 @@ function PodiumCard({ agent, rank }: { agent: Agent; rank: number }) {
 
 function RankingSection() {
   const { t, i18n } = useTranslation();
-  const { agentCount } = useNetworkStats();
-  const agentCountLabel =
-    agentCount !== null ? new Intl.NumberFormat(i18n.language).format(agentCount) : '—';
   // Ranking REAL: top del panal por actividad/reputación del indexador.
   const { top } = useTopAgents();
+  /**
+   * El número del enlace es el de los agentes que se van a ver.
+   *
+   * Salía de `getAgentCount()` del registro, que cuenta TODOS los que se
+   * registraron alguna vez, incluidos los dados de baja: decía «ver los 9
+   * agentes» y al pulsarlo aparecían seis.
+   */
+  const agentCountLabel = top.length > 0 ? new Intl.NumberFormat(i18n.language).format(top.length) : '—';
   const podium = top.slice(0, 3);
-  const minis = top.slice(3, 7);
+  /**
+   * El resto del ranking, con su ficha entera.
+   *
+   * Antes salían como una fila fina con el nombre y poco más, y al lado de las
+   * tarjetas del podio parecía que a esos agentes les faltaban los datos. No
+   * era un fallo de datos: era que no se pintaban. Se reutiliza la tarjeta del
+   * mercado, que ya enseña descripción, valoración, métricas y los dos botones.
+   */
+  const resto = top.slice(3, 9);
 
   return (
     <section className="bg-paper py-24 md:py-32">
@@ -661,24 +659,13 @@ function RankingSection() {
                 <PodiumCard key={a.id} agent={a} rank={i + 1} />
               ))}
             </Reveal>
-            <Reveal stagger className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {minis.map((a) => (
-                <Link
-                  key={a.id}
-                  to={`/agente/${a.id}`}
-                  className="group flex items-center gap-3 rounded-2xl border border-line bg-paper p-4 transition-all duration-200 hover:-translate-y-1 hover:border-honey hover:shadow-card"
-                >
-                  <HexAvatar seed={a.wallet} size={40} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[0.875rem] font-semibold text-ink">{a.name}</p>
-                    <p className="font-mono text-[11px] text-ink-3">
-                      {formatRating(a.rating)} ★ · {formatMon(a.pricePerTask)} {isOnchainAgent(a) ? currencySymbol(a.currency) : 'MON'}
-                    </p>
-                  </div>
-                  <Sparkline data={a.trend7d} className="shrink-0 opacity-80 transition-opacity group-hover:opacity-100" />
-                </Link>
-              ))}
-            </Reveal>
+            {resto.length > 0 && (
+              <Reveal stagger className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {resto.map((a) => (
+                  <AgentCard key={a.id} agent={a} />
+                ))}
+              </Reveal>
+            )}
           </>
         )}
       </div>
