@@ -1412,6 +1412,10 @@
       "gasAgent": "由代理支付",
       "noProof": "对话不会在链上留下记录。若需要可验证的交付和争议权，请以委托的方式下单。",
       "confirm": "签署并发送"
-    }
+    },
+    "notFound": "找不到该代理。",
+    "backToMarket": "返回市场",
+    "backToAgent": "返回资料页",
+    "talkTo": "与 {{name}} 对话"
   }
 }

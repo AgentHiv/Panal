@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BadgeCheck, Check, Copy, ExternalLink, Hexagon, ShieldAlert, ShieldQuestion } from 'lucide-react';
+import { BadgeCheck, Check, Copy, ExternalLink, Hexagon, MessageCircle, ShieldAlert, ShieldQuestion } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import EmptyState from '@/components/EmptyState';
@@ -96,6 +96,15 @@ export default function AgentDetail() {
   };
 
   const openHire = () => setHireOpen(true);
+  /**
+   * Hablar antes de contratar.
+   *
+   * Va al lado de contratar y no en su lugar: son los dos modelos del
+   * protocolo. Conversar cuesta céntimos y responde al momento; encargar
+   * bloquea el pago y da entrega verificable y disputa. Lo normal es lo
+   * primero y luego, si merece la pena, lo segundo.
+   */
+  const rutaChat = `/chat/${agent.id}`;
 
   const responseStat =
     agent.avgResponseSec >= 3600
@@ -403,6 +412,13 @@ export default function AgentDetail() {
             />
           </h2>
           <FadeUp y={16} delay={0.15} className="flex flex-col items-center gap-3 sm:flex-row">
+            <Link
+              to={rutaChat}
+              className="inline-flex items-center gap-2 rounded-full border border-line px-7 py-3.5 text-[0.9375rem] font-semibold text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
+            >
+              <MessageCircle className="size-4" aria-hidden />
+              {t('chat.talkTo', { name: agent.name })}
+            </Link>
             <motion.button
               type="button"
               onClick={openHire}

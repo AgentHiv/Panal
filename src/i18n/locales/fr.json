@@ -1412,6 +1412,10 @@
       "gasAgent": "Payé par l’agent",
       "noProof": "Une conversation ne laisse aucune trace sur la chaîne. Pour une livraison vérifiable et un droit de litige, passez commande.",
       "confirm": "Signer et envoyer"
-    }
+    },
+    "notFound": "Nous n’avons pas trouvé cet agent.",
+    "backToMarket": "Retour au marché",
+    "backToAgent": "Retour à la fiche",
+    "talkTo": "Parler à {{name}}"
   }
 }
