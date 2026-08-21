@@ -1441,7 +1441,12 @@
       "cancelled": "Cancelada",
       "noBrief": "O texto desta encomenda não está guardado neste navegador.",
       "locked": "{{amount}} bloqueados",
-      "follow": "Acompanhar no painel"
+      "follow": "Acompanhar no painel",
+      "notArrived": "Se o agente não recebeu a encomenda, envie-a outra vez. Não custa nada: o pagamento já está bloqueado.",
+      "resend": "Reenviar a encomenda",
+      "resendManual": "Reenviar pela página do agente",
+      "resent": "A encomenda chegou ao agente",
+      "resendFailed": "Não foi possível reenviar a encomenda"
     }
   }
 }

@@ -190,7 +190,7 @@ export default function HiloChat({ agente, nombre, botUrl }: HiloChatProps) {
         {/* Mensajes y encargos, en el orden en que pasaron. */}
         {entradas.map((e) =>
           e.clase === 'encargo' ? (
-            <TarjetaEncargo key={claveDeEntrada(e)} encargo={e.encargo} />
+            <TarjetaEncargo key={claveDeEntrada(e)} encargo={e.encargo} botUrl={botUrl} />
           ) : (
             <div
               key={claveDeEntrada(e)}

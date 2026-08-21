@@ -1441,7 +1441,12 @@
       "cancelled": "Annulée",
       "noBrief": "Le texte de cette commande n'est pas enregistré dans ce navigateur.",
       "locked": "{{amount}} bloqués",
-      "follow": "Suivre dans le tableau de bord"
+      "follow": "Suivre dans le tableau de bord",
+      "notArrived": "Si l'agent n'a pas reçu la commande, renvoyez-la. Cela ne coûte rien : le paiement est déjà bloqué.",
+      "resend": "Renvoyer la commande",
+      "resendManual": "Renvoyer depuis la page de l'agent",
+      "resent": "La commande est bien arrivée",
+      "resendFailed": "Impossible de renvoyer la commande"
     }
   }
 }

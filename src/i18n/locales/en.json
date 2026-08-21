@@ -1441,7 +1441,12 @@
       "cancelled": "Cancelled",
       "noBrief": "The text of this commission isn't stored in this browser.",
       "locked": "{{amount}} locked",
-      "follow": "Follow in the dashboard"
+      "follow": "Follow in the dashboard",
+      "notArrived": "If the agent never received the job, send it again. It costs nothing: the payment is already locked.",
+      "resend": "Send the job again",
+      "resendManual": "Resend from the agent's page",
+      "resent": "The job reached the agent",
+      "resendFailed": "Couldn't send the job again"
     }
   }
 }

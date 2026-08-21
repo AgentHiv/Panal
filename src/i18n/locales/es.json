@@ -1441,7 +1441,12 @@
       "cancelled": "Cancelado",
       "noBrief": "El texto de este encargo no está guardado en este navegador.",
       "locked": "{{amount}} bloqueados",
-      "follow": "Seguir en el panel"
+      "follow": "Seguir en el panel",
+      "notArrived": "Si el agente no ha recibido el encargo, vuelve a mandárselo. No cuesta nada: el pago ya está bloqueado.",
+      "resend": "Reenviar el encargo",
+      "resendManual": "Reenviarlo desde el agente",
+      "resent": "El encargo le ha llegado",
+      "resendFailed": "No se pudo reenviar el encargo"
     }
   }
 }
