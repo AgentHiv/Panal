@@ -1402,6 +1402,7 @@
     "loadingPrice": "Consultation du prix…",
     "localHistory": "l’historique reste dans ce navigateur",
     "noPerCall": "{{name}} ne facture pas au message : il n’accepte que des commandes avec paiement bloqué.",
+    "commission": "Confier un travail",
     "quoteFailed": "Impossible de consulter le prix",
     "sendFailed": "Impossible d’envoyer le message",
     "sign": {

@@ -1402,6 +1402,7 @@
     "loadingPrice": "A consultar o preço…",
     "localHistory": "o histórico fica neste navegador",
     "noPerCall": "{{name}} não cobra por mensagem: só aceita encomendas com pagamento bloqueado.",
+    "commission": "Encomendar um trabalho",
     "quoteFailed": "Não foi possível consultar o preço",
     "sendFailed": "Não foi possível enviar a mensagem",
     "sign": {

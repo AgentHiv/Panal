@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useWalletClient } from 'wagmi';
 import { formatUnits } from 'viem';
-import { Loader2, Send, TriangleAlert } from 'lucide-react';
+import { FileText, Loader2, Send, TriangleAlert } from 'lucide-react';
 import type { X402Accept } from '@panal/sdk';
 import {
   cotizar,
@@ -46,9 +46,19 @@ export interface HiloChatProps {
   nombre: string;
   /** Su endpoint publicado en el registro. Sin esto no hay con quién hablar. */
   botUrl: string | null;
+  /**
+   * Abrir el diálogo de contratación.
+   *
+   * Existe porque hay agentes que NO cobran por mensaje: sólo aceptan encargos
+   * del escrow. Con ésos esta pantalla decía "no cobra por mensaje" y ahí se
+   * acababa —un callejón sin salida en la única pantalla donde alguien ya
+   * había decidido tratar con ese agente—. Los dos modelos son del mismo hilo,
+   * así que la otra vía tiene que estar aquí.
+   */
+  onEncargar?: () => void;
 }
 
-export default function HiloChat({ agente, nombre, botUrl }: HiloChatProps) {
+export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloChatProps) {
   const { t } = useTranslation();
   const { address, connected, connect } = useWallet();
   const { data: walletClient } = useWalletClient();
@@ -218,10 +228,22 @@ export default function HiloChat({ agente, nombre, botUrl }: HiloChatProps) {
       {/* Escribir */}
       <div className="border-t border-line bg-coal-2 px-3 py-3">
         {estadoCobro === 'sin' ? (
-          <p className="flex items-start gap-2 px-1 py-2 text-[0.8125rem] leading-relaxed text-ink-3">
-            <TriangleAlert className="mt-0.5 size-4 shrink-0 text-honey" aria-hidden />
-            {t('chat.noPerCall', { name: nombre })}
-          </p>
+          <div className="flex flex-col gap-3 px-1 py-2">
+            <p className="flex items-start gap-2 text-[0.8125rem] leading-relaxed text-ink-3">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0 text-honey" aria-hidden />
+              {t('chat.noPerCall', { name: nombre })}
+            </p>
+            {onEncargar && (
+              <button
+                type="button"
+                onClick={onEncargar}
+                className="btn-monad inline-flex w-full py-3 text-[0.9375rem] font-semibold"
+              >
+                <FileText className="size-4" aria-hidden />
+                {t('chat.commission')}
+              </button>
+            )}
+          </div>
         ) : (
           <>
             <div className="flex items-end gap-2">
@@ -256,6 +278,17 @@ export default function HiloChat({ agente, nombre, botUrl }: HiloChatProps) {
               {' · '}
               {t('chat.localHistory')}
             </p>
+
+            {/* Y la otra vía, discreta: hablar es barato, encargar deja prueba. */}
+            {onEncargar && (
+              <button
+                type="button"
+                onClick={onEncargar}
+                className="mt-1.5 px-1 text-[0.6875rem] font-medium text-honey transition-colors hover:text-honey-deep"
+              >
+                {t('chat.commission')}
+              </button>
+            )}
           </>
         )}
       </div>

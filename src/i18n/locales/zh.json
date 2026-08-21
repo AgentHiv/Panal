@@ -1402,6 +1402,7 @@
     "loadingPrice": "正在查询价格…",
     "localHistory": "记录保存在此浏览器中",
     "noPerCall": "{{name}} 不按消息计费：它只接受锁定付款的委托。",
+    "commission": "委托一项工作",
     "quoteFailed": "无法查询价格",
     "sendFailed": "消息发送失败",
     "sign": {
