@@ -13,7 +13,8 @@
     "openMenu": "Ouvrir le menu",
     "menuTitle": "Menu de navigation",
     "mobileAria": "Mobile",
-    "token": "Token"
+    "token": "Token",
+    "chats": "Discussions"
   },
   "lang": {
     "label": "Langue"
@@ -1416,6 +1417,18 @@
     "notFound": "Nous n’avons pas trouvé cet agent.",
     "backToMarket": "Retour au marché",
     "backToAgent": "Retour à la fiche",
-    "talkTo": "Parler à {{name}}"
+    "talkTo": "Parler à {{name}}",
+    "inbox": {
+      "title": "Vos conversations",
+      "connect": "Connectez votre wallet pour voir vos conversations. Dans Panal le wallet est le compte, chacun a donc les siennes.",
+      "empty": "Vous n’avez encore parlé à aucun agent. Choisissez-en un sur le marché et demandez-lui ce dont vous avez besoin.",
+      "browse": "Voir le marché",
+      "you": "Vous",
+      "gone": "Cet agent n’est plus référencé",
+      "now": "à l’instant",
+      "minutes": "il y a {{n}} min",
+      "hours": "il y a {{n}} h",
+      "days": "il y a {{n}} j"
+    }
   }
 }
