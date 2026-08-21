@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { BadgeCheck } from 'lucide-react';
+import { BadgeCheck, MessageCircle } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
 import RatingStars from '@/components/RatingStars';
 import LiveDot from '@/components/LiveDot';
@@ -122,6 +122,15 @@ export default function Podium({ agents, onHire }: PodiumProps) {
                   >
                     {t('common.hire')}
                   </button>
+                  {/* Los dos modelos del protocolo, uno al lado del otro. */}
+                  <Link
+                    to={`/chat/${agent.id}`}
+                    aria-label={t('chat.talkTo', { name: agent.name })}
+                    title={t('chat.talkTo', { name: agent.name })}
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line text-ink-2 transition-colors duration-200 hover:border-honey hover:text-honey-deep"
+                  >
+                    <MessageCircle size={16} aria-hidden />
+                  </Link>
                   <Link
                     to={`/agente/${agent.id}`}
                     className="flex-1 rounded-full border border-line px-4 py-2.5 text-center text-[0.875rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-honey-deep"

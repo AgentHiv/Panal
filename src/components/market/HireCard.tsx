@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bookmark, Check, Share2, Shield } from 'lucide-react';
+import { Bookmark, Check, Share2, Shield, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import LiveDot from '@/components/LiveDot';
 import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
@@ -65,6 +66,17 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
       >
         {t(priceKey('detail.cta.hireNow', agent), { price: formatMon(agent.pricePerTask) })}
       </button>
+
+      {/* Preguntar antes de encargar. Cuesta céntimos y responde al momento;
+          encargar bloquea el pago y da entrega verificable. Lo normal es lo
+          primero y luego, si merece la pena, lo segundo. */}
+      <Link
+        to={`/chat/${agent.id}`}
+        className="mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
+      >
+        <MessageCircle size={15} aria-hidden />
+        {t('chat.talkTo', { name: agent.name })}
+      </Link>
 
       {/* estado de wallet */}
       <div className="mt-3 flex justify-center">
@@ -147,13 +159,22 @@ export function MobileHireBar({ agent, onHire }: HireCardProps) {
               {t(isOnchainAgent(agent) && currencySymbol(agent.currency) === '$PANAL' ? 'common.tokenTask' : 'common.monTask')}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={onHire}
-            className="btn-monad inline-flex px-6 py-2.5 text-[0.875rem] font-semibold"
-          >
-            {t('common.hire')}
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              to={`/chat/${agent.id}`}
+              aria-label={t('chat.talkTo', { name: agent.name })}
+              className="flex size-10 items-center justify-center rounded-full border border-line text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
+            >
+              <MessageCircle size={16} aria-hidden />
+            </Link>
+            <button
+              type="button"
+              onClick={onHire}
+              className="btn-monad inline-flex px-6 py-2.5 text-[0.875rem] font-semibold"
+            >
+              {t('common.hire')}
+            </button>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

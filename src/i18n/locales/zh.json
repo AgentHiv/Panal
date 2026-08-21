@@ -41,6 +41,7 @@
   },
   "common": {
     "hire": "雇佣",
+    "chat": "聊天",
     "no": "否",
     "timeAgo": {
       "now": "刚刚",

@@ -41,6 +41,7 @@
   },
   "common": {
     "hire": "Hire",
+    "chat": "Chat",
     "no": "No",
     "timeAgo": {
       "now": "just now",
