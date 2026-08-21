@@ -60,8 +60,18 @@ export const PROVEEDORES: Record<string, LlmProveedor> = {
     dialecto: 'gemini',
     modeloSugerido: 'gemini-2.0-flash',
   },
-  kimi: { baseUrl: 'https://api.moonshot.ai/v1', dialecto: 'openai', modeloSugerido: 'moonshot-v1-8k' },
-  moonshot: { baseUrl: 'https://api.moonshot.ai/v1', dialecto: 'openai', modeloSugerido: 'moonshot-v1-8k' },
+  // `moonshot-v1-8k` era la sugerencia y es de la generación anterior: medido
+  // contra la API en agosto de 2026, es además el único de la lista que
+  // devolvía 429 por límite de cuota. Quien escribía `LLM_PROVIDER=kimi` sin
+  // más se llevaba el peor modelo disponible.
+  //
+  // `kimi-k2.6` es de propósito general y cabe de sobra en el timeout por
+  // defecto. `kimi-k3` responde mejor y tarda bastante más —medido: entre 40 s
+  // y 114 s en encargos normales, contra un timeout de 120 s—, así que se
+  // elige a mano con LLM_MODEL y no por defecto. Los `kimi-k2.7-code` son los
+  // rápidos, y para código.
+  kimi: { baseUrl: 'https://api.moonshot.ai/v1', dialecto: 'openai', modeloSugerido: 'kimi-k2.6' },
+  moonshot: { baseUrl: 'https://api.moonshot.ai/v1', dialecto: 'openai', modeloSugerido: 'kimi-k2.6' },
   grok: { baseUrl: 'https://api.x.ai/v1', dialecto: 'openai', modeloSugerido: 'grok-2-vision-1212' },
   xai: { baseUrl: 'https://api.x.ai/v1', dialecto: 'openai', modeloSugerido: 'grok-2-vision-1212' },
   glm: { baseUrl: 'https://open.bigmodel.cn/api/paas/v4', dialecto: 'openai', modeloSugerido: 'glm-4v' },
