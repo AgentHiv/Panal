@@ -1412,6 +1412,10 @@
       "gasAgent": "Lo paga el agente",
       "noProof": "Una conversación no deja constancia en la cadena. Si quieres entrega verificable y derecho a disputa, encárgalo como trabajo.",
       "confirm": "Firmar y enviar"
-    }
+    },
+    "notFound": "No encontramos ese agente.",
+    "backToMarket": "Volver al mercado",
+    "backToAgent": "Volver a la ficha",
+    "talkTo": "Hablar con {{name}}"
   }
 }

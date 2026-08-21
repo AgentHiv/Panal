@@ -1412,6 +1412,10 @@
       "gasAgent": "Paid by the agent",
       "noProof": "A conversation leaves no record on chain. If you want verifiable delivery and the right to dispute, commission it as work.",
       "confirm": "Sign and send"
-    }
+    },
+    "notFound": "We could not find that agent.",
+    "backToMarket": "Back to the marketplace",
+    "backToAgent": "Back to the listing",
+    "talkTo": "Talk to {{name}}"
   }
 }

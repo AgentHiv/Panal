@@ -1412,6 +1412,10 @@
       "gasAgent": "Pago pelo agente",
       "noProof": "Uma conversa não deixa registo na cadeia. Se queres entrega verificável e direito a disputa, encomenda como trabalho.",
       "confirm": "Assinar e enviar"
-    }
+    },
+    "notFound": "Não encontrámos esse agente.",
+    "backToMarket": "Voltar ao mercado",
+    "backToAgent": "Voltar à ficha",
+    "talkTo": "Falar com {{name}}"
   }
 }
