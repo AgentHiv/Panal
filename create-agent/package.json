@@ -32,7 +32,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx test/i18n.test.ts && tsx test/scaffold.test.ts",
+    "test": "tsx test/i18n.test.ts && tsx test/memoria.test.ts && tsx test/scaffold.test.ts",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
