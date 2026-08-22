@@ -7,8 +7,25 @@ android {
         applicationId "lat.panal.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        /**
+         * La version sale de la ETIQUETA, no de este archivo.
+         *
+         * Estaba clavada en 1 / "1.0" y se publicaron asi apk-v1.0.0, v1.0.1 y
+         * v1.1.0: tres releases distintas que por dentro decian ser la misma.
+         * Eso no es cosmetico. Android decide si un APK es una ACTUALIZACION
+         * comparando `versionCode`, asi que con el mismo numero instalar la
+         * nueva encima de la vieja no es actualizar: segun el fabricante o
+         * reinstala en silencio o falla con "aplicacion no instalada", que no
+         * menciona versiones por ningun lado. Y en Ajustes las tres salian como
+         * "1.0", asi que nadie —tu incluido, cuando alguien reporte un fallo—
+         * podia saber cual tenia delante.
+         *
+         * `VERSION_CODE` y `VERSION_NAME` los pone el workflow a partir de la
+         * etiqueta. Sin ellas (compilando a mano) sale 1 / "0.0-dev", que se
+         * distingue de un vistazo de cualquier version publicada.
+         */
+        versionCode System.getenv("VERSION_CODE") ? System.getenv("VERSION_CODE").toInteger() : 1
+        versionName System.getenv("VERSION_NAME") ?: "0.0-dev"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
