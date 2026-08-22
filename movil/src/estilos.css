@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: #121019;
+    color: #f2effa;
+    font-family: Inter, system-ui, sans-serif;
+    /* En un WebView el rebote y la selección al mantener pulsado delatan que
+       esto no es nativo. Quitarlos es la mitad de que parezca una app. */
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* El texto que la gente sí necesita copiar: direcciones, hashes, respuestas. */
+  .seleccionable {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+@layer components {
+  /* La fila de pestañas se apoya en la barra de gestos, no debajo de ella. */
+  .con-barra-abajo {
+    padding-bottom: calc(22px + env(safe-area-inset-bottom));
+  }
+
+  .con-barra-arriba {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pulsable {
+    cursor: pointer;
+    transition: opacity 120ms ease;
+  }
+
+  .pulsable:active {
+    opacity: 0.72;
+  }
+}
