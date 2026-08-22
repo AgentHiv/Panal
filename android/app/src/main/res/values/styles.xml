@@ -1,22 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  El tema. Oscuro SIEMPRE, y no «según el teléfono».
+
+  Estaba en `Theme.AppCompat.Light.DarkActionBar` y el de la actividad en
+  `DayNight`, que es el andamio que genera Capacitor. En una app oscura eso da
+  dos fallos que se ven a simple vista y solo en un teléfono de verdad:
+
+  1. El fondo de la VENTANA salía claro. Con Android 15+ la app se dibuja de
+     borde a borde por obligación, así que la franja de la barra de estado y la
+     de la barra de gestos las pinta la ventana, no la web: en un teléfono en
+     modo claro aparecían dos bandas casi blancas arriba y abajo de una app
+     negra. `SystemBars` incluso lo copia a mano al decor
+     (`setBackgroundColor(getThemeColor(android.R.attr.windowBackground))`),
+     así que el tema decidía ese color aunque el CSS dijera otra cosa.
+
+  2. `DayNight` hacía que dependiera del ajuste del teléfono, o sea que el
+     fallo aparecía en unos y en otros no. Peor que fallar siempre.
+
+  Aquí no hay modo claro que respetar: la app es oscura y punto.
+-->
 <resources>
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/panal_paper</item>
+        <item name="colorPrimaryDark">@color/panal_paper</item>
+        <item name="colorAccent">@color/panal_honey</item>
+        <item name="android:windowBackground">@color/panal_paper</item>
     </style>
 
-    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <!-- El tema que Capacitor pone en cuanto arranca la actividad
+         (`BridgeActivity.onCreate` hace `setTheme(AppTheme_NoActionBar)`), o
+         sea el que manda durante toda la vida de la app. -->
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="android:background">@null</item>
+        <item name="android:windowBackground">@color/panal_paper</item>
     </style>
 
+    <!--
+      El arranque. Antes era el logo de Capacitor sobre blanco: la primera
+      imagen de la app, cada vez que se abría, era la marca de la herramienta
+      con la que está hecha.
 
+      Aquí solo cuenta `android:windowBackground` con el logo del panal.
+      Capacitor NO llama a `installSplashScreen()` de core-splashscreen —hace
+      `setTheme()` a pelo—, así que los atributos sin prefijo de esa librería
+      no los lee nadie. Los de la plataforma (API 31+) van en `values-v31`.
+    -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="android:windowBackground">@drawable/splash</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

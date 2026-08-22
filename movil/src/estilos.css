@@ -14,6 +14,7 @@
     background: #121019;
     color: #f2effa;
     font-family: Inter, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
     /* En un WebView el rebote y la selección al mantener pulsado delatan que
        esto no es nativo. Quitarlos es la mitad de que parezca una app. */
     overscroll-behavior: none;
@@ -27,24 +28,64 @@
     -webkit-user-select: text;
     user-select: text;
   }
+
+  /* Nadie mira una barra de scroll en un teléfono, y en el WebView ocupa
+     sitio de verdad dentro de las listas. */
+  ::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @layer components {
-  /* La fila de pestañas se apoya en la barra de gestos, no debajo de ella. */
+  /**
+   * Las barras del sistema.
+   *
+   * Android tiene DOS formas de contar esto y hay que aguantar las dos, porque
+   * cuál toca depende de la versión del WebView que lleve el teléfono
+   * (SystemBars.java:200):
+   *
+   *   - WebView 140+ : los huecos llegan al CSS y `env(safe-area-inset-*)`
+   *     vale. Capacitor además copia el valor a `--safe-area-inset-*`.
+   *   - WebView viejo: Capacitor rellena la vista padre a mano y pone las dos
+   *     cosas a CERO, porque el hueco ya está descontado fuera.
+   *
+   * `max()` de las dos da lo correcto en los dos casos y en el navegador, y no
+   * suma dos veces cuando ambas valen lo mismo.
+   */
   .con-barra-abajo {
-    padding-bottom: calc(22px + env(safe-area-inset-bottom));
+    padding-bottom: calc(
+      10px + max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px))
+    );
   }
 
   .con-barra-arriba {
-    padding-top: env(safe-area-inset-top);
+    padding-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
   }
 
+  /**
+   * Lo pulsable.
+   *
+   * `touch-action: manipulation` quita el retardo de ~300 ms que el WebView se
+   * reserva por si el toque era un doble toque para hacer zoom. Sin esto cada
+   * botón de la app responde tarde, y «tarde» es exactamente la sensación de
+   * que esto es una web y no una app.
+   */
   .pulsable {
     cursor: pointer;
-    transition: opacity 120ms ease;
+    touch-action: manipulation;
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease;
   }
 
   .pulsable:active {
     opacity: 0.72;
+    transform: scale(0.985);
+  }
+
+  /* La altura mínima que un dedo acierta. 44 px es el mínimo de las dos guías
+     (Apple 44, Android 48 dp); por debajo se falla el toque. */
+  .tocable {
+    min-height: 44px;
   }
 }

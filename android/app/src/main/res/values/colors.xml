@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  La paleta de Panal en el lado nativo.
+
+  Hacía falta porque hay superficie que el WebView NO pinta: el fondo de la
+  ventana detrás de la barra de estado y de la barra de gestos, y la pantalla
+  de arranque antes de que exista una sola línea de HTML. Eso lo decide el
+  tema de Android, y hasta ahora salía del tema claro de AppCompat.
+-->
+<resources>
+    <!-- `paper`: el fondo de la app. Tiene que ser EXACTAMENTE el del CSS o se
+         ve la costura entre lo nativo y la web. -->
+    <color name="panal_paper">#121019</color>
+    <color name="panal_honey">#E29A2E</color>
+    <color name="panal_ink">#F2EFFA</color>
+</resources>
