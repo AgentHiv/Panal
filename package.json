@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@capacitor/core": "^8.5.0",
+    "@capacitor/local-notifications": "^8.0.0",
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^5.2.2",
     "@panal/sdk": "^0.13.0",

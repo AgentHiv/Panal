@@ -8,3 +8,6 @@ dist-mainnet/
 .env.local
 bot/.env
 bot/data/
+
+# Cache de compilacion de TypeScript de la app: se regenera sola.
+movil/tsconfig.tsbuildinfo
