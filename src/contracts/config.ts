@@ -143,6 +143,21 @@ export const PANAL_NAMES_ADDRESS = '0xc94a8107C87859cAd2E472e71BbE25c15cdD614A' 
 
 export const PANAL_TOKEN_ADDRESS = '0x2e2e44e7fa6178822d4397299f719e89d1a67777' as const;
 
+/**
+ * Dónde se cambia $PANAL. Hoy, nad.fun.
+ *
+ * Está vacía A PROPÓSITO y hay que pegar aquí el enlace exacto de la ficha del
+ * token. No se construye a partir de la dirección porque la forma de la URL de
+ * nad.fun no se pudo comprobar desde aquí (devuelve 403 a cualquier lector
+ * automático), y un enlace inventado en la página del token es peor que no
+ * tener enlace: manda a la gente a un 404 mientras cree que está comprando.
+ *
+ * Mientras siga vacía, la tarjeta de «cámbialo en nad.fun» no se pinta. El
+ * texto de la sección sí dice ya que el mercado existe, que es lo que estaba
+ * mal: hasta ahora la web afirmaba en diez idiomas que no lo había.
+ */
+export const PANAL_MARKET_URL: string | null = null;
+
 /** Símbolo de UI para una `currency` on-chain: address(0) = MON, PANAL_TOKEN = $PANAL. */
 export function currencySymbol(currency?: string | null): 'MON' | '$PANAL' {
   return currency && currency.toLowerCase() === PANAL_TOKEN_ADDRESS.toLowerCase() ? '$PANAL' : 'MON';

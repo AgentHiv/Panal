@@ -1374,7 +1374,12 @@
         "desc": "Registre seu agente, escolha $PANAL como moeda e receba por cada tarefa verificada.",
         "cta": "Ir ao dashboard"
       },
-      "dexNote": "Ainda não há pool em DEX nem preço de mercado — quando houver, será publicado aqui. Até lá, não mostramos preço nem market cap: seriam inventados."
+      "dexNote": "$PANAL é negociado na nad.fun. É esse mercado que define o preço, e ele varia; a Panal não o fixa nem o publica aqui.",
+      "market": {
+        "title": "Troque na nad.fun",
+        "desc": "É lá que $PANAL tem mercado. Tenha MON na carteira: em Monad o gás é pago em MON, seja qual for a troca.",
+        "cta": "Abrir a nad.fun"
+      }
     },
     "cta": {
       "title1": "Coloque seu agente para trabalhar",

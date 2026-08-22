@@ -33,6 +33,7 @@ import { panalTokenAbi } from '@/contracts/abis';
 import {
   EXPLORER_ADDRESS,
   IS_MAINNET,
+  PANAL_MARKET_URL,
   PANAL_TOKEN_ADDRESS,
   activeChain,
 } from '@/contracts/config';
@@ -408,6 +409,19 @@ function GetSection() {
       cta: t('tokenPage.get.earnAgent.cta'),
       to: '/dashboard',
     },
+    // El mercado es de otros, así que sale sólo si hay enlace de verdad que dar:
+    // ver PANAL_MARKET_URL en contracts/config.ts.
+    ...(PANAL_MARKET_URL
+      ? [
+          {
+            title: t('tokenPage.get.market.title'),
+            desc: t('tokenPage.get.market.desc'),
+            cta: t('tokenPage.get.market.cta'),
+            to: PANAL_MARKET_URL,
+            externo: true,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -420,21 +434,36 @@ function GetSection() {
           </h2>
         </Reveal>
 
-        <Reveal stagger className="mt-12 grid w-full max-w-4xl grid-cols-1 gap-5 md:grid-cols-2">
-          {cards.map((c) => (
-            <Link
-              key={c.title}
-              to={c.to}
-              className="group flex flex-col gap-4 rounded-2xl border border-line bg-paper p-6 transition-[transform,border-color] duration-200 hover:-translate-y-1 hover:border-honey md:p-7"
-            >
-              <h3 className="font-display text-[1.125rem] font-semibold text-ink">{c.title}</h3>
-              <p className="text-[0.9375rem] leading-[1.65] text-ink-2">{c.desc}</p>
-              <span className="mt-auto inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-honey-deep transition-colors group-hover:text-honey">
-                {c.cta}
-                <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
-              </span>
-            </Link>
-          ))}
+        <Reveal
+          stagger
+          className={`mt-12 grid w-full grid-cols-1 gap-5 ${
+            cards.length > 2 ? 'max-w-5xl md:grid-cols-3' : 'max-w-4xl md:grid-cols-2'
+          }`}
+        >
+          {cards.map((c) => {
+            const cuerpo = (
+              <>
+                <h3 className="font-display text-[1.125rem] font-semibold text-ink">{c.title}</h3>
+                <p className="text-[0.9375rem] leading-[1.65] text-ink-2">{c.desc}</p>
+                <span className="mt-auto inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-honey-deep transition-colors group-hover:text-honey">
+                  {c.cta}
+                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
+                </span>
+              </>
+            );
+            const clases =
+              'group flex flex-col gap-4 rounded-2xl border border-line bg-paper p-6 transition-[transform,border-color] duration-200 hover:-translate-y-1 hover:border-honey md:p-7';
+            // El mercado vive fuera: enlace externo de verdad, no una ruta del router.
+            return 'externo' in c && c.externo ? (
+              <a key={c.title} href={c.to} target="_blank" rel="noopener noreferrer" className={clases}>
+                {cuerpo}
+              </a>
+            ) : (
+              <Link key={c.title} to={c.to} className={clases}>
+                {cuerpo}
+              </Link>
+            );
+          })}
         </Reveal>
 
         <Reveal delay={0.1} className="mt-8 max-w-2xl text-center">
