@@ -1,8 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+      `allowBackup="false"` a propósito, y no es una opción por defecto que se
+      quedó puesta.
+
+      Con la copia automática activada, Android sube los datos de la app a la
+      cuenta de Google de quien la tenga: entre ellos el `localStorage` del
+      WebView, que es donde vive la sesión de la wallet y lo que se hable con
+      los agentes. Eso convierte una copia de seguridad de sistema en un sitio
+      más donde acaba material de una wallet, fuera del teléfono y fuera de
+      control de nadie aquí. Y `adb backup` lo puede sacar del cable.
+
+      El coste de apagarlo es que al cambiar de teléfono hay que volver a
+      conectar la wallet. Para eso están las 12 palabras.
+    -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -15,6 +29,7 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true">
 
             <intent-filter>

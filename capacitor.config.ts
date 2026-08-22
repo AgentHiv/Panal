@@ -55,6 +55,25 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     cleartext: false,
   },
+  plugins: {
+    /**
+     * Los iconos de la barra de estado, CLAROS siempre.
+     *
+     * Sin esto el estilo es `DEFAULT`, y `DEFAULT` no significa «lo que pida la
+     * app»: significa mirar si el teléfono está en modo claro u oscuro
+     * (`getStyleForTheme`, SystemBars.java:326). En un teléfono en modo claro
+     * salía `LIGHT`, que pinta los iconos del sistema en NEGRO — sobre el
+     * #121019 de Panal, una barra de estado en la que no se ve la hora ni la
+     * batería. Y como dependía del ajuste de cada uno, fallaba en unos
+     * teléfonos y en otros no.
+     *
+     * La app no tiene modo claro. `DARK` aquí quiere decir «la barra es
+     * oscura», o sea iconos claros encima.
+     */
+    SystemBars: {
+      style: 'DARK',
+    },
+  },
 };
 
 export default config;

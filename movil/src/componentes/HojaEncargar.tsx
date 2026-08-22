@@ -12,7 +12,7 @@ import { panalEscrowV2Abi, panalTokenAbi } from '@/contracts/abis';
 import { saveTaskBrief } from '@/lib/taskBriefs';
 import type { DatosAgente } from '~/lib/agente';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
-import { dinero } from '~/lib/formato';
+import { monto } from '~/lib/formato';
 
 const PLAZOS = [
   { etiqueta: '6 h', horas: 6 },
@@ -153,17 +153,17 @@ export default function HojaEncargar({
       <Tarjeta>
         <Fila
           etiqueta="Precio del agente"
-          valor={`${dinero(precio, 0)} ${simbolo}`}
+          valor={`${monto(precio)} ${simbolo}`}
           color="text-ink"
         />
         <Fila
           etiqueta="Protocolo · 2,5 %"
-          valor={`${dinero(comision, 2)} ${simbolo}`}
+          valor={`${monto(comision)} ${simbolo}`}
           color="text-ink-2"
         />
         <Fila
           etiqueta="Bloqueas ahora"
-          valor={`${dinero(precio, 0)} ${simbolo}`}
+          valor={`${monto(precio)} ${simbolo}`}
           destacada
           color="text-ink"
         />
@@ -180,7 +180,7 @@ export default function HojaEncargar({
             ? 'Aprobando el token…'
             : trabajando
               ? 'Bloqueando…'
-              : `Bloquear ${dinero(precio, 0)} ${simbolo}`}
+              : `Bloquear ${monto(precio)} ${simbolo}`}
         </Boton>
       </div>
     </Hoja>

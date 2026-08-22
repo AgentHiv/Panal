@@ -4,7 +4,7 @@ import { PANAL_ESCROW_V2_ADDRESS, activeChain } from '@/contracts/config';
 import { panalEscrowV2Abi } from '@/contracts/abis';
 import type { EncargoEnHilo } from '@/lib/conversaciones';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
-import { dinero, restante } from '~/lib/formato';
+import { monto, restante } from '~/lib/formato';
 
 const LEYENDAS = ['Sin valorar', 'Muy mal', 'Mal', 'Regular', 'Bien', 'Muy bien'];
 
@@ -76,7 +76,7 @@ export default function HojaRevisar({
         bloqueada={trabajando}
       >
         <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2">
-          Los {dinero(encargo.importe, 0)} {encargo.simbolo} se congelan. Ni tú ni el agente cobráis
+          Los {monto(encargo.importe)} {encargo.simbolo} se congelan. Ni tú ni el agente cobráis
           hasta que se resuelva.
         </p>
 
@@ -197,12 +197,12 @@ export default function HojaRevisar({
       <Tarjeta>
         <Fila
           etiqueta="Al agente"
-          valor={`${dinero(alAgente, 2)} ${encargo.simbolo}`}
+          valor={`${monto(alAgente)} ${encargo.simbolo}`}
           color="text-ink"
         />
         <Fila
           etiqueta="Protocolo · 2,5 %"
-          valor={`${dinero(comision, 2)} ${encargo.simbolo}`}
+          valor={`${monto(comision)} ${encargo.simbolo}`}
           color="text-ink-2"
         />
       </Tarjeta>
@@ -216,7 +216,7 @@ export default function HojaRevisar({
           {trabajando
             ? 'Firmando…'
             : estrellas > 0
-              ? `Aprobar y pagar ${dinero(encargo.importe, 0)} ${encargo.simbolo}`
+              ? `Aprobar y pagar ${monto(encargo.importe)} ${encargo.simbolo}`
               : 'Elige una valoración'}
         </Boton>
       </div>

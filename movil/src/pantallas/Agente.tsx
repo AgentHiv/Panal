@@ -3,11 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
 import type { OnchainAgent } from '@/hooks/usePanalAgents';
 import { currencySymbol } from '@/contracts/config';
-import { formatMon } from '@/data/agents';
 import { useAhora } from '@/hooks/useAhora';
 import { useAgente } from '~/lib/agente';
 import Hexagono from '~/componentes/Hexagono';
-import { dinero } from '~/lib/formato';
+import Icono from '~/componentes/Icono';
+import { monto, precio } from '~/lib/formato';
 
 /**
  * La ficha del agente.
@@ -42,26 +42,14 @@ export default function Agente(): React.ReactElement {
 
   return (
     <div className="flex min-h-0 grow flex-col">
-      <header className="con-barra-arriba flex shrink-0 items-center px-3 pt-3">
+      <header className="flex shrink-0 items-center px-3 pt-3">
         <button
           type="button"
           onClick={() => navegar(-1)}
           aria-label="Volver"
           className="pulsable flex h-11 w-11 items-center justify-center"
         >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#C8C3DC"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="M15 5l-7 7 7 7" />
-          </svg>
+          <Icono nombre="atras" tamano={24} color="#C8C3DC" grosor={2} />
         </button>
       </header>
 
@@ -94,7 +82,7 @@ export default function Agente(): React.ReactElement {
               color={agente.reviews > 0 ? 'text-honey' : 'text-ink-3'}
             />
             <Dato
-              valor={formatMon(agente.totalEarned, 0)}
+              valor={precio(agente.totalEarned) ?? '0'}
               pie={`${currencySymbol(agente.currency)} cobrados`}
             />
           </div>
@@ -110,7 +98,7 @@ export default function Agente(): React.ReactElement {
             pie="respuesta al momento · sin disputa"
             valor={
               datos?.cobro
-                ? `${dinero(datos.cobro.amount, 1)} ${datos.cobro.simbolo}`
+                ? `${monto(datos.cobro.amount)} ${datos.cobro.simbolo}`
                 : 'no disponible'
             }
             color={datos?.cobro ? 'text-honey' : 'text-ink-3'}
@@ -119,11 +107,13 @@ export default function Agente(): React.ReactElement {
             titulo="Encargar un trabajo"
             pie="plazo · entrega anclada · disputa"
             valor={
-              agente
-                ? `${formatMon(agente.pricePerTask, 0)} ${currencySymbol(agente.currency)}`
-                : '…'
+              !agente
+                ? '…'
+                : precio(agente.pricePerTask)
+                  ? `${precio(agente.pricePerTask)} ${currencySymbol(agente.currency)}`
+                  : 'sin precio'
             }
-            color="text-monad-mist"
+            color={agente && precio(agente.pricePerTask) ? 'text-monad-mist' : 'text-ink-3'}
           />
         </div>
 
@@ -213,20 +203,13 @@ function OrigenDelNombre({ agente }: { agente: OnchainAgent }): React.ReactEleme
 
   return (
     <div className="flex items-start gap-2.5">
-      <svg
-        width="15"
-        height="15"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke={reciente ? '#C9653B' : '#948DAE'}
-        strokeWidth="1.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+      <Icono
+        nombre="hexagono"
+        tamano={15}
+        color={reciente ? '#C9653B' : '#948DAE'}
+        grosor={1.9}
         className="mt-0.5 shrink-0"
-        aria-hidden
-      >
-        <path d="M4 8.5l8-4.5 8 4.5v7l-8 4.5-8-4.5z" />
-      </svg>
+      />
       <div className="min-w-0">
         <p className={`text-[12.5px] font-medium ${reciente ? 'text-terra' : 'text-ink-3'}`}>
           {texto}

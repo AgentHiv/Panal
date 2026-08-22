@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  La pantalla de arranque en Android 11 y anteriores (en 12+ la dibuja el
+  sistema desde `values-v31`).
+
+  Reemplaza a diez `splash.png` que traía el andamio de Capacitor: el logo de
+  Capacitor sobre fondo blanco, 960x1600 cada uno. Un vector sobre un color
+  vale para cualquier pantalla, no se pixela y no pesa.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/panal_paper" />
+    <item
+        android:drawable="@drawable/ic_launcher_foreground"
+        android:gravity="center"
+        android:width="180dp"
+        android:height="180dp" />
+</layer-list>

@@ -1,3 +1,76 @@
+/**
+ * Las fuentes van DENTRO del APK.
+ *
+ * `index.html` las pedía a `fonts.googleapis.com` en cada arranque, y eso en
+ * una app instalada tiene tres problemas: sin cobertura la app se queda con la
+ * tipografía del sistema y no se parece a Panal; con cobertura lenta se pinta
+ * primero en Roboto y salta al aparecer la buena, en todas las pantallas; y una
+ * app que maneja una wallet le está diciendo a Google cuándo la abres.
+ *
+ * Son fuentes VARIABLES, así que un archivo por familia sirve para todos los
+ * pesos —los tres que pedía `css2` eran el mismo byte a byte— y el navegador
+ * saca el peso del eje. Con eso y quedarnos solo en latín (la app está en
+ * español) son 224 kB en total.
+ *
+ * `font-display: swap` de todas formas: si algo fallara al leer el archivo, se
+ * ve texto en la fuente del sistema, no un hueco en blanco.
+ */
+
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fuentes/space-grotesk-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fuentes/space-grotesk-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fuentes/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fuentes/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fuentes/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fuentes/jetbrains-mono-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,6 +87,7 @@
     background: #121019;
     color: #f2effa;
     font-family: Inter, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
     /* En un WebView el rebote y la selección al mantener pulsado delatan que
        esto no es nativo. Quitarlos es la mitad de que parezca una app. */
     overscroll-behavior: none;
@@ -27,24 +101,64 @@
     -webkit-user-select: text;
     user-select: text;
   }
+
+  /* Nadie mira una barra de scroll en un teléfono, y en el WebView ocupa
+     sitio de verdad dentro de las listas. */
+  ::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @layer components {
-  /* La fila de pestañas se apoya en la barra de gestos, no debajo de ella. */
+  /**
+   * Las barras del sistema.
+   *
+   * Android tiene DOS formas de contar esto y hay que aguantar las dos, porque
+   * cuál toca depende de la versión del WebView que lleve el teléfono
+   * (SystemBars.java:200):
+   *
+   *   - WebView 140+ : los huecos llegan al CSS y `env(safe-area-inset-*)`
+   *     vale. Capacitor además copia el valor a `--safe-area-inset-*`.
+   *   - WebView viejo: Capacitor rellena la vista padre a mano y pone las dos
+   *     cosas a CERO, porque el hueco ya está descontado fuera.
+   *
+   * `max()` de las dos da lo correcto en los dos casos y en el navegador, y no
+   * suma dos veces cuando ambas valen lo mismo.
+   */
   .con-barra-abajo {
-    padding-bottom: calc(22px + env(safe-area-inset-bottom));
+    padding-bottom: calc(
+      10px + max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px))
+    );
   }
 
   .con-barra-arriba {
-    padding-top: env(safe-area-inset-top);
+    padding-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
   }
 
+  /**
+   * Lo pulsable.
+   *
+   * `touch-action: manipulation` quita el retardo de ~300 ms que el WebView se
+   * reserva por si el toque era un doble toque para hacer zoom. Sin esto cada
+   * botón de la app responde tarde, y «tarde» es exactamente la sensación de
+   * que esto es una web y no una app.
+   */
   .pulsable {
     cursor: pointer;
-    transition: opacity 120ms ease;
+    touch-action: manipulation;
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease;
   }
 
   .pulsable:active {
     opacity: 0.72;
+    transform: scale(0.985);
+  }
+
+  /* La altura mínima que un dedo acierta. 44 px es el mínimo de las dos guías
+     (Apple 44, Android 48 dp); por debajo se falla el toque. */
+  .tocable {
+    min-height: 44px;
   }
 }

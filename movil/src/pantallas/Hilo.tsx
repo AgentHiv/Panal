@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useWalletClient } from 'wagmi';
 import { useWallet } from '@/hooks/useWallet';
@@ -12,10 +12,11 @@ import { getTaskBrief } from '@/lib/taskBriefs';
 import type { X402Accept } from '@panal/sdk';
 import { useAgente } from '~/lib/agente';
 import Hexagono from '~/componentes/Hexagono';
+import Icono from '~/componentes/Icono';
 import HojaFirmar from '~/componentes/HojaFirmar';
 import HojaEncargar from '~/componentes/HojaEncargar';
 import HojaRevisar from '~/componentes/HojaRevisar';
-import { dinero } from '~/lib/formato';
+import { monto } from '~/lib/formato';
 
 type Abierta = null | 'firmar' | 'encargar' | 'revisar';
 
@@ -119,28 +120,29 @@ export default function Hilo(): React.ReactElement {
 
   const enRevision = encargos.find((e) => e.id === encargoRevisando) ?? null;
 
+  /**
+   * Bajar al final cuando entra algo nuevo.
+   *
+   * Sin esto, al mandar un mensaje la respuesta —lo que acabas de PAGAR— entra
+   * por debajo del borde y la pantalla no se mueve: parece que no ha pasado
+   * nada. Se hace con un ancla al final y no tocando `scrollTop`, que en un
+   * WebView con la lista todavía creciendo se queda corto.
+   */
+  const finDelHilo = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    finDelHilo.current?.scrollIntoView({ block: 'end' });
+  }, [entradas.length]);
+
   return (
     <div className="relative flex min-h-0 grow flex-col">
-      <header className="con-barra-arriba flex shrink-0 items-center gap-3 border-b border-line bg-noche px-4 pb-3 pt-4">
+      <header className="flex shrink-0 items-center gap-3 border-b border-line bg-noche px-4 pb-3 pt-4">
         <button
           type="button"
           onClick={() => navegar('/chats')}
           aria-label="Volver"
           className="pulsable flex h-11 w-8 items-center"
         >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#C8C3DC"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="M15 5l-7 7 7 7" />
-          </svg>
+          <Icono nombre="atras" tamano={24} color="#C8C3DC" grosor={2} />
         </button>
         <Link to={`/agente/${agente}`} className="pulsable flex min-w-0 grow items-center gap-3">
           <Hexagono semilla={agente} inicial={(datos?.nombre ?? 'A').slice(0, 1)} tamano={34} />
@@ -148,7 +150,7 @@ export default function Hilo(): React.ReactElement {
             <p className="truncate text-[15px] font-semibold">{datos?.nombre ?? '…'}</p>
             <p className="font-mono text-[11.5px] text-ink-3">
               {datos?.cobro
-                ? `${dinero(datos.cobro.amount, 1)} ${datos.cobro.simbolo} por mensaje`
+                ? `${monto(datos.cobro.amount)} ${datos.cobro.simbolo} por mensaje`
                 : 'solo acepta encargos'}
             </p>
           </div>
@@ -176,6 +178,7 @@ export default function Hilo(): React.ReactElement {
             onRevisar={() => setEncargoRevisando(e.clase === 'encargo' ? e.encargo.id : null)}
           />
         ))}
+        <div ref={finDelHilo} />
       </div>
 
       {error && (
@@ -200,25 +203,12 @@ export default function Hilo(): React.ReactElement {
             aria-label="Enviar"
             className="pulsable flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-monad shadow-monad disabled:opacity-40"
           >
-            <svg
-              width="19"
-              height="19"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#fff"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M4 12h15" />
-              <path d="M13 6l6 6-6 6" />
-            </svg>
+            <Icono nombre="atras" tamano={19} color="#fff" grosor={2.2} className="rotate-180" />
           </button>
         </div>
         <p className="mt-2 pl-1.5 text-[11.5px] text-ink-3">
           {datos?.cobro
-            ? `${dinero(datos.cobro.amount, 1)} ${datos.cobro.simbolo} por mensaje · una firma, sin gas`
+            ? `${monto(datos.cobro.amount)} ${datos.cobro.simbolo} por mensaje · una firma, sin gas`
             : 'Sin cobro por mensaje publicado'}
         </p>
       </div>
@@ -321,19 +311,7 @@ function EntradaHilo({
   return (
     <article className="self-stretch overflow-hidden rounded-2xl border border-honey bg-cream">
       <div className="flex items-center gap-2 bg-honey-soft px-3.5 py-2.5">
-        <svg
-          width="15"
-          height="15"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#E29A2E"
-          strokeWidth="2"
-          strokeLinecap="round"
-          aria-hidden
-        >
-          <rect x="4" y="10" width="16" height="10" rx="2" />
-          <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-        </svg>
+        <Icono nombre="candado" tamano={15} color="#E29A2E" grosor={2} />
         <span className="text-[12px] font-semibold uppercase tracking-[0.04em] text-honey">
           Encargo · pago bloqueado
         </span>
@@ -346,7 +324,7 @@ function EntradaHilo({
           <div>
             <p className="text-[10.5px] uppercase tracking-[0.08em] text-ink-3">Precio</p>
             <p className="mt-0.5 font-mono text-[15px]">
-              {dinero(e.importe, 0)} {e.simbolo}
+              {monto(e.importe)} {e.simbolo}
             </p>
           </div>
           <div>
@@ -362,20 +340,7 @@ function EntradaHilo({
         >
           <span className={`grow text-left text-[12.5px] ${st.color}`}>{st.texto}</span>
           {st.accion && (
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={st.color}
-              aria-hidden
-            >
-              <path d="M9.5 5l7 7-7 7" />
-            </svg>
+            <Icono nombre="atras" tamano={15} grosor={2.2} className={`rotate-180 ${st.color}`} />
           )}
         </button>
       </div>

@@ -35,6 +35,28 @@ jobs:
     name: Compilar el APK
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      # WALLETCONNECT ES OBLIGATORIO AQUI, no un extra.
+      #
+      # Dentro de un WebView no hay extensiones, o sea que no hay
+      # `window.ethereum`, o sea que el conector `injected` —el unico que se
+      # compilaba— no podia funcionar nunca. Los tres APK publicados salieron
+      # con el boton de conectar muerto por esto: pulsarlo lanzaba
+      # `ConnectorNotFoundError` y wagmi lo guardaba en un estado que nadie
+      # miraba, asi que no pasaba absolutamente nada.
+      #
+      # El projectId NO es un secreto: viaja dentro del paquete y ya esta
+      # publicado en el de la web (es el mismo). Se deja a la vista para que
+      # compilar el APK funcione recien clonado el repositorio, y un secreto
+      # del repositorio lo sustituye cuando convenga.
+      #
+      # Vale el mismo que la web porque la app se sirve desde
+      # `https://panal.lat` —eso lo hace `server.hostname`—, asi que pasa la
+      # misma restriccion por dominio del panel de Reown sin tocar nada alli.
+      #
+      # Va en el JOB y no en un paso porque el paso que comprueba el bundle
+      # busca este valor EXACTO dentro del paquete.
+      VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.WALLETCONNECT_PROJECT_ID || 'ae5c70c560c02d8a26a18816f40ac0c9' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -70,6 +92,16 @@ jobs:
           test -f movil/dist/index.html
           test -d movil/dist/assets
           grep -q 'HeroSwarm' -r movil/dist && { echo 'ERROR: esto es el bundle de la web'; exit 1; } || true
+          # Que no se vuelva a publicar un APK sin forma de conectar la wallet.
+          #
+          # Se busca el projectId EXACTO y no la palabra "walletconnect": esa
+          # sale en el paquete de todas formas —el id del conector esta escrito
+          # en la capa compartida— asi que como comprobacion no distingue nada.
+          # El projectId, en cambio, solo acaba dentro si la variable llego al
+          # build (config.ts:200); sin el, la app se instala, abre y no deja
+          # entrar.
+          grep -rqF "$VITE_WALLETCONNECT_PROJECT_ID" movil/dist/assets || {
+            echo 'ERROR: el paquete no lleva el projectId de WalletConnect: el boton de conectar no haria nada'; exit 1; }
           echo "movil/dist: $(du -sh movil/dist | cut -f1), $(find movil/dist -type f | wc -l) archivos"
 
       - name: Sincronizar el proyecto Android

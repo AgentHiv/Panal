@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import BarraRed from '~/componentes/BarraRed';
 import Pestanas from '~/componentes/Pestanas';
 import Chats from '~/pantallas/Chats';
 import Mercado from '~/pantallas/Mercado';
@@ -18,7 +19,8 @@ export default function App(): React.ReactElement {
   useAvisos();
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-paper">
+    <div className="con-barra-arriba flex h-full flex-col overflow-hidden bg-paper">
+      <BarraRed />
       <div className="flex min-h-0 grow flex-col">
         <Routes>
           {/* Se abre en los chats, como cualquier app de mensajería. */}
