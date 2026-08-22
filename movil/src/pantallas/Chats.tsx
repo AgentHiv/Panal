@@ -8,6 +8,7 @@ import type { ResumenConversacion } from '@/lib/conversaciones';
 import { currencySymbol } from '@/contracts/config';
 import { getTaskBrief } from '@/lib/taskBriefs';
 import Hexagono from '~/componentes/Hexagono';
+import Icono from '~/componentes/Icono';
 import Arranque from '~/pantallas/Arranque';
 import { cuando as formatoCuando } from '~/lib/formato';
 
@@ -37,25 +38,14 @@ export default function Chats(): React.ReactElement {
 
   return (
     <div className="flex min-h-0 grow flex-col">
-      <header className="con-barra-arriba flex shrink-0 items-center justify-between px-5 pb-3 pt-5">
+      <header className="flex shrink-0 items-center justify-between px-5 pb-3 pt-5">
         <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">Chats</h1>
         <Link
           to="/mercado"
           aria-label="Buscar un agente"
           className="pulsable flex h-11 w-11 items-center justify-center rounded-full bg-monad shadow-monad"
         >
-          <svg
-            width="19"
-            height="19"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#fff"
-            strokeWidth="2"
-            strokeLinecap="round"
-            aria-hidden
-          >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
+          <Icono nombre="mas" tamano={19} color="#fff" grosor={2.2} />
         </Link>
       </header>
 

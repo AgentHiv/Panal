@@ -3,7 +3,7 @@ import { useMyTasks } from '@/hooks/useMyTasks';
 import { ESTADO } from '@/lib/conversaciones';
 import { currencySymbol } from '@/contracts/config';
 import { getTaskBrief } from '@/lib/taskBriefs';
-import { AUTO_RELEASE_MS, dinero } from '~/lib/formato';
+import { AUTO_RELEASE_MS, monto } from '~/lib/formato';
 import { hayAvisos, idDe, pedirPermiso, programar } from '~/lib/avisos';
 
 /**
@@ -66,7 +66,7 @@ export function useAvisos(): void {
             nuevos.push({
               id: cuenta,
               titulo: `Quedan 6 h para que #${id} se apruebe solo`,
-              cuerpo: `Si no haces nada se pagan ${dinero(t.amountWei, 0)} ${simbolo} y cuenta como 5 estrellas.`,
+              cuerpo: `Si no haces nada se pagan ${monto(t.amountWei)} ${simbolo} y cuenta como 5 estrellas.`,
               ruta: `/chat/${t.worker.toLowerCase()}`,
               cuando,
             });
@@ -80,7 +80,7 @@ export function useAvisos(): void {
             nuevos.push({
               id: plazo,
               titulo: `#${id} venció sin entrega`,
-              cuerpo: `Puedes recuperar los ${dinero(t.amountWei, 0)} ${simbolo} que bloqueaste.`,
+              cuerpo: `Puedes recuperar los ${monto(t.amountWei)} ${simbolo} que bloqueaste.`,
               ruta: `/chat/${t.worker.toLowerCase()}`,
             });
           }

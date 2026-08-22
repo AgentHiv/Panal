@@ -1,7 +1,7 @@
 import type { X402Accept } from '@panal/sdk';
 import type { CobroPorLlamada } from '@/lib/chat';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
-import { dinero } from '~/lib/formato';
+import { monto } from '~/lib/formato';
 
 /**
  * Pagar un mensaje: x402.
@@ -42,7 +42,7 @@ export default function HojaFirmar({
       <Tarjeta>
         <Fila
           etiqueta="Coste del mensaje"
-          valor={`${dinero(importe, 1)} ${cobro.simbolo}`}
+          valor={`${monto(importe)} ${cobro.simbolo}`}
           color="text-ink"
         />
         <Fila etiqueta="Gas" valor="Lo paga el agente" color="text-olive" />
@@ -52,7 +52,7 @@ export default function HojaFirmar({
           por encima del tope, pero enterarse por un fallo es enterarse tarde. */}
       {subio && (
         <Nota tono="miel">
-          El agente pide más de lo que anunciaba en su ficha ({dinero(cobro.amount, 1)}{' '}
+          El agente pide más de lo que anunciaba en su ficha ({monto(cobro.amount)}{' '}
           {cobro.simbolo}). Lo que firmas es lo de arriba.
         </Nota>
       )}
