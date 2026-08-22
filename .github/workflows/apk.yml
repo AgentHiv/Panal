@@ -11,7 +11,9 @@
 # firmarlo con una clave propia: ver el paso comentado al final.
 #
 # No corre en cada push. Un APK por commit no le sirve a nadie y son minutos de
-# CI: se lanza a mano, o publicando una etiqueta `apk-v1.0.0`.
+# CI: se lanza a mano, o publicando una etiqueta `apk-v1.0.0`. Ojo: la app va
+# DENTRO del APK, así que se queda congelada en el commit con el que se
+# compiló — desplegar la web ya no toca los teléfonos, y son cosas distintas.
 
 name: APK
 
@@ -55,24 +57,46 @@ jobs:
       - name: Instalar dependencias
         run: pnpm install --frozen-lockfile
 
-      # `webDir` tiene que existir porque Capacitor lo copia dentro del APK,
-      # pero la app NO usa esos archivos: carga https://panal.lat (ver
-      # capacitor.config.ts, que explica por qué). En vez de meter 2,7 MB de
-      # bundle que nadie va a abrir, va una página que lo dice — así, si algún
-      # día alguien quita `server.url` y no compila la web, se encuentra este
-      # texto en vez de una pantalla en blanco sin explicación.
-      - name: Marcador en webDir
+      # Se compila la APP, no el sitio. Son proyectos distintos: `movil/` tiene
+      # su propio Vite, su propio Tailwind y su propia interfaz.
+      - name: Compilar la app
+        run: pnpm --filter @panal/movil build
+
+      # Que no se cuele un APK con un bundle viejo o con el del sitio: sin los
+      # archivos correctos la app abre una pantalla en blanco y eso solo se ve
+      # ya en el teléfono.
+      - name: Comprobar el bundle
         run: |
-          mkdir -p dist
-          cat > dist/index.html <<'HTML'
-          <!doctype html><meta charset="utf-8"><title>Panal</title>
-          <p>Esta app carga https://panal.lat. Si estás viendo esto, se ha
-          quitado <code>server.url</code> de capacitor.config.ts sin compilar
-          la web.</p>
-          HTML
+          test -f movil/dist/index.html
+          test -d movil/dist/assets
+          grep -q 'HeroSwarm' -r movil/dist && { echo 'ERROR: esto es el bundle de la web'; exit 1; } || true
+          echo "movil/dist: $(du -sh movil/dist | cut -f1), $(find movil/dist -type f | wc -l) archivos"
 
       - name: Sincronizar el proyecto Android
         run: pnpm exec cap sync android
+
+      # La version del APK sale de la etiqueta, para que no vuelva a haber tres
+      # releases que por dentro dicen ser la misma. `versionCode` tiene que
+      # CRECER siempre o Android no lo considera una actualizacion: 2.0.0 →
+      # 20000, 2.1.3 → 20103. Aguanta hasta 99 en minor y patch.
+      - name: Numerar la version
+        run: |
+          if [[ "$GITHUB_REF_NAME" =~ ^apk-v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            MAJOR=${BASH_REMATCH[1]}; MINOR=${BASH_REMATCH[2]}; PATCH=${BASH_REMATCH[3]}
+            if (( MINOR > 99 || PATCH > 99 )); then
+              echo "minor y patch tienen que ser < 100 para que versionCode siga creciendo"; exit 1
+            fi
+            NOMBRE="${MAJOR}.${MINOR}.${PATCH}"
+            CODIGO=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
+          else
+            # Ejecucion a mano: no es una release y tiene que notarse.
+            NOMBRE="0.0-dev"; CODIGO=1
+          fi
+          # Se leen en el paso de compilar, no en este: lo que se escribe en
+          # GITHUB_ENV no existe todavia en el paso que lo escribe.
+          echo "VERSION_NAME=$NOMBRE" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$CODIGO" >> "$GITHUB_ENV"
+          echo "versionName=$NOMBRE  versionCode=$CODIGO"
 
       - name: Compilar
         working-directory: android
@@ -110,7 +134,7 @@ jobs:
           APK="panal-${GITHUB_REF_NAME}.apk"
           NOTAS="APK firmado en depuración. En el móvil: descárgalo y ábrelo; Android pedirá permiso para instalar de orígenes desconocidos.
 
-          La app carga https://panal.lat, así que se actualiza sola con la web y no hace falta reinstalar salvo que cambie el envoltorio."
+          Es la app de Panal, no el sitio web dentro de una ventana: tres pestañas y su propia interfaz. Va entera dentro del APK, así que NO se actualiza sola — cada cambio necesita una versión nueva."
 
           # Crear o, si ya existe, adjuntar. Publicar la release desde la web
           # de GitHub la crea ANTES de que este paso corra, y entonces
