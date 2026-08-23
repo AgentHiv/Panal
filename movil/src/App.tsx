@@ -9,6 +9,10 @@ import Agente from '~/pantallas/Agente';
 import Archivo from '~/pantallas/Archivo';
 import Expediente from '~/pantallas/Expediente';
 import Llavero from '~/pantallas/Llavero';
+import Agentes from '~/pantallas/Agentes';
+import PanelAgente from '~/pantallas/Panel';
+import Guardia from '~/pantallas/Guardia';
+import Alta from '~/pantallas/Alta';
 import { useAvisos } from '~/lib/usarAvisos';
 
 /** Las rutas con pestañas abajo. Un hilo o una ficha ocupan la pantalla entera. */
@@ -36,6 +40,10 @@ export default function App(): React.ReactElement {
           <Route path="/expediente/:id" element={<Expediente />} />
           <Route path="/saldo" element={<Saldo />} />
           <Route path="/llavero" element={<Llavero />} />
+          <Route path="/agentes" element={<Agentes />} />
+          <Route path="/panel/:direccion" element={<PanelAgente />} />
+          <Route path="/guardia/:direccion" element={<Guardia />} />
+          <Route path="/alta" element={<Alta />} />
           <Route path="*" element={<Navigate to="/chats" replace />} />
         </Routes>
       </div>

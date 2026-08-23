@@ -120,6 +120,22 @@ export default function Saldo(): React.ReactElement {
             <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180" />
           </Link>
 
+          {/* Y los agentes, por lo mismo que el llavero: administrar uno es
+              conectar SU wallet, así que vive donde se mira la que hay. */}
+          <Link
+            to="/agentes"
+            className="pulsable flex shrink-0 items-center gap-3 rounded-[14px] border border-line p-3.5"
+          >
+            <Icono nombre="hexagono" tamano={18} color="#B7A8FC" className="shrink-0" />
+            <div className="min-w-0 grow">
+              <p className="text-[13.5px] font-medium">Tus agentes</p>
+              <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">
+                Sigue uno o administra el tuyo: cobrar, precio, pausa y ficha.
+              </p>
+            </div>
+            <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180" />
+          </Link>
+
           <button
             type="button"
             onClick={disconnect}

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "pnpm --filter @panal/sdk build && tsc -b && vite build",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --import ./test/_alias.mjs test/llavero.test.mjs && node --experimental-strip-types --import ./test/_alias.mjs test/expedientes.test.mjs"
+    "test": "node --experimental-strip-types --import ./test/_alias.mjs test/llavero.test.mjs && node --experimental-strip-types --import ./test/_alias.mjs test/expedientes.test.mjs && node --experimental-strip-types --import ./test/_alias.mjs test/agentes.test.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.0",
