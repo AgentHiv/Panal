@@ -14,6 +14,7 @@ import PanelAgente from '~/pantallas/Panel';
 import Guardia from '~/pantallas/Guardia';
 import Alta from '~/pantallas/Alta';
 import Informe from '~/pantallas/Informe';
+import Cartera from '~/pantallas/Cartera';
 import { useAvisos } from '~/lib/usarAvisos';
 
 /** Las rutas con pestañas abajo. Un hilo o una ficha ocupan la pantalla entera. */
@@ -46,6 +47,7 @@ export default function App(): React.ReactElement {
           <Route path="/guardia/:direccion" element={<Guardia />} />
           <Route path="/alta" element={<Alta />} />
           <Route path="/informe/:direccion" element={<Informe />} />
+          <Route path="/cartera" element={<Cartera />} />
           <Route path="*" element={<Navigate to="/chats" replace />} />
         </Routes>
       </div>

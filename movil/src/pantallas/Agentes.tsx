@@ -118,9 +118,18 @@ export default function Agentes(): React.ReactElement {
 
         {lista.length > 0 && (
           <>
-            <p className="mt-1 shrink-0 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-              Los que sigues
-            </p>
+            <div className="mt-1 flex shrink-0 items-baseline justify-between gap-2">
+              <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">Los que sigues</p>
+              {lista.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => navegar('/cartera')}
+                  className="pulsable text-[12px] text-honey"
+                >
+                  Verlos juntos
+                </button>
+              )}
+            </div>
             {lista.map((d) => (
               <FilaSeguido key={d} direccion={d} onAbrir={() => navegar(`/panel/${d}`)} />
             ))}

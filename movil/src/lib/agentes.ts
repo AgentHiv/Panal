@@ -31,6 +31,7 @@ import {
 } from '@/contracts/config';
 import { extractBotUrl } from '@/lib/botEndpoint';
 import { esDireccion, partirFicha } from '~/lib/ficha';
+import type { FilaCartera } from '~/lib/cartera';
 import { fetchTaskIdsOf } from '@/lib/indexer';
 
 export { armarFicha, dejarDeSeguir, esDireccion, partirFicha, seguidos, seguir } from '~/lib/ficha';
@@ -146,6 +147,8 @@ const LOTE = 5;
 const RESPIRO_MS = 300;
 const VENTANA_RECIENTE = 25;
 const TOPE_ESCANEO = 200;
+/** Cuántas tareas del final se miran para contar los encargos abiertos. */
+const VENTANA_CARTERA = 120;
 
 const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -243,6 +246,133 @@ async function tareasDe(direccion: Address): Promise<TareaDeAgente[]> {
   }
 
   return suyas.sort((a, b) => (a.id > b.id ? -1 : 1));
+}
+
+/* ── la cartera: varios agentes de una vez ───────────────────────────────── */
+
+/**
+ * Todos los agentes que sigues, en UNA consulta.
+ *
+ * Se lee todo junto y no con un hook por fila porque el total tiene que salir
+ * de la misma foto que las filas: con una consulta por agente, la suma de
+ * arriba iría cambiando mientras van llegando y por un momento diría una cifra
+ * que no es la de ninguna lista.
+ *
+ * Son tres lecturas por agente —ficha y las dos monedas— más el escaneo de sus
+ * encargos abiertos. Con nueve agentes son 27 lecturas y un escaneo del escrow
+ * compartido por todos, que es lo que cuesta ver una cartera entera.
+ */
+export function useCartera(direcciones: string[]) {
+  const claves = direcciones.map((d) => d.toLowerCase()).sort();
+
+  return useQuery<FilaCartera[]>({
+    queryKey: ['cartera', activeChain.id, claves.join(',')],
+    enabled: claves.length > 0,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    queryFn: async () => {
+      const ahora = Math.floor(Date.now() / 1000);
+      // Las tareas abiertas se sacan del escrow UNA vez y se reparten: pedir
+      // las de cada agente por separado repetiría el mismo recorrido nueve
+      // veces contra un RPC público.
+      const abiertasPorAgente = await abiertasDe(claves);
+
+      const filas = await Promise.all(
+        claves.map(async (dir): Promise<FilaCartera> => {
+          const [ficha, panal, mon] = await Promise.all([
+            publicClient.readContract({
+              address: PANAL_REGISTRY_V2_ADDRESS,
+              abi: panalRegistryV2Abi,
+              functionName: 'getAgent',
+              args: [dir as Address],
+            }) as Promise<{
+              metadataURI: string;
+              pricePerTask: bigint;
+              active: boolean;
+              registeredAt: bigint;
+              currency: Address;
+            }>,
+            publicClient.readContract({
+              address: PANAL_ESCROW_V2_ADDRESS,
+              abi: panalEscrowV2Abi,
+              functionName: 'pendingWithdrawals',
+              args: [PANAL_TOKEN_ADDRESS, dir as Address],
+            }) as Promise<bigint>,
+            publicClient.readContract({
+              address: PANAL_ESCROW_V2_ADDRESS,
+              abi: panalEscrowV2Abi,
+              functionName: 'pendingWithdrawals',
+              args: [NATIVE_CURRENCY, dir as Address],
+            }) as Promise<bigint>,
+          ]);
+
+          const suyas = abiertasPorAgente.get(dir) ?? [];
+          return {
+            direccion: dir,
+            nombre: partirFicha(ficha.metadataURI ?? '').nombre || `${dir.slice(0, 6)}…${dir.slice(-4)}`,
+            registrado: ficha.registeredAt > 0n,
+            activo: ficha.active,
+            precio: ficha.pricePerTask,
+            moneda:
+              ficha.currency?.toLowerCase() === PANAL_TOKEN_ADDRESS.toLowerCase() ? '$PANAL' : 'MON',
+            conEndpoint: extractBotUrl(ficha.metadataURI) !== null,
+            panal,
+            mon,
+            vencidos: suyas.filter((t) => t < ahora).length,
+            abiertos: suyas.filter((t) => t >= ahora).length,
+          };
+        }),
+      );
+      return filas;
+    },
+  });
+}
+
+/**
+ * Los plazos de los encargos ABIERTOS de cada agente, en un solo recorrido.
+ *
+ * Solo mira la cola del escrow: un encargo abierto es reciente por definición
+ * —o venció, y entonces sigue estando en esa cola salvo que sea muy viejo—.
+ * Recorrer las 61 tareas enteras por cada carga de pantalla sería castigar un
+ * RPC público para enseñar un contador.
+ */
+async function abiertasDe(direcciones: string[]): Promise<Map<string, number[]>> {
+  const salida = new Map<string, number[]>();
+  const total = Number(
+    (await publicClient.readContract({
+      address: PANAL_ESCROW_V2_ADDRESS,
+      abi: panalEscrowV2Abi,
+      functionName: 'getTaskCount',
+    })) as bigint,
+  );
+  if (total === 0) return salida;
+
+  const buscadas = new Set(direcciones);
+  const desde = Math.max(0, total - VENTANA_CARTERA);
+
+  for (let i = desde; i < total; i += LOTE) {
+    const lote = Array.from({ length: Math.min(LOTE, total - i) }, (_, j) => BigInt(i + j));
+    const filas = await Promise.all(
+      lote.map(
+        (id) =>
+          publicClient.readContract({
+            address: PANAL_ESCROW_V2_ADDRESS,
+            abi: panalEscrowV2Abi,
+            functionName: 'tasks',
+            args: [id],
+          }) as Promise<{ worker: Address; deadline: bigint; status: number }>,
+      ),
+    );
+    for (const f of filas) {
+      if (Number(f.status) !== 0) continue;
+      const w = f.worker.toLowerCase();
+      if (!buscadas.has(w)) continue;
+      salida.set(w, [...(salida.get(w) ?? []), Number(f.deadline)]);
+    }
+    if (i + LOTE < total) await dormir(RESPIRO_MS);
+  }
+  return salida;
 }
 
 export function useTareasDe(direccion: string | undefined) {
