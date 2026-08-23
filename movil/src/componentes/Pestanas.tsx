@@ -3,12 +3,18 @@ import Icono from '~/componentes/Icono';
 import type { NombreIcono } from '~/componentes/Icono';
 
 /**
- * Tres pestañas. La web tiene nueve rutas; aquí no cabe —ni hace falta— la
+ * Cuatro pestañas. La web tiene nueve rutas; aquí no cabe —ni hace falta— la
  * portada, el enjambre, el protocolo, el token ni el panel.
+ *
+ * «Archivo» va en la barra y no escondido dentro de un encargo porque es donde
+ * se ve lo que la app está a punto de tirar: 200 briefs y 60 hilos son el tope,
+ * y pasado eso se pierde lo más viejo sin avisar. Un aviso que hay que buscar
+ * no es un aviso.
  */
 const PESTANAS: { a: string; etiqueta: string; icono: NombreIcono }[] = [
   { a: '/chats', etiqueta: 'Chats', icono: 'chat' },
   { a: '/mercado', etiqueta: 'Mercado', icono: 'bolsa' },
+  { a: '/archivo', etiqueta: 'Archivo', icono: 'carpeta' },
   { a: '/saldo', etiqueta: 'Saldo', icono: 'cartera' },
 ];
 
@@ -27,7 +33,7 @@ export default function Pestanas(): React.ReactElement {
                   no solo con el color: en una barra oscura, miel sobre gris es
                   poca diferencia a la primera ojeada. */}
               <span
-                className={`flex h-7 w-[52px] items-center justify-center rounded-full transition-colors ${
+                className={`flex h-7 w-[46px] items-center justify-center rounded-full transition-colors ${
                   isActive ? 'bg-honey-soft' : ''
                 }`}
               >

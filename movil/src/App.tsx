@@ -6,10 +6,13 @@ import Mercado from '~/pantallas/Mercado';
 import Saldo from '~/pantallas/Saldo';
 import Hilo from '~/pantallas/Hilo';
 import Agente from '~/pantallas/Agente';
+import Archivo from '~/pantallas/Archivo';
+import Expediente from '~/pantallas/Expediente';
+import Llavero from '~/pantallas/Llavero';
 import { useAvisos } from '~/lib/usarAvisos';
 
 /** Las rutas con pestañas abajo. Un hilo o una ficha ocupan la pantalla entera. */
-const CON_PESTANAS = ['/chats', '/mercado', '/saldo'];
+const CON_PESTANAS = ['/chats', '/mercado', '/archivo', '/saldo'];
 
 export default function App(): React.ReactElement {
   const { pathname } = useLocation();
@@ -29,7 +32,10 @@ export default function App(): React.ReactElement {
           <Route path="/chat/:id" element={<Hilo />} />
           <Route path="/agente/:id" element={<Agente />} />
           <Route path="/mercado" element={<Mercado />} />
+          <Route path="/archivo" element={<Archivo />} />
+          <Route path="/expediente/:id" element={<Expediente />} />
           <Route path="/saldo" element={<Saldo />} />
+          <Route path="/llavero" element={<Llavero />} />
           <Route path="*" element={<Navigate to="/chats" replace />} />
         </Routes>
       </div>
