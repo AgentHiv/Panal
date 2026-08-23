@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+    a { color: #E29A2E; text-decoration: none; }
+    a:hover { color: #D9982B; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #121019; color: #F2EFFA; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+
+  <div style="flex-grow: 1; padding: 16px 14px; display: flex; flex-direction: column; gap: 12px; opacity: 0.22;">
+    <div style="align-self: flex-start; max-width: 82%; background: #1A1726; border-radius: 16px 16px 16px 5px; padding: 11px 13px; height: 34px;"></div>
+  </div>
+
+  <div style="background: #1A1726; border-top: 1px solid #342E4A; border-radius: 22px 22px 0 0; padding: 10px 20px 22px; box-shadow: 0 -12px 40px -8px rgba(0,0,0,.6);">
+
+    <div style="width: 38px; height: 4px; border-radius: 9999px; background: #342E4A; margin: 0 auto 18px;"></div>
+
+    <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 21px; letter-spacing: -0.015em;">Abrir una disputa</div>
+    <div style="font-size: 13.5px; color: #C8C3DC; line-height: 1.55; margin-top: 6px;">Los 12 MON se congelan. Ni tú ni revisor-codigo cobráis hasta que se resuelva.</div>
+
+    <!-- No hay campo de motivo a propósito: la cadena no guarda texto, y el
+         hilo ya contiene lo que hace falta para juzgar. -->
+    <div style="border: 1px solid #342E4A; border-radius: 14px; margin-top: 16px; padding: 13px 15px 14px;">
+      <div style="font-size: 11.5px; color: #948DAE; text-transform: uppercase; letter-spacing: 0.06em;">Lo que verá quien decide</div>
+      <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 10px;">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
+          <div style="font-size: 13px; color: #C8C3DC;">Lo que pediste, palabra por palabra</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M13.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z"/><path d="M13.5 3v5.5H19"/></svg>
+          <div style="font-size: 13px; color: #C8C3DC;">El archivo entregado y su hash</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5.4A8 8 0 1 1 21 12z"/></svg>
+          <div style="font-size: 13px; color: #C8C3DC;">La conversación entera</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="border: 1px solid #342E4A; border-radius: 14px; margin-top: 12px; overflow: hidden;">
+      <div style="padding: 13px 15px;">
+        <div style="font-size: 11.5px; color: #948DAE; text-transform: uppercase; letter-spacing: 0.06em;">Cómo puede acabar</div>
+        <div style="font-size: 13px; color: #C8C3DC; line-height: 1.5; margin-top: 6px;">Los 12 MON vuelven enteros, van enteros al agente, o se parten en la proporción que decida el árbitro.</div>
+      </div>
+      <div style="height: 1px; background: #342E4A;"></div>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 15px;">
+        <div style="min-width: 0;">
+          <div style="font-size: 13px; color: #C8C3DC;">Decide</div>
+          <div style="font-size: 11.5px; color: #948DAE; margin-top: 2px;">un 2-de-3, no una sola clave</div>
+        </div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #948DAE; flex-shrink: 0;">0xc384…1Fe0</div>
+      </div>
+    </div>
+
+    <!-- La salida de emergencia del contrato. Es la garantía real del cliente. -->
+    <div style="display: flex; gap: 9px; margin-top: 12px; padding: 11px 13px; background: #232035; border-radius: 12px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92A268" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 3l7.5 3.2v5c0 4.6-3.1 8.8-7.5 10-4.4-1.2-7.5-5.4-7.5-10v-5z"/><path d="M9 12l2 2 4-4"/></svg>
+      <div style="font-size: 12px; color: #948DAE; line-height: 1.5;">Si el árbitro no resuelve en 14 días, recuperas los 12 MON enteros. Lo puede reclamar cualquiera y no hace falta su permiso.</div>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-top: 18px;">
+      <div style="flex-grow: 1; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #342E4A; font-size: 15px; font-weight: 500; color: #C8C3DC; cursor: pointer;">Ahora no</div>
+      <div style="flex-grow: 1.4; height: 52px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 9999px; background: #C9653B; box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 8px 24px -10px rgba(201,101,59,.6); font-size: 15px; font-weight: 600; color: #ffffff; cursor: pointer;">Abrir disputa</div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

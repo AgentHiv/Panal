@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+    a { color: #E29A2E; text-decoration: none; }
+    a:hover { color: #D9982B; }
+    .pulsa { cursor: pointer; transition: opacity 120ms ease; }
+    .pulsa:active { opacity: .72; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #121019; color: #F2EFFA; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="padding: 20px 18px 10px;">
+    <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 26px; letter-spacing: -0.015em;">Tus expedientes</div>
+    <div style="font-size: 12.5px; color: #948DAE; margin-top: 3px;">Lo que la cadena no guarda de cada encargo</div>
+  </div>
+
+  <div style="flex-grow: 1; overflow-y: auto; padding: 4px 18px 18px;">
+
+    <!-- ESTO NO ES UN AVISO INVENTADO PARA LA MAQUETA. taskBriefs.ts guarda un
+         máximo de 200 entradas con recorte FIFO, e historial.ts 60 hilos de 300
+         mensajes. Ya se está tirando material, en silencio y sin avisar. -->
+    <div style="border: 1px solid {{ salud.borde }}; background: {{ salud.fondo }}; border-radius: 16px; padding: 15px;">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{ salud.color }}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17z"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>
+        <div style="font-size: 13.5px; font-weight: 600; color: {{ salud.color }};">{{ salud.titulo }}</div>
+      </div>
+
+      <div style="height: 6px; border-radius: 9999px; background: #232035; margin-top: 12px; overflow: hidden;">
+        <div style="height: 6px; width: {{ salud.ancho }}; background: {{ salud.color }}; border-radius: 9999px;"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-top: 7px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: {{ salud.color }};">{{ salud.usados }} de 200</span>
+        <span style="font-size: 11.5px; color: #948DAE;">briefs guardados</span>
+      </div>
+
+      <div style="font-size: 12px; color: #C8C3DC; line-height: 1.55; margin-top: 11px;">{{ salud.texto }}</div>
+    </div>
+
+    <div class="pulsa" style="display: flex; align-items: center; gap: 11px; border: 1px solid #342E4A; border-radius: 14px; margin-top: 12px; padding: 13px 14px; min-height: 44px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92A268" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M12 3.5v11"/><path d="M8 11l4 3.5 4-3.5"/><path d="M4.5 17v2.5h15V17"/></svg>
+      <div style="flex-grow: 1; min-width: 0;">
+        <div style="font-size: 13.5px; font-weight: 500;">Sacar una copia de todo</div>
+        <div style="font-size: 11.5px; color: #948DAE; margin-top: 2px; line-height: 1.45;">Un archivo que se abre sin la app y no caduca</div>
+      </div>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A4363" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M9.5 5l7 7-7 7"/></svg>
+    </div>
+
+    <div style="display: flex; gap: 7px; margin-top: 18px;">
+      <sc-for list="{{ filtros }}" as="f" hint-placeholder-count="3">
+        <div class="pulsa" onClick="{{ f.elegir }}" style="height: 32px; padding: 0 13px; display: flex; align-items: center; border-radius: 9999px; border: 1px solid {{ f.borde }}; background: {{ f.fondo }}; font-size: 12.5px; font-weight: 600; color: {{ f.color }};">{{ f.texto }}</div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+      <sc-for list="{{ lista }}" as="e" hint-placeholder-count="5">
+        <div class="pulsa" style="border: 1px solid #342E4A; background: #1A1726; border-radius: 14px; padding: 13px 14px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+            <div style="font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ e.titulo }}</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #948DAE; flex-shrink: 0;">#{{ e.n }}</div>
+          </div>
+          <div style="font-size: 12px; color: #948DAE; margin-top: 4px;">{{ e.agente }} · {{ e.fecha }} · {{ e.importe }}</div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-top: 10px;">
+            <div style="width: 6px; height: 6px; border-radius: 9999px; background: {{ e.color }}; flex-shrink: 0;"></div>
+            <span style="font-size: 11.5px; color: {{ e.color }};">{{ e.estado }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { filtro: 'todos' };
+  }
+
+  renderVals() {
+    const usados = 184;
+    const salud = {
+      titulo: 'Quedan 16 antes de empezar a perder',
+      color: '#E29A2E', borde: '#4A3A18', fondo: '#2E2510',
+      usados: String(usados), ancho: Math.round((usados / 200) * 100) + '%',
+      texto: 'La app guarda 200 briefs y, al llegar ahí, va tirando los más viejos sin avisar. Los hilos tienen su propio tope: 60 conversaciones de 300 mensajes. Y todo esto vive en este teléfono: borrar los datos de la app lo pierde, y cambiar de móvil no se lo lleva.',
+    };
+
+    const todos = [
+      { n: '12', titulo: 'Revisión del contrato de escrow', agente: 'revisor-codigo', fecha: '14 ago', importe: '12 MON', completo: true, color: '#92A268', estado: 'Completo · brief, entrega y hilo' },
+      { n: '11', titulo: 'Auditar los reembolsos', agente: 'Audit', fecha: '9 ago', importe: '15.000 $PANAL', completo: true, color: '#92A268', estado: 'Completo · brief, entrega y hilo' },
+      { n: '9', titulo: 'Traducir la ficha del token', agente: 'i18n', fecha: '2 ago', importe: '0,01 MON', completo: false, color: '#C9653B', estado: 'Falta el archivo entregado' },
+      { n: '7', titulo: 'Casos de prueba del endpoint', agente: 'Spec', fecha: '28 jul', importe: '100 $PANAL', completo: false, color: '#948DAE', estado: 'Solo lo de la cadena · el brief se perdió' },
+      { n: '4', titulo: 'Resumen del acuerdo de licencia', agente: 'LexPanal', fecha: '21 jul', importe: '1 MON', completo: true, color: '#92A268', estado: 'Completo · brief, entrega y hilo' },
+    ];
+
+    const f = this.state.filtro;
+    const lista = todos.filter((e) => (f === 'completos' ? e.completo : f === 'incompletos' ? !e.completo : true));
+
+    const filtros = [
+      { id: 'todos', texto: 'Todos · 5' },
+      { id: 'completos', texto: 'Completos · 3' },
+      { id: 'incompletos', texto: 'Con huecos · 2' },
+    ].map((x) => {
+      const puesto = f === x.id;
+      return {
+        texto: x.texto,
+        elegir: () => this.setState({ filtro: x.id }),
+        borde: puesto ? '#E29A2E' : '#342E4A',
+        fondo: puesto ? '#2E2510' : 'transparent',
+        color: puesto ? '#E29A2E' : '#948DAE',
+      };
+    });
+
+    return { salud, lista, filtros };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# La página del lienzo publicada: 2,5 MB de editor minificado envolviendo estos
+# mismos artboards, que sí están versionados. Se descarga del artifact cuando
+# haga falta editar el lienzo; para leer el diseño basta con visor.html.
+panal-app-android.html

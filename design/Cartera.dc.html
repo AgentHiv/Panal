@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+    a { color: #E29A2E; text-decoration: none; }
+    a:hover { color: #D9982B; }
+    .pulsa { cursor: pointer; transition: opacity 120ms ease; }
+    .pulsa:active { opacity: .72; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #121019; color: #F2EFFA; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- La cinta va DENTRO de la pantalla y no en una nota al margen: quien
+       enseñe esta captura tiene que ver que todavía no existe. -->
+  <div style="display: flex; align-items: center; gap: 8px; background: #2E2510; border-bottom: 1px solid #4A3A18; padding: 8px 14px;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E29A2E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17z"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>
+    <div style="font-size: 11.5px; color: #E29A2E; line-height: 1.4;">No existe todavía. Pide un registro nuevo — ver «Qué hay que cambiar».</div>
+  </div>
+
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; padding: 16px 18px 10px;">
+    <div>
+      <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 26px; letter-spacing: -0.015em;">Cartera</div>
+      <div style="font-size: 12.5px; color: #948DAE; margin-top: 3px;">9 agentes · una sola wallet al mando</div>
+    </div>
+    <div class="pulsa" style="width: 36px; height: 36px; border-radius: 9999px; border: 1px solid #342E4A; display: flex; align-items: center; justify-content: center;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C8C3DC" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5.5v13"/><path d="M5.5 12h13"/></svg>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; overflow-y: auto; padding: 0 18px 18px;">
+
+    <!-- LO QUE DE VERDAD COMPRA EL CAMBIO DE CONTRATO: una firma en vez de
+         nueve. Hoy cobrar todo son 9 wallets × 2 monedas = 18 transacciones. -->
+    <div style="border: 1px solid #4A3A18; background: #2E2510; border-radius: 16px; padding: 15px;">
+      <div style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #E29A2E;">Sin cobrar en toda la cartera</div>
+      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 8px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 29px; font-weight: 500; color: #E29A2E; line-height: 1;">88.052,50</span>
+        <span style="font-size: 13.5px; font-weight: 600; color: #E29A2E;">$PANAL</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 5px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 500; color: #C8C3DC; line-height: 1;">0,5603</span>
+        <span style="font-size: 12px; font-weight: 600; color: #C8C3DC;">MON</span>
+      </div>
+      <div class="pulsa" style="height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 9999px; margin-top: 13px; background: linear-gradient(120deg, #836ef9 0%, #6a4ff0 55%, #5b3de8 100%); box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 8px 24px -10px rgba(131,110,249,.55); font-size: 14.5px; font-weight: 600; color: #ffffff;">
+        Cobrarlo todo · 1 firma
+      </div>
+      <div style="font-size: 11.5px; color: #948DAE; line-height: 1.5; margin-top: 9px; text-align: center;">Hoy son 18: nueve wallets, dos monedas cada una.</div>
+    </div>
+
+    <div style="display: flex; gap: 7px; margin-top: 16px;">
+      <sc-for list="{{ filtros }}" as="f" hint-placeholder-count="3">
+        <div class="pulsa" onClick="{{ f.elegir }}" style="height: 32px; padding: 0 13px; display: flex; align-items: center; border-radius: 9999px; border: 1px solid {{ f.borde }}; background: {{ f.fondo }}; font-size: 12.5px; font-weight: 600; color: {{ f.color }};">{{ f.texto }}</div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+      <sc-for list="{{ agentes }}" as="a" hint-placeholder-count="5">
+        <div class="pulsa" style="border: 1px solid #342E4A; background: #1A1726; border-radius: 14px; padding: 13px 14px;">
+          <div style="display: flex; align-items: center; gap: 11px;">
+            <svg width="34" height="34" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="#232035" stroke="{{ a.tono }}" stroke-width="1.3"/><text x="20" y="26" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="700" fill="{{ a.tono }}">{{ a.inicial }}</text></svg>
+            <div style="flex-grow: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 7px;">
+                <div style="width: 6px; height: 6px; border-radius: 9999px; background: {{ a.puntoColor }}; flex-shrink: 0;"></div>
+                <div style="font-size: 14.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ a.nombre }}</div>
+              </div>
+              <div style="font-size: 11.5px; color: #948DAE; margin-top: 3px;">{{ a.estado }} · {{ a.precio }}</div>
+            </div>
+            <div style="text-align: right; flex-shrink: 0;">
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: {{ a.saldoColor }};">{{ a.saldo }}</div>
+              <div style="font-size: 10.5px; color: #948DAE; margin-top: 2px;">sin cobrar</div>
+            </div>
+          </div>
+          <sc-if value="{{ a.aviso }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 7px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #342E4A;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9653B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17z"/><path d="M12 8v5"/></svg>
+              <span style="font-size: 11.5px; color: #C9653B; line-height: 1.4;">{{ a.aviso }}</span>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { filtro: 'todos' };
+  }
+
+  renderVals() {
+    // Los tres primeros son agentes REALES, con sus cifras leídas del escrow.
+    // Los demás van sin nombre porque no pude confirmar cuál es cuál.
+    const todos = [
+      { nombre: 'Audit', inicial: 'A', tono: '#E29A2E', activo: true, estado: 'Activo', precio: '15.000 $PANAL', saldo: '85.361,25', saldoColor: '#E29A2E', aviso: null },
+      { nombre: 'LexPanal', inicial: 'L', tono: '#836EF9', activo: false, estado: 'Pausado', precio: '1 MON', saldo: '2.203,75', saldoColor: '#E29A2E', aviso: 'Pausado y con dinero dentro. Su ficha tampoco declara endpoint.' },
+      { nombre: 'Spec', inicial: 'S', tono: '#C9653B', activo: true, estado: 'Activo', precio: '100 $PANAL', saldo: '487,50', saldoColor: '#E29A2E', aviso: null },
+      { nombre: 'Lint', inicial: 'L', tono: '#92A268', activo: true, estado: 'Activo', precio: '0,03 MON', saldo: '0,0585', saldoColor: '#B7A8FC', aviso: null },
+      { nombre: '0x17b5…9302', inicial: '?', tono: '#948DAE', activo: false, estado: 'Pausado', precio: '1 MON', saldo: '0', saldoColor: '#948DAE', aviso: 'Nunca ha cobrado nada y lleva pausado desde el alta.' },
+      { nombre: '0xad84…182C', inicial: '?', tono: '#948DAE', activo: false, estado: 'Pausado', precio: '0,05 MON', saldo: '0', saldoColor: '#948DAE', aviso: null },
+    ];
+
+    const f = this.state.filtro;
+    const agentes = todos
+      .filter((a) => (f === 'activos' ? a.activo : f === 'pausados' ? !a.activo : true))
+      .map((a) => ({ ...a, puntoColor: a.activo ? '#92A268' : '#C9653B' }));
+
+    const filtros = [
+      { id: 'todos', texto: 'Todos · 9' },
+      { id: 'activos', texto: 'Activos · 6' },
+      { id: 'pausados', texto: 'Pausados · 3' },
+    ].map((x) => {
+      const puesto = f === x.id;
+      return {
+        texto: x.texto,
+        elegir: () => this.setState({ filtro: x.id }),
+        borde: puesto ? '#E29A2E' : '#342E4A',
+        fondo: puesto ? '#2E2510' : 'transparent',
+        color: puesto ? '#E29A2E' : '#948DAE',
+      };
+    });
+
+    return { agentes, filtros };
+  }
+}
+</script>
+</body>
+</html>

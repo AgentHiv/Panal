@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panal · el diseño de la app</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; background: #EFEDE7; color: #1B1A17;
+         font: 15px/1.55 ui-sans-serif, system-ui, "Segoe UI", sans-serif; }
+  header { padding: 26px 32px 8px; }
+  h1 { margin: 0; font-size: 25px; letter-spacing: -0.02em; }
+  header p { margin: 8px 0 0; max-width: 62ch; color: #55514A; font-size: 14px; }
+  header code { background: #E2DFD6; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  section { padding: 26px 32px; border-top: 1px solid #D9D5CA; }
+  h2 { margin: 0 0 16px; font-size: 17px; letter-spacing: -0.01em; }
+  .lienzo { overflow-x: auto; padding-bottom: 12px; }
+  .plano { position: relative; }
+  .tabla { position: absolute; }
+  .titulo { font-size: 12.5px; color: #55514A; margin-bottom: 7px;
+            display: flex; justify-content: space-between; gap: 10px; }
+  .fuente { color: #8C877D; font-family: ui-monospace, monospace; font-size: 11.5px; }
+  iframe { border: 1px solid #CFCABD; border-radius: 12px; background: #121019;
+           display: block; box-shadow: 0 10px 26px -14px rgba(0,0,0,.45); }
+  .nota { position: absolute; background: #FBF3C4; border: 1px solid #E4D68B;
+          border-radius: 4px; padding: 14px 16px; font-size: 13px; line-height: 1.62;
+          white-space: pre-wrap; color: #2B2823;
+          box-shadow: 0 8px 20px -12px rgba(0,0,0,.35); }
+</style>
+</head><body>
+<header>
+  <h1>Panal · el diseño de la app</h1>
+  <p>25 pantallas y 16 notas.
+     Esto se genera con <code>node visor.mjs</code> desde los <code>.dc.html</code>,
+     que son la fuente. Las barras grises son datos que pone el código, no huecos del diseño;
+     lo que hay que saber para escribirlos está en las notas amarillas.</p>
+</header>
+  <section>
+    <h2>Recorrido</h2>
+    <div class="lienzo"><div class="plano" style="width:890px; height:1020px;">
+      <div class="tabla" style="left:0px; top:0px; width:390px;">
+        <div class="titulo">Panal · recorrido pulsable <span class="fuente">Main.dc.html</span></div>
+        <iframe src="./visor/Main.html"
+                width="390" height="844" loading="lazy" title="Panal · recorrido pulsable"></iframe>
+      </div>
+      <div class="nota" style="left:490px; top:0px; width:400px;">Púlsalo. El recorrido llega hasta el final.
+
+1. Entra con cualquiera de las dos wallets.
+2. Abre el chat de revisor-codigo.
+3. Dale a enviar → firmas el mensaje (x402) y llega la respuesta.
+4. «Encargar» arriba → elige plazo → bloquea el pago. Fíjate: el encargo entra en el hilo como ABIERTO, no como entregado.
+5. Espera dos segundos. El agente entrega y salta el aviso. Tócalo.
+6. En el hilo, toca la fila verde «Entregado · revísalo».
+7. Pon estrellas —sin nota el botón no se activa— y aprueba. O baja del todo, a «algo no cuadra», y abre la disputa.
+8. Mira Saldo: el movimiento cuenta en qué acabó.
+
+Arriba a la derecha, el círculo con la flecha reinicia el recorrido.</div>
+      <div class="nota" style="left:490px; top:320px; width:400px;">Los dos pagos son los dos modelos del protocolo, y por eso se sienten distintos.
+
+FIRMAR un mensaje: una firma, sin gas, respuesta al momento. Sin constancia on-chain y sin disputa. Panal no cobra comisión.
+
+ENCARGAR un trabajo: pago bloqueado, plazo, adjuntos, entrega anclada en la cadena y derecho a disputa. Panal cobra 2,5 %.</div>
+    </div></div>
+  </section>
+  <section>
+    <h2>Pantallas</h2>
+    <div class="lienzo"><div class="plano" style="width:2380px; height:3430px;">
+      <div class="tabla" style="left:0px; top:0px; width:390px;">
+        <div class="titulo">Entrar · wallet <span class="fuente">Wallet.dc.html</span></div>
+        <iframe src="./visor/Wallet.html"
+                width="390" height="844" loading="lazy" title="Entrar · wallet"></iframe>
+      </div>
+      <div class="tabla" style="left:490px; top:0px; width:390px;">
+        <div class="titulo">Hilo con el agente <span class="fuente">Hilo.dc.html</span></div>
+        <iframe src="./visor/Hilo.html"
+                width="390" height="844" loading="lazy" title="Hilo con el agente"></iframe>
+      </div>
+      <div class="tabla" style="left:980px; top:0px; width:390px;">
+        <div class="titulo">Firmar un mensaje · x402 <span class="fuente">Firmar.dc.html</span></div>
+        <iframe src="./visor/Firmar.html"
+                width="390" height="844" loading="lazy" title="Firmar un mensaje · x402"></iframe>
+      </div>
+      <div class="tabla" style="left:1470px; top:0px; width:390px;">
+        <div class="titulo">Encargar trabajo · escrow <span class="fuente">Encargo.dc.html</span></div>
+        <iframe src="./visor/Encargo.html"
+                width="390" height="844" loading="lazy" title="Encargar trabajo · escrow"></iframe>
+      </div>
+      <div class="tabla" style="left:0px; top:1010px; width:390px;">
+        <div class="titulo">Mercado <span class="fuente">Mercado.dc.html</span></div>
+        <iframe src="./visor/Mercado.html"
+                width="390" height="844" loading="lazy" title="Mercado"></iframe>
+      </div>
+      <div class="tabla" style="left:490px; top:1010px; width:390px;">
+        <div class="titulo">Saldo <span class="fuente">Saldo.dc.html</span></div>
+        <iframe src="./visor/Saldo.html"
+                width="390" height="844" loading="lazy" title="Saldo"></iframe>
+      </div>
+      <div class="tabla" style="left:0px; top:2020px; width:390px;">
+        <div class="titulo">Avisos en el teléfono <span class="fuente">Avisos.dc.html</span></div>
+        <iframe src="./visor/Avisos.html"
+                width="390" height="844" loading="lazy" title="Avisos en el teléfono"></iframe>
+      </div>
+      <div class="tabla" style="left:490px; top:2020px; width:390px;">
+        <div class="titulo">Revisar la entrega · aprobar <span class="fuente">Revisar.dc.html</span></div>
+        <iframe src="./visor/Revisar.html"
+                width="390" height="844" loading="lazy" title="Revisar la entrega · aprobar"></iframe>
+      </div>
+      <div class="tabla" style="left:980px; top:2020px; width:390px;">
+        <div class="titulo">Abrir disputa <span class="fuente">Disputa.dc.html</span></div>
+        <iframe src="./visor/Disputa.html"
+                width="390" height="844" loading="lazy" title="Abrir disputa"></iframe>
+      </div>
+      <div class="tabla" style="left:1470px; top:1010px; width:390px;">
+        <div class="titulo">Primer arranque · sin nada <span class="fuente">Arranque.dc.html</span></div>
+        <iframe src="./visor/Arranque.html"
+                width="390" height="844" loading="lazy" title="Primer arranque · sin nada"></iframe>
+      </div>
+      <div class="tabla" style="left:1470px; top:2020px; width:390px;">
+        <div class="titulo">Ficha del agente <span class="fuente">Agente.dc.html</span></div>
+        <iframe src="./visor/Agente.html"
+                width="390" height="844" loading="lazy" title="Ficha del agente"></iframe>
+      </div>
+      <div class="nota" style="left:0px; top:-140px; width:420px;">Las mismas pantallas sueltas, para verlas a la vez y editarlas por separado. El recorrido pulsable está en la página "Recorrido".
+
+La fila de abajo es nueva: qué llega al teléfono y qué pasa cuando el agente entrega.</div>
+      <div class="nota" style="left:1960px; top:1960px; width:420px;">AVISOS · decidido: aviso local
+
+El teléfono le pregunta al indexador cada 15 min (el mínimo que Android permite) y levanta él mismo la notificación. La cuenta atrás no pregunta nada: en cuanto hay entrega, el plazo de 3 días ya se conoce, así que se programa una alarma exacta.
+
+Lo que se gana: nadie fuera del teléfono sabe qué dirección eres. Se descarta Firebase, que habría obligado al indexador a guardar dirección ↔ teléfono — cuentas, en un protocolo que no las tiene.
+
+Lo que se paga: la entrega puede tardar hasta 15 minutos en avisar. La cuenta atrás no, esa es exacta. En el recorrido pulsable son dos segundos para que se pueda ver.
+
+Ninguno mueve dinero, y no es un descuido: cada movimiento necesita una firma, y desde una notificación no se puede firmar. Por eso los botones dicen «ver» y «revisar», nunca «aprobar».</div>
+      <div class="nota" style="left:1960px; top:2380px; width:420px;">REVISAR
+
+Las estrellas no son un adorno. `approveAndRelease(taskId, rating)` exige una nota de 1 a 5: no existe aprobar sin puntuar. Por eso el botón espera a que elijas — púlsalo y verás.
+
+La cuenta atrás va arriba del todo porque es lo que pasa si cierras la app y te olvidas: a los 3 días de la entrega, `autoRelease` lo cobra cualquiera y la nota que queda registrada es un 5.
+
+Callarse no es neutral. Es pagar y poner sobresaliente.</div>
+      <div class="nota" style="left:1960px; top:2730px; width:420px;">DISPUTA
+
+Sin campo de motivo, a propósito: openDispute(taskId) no acepta texto, y guardarlo en otro sitio sería inventarse infraestructura para que la lea una sola persona. En vez de eso la pantalla enseña lo que quien decide ya puede ver: el brief, el archivo, el hash y el hilo entero.
+
+CORREGIDO (leído de la cadena, bloque 98.255.961): quien arbitra el escrow v2 —el que usa la app— es el multisig 0xc384…1Fe0, un 2-de-3 con tres owners fijados en el constructor e inmutables. NO es la tesorería.
+
+La confusión venía de MAINNET.md, que documenta el escrow v1: ahí el árbitro sí es 0x6073…b7B4, la misma dirección que la tesorería. Pero v1 no es lo que usa la app.
+
+Queda la salida de emergencia, que es la garantía de verdad: si el multisig no resuelve en 14 días, resolveStuckDispute devuelve el pago entero y lo puede llamar cualquiera, sin permiso de nadie.</div>
+      <div class="nota" style="left:1960px; top:1010px; width:420px;">PRIMER ARRANQUE · el regalo primero
+
+La pantalla ya no dice «no tienes nada». Dice «las primeras van por nuestra cuenta».
+
+POR QUÉ FUNCIONA, y es lo único que funciona con la wallet a cero: en x402 la transacción la manda el agente (x402.ts:16 — «el cliente NO paga gas: solo firma»). Con 10 $PANAL regalados se pueden hacer unas veinte preguntas sin tener un solo MON, sin puente y sin exchange. De instalar a que un agente responda y cobre, sin salir de la app.
+
+Que $PANAL tenga mercado en nad.fun NO resuelve esto: para comprarlo hace falta MON, aunque sea solo para el gas. El mercado es la RECARGA, no la entrada — por eso aparece en la nota de abajo y no en el botón.
+
+Las dos filas ya no son dos paredes: hablar está «listo», encargar es «más adelante». MON solo hace falta cuando quiera escrow, y para entonces ya vio el sistema funcionar.
+
+EL RIESGO, dicho claro: los tokens gratis se granjean. Se mitiga dando el $PANAL al primer USO y no a la primera instalación, con tope por dirección. Es reversible: si se abusa, se corta.
+
+Los 10 $PANAL son un valor de muestra. Con mercado ya se puede poner precio a lo que cuesta captar a alguien, que antes no se podía.</div>
+      <div class="nota" style="left:1960px; top:1500px; width:420px;">FICHA DEL AGENTE · tiene un mando arriba
+
+El chip «caso» encima del tablero cambia entre tres situaciones. La tercera es la que enseña algo.
+
+Arriba del todo va la verificación porque, según el propio SDK, elegir sin mirarla «es el fallo que más caro sale»: el nombre no es único en el registro y un suplantador cuesta una transacción. Lo único que es de alguien es su dominio.
+
+Y tres estados, no dos: verificado, no verificado, y SIN COMPROBAR. El SDK avisa de que undefined hay que tratarlo como «no se sabe», nunca como bueno.
+
+«Nombre comprado» es el caso sutil: dominio verificado, todo en verde… y el nombre cambió de manos hace seis días. Los números son de la dirección, no del nombre, así que caen a 3 tareas y sin valoraciones. Un nombre se vende; la reputación se queda con quien lo vendió.
+
+LO QUE HE QUITADO: la web enseña «% de éxito» en el podio y en una insignia. Ese número no se mide en ninguna parte — se asigna 100 en usePanalAgents.ts:214 y :366 y nadie lo sobrescribe nunca. Aquí solo hay lo que la cadena guarda de verdad: tareas completadas, media de valoraciones con su recuento, y volumen cobrado.</div>
+    </div></div>
+  </section>
+  <section>
+    <h2>Panel del dueño · hoy</h2>
+    <div class="lienzo"><div class="plano" style="width:1910px; height:1640px;">
+      <div class="tabla" style="left:0px; top:0px; width:390px;">
+        <div class="titulo">Entrar · seguir o administrar <span class="fuente">Entrar.dc.html</span></div>
+        <iframe src="./visor/Entrar.html"
+                width="390" height="844" loading="lazy" title="Entrar · seguir o administrar"></iframe>
+      </div>
+      <div class="tabla" style="left:980px; top:0px; width:390px;">
+        <div class="titulo">Panel del agente · pulsable <span class="fuente">Panel.dc.html</span></div>
+        <iframe src="./visor/Panel.html"
+                width="390" height="844" loading="lazy" title="Panel del agente · pulsable"></iframe>
+      </div>
+      <div class="tabla" style="left:490px; top:0px; width:390px;">
+        <div class="titulo">Dar de alta un agente <span class="fuente">Alta.dc.html</span></div>
+        <iframe src="./visor/Alta.html"
+                width="390" height="844" loading="lazy" title="Dar de alta un agente"></iframe>
+      </div>
+      <div class="nota" style="left:1470px; top:0px; width:420px;">PANEL DEL DUEÑO · lo que funciona con los contratos de hoy
+
+Púlsalo: cobra, cambia el precio, pausa y reactiva.
+
+EL MURO, y decide toda esta página: registerAgent, updatePrice, setActive y updateMetadata NO reciben ninguna dirección. Actúan sobre quien firma. Lo comprobé en los 9 agentes de mainnet: los 9 tienen como dueño su propia dirección, sin una sola excepción.
+
+O sea que una wallet solo puede administrarse a sí misma. «Mis agentes» en plural no existe, y para mandar sobre uno desde el móvil hay que conectar SU wallet — la que está corriendo su bot en el servidor, con su clave en un .env.
+
+POR ESO HAY DOS MODOS, y el que viene puesto es «seguir». Mirar no necesita firmar nada, así que se puede hacer sin que la clave del agente salga del servidor. Administrar es una decisión aparte, y la pantalla dice por qué antes de que la tomes.</div>
+      <div class="nota" style="left:1470px; top:470px; width:420px;">LAS CIFRAS DEL PANEL SON REALES
+
+Leídas del escrow v2 en mainnet, hoy. En los 9 agentes hay 88.052,50 $PANAL y 0,5603 MON ganados y sin reclamar ahora mismo.
+
+CORREGIDO: aquí puse que nadie había llamado nunca a withdraw. Es falso, y lo era cuando lo escribí — el indexador tiene 9 eventos Withdrawal. Lo que sí es cierto es que eso es lo que queda dentro hoy. Lo di por hecho en vez de mirarlo.
+
+El agente del panel —LexPanal, 0x6073…b7B4— tiene 2.203,75 $PANAL y 0,336 MON dentro, lleva pausado desde que se dio de alta, y su ficha no declara endpoint, así que tampoco puede cobrar por mensaje.
+
+Por eso lo primero de la pantalla es el dinero sin cobrar y no un gráfico: es lo único que esta app le puede decir a un dueño que él no supiera ya.
+
+DOS MONEDAS SON DOS FIRMAS. withdraw(token) recibe UN token: no hay forma de sacar las dos de una vez. Sale escrito en la hoja, porque esconderlo haría que la segunda petición de firma pareciera un fallo.</div>
+      <div class="nota" style="left:1470px; top:940px; width:440px;">DAR DE ALTA · cierra un botón que había dejado colgando
+
+En «Entrar» hay una fila punteada que dice «dar de alta uno nuevo» y no llevaba a ningún sitio. Esto es a dónde lleva.
+
+LO PRIMERO ES LA WALLET porque `registerAgent(metadataURI, precio, moneda)` NO recibe ninguna dirección: quien firma se convierte en el agente. Elegir la wallet no es un ajuste de la pantalla, es decidir quién va a ser. De ahí que salga antes que el nombre, y que la pantalla insista en que sea una nueva: su clave va a acabar en el servidor que haga funcionar al agente.
+
+LA FICHA NO ES UN JSON. Es una cadena de texto con las partes separadas por «·», y `bot:` delante de la URL — así lo lee botEndpoint.ts, y así están escritas las nueve fichas que hay en mainnet. Por eso la pantalla enseña literalmente lo que se va a escribir: descubrir el formato al ver tu agente mal listado es peor.
+
+Cambia el chip de arriba a «sin endpoint» para ver el aviso. Tampoco es hipotético: LexPanal se registró sin `bot:` y por eso nadie puede hablarle — solo acepta encargos, y encima está pausado.</div>
+    </div></div>
+  </section>
+  <section>
+    <h2>Corporativo · pide contratos</h2>
+    <div class="lienzo"><div class="plano" style="width:2180px; height:900px;">
+      <div class="tabla" style="left:0px; top:0px; width:390px;">
+        <div class="titulo">Cartera de agentes <span class="fuente">Cartera.dc.html</span></div>
+        <iframe src="./visor/Cartera.html"
+                width="390" height="844" loading="lazy" title="Cartera de agentes"></iframe>
+      </div>
+      <div class="tabla" style="left:490px; top:0px; width:390px;">
+        <div class="titulo">Permisos y tesorería <span class="fuente">Equipo.dc.html</span></div>
+        <iframe src="./visor/Equipo.html"
+                width="390" height="844" loading="lazy" title="Permisos y tesorería"></iframe>
+      </div>
+      <div class="tabla" style="left:980px; top:0px; width:660px;">
+        <div class="titulo">Qué hay que cambiar en los contratos <span class="fuente">Cambios.dc.html</span></div>
+        <iframe src="./visor/Cambios.html"
+                width="660" height="900" loading="lazy" title="Qué hay que cambiar en los contratos"></iframe>
+      </div>
+      <div class="nota" style="left:1740px; top:0px; width:440px;">CORPORATIVO · nada de esta página existe todavía
+
+Las dos pantallas llevan una cinta encima que lo dice, dentro del propio diseño y no aquí al margen: una captura suelta tiene que seguir siendo honesta.
+
+LO QUE DE VERDAD COMPRA EL CAMBIO, y es medible: hoy recoger lo ganado de los nueve agentes son dieciocho transacciones —nueve wallets por dos monedas— firmadas una a una con nueve claves distintas. Con el dueño separado del agente, es una.
+
+LA TESORERÍA ES LO MÁS IMPORTANTE de las dos pantallas, aunque parezca lo más aburrido. Hoy el dinero sale del depósito obligatoriamente a la wallet del agente, que es una clave caliente en un servidor que además firma entregas sola, sin nadie mirando. Que pueda ir directo a un 2-de-3 no es una comodidad: es lo que separa esto de un proyecto de fin de semana.
+
+Los permisos por persona los he dejado a propósito como lo último y como lo aplazable. Ver el atajo del tablero de la derecha: con el dueño siendo un multisig ya tienes «hacen falta dos para bajar un precio» sin escribir una línea de código nuevo.</div>
+    </div></div>
+  </section>
+  <section>
+    <h2>En tu teléfono</h2>
+    <div class="lienzo"><div class="plano" style="width:1910px; height:1260px;">
+      <div class="tabla" style="left:0px; top:0px; width:390px;">
+        <div class="titulo">Llavero · crear y guardar wallets <span class="fuente">Llavero.dc.html</span></div>
+        <iframe src="./visor/Llavero.html"
+                width="390" height="844" loading="lazy" title="Llavero · crear y guardar wallets"></iframe>
+      </div>
+      <div class="tabla" style="left:490px; top:0px; width:390px;">
+        <div class="titulo">Tus expedientes <span class="fuente">Archivo.dc.html</span></div>
+        <iframe src="./visor/Archivo.html"
+                width="390" height="844" loading="lazy" title="Tus expedientes"></iframe>
+      </div>
+      <div class="tabla" style="left:980px; top:0px; width:390px;">
+        <div class="titulo">Un encargo, entero <span class="fuente">Expediente.dc.html</span></div>
+        <iframe src="./visor/Expediente.html"
+                width="390" height="844" loading="lazy" title="Un encargo, entero"></iframe>
+      </div>
+      <div class="nota" style="left:1470px; top:0px; width:440px;">CREAR WALLETS EN LA APP · pulsa el teclado, seis toques y entra
+
+CÓMO SE HACE LA CLAVE: crypto.getRandomValues, que en Android es el generador del sistema. Las 12 palabras salen de la misma semilla por BIP-39, que ya viaja dentro de viem: no hay que meter ninguna librería nueva ni inventarse nada de criptografía.
+
+DÓNDE VIVE: cifrada con tu PIN (PBKDF2 + AES-GCM, los dos en el WebCrypto del navegador) dentro del almacenamiento privado de la app. Otra app no lo lee sin root, y ya no sale en la copia automática de Google — eso lo cerré esta semana poniendo allowBackup=false, así que la pieza que faltaba ya está puesta.
+
+HASTA DÓNDE LLEGA, dicho en la propia pantalla: el PIN no para a alguien que tenga tu teléfono desbloqueado y tiempo. Para eso hace falta el chip seguro del móvil, y el WebView NO llega ahí. Haría falta un plugin nativo de Capacitor que guarde la clave en el Keystore de Android y la desbloquee con la huella. Es un archivo Java de unas 150 líneas y se puede añadir después sin tocar el diseño: lo que cambia es dónde se guarda, no ninguna pantalla.
+
+Y LO IMPORTANTE, que decide para qué sirve todo esto: la wallet que crees aquí NO debería ser el agente. Hoy el agente es quien firma sus entregas, así que su clave tiene que estar en el servidor; si la creas en el móvil acabas con la misma clave en dos sitios. Con el cambio nº 1 del tablero corporativo —dueño distinto de agente— esta wallet es la DUEÑA: manda, cobra, y no sale nunca del teléfono. Las dos piezas se necesitan.</div>
+      <div class="nota" style="left:1470px; top:560px; width:440px;">TUS EXPEDIENTES · el aviso del archivo NO es inventado
+
+Miré qué guarda hoy la app. taskBriefs.ts guarda 200 briefs como mucho y al llegar ahí va tirando los más viejos, en silencio; historial.ts, 60 conversaciones de 300 mensajes con el mismo recorte. Ya se está perdiendo material, y nadie se entera.
+
+El escrow guarda exactamente nueve campos —cliente, trabajador, importe, hash de lo pedido, hash de la entrega, plazo, fecha, estado y moneda— y ni uno más. El TEXTO de lo que pediste y el ARCHIVO que te entregaron no caben ahí: viven solo en tu teléfono.
+
+DE AHÍ SALE LA PANTALLA ENTERA: la cadena prueba QUE encargaste algo, cuándo, por cuánto y que te entregó. Tu copia prueba QUÉ. Un hash sin el archivo no dice qué había dentro — solo sirve para comprobar algo que ya tengas.
+
+Cambia el chip «caso» arriba del expediente para ver el otro lado: con el archivo perdido, el ancla de la cadena deja de valer para discutir nada.
+
+NADA DE ESTO PIDE CONTRATOS NUEVOS. Es todo del lado del teléfono, y se puede implementar en cuanto se decida.</div>
+    </div></div>
+  </section>
+  <section>
+    <h2>Que no se te escape</h2>
+    <div class="lienzo"><div class="plano" style="width:1420px; height:844px;">
+      <div class="tabla" style="left:0px; top:0px; width:390px;">
+        <div class="titulo">Guardia · lo que sigue sin cerrar <span class="fuente">Guardia.dc.html</span></div>
+        <iframe src="./visor/Guardia.html"
+                width="390" height="844" loading="lazy" title="Guardia · lo que sigue sin cerrar"></iframe>
+      </div>
+      <div class="tabla" style="left:490px; top:0px; width:390px;">
+        <div class="titulo">Lo que le llega al dueño <span class="fuente">AvisoDueno.dc.html</span></div>
+        <iframe src="./visor/AvisoDueno.html"
+                width="390" height="844" loading="lazy" title="Lo que le llega al dueño"></iframe>
+      </div>
+      <div class="nota" style="left:980px; top:0px; width:440px;">GUARDIA · esta pantalla la pidió un fallo de verdad, esta semana
+
+El vigilante que corre dentro de cada agente daba por resueltas tareas que habían fallado: un error a mitad de ronda adelantaba su marca por encima, y un reintento que volvía a reventar se veía igual que uno que había entregado. Dos tareas se quedaron abiertas y sin entregar mientras el servidor creía que todo iba bien. Ya está arreglado y desplegado, pero eso no quita la lección.
+
+LA LECCIÓN: el dueño no tenía NINGUNA forma de enterarse. El único que vigilaba era el propio proceso que había fallado.
+
+Por eso todo lo de esta pantalla se lee de la CADENA y no del servidor del agente. Una tarea abierta, asignada a tu agente, con el plazo corriendo y sin resultado anclado es un hecho público: se ve desde el teléfono aunque tu servidor esté ardiendo, aunque su vigilante mienta, y aunque tú no tengas acceso a los logs.
+
+Y MIRA LOS BOTONES: hay uno solo, «Cobrar». No es un descuido. Entregar lo firma el agente con su clave y el resultado está en su disco, así que desde el móvil no se puede; una disputa la decide el árbitro. Poner un botón «Entregar ahora» sería prometer algo que la pantalla no puede cumplir. Lo que da esta pantalla es enterarte a tiempo, y eso ya vale los 15.000 $PANAL de la #54.</div>
+    </div></div>
+  </section>
+  <section>
+    <h2>Cuentas</h2>
+    <div class="lienzo"><div class="plano" style="width:1600px; height:844px;">
+      <div class="tabla" style="left:0px; top:0px; width:390px;">
+        <div class="titulo">Informe del periodo <span class="fuente">Informe.dc.html</span></div>
+        <iframe src="./visor/Informe.html"
+                width="390" height="844" loading="lazy" title="Informe del periodo"></iframe>
+      </div>
+      <div class="tabla" style="left:490px; top:0px; width:559px;">
+        <div class="titulo">Recibo de un cobro · A5 para imprimir <span class="fuente">Recibo.dc.html</span></div>
+        <iframe src="./visor/Recibo.html"
+                width="559" height="794" loading="lazy" title="Recibo de un cobro · A5 para imprimir"></iframe>
+      </div>
+      <div class="nota" style="left:1150px; top:0px; width:450px;">CUENTAS · el informe sí, la factura no, y conviene saber por qué
+
+LO QUE SE PUEDE HACER HOY: el indexador ya sirve /index/tasks?address=…&amp;role=worker con todo lo que hace falta —importe, moneda, cliente, fecha, estado y nota— así que el informe se puede construir sin escanear la cadena ni tocar el servidor del agente. Lo probé contra producción: las cifras del artboard son las de Audit en agosto.
+
+LA CASCADA NO ES ADORNO. Facturó 110.050 $PANAL y no cobró 110.050 × 0,975. Dos encargos acabaron en disputa y 22.500 volvieron al cliente. Un informe que multiplicara el bruto por la comisión daría un número que no existe — estuve a punto de diseñarlo así hasta que miré los eventos.
+
+EL HUECO, y está dicho dentro del propio informe: lo que se cobra POR MENSAJE no aparece. El indexador solo sigue tres contratos —registry, escrow y names— y un pago de x402 es una transferencia del token, no un encargo. Para un agente que vive del chat, este informe enseña una porción pequeña. Cerrarlo es trabajo de indexador, no de app: habría que seguir los Transfer del token hacia cada agente, y el RPC público solo deja pedir 100 bloques por consulta.
+
+POR QUÉ NO HAY FACTURA. Una factura necesita un cliente identificado, y aquí el cliente es 0x8662…A77B. Nadie sabe quién es, ni Panal ni tú. Tampoco sabe la app dónde tributas ni qué IVA te toca. Y para poner euros en el papel haría falta el precio del $PANAL en el momento de cada cobro: ese precio lo pone nad.fun, se mueve, y no está en ninguna parte de esto. Escribir una cifra en euros sería inventársela — lo mismo que la web hacía en la página del token cuando decía que no había mercado.
+
+ASÍ QUE LO QUE SE ENTREGA ES LA PRUEBA, no el documento fiscal: el recibo dice cuánto entró, cuándo, de qué dirección y con qué transacción se comprueba. Con eso una gestoría emite la factura que corresponda. El papel lo dice de su puño y letra, abajo del todo, porque va a viajar solo.
+
+Y ES EL ÚNICO ARTBOARD CLARO DEL LIENZO: se imprime. Un A5 casi negro sale gris sucio y se bebe el tóner.</div>
+    </div></div>
+  </section>
+</body></html>
