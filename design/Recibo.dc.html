@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+    a { color: #A8701C; text-decoration: none; }
+    a:hover { color: #8A5C15; }
+  </style>
+</helmet>
+
+<!--
+  EL ÚNICO ARTBOARD CLARO DE TODO EL LIENZO, y es a propósito.
+
+  Esto no se mira en el teléfono: se imprime o se manda en PDF a una gestoría.
+  Un A5 de fondo casi negro se bebe el tóner de un cartucho y sale gris sucio
+  en cualquier impresora normal. La app es oscura porque se mira de noche; un
+  papel es un papel.
+
+  A5 a 96 px por pulgada = 559 x 794. El cuerpo va a 16 px, que son los 12 pt
+  por debajo de los cuales un impreso deja de leerse.
+-->
+<div style="width: 559px; height: 794px; background: #FBFAF7; color: #1A1726; padding: 44px 46px; box-sizing: border-box; display: flex; flex-direction: column;">
+
+  <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+    <div>
+      <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 25px; letter-spacing: -0.02em;">Recibo de cobro</div>
+      <div style="font-size: 13px; color: #6B6480; margin-top: 5px;">Encargo n.º 58 · 21 de agosto de 2026</div>
+    </div>
+    <svg width="34" height="34" viewBox="0 0 40 40" style="flex-shrink: 0;">
+      <polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="none" stroke="#A8701C" stroke-width="1.6"/>
+      <polygon points="20,11 27,15 27,24 20,28 13,24 13,15" fill="#E29A2E"/>
+    </svg>
+  </div>
+
+  <div style="height: 2px; background: #1A1726; margin: 18px 0 22px;"></div>
+
+  <div style="display: flex; gap: 26px;">
+    <div style="flex-grow: 1; flex-basis: 0; min-width: 0;">
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #6B6480;">Cobra</div>
+      <div style="font-size: 16px; font-weight: 600; margin-top: 7px;">[TU NOMBRE O RAZÓN SOCIAL]</div>
+      <div style="font-size: 14px; color: #4A4363; line-height: 1.6; margin-top: 4px;">[NIF / VAT]<br>[DIRECCIÓN]</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #6B6480; margin-top: 8px;">agente 0x6cb8…7367</div>
+    </div>
+    <div style="width: 1px; background: #DEDAD0;"></div>
+    <div style="flex-grow: 1; flex-basis: 0; min-width: 0;">
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #6B6480;">Pagó</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; margin-top: 7px; word-break: break-all; line-height: 1.5;">0x86622fcFf353850C3B9AeCA07160B0088927A77B</div>
+      <!-- La línea más importante del documento. Una dirección no es una
+           persona: quien lo lea tiene que saberlo antes de intentar usarlo
+           como una factura. -->
+      <div style="font-size: 12.5px; color: #8A5C15; line-height: 1.5; margin-top: 8px;">Es una dirección de Monad, no una identidad fiscal. Panal no sabe quién hay detrás.</div>
+    </div>
+  </div>
+
+  <div style="height: 1px; background: #DEDAD0; margin: 22px 0;"></div>
+
+  <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #6B6480;">Por</div>
+  <div style="font-size: 16px; line-height: 1.55; margin-top: 8px;">Auditar el contrato de depósito: reentrada, control de acceso y desbordamiento, con la entrada exacta que rompe cada uno.</div>
+
+  <div style="border: 1px solid #DEDAD0; border-radius: 10px; margin-top: 22px; overflow: hidden;">
+    <sc-for list="{{ filas }}" as="f" hint-placeholder-count="3">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: {{ f.pad }}; background: {{ f.fondo }}; border-top: 1px solid {{ f.borde }};">
+        <div style="font-size: {{ f.tam }}; font-weight: {{ f.peso }}; color: {{ f.colorTexto }};">{{ f.etiqueta }}</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: {{ f.tamCifra }}; font-weight: {{ f.peso }}; color: {{ f.colorTexto }}; flex-shrink: 0;">{{ f.cifra }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; gap: 26px; margin-top: 20px;">
+    <div style="flex-grow: 1; flex-basis: 0; min-width: 0;">
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #6B6480;">La transacción que lo prueba</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #4A4363; word-break: break-all; line-height: 1.6; margin-top: 6px;">0x4c1f8ae3…9b20d7f4</div>
+    </div>
+    <div style="flex-grow: 1; flex-basis: 0; min-width: 0;">
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #6B6480;">Huella de lo entregado</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #4A4363; word-break: break-all; line-height: 1.6; margin-top: 6px;">0x61214d3c…0e55b843</div>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <!-- LO QUE ESTE PAPEL NO ES. Va dentro del documento porque el documento
+       viaja solo: quien lo reciba no va a tener a nadie al lado para
+       explicárselo. -->
+  <div style="border-top: 1px solid #DEDAD0; padding-top: 16px;">
+    <div style="font-size: 13px; font-weight: 600; color: #8A5C15;">Esto acredita un cobro. No es una factura.</div>
+    <div style="font-size: 12.5px; color: #4A4363; line-height: 1.6; margin-top: 6px;">Una factura necesita un cliente identificado y un tratamiento fiscal que dependen de dónde tributes, y aquí el cliente es una dirección. Este papel dice cuánto entró, cuándo, de dónde y con qué transacción se puede comprobar en la cadena — que es lo que tu gestoría necesita para emitir la factura que corresponda. Las cifras están en $PANAL, sin convertir: su precio lo pone un mercado y cambia, así que ponerle euros aquí sería inventarse una cifra.</div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":559,"height":794}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const esp = (n, d = 2) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+    const bruto = 15000;
+    const com = bruto * 0.025;
+    return {
+      filas: [
+        {
+          borde: 'transparent', pad: '13px 16px', fondo: 'transparent',
+          etiqueta: 'Precio del encargo', cifra: `${esp(bruto, 0)} $PANAL`,
+          tam: '15px', tamCifra: '15px', peso: '400', colorTexto: '#1A1726',
+        },
+        {
+          borde: '#DEDAD0', pad: '13px 16px', fondo: 'transparent',
+          etiqueta: 'Comisión de Panal (2,5 %)', cifra: `−${esp(com)} $PANAL`,
+          tam: '15px', tamCifra: '15px', peso: '400', colorTexto: '#4A4363',
+        },
+        {
+          borde: '#DEDAD0', pad: '15px 16px', fondo: '#F3EEE2',
+          etiqueta: 'Cobrado', cifra: `${esp(bruto - com)} $PANAL`,
+          tam: '16px', tamCifra: '19px', peso: '600', colorTexto: '#1A1726',
+        },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

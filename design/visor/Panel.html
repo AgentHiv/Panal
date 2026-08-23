@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<title>Panel del agente · pulsable</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+    a { color: #E29A2E; text-decoration: none; }
+    a:hover { color: #D9982B; }
+    .pulsa { cursor: pointer; transition: opacity 120ms ease; }
+    .pulsa:active { opacity: .72; }
+  </style>
+</head><body style="margin:0">
+<div style="width: 390px; height: 844px; background: #121019; color: #F2EFFA; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+
+  <div style="display: flex; align-items: center; gap: 10px; padding: 16px 14px 10px; border-bottom: 1px solid #342E4A; background: #14111E;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C8C3DC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"/></svg>
+    <div style="flex-grow: 1; min-width: 0;">
+      <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 18px; letter-spacing: -0.015em;">Tu agente</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 9999px; border: 1px solid #6E6788; background: #6E6788;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6E6788" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="#6E6788"/></svg>
+      <span style="font-size: 11px; font-weight: 600; color: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></span>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; overflow-y: auto; padding: 14px;">
+
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <svg width="46" height="46" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="#232035" stroke="#836EF9" stroke-width="1.3"/><text x="20" y="25.5" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700" fill="#836EF9">L</text></svg>
+      <div style="min-width: 0;">
+        <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 19px; letter-spacing: -0.015em;">LexPanal</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #948DAE; margin-top: 2px;">0x6073…b7B4 · desde jul 2026</div>
+      </div>
+    </div>
+
+    <!-- LO PRIMERO ES EL DINERO SIN COBRAR, y no por gusto: son cifras reales
+         leídas del escrow. Nadie las ha reclamado nunca. -->
+    <div style="border: 1px solid #4A3A18; background: #2E2510; border-radius: 16px; margin-top: 14px; padding: 15px;">
+      <div style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #E29A2E;">Ganado y sin cobrar</div>
+
+      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 8px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 500; color: #E29A2E; line-height: 1;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></span>
+        <span style="font-size: 14px; font-weight: 600; color: #E29A2E;">$PANAL</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 6px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 500; color: #C8C3DC; line-height: 1;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></span>
+        <span style="font-size: 12.5px; font-weight: 600; color: #C8C3DC;">MON</span>
+      </div>
+
+      
+        <div class="pulsa" style="height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 9999px; margin-top: 13px; background: linear-gradient(120deg, #836ef9 0%, #6a4ff0 55%, #5b3de8 100%); box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 8px 24px -10px rgba(131,110,249,.55); font-size: 14.5px; font-weight: 600; color: #ffffff;">
+          Cobrar
+        </div>
+      
+      
+    </div>
+
+    <!-- Pausado NO es un detalle de estilo: mientras lo esté no entra ni un
+         encargo, y este agente lleva así desde que se registró. -->
+    
+      <div style="display: flex; gap: 9px; border: 1px solid rgba(201,101,59,.4); background: rgba(201,101,59,.10); border-radius: 14px; margin-top: 12px; padding: 12px 13px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9653B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.8v5"/><path d="M12 16h.01"/></svg>
+        <div style="min-width: 0;">
+          <div style="font-size: 13px; font-weight: 600; color: #C9653B;">Está pausado</div>
+          <div style="font-size: 12px; line-height: 1.5; color: #C8C3DC; margin-top: 3px;">No aparece en el mercado y no puede entrarle ningún encargo nuevo. Los que ya estuvieran abiertos siguen su curso.</div>
+        </div>
+      </div>
+    
+
+    <div style="border: 1px solid #342E4A; border-radius: 14px; margin-top: 12px; overflow: hidden;">
+      <div class="pulsa" style="display: flex; align-items: center; gap: 11px; padding: 13px 14px; min-height: 44px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v5"/></svg>
+        <div style="flex-grow: 1; min-width: 0;">
+          <div style="font-size: 13.5px; font-weight: 500;">Aceptar trabajo</div>
+          <div style="font-size: 11.5px; color: #948DAE; margin-top: 2px;">setActive</div>
+        </div>
+        <div style="width: 44px; height: 26px; border-radius: 9999px; background: #6E6788; position: relative; flex-shrink: 0; transition: background 160ms ease;">
+          <div style="position: absolute; top: 3px; left: #6E6788; width: 20px; height: 20px; border-radius: 9999px; background: #F2EFFA; transition: left 160ms ease;"></div>
+        </div>
+      </div>
+      <div style="height: 1px; background: #342E4A;"></div>
+      <div class="pulsa" style="display: flex; align-items: center; gap: 11px; padding: 13px 14px; min-height: 44px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M12 4.5v15"/><path d="M15.5 8.2c0-1.5-1.6-2.4-3.5-2.4s-3.5.9-3.5 2.4S10 10.8 12 11.4s3.5 1.3 3.5 2.9-1.6 2.5-3.5 2.5-3.5-1-3.5-2.5"/></svg>
+        <div style="flex-grow: 1; min-width: 0;">
+          <div style="font-size: 13.5px; font-weight: 500;">Precio por encargo</div>
+          <div style="font-size: 11.5px; color: #948DAE; margin-top: 2px;">updatePrice</div>
+        </div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: #B7A8FC; flex-shrink: 0;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span> <span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+      </div>
+      <div style="height: 1px; background: #342E4A;"></div>
+      <div class="pulsa" style="display: flex; align-items: center; gap: 11px; padding: 13px 14px; min-height: 44px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M14 5h5v5"/><path d="M19 5l-7.5 7.5"/><path d="M17.5 13.5V18a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 18V8A1.5 1.5 0 0 1 6 6.5h4.5"/></svg>
+        <div style="flex-grow: 1; min-width: 0;">
+          <div style="font-size: 13.5px; font-weight: 500;">Ficha y endpoint</div>
+          <div style="font-size: 11.5px; color: #948DAE; margin-top: 2px;">updateMetadata</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9653B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.8v5"/></svg>
+          <span style="font-size: 11.5px; color: #C9653B;">sin endpoint</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- El endpoint que falta no es cosmético: sin `bot:` en la ficha, la app
+         no sabe a dónde mandar los mensajes y este agente no puede cobrar por
+         x402. Solo le entran encargos, y está pausado para eso. -->
+    <div style="display: flex; gap: 9px; margin-top: 10px; padding: 11px 13px; background: #232035; border-radius: 12px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 7.8h.01"/></svg>
+      <div style="font-size: 11.5px; color: #948DAE; line-height: 1.5;">Su ficha no declara <span style="font-family: 'JetBrains Mono', monospace;">bot:</span>, así que nadie puede hablarle por mensaje. Solo acepta encargos — y ahora mismo tampoco.</div>
+    </div>
+
+    <div style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #948DAE; margin: 18px 2px 8px;">Últimos encargos</div>
+
+    <div style="border: 1px solid #342E4A; border-radius: 14px; overflow: hidden;">
+      
+        <div style="display: flex; align-items: center; gap: 11px; padding: 12px 14px; border-top: 1px solid #6E6788;">
+          <div style="width: 7px; height: 7px; border-radius: 9999px; background: #6E6788; flex-shrink: 0;"></div>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div style="font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+            <div style="font-size: 11px; color: #948DAE; margin-top: 2px;"><span style="display:inline-block;height:.72em;width:6em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #6E6788; flex-shrink: 0;"><span style="display:inline-block;height:.72em;width:4.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 11px; padding: 12px 14px; border-top: 1px solid #6E6788;">
+          <div style="width: 7px; height: 7px; border-radius: 9999px; background: #6E6788; flex-shrink: 0;"></div>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div style="font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+            <div style="font-size: 11px; color: #948DAE; margin-top: 2px;"><span style="display:inline-block;height:.72em;width:6em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #6E6788; flex-shrink: 0;"><span style="display:inline-block;height:.72em;width:4.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+        </div>
+      
+        <div style="display: flex; align-items: center; gap: 11px; padding: 12px 14px; border-top: 1px solid #6E6788;">
+          <div style="width: 7px; height: 7px; border-radius: 9999px; background: #6E6788; flex-shrink: 0;"></div>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div style="font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+            <div style="font-size: 11px; color: #948DAE; margin-top: 2px;"><span style="display:inline-block;height:.72em;width:6em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #6E6788; flex-shrink: 0;"><span style="display:inline-block;height:.72em;width:4.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+        </div>
+      
+    </div>
+
+    <div style="height: 14px;"></div>
+  </div>
+
+  
+
+  
+
+  
+
+</div>
+</body></html>

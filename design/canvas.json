@@ -1,0 +1,394 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Recorrido"
+    },
+    {
+      "id": "page-2",
+      "name": "Pantallas"
+    },
+    {
+      "id": "page-3",
+      "name": "Panel del dueño · hoy"
+    },
+    {
+      "id": "page-4",
+      "name": "Corporativo · pide contratos"
+    },
+    {
+      "id": "page-5",
+      "name": "En tu teléfono"
+    },
+    {
+      "id": "page-6",
+      "name": "Que no se te escape"
+    },
+    {
+      "id": "page-7",
+      "name": "Cuentas"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Panal · recorrido pulsable",
+      "page": "page-1"
+    },
+    {
+      "file": "Wallet.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Entrar · wallet",
+      "page": "page-2"
+    },
+    {
+      "file": "Hilo.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Hilo con el agente",
+      "page": "page-2"
+    },
+    {
+      "file": "Firmar.dc.html",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Firmar un mensaje · x402",
+      "page": "page-2"
+    },
+    {
+      "file": "Encargo.dc.html",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Encargar trabajo · escrow",
+      "page": "page-2"
+    },
+    {
+      "file": "Mercado.dc.html",
+      "x": 0,
+      "y": 1010,
+      "w": 390,
+      "h": 844,
+      "title": "Mercado",
+      "page": "page-2"
+    },
+    {
+      "file": "Saldo.dc.html",
+      "x": 490,
+      "y": 1010,
+      "w": 390,
+      "h": 844,
+      "title": "Saldo",
+      "page": "page-2"
+    },
+    {
+      "file": "Avisos.dc.html",
+      "x": 0,
+      "y": 2020,
+      "w": 390,
+      "h": 844,
+      "title": "Avisos en el teléfono",
+      "page": "page-2"
+    },
+    {
+      "file": "Revisar.dc.html",
+      "x": 490,
+      "y": 2020,
+      "w": 390,
+      "h": 844,
+      "title": "Revisar la entrega · aprobar",
+      "page": "page-2"
+    },
+    {
+      "file": "Disputa.dc.html",
+      "x": 980,
+      "y": 2020,
+      "w": 390,
+      "h": 844,
+      "title": "Abrir disputa",
+      "page": "page-2"
+    },
+    {
+      "file": "Arranque.dc.html",
+      "x": 1470,
+      "y": 1010,
+      "w": 390,
+      "h": 844,
+      "title": "Primer arranque · sin nada",
+      "page": "page-2"
+    },
+    {
+      "file": "Agente.dc.html",
+      "x": 1470,
+      "y": 2020,
+      "w": 390,
+      "h": 844,
+      "title": "Ficha del agente",
+      "page": "page-2"
+    },
+    {
+      "file": "Entrar.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Entrar · seguir o administrar",
+      "page": "page-3"
+    },
+    {
+      "file": "Panel.dc.html",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Panel del agente · pulsable",
+      "page": "page-3"
+    },
+    {
+      "file": "Cartera.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Cartera de agentes",
+      "page": "page-4"
+    },
+    {
+      "file": "Equipo.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Permisos y tesorería",
+      "page": "page-4"
+    },
+    {
+      "file": "Cambios.dc.html",
+      "x": 980,
+      "y": 0,
+      "w": 660,
+      "h": 900,
+      "title": "Qué hay que cambiar en los contratos",
+      "page": "page-4"
+    },
+    {
+      "file": "Llavero.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Llavero · crear y guardar wallets",
+      "page": "page-5"
+    },
+    {
+      "file": "Archivo.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Tus expedientes",
+      "page": "page-5"
+    },
+    {
+      "file": "Expediente.dc.html",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Un encargo, entero",
+      "page": "page-5"
+    },
+    {
+      "file": "Alta.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Dar de alta un agente",
+      "page": "page-3"
+    },
+    {
+      "file": "Guardia.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Guardia · lo que sigue sin cerrar",
+      "page": "page-6"
+    },
+    {
+      "file": "AvisoDueno.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Lo que le llega al dueño",
+      "page": "page-6"
+    },
+    {
+      "file": "Informe.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Informe del periodo",
+      "page": "page-7"
+    },
+    {
+      "file": "Recibo.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 559,
+      "h": 794,
+      "title": "Recibo de un cobro · A5 para imprimir",
+      "page": "page-7",
+      "print": "fixed"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "como-probarlo",
+      "x": 490,
+      "y": 0,
+      "w": 400,
+      "page": "page-1",
+      "text": "Púlsalo. El recorrido llega hasta el final.\n\n1. Entra con cualquiera de las dos wallets.\n2. Abre el chat de revisor-codigo.\n3. Dale a enviar → firmas el mensaje (x402) y llega la respuesta.\n4. «Encargar» arriba → elige plazo → bloquea el pago. Fíjate: el encargo entra en el hilo como ABIERTO, no como entregado.\n5. Espera dos segundos. El agente entrega y salta el aviso. Tócalo.\n6. En el hilo, toca la fila verde «Entregado · revísalo».\n7. Pon estrellas —sin nota el botón no se activa— y aprueba. O baja del todo, a «algo no cuadra», y abre la disputa.\n8. Mira Saldo: el movimiento cuenta en qué acabó.\n\nArriba a la derecha, el círculo con la flecha reinicia el recorrido."
+    },
+    {
+      "id": "dos-modelos",
+      "x": 490,
+      "y": 320,
+      "w": 400,
+      "page": "page-1",
+      "text": "Los dos pagos son los dos modelos del protocolo, y por eso se sienten distintos.\n\nFIRMAR un mensaje: una firma, sin gas, respuesta al momento. Sin constancia on-chain y sin disputa. Panal no cobra comisión.\n\nENCARGAR un trabajo: pago bloqueado, plazo, adjuntos, entrega anclada en la cadena y derecho a disputa. Panal cobra 2,5 %."
+    },
+    {
+      "id": "estaticas",
+      "x": 0,
+      "y": -140,
+      "w": 420,
+      "page": "page-2",
+      "text": "Las mismas pantallas sueltas, para verlas a la vez y editarlas por separado. El recorrido pulsable está en la página \"Recorrido\".\n\nLa fila de abajo es nueva: qué llega al teléfono y qué pasa cuando el agente entrega."
+    },
+    {
+      "id": "avisos-notas",
+      "x": 1960,
+      "y": 1960,
+      "w": 420,
+      "page": "page-2",
+      "text": "AVISOS · decidido: aviso local\n\nEl teléfono le pregunta al indexador cada 15 min (el mínimo que Android permite) y levanta él mismo la notificación. La cuenta atrás no pregunta nada: en cuanto hay entrega, el plazo de 3 días ya se conoce, así que se programa una alarma exacta.\n\nLo que se gana: nadie fuera del teléfono sabe qué dirección eres. Se descarta Firebase, que habría obligado al indexador a guardar dirección ↔ teléfono — cuentas, en un protocolo que no las tiene.\n\nLo que se paga: la entrega puede tardar hasta 15 minutos en avisar. La cuenta atrás no, esa es exacta. En el recorrido pulsable son dos segundos para que se pueda ver.\n\nNinguno mueve dinero, y no es un descuido: cada movimiento necesita una firma, y desde una notificación no se puede firmar. Por eso los botones dicen «ver» y «revisar», nunca «aprobar»."
+    },
+    {
+      "id": "revisar-notas",
+      "x": 1960,
+      "y": 2380,
+      "w": 420,
+      "page": "page-2",
+      "text": "REVISAR\n\nLas estrellas no son un adorno. `approveAndRelease(taskId, rating)` exige una nota de 1 a 5: no existe aprobar sin puntuar. Por eso el botón espera a que elijas — púlsalo y verás.\n\nLa cuenta atrás va arriba del todo porque es lo que pasa si cierras la app y te olvidas: a los 3 días de la entrega, `autoRelease` lo cobra cualquiera y la nota que queda registrada es un 5.\n\nCallarse no es neutral. Es pagar y poner sobresaliente."
+    },
+    {
+      "id": "disputa-notas",
+      "x": 1960,
+      "y": 2730,
+      "w": 420,
+      "page": "page-2",
+      "text": "DISPUTA\n\nSin campo de motivo, a propósito: openDispute(taskId) no acepta texto, y guardarlo en otro sitio sería inventarse infraestructura para que la lea una sola persona. En vez de eso la pantalla enseña lo que quien decide ya puede ver: el brief, el archivo, el hash y el hilo entero.\n\nCORREGIDO (leído de la cadena, bloque 98.255.961): quien arbitra el escrow v2 —el que usa la app— es el multisig 0xc384…1Fe0, un 2-de-3 con tres owners fijados en el constructor e inmutables. NO es la tesorería.\n\nLa confusión venía de MAINNET.md, que documenta el escrow v1: ahí el árbitro sí es 0x6073…b7B4, la misma dirección que la tesorería. Pero v1 no es lo que usa la app.\n\nQueda la salida de emergencia, que es la garantía de verdad: si el multisig no resuelve en 14 días, resolveStuckDispute devuelve el pago entero y lo puede llamar cualquiera, sin permiso de nadie."
+    },
+    {
+      "id": "arranque-notas",
+      "x": 1960,
+      "y": 1010,
+      "w": 420,
+      "page": "page-2",
+      "text": "PRIMER ARRANQUE · el regalo primero\n\nLa pantalla ya no dice «no tienes nada». Dice «las primeras van por nuestra cuenta».\n\nPOR QUÉ FUNCIONA, y es lo único que funciona con la wallet a cero: en x402 la transacción la manda el agente (x402.ts:16 — «el cliente NO paga gas: solo firma»). Con 10 $PANAL regalados se pueden hacer unas veinte preguntas sin tener un solo MON, sin puente y sin exchange. De instalar a que un agente responda y cobre, sin salir de la app.\n\nQue $PANAL tenga mercado en nad.fun NO resuelve esto: para comprarlo hace falta MON, aunque sea solo para el gas. El mercado es la RECARGA, no la entrada — por eso aparece en la nota de abajo y no en el botón.\n\nLas dos filas ya no son dos paredes: hablar está «listo», encargar es «más adelante». MON solo hace falta cuando quiera escrow, y para entonces ya vio el sistema funcionar.\n\nEL RIESGO, dicho claro: los tokens gratis se granjean. Se mitiga dando el $PANAL al primer USO y no a la primera instalación, con tope por dirección. Es reversible: si se abusa, se corta.\n\nLos 10 $PANAL son un valor de muestra. Con mercado ya se puede poner precio a lo que cuesta captar a alguien, que antes no se podía."
+    },
+    {
+      "id": "agente-notas",
+      "x": 1960,
+      "y": 1500,
+      "w": 420,
+      "page": "page-2",
+      "text": "FICHA DEL AGENTE · tiene un mando arriba\n\nEl chip «caso» encima del tablero cambia entre tres situaciones. La tercera es la que enseña algo.\n\nArriba del todo va la verificación porque, según el propio SDK, elegir sin mirarla «es el fallo que más caro sale»: el nombre no es único en el registro y un suplantador cuesta una transacción. Lo único que es de alguien es su dominio.\n\nY tres estados, no dos: verificado, no verificado, y SIN COMPROBAR. El SDK avisa de que undefined hay que tratarlo como «no se sabe», nunca como bueno.\n\n«Nombre comprado» es el caso sutil: dominio verificado, todo en verde… y el nombre cambió de manos hace seis días. Los números son de la dirección, no del nombre, así que caen a 3 tareas y sin valoraciones. Un nombre se vende; la reputación se queda con quien lo vendió.\n\nLO QUE HE QUITADO: la web enseña «% de éxito» en el podio y en una insignia. Ese número no se mide en ninguna parte — se asigna 100 en usePanalAgents.ts:214 y :366 y nadie lo sobrescribe nunca. Aquí solo hay lo que la cadena guarda de verdad: tareas completadas, media de valoraciones con su recuento, y volumen cobrado."
+    },
+    {
+      "id": "panel-hoy",
+      "x": 1470,
+      "y": 0,
+      "w": 420,
+      "page": "page-3",
+      "text": "PANEL DEL DUEÑO · lo que funciona con los contratos de hoy\n\nPúlsalo: cobra, cambia el precio, pausa y reactiva.\n\nEL MURO, y decide toda esta página: registerAgent, updatePrice, setActive y updateMetadata NO reciben ninguna dirección. Actúan sobre quien firma. Lo comprobé en los 9 agentes de mainnet: los 9 tienen como dueño su propia dirección, sin una sola excepción.\n\nO sea que una wallet solo puede administrarse a sí misma. «Mis agentes» en plural no existe, y para mandar sobre uno desde el móvil hay que conectar SU wallet — la que está corriendo su bot en el servidor, con su clave en un .env.\n\nPOR ESO HAY DOS MODOS, y el que viene puesto es «seguir». Mirar no necesita firmar nada, así que se puede hacer sin que la clave del agente salga del servidor. Administrar es una decisión aparte, y la pantalla dice por qué antes de que la tomes."
+    },
+    {
+      "id": "dinero-real",
+      "x": 1470,
+      "y": 470,
+      "w": 420,
+      "page": "page-3",
+      "text": "LAS CIFRAS DEL PANEL SON REALES\n\nLeídas del escrow v2 en mainnet, hoy. En los 9 agentes hay 88.052,50 $PANAL y 0,5603 MON ganados y sin reclamar ahora mismo.\n\nCORREGIDO: aquí puse que nadie había llamado nunca a withdraw. Es falso, y lo era cuando lo escribí — el indexador tiene 9 eventos Withdrawal. Lo que sí es cierto es que eso es lo que queda dentro hoy. Lo di por hecho en vez de mirarlo.\n\nEl agente del panel —LexPanal, 0x6073…b7B4— tiene 2.203,75 $PANAL y 0,336 MON dentro, lleva pausado desde que se dio de alta, y su ficha no declara endpoint, así que tampoco puede cobrar por mensaje.\n\nPor eso lo primero de la pantalla es el dinero sin cobrar y no un gráfico: es lo único que esta app le puede decir a un dueño que él no supiera ya.\n\nDOS MONEDAS SON DOS FIRMAS. withdraw(token) recibe UN token: no hay forma de sacar las dos de una vez. Sale escrito en la hoja, porque esconderlo haría que la segunda petición de firma pareciera un fallo."
+    },
+    {
+      "id": "corporativo",
+      "x": 1740,
+      "y": 0,
+      "w": 440,
+      "page": "page-4",
+      "text": "CORPORATIVO · nada de esta página existe todavía\n\nLas dos pantallas llevan una cinta encima que lo dice, dentro del propio diseño y no aquí al margen: una captura suelta tiene que seguir siendo honesta.\n\nLO QUE DE VERDAD COMPRA EL CAMBIO, y es medible: hoy recoger lo ganado de los nueve agentes son dieciocho transacciones —nueve wallets por dos monedas— firmadas una a una con nueve claves distintas. Con el dueño separado del agente, es una.\n\nLA TESORERÍA ES LO MÁS IMPORTANTE de las dos pantallas, aunque parezca lo más aburrido. Hoy el dinero sale del depósito obligatoriamente a la wallet del agente, que es una clave caliente en un servidor que además firma entregas sola, sin nadie mirando. Que pueda ir directo a un 2-de-3 no es una comodidad: es lo que separa esto de un proyecto de fin de semana.\n\nLos permisos por persona los he dejado a propósito como lo último y como lo aplazable. Ver el atajo del tablero de la derecha: con el dueño siendo un multisig ya tienes «hacen falta dos para bajar un precio» sin escribir una línea de código nuevo."
+    },
+    {
+      "id": "llavero-notas",
+      "x": 1470,
+      "y": 0,
+      "w": 440,
+      "page": "page-5",
+      "text": "CREAR WALLETS EN LA APP · pulsa el teclado, seis toques y entra\n\nCÓMO SE HACE LA CLAVE: crypto.getRandomValues, que en Android es el generador del sistema. Las 12 palabras salen de la misma semilla por BIP-39, que ya viaja dentro de viem: no hay que meter ninguna librería nueva ni inventarse nada de criptografía.\n\nDÓNDE VIVE: cifrada con tu PIN (PBKDF2 + AES-GCM, los dos en el WebCrypto del navegador) dentro del almacenamiento privado de la app. Otra app no lo lee sin root, y ya no sale en la copia automática de Google — eso lo cerré esta semana poniendo allowBackup=false, así que la pieza que faltaba ya está puesta.\n\nHASTA DÓNDE LLEGA, dicho en la propia pantalla: el PIN no para a alguien que tenga tu teléfono desbloqueado y tiempo. Para eso hace falta el chip seguro del móvil, y el WebView NO llega ahí. Haría falta un plugin nativo de Capacitor que guarde la clave en el Keystore de Android y la desbloquee con la huella. Es un archivo Java de unas 150 líneas y se puede añadir después sin tocar el diseño: lo que cambia es dónde se guarda, no ninguna pantalla.\n\nY LO IMPORTANTE, que decide para qué sirve todo esto: la wallet que crees aquí NO debería ser el agente. Hoy el agente es quien firma sus entregas, así que su clave tiene que estar en el servidor; si la creas en el móvil acabas con la misma clave en dos sitios. Con el cambio nº 1 del tablero corporativo —dueño distinto de agente— esta wallet es la DUEÑA: manda, cobra, y no sale nunca del teléfono. Las dos piezas se necesitan."
+    },
+    {
+      "id": "expediente-notas",
+      "x": 1470,
+      "y": 560,
+      "w": 440,
+      "page": "page-5",
+      "text": "TUS EXPEDIENTES · el aviso del archivo NO es inventado\n\nMiré qué guarda hoy la app. taskBriefs.ts guarda 200 briefs como mucho y al llegar ahí va tirando los más viejos, en silencio; historial.ts, 60 conversaciones de 300 mensajes con el mismo recorte. Ya se está perdiendo material, y nadie se entera.\n\nEl escrow guarda exactamente nueve campos —cliente, trabajador, importe, hash de lo pedido, hash de la entrega, plazo, fecha, estado y moneda— y ni uno más. El TEXTO de lo que pediste y el ARCHIVO que te entregaron no caben ahí: viven solo en tu teléfono.\n\nDE AHÍ SALE LA PANTALLA ENTERA: la cadena prueba QUE encargaste algo, cuándo, por cuánto y que te entregó. Tu copia prueba QUÉ. Un hash sin el archivo no dice qué había dentro — solo sirve para comprobar algo que ya tengas.\n\nCambia el chip «caso» arriba del expediente para ver el otro lado: con el archivo perdido, el ancla de la cadena deja de valer para discutir nada.\n\nNADA DE ESTO PIDE CONTRATOS NUEVOS. Es todo del lado del teléfono, y se puede implementar en cuanto se decida."
+    },
+    {
+      "id": "guardia-notas",
+      "x": 980,
+      "y": 0,
+      "w": 440,
+      "page": "page-6",
+      "text": "GUARDIA · esta pantalla la pidió un fallo de verdad, esta semana\n\nEl vigilante que corre dentro de cada agente daba por resueltas tareas que habían fallado: un error a mitad de ronda adelantaba su marca por encima, y un reintento que volvía a reventar se veía igual que uno que había entregado. Dos tareas se quedaron abiertas y sin entregar mientras el servidor creía que todo iba bien. Ya está arreglado y desplegado, pero eso no quita la lección.\n\nLA LECCIÓN: el dueño no tenía NINGUNA forma de enterarse. El único que vigilaba era el propio proceso que había fallado.\n\nPor eso todo lo de esta pantalla se lee de la CADENA y no del servidor del agente. Una tarea abierta, asignada a tu agente, con el plazo corriendo y sin resultado anclado es un hecho público: se ve desde el teléfono aunque tu servidor esté ardiendo, aunque su vigilante mienta, y aunque tú no tengas acceso a los logs.\n\nY MIRA LOS BOTONES: hay uno solo, «Cobrar». No es un descuido. Entregar lo firma el agente con su clave y el resultado está en su disco, así que desde el móvil no se puede; una disputa la decide el árbitro. Poner un botón «Entregar ahora» sería prometer algo que la pantalla no puede cumplir. Lo que da esta pantalla es enterarte a tiempo, y eso ya vale los 15.000 $PANAL de la #54."
+    },
+    {
+      "id": "alta-notas",
+      "x": 1470,
+      "y": 940,
+      "w": 440,
+      "page": "page-3",
+      "text": "DAR DE ALTA · cierra un botón que había dejado colgando\n\nEn «Entrar» hay una fila punteada que dice «dar de alta uno nuevo» y no llevaba a ningún sitio. Esto es a dónde lleva.\n\nLO PRIMERO ES LA WALLET porque `registerAgent(metadataURI, precio, moneda)` NO recibe ninguna dirección: quien firma se convierte en el agente. Elegir la wallet no es un ajuste de la pantalla, es decidir quién va a ser. De ahí que salga antes que el nombre, y que la pantalla insista en que sea una nueva: su clave va a acabar en el servidor que haga funcionar al agente.\n\nLA FICHA NO ES UN JSON. Es una cadena de texto con las partes separadas por «·», y `bot:` delante de la URL — así lo lee botEndpoint.ts, y así están escritas las nueve fichas que hay en mainnet. Por eso la pantalla enseña literalmente lo que se va a escribir: descubrir el formato al ver tu agente mal listado es peor.\n\nCambia el chip de arriba a «sin endpoint» para ver el aviso. Tampoco es hipotético: LexPanal se registró sin `bot:` y por eso nadie puede hablarle — solo acepta encargos, y encima está pausado."
+    },
+    {
+      "id": "cuentas-notas",
+      "x": 1150,
+      "y": 0,
+      "w": 450,
+      "page": "page-7",
+      "text": "CUENTAS · el informe sí, la factura no, y conviene saber por qué\n\nLO QUE SE PUEDE HACER HOY: el indexador ya sirve /index/tasks?address=…&role=worker con todo lo que hace falta —importe, moneda, cliente, fecha, estado y nota— así que el informe se puede construir sin escanear la cadena ni tocar el servidor del agente. Lo probé contra producción: las cifras del artboard son las de Audit en agosto.\n\nLA CASCADA NO ES ADORNO. Facturó 110.050 $PANAL y no cobró 110.050 × 0,975. Dos encargos acabaron en disputa y 22.500 volvieron al cliente. Un informe que multiplicara el bruto por la comisión daría un número que no existe — estuve a punto de diseñarlo así hasta que miré los eventos.\n\nEL HUECO, y está dicho dentro del propio informe: lo que se cobra POR MENSAJE no aparece. El indexador solo sigue tres contratos —registry, escrow y names— y un pago de x402 es una transferencia del token, no un encargo. Para un agente que vive del chat, este informe enseña una porción pequeña. Cerrarlo es trabajo de indexador, no de app: habría que seguir los Transfer del token hacia cada agente, y el RPC público solo deja pedir 100 bloques por consulta.\n\nPOR QUÉ NO HAY FACTURA. Una factura necesita un cliente identificado, y aquí el cliente es 0x8662…A77B. Nadie sabe quién es, ni Panal ni tú. Tampoco sabe la app dónde tributas ni qué IVA te toca. Y para poner euros en el papel haría falta el precio del $PANAL en el momento de cada cobro: ese precio lo pone nad.fun, se mueve, y no está en ninguna parte de esto. Escribir una cifra en euros sería inventársela — lo mismo que la web hacía en la página del token cuando decía que no había mercado.\n\nASÍ QUE LO QUE SE ENTREGA ES LA PRUEBA, no el documento fiscal: el recibo dice cuánto entró, cuándo, de qué dirección y con qué transacción se comprueba. Con eso una gestoría emite la factura que corresponda. El papel lo dice de su puño y letra, abajo del todo, porque va a viajar solo.\n\nY ES EL ÚNICO ARTBOARD CLARO DEL LIENZO: se imprime. Un A5 casi negro sale gris sucio y se bebe el tóner."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-7"
+  }
+}

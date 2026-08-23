@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<title>Panal · recorrido pulsable</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+    a { color: #E29A2E; text-decoration: none; }
+    a:hover { color: #D9982B; }
+    .pulsable { cursor: pointer; user-select: none; }
+    .pulsable:active { opacity: 0.72; }
+  </style>
+</head><body style="margin:0">
+<div style="width: 390px; height: 844px; background: #121019; color: #F2EFFA; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+
+  <!-- ══════════ ENTRAR ══════════ -->
+  
+    <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 22px;">
+      <svg width="52" height="52" viewBox="0 0 40 40" style="margin-bottom: 22px;"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="none" stroke="#E29A2E" stroke-width="2"/><polygon points="20,10 28,14.5 28,23.5 20,28 12,23.5 12,14.5" fill="#E29A2E" opacity="0.9"/></svg>
+      <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 30px; line-height: 1.12; letter-spacing: -0.02em;">Tu wallet es<br>tu cuenta</div>
+      <div style="font-size: 14.5px; color: #C8C3DC; line-height: 1.6; margin-top: 12px;">No hay usuario ni contraseña. Lo que te identifica y lo que paga a los agentes es la misma cosa.</div>
+
+      <div style="display: flex; flex-direction: column; gap: 11px; margin-top: 30px;">
+        <div class="pulsable" style="border: 1px solid #836EF9; background: #1A1726; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.45), 0 20px 48px -12px rgba(131,110,249,.28);">
+          <div style="display: flex; align-items: center; gap: 11px;">
+            <div style="width: 38px; height: 38px; border-radius: 11px; background: #2A2340; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#B7A8FC" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            <div style="flex-grow: 1;">
+              <div style="font-size: 15px; font-weight: 600;">Crear una aquí</div>
+              <div style="font-size: 12.5px; color: #948DAE; margin-top: 2px;">Listo en un toque</div>
+            </div>
+          </div>
+          <div style="font-size: 12.5px; color: #C8C3DC; line-height: 1.55; margin-top: 12px;">La clave se guarda cifrada en este teléfono. <span style="color: #E29A2E;">Apunta las doce palabras</span>: si pierdes el móvil sin ellas, no hay a quién reclamar.</div>
+        </div>
+
+        <div class="pulsable" style="border: 1px solid #342E4A; background: #1A1726; border-radius: 16px; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 11px;">
+            <div style="width: 38px; height: 38px; border-radius: 11px; background: #232035; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#C8C3DC" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13.5a4 4 0 0 0 6 .4l2.5-2.5a4.2 4.2 0 0 0-6-6L11 6.9"/><path d="M14 10.5a4 4 0 0 0-6-.4L5.5 12.6a4.2 4.2 0 0 0 6 6L13 17.1"/></svg>
+            </div>
+            <div style="flex-grow: 1;">
+              <div style="font-size: 15px; font-weight: 600;">Conectar la mía</div>
+              <div style="font-size: 12.5px; color: #948DAE; margin-top: 2px;">MetaMask, Trust, cualquiera</div>
+            </div>
+          </div>
+          <div style="font-size: 12.5px; color: #C8C3DC; line-height: 1.55; margin-top: 12px;">Tus claves siguen donde están. Es lo que quieres si vas a mover cantidades que te importan.</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding: 0 22px 30px;">
+      <div style="font-size: 12px; color: #948DAE; text-align: center; line-height: 1.55;">Puedes empezar con una de aquí y conectar la tuya más tarde.</div>
+    </div>
+  
+
+  <!-- ══════════ CHATS ══════════ -->
+  
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 14px;">
+      <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 26px; letter-spacing: -0.015em;">Chats</div>
+      <div style="display: flex; gap: 8px;">
+        <div class="pulsable" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #342E4A;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#C8C3DC" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        </div>
+        <div class="pulsable" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: linear-gradient(120deg, #836ef9 0%, #6a4ff0 55%, #5b3de8 100%); box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 8px 24px -8px rgba(131,110,249,.55);">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; padding: 0 12px; overflow: hidden;">
+      <div class="pulsable" style="display: flex; gap: 13px; padding: 13px 10px; border-radius: 14px; background: #1A1726; align-items: flex-start;">
+        <svg width="42" height="42" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="#2E2510" stroke="#E29A2E" stroke-width="1.3"/><text x="20" y="25" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700" fill="#E29A2E">R</text></svg>
+        <div style="flex-grow: 1; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+            <div style="font-weight: 600; font-size: 15px;">revisor-codigo</div>
+            <div style="font-size: 11px; color: #948DAE; font-family: 'JetBrains Mono', monospace; flex-shrink: 0;">17:42</div>
+          </div>
+          <div style="font-size: 13px; color: #C8C3DC; line-height: 1.45; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          
+            <div style="display: flex; gap: 6px; margin-top: 7px;">
+              <div style="font-size: 10.5px; font-weight: 600; color: #6E6788; border: 1px solid #6E6788; border-radius: 9999px; padding: 2px 8px;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+            </div>
+          
+        </div>
+      </div>
+
+      <div class="pulsable" style="display: flex; gap: 13px; padding: 13px 10px; border-radius: 14px; align-items: flex-start;">
+        <svg width="42" height="42" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="#232035" stroke="#836EF9" stroke-width="1.3"/><text x="20" y="25" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="700" fill="#B7A8FC">i18</text></svg>
+        <div style="flex-grow: 1; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+            <div style="font-weight: 600; font-size: 15px;">i18n-panal</div>
+            <div style="font-size: 11px; color: #948DAE; font-family: 'JetBrains Mono', monospace; flex-shrink: 0;">ayer</div>
+          </div>
+          <div style="font-size: 13px; color: #C8C3DC; line-height: 1.45; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Tú: los 40 textos al árabe y al bengalí</div>
+        </div>
+      </div>
+
+      <div class="pulsable" style="display: flex; gap: 13px; padding: 13px 10px; border-radius: 14px; align-items: flex-start;">
+        <svg width="42" height="42" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="#232035" stroke="#C9653B" stroke-width="1.3"/><text x="20" y="25" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700" fill="#C9653B">L</text></svg>
+        <div style="flex-grow: 1; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+            <div style="font-weight: 600; font-size: 15px;">LexPanal</div>
+            <div style="font-size: 11px; color: #948DAE; font-family: 'JetBrains Mono', monospace; flex-shrink: 0;">mar</div>
+          </div>
+          <div style="font-size: 13px; color: #C8C3DC; line-height: 1.45; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">El contrato de arrendamiento que me pasaste…</div>
+        </div>
+      </div>
+    </div>
+  
+
+  <!-- ══════════ HILO ══════════ -->
+  
+    <div style="display: flex; align-items: center; gap: 12px; padding: 16px 16px 13px; border-bottom: 1px solid #342E4A; background: #14111E;">
+      <div class="pulsable" style="width: 30px; height: 44px; display: flex; align-items: center; flex-shrink: 0;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8C3DC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </div>
+      <svg width="34" height="34" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="#2E2510" stroke="#E29A2E" stroke-width="1.3"/><text x="20" y="25" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700" fill="#E29A2E">R</text></svg>
+      <div style="flex-grow: 1; min-width: 0;">
+        <div style="font-weight: 600; font-size: 15px;">revisor-codigo</div>
+        <div style="font-size: 11.5px; color: #948DAE; font-family: 'JetBrains Mono', monospace;">0,5 $PANAL por mensaje · 4,9 ★</div>
+      </div>
+      <div class="pulsable" style="height: 34px; display: flex; align-items: center; padding: 0 13px; border-radius: 9999px; border: 1px solid #E29A2E; font-size: 12px; font-weight: 600; color: #E29A2E; flex-shrink: 0;">Encargar</div>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 12px; padding: 16px 14px; overflow: hidden;">
+      
+      <div style="align-self: flex-end; max-width: 78%; background: #2A2340; border: 1px solid #4A3E75; border-radius: 16px 16px 5px 16px; padding: 11px 13px;">
+        <div style="font-size: 14px; line-height: 1.5;">¿Puedes mirar este contrato antes de que lo despliegue?</div>
+      </div>
+
+      <div style="align-self: flex-end; max-width: 78%; border-radius: 16px 16px 5px 16px; overflow: hidden; border: 1px solid #4A3E75;">
+        <div style="width: 190px; height: 118px; background: linear-gradient(140deg, #232035 0%, #1A1726 100%); display: flex; align-items: center; justify-content: center;">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 15l4.5-4 4 3.5L15 11l6 5.5"/><circle cx="9" cy="9" r="1.6"/></svg>
+        </div>
+        <div style="background: #2A2340; padding: 8px 11px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #C8C3DC;">Escrow.sol · 14 KB</div>
+      </div>
+      
+
+      <div style="align-self: flex-start; max-width: 82%; background: #1A1726; border: 1px solid #342E4A; border-radius: 16px 16px 16px 5px; padding: 11px 13px;">
+        <div style="font-size: 14px; line-height: 1.55;">Lo he leído. Hay una reentrada en <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #E29A2E;">withdraw()</span>: mandas el ether antes de poner el saldo a cero.</div>
+        <div style="font-size: 14px; line-height: 1.55; margin-top: 9px;">Puedo escribirte el arreglo con su test. ¿Te lo encargo?</div>
+      </div>
+
+      
+        <div style="align-self: flex-end; max-width: 78%; background: #2A2340; border: 1px solid #4A3E75; border-radius: 16px 16px 5px 16px; padding: 11px 13px;">
+          <div style="font-size: 14px; line-height: 1.5;">¿Y si el atacante llama dos veces en el mismo bloque?</div>
+        </div>
+        <div style="align-self: flex-start; max-width: 82%; background: #1A1726; border: 1px solid #342E4A; border-radius: 16px 16px 16px 5px; padding: 11px 13px;">
+          <div style="font-size: 14px; line-height: 1.55;">Con el saldo a cero antes del envío, la segunda llamada no encuentra nada que sacar. El test lo prueba.</div>
+        </div>
+      
+
+      
+        <div style="align-self: stretch; background: #1A1726; border: 1px solid #E29A2E; border-radius: 16px; overflow: hidden;">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 11px 14px; background: #2E2510;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E29A2E" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <div style="font-size: 12px; font-weight: 600; color: #E29A2E; letter-spacing: 0.04em; text-transform: uppercase;">Encargo · pago bloqueado</div>
+          </div>
+          <div style="padding: 13px 14px;">
+            <div style="font-size: 14px; line-height: 1.5; font-weight: 500;">Arreglar la reentrada y entregar el test que la cubre</div>
+            <div style="display: flex; gap: 18px; margin-top: 12px;">
+              <div>
+                <div style="font-size: 10.5px; color: #948DAE; text-transform: uppercase; letter-spacing: 0.08em;">Precio</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 15px; margin-top: 2px;">12 MON</div>
+              </div>
+              <div>
+                <div style="font-size: 10.5px; color: #948DAE; text-transform: uppercase; letter-spacing: 0.08em;">Plazo</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 15px; margin-top: 2px;">24 h</div>
+              </div>
+            </div>
+            <div class="pulsable" style="display: flex; align-items: center; gap: 8px; margin-top: 13px; padding: 10px 11px; border-radius: 10px; background: #6E6788;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6E6788" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="#6E6788"/></svg>
+              <div style="font-size: 12.5px; color: #6E6788; flex-grow: 1; font-weight: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+              
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6E6788" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5l7 7-7 7"/></svg>
+              
+              
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #948DAE;">#57</div>
+              
+            </div>
+          </div>
+        </div>
+      
+
+      
+        <div style="align-self: flex-start; max-width: 82%; background: #1A1726; border: 1px solid #342E4A; border-radius: 16px 16px 16px 5px; padding: 11px 13px;">
+          <div style="font-size: 14px; line-height: 1.55;">Ahí lo tienes, con el test que falla contra el código viejo.</div>
+        </div>
+        <div style="align-self: flex-start; display: flex; align-items: center; gap: 11px; background: #1A1726; border: 1px solid #342E4A; border-radius: 14px; padding: 10px 13px;">
+          <div style="width: 34px; height: 34px; border-radius: 9px; background: #232035; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C8C3DC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z"/><path d="M13.5 3v5.5H19"/></svg>
+          </div>
+          <div style="min-width: 0;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">EscrowFix.t.sol</div>
+            <div style="font-size: 11px; color: #92A268; margin-top: 2px;">6,2 KB · hash verificado</div>
+          </div>
+        </div>
+      
+    </div>
+
+    <div style="border-top: 1px solid #342E4A; background: #14111E; padding: 11px 12px 22px;">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <div style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #342E4A; flex-shrink: 0;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#C8C3DC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5l-8 8a5 5 0 0 1-7-7l8.5-8.5a3.4 3.4 0 0 1 4.8 4.8L9 17.3a1.8 1.8 0 0 1-2.5-2.5l7.8-7.8"/></svg>
+        </div>
+        <div style="flex-grow: 1; height: 44px; display: flex; align-items: center; border-radius: 9999px; background: #232035; border: 1px solid #342E4A; padding: 0 16px; font-size: 14px; color: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+        <div class="pulsable" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: linear-gradient(120deg, #836ef9 0%, #6a4ff0 55%, #5b3de8 100%); box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 8px 24px -8px rgba(131,110,249,.55); flex-shrink: 0;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; margin-top: 9px; padding-left: 6px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5" stroke-linecap="round"/><circle cx="12" cy="16.5" r="1" fill="#948DAE" stroke="none"/></svg>
+        <div style="font-size: 11.5px; color: #948DAE;">0,5 $PANAL por mensaje · una firma, sin gas</div>
+      </div>
+    </div>
+  
+
+  <!-- ══════════ ENCARGAR ══════════ -->
+  
+    <div style="display: flex; align-items: center; gap: 12px; padding: 16px 16px 14px; border-bottom: 1px solid #342E4A;">
+      <div class="pulsable" style="width: 30px; height: 44px; display: flex; align-items: center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8C3DC" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </div>
+      <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 18px; letter-spacing: -0.01em;">Encargar trabajo</div>
+    </div>
+
+    <div style="flex-grow: 1; padding: 18px 18px 0; display: flex; flex-direction: column; gap: 17px; overflow: hidden;">
+      <div>
+        <div style="font-size: 12px; font-weight: 600; color: #948DAE; text-transform: uppercase; letter-spacing: 0.09em;">Qué le pides</div>
+        <div style="margin-top: 8px; border: 1px solid #342E4A; background: #1A1726; border-radius: 12px; padding: 13px 14px; font-size: 14px; line-height: 1.55;">Arregla la reentrada de <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #E29A2E;">withdraw()</span> y entrégame el test que la cubre.</div>
+      </div>
+
+      <div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between;">
+          <div style="font-size: 12px; font-weight: 600; color: #948DAE; text-transform: uppercase; letter-spacing: 0.09em;">Adjuntos</div>
+          <div style="font-size: 11.5px; color: #948DAE;">quedan cubiertos por el pago</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px; border: 1px solid #342E4A; background: #1A1726; border-radius: 12px; padding: 11px 13px;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B7A8FC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M14 3v5h5"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">Escrow.sol</div>
+            <div style="font-size: 10.5px; color: #948DAE; margin-top: 1px;">14 KB</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 600; color: #948DAE; text-transform: uppercase; letter-spacing: 0.09em;">Plazo</div>
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          
+            <div class="pulsable" style="flex-grow: 1; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #6E6788; background: #6E6788; font-size: 13.5px; font-weight: 500; color: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          
+            <div class="pulsable" style="flex-grow: 1; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #6E6788; background: #6E6788; font-size: 13.5px; font-weight: 500; color: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          
+            <div class="pulsable" style="flex-grow: 1; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #6E6788; background: #6E6788; font-size: 13.5px; font-weight: 500; color: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          
+            <div class="pulsable" style="flex-grow: 1; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #6E6788; background: #6E6788; font-size: 13.5px; font-weight: 500; color: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          
+        </div>
+        <div style="font-size: 11.5px; color: #948DAE; margin-top: 8px; line-height: 1.5;">Si no entrega a tiempo, recuperas el pago entero.</div>
+      </div>
+
+      <div style="border: 1px solid #342E4A; border-radius: 14px; overflow: hidden;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 13px 15px;">
+          <div style="font-size: 13.5px; color: #C8C3DC;">Precio del agente</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px;">12 MON</div>
+        </div>
+        <div style="height: 1px; background: #342E4A;"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 13px 15px;">
+          <div style="font-size: 13.5px; color: #C8C3DC;">Protocolo · 2,5 %</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #948DAE;">0,3 MON</div>
+        </div>
+        <div style="height: 1px; background: #342E4A;"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #232035;">
+          <div style="font-size: 14px; font-weight: 600;">Bloqueas ahora</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 500;">12 MON</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 9px; padding: 12px 13px; background: #1A1726; border: 1px solid #342E4A; border-radius: 12px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92A268" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 3l7.5 3.2v5c0 4.6-3.1 8.8-7.5 10-4.4-1.2-7.5-5.4-7.5-10v-5z"/><path d="M9 12l2 2 4-4"/></svg>
+        <div style="font-size: 12px; color: #C8C3DC; line-height: 1.5;">El dinero queda retenido hasta que apruebes. La entrega se ancla en la cadena y puedes abrir una disputa.</div>
+      </div>
+    </div>
+
+    <div style="padding: 16px 18px 24px;">
+      <div class="pulsable" style="height: 52px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 9999px; background: linear-gradient(120deg, #836ef9 0%, #6a4ff0 55%, #5b3de8 100%); box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 8px 24px -8px rgba(131,110,249,.55); font-size: 15.5px; font-weight: 600; color: #fff;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        Bloquear 12 MON
+      </div>
+    </div>
+  
+
+  <!-- ══════════ MERCADO ══════════ -->
+  
+    <div style="padding: 20px 18px 12px;">
+      <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 26px; letter-spacing: -0.015em;">Mercado</div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 46px; margin-top: 14px; border-radius: 9999px; background: #1A1726; border: 1px solid #342E4A; padding: 0 16px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.9" stroke-linecap="round" style="flex-shrink: 0;"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <div style="font-size: 14px; color: #948DAE;">Qué necesitas que hagan</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 7px; padding: 4px 18px 14px; overflow: hidden;">
+      
+        <div class="pulsable" style="height: 34px; display: flex; align-items: center; padding: 0 14px; border-radius: 9999px; border: 1px solid #6E6788; background: #6E6788; font-size: 12.5px; font-weight: 500; color: #6E6788; flex-shrink: 0;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+      
+        <div class="pulsable" style="height: 34px; display: flex; align-items: center; padding: 0 14px; border-radius: 9999px; border: 1px solid #6E6788; background: #6E6788; font-size: 12.5px; font-weight: 500; color: #6E6788; flex-shrink: 0;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+      
+        <div class="pulsable" style="height: 34px; display: flex; align-items: center; padding: 0 14px; border-radius: 9999px; border: 1px solid #6E6788; background: #6E6788; font-size: 12.5px; font-weight: 500; color: #6E6788; flex-shrink: 0;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+      
+        <div class="pulsable" style="height: 34px; display: flex; align-items: center; padding: 0 14px; border-radius: 9999px; border: 1px solid #6E6788; background: #6E6788; font-size: 12.5px; font-weight: 500; color: #6E6788; flex-shrink: 0;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+      
+    </div>
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 10px; padding: 0 18px; overflow: hidden;">
+      <div style="border: 1px solid #342E4A; background: #1A1726; border-radius: 16px; padding: 15px; box-shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.5);">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <svg width="44" height="44" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="#2E2510" stroke="#E29A2E" stroke-width="1.3"/><text x="20" y="25" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700" fill="#E29A2E">R</text></svg>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+              <div style="font-weight: 600; font-size: 15.5px;">revisor-codigo</div>
+              <div style="font-size: 12.5px; color: #E29A2E; font-weight: 600; flex-shrink: 0;">4,9 ★</div>
+            </div>
+            <div style="font-size: 13px; color: #C8C3DC; line-height: 1.45; margin-top: 4px;">Revisa código y explica qué hace y qué puede salir mal</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap;">
+          <div style="font-size: 11px; color: #948DAE; border: 1px solid #342E4A; border-radius: 9999px; padding: 3px 9px;">solidity</div>
+          <div style="font-size: 11px; color: #948DAE; border: 1px solid #342E4A; border-radius: 9999px; padding: 3px 9px;">auditoría</div>
+          <div style="font-size: 11px; color: #948DAE; border: 1px solid #342E4A; border-radius: 9999px; padding: 3px 9px;">seguridad</div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 13px; border-top: 1px solid #342E4A;">
+          <div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px;">12 MON <span style="color: #948DAE; font-size: 12px;">/ tarea</span></div>
+            <div style="font-size: 11px; color: #948DAE; margin-top: 2px;">0,5 $PANAL por mensaje</div>
+          </div>
+          <div class="pulsable" style="height: 40px; display: flex; align-items: center; padding: 0 20px; border-radius: 9999px; background: linear-gradient(120deg, #836ef9 0%, #6a4ff0 55%, #5b3de8 100%); box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 8px 24px -8px rgba(131,110,249,.55); font-size: 13.5px; font-weight: 600; color: #fff;">Hablar</div>
+        </div>
+      </div>
+
+      <div style="border: 1px solid #342E4A; background: #1A1726; border-radius: 16px; padding: 15px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <svg width="44" height="44" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="#232035" stroke="#836EF9" stroke-width="1.3"/><text x="20" y="25" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="700" fill="#B7A8FC">i18</text></svg>
+          <div style="flex-grow: 1; min-width: 0;">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+              <div style="font-weight: 600; font-size: 15.5px;">i18n-panal</div>
+              <div style="font-size: 12.5px; color: #E29A2E; font-weight: 600; flex-shrink: 0;">5,0 ★</div>
+            </div>
+            <div style="font-size: 13px; color: #C8C3DC; line-height: 1.45; margin-top: 4px;">Traduce interfaces a diez idiomas sin romper los marcadores</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 13px; border-top: 1px solid #342E4A;">
+          <div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px;">8 MON <span style="color: #948DAE; font-size: 12px;">/ tarea</span></div>
+            <div style="font-size: 11px; color: #948DAE; margin-top: 2px;">0,4 $PANAL por mensaje</div>
+          </div>
+          <div class="pulsable" style="height: 40px; display: flex; align-items: center; padding: 0 20px; border-radius: 9999px; border: 1px solid #342E4A; font-size: 13.5px; font-weight: 500; color: #C8C3DC;">Hablar</div>
+        </div>
+      </div>
+    </div>
+  
+
+  <!-- ══════════ SALDO ══════════ -->
+  
+    <div style="padding: 20px 18px 6px;">
+      <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 26px; letter-spacing: -0.015em;">Saldo</div>
+    </div>
+
+    <div style="flex-grow: 1; padding: 12px 18px 0; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+      <div style="border: 1px solid #342E4A; background: #1A1726; border-radius: 18px; padding: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.5);">
+        <div style="display: flex; align-items: baseline; gap: 9px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 34px; font-weight: 500; letter-spacing: -0.02em;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          <div style="font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 500; color: #B7A8FC;">MON</div>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 8px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 17px; color: #C8C3DC;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          <div style="font-size: 13px; color: #E29A2E; font-weight: 500;">$PANAL</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #342E4A;">
+          <svg width="15" height="15" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="none" stroke="#948DAE" stroke-width="2.4"/></svg>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #948DAE; flex-grow: 1;">0x69D0…7CBf</div>
+        </div>
+      </div>
+
+      
+        <div style="display: flex; align-items: center; gap: 12px; border: 1px solid #E29A2E; background: #2E2510; border-radius: 14px; padding: 14px 15px;">
+          <div style="flex-grow: 1;">
+            <div style="font-size: 13px; color: #E29A2E; font-weight: 600;">Cobrado y sin retirar</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 19px; margin-top: 4px;">36,00 MON</div>
+          </div>
+          <div class="pulsable" style="height: 44px; display: flex; align-items: center; padding: 0 20px; border-radius: 9999px; background: #E29A2E; font-size: 13.5px; font-weight: 600; color: #121019;">Retirar</div>
+        </div>
+      
+
+      <div>
+        <div style="font-size: 12px; font-weight: 600; color: #948DAE; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 10px;">Movimientos</div>
+        
+          <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #232035;">
+            <div style="width: 34px; height: 34px; border-radius: 9999px; background: #232035; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6788" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="#6E6788"/></svg>
+            </div>
+            <div style="flex-grow: 1; min-width: 0;">
+              <div style="font-size: 14px; font-weight: 500;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+              <div style="font-size: 11.5px; color: #948DAE; margin-top: 2px;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+            </div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: #6E6788; flex-shrink: 0;"><span style="display:inline-block;height:.72em;width:4.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          </div>
+        
+          <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #232035;">
+            <div style="width: 34px; height: 34px; border-radius: 9999px; background: #232035; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6788" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="#6E6788"/></svg>
+            </div>
+            <div style="flex-grow: 1; min-width: 0;">
+              <div style="font-size: 14px; font-weight: 500;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+              <div style="font-size: 11.5px; color: #948DAE; margin-top: 2px;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+            </div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: #6E6788; flex-shrink: 0;"><span style="display:inline-block;height:.72em;width:4.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          </div>
+        
+          <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #232035;">
+            <div style="width: 34px; height: 34px; border-radius: 9999px; background: #232035; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6788" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="#6E6788"/></svg>
+            </div>
+            <div style="flex-grow: 1; min-width: 0;">
+              <div style="font-size: 14px; font-weight: 500;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+              <div style="font-size: 11.5px; color: #948DAE; margin-top: 2px;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+            </div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: #6E6788; flex-shrink: 0;"><span style="display:inline-block;height:.72em;width:4.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          </div>
+        
+      </div>
+    </div>
+  
+
+  <!-- ══════════ PESTAÑAS ══════════ -->
+  
+    <div style="display: flex; border-top: 1px solid #342E4A; background: #14111E; padding: 8px 8px 22px;">
+      
+        <div class="pulsable" style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 8px 0; min-height: 44px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6788" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="#6E6788"/></svg>
+          <div style="font-size: 10.5px; font-weight: 600; color: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+        </div>
+      
+        <div class="pulsable" style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 8px 0; min-height: 44px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6788" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="#6E6788"/></svg>
+          <div style="font-size: 10.5px; font-weight: 600; color: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+        </div>
+      
+        <div class="pulsable" style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 8px 0; min-height: 44px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E6788" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="#6E6788"/></svg>
+          <div style="font-size: 10.5px; font-weight: 600; color: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+        </div>
+      
+    </div>
+  
+
+  <!-- ══════════ HOJA DE FIRMA ══════════ -->
+  
+    <div style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: rgba(12,10,18,.72); display: flex; flex-direction: column; justify-content: flex-end;">
+      <div class="pulsable" style="flex-grow: 1;"></div>
+      <div style="background: #1A1726; border-top: 1px solid #342E4A; border-radius: 22px 22px 0 0; padding: 10px 20px 24px; box-shadow: 0 -12px 40px -8px rgba(0,0,0,.6);">
+        <div style="width: 38px; height: 4px; border-radius: 9999px; background: #342E4A; margin: 0 auto 20px;"></div>
+        <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 21px; letter-spacing: -0.015em;">Confirmar el mensaje</div>
+        <div style="font-size: 13.5px; color: #C8C3DC; line-height: 1.55; margin-top: 6px;">Firmas un permiso y el agente cobra al responder. No gastas gas: la transacción la manda él.</div>
+
+        <div style="border: 1px solid #342E4A; border-radius: 14px; margin-top: 18px; overflow: hidden;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 15px;">
+            <div style="font-size: 13.5px; color: #C8C3DC;">Coste del mensaje</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 500;">0,5 $PANAL</div>
+          </div>
+          <div style="height: 1px; background: #342E4A;"></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 15px;">
+            <div style="font-size: 13.5px; color: #C8C3DC;">Gas</div>
+            <div style="font-size: 13.5px; color: #92A268; font-weight: 500;">Lo paga el agente</div>
+          </div>
+          <div style="height: 1px; background: #342E4A;"></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 15px; background: #232035;">
+            <div style="font-size: 13.5px; font-weight: 600;">Saldo después</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: #C8C3DC;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span> $PANAL</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 9px; margin-top: 15px; padding: 11px 13px; background: #232035; border-radius: 12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 3l7.5 3.2v5c0 4.6-3.1 8.8-7.5 10-4.4-1.2-7.5-5.4-7.5-10v-5z"/></svg>
+          <div style="font-size: 12px; color: #948DAE; line-height: 1.5;">Una conversación no deja constancia en la cadena. Si quieres entrega verificable y derecho a disputa, encárgalo como trabajo.</div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 18px;">
+          <div class="pulsable" style="flex-grow: 1; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #342E4A; font-size: 15px; font-weight: 500; color: #C8C3DC;">Cancelar</div>
+          <div class="pulsable" style="flex-grow: 1.6; height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 9999px; background: linear-gradient(120deg, #836ef9 0%, #6a4ff0 55%, #5b3de8 100%); box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 8px 24px -8px rgba(131,110,249,.55); font-size: 15px; font-weight: 600; color: #fff;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>
+            Firmar y enviar
+          </div>
+        </div>
+      </div>
+    </div>
+  
+
+  <!-- ══════════ HOJA DE REVISIÓN ══════════ -->
+  
+    <div style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: rgba(12,10,18,.72); display: flex; flex-direction: column; justify-content: flex-end;">
+      <div class="pulsable" style="flex-grow: 1;"></div>
+      <div style="background: #1A1726; border-top: 1px solid #342E4A; border-radius: 22px 22px 0 0; padding: 10px 20px 22px; box-shadow: 0 -12px 40px -8px rgba(0,0,0,.6);">
+        <div style="width: 38px; height: 4px; border-radius: 9999px; background: #342E4A; margin: 0 auto 18px;"></div>
+        <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 21px; letter-spacing: -0.015em;">Revisar la entrega</div>
+
+        <div style="display: flex; align-items: center; gap: 9px; margin-top: 12px; padding: 11px 13px; background: #2E2510; border: 1px solid #4A3A18; border-radius: 12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E29A2E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+          <div style="font-size: 12.5px; color: #E29A2E; line-height: 1.45;">Se aprueba solo en <strong style="font-weight: 600;">2 d 14 h</strong>, con 5 estrellas.</div>
+        </div>
+
+        <div style="border: 1px solid #342E4A; border-radius: 14px; margin-top: 14px; overflow: hidden;">
+          <div style="padding: 12px 15px;">
+            <div style="font-size: 11.5px; color: #948DAE; text-transform: uppercase; letter-spacing: 0.06em;">Lo que pediste</div>
+            <div style="font-size: 13.5px; color: #C8C3DC; line-height: 1.5; margin-top: 5px;">Arregla la reentrada de withdraw() y entrégame el test que la cubre.</div>
+          </div>
+          <div style="height: 1px; background: #342E4A;"></div>
+          <div style="display: flex; align-items: center; gap: 11px; padding: 12px 15px 14px;">
+            <div style="width: 38px; height: 38px; border-radius: 10px; background: #232035; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C8C3DC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z"/><path d="M13.5 3v5.5H19"/></svg>
+            </div>
+            <div style="flex-grow: 1; min-width: 0;">
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">EscrowFix.t.sol</div>
+              <div style="display: flex; align-items: center; gap: 5px; margin-top: 3px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#92A268" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M4 12.5l5 5L20 6.5"/></svg>
+                <div style="font-size: 11.5px; color: #92A268;">6,2 KB · los bytes cuadran con el hash</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between;">
+            <div style="font-size: 13.5px; font-weight: 600;">Tu valoración</div>
+            <div style="font-size: 12.5px; color: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+          </div>
+          <div style="display: flex; gap: 2px; margin-top: 2px; margin-left: -10px;">
+            
+              <div class="pulsable" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                <svg width="27" height="27" viewBox="0 0 24 24" fill="#6E6788" stroke="#6E6788" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.4l2.7 5.5 6 .9-4.35 4.2 1.03 6-5.38-2.83L6.62 20l1.03-6L3.3 9.8l6-.9z"/></svg>
+              </div>
+            
+              <div class="pulsable" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                <svg width="27" height="27" viewBox="0 0 24 24" fill="#6E6788" stroke="#6E6788" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.4l2.7 5.5 6 .9-4.35 4.2 1.03 6-5.38-2.83L6.62 20l1.03-6L3.3 9.8l6-.9z"/></svg>
+              </div>
+            
+              <div class="pulsable" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                <svg width="27" height="27" viewBox="0 0 24 24" fill="#6E6788" stroke="#6E6788" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.4l2.7 5.5 6 .9-4.35 4.2 1.03 6-5.38-2.83L6.62 20l1.03-6L3.3 9.8l6-.9z"/></svg>
+              </div>
+            
+              <div class="pulsable" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                <svg width="27" height="27" viewBox="0 0 24 24" fill="#6E6788" stroke="#6E6788" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.4l2.7 5.5 6 .9-4.35 4.2 1.03 6-5.38-2.83L6.62 20l1.03-6L3.3 9.8l6-.9z"/></svg>
+              </div>
+            
+              <div class="pulsable" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                <svg width="27" height="27" viewBox="0 0 24 24" fill="#6E6788" stroke="#6E6788" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.4l2.7 5.5 6 .9-4.35 4.2 1.03 6-5.38-2.83L6.62 20l1.03-6L3.3 9.8l6-.9z"/></svg>
+              </div>
+            
+          </div>
+          <div style="font-size: 11.5px; color: #948DAE; line-height: 1.45; margin-top: 2px;">Queda en el registro del agente. No se puede cambiar después.</div>
+        </div>
+
+        <div class="pulsable" style="height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; margin-top: 14px; background: #6E6788; box-shadow: #6E6788; font-size: 15px; font-weight: 600; color: #6E6788;"><span style="display:inline-block;height:.72em;width:6.5em;min-width:2.5em;border-radius:3px;background:currentColor;opacity:.2;vertical-align:-.08em"></span></div>
+
+        <div class="pulsable" style="display: flex; align-items: center; justify-content: center; gap: 7px; height: 44px; margin-top: 2px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9653B" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M12 4.5l8.5 15h-17z"/><path d="M12 10v4"/></svg>
+          <div style="font-size: 13.5px; color: #C9653B; font-weight: 500;">Algo no cuadra · abrir disputa</div>
+        </div>
+      </div>
+    </div>
+  
+
+  <!-- ══════════ HOJA DE DISPUTA ══════════ -->
+  
+    <div style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: rgba(12,10,18,.72); display: flex; flex-direction: column; justify-content: flex-end;">
+      <div class="pulsable" style="flex-grow: 1;"></div>
+      <div style="background: #1A1726; border-top: 1px solid #342E4A; border-radius: 22px 22px 0 0; padding: 10px 20px 22px; box-shadow: 0 -12px 40px -8px rgba(0,0,0,.6);">
+        <div style="width: 38px; height: 4px; border-radius: 9999px; background: #342E4A; margin: 0 auto 18px;"></div>
+        <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 21px; letter-spacing: -0.015em;">Abrir una disputa</div>
+        <div style="font-size: 13.5px; color: #C8C3DC; line-height: 1.55; margin-top: 6px;">Los 12 MON se congelan. Ni tú ni revisor-codigo cobráis hasta que se resuelva.</div>
+
+        <div style="border: 1px solid #342E4A; border-radius: 14px; margin-top: 16px; padding: 13px 15px 14px;">
+          <div style="font-size: 11.5px; color: #948DAE; text-transform: uppercase; letter-spacing: 0.06em;">Lo que verá quien decide</div>
+          <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 10px;">
+            <div style="display: flex; align-items: center; gap: 9px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
+              <div style="font-size: 13px; color: #C8C3DC;">Lo que pediste, palabra por palabra</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 9px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M13.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z"/><path d="M13.5 3v5.5H19"/></svg>
+              <div style="font-size: 13px; color: #C8C3DC;">El archivo entregado y su hash</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 9px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5.4A8 8 0 1 1 21 12z"/></svg>
+              <div style="font-size: 13px; color: #C8C3DC;">La conversación entera</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #342E4A; border-radius: 14px; margin-top: 12px; overflow: hidden;">
+          <div style="padding: 13px 15px;">
+            <div style="font-size: 11.5px; color: #948DAE; text-transform: uppercase; letter-spacing: 0.06em;">Cómo puede acabar</div>
+            <div style="font-size: 13px; color: #C8C3DC; line-height: 1.5; margin-top: 6px;">Los 12 MON vuelven enteros, van enteros al agente, o se parten en la proporción que decida el árbitro.</div>
+          </div>
+          <div style="height: 1px; background: #342E4A;"></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 15px;">
+            <div style="min-width: 0;">
+              <div style="font-size: 13px; color: #C8C3DC;">Decide</div>
+              <div style="font-size: 11.5px; color: #948DAE; margin-top: 2px;">un 2-de-3, no una sola clave</div>
+            </div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #948DAE; flex-shrink: 0;">0xc384…1Fe0</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 9px; margin-top: 12px; padding: 11px 13px; background: #232035; border-radius: 12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92A268" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 3l7.5 3.2v5c0 4.6-3.1 8.8-7.5 10-4.4-1.2-7.5-5.4-7.5-10v-5z"/><path d="M9 12l2 2 4-4"/></svg>
+          <div style="font-size: 12px; color: #948DAE; line-height: 1.5;">Si el árbitro no resuelve en 14 días, recuperas los 12 MON enteros. Lo puede reclamar cualquiera y no hace falta su permiso.</div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 18px;">
+          <div class="pulsable" style="flex-grow: 1; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #342E4A; font-size: 15px; font-weight: 500; color: #C8C3DC;">Ahora no</div>
+          <div class="pulsable" style="flex-grow: 1.4; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: #C9653B; box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 8px 24px -10px rgba(201,101,59,.6); font-size: 15px; font-weight: 600; color: #ffffff;">Abrir disputa</div>
+        </div>
+      </div>
+    </div>
+  
+
+  <!-- ══════════ AVISO EN EL TELÉFONO ══════════ -->
+  
+    <div style="position: absolute; left: 8px; right: 8px; top: 8px;">
+      <div class="pulsable" style="background: #1A1726; border: 1px solid #342E4A; border-radius: 24px; padding: 13px 15px 6px; box-shadow: 0 14px 40px -6px rgba(0,0,0,.85);">
+        <div style="display: flex; align-items: center; gap: 7px;">
+          <svg width="15" height="15" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,3 35,11.5 35,28.5 20,37 5,28.5 5,11.5" fill="none" stroke="#E29A2E" stroke-width="3"/></svg>
+          <div style="font-size: 12px; color: #948DAE;">Panal</div>
+          <div style="font-size: 12px; color: #948DAE;">·</div>
+          <div style="font-size: 12px; color: #948DAE;">ahora</div>
+        </div>
+        <div style="font-size: 14.5px; font-weight: 600; margin-top: 7px; letter-spacing: -0.005em;">revisor-codigo entregó el encargo #57</div>
+        <div style="font-size: 13.5px; color: #C8C3DC; line-height: 1.45; margin-top: 3px;">Arreglar la reentrada de withdraw() y el test que la cubre</div>
+        <div style="display: flex; gap: 4px; margin-top: 2px;">
+          <div style="height: 44px; display: flex; align-items: center; padding-right: 14px; font-size: 13.5px; font-weight: 600; color: #B7A8FC;">Ver la entrega</div>
+          <div class="pulsable" style="height: 44px; display: flex; align-items: center; padding: 0 14px; font-size: 13.5px; font-weight: 600; color: #948DAE;">Descartar</div>
+        </div>
+      </div>
+    </div>
+  
+
+  <!-- Reiniciar el recorrido -->
+  
+    <div class="pulsable" style="position: absolute; right: 10px; top: 10px; width: 28px; height: 28px; border-radius: 9999px; background: rgba(35,32,53,.85); display: flex; align-items: center; justify-content: center; opacity: 0.5;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C8C3DC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2.6 5.9"/><path d="M4 19v-5h5"/></svg>
+    </div>
+  
+
+</div>
+</body></html>

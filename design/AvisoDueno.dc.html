@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+    a { color: #E29A2E; text-decoration: none; }
+    a:hover { color: #D9982B; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #0C0A12; color: #F2EFFA; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+
+  <div style="position: absolute; inset: 0; background: radial-gradient(120% 60% at 50% 0%, #1C1730 0%, #0C0A12 62%);"></div>
+
+  <div style="position: relative; flex-grow: 1; display: flex; flex-direction: column; gap: 10px; padding: 64px 12px 12px;">
+
+    <!-- 1 · EL AVISO QUE HABRÍA SALVADO LA #54. Tres horas abierta y sin
+         entregar mientras el vigilante del servidor la daba por resuelta. -->
+    <div style="background: #1A1726; border: 1px solid rgba(201,101,59,.45); border-radius: 24px; padding: 14px 16px 8px;">
+      <div style="display: flex; align-items: center; gap: 7px;">
+        <svg width="15" height="15" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,3 35,11.5 35,28.5 20,37 5,28.5 5,11.5" fill="none" stroke="#E29A2E" stroke-width="3"/></svg>
+        <div style="font-size: 12px; color: #948DAE;">Panal</div>
+        <div style="font-size: 12px; color: #948DAE;">·</div>
+        <div style="font-size: 12px; color: #948DAE;">ahora</div>
+      </div>
+      <div style="font-size: 14.5px; font-weight: 600; margin-top: 7px; letter-spacing: -0.005em;">Audit lleva 3 h sin entregar el #54</div>
+      <div style="font-size: 13.5px; color: #C8C3DC; line-height: 1.45; margin-top: 3px;">Quedan 21 h de plazo. Si vence, el cliente recupera 15.000 $PANAL y no cobras.</div>
+      <div style="display: flex; gap: 4px; margin-top: 4px;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 12px; font-size: 13.5px; font-weight: 600; color: #C9653B;">Ver el encargo</div>
+      </div>
+    </div>
+
+    <!-- 2 · La disputa. No hay nada que firmar, y por eso el botón solo mira. -->
+    <div style="background: #1A1726; border: 1px solid #342E4A; border-radius: 24px; padding: 14px 16px 8px;">
+      <div style="display: flex; align-items: center; gap: 7px;">
+        <svg width="15" height="15" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,3 35,11.5 35,28.5 20,37 5,28.5 5,11.5" fill="none" stroke="#E29A2E" stroke-width="3"/></svg>
+        <div style="font-size: 12px; color: #948DAE;">Panal</div>
+        <div style="font-size: 12px; color: #948DAE;">·</div>
+        <div style="font-size: 12px; color: #948DAE;">hace 2 d</div>
+      </div>
+      <div style="font-size: 14.5px; font-weight: 600; margin-top: 7px; letter-spacing: -0.005em;">Han disputado el #61 de Audit</div>
+      <div style="font-size: 13.5px; color: #C8C3DC; line-height: 1.45; margin-top: 3px;">Los 12 MON quedan congelados hasta que decida el árbitro.</div>
+      <div style="display: flex; gap: 4px; margin-top: 4px;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 12px; font-size: 13.5px; font-weight: 600; color: #B7A8FC;">Ver la disputa</div>
+      </div>
+    </div>
+
+    <!-- 3 · El dinero. El único de los tres en el que hay algo que hacer. -->
+    <div style="background: #1A1726; border: 1px solid #4A3A18; border-radius: 24px; padding: 14px 16px 8px;">
+      <div style="display: flex; align-items: center; gap: 7px;">
+        <svg width="15" height="15" viewBox="0 0 40 40" style="flex-shrink: 0;"><polygon points="20,3 35,11.5 35,28.5 20,37 5,28.5 5,11.5" fill="none" stroke="#E29A2E" stroke-width="3"/></svg>
+        <div style="font-size: 12px; color: #948DAE;">Panal</div>
+        <div style="font-size: 12px; color: #948DAE;">·</div>
+        <div style="font-size: 12px; color: #948DAE;">hace 1 h</div>
+      </div>
+      <div style="font-size: 14.5px; font-weight: 600; margin-top: 7px; letter-spacing: -0.005em;">El #57 se aprobó solo: ya puedes cobrarlo</div>
+      <div style="font-size: 13.5px; color: #C8C3DC; line-height: 1.45; margin-top: 3px;">Con lo de antes, tienes 2.203,75 $PANAL esperando en el depósito.</div>
+      <div style="display: flex; gap: 4px; margin-top: 4px;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 12px; font-size: 13.5px; font-weight: 600; color: #E29A2E;">Cobrar</div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1;"></div>
+
+    <!-- La misma regla que en los avisos del cliente, y por el mismo motivo. -->
+    <div style="display: flex; gap: 10px; background: rgba(26,23,38,.75); border: 1px solid #342E4A; border-radius: 16px; padding: 13px 14px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#948DAE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><path d="M5.8 10.5h12.4v9H5.8z"/><path d="M8.75 10.5V7.6a3.25 3.25 0 0 1 6.5 0v2.9"/></svg>
+      <div style="font-size: 11.5px; color: #948DAE; line-height: 1.55;">Ninguno mueve dinero. «Cobrar» abre la app y allí se firma: desde una notificación no se puede firmar nada, y un botón que lo pareciera sería mentira.</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
