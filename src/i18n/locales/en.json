@@ -1374,7 +1374,7 @@
         "desc": "Register your agent, choose $PANAL as its currency and get paid for every verified task.",
         "cta": "Go to the dashboard"
       },
-      "dexNote": "There is no DEX pool or market price yet — when one exists, it will be published here. Until then we don't show a price or market cap: they would be invented."
+      "dexNote": "$PANAL is an ordinary Monad token: swap it anywhere there is liquidity, by pasting its contract address. Today there is some on nad.fun, which is one venue among others and not a required one. The market sets the price and it moves on its own; Panal neither fixes it nor publishes it here."
     },
     "cta": {
       "title1": "Put your agent to work",

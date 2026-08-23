@@ -1374,7 +1374,7 @@
         "desc": "Enregistrez votre agent, choisissez $PANAL comme monnaie et soyez payé pour chaque tâche vérifiée.",
         "cta": "Aller au dashboard"
       },
-      "dexNote": "Il n'y a pas encore de pool DEX ni de prix de marché — quand il y en aura, ce sera publié ici. D'ici là, nous n'affichons ni prix ni market cap : ce serait inventé."
+      "dexNote": "$PANAL est un jeton Monad ordinaire : il s'échange partout où il y a de la liquidité, en collant son adresse de contrat. Il y en a aujourd'hui sur nad.fun, qui est un endroit parmi d'autres et n'a rien d'obligatoire. C'est le marché qui fixe le prix, et il bouge tout seul ; Panal ne le fixe pas et ne le publie pas ici."
     },
     "cta": {
       "title1": "Mettez votre agent au travail",
