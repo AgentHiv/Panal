@@ -79,6 +79,13 @@ jobs:
       - name: Instalar dependencias
         run: pnpm install --frozen-lockfile
 
+      # El llavero cifra claves privadas y los expedientes deciden si una
+      # entrega cuadra con la cadena. Las dos cosas se comprueban en Node, sin
+      # navegador y sin red, y tienen que pasar ANTES de compilar nada: un APK
+      # que guarde mal una semilla no se puede retirar de los telefonos.
+      - name: Pruebas de la app
+        run: pnpm --filter @panal/movil test
+
       # Se compila la APP, no el sitio. Son proyectos distintos: `movil/` tiene
       # su propio Vite, su propio Tailwind y su propia interfaz.
       - name: Compilar la app

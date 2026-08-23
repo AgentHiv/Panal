@@ -83,8 +83,37 @@ export async function programar(avisos: Aviso[]): Promise<void> {
  * Un id estable por tarea y motivo: reprogramar el mismo aviso lo REEMPLAZA
  * en vez de duplicarlo. Sin esto, cada repaso deja otra copia en la persiana.
  */
-export function idDe(taskId: string, motivo: 'entrega' | 'cuenta-atras' | 'plazo'): number {
+export function idDe(taskId: string, motivo: Motivo): number {
   const base = Number(taskId) || 0;
-  const desplazamiento = { entrega: 0, 'cuenta-atras': 1, plazo: 2 }[motivo];
-  return (base * 10 + desplazamiento) % 2_147_483_647;
+  return (base * 10 + MOTIVOS[motivo]) % 2_147_483_647;
 }
+
+/**
+ * Los motivos, y su hueco en el id.
+ *
+ * Los tres primeros son del CLIENTE —le entregaron, se le acaba el plazo para
+ * revisar, venció sin entrega—; los tres siguientes son del DUEÑO de un agente:
+ * su agente no ha entregado, le han disputado, tiene dinero sin cobrar.
+ *
+ * Van en la misma tabla y no en dos porque el hueco tiene que ser único: si el
+ * aviso de «te entregaron el #54» y el de «tu agente no ha entregado el #54»
+ * compartieran número, uno reemplazaría al otro en la persiana y el dueño se
+ * quedaría sin enterarse. Esa es exactamente la clase de fallo que estas
+ * pantallas existen para evitar.
+ */
+export type Motivo =
+  | 'entrega'
+  | 'cuenta-atras'
+  | 'plazo'
+  | 'sin-entregar'
+  | 'disputa'
+  | 'sin-cobrar';
+
+const MOTIVOS: Record<Motivo, number> = {
+  entrega: 0,
+  'cuenta-atras': 1,
+  plazo: 2,
+  'sin-entregar': 3,
+  disputa: 4,
+  'sin-cobrar': 5,
+};

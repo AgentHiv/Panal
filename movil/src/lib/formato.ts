@@ -47,6 +47,32 @@ export function monto(wei: bigint | string): string {
 }
 
 /**
+ * Lo mismo, pero para una COLUMNA de cifras.
+ *
+ * `monto` sigue el es-ES de Intl, que no agrupa los números de cuatro dígitos:
+ * es lo correcto para una cantidad suelta y lo que recomienda la RAE. En una
+ * cascada de cuentas produce esto:
+ *
+ *     Facturado           110.050
+ *     Comisión de Panal   2188,75      ← se sale de la columna
+ *     Tuyo                85.361,25
+ *
+ * Ahí el separador deja de ser ortografía y pasa a ser alineación, que es
+ * justo el caso en que sí se pone. Solo para tablas: en un botón de firmar se
+ * usa `monto`, que es el que decide toda la app.
+ */
+export function montoCuadro(wei: bigint | string): string {
+  const n = Number(formatEther(typeof wei === 'string' ? BigInt(wei) : wei));
+  if (n === 0) return '0';
+  if (n < 0.0001) return '<0,0001';
+  return n.toLocaleString('es-ES', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: decimalesPara(n),
+    useGrouping: 'always',
+  });
+}
+
+/**
  * «hace un momento», «17:42», «ayer», «mar».
  *
  * La bandeja necesita que la hora quepa en un hueco estrecho y que se entienda
