@@ -226,6 +226,21 @@ export default function PanelAgente(): React.ReactElement {
           <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180 shrink-0" />
         </button>
 
+        <button
+          type="button"
+          onClick={() => navegar(`/informe/${dir}`)}
+          className="pulsable flex shrink-0 items-center gap-3 rounded-[14px] border border-line p-3.5 text-left"
+        >
+          <Icono nombre="hoja" tamano={18} color="#948DAE" className="shrink-0" />
+          <div className="min-w-0 grow">
+            <p className="text-[13.5px] font-medium">Informe</p>
+            <p className="mt-0.5 text-[11.5px] text-ink-3">
+              Lo que entró y lo que se quedó, con recibo por encargo
+            </p>
+          </div>
+          <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180 shrink-0" />
+        </button>
+
         <p className="mt-1 shrink-0 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
           Últimos encargos
         </p>

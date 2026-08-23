@@ -154,10 +154,14 @@ export type Resultado = { ok: true; donde: string } | { ok: false; porque: strin
  * Fuera de Android —el `pnpm dev` de un portátil— baja como un archivo normal,
  * porque ahí sí funciona `<a download>` y así se puede probar sin compilar.
  */
-export async function guardarCopia(nombre: string, html: string): Promise<Resultado> {
+export async function guardarCopia(
+  nombre: string,
+  contenido: string,
+  tipo = 'text/html',
+): Promise<Resultado> {
   if (!Capacitor.isNativePlatform()) {
     try {
-      const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+      const url = URL.createObjectURL(new Blob([contenido], { type: tipo }));
       const a = document.createElement('a');
       a.href = url;
       a.download = nombre;
@@ -174,7 +178,7 @@ export async function guardarCopia(nombre: string, html: string): Promise<Result
     // Android viejos, y el archivo se va a compartir al momento de todos modos.
     const escrito = await Filesystem.writeFile({
       path: nombre,
-      data: html,
+      data: contenido,
       directory: Directory.Cache,
       encoding: Encoding.UTF8,
     });
