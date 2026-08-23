@@ -21,6 +21,20 @@
  * el enlace de reenvío y se espera. Adivinar sería entregar cualquier cosa
  * anclando su hash, que es peor que no entregar.
  *
+ * «MIRADA» NO ES «RESUELTA», y confundirlas costó dos tareas de verdad.
+ *
+ * La marca guarda hasta dónde se ha ENUMERADO, no hasta dónde se ha resuelto.
+ * Antes se escribía al final de cada ronda pasara lo que pasara, así que una
+ * tarea que fallaba a mitad —el modelo colgado, el RPC caído— se quedaba por
+ * detrás de la marca y no volvía a mirarse nunca. Y lo que la recordaba vivía
+ * solo en memoria, o sea que un reinicio conservaba la mitad optimista (la
+ * marca, en disco) y perdía la otra (los pendientes, en RAM).
+ *
+ * Ahora las dos cosas viven en el MISMO archivo y se escriben juntas: la marca
+ * dice hasta dónde se enumeró, y `pendientes` lleva las excepciones. Una tarea
+ * sale de esa lista cuando de verdad se cierra —entregada, completada,
+ * cancelada— y no cuando se intentó algo con ella.
+ *
  * SE SONDEA, NO SE ESCUCHAN EVENTOS. `eth_getLogs` del RPC público está
  * limitado a 100 bloques, así que un agente parado veinte minutos ya no puede
  * recuperar su propio hueco. Leer el contador de tareas y mirar las nuevas es
@@ -40,8 +54,20 @@ export interface VigilanteDeps {
   yo: Address;
   /** Dónde guardar hasta dónde se miró. */
   dataDir: string;
-  /** Trabaja una tarea de la que YA se tiene el encargo. */
-  trabajar: (taskId: bigint, brief: string) => Promise<void>;
+  /**
+   * Trabaja una tarea de la que YA se tiene el encargo.
+   *
+   * Devuelve si la ENTREGÓ, y ese booleano es media corrección de este archivo.
+   * `work()` está escrito para no lanzar nunca —una tarea rota no puede tumbar
+   * la ronda entera—, así que desde aquí un reintento que funcionó y uno que
+   * volvió a reventar por límite de uso se veían exactamente igual: sin error.
+   * El vigilante daba por buena la tarea y dejaba de mirarla.
+   *
+   * Y no vale con relanzar el error: `work()` también sale limpio cuando la
+   * tarea espera adjuntos que no han llegado, que tampoco es haberla resuelto.
+   * Hace falta que lo diga, no que se deduzca de que nadie protestó.
+   */
+  trabajar: (taskId: bigint, brief: string) => Promise<boolean>;
   /**
    * ¿Se está trabajando esa tarea AHORA MISMO?
    *
@@ -100,98 +126,180 @@ const GRACIA_MS = 3 * 60 * 1000;
 /** Cuántas tareas hacia atrás se miran al arrancar sin marca previa. */
 const REPASO_INICIAL = 50n;
 
+/**
+ * Tope de la lista de pendientes.
+ *
+ * Una tarea sale de la lista cuando se cierra —entregada, completada,
+ * cancelada—, y todas acaban cerrándose: al vencer el plazo el cliente
+ * recupera su dinero y la tarea deja de estar abierta. Aun así el tope existe
+ * porque nadie OBLIGA al cliente a cancelar: una tarea abandonada puede
+ * quedarse abierta para siempre, y sin tope el archivo crecería sin fin.
+ *
+ * Al recortar se tiran las más VIEJAS, que son las que menos se pueden
+ * recuperar, y se dice en voz alta. Callarlo sería repetir el fallo que este
+ * archivo viene a arreglar.
+ */
+const MAX_PENDIENTES = 500;
+
+/** Qué se sabe de una tarea tras mirarla. «Se intentó» no es un veredicto. */
+type Veredicto = 'resuelta' | 'pendiente';
+
 export function arrancarVigilante(deps: VigilanteDeps): { parar: () => void } {
   if (process.env.VIGILANTE === 'off') {
     console.log('Vigilante desactivado (VIGILANTE=off).');
     return { parar: () => {} };
   }
 
-  const marcaPath = join(deps.dataDir, 'vigilante.json');
-  /** Tareas vistas sin encargo, con el momento en que se vieron. */
-  const huerfanas = new Map<string, number>();
+  const estadoPath = join(deps.dataDir, 'vigilante.json');
+  /**
+   * Cuándo se vio por primera vez una tarea sin encargo.
+   *
+   * Esto SÍ puede vivir solo en memoria: solo sirve para el margen de gracia
+   * antes de gritar, y perderlo en un reinicio únicamente reinicia esa cuenta
+   * atrás. Lo que no puede vivir solo en memoria es la lista de pendientes, y
+   * por eso está aparte.
+   */
+  const vistas = new Map<string, number>();
   /** De las que ya se avisó, para no repetir el aviso cada vuelta. */
   const avisadas = new Set<string>();
+  /** De los encargos guardados que no cuadran, para no repetir la queja. */
+  const quejadas = new Set<string>();
   let parado = false;
 
-  const leerMarca = (): bigint => {
+  interface Estado {
+    visto: bigint;
+    pendientes: Set<string>;
+  }
+
+  const leerEstado = (): Estado => {
     try {
-      const raw = JSON.parse(readFileSync(marcaPath, 'utf8')) as { visto?: string };
-      return BigInt(raw.visto ?? '0');
+      const raw = JSON.parse(readFileSync(estadoPath, 'utf8')) as {
+        visto?: string;
+        pendientes?: string[];
+      };
+      return {
+        // -1 y no 0: sin marca hay que hacer el repaso inicial.
+        visto: raw.visto === undefined ? -1n : BigInt(raw.visto),
+        // Un archivo de la versión anterior no trae la lista. Se lee como
+        // vacía y la primera ronda la vuelve a poblar con lo que siga abierto
+        // por delante de la marca; lo que quedó huérfano por detrás hay que
+        // recuperarlo a mano, que es exactamente el destrozo que esto corrige.
+        pendientes: new Set(raw.pendientes ?? []),
+      };
     } catch {
-      return -1n; // sin marca: se hace el repaso inicial
+      return { visto: -1n, pendientes: new Set() };
     }
   };
-  const escribirMarca = (visto: bigint): void => {
+
+  /**
+   * Las dos cosas se escriben JUNTAS, y ahí está la corrección.
+   *
+   * Antes la marca iba a disco y los pendientes se quedaban en RAM, así que un
+   * reinicio guardaba la mitad que dice «ya miré» y perdía la que dice «pero
+   * esto sigue sin resolver». En un solo archivo no puede pasar.
+   */
+  const escribirEstado = (visto: bigint, pendientes: Set<string>): void => {
+    let lista = [...pendientes];
+    if (lista.length > MAX_PENDIENTES) {
+      // Ordenadas por id: las más viejas primero, que son las que se tiran.
+      lista.sort((a, b) => (BigInt(a) < BigInt(b) ? -1 : 1));
+      const tiradas = lista.slice(0, lista.length - MAX_PENDIENTES);
+      lista = lista.slice(-MAX_PENDIENTES);
+      console.error(
+        `[vigilante] la lista de pendientes pasó de ${MAX_PENDIENTES}: dejo de seguir ` +
+          `${tiradas.length} tarea(s) vieja(s) (#${tiradas[0]}…#${tiradas[tiradas.length - 1]}). ` +
+          'Míralas a mano si alguna sigue abierta.',
+      );
+    }
     try {
-      writeFileSync(marcaPath, JSON.stringify({ visto: visto.toString() }, null, 2));
+      writeFileSync(estadoPath, JSON.stringify({ visto: visto.toString(), pendientes: lista }, null, 2));
     } catch (err) {
-      // Perder la marca solo cuesta repetir el repaso, así que no se para nada.
-      console.error(`[vigilante] no se pudo guardar la marca: ${err instanceof Error ? err.message : err}`);
+      // Perder el estado cuesta repetir el repaso, así que no se para nada.
+      console.error(`[vigilante] no se pudo guardar el estado: ${err instanceof Error ? err.message : err}`);
     }
   };
 
   /** true si encontro algo que atender: eso es lo que decide el ritmo. */
   async function repasar(): Promise<boolean> {
     const total = await deps.panal.getTaskCount();
-    const marca = leerMarca();
+    const { visto, pendientes } = leerEstado();
     // La primera vez se miran las últimas REPASO_INICIAL en vez de las 30.000
     // que pueda haber: las viejas están cerradas y no cambian.
-    const desde = marca >= 0n ? marca + 1n : total > REPASO_INICIAL ? total - REPASO_INICIAL : 0n;
+    const desde = visto >= 0n ? visto + 1n : total > REPASO_INICIAL ? total - REPASO_INICIAL : 0n;
 
-    // Las nuevas, más las que quedaron pendientes de vueltas anteriores.
-    const pendientes = new Set<string>(huerfanas.keys());
-    for (let i = desde; i < total; i++) pendientes.add(i.toString());
-    if (pendientes.size === 0) {
-      escribirMarca(total - 1n);
+    // Las nuevas, más las que quedaron sin resolver de vueltas anteriores.
+    const aMirar = new Set<string>(pendientes);
+    for (let i = desde; i < total; i++) aMirar.add(i.toString());
+    if (aMirar.size === 0) {
+      escribirEstado(total - 1n, aMirar);
       return false;
     }
 
-    for (const id of pendientes) {
-      if (parado) return true;
+    // Se PARTE de que todas siguen pendientes y solo sale la que devuelva un
+    // veredicto de resuelta. Antes era al revés —dentro salvo que alguien se
+    // quejara— y por eso un fallo a mitad equivalía a un éxito.
+    const restantes = new Set<string>(aMirar);
+    for (const id of aMirar) {
+      // `break` y no `return`: hay que guardar lo que sí se llegó a resolver,
+      // y sobre todo lo que no.
+      if (parado) break;
       const taskId = BigInt(id);
+      let veredicto: Veredicto = 'pendiente';
       try {
-        await revisarUna(taskId);
+        veredicto = await revisarUna(taskId);
       } catch (err) {
-        console.error(`[vigilante] #${taskId}: ${err instanceof Error ? err.message : err}`);
+        console.error(
+          `[vigilante] #${taskId}: ${err instanceof Error ? err.message : err} — sigue pendiente`,
+        );
       }
+      if (veredicto === 'resuelta') restantes.delete(id);
     }
-    escribirMarca(total - 1n);
+    escribirEstado(total - 1n, restantes);
     // Habia algo que mirar, aunque no fuera nuestro: no es una vuelta en blanco.
     return true;
   }
 
-  async function revisarUna(taskId: bigint): Promise<void> {
+  async function revisarUna(taskId: bigint): Promise<Veredicto> {
     const task = await deps.panal.getTask(taskId);
     const id = taskId.toString();
 
-    // Ni mía, ni viva: fuera de la lista y a otra cosa.
+    // No es mía: no hay nada que resolver y no hará falta volver a mirarla.
     if (task.worker.toLowerCase() !== deps.yo.toLowerCase()) {
-      huerfanas.delete(id);
-      return;
+      vistas.delete(id);
+      return 'resuelta';
     }
+    // Cerrada en la cadena —entregada, completada, disputada o cancelada—.
+    // ESTA es la única salida buena de la lista: lo dice el escrow, no nosotros.
     if (task.status !== TaskStatus.Open) {
-      huerfanas.delete(id);
+      vistas.delete(id);
       avisadas.delete(id);
-      return;
+      quejadas.delete(id);
+      return 'resuelta';
     }
 
     // Se está trabajando ahora mismo: no es un hueco, es el camino normal. Ni
     // se retoma, ni se avisa de que falte el encargo — lo tiene y lo está
     // usando. El vigilante solo se ocupa de lo que ya no se mueve.
+    //
+    // PERO SIGUE PENDIENTE. Antes esto la sacaba de la lista, y era el mismo
+    // fallo con otro disfraz: si ese trabajo en curso acababa reventando, la
+    // marca ya había pasado por encima y no volvía a mirarla nadie.
     if (deps.enCurso(taskId)) {
-      huerfanas.delete(id);
-      return;
+      vistas.delete(id);
+      return 'pendiente';
     }
 
     // CASO 3: el resultado está calculado y la tarea sigue abierta, así que la
     // entrega no llegó a anclarse. Se reintenta, que es gratis para el cliente
     // y le devuelve una tarea que daba por perdida.
+    //
+    // Si `reentregar` falla, lanza: sube a `repasar`, que la deja pendiente.
     const resultado = deps.resultadoGuardado(taskId);
     if (resultado !== null) {
       console.log(`[vigilante] #${taskId} tenía resultado sin anclar: se reintenta la entrega`);
       await deps.reentregar(taskId, resultado);
-      huerfanas.delete(id);
-      return;
+      vistas.delete(id);
+      return 'resuelta';
     }
 
     // CASO 2: el encargo está guardado pero no hay resultado, o sea que el
@@ -202,26 +310,38 @@ export function arrancarVigilante(deps: VigilanteDeps): { parar: () => void } {
       // otra ejecución y no vale fiarse: si no cuadra con lo que hay en la
       // cadena, trabajar sobre él sería entregar algo que el cliente no pidió.
       if (keccak256(toBytes(brief)) !== task.taskHash) {
-        console.error(
-          `[vigilante] #${taskId} el encargo guardado NO cuadra con el taskHash de la cadena: se ignora`,
-        );
-        huerfanas.delete(id);
-        return;
+        // Pendiente, NO resuelta: el cliente todavía puede reenviar el bueno
+        // por /reenviar y entonces sí se puede trabajar. Se queja una sola vez
+        // para no llenar el log en cada vuelta.
+        if (!quejadas.has(id)) {
+          quejadas.add(id);
+          console.error(
+            `[vigilante] #${taskId} el encargo guardado NO cuadra con el taskHash de la cadena: ` +
+              'no se trabaja sobre él. Que el cliente lo reenvíe.',
+          );
+        }
+        return 'pendiente';
       }
       console.log(`[vigilante] #${taskId} se quedó a medias: se retoma el trabajo`);
-      await deps.trabajar(taskId, brief);
-      huerfanas.delete(id);
-      return;
+      const entregada = await deps.trabajar(taskId, brief);
+      vistas.delete(id);
+      // AQUÍ vivía el segundo fallo: se daba por resuelta sin mirar si lo
+      // estaba. Un modelo que devuelve 429 dos veces seguidas se veía igual
+      // que una entrega perfecta.
+      if (!entregada) {
+        console.log(`[vigilante] #${taskId} no quedó entregada: sigue en la lista para la próxima vuelta`);
+      }
+      return entregada ? 'resuelta' : 'pendiente';
     }
 
     // CASO 1: hay tarea y no hay encargo. Aquí no se puede hacer nada más que
     // avisar: el texto no está en la cadena y adivinarlo sería inventárselo.
-    const visto = huerfanas.get(id);
+    const visto = vistas.get(id);
     if (visto === undefined) {
-      huerfanas.set(id, Date.now());
-      return;
+      vistas.set(id, Date.now());
+      return 'pendiente';
     }
-    if (Date.now() - visto < GRACIA_MS || avisadas.has(id)) return;
+    if (Date.now() - visto < GRACIA_MS || avisadas.has(id)) return 'pendiente';
 
     avisadas.add(id);
     // En cuánto vence, no cuándo. La fecha absoluta se imprimía en UTC junto a
@@ -242,6 +362,9 @@ export function arrancarVigilante(deps: VigilanteDeps): { parar: () => void } {
         ` o desde https://panal.lat/dashboard.\n` +
         `  Si nadie lo hace, el plazo vence ${vence} y el cliente recupera su dinero.`,
     );
+    // Sigue abierta y sin encargo: se queda en la lista hasta que la cadena
+    // diga otra cosa.
+    return 'pendiente';
   }
 
   console.log(`Vigilante activo: repasa cada ${CADA} s (VIGILANTE=off para apagarlo).`);

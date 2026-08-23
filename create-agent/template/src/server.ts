@@ -535,9 +535,28 @@ function contexto(
   };
 }
 
-async function work(taskId: bigint, brief: string, sobre: CallEnvelope | null): Promise<void> {
+/**
+ * Cómo acabó un intento de trabajar una tarea.
+ *
+ * Existe porque `work()` no puede lanzar —también lo llama una ruta HTTP, y
+ * una tarea rota no debe tumbar la ronda del vigilante— y sin embargo el
+ * vigilante NECESITA distinguir. Antes no podía: un modelo que devolvía 429
+ * dos veces seguidas y una entrega perfecta se veían igual desde fuera, así
+ * que la tarea se daba por resuelta y se dejaba de mirar. Pasó con la #55.
+ *
+ * `esperando` no es un fallo y tampoco es un éxito, y por eso no bastaba con
+ * relanzar el error: una tarea a la que le faltan adjuntos sale de aquí sin
+ * ningún error y sin haberse entregado.
+ */
+export type ResultadoTrabajo = 'entregada' | 'esperando' | 'fallo' | 'en-curso';
+
+async function work(
+  taskId: bigint,
+  brief: string,
+  sobre: CallEnvelope | null,
+): Promise<ResultadoTrabajo> {
   const key = taskId.toString();
-  if (inFlight.has(key)) return;
+  if (inFlight.has(key)) return 'en-curso';
   inFlight.add(key);
   try {
     // Lo PRIMERO, antes de trabajar: si el proceso muere a mitad, esto es lo
@@ -556,7 +575,10 @@ async function work(taskId: bigint, brief: string, sobre: CallEnvelope | null): 
       console.log(
         `[panal] #${taskId} en espera de ${faltan.length} adjunto(s): ${faltan.map((f) => f.name).join(', ')}`,
       );
-      return;
+      // Salida limpia y sin entregar. El vigilante tiene que verlo tal cual:
+      // dándola por resuelta, una tarea cuyo adjunto llega tras un reinicio se
+      // quedaba esperando para siempre sin que nadie volviera a mirarla.
+      return 'esperando';
     }
     if (recibidos.length > 0) console.log(`[panal] #${taskId} con ${recibidos.length} adjunto(s) del cliente`);
 
@@ -590,8 +612,10 @@ async function work(taskId: bigint, brief: string, sobre: CallEnvelope | null): 
     saveResult(taskId, text);
     const { txHash } = await panal.deliverResult(taskId, text);
     console.log(`[panal] #${taskId} entregada · tx ${txHash}`);
+    return 'entregada';
   } catch (err) {
     console.error(`[panal] #${taskId} falló: ${err instanceof Error ? err.message : err}`);
+    return 'fallo';
   } finally {
     inFlight.delete(key);
   }
@@ -1439,7 +1463,9 @@ arrancarVigilante({
   // que la sostenía murió—, así que esta reanudación no puede seguir gastando
   // en nombre de nadie. Si el encargo necesitaba subcontratar, lo hará con el
   // presupuesto propio de este agente y no con el de quien llamó.
-  trabajar: (taskId, brief) => work(taskId, brief, null),
+  // Solo `entregada` cuenta como resuelta. Un fallo del modelo o una espera de
+  // adjuntos devuelven false y la tarea se queda en la lista del vigilante.
+  trabajar: async (taskId, brief) => (await work(taskId, brief, null)) === 'entregada',
   reentregar: async (taskId, texto) => {
     const { txHash } = await panal.deliverResult(taskId, texto);
     console.log(`[vigilante] #${taskId} entregada al segundo intento · tx ${txHash}`);

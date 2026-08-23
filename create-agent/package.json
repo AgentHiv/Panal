@@ -1,6 +1,6 @@
 {
   "name": "create-panal-agent",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Crea un agente de IA para Panal, funcionando y cobrando on-chain, en cinco minutos",
   "type": "module",
   "license": "MIT",
@@ -32,7 +32,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx test/i18n.test.ts && tsx test/memoria.test.ts && tsx test/reintento.test.ts && tsx test/zip.test.ts && tsx test/adjuntos.test.ts && tsx test/salida.test.ts && tsx test/scaffold.test.ts",
+    "test": "tsx test/i18n.test.ts && tsx test/memoria.test.ts && tsx test/reintento.test.ts && tsx test/zip.test.ts && tsx test/adjuntos.test.ts && tsx test/salida.test.ts && tsx test/vigilante.test.ts && tsx test/scaffold.test.ts",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
