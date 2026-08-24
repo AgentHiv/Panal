@@ -1,7 +1,12 @@
-import { formatUnits } from 'viem';
+import { useQuery } from '@tanstack/react-query';
 import { useAccount, useBalance, useReadContract } from 'wagmi';
-import { activeChain, PANAL_TOKEN_ADDRESS } from '@/contracts/config';
+import { activeChain, PANAL_TOKEN_ADDRESS, publicClient } from '@/contracts/config';
 import { panalTokenAbi } from '@/contracts/abis';
+import { conDecimales } from '~/lib/formato';
+
+// Se reexporta porque media app la importaba de aquí, y porque este sigue
+// siendo el sitio donde uno la busca: es la que da formato a estos saldos.
+export { conDecimales };
 
 /**
  * Las dos monedas, que no son intercambiables y hacen cosas distintas.
@@ -55,16 +60,71 @@ export function useSaldos(): Saldos {
   };
 }
 
+/* ── las wallets del llavero ─────────────────────────────────────────────── */
+
+/** Las dos monedas de una dirección, en crudo. */
+export interface Par {
+  mon: bigint;
+  panal: bigint;
+}
+
+export interface SaldosLlavero {
+  /** Indexado por dirección en minúsculas. Vacío mientras carga. */
+  por: Record<string, Par>;
+  cargando: boolean;
+  /** Si la red no ha contestado. El saldo NO es cero: es que no se sabe. */
+  fallo: boolean;
+  refrescar: () => void;
+}
+
 /**
- * Un saldo se lee de un vistazo o no se lee.
+ * El saldo de varias direcciones a la vez, sin que ninguna esté conectada.
  *
- * Dos decimales para las cantidades normales; cuatro solo cuando con dos
- * saldría «0,00» teniendo algo, que es peor que un número largo: parece que no
- * tienes nada.
+ * `useSaldos` no servía para esto y no era un descuido suyo: lee de
+ * `useAccount()`, o sea de la wallet conectada por WalletConnect, y una wallet
+ * del llavero no está conectada a nada. Por eso el llavero decía «esta wallet
+ * está vacía hasta que le mandes algo» — no lo sabía, y lo daba por hecho.
+ *
+ * Va por `publicClient` y no por hooks de wagmi por una razón tonta y firme:
+ * los hooks no se pueden llamar dentro de un bucle, y aquí el número de
+ * wallets lo decide quien las crea. Una consulta que las recorre todas cabe en
+ * un `useQuery` y se refresca sola.
+ *
+ * Se refresca cada 30 s. Es dinero, y una cantidad vieja en pantalla es la
+ * clase de mentira que hace que alguien mande dos veces lo mismo.
  */
-export function conDecimales(bruto: bigint, decimales: number): string {
-  const n = Number(formatUnits(bruto, decimales));
-  if (n === 0) return '0';
-  const d = n < 0.01 ? 4 : 2;
-  return n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+export function useSaldosLlavero(direcciones: string[]): SaldosLlavero {
+  // Ordenada para que el mismo juego de wallets no reconsulte al reordenarse.
+  const clave = direcciones.map((d) => d.toLowerCase()).sort().join(',');
+
+  const consulta = useQuery({
+    queryKey: ['saldos-llavero', clave, activeChain.id],
+    enabled: direcciones.length > 0,
+    refetchInterval: 30_000,
+    queryFn: async (): Promise<Record<string, Par>> => {
+      const filas = await Promise.all(
+        clave.split(',').map(async (d) => {
+          const dir = d as `0x${string}`;
+          const [mon, panal] = await Promise.all([
+            publicClient.getBalance({ address: dir }),
+            publicClient.readContract({
+              address: PANAL_TOKEN_ADDRESS,
+              abi: panalTokenAbi,
+              functionName: 'balanceOf',
+              args: [dir],
+            }),
+          ]);
+          return [d, { mon, panal }] as const;
+        }),
+      );
+      return Object.fromEntries(filas);
+    },
+  });
+
+  return {
+    por: consulta.data ?? {},
+    cargando: consulta.isLoading,
+    fallo: consulta.isError,
+    refrescar: () => void consulta.refetch(),
+  };
 }

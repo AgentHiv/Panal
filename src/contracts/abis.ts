@@ -804,6 +804,24 @@ export const panalTokenAbi = [
     ],
     outputs: [{ name: '', type: 'uint256' }],
   },
+  /**
+   * transfer(to, amount) — mandar $PANAL de una wallet a otra.
+   *
+   * No la usa la web: allí el $PANAL solo se mueve por `approve` + escrow. La
+   * pide el llavero del APK, donde una wallet creada en el teléfono manda su
+   * saldo a donde su dueño diga. Va aquí y no en una copia dentro de `movil/`
+   * porque dos ABIs del mismo token acaban discrepando.
+   */
+  {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
 ] as const;
 
 /**
