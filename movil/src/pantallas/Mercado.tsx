@@ -6,6 +6,7 @@ import type { Agent } from '@/data/agents';
 import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
 import { precio } from '~/lib/formato';
+import Menu from '~/componentes/Menu';
 
 /**
  * El mercado, con los agentes de verdad de la cadena.
@@ -32,8 +33,9 @@ export default function Mercado(): React.ReactElement {
 
   return (
     <div className="flex min-h-0 grow flex-col">
-      <header className="shrink-0 px-5 pb-3 pt-5">
+      <header className="flex shrink-0 items-center justify-between px-5 pb-3 pt-5">
         <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">Mercado</h1>
+        <Menu />
       </header>
 
       {/* Buscar no es un adorno: la lista se lee de la cadena y crece sola.

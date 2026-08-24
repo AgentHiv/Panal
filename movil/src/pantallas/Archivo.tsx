@@ -10,6 +10,7 @@ import { armar, salud } from '~/lib/expedientes';
 import type { Expediente } from '~/lib/expedientes';
 import { guardarCopia, todoAHtml } from '~/lib/copia';
 import { monto, cuando } from '~/lib/formato';
+import Menu from '~/componentes/Menu';
 
 /**
  * Tus expedientes.
@@ -64,23 +65,23 @@ export default function Archivo(): React.ReactElement {
     setAviso(r.ok ? `Copia lista en ${r.donde}.` : `No se pudo sacar la copia: ${r.porque}`);
   };
 
+  // Con la cabecera, no en su lugar: sin ella esta pantalla se quedaba sin
+  // título y —desde que el menú vive ahí— sin forma de llegar a nada.
   if (!connected) {
     return (
-      <Vacia
-        titulo="Conecta tu wallet"
-        texto="Los expedientes son de una dirección: son sus encargos y sus conversaciones."
-      />
+      <div className="flex min-h-0 grow flex-col">
+        <Cabecera />
+        <Vacia
+          titulo="Conecta tu wallet"
+          texto="Los expedientes son de una dirección: son sus encargos y sus conversaciones."
+        />
+      </div>
     );
   }
 
   return (
     <div className="flex min-h-0 grow flex-col">
-      <header className="shrink-0 px-5 pb-3 pt-5">
-        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">
-          Tus expedientes
-        </h1>
-        <p className="mt-0.5 text-[12.5px] text-ink-3">Lo que la cadena no guarda de cada encargo</p>
-      </header>
+      <Cabecera />
 
       <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-5 pb-5">
         {/* La salud del archivo va ARRIBA del todo, no al final: cuando se lea
@@ -225,6 +226,22 @@ function resumen(e: Expediente): string {
 function primeraLinea(texto: string): string {
   const l = texto.trim().split('\n')[0] ?? '';
   return l.length > 68 ? `${l.slice(0, 68)}…` : l;
+}
+
+function Cabecera(): React.ReactElement {
+  return (
+    <header className="flex shrink-0 items-start justify-between gap-3 px-5 pb-3 pt-5">
+      <div className="min-w-0">
+        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">
+          Tus expedientes
+        </h1>
+        <p className="mt-0.5 text-[12.5px] text-ink-3">
+          Lo que la cadena no guarda de cada encargo
+        </p>
+      </div>
+      <Menu />
+    </header>
+  );
 }
 
 function Vacia({ titulo, texto }: { titulo: string; texto: string }): React.ReactElement {

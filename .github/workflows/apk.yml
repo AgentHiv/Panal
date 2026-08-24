@@ -86,10 +86,43 @@ jobs:
       - name: Pruebas de la app
         run: pnpm --filter @panal/movil test
 
+      # La version del APK sale de la etiqueta, para que no vuelva a haber tres
+      # releases que por dentro dicen ser la misma. `versionCode` tiene que
+      # CRECER siempre o Android no lo considera una actualizacion: 2.0.0 →
+      # 20000, 2.1.3 → 20103. Aguanta hasta 99 en minor y patch.
+      - name: Numerar la version
+        run: |
+          if [[ "$GITHUB_REF_NAME" =~ ^apk-v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            MAJOR=${BASH_REMATCH[1]}; MINOR=${BASH_REMATCH[2]}; PATCH=${BASH_REMATCH[3]}
+            if (( MINOR > 99 || PATCH > 99 )); then
+              echo "minor y patch tienen que ser < 100 para que versionCode siga creciendo"; exit 1
+            fi
+            NOMBRE="${MAJOR}.${MINOR}.${PATCH}"
+            CODIGO=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
+          else
+            # Ejecucion a mano: no es una release y tiene que notarse.
+            NOMBRE="0.0-dev"; CODIGO=1
+          fi
+          # Se leen en los pasos de compilar, no en este: lo que se escribe en
+          # GITHUB_ENV no existe todavia en el paso que lo escribe.
+          #
+          # Va ANTES de compilar la app —y no justo antes de Gradle, como
+          # estaba— porque el menu de la app enseña la version, y para eso
+          # `VITE_VERSION` tiene que existir cuando corre Vite. Si se numera
+          # despues, el APK dice 2.1.0 por fuera y «compilacion de desarrollo»
+          # por dentro.
+          echo "VERSION_NAME=$NOMBRE" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$CODIGO" >> "$GITHUB_ENV"
+          echo "versionName=$NOMBRE  versionCode=$CODIGO"
+
       # Se compila la APP, no el sitio. Son proyectos distintos: `movil/` tiene
       # su propio Vite, su propio Tailwind y su propia interfaz.
       - name: Compilar la app
         run: pnpm --filter @panal/movil build
+        env:
+          # La misma que `versionName`: el menu de la app la enseña, y sin esto
+          # diria «compilacion de desarrollo» en una release de verdad.
+          VITE_VERSION: ${{ env.VERSION_NAME }}
 
       # Que no se cuele un APK con un bundle viejo o con el del sitio: sin los
       # archivos correctos la app abre una pantalla en blanco y eso solo se ve
@@ -113,29 +146,6 @@ jobs:
 
       - name: Sincronizar el proyecto Android
         run: pnpm exec cap sync android
-
-      # La version del APK sale de la etiqueta, para que no vuelva a haber tres
-      # releases que por dentro dicen ser la misma. `versionCode` tiene que
-      # CRECER siempre o Android no lo considera una actualizacion: 2.0.0 →
-      # 20000, 2.1.3 → 20103. Aguanta hasta 99 en minor y patch.
-      - name: Numerar la version
-        run: |
-          if [[ "$GITHUB_REF_NAME" =~ ^apk-v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            MAJOR=${BASH_REMATCH[1]}; MINOR=${BASH_REMATCH[2]}; PATCH=${BASH_REMATCH[3]}
-            if (( MINOR > 99 || PATCH > 99 )); then
-              echo "minor y patch tienen que ser < 100 para que versionCode siga creciendo"; exit 1
-            fi
-            NOMBRE="${MAJOR}.${MINOR}.${PATCH}"
-            CODIGO=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
-          else
-            # Ejecucion a mano: no es una release y tiene que notarse.
-            NOMBRE="0.0-dev"; CODIGO=1
-          fi
-          # Se leen en el paso de compilar, no en este: lo que se escribe en
-          # GITHUB_ENV no existe todavia en el paso que lo escribe.
-          echo "VERSION_NAME=$NOMBRE" >> "$GITHUB_ENV"
-          echo "VERSION_CODE=$CODIGO" >> "$GITHUB_ENV"
-          echo "versionName=$NOMBRE  versionCode=$CODIGO"
 
       - name: Compilar
         working-directory: android

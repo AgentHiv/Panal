@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/hooks/useWallet';
 import { useSaldos } from '~/lib/usarSaldos';
 import Icono from '~/componentes/Icono';
+import Menu from '~/componentes/Menu';
 
 /**
  * El primer arranque: lo que se ve al abrir la app sin nada dentro.
@@ -24,8 +25,12 @@ export default function Arranque(): React.ReactElement {
 
   return (
     <div className="flex min-h-0 grow flex-col">
-      <header className="flex shrink-0 items-center px-5 pb-1 pt-5">
+      {/* El menú también aquí: esta es la primera pantalla de la app, y sin
+          él quien acaba de instalarla no tiene ninguna forma de llegar al
+          llavero ni de ver en qué red está. */}
+      <header className="flex shrink-0 items-center justify-between px-5 pb-1 pt-5">
         <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">Chats</h1>
+        <Menu />
       </header>
 
       {/* `shrink-0` en TODOS los hijos, y no por costumbre: sin él este mismo

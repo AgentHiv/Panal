@@ -4,7 +4,7 @@ import { ESTADO } from '@/lib/conversaciones';
 import { currencySymbol } from '@/contracts/config';
 import { getTaskBrief } from '@/lib/taskBriefs';
 import { AUTO_RELEASE_MS, monto } from '~/lib/formato';
-import { hayAvisos, idDe, pedirPermiso, programar } from '~/lib/avisos';
+import { avisosEncendidos, hayAvisos, idDe, pedirPermiso, programar } from '~/lib/avisos';
 
 /**
  * Los avisos, enganchados a las tareas que ya se leen.
@@ -43,7 +43,7 @@ export function useAvisos(): void {
   const yaAvisado = useRef(new Set<number>());
 
   useEffect(() => {
-    if (!hayAvisos() || tasks.length === 0) return;
+    if (!hayAvisos() || !avisosEncendidos() || tasks.length === 0) return;
 
     let vigente = true;
     void (async () => {

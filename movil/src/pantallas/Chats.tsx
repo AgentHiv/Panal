@@ -11,6 +11,7 @@ import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
 import Arranque from '~/pantallas/Arranque';
 import { cuando as formatoCuando } from '~/lib/formato';
+import Menu from '~/componentes/Menu';
 
 /**
  * La bandeja. Es la pantalla de inicio de la app, como en cualquier
@@ -40,6 +41,8 @@ export default function Chats(): React.ReactElement {
     <div className="flex min-h-0 grow flex-col">
       <header className="flex shrink-0 items-center justify-between px-5 pb-3 pt-5">
         <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">Chats</h1>
+        <div className="flex items-center gap-2">
+        <Menu />
         <Link
           to="/mercado"
           aria-label="Buscar un agente"
@@ -47,6 +50,7 @@ export default function Chats(): React.ReactElement {
         >
           <Icono nombre="mas" tamano={19} color="#fff" grosor={2.2} />
         </Link>
+        </div>
       </header>
 
       <ul className="min-h-0 grow overflow-y-auto px-3 pb-3">

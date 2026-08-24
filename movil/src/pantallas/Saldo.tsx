@@ -6,6 +6,7 @@ import { useSaldos } from '~/lib/usarSaldos';
 import { useSesion } from '~/lib/sesion';
 import { copiar } from '~/lib/wallets';
 import Icono from '~/componentes/Icono';
+import Menu from '~/componentes/Menu';
 
 /**
  * El saldo.
@@ -36,8 +37,9 @@ export default function Saldo(): React.ReactElement {
 
   return (
     <div className="flex min-h-0 grow flex-col">
-      <header className="shrink-0 px-5 pb-3 pt-5">
+      <header className="flex shrink-0 items-center justify-between px-5 pb-3 pt-5">
         <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">Saldo</h1>
+        <Menu />
       </header>
 
       {!connected ? (
