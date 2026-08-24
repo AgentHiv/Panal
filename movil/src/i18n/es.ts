@@ -599,6 +599,12 @@ export const es = {
   },
 
   informe: {
+    grafico: 'Lo cobrado, mes a mes',
+    graficoPie: (moneda: string) => `Últimos meses, en ${moneda}. Los vacíos son meses sin cobrar.`,
+    subio: (pct: string) => `+${pct} % sobre el mes anterior`,
+    bajo: (pct: string) => `−${pct} % sobre el mes anterior`,
+    igual: 'Igual que el mes anterior',
+    unSoloMes: 'Un solo mes con movimiento: todavía no hay con qué comparar',
     volver: 'Volver',
     titulo: 'Informe',
     subtitulo: (nombre: string) => `${nombre} · lo que entró y lo que se quedó`,

@@ -12,6 +12,7 @@ import { guardarCopia } from '~/lib/copia';
 import { montoCuadro } from '~/lib/formato';
 import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
+import Barras from '~/componentes/Barras';
 
 /**
  * Informe · lo que entró y lo que se quedó.
@@ -131,6 +132,10 @@ export default function Informe(): React.ReactElement {
             {periodo ? T.informe.periodoVacio : T.informe.nadaLiquidado}
           </p>
         )}
+
+        {/* El gráfico va con el bloque principal y solo con él: la segunda
+            moneda se lleva aparte y sumarlas daría una barra sin significado. */}
+        {cuentas.length > 0 && <Barras cuentas={cuentas[0]!} />}
 
         {cuentas.map((c, i) => (
           <Bloque

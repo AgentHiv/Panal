@@ -544,6 +544,12 @@ export const zh: Textos = {
   },
 
   informe: {
+    grafico: '逐月收款',
+    graficoPie: (moneda: string) => `最近几个月，以 ${moneda} 计。空缺表示当月没有收入。`,
+    subio: (pct: string) => `较上月 +${pct}%`,
+    bajo: (pct: string) => `较上月 −${pct}%`,
+    igual: '与上月持平',
+    unSoloMes: '只有一个月有流水：还没有可比的对象',
     volver: '返回',
     titulo: '报表',
     subtitulo: (nombre: string) => `${nombre} · 进账与留存`,

@@ -593,6 +593,12 @@ export const pt: Textos = {
   },
 
   informe: {
+    grafico: 'O recebido, mês a mês',
+    graficoPie: (moneda: string) => `Últimos meses, em ${moneda}. Os vazios são meses sem receber.`,
+    subio: (pct: string) => `+${pct} % sobre o mês anterior`,
+    bajo: (pct: string) => `−${pct} % sobre o mês anterior`,
+    igual: 'Igual ao mês anterior',
+    unSoloMes: 'Só um mês com movimento: ainda não há com que comparar',
     volver: 'Voltar',
     titulo: 'Relatório',
     subtitulo: (nombre: string) => `${nombre} · o que entrou e o que ficou`,

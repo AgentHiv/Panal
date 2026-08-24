@@ -592,6 +592,12 @@ export const en: Textos = {
   },
 
   informe: {
+    grafico: 'Received, month by month',
+    graficoPie: (moneda: string) => `Recent months, in ${moneda}. Gaps are months with nothing.`,
+    subio: (pct: string) => `+${pct}% on the month before`,
+    bajo: (pct: string) => `−${pct}% on the month before`,
+    igual: 'Same as the month before',
+    unSoloMes: 'Only one month with movement: nothing to compare against yet',
     volver: 'Back',
     titulo: 'Report',
     subtitulo: (nombre: string) => `${nombre} · what came in and what stayed`,
