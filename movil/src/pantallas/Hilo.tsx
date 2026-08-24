@@ -41,6 +41,27 @@ export default function Hilo(): React.ReactElement {
   const { data: walletClient } = useWalletClient();
 
   const [mensajes, setMensajes] = useState(() => (address ? leerHilo(address, agente) : []));
+
+  /**
+   * Releer el hilo cuando cambia de quién es.
+   *
+   * ESTO ARREGLA UN FALLO DE VERDAD. El estado de arriba se calcula UNA vez,
+   * al montar, y al abrir la app la dirección todavía no está: wagmi está
+   * reconectando, o el llavero espera el PIN. Así que se inicializaba vacío y
+   * ahí se quedaba — abrías una conversación de meses y salía «todavía no
+   * habéis hablado».
+   *
+   * Se ajusta EN EL RENDER y no en un efecto, que es lo que React recomienda
+   * para esto: el efecto pintaría primero la lista vieja y la corregiría
+   * después, un parpadeo que aquí se vería como un hilo vacío que se llena
+   * solo. Así el primer pintado ya es el bueno.
+   */
+  const dueno = `${address ?? ''}|${agente}`;
+  const [ultimoDueno, setUltimoDueno] = useState(dueno);
+  if (ultimoDueno !== dueno) {
+    setUltimoDueno(dueno);
+    setMensajes(address ? leerHilo(address, agente) : []);
+  }
   const [borrador, setBorrador] = useState('');
   const [hoja, setHoja] = useState<Abierta>(null);
   const [cotizacion, setCotizacion] = useState<X402Accept | null>(null);
@@ -268,7 +289,7 @@ function EntradaHilo({
     const mio = entrada.mensaje.de === 'yo';
     return (
       <div
-        className={`seleccionable max-w-[82%] rounded-2xl border px-3.5 py-2.5 ${
+        className={`seleccionable max-w-[82%] shrink-0 rounded-2xl border px-3.5 py-2.5 ${
           mio
             ? 'self-end rounded-br-[5px] border-[#4A3E75] bg-[#2A2340]'
             : 'self-start rounded-bl-[5px] border-line bg-cream'
@@ -315,7 +336,15 @@ function EntradaHilo({
   const st = estados[e.estado] ?? estados[ESTADO.Abierto];
 
   return (
-    <article className="self-stretch overflow-hidden rounded-2xl border border-honey bg-cream">
+    /* `shrink-0` NO es de adorno, y este es el caso que lo demuestra.
+       En una columna flex los hijos llevan `min-height: auto`, que los protege
+       de encogerse por debajo de su contenido — pero esa protección SOLO vale
+       mientras `overflow` sea `visible`. Esta tarjeta lleva `overflow-hidden`
+       para redondear las esquinas, así que la pierde: medido, se quedaba en
+       2 px de alto contra los 174 que ocupa de verdad. Por eso el historial de
+       encargos salía como rayas y los mensajes no: los mensajes no llevan
+       `overflow-hidden`. */
+    <article className="shrink-0 self-stretch overflow-hidden rounded-2xl border border-honey bg-cream">
       <div className="flex items-center gap-2 bg-honey-soft px-3.5 py-2.5">
         <Icono nombre="candado" tamano={15} color="#E29A2E" grosor={2} />
         <span className="text-[12px] font-semibold uppercase tracking-[0.04em] text-honey">

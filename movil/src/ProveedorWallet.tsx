@@ -14,7 +14,7 @@ import type { Redireccion } from '~/lib/regreso';
 import Teclado from '~/componentes/Teclado';
 import Icono from '~/componentes/Icono';
 import { conectorLlavero } from '~/lib/conector';
-import { abrirSesion, idRecordado, useSesion } from '~/lib/sesion';
+import { abrirSesion, caducar, idRecordado, tocar, useSesion } from '~/lib/sesion';
 import { abrir as abrirLlavero, listar } from '~/lib/llavero';
 import { useTextos } from '~/i18n/idiomas';
 import type { WalletGuardada } from '~/lib/llavero';
@@ -114,6 +114,41 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
     wc.emitter.on('message', alMensaje);
     return () => wc.emitter.off('message', alMensaje);
   }, [wc]);
+
+  /**
+   * El reloj de inactividad del llavero.
+   *
+   * Tres cosas, y las tres hacen falta:
+   *
+   *   · Cualquier toque reinicia la cuenta. Va en `capture` y pasivo para no
+   *     estorbar al desplazamiento, que en un WebView se nota.
+   *   · Un repaso cada 30 s cierra si ya se pasó el rato estando la app
+   *     delante.
+   *   · Y otro al volver a primer plano, porque el intervalo de arriba en
+   *     segundo plano lo estrangula Android o no corre: la comprobación tiene
+   *     que ser al volver, no confiar en que el reloj siguió.
+   *
+   * Al cerrarse hay que desconectar wagmi además de tirar la clave: sin eso la
+   * app seguiría diciendo que hay una wallet conectada y la primera firma
+   * fallaría con un error en vez de pedir el PIN.
+   */
+  useEffect(() => {
+    const alCaducar = (): void => {
+      if (caducar()) disconnect();
+    };
+    const usar = (): void => tocar();
+
+    const eventos = ['pointerdown', 'keydown', 'touchstart'] as const;
+    for (const e of eventos) window.addEventListener(e, usar, { capture: true, passive: true });
+    const reloj = window.setInterval(alCaducar, 30_000);
+    document.addEventListener('visibilitychange', alCaducar);
+
+    return () => {
+      for (const e of eventos) window.removeEventListener(e, usar, { capture: true });
+      window.clearInterval(reloj);
+      document.removeEventListener('visibilitychange', alCaducar);
+    };
+  }, [disconnect]);
 
   /**
    * Ir a buscar a la wallet cuando sale una firma, y decirlo en pantalla.

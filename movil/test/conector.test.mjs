@@ -139,6 +139,32 @@ dice(
   })),
 );
 
+console.log('\nse cierra sola por inactividad');
+dice('recién abierta, le queda todo', ses.leQueda() > ses.INACTIVIDAD_MS - 1000);
+dice('y no caduca por mirarla', ses.caducar() === false);
+dice(
+  'un minuto antes del plazo sigue abierta',
+  ses.caducar(Date.now() + ses.INACTIVIDAD_MS - 60_000) === false,
+);
+dice('sigue firmando', ses.cuentaViva() !== null);
+// Se pasa el rato de golpe: es lo que hace un móvil olvidado encima de la mesa.
+dice('pasado el plazo, se cierra', ses.caducar(Date.now() + ses.INACTIVIDAD_MS + 1) === true);
+dice('y ya no hay cuenta', ses.cuentaViva() === null);
+dice('cerrar dos veces no revienta', ses.caducar(Date.now() + 999_999_999) === false);
+
+console.log('\nusar la app reinicia el reloj');
+await ses.abrirSesion(llave, wallet);
+// A punto de caducar…
+ses.caducar(Date.now() + ses.INACTIVIDAD_MS - 1000);
+dice('a un segundo del plazo sigue viva', ses.cuentaViva() !== null);
+// …y `cuentaViva` acaba de tocarla, así que el reloj empezó de nuevo.
+dice(
+  'firmar cuenta como usarla: el reloj vuelve a empezar',
+  ses.caducar(Date.now() + ses.INACTIVIDAD_MS - 500) === false,
+);
+ses.tocar();
+dice('y tocar también', ses.leQueda() > ses.INACTIVIDAD_MS - 1000);
+
 console.log('\ncerrar la sesión');
 ses.cerrarSesion();
 dice('se va la cuenta', ses.cuentaViva() === null);
