@@ -89,6 +89,7 @@ export const pt: Textos = {
     noSePudo: 'Não foi possível ligar',
     sinWalletConnect:
       'Esta versão foi compilada sem WalletConnect, por isso não há forma de abrir uma wallet a partir daqui. É preciso compilar o APK com',
+    usarOtra: 'Usar outra',
     pinTitulo: 'O PIN do teu porta-chaves. Com ele, assinar deixa de te tirar da app.',
   },
 
@@ -238,7 +239,7 @@ export const pt: Textos = {
     limpiar: 'Limpar',
     sinAgentes: 'Ainda não há nenhum agente registado na cadeia.',
     sinResultados: 'Nenhum se chama assim nem faz isso.',
-    porEncargo: (precio: string, moneda: string) => `${precio} ${moneda} · por encomenda`,
+    porEncargo: 'por encomenda',
     sinPrecio: 'sem preço de encomenda',
     tareas: (n: number) => `· ${n} ${n === 1 ? 'tarefa' : 'tarefas'}`,
     sinValoraciones: '· sem avaliações',
@@ -393,8 +394,10 @@ export const pt: Textos = {
   },
 
   hilo: {
+    hoy: 'Hoje',
+    ayer: 'Ontem',
     volver: 'Voltar',
-    porMensaje: (cantidad: string, moneda: string) => `${cantidad} ${moneda} por mensagem`,
+    porMensaje: 'por mensagem',
     soloEncargos: 'só aceita encomendas',
     encargar: 'Encomendar',
     sinHablar:
@@ -590,6 +593,12 @@ export const pt: Textos = {
   },
 
   informe: {
+    grafico: 'O recebido, mês a mês',
+    graficoPie: (moneda: string) => `Últimos meses, em ${moneda}. Os vazios são meses sem receber.`,
+    subio: (pct: string) => `+${pct} % sobre o mês anterior`,
+    bajo: (pct: string) => `−${pct} % sobre o mês anterior`,
+    igual: 'Igual ao mês anterior',
+    unSoloMes: 'Só um mês com movimento: ainda não há com que comparar',
     volver: 'Voltar',
     titulo: 'Relatório',
     subtitulo: (nombre: string) => `${nombre} · o que entrou e o que ficou`,

@@ -84,6 +84,7 @@ export const zh: Textos = {
     preparando: '正在准备连接…',
     noSePudo: '连接失败',
     sinWalletConnect: '这个版本编译时没有带 WalletConnect，所以无法从这里打开钱包。APK 需要用以下变量编译：',
+    usarOtra: '换一个',
     pinTitulo: '你的钥匙串 PIN。有了它，签名就不再把你赶出应用。',
   },
 
@@ -219,7 +220,7 @@ export const zh: Textos = {
     limpiar: '清空',
     sinAgentes: '链上还没有注册任何代理。',
     sinResultados: '没有叫这个名字、也没有做这件事的。',
-    porEncargo: (precio: string, moneda: string) => `${precio} ${moneda} · 每单`,
+    porEncargo: '每单',
     sinPrecio: '没有委托报价',
     tareas: (n: number) => `· ${n} 单`,
     sinValoraciones: '· 没有评价',
@@ -362,8 +363,10 @@ export const zh: Textos = {
   },
 
   hilo: {
+    hoy: '今天',
+    ayer: '昨天',
     volver: '返回',
-    porMensaje: (cantidad: string, moneda: string) => `每条 ${cantidad} ${moneda}`,
+    porMensaje: '每条',
     soloEncargos: '只接委托',
     encargar: '委托',
     sinHablar: '你们还没有说过话。在这里写的每条消息都要付费，它会立刻回复。',
@@ -541,6 +544,12 @@ export const zh: Textos = {
   },
 
   informe: {
+    grafico: '逐月收款',
+    graficoPie: (moneda: string) => `最近几个月，以 ${moneda} 计。空缺表示当月没有收入。`,
+    subio: (pct: string) => `较上月 +${pct}%`,
+    bajo: (pct: string) => `较上月 −${pct}%`,
+    igual: '与上月持平',
+    unSoloMes: '只有一个月有流水：还没有可比的对象',
     volver: '返回',
     titulo: '报表',
     subtitulo: (nombre: string) => `${nombre} · 进账与留存`,

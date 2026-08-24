@@ -92,6 +92,7 @@ export const es = {
     noSePudo: 'No se pudo conectar',
     sinWalletConnect:
       'Esta versión se compiló sin WalletConnect, así que no hay forma de abrir una wallet desde aquí. Hace falta compilar el APK con',
+    usarOtra: 'Usar otra',
     pinTitulo: 'Tu PIN del llavero. Con él, firmar deja de sacarte de la app.',
   },
 
@@ -241,7 +242,7 @@ export const es = {
     limpiar: 'Limpiar',
     sinAgentes: 'Todavía no hay ningún agente registrado en la cadena.',
     sinResultados: 'Ninguno se llama así ni hace eso.',
-    porEncargo: (precio: string, moneda: string) => `${precio} ${moneda} · encargo`,
+    porEncargo: 'encargo',
     sinPrecio: 'sin precio de encargo',
     tareas: (n: number) => `· ${n} ${n === 1 ? 'tarea' : 'tareas'}`,
     sinValoraciones: '· sin valoraciones',
@@ -398,8 +399,10 @@ export const es = {
   },
 
   hilo: {
+    hoy: 'Hoy',
+    ayer: 'Ayer',
     volver: 'Volver',
-    porMensaje: (cantidad: string, moneda: string) => `${cantidad} ${moneda} por mensaje`,
+    porMensaje: 'por mensaje',
     soloEncargos: 'solo acepta encargos',
     encargar: 'Encargar',
     sinHablar:
@@ -596,6 +599,12 @@ export const es = {
   },
 
   informe: {
+    grafico: 'Lo cobrado, mes a mes',
+    graficoPie: (moneda: string) => `Últimos meses, en ${moneda}. Los vacíos son meses sin cobrar.`,
+    subio: (pct: string) => `+${pct} % sobre el mes anterior`,
+    bajo: (pct: string) => `−${pct} % sobre el mes anterior`,
+    igual: 'Igual que el mes anterior',
+    unSoloMes: 'Un solo mes con movimiento: todavía no hay con qué comparar',
     volver: 'Volver',
     titulo: 'Informe',
     subtitulo: (nombre: string) => `${nombre} · lo que entró y lo que se quedó`,

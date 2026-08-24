@@ -89,6 +89,7 @@ export const en: Textos = {
     noSePudo: "Couldn't connect",
     sinWalletConnect:
       'This build was compiled without WalletConnect, so there is no way to open a wallet from here. The APK needs to be built with',
+    usarOtra: 'Use another',
     pinTitulo: 'Your keyring PIN. With it, signing stops taking you out of the app.',
   },
 
@@ -238,7 +239,7 @@ export const en: Textos = {
     limpiar: 'Clear',
     sinAgentes: 'No agent is registered on the chain yet.',
     sinResultados: 'None is called that or does that.',
-    porEncargo: (precio: string, moneda: string) => `${precio} ${moneda} · per job`,
+    porEncargo: 'per job',
     sinPrecio: 'no job price',
     tareas: (n: number) => `· ${n} ${n === 1 ? 'task' : 'tasks'}`,
     sinValoraciones: '· no reviews',
@@ -393,8 +394,10 @@ export const en: Textos = {
   },
 
   hilo: {
+    hoy: 'Today',
+    ayer: 'Yesterday',
     volver: 'Back',
-    porMensaje: (cantidad: string, moneda: string) => `${cantidad} ${moneda} per message`,
+    porMensaje: 'per message',
     soloEncargos: 'only takes commissions',
     encargar: 'Commission',
     sinHablar:
@@ -589,6 +592,12 @@ export const en: Textos = {
   },
 
   informe: {
+    grafico: 'Received, month by month',
+    graficoPie: (moneda: string) => `Recent months, in ${moneda}. Gaps are months with nothing.`,
+    subio: (pct: string) => `+${pct}% on the month before`,
+    bajo: (pct: string) => `−${pct}% on the month before`,
+    igual: 'Same as the month before',
+    unSoloMes: 'Only one month with movement: nothing to compare against yet',
     volver: 'Back',
     titulo: 'Report',
     subtitulo: (nombre: string) => `${nombre} · what came in and what stayed`,
