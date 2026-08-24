@@ -6,6 +6,8 @@ import Icono from '~/componentes/Icono';
 import type { NombreIcono } from '~/componentes/Icono';
 import { avisosEncendidos, encenderAvisos, hayAvisos, pedirPermiso } from '~/lib/avisos';
 import { useSesion } from '~/lib/sesion';
+import { IDIOMAS, cambiarIdioma, useIdioma, useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * El menú de la app.
@@ -26,13 +28,14 @@ import { useSesion } from '~/lib/sesion';
  */
 export default function Menu(): React.ReactElement {
   const [abierto, setAbierto] = useState(false);
+  const T = useTextos();
 
   return (
     <>
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        aria-label="Menú"
+        aria-label={T.comun.menu}
         className="pulsable tocable flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line"
       >
         <Icono nombre="menu" tamano={18} color="#C8C3DC" grosor={1.9} />
@@ -47,7 +50,10 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
   const navegar = useNavigate();
   const { connected, addressShort, connect, disconnect } = useWallet();
   const sesion = useSesion();
+  const T = useTextos();
+  const idioma = useIdioma();
   const [avisos, setAvisos] = useState(() => avisosEncendidos());
+  const [eligiendoIdioma, setEligiendoIdioma] = useState(false);
 
   const ir = (a: string): void => {
     onCerrar();
@@ -77,7 +83,7 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
           el menú de lo que hay detrás para que se lea de una ojeada. */}
       <button
         type="button"
-        aria-label="Cerrar"
+        aria-label={T.comun.cerrar}
         className="absolute inset-0 bg-[rgba(12,10,18,.45)]"
         onClick={onCerrar}
       />
@@ -95,11 +101,11 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
                     tamano={12}
                     color={sesion.abierta ? '#E29A2E' : '#948DAE'}
                   />
-                  {sesion.abierta ? 'Firma en este teléfono' : 'Firma en tu wallet'}
+                  {sesion.abierta ? T.menu.firmaAqui : T.menu.firmaFuera}
                 </p>
               </>
             ) : (
-              <p className="text-[13px] text-ink-2">Sin wallet conectada</p>
+              <p className="text-[13px] text-ink-2">{T.menu.sinWallet}</p>
             )}
             <button
               type="button"
@@ -110,13 +116,57 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
               }}
               className="pulsable mt-2.5 w-full rounded-full border border-line py-2 text-[12.5px] font-medium text-ink-2"
             >
-              {connected ? 'Desconectar' : 'Conectar wallet'}
+              {connected ? T.comun.desconectar : T.comun.conectarWallet}
             </button>
           </div>
 
-          <Fila icono="llave" texto="Tu llavero" onClick={() => ir('/llavero')} />
-          <Fila icono="hexagono" texto="Tus agentes" onClick={() => ir('/agentes')} />
-          <Fila icono="cartera" texto="Tu cartera" onClick={() => ir('/cartera')} />
+          {/* El idioma reemplaza el contenido del panel en vez de abrir otra
+              cosa encima: son cuatro filas y volver tiene que costar un toque. */}
+          {eligiendoIdioma ? (
+            <>
+              {IDIOMAS.map((i) => (
+                <button
+                  key={i.codigo}
+                  type="button"
+                  onClick={() => {
+                    cambiarIdioma(i.codigo);
+                    setEligiendoIdioma(false);
+                    // Y se cierra el menú entero: si se queda abierto, tapa
+                    // justo la pantalla que la persona acaba de cambiar.
+                    onCerrar();
+                  }}
+                  className="pulsable flex w-full items-center gap-3 border-t border-line px-4 py-3 text-left"
+                >
+                  <span className="grow text-[13.5px]">{i.nombre}</span>
+                  {i.codigo === idioma && <Icono nombre="check" tamano={15} color="#92A268" grosor={2.4} />}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setEligiendoIdioma(false)}
+                className="pulsable flex w-full items-center gap-3 border-t border-line px-4 py-3 text-left"
+              >
+                <Icono nombre="atras" tamano={15} color="#948DAE" className="shrink-0" />
+                <span className="grow text-[13.5px] text-ink-2">{T.comun.atras}</span>
+              </button>
+            </>
+          ) : (
+            <>
+          <Fila icono="llave" texto={T.menu.llavero} onClick={() => ir('/llavero')} />
+          <Fila icono="hexagono" texto={T.menu.agentes} onClick={() => ir('/agentes')} />
+          <Fila icono="cartera" texto={T.menu.cartera} onClick={() => ir('/cartera')} />
+
+          <button
+            type="button"
+            onClick={() => setEligiendoIdioma(true)}
+            className="pulsable flex w-full items-center gap-3 border-t border-line px-4 py-3 text-left"
+          >
+            <Icono nombre="hoja" tamano={17} color="#948DAE" className="shrink-0" />
+            <span className="grow text-[13.5px]">{T.menu.idioma}</span>
+            <span className="shrink-0 text-[12.5px] text-ink-3">
+              {IDIOMAS.find((i) => i.codigo === idioma)?.nombre}
+            </span>
+          </button>
 
           {/* Solo dentro del APK: en el navegador no hay a quién pedirle
               permiso, y un interruptor que no puede hacer nada estorba. */}
@@ -127,16 +177,17 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
               className="pulsable flex w-full items-center gap-3 border-t border-line px-4 py-3 text-left"
             >
               <Icono nombre="reloj" tamano={17} color="#948DAE" className="shrink-0" />
-              <span className="grow text-[13.5px]">Avisos del teléfono</span>
+              <span className="grow text-[13.5px]">{T.menu.avisos}</span>
               <Interruptor encendido={avisos} />
             </button>
           )}
 
+            </>
+          )}
+
           <div className="border-t border-line px-4 py-3">
-            <p className="text-[11px] text-ink-3">
-              Panal · {activeChain.name} ({activeChain.id})
-            </p>
-            <p className="mt-0.5 text-[11px] text-ink-3">{version()}</p>
+            <p className="text-[11px] text-ink-3">{T.menu.red(activeChain.name, activeChain.id)}</p>
+            <p className="mt-0.5 text-[11px] text-ink-3">{version(T)}</p>
           </div>
         </div>
       </div>
@@ -190,7 +241,7 @@ function Interruptor({ encendido }: { encendido: boolean }): React.ReactElement 
  * `versionName`. Sin ella —al compilar a mano— no se inventa nada: se dice que
  * es una compilación de desarrollo, que es lo que es.
  */
-function version(): string {
+function version(T: Textos): string {
   const v = import.meta.env.VITE_VERSION?.trim();
-  return v ? `Versión ${v}` : 'Compilación de desarrollo';
+  return v ? T.menu.version(v) : T.menu.sinVersion;
 }

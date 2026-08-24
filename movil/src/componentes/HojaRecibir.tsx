@@ -6,6 +6,7 @@ import Hoja, { Nota } from '~/componentes/Hoja';
 import Icono from '~/componentes/Icono';
 import { copiar } from '~/lib/wallets';
 import { troceada } from '~/lib/formato';
+import type { Textos } from '~/i18n/idiomas';
 import type { WalletGuardada } from '~/lib/llavero';
 
 /**
@@ -26,9 +27,11 @@ import type { WalletGuardada } from '~/lib/llavero';
 export default function HojaRecibir({
   wallet,
   onCerrar,
+  T,
 }: {
   wallet: WalletGuardada;
   onCerrar: () => void;
+  T: Textos;
 }): React.ReactElement {
   const [copiado, setCopiado] = useState(false);
 
@@ -46,9 +49,9 @@ export default function HojaRecibir({
     }
     try {
       await Share.share({
-        title: `Dirección de ${wallet.nombre}`,
+        title: T.recibir.titulo(wallet.nombre),
         text: wallet.direccion,
-        dialogTitle: 'Mandar la dirección',
+        dialogTitle: T.recibir.compartir,
       });
     } catch {
       /* cerrar el selector no es un fallo */
@@ -56,14 +59,11 @@ export default function HojaRecibir({
   };
 
   return (
-    <Hoja abierta titulo={`Meterle a ${wallet.nombre}`} onCerrar={onCerrar}>
-      <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2">
-        Manda MON o $PANAL a esta dirección desde donde ya los tengas: tu otra wallet, un exchange,
-        otra persona.
-      </p>
+    <Hoja abierta titulo={T.recibir.titulo(wallet.nombre)} onCerrar={onCerrar}>
+      <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2">{T.recibir.texto}</p>
 
       <div className="mt-4 rounded-[14px] border border-line bg-cream p-4">
-        <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">Su dirección</p>
+        <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">{T.comun.suDireccion}</p>
         <p className="seleccionable mt-2.5 font-mono text-[14px] leading-[1.7] tracking-[0.02em]">
           {troceada(wallet.direccion)}
         </p>
@@ -80,7 +80,7 @@ export default function HojaRecibir({
             tamano={15}
             color={copiado ? '#92A268' : '#948DAE'}
           />
-          {copiado ? 'Copiada' : 'Copiar'}
+          {copiado ? T.comun.copiada : T.comun.copiar}
         </button>
         <button
           type="button"
@@ -88,21 +88,15 @@ export default function HojaRecibir({
           className="pulsable tocable flex grow items-center justify-center gap-2 rounded-full border border-line py-2.5 text-[13.5px] font-medium text-ink-2"
         >
           <Icono nombre="fuera" tamano={15} color="#948DAE" />
-          Compartir
+          {T.recibir.compartir}
         </button>
       </div>
 
       {/* La red equivocada es la forma más común de perder dinero recibiendo, y
           no la avisa nadie: la transacción sale bien, solo que en otra cadena. */}
-      <Nota tono="miel">
-        Tiene que salir por {activeChain.name} ({activeChain.id}). La misma dirección existe en otras
-        redes, y lo que llegue por otra no aparece aquí ni se puede recuperar desde la app.
-      </Nota>
+      <Nota tono="miel">{T.recibir.redAviso(activeChain.name, activeChain.id)}</Nota>
 
-      <Nota>
-        Deja algo de MON aunque solo vayas a mover $PANAL: la comisión de red se paga en MON, y una
-        wallet con $PANAL y cero MON no puede mandar nada.
-      </Nota>
+      <Nota>{T.recibir.gasAviso}</Nota>
 
       <div className="pb-2" />
     </Hoja>

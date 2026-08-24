@@ -97,7 +97,7 @@ const conJulio = armar(
 const ps = periodosDe(conJulio);
 dice('dos meses', ps.length === 2);
 dice('el más reciente primero', ps[0].clave > ps[1].clave);
-dice('con nombre en español', ps[0].etiqueta.includes('de 2026'));
+dice('trae el año y el mes en crudo', ps[0].anio === 2026 && ps[0].mes >= 1 && ps[0].mes <= 12);
 const soloAgosto = enPeriodo(conJulio, ps.find((p) => p.clave === '2026-08'));
 dice('agosto trae siete', soloAgosto[0].lineas.length === 7);
 dice('y su neto es el de agosto', soloAgosto[0].neto === w(85361.25));

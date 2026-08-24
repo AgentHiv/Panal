@@ -13,6 +13,8 @@ import type { Expediente as Expe } from '~/lib/expedientes';
 import { aHtml, guardarCopia, nombreDe } from '~/lib/copia';
 import { monto } from '~/lib/formato';
 import Icono from '~/componentes/Icono';
+import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * Un encargo, entero.
@@ -28,12 +30,13 @@ import Icono from '~/componentes/Icono';
  * ya protege `/result`, se comprueba el keccak256 contra lo que ancló la
  * cadena, y solo entonces se guarda.
  */
-const ESTADOS: Record<number, { texto: string; color: string }> = {
-  [ESTADO.Abierto]: { texto: 'Abierto', color: '#B7A8FC' },
-  [ESTADO.Entregado]: { texto: 'Entregado', color: '#E29A2E' },
-  [ESTADO.Completado]: { texto: 'Completado', color: '#92A268' },
-  [ESTADO.Disputado]: { texto: 'En disputa', color: '#C9653B' },
-  [ESTADO.Cancelado]: { texto: 'Cancelado', color: '#948DAE' },
+/** El color no cambia de idioma; el rótulo sale de `T` por su clave. */
+const ESTADOS: Record<number, { clave: keyof Textos['expediente']; color: string }> = {
+  [ESTADO.Abierto]: { clave: 'abierto', color: '#B7A8FC' },
+  [ESTADO.Entregado]: { clave: 'entregado', color: '#E29A2E' },
+  [ESTADO.Completado]: { clave: 'completado', color: '#92A268' },
+  [ESTADO.Disputado]: { clave: 'disputado', color: '#C9653B' },
+  [ESTADO.Cancelado]: { clave: 'cancelado', color: '#948DAE' },
 };
 
 export default function Expediente(): React.ReactElement {
@@ -46,6 +49,7 @@ export default function Expediente(): React.ReactElement {
   const [trayendo, setTrayendo] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
   const [copiando, setCopiando] = useState(false);
+  const T = useTextos();
   const [aviso, setAviso] = useState<string | null>(null);
   // Cambia al guardar la entrega, y con eso se rearma el expediente.
   const [version, setVersion] = useState(0);
@@ -62,12 +66,12 @@ export default function Expediente(): React.ReactElement {
   }, [tarea, address, version]);
 
   if (loading && !e) {
-    return <Mensaje texto="Leyendo la cadena…" />;
+    return <Mensaje texto={T.expediente.leyendo} />;
   }
   if (!e) {
     return (
       <Mensaje
-        texto="Ese encargo no aparece entre los tuyos. Puede ser de otra wallet."
+        texto={T.expediente.noAparece}
         onVolver={() => navegar('/archivo')}
       />
     );
@@ -75,7 +79,9 @@ export default function Expediente(): React.ReactElement {
 
   const yaEntregado =
     e.cadena.estado === ESTADO.Entregado || e.cadena.estado === ESTADO.Completado;
-  const estado = ESTADOS[e.cadena.estado] ?? { texto: '—', color: '#948DAE' };
+  const estado = ESTADOS[e.cadena.estado];
+  const rotulo = estado ? (T.expediente[estado.clave] as string) : '—';
+  const color = estado?.color ?? '#948DAE';
 
   /**
    * Trae la entrega del agente y la guarda si cuadra con la cadena.
@@ -87,7 +93,7 @@ export default function Expediente(): React.ReactElement {
     // `useAgente` ya lo sacó del registro con `extractBotUrl`.
     const botUrl = datosAgente?.botUrl;
     if (!botUrl || !address || !tarea) {
-      setFallo('Este agente no publica endpoint en el registro, así que no hay a quién pedírsela.');
+      setFallo(T.expediente.sinEndpoint);
       return;
     }
     setTrayendo(true);
@@ -101,7 +107,7 @@ export default function Expediente(): React.ReactElement {
       if (!res.ok) {
         setFallo(
           res.status === 403
-            ? 'El agente no reconoce esa firma como del cliente de este encargo.'
+            ? T.expediente.firmaRechazada
             : `El agente respondió ${res.status}.`,
         );
         return;
@@ -109,19 +115,19 @@ export default function Expediente(): React.ReactElement {
       const cuerpo = (await res.json()) as { resultText?: string };
       const texto = cuerpo.resultText ?? '';
       if (!texto) {
-        setFallo('El agente devolvió una entrega vacía.');
+        setFallo(T.expediente.entregaVacia);
         return;
       }
       // Si el keccak256 no cuadra, esto NO es lo que se ancló en la cadena y no
       // se guarda: una copia que no cuadra es peor que no tener copia.
       if (!guardarEntrega(e.id, texto, e.cadena.resultHash)) {
-        setFallo('Lo que ha devuelto el agente no cuadra con el hash de la cadena. No se guarda.');
+        setFallo(T.expediente.noCuadraHash);
         return;
       }
       setVersion((v) => v + 1);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      setFallo(/reject|denied|user/i.test(msg) ? null : 'No se pudo hablar con el agente.');
+      setFallo(/reject|denied|user/i.test(msg) ? null : T.expediente.noSePudoHablar);
     } finally {
       setTrayendo(false);
     }
@@ -132,7 +138,7 @@ export default function Expediente(): React.ReactElement {
     setAviso(null);
     const r = await guardarCopia(nombreDe(e), aHtml(e));
     setCopiando(false);
-    setAviso(r.ok ? `Copia lista en ${r.donde}.` : `No se pudo sacar la copia: ${r.porque}`);
+    setAviso(r.ok ? T.archivo.copiaLista(r.donde) : T.archivo.copiaFallo(r.porque));
   };
 
   return (
@@ -142,13 +148,13 @@ export default function Expediente(): React.ReactElement {
           type="button"
           onClick={() => navegar(-1)}
           className="pulsable tocable -ml-1 flex h-9 w-9 items-center justify-center"
-          aria-label="Volver"
+          aria-label={T.expediente.volver}
         >
           <Icono nombre="atras" tamano={19} color="#F2EFFA" />
         </button>
         <div className="min-w-0 grow">
           <h1 className="font-display text-[19px] font-semibold -tracking-[0.015em]">
-            Encargo #{e.id}
+            {T.expediente.titulo(String(e.id))}
           </h1>
           <p className="truncate text-[11.5px] text-ink-3">
             {datosAgente?.nombre ?? corta(e.agente)} · {dia(e.cadena.creado)}
@@ -159,7 +165,7 @@ export default function Expediente(): React.ReactElement {
           onClick={alCopiar}
           disabled={copiando}
           className="pulsable tocable flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line disabled:opacity-50"
-          aria-label="Guardar el expediente"
+          aria-label={T.expediente.guardarBoton}
         >
           <Icono nombre="bajar" tamano={15} color="#C8C3DC" grosor={1.9} />
         </button>
@@ -168,34 +174,37 @@ export default function Expediente(): React.ReactElement {
       <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-5 py-4">
         <div
           className="flex shrink-0 items-center gap-2 rounded-[12px] border px-3.5 py-2.5"
-          style={{ borderColor: `${estado.color}55`, background: `${estado.color}14` }}
+          style={{ borderColor: `${color}55`, background: `${color}14` }}
         >
-          <span className="h-2 w-2 rounded-full" style={{ background: estado.color }} />
-          <span className="text-[13px] font-semibold" style={{ color: estado.color }}>
-            {estado.texto}
+          <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+          <span className="text-[13px] font-semibold" style={{ color }}>
+            {rotulo}
           </span>
-          <span className="ml-auto font-mono text-[13px]" style={{ color: estado.color }}>
+          <span className="ml-auto font-mono text-[13px]" style={{ color }}>
             {monto(e.cadena.importe)} {e.cadena.simbolo}
           </span>
         </div>
 
-        <Seccion titulo="En la cadena · para siempre" />
+        <Seccion titulo={T.expediente.enLaCadena} />
         <div className="shrink-0 divide-y divide-line overflow-hidden rounded-[14px] border border-line">
-          <Fila k="Cliente" v={corta(e.cliente)} />
-          <Fila k="Agente" v={corta(e.agente)} />
-          <Fila k="Creado" v={dia(e.cadena.creado)} />
-          <Fila k="Plazo" v={dia(e.cadena.plazo)} />
-          <Fila k="Entregado" v={e.cadena.entregado ? dia(e.cadena.entregado) : '—'} />
-          <Fila k="Hash de lo pedido" v={cortaHash(e.cadena.taskHash)} />
-          <Fila k="Hash de la entrega" v={cortaHash(e.cadena.resultHash)} />
+          <Fila k={T.expediente.cliente} v={corta(e.cliente)} />
+          <Fila k={T.expediente.agente} v={corta(e.agente)} />
+          <Fila k={T.expediente.creado} v={dia(e.cadena.creado)} />
+          <Fila k={T.expediente.plazo} v={dia(e.cadena.plazo)} />
+          <Fila
+            k={T.expediente.filaEntregado}
+            v={e.cadena.entregado ? dia(e.cadena.entregado) : '—'}
+          />
+          <Fila k={T.expediente.hashPedido} v={cortaHash(e.cadena.taskHash)} />
+          <Fila k={T.expediente.hashEntrega} v={cortaHash(e.cadena.resultHash)} />
         </div>
 
-        <Seccion titulo="En tu teléfono · solo aquí" />
+        <Seccion titulo={T.expediente.enTuTelefono} />
 
         {/* Lo que pediste */}
         <div className="shrink-0 rounded-[14px] border border-line p-3.5">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-[13px] text-ink-2">Lo que pediste</p>
+            <p className="text-[13px] text-ink-2">{T.expediente.loQuePediste}</p>
             {e.local.brief && (
               <span
                 className={`flex shrink-0 items-center gap-1 text-[11.5px] ${
@@ -208,7 +217,7 @@ export default function Expediente(): React.ReactElement {
                   color={e.local.briefCuadra ? '#92A268' : '#C9653B'}
                   grosor={2.4}
                 />
-                {e.local.briefCuadra ? 'cuadra con la cadena' : 'NO cuadra'}
+                {e.local.briefCuadra ? T.expediente.cuadra : T.expediente.noCuadra}
               </span>
             )}
           </div>
@@ -223,8 +232,7 @@ export default function Expediente(): React.ReactElement {
             </>
           ) : (
             <p className="mt-2 text-[12.5px] leading-[1.55] text-terra">
-              No está en este teléfono. En la cadena solo viaja su hash, así que el texto de lo que
-              pediste se perdió — de otro móvil, o porque el archivo llegó a su tope y lo tiró.
+              {T.expediente.briefPerdido}
             </p>
           )}
         </div>
@@ -232,11 +240,11 @@ export default function Expediente(): React.ReactElement {
         {/* Lo que entregó */}
         <div className="shrink-0 rounded-[14px] border border-line p-3.5">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-[13px] text-ink-2">Lo que entregó</p>
+            <p className="text-[13px] text-ink-2">{T.expediente.loQueEntrego}</p>
             {e.local.entrega && (
               <span className="flex shrink-0 items-center gap-1 text-[11.5px] text-olive">
                 <Icono nombre="check" tamano={12} color="#92A268" grosor={2.4} />
-                cuadra con la cadena
+                {T.expediente.cuadra}
               </span>
             )}
           </div>
@@ -255,7 +263,7 @@ export default function Expediente(): React.ReactElement {
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-medium">{a.name}</p>
                     <p className="mt-0.5 text-[11px] text-ink-3">
-                      {formatBytes(a.size)} · el archivo se baja del agente, aquí está su hash
+                      {T.expediente.adjuntoPie(formatBytes(a.size))}
                     </p>
                   </div>
                 </div>
@@ -267,8 +275,7 @@ export default function Expediente(): React.ReactElement {
           ) : yaEntregado ? (
             <>
               <p className="mt-2 text-[12.5px] leading-[1.55] text-ink-2">
-                No la tienes. Se puede volver a pedir al agente mientras siga en pie; si no, el hash
-                de arriba ya no prueba nada por sí solo.
+                {T.expediente.entregaNoLaTienes}
               </p>
               <button
                 type="button"
@@ -277,16 +284,16 @@ export default function Expediente(): React.ReactElement {
                 className="pulsable tocable mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-line py-2.5 text-[13.5px] font-medium text-ink-2 disabled:opacity-50"
               >
                 <Icono nombre="bajar" tamano={15} color="#948DAE" />
-                {trayendo ? 'Pidiéndosela…' : 'Traer la entrega y guardarla'}
+                {trayendo ? T.expediente.pidiendola : T.expediente.traerEntrega}
               </button>
               <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">
-                Firmarás un mensaje para que el agente sepa que eres su cliente. No cuesta gas.
+                {T.expediente.firmarasPie}
               </p>
               {fallo && <p className="mt-2 text-[12px] text-terra">{fallo}</p>}
             </>
           ) : (
             <p className="mt-2 text-[12.5px] leading-[1.55] text-ink-3">
-              Todavía no ha entregado nada. Cuando lo haga, aquí queda el texto.
+              {T.expediente.sinEntregar}
             </p>
           )}
         </div>
@@ -299,9 +306,9 @@ export default function Expediente(): React.ReactElement {
           >
             <Icono nombre="chat" tamano={17} color="#948DAE" className="shrink-0" />
             <div className="min-w-0 grow">
-              <p className="text-[13.5px] font-medium">La conversación</p>
+              <p className="text-[13.5px] font-medium">{T.expediente.laConversacion}</p>
               <p className="mt-0.5 text-[11.5px] text-ink-3">
-                {e.local.hilo.length} mensajes, {rango(e.local.hilo)}
+                {T.expediente.mensajes(e.local.hilo.length, rango(e.local.hilo, T))}
               </p>
             </div>
             <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180" />
@@ -314,10 +321,10 @@ export default function Expediente(): React.ReactElement {
           disabled={copiando}
           className="pulsable tocable mt-1 shrink-0 rounded-full bg-monad py-3.5 text-[15px] font-semibold text-white shadow-monad disabled:opacity-60"
         >
-          {copiando ? 'Preparando…' : 'Guardar el expediente'}
+          {copiando ? T.expediente.preparando : T.expediente.guardarBoton}
         </button>
         <p className="shrink-0 px-1 text-[11.5px] leading-[1.5] text-ink-3">
-          Un archivo con todo: lo de la cadena, tu brief, la entrega y el hilo. Se abre sin la app.
+          {T.expediente.guardarPie}
         </p>
         {aviso && <p className="shrink-0 px-1 text-[12px] text-ink-2">{aviso}</p>}
       </div>
@@ -364,14 +371,24 @@ function Mensaje({ texto, onVolver }: { texto: string; onVolver?: () => void }):
 const corta = (d: string): string => `${d.slice(0, 6)}…${d.slice(-4)}`;
 const cortaHash = (h: string): string => (h.length > 14 ? `${h.slice(0, 8)}…${h.slice(-4)}` : h);
 
+/**
+ * La fecha en el idioma de la app, no siempre en español.
+ *
+ * `etiquetaIdioma()` da el `es-ES` / `zh-CN` que corresponde. Sin esto una app
+ * en chino escribiría «24 ago 2026»: la fecha correcta en el idioma que no es.
+ */
 function dia(ms: number): string {
-  return new Date(ms).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(ms).toLocaleDateString(etiquetaIdioma(), {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
-function rango(hilo: { cuando: number }[]): string {
+function rango(hilo: { cuando: number }[], T: Textos): string {
   const d = (ms: number): string =>
-    new Date(ms).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+    new Date(ms).toLocaleDateString(etiquetaIdioma(), { day: 'numeric', month: 'long' });
   const a = d(hilo[0]!.cuando);
   const b = d(hilo[hilo.length - 1]!.cuando);
-  return a === b ? `el ${a}` : `del ${a} al ${b}`;
+  return a === b ? T.expediente.elDia(a) : T.expediente.delAl(a, b);
 }

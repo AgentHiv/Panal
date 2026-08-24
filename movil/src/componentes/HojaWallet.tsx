@@ -3,6 +3,8 @@ import { WALLETS, abrirFuera, copiar } from '~/lib/wallets';
 import { recordarWallet } from '~/lib/regreso';
 import Icono from '~/componentes/Icono';
 import type { WalletGuardada } from '~/lib/llavero';
+import { useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * La hoja de conectar la wallet.
@@ -50,6 +52,7 @@ export default function HojaWallet({
   onCerrar: () => void;
 }): React.ReactElement | null {
   const [copiado, setCopiado] = useState(false);
+  const T = useTextos();
 
   if (!abierta) return null;
 
@@ -62,42 +65,42 @@ export default function HojaWallet({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end bg-[rgba(12,10,18,.72)]">
-      <button type="button" aria-label="Cerrar" className="grow" onClick={onCerrar} />
+      <button type="button" aria-label={T.comun.cerrar} className="grow" onClick={onCerrar} />
 
       <div className="con-barra-abajo max-h-[92%] overflow-y-auto rounded-t-[22px] border-t border-line bg-cream px-5 pt-2.5 shadow-hoja">
         <div className="mx-auto mb-4 h-1 w-[38px] rounded-full bg-line" />
 
         <h2 className="font-display text-[21px] font-semibold -tracking-[0.015em]">
-          Conectar tu wallet
+          {T.hojaWallet.titulo}
         </h2>
         <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2">
-          Tu wallet es tu cuenta. Panal no guarda ninguna clave ni te pide correo.
+          {T.hojaWallet.entradilla}
         </p>
 
         <DelTelefono
           wallets={ordenar(delTelefono, recordada)}
           onElegir={onElegirDelTelefono}
           onCrear={onIrAlLlavero}
+          T={T}
         />
 
         <div className="mt-5 flex items-center gap-3">
           <div className="h-px grow bg-line" />
           <span className="text-[11px] uppercase tracking-[0.06em] text-ink-3">
-            o la que ya usas
+            {T.hojaWallet.oLaQueYaUsas}
           </span>
           <div className="h-px grow bg-line" />
         </div>
         <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">
-          Se abre tu wallet, apruebas allí y vuelves. Cada firma te saca de Panal, pero lo que
-          firmas te lo enseña ella.
+          {T.hojaWallet.fueraPie}
         </p>
 
         {!hayWalletConnect ? (
-          <SinWalletConnect />
+          <SinWalletConnect T={T} />
         ) : fallo ? (
-          <Fallo texto={fallo} />
+          <Fallo texto={fallo} T={T} />
         ) : !uri ? (
-          <Esperando />
+          <Esperando T={T} />
         ) : (
           <>
             {/* Lo primero es lo genérico: Android saca el selector con TODAS
@@ -115,10 +118,10 @@ export default function HojaWallet({
               className="pulsable mt-5 flex h-[54px] w-full items-center justify-center gap-2.5 rounded-full bg-monad text-[15px] font-semibold text-white shadow-monad"
             >
               <Icono nombre="fuera" tamano={18} color="#fff" grosor={2} />
-              Abrir mi wallet
+              {T.hojaWallet.abrirMiWallet}
             </button>
             <p className="mt-2 text-center text-[11.5px] leading-[1.45] text-ink-3">
-              Se abre la wallet que tengas instalada, apruebas allí y vuelves aquí.
+              {T.hojaWallet.abrirMiWalletPie}
             </p>
 
             <ul className="mt-4 overflow-hidden rounded-[14px] border border-line">
@@ -155,10 +158,10 @@ export default function HojaWallet({
               className="pulsable tocable mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-line py-3 text-[13.5px] font-medium text-ink-2"
             >
               <Icono nombre={copiado ? 'check' : 'copiar'} tamano={16} color={copiado ? '#92A268' : '#948DAE'} />
-              {copiado ? 'Enlace copiado' : 'Copiar el enlace'}
+              {copiado ? T.hojaWallet.enlaceCopiado : T.hojaWallet.copiarEnlace}
             </button>
             <p className="mt-2 pb-1 text-center text-[11.5px] leading-[1.45] text-ink-3">
-              Para pegarlo a mano en tu wallet, en «escanear» o «conectar».
+              {T.hojaWallet.copiarPie}
             </p>
           </>
         )}
@@ -186,21 +189,21 @@ function SelloHex({ color, sigla }: { color: string; sigla: string }): React.Rea
   );
 }
 
-function Esperando(): React.ReactElement {
+function Esperando({ T }: { T: Textos }): React.ReactElement {
   return (
     <div className="flex flex-col items-center gap-3 py-10">
       <div className="h-7 w-7 animate-spin rounded-full border-2 border-line border-t-monad" />
-      <p className="text-[13px] text-ink-3">Preparando la conexión…</p>
+      <p className="text-[13px] text-ink-3">{T.hojaWallet.preparando}</p>
     </div>
   );
 }
 
-function Fallo({ texto }: { texto: string }): React.ReactElement {
+function Fallo({ texto, T }: { texto: string; T: Textos }): React.ReactElement {
   return (
     <div className="mt-4 flex gap-2.5 rounded-xl border border-terra/40 bg-terra/10 px-3.5 py-3">
       <Icono nombre="info" tamano={16} color="#C9653B" className="mt-px shrink-0" />
       <div className="min-w-0">
-        <p className="text-[13px] font-semibold text-terra">No se pudo conectar</p>
+        <p className="text-[13px] font-semibold text-terra">{T.hojaWallet.noSePudo}</p>
         <p className="seleccionable mt-1 break-words text-[12px] leading-[1.5] text-ink-2">{texto}</p>
       </div>
     </div>
@@ -214,13 +217,13 @@ function Fallo({ texto }: { texto: string }): React.ReactElement {
  * poder abrirse: es un fallo de compilación, no del teléfono, y quien lo lea
  * puede contarlo tal cual.
  */
-function SinWalletConnect(): React.ReactElement {
+function SinWalletConnect({ T }: { T: Textos }): React.ReactElement {
   return (
     <div className="mt-4 flex gap-2.5 rounded-xl bg-sand px-3.5 py-3">
       <Icono nombre="info" tamano={16} color="#948DAE" className="mt-px shrink-0" />
       <p className="text-[12px] leading-[1.55] text-ink-3">
-        Esta versión se compiló sin WalletConnect, así que no hay forma de abrir una wallet desde
-        aquí. Hace falta compilar el APK con <span className="font-mono">VITE_WALLETCONNECT_PROJECT_ID</span>.
+        {T.hojaWallet.sinWalletConnect}{' '}
+        <span className="font-mono">VITE_WALLETCONNECT_PROJECT_ID</span>.
       </p>
     </div>
   );
@@ -239,10 +242,12 @@ function DelTelefono({
   wallets,
   onElegir,
   onCrear,
+  T,
 }: {
   wallets: WalletGuardada[];
   onElegir: (w: WalletGuardada) => void;
   onCrear: () => void;
+  T: Textos;
 }): React.ReactElement {
   if (wallets.length === 0) {
     return (
@@ -253,9 +258,9 @@ function DelTelefono({
       >
         <Icono nombre="llave" tamano={18} color="#E29A2E" className="shrink-0" />
         <div className="min-w-0 grow">
-          <p className="text-[13.5px] font-medium">Crear una wallet aquí</p>
+          <p className="text-[13.5px] font-medium">{T.hojaWallet.crearAqui}</p>
           <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">
-            Se genera en el teléfono y firma sin salir de la app. Un minuto.
+            {T.hojaWallet.crearAquiPie}
           </p>
         </div>
         <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180" />
@@ -265,7 +270,9 @@ function DelTelefono({
 
   return (
     <>
-      <p className="mt-5 text-[11px] uppercase tracking-[0.06em] text-ink-3">La de este teléfono</p>
+      <p className="mt-5 text-[11px] uppercase tracking-[0.06em] text-ink-3">
+        {T.hojaWallet.deEsteTelefono}
+      </p>
       <ul className="mt-2 overflow-hidden rounded-[14px] border border-line">
         {wallets.map((w, i) => (
           <li key={w.id}>
@@ -287,10 +294,7 @@ function DelTelefono({
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">
-        Firma aquí dentro, sin abrir nada más. Lo que apruebas es lo que te enseña Panal: no hay una
-        segunda pantalla que te lo repita.
-      </p>
+      <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">{T.hojaWallet.dentroPie}</p>
     </>
   );
 }

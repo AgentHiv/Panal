@@ -66,15 +66,35 @@ export interface Envio {
   saldoPanal: bigint;
 }
 
+/**
+ * Qué es lo que impide firmar, o lo que conviene saber.
+ *
+ * Claves y no frases: esta función decide si un envío se puede firmar, y esa
+ * decisión es la misma en los cuatro idiomas. Con la frase dentro, el test
+ * comprobaba la redacción en vez de la regla. La pantalla las escribe.
+ */
+export type Pega =
+  | 'sin-destino'
+  | 'destino-malo'
+  | 'destino-soy-yo'
+  | 'sin-cantidad'
+  | 'cantidad-mala'
+  | 'cantidad-cero'
+  | 'no-hay-tanto'
+  | 'deja-gas'
+  | 'sin-mon-para-gas';
+
+export type AvisoEnvio = 'poco-mon';
+
 export interface Revision {
   /** Si se puede firmar. */
   ok: boolean;
   /** La cantidad ya en unidades mínimas; 0n si no se entiende. */
   wei: bigint;
   /** Lo que lo impide. `null` si no hay nada. */
-  pega: string | null;
+  pega: Pega | null;
   /** Lo que conviene saber pero no lo impide. */
-  aviso: string | null;
+  aviso: AvisoEnvio | null;
 }
 
 /**
@@ -89,30 +109,24 @@ export interface Revision {
 export function revisar(e: Envio): Revision {
   const wei = aWei(e.importe) ?? 0n;
   const saldo = e.moneda === '$PANAL' ? e.saldoPanal : e.saldoMon;
-  const no = (pega: string): Revision => ({ ok: false, wei, pega, aviso: null });
+  const no = (pega: Pega): Revision => ({ ok: false, wei, pega, aviso: null });
 
   const destino = e.destino.trim();
-  if (!destino) return no('Falta la dirección a la que mandarlo.');
-  if (!isAddress(destino, { strict: false }))
-    return no('Esa dirección no vale. Una de Monad son 42 caracteres y empieza por 0x.');
-  if (destino.toLowerCase() === e.mio.trim().toLowerCase())
-    return no('Esa es esta misma wallet. Pon la dirección de destino.');
+  if (!destino) return no('sin-destino');
+  if (!isAddress(destino, { strict: false })) return no('destino-malo');
+  if (destino.toLowerCase() === e.mio.trim().toLowerCase()) return no('destino-soy-yo');
 
-  if (!e.importe.trim()) return no('Escribe cuánto.');
-  if (aWei(e.importe) === null) return no('Eso no es una cantidad.');
-  if (wei === 0n) return no('La cantidad es cero.');
-  if (wei > saldo) return no(`No hay tanto ${e.moneda} en esta wallet.`);
+  if (!e.importe.trim()) return no('sin-cantidad');
+  if (aWei(e.importe) === null) return no('cantidad-mala');
+  if (wei === 0n) return no('cantidad-cero');
+  if (wei > saldo) return no('no-hay-tanto');
 
   // El gas se paga en MON siempre, se mande lo que se mande.
-  if (e.moneda === 'MON' && wei > maximo('MON', e.saldoMon, e.saldoPanal))
-    return no('Deja algo de MON para la comisión de red. Usa «Todo» y te lo calcula.');
-  if (e.moneda === '$PANAL' && e.saldoMon === 0n)
-    return no('Esta wallet no tiene MON, y la red cobra la comisión en MON. Mándale un poco antes.');
+  if (e.moneda === 'MON' && wei > maximo('MON', e.saldoMon, e.saldoPanal)) return no('deja-gas');
+  if (e.moneda === '$PANAL' && e.saldoMon === 0n) return no('sin-mon-para-gas');
 
-  const aviso =
-    e.moneda === '$PANAL' && e.saldoMon < RESERVA_GAS
-      ? 'Queda muy poco MON. Si la comisión sube, la transacción se cae.'
-      : null;
+  const aviso: AvisoEnvio | null =
+    e.moneda === '$PANAL' && e.saldoMon < RESERVA_GAS ? 'poco-mon' : null;
 
   return { ok: true, wei, pega: null, aviso };
 }

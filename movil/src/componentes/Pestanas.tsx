@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import Icono from '~/componentes/Icono';
 import type { NombreIcono } from '~/componentes/Icono';
+import { useTextos } from '~/i18n/idiomas';
 
 /**
  * Cuatro pestañas. La web tiene nueve rutas; aquí no cabe —ni hace falta— la
@@ -11,14 +12,16 @@ import type { NombreIcono } from '~/componentes/Icono';
  * y pasado eso se pierde lo más viejo sin avisar. Un aviso que hay que buscar
  * no es un aviso.
  */
-const PESTANAS: { a: string; etiqueta: string; icono: NombreIcono }[] = [
-  { a: '/chats', etiqueta: 'Chats', icono: 'chat' },
-  { a: '/mercado', etiqueta: 'Mercado', icono: 'bolsa' },
-  { a: '/archivo', etiqueta: 'Archivo', icono: 'carpeta' },
-  { a: '/saldo', etiqueta: 'Saldo', icono: 'cartera' },
+const PESTANAS: { a: string; clave: 'chats' | 'mercado' | 'archivo' | 'saldo'; icono: NombreIcono }[] = [
+  { a: '/chats', clave: 'chats', icono: 'chat' },
+  { a: '/mercado', clave: 'mercado', icono: 'bolsa' },
+  { a: '/archivo', clave: 'archivo', icono: 'carpeta' },
+  { a: '/saldo', clave: 'saldo', icono: 'cartera' },
 ];
 
 export default function Pestanas(): React.ReactElement {
+  const T = useTextos();
+
   return (
     <nav className="con-barra-abajo flex shrink-0 border-t border-line bg-noche px-2 pt-1.5">
       {PESTANAS.map((p) => (
@@ -42,7 +45,7 @@ export default function Pestanas(): React.ReactElement {
               <span
                 className={`text-[10.5px] font-semibold ${isActive ? 'text-honey' : 'text-ink-3'}`}
               >
-                {p.etiqueta}
+                {T.pestanas[p.clave]}
               </span>
             </>
           )}

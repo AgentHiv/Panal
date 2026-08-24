@@ -15,6 +15,9 @@ globalThis.localStorage = {
   removeItem: (k) => disco.delete(k),
 };
 if (!globalThis.crypto.randomUUID) globalThis.crypto.randomUUID = webcrypto.randomUUID.bind(webcrypto);
+// La copia se escribe en el idioma puesto, y el Node del CI detecta el suyo.
+// Sin fijarlo, el test comprobaría la traducción en vez del contenido.
+disco.set('panal:idioma:v1', 'es');
 
 const ex = await import('../src/lib/expedientes.ts');
 const cp = await import('../src/lib/copia.ts');

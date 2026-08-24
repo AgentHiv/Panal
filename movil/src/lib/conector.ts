@@ -35,6 +35,7 @@ import { SwitchChainError, UserRejectedRequestError, createWalletClient, http, n
 import type { Address, Hex, TypedDataDefinition } from 'viem';
 import { activeChain, publicClient } from '@/contracts/config';
 import { cerrarSesion, cuentaViva } from '~/lib/sesion';
+import { textos } from '~/i18n/idiomas';
 
 export const ID_LLAVERO = 'panal-llavero';
 
@@ -57,7 +58,7 @@ function exigirCuenta() {
   if (!cuenta) {
     // Es lo que le pasa a wagmi cuando alguien cierra la wallet sin aprobar, y
     // es lo que corresponde: el llavero cerrado no es un fallo de la app.
-    throw new UserRejectedRequestError(new Error('El llavero está cerrado. Ábrelo con tu PIN.'));
+    throw new UserRejectedRequestError(new Error(textos().comun.llaveroCerrado));
   }
   return cuenta;
 }
@@ -152,7 +153,7 @@ export type ProveedorLlavero = typeof PROVEEDOR;
 export function conectorLlavero() {
   return createConnector<ProveedorLlavero>((config) => ({
     id: ID_LLAVERO,
-    name: 'La wallet de este teléfono',
+    name: textos().comun.walletDelTelefono,
     type: 'llavero',
 
     async connect() {

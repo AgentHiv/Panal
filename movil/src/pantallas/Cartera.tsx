@@ -4,8 +4,11 @@ import Icono from '~/componentes/Icono';
 import { useCartera } from '~/lib/agentes';
 import { dejarDeSeguir, seguidos } from '~/lib/ficha';
 import { avisar, tono, totales } from '~/lib/cartera';
+import type { Aviso } from '~/lib/cartera';
 import type { FilaCartera } from '~/lib/cartera';
 import { montoCuadro } from '~/lib/formato';
+import { useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * La cartera: todos los agentes que sigues, a la vez.
@@ -27,6 +30,7 @@ export default function Cartera(): React.ReactElement {
   const navegar = useNavigate();
   const [lista, setLista] = useState<string[]>(() => seguidos());
   const [filtro, setFiltro] = useState<Filtro>('todos');
+  const T = useTextos();
   const { data: filas = [], isLoading, isError } = useCartera(lista);
 
   const t = useMemo(() => totales(filas), [filas]);
@@ -46,15 +50,15 @@ export default function Cartera(): React.ReactElement {
           type="button"
           onClick={() => navegar(-1)}
           className="pulsable tocable -ml-1 flex h-9 w-9 items-center justify-center"
-          aria-label="Volver"
+          aria-label={T.cartera.volver}
         >
           <Icono nombre="atras" tamano={19} color="#F2EFFA" />
         </button>
         <div className="min-w-0 grow">
-          <h1 className="font-display text-[19px] font-semibold -tracking-[0.015em]">Cartera</h1>
-          <p className="truncate text-[11.5px] text-ink-3">
-            {lista.length} {lista.length === 1 ? 'agente' : 'agentes'} · solo mirar
-          </p>
+          <h1 className="font-display text-[19px] font-semibold -tracking-[0.015em]">
+            {T.cartera.titulo}
+          </h1>
+          <p className="truncate text-[11.5px] text-ink-3">{T.cartera.subtitulo(lista.length)}</p>
         </div>
       </header>
 
@@ -63,18 +67,17 @@ export default function Cartera(): React.ReactElement {
           <div className="flex grow flex-col items-center justify-center px-6 pb-10">
             <Icono nombre="hexagono" tamano={40} color="#342E4A" grosor={1.5} />
             <p className="mt-4 text-center font-display text-[17px] font-semibold">
-              No sigues a ninguno
+              {T.cartera.ningunoTitulo}
             </p>
             <p className="mt-2 max-w-[270px] text-pretty text-center text-[12.5px] leading-[1.55] text-ink-2">
-              Pega la dirección de un agente y lo verás entero: lo que gana, lo que le queda por
-              cobrar y lo que tiene sin cerrar.
+              {T.cartera.ningunoTexto}
             </p>
             <button
               type="button"
               onClick={() => navegar('/agentes')}
               className="pulsable tocable mt-5 rounded-full border border-line px-5 py-2.5 text-[13.5px] font-medium text-ink-2"
             >
-              Seguir a uno
+              {T.cartera.seguirAUno}
             </button>
           </div>
         )}
@@ -83,7 +86,7 @@ export default function Cartera(): React.ReactElement {
           <>
             <div className="shrink-0 rounded-[18px] border border-honey-line bg-honey-soft p-[18px]">
               <p className="text-[11.5px] uppercase tracking-[0.06em] text-honey">
-                Sin cobrar en toda la cartera
+                {T.cartera.sinCobrarTotal}
               </p>
               {isLoading && filas.length === 0 ? (
                 <span className="mt-2.5 block h-7 w-32 animate-pulse rounded bg-sand" />
@@ -92,7 +95,7 @@ export default function Cartera(): React.ReactElement {
                   {t.panal > 0n && <Cifra valor={t.panal} simbolo="$PANAL" />}
                   {t.mon > 0n && <Cifra valor={t.mon} simbolo="MON" />}
                   {t.panal === 0n && t.mon === 0n && (
-                    <p className="text-[13px] text-ink-2">Nada dentro del depósito.</p>
+                    <p className="text-[13px] text-ink-2">{T.cartera.nadaDentro}</p>
                   )}
                 </div>
               )}
@@ -100,9 +103,10 @@ export default function Cartera(): React.ReactElement {
               {/* El coste de no tener dueño separado del agente, contado. */}
               {t.firmas > 0 && (
                 <p className="mt-3 border-t border-honey-line pt-3 text-[12px] leading-[1.55] text-ink-2">
-                  Recogerlo son <span className="font-semibold text-honey">{t.firmas} firmas</span>:
-                  una por agente y moneda, cada una desde la wallet de ese agente. Desde aquí no se
-                  puede — <span className="font-mono text-[11px]">withdraw</span> paga a quien firma.
+                  {T.cartera.firmasAntes}{' '}
+                  <span className="font-semibold text-honey">{T.cartera.firmas(t.firmas)}</span>
+                  {T.cartera.firmasDespues}{' '}
+                  <span className="font-mono text-[11px]">withdraw</span> {T.cartera.firmasCola}
                 </p>
               )}
             </div>
@@ -115,17 +119,14 @@ export default function Cartera(): React.ReactElement {
               >
                 <Icono nombre="info" tamano={16} color="#C9653B" grosor={2.2} className="shrink-0" />
                 <p className="text-[12.5px] leading-[1.5] text-terra">
-                  {t.enRiesgo === 1
-                    ? 'Un agente tiene encargos con el plazo vencido y sin entregar.'
-                    : `${t.enRiesgo} agentes tienen encargos con el plazo vencido y sin entregar.`}
+                  {T.cartera.enRiesgo(t.enRiesgo)}
                 </p>
               </button>
             )}
 
             {isError && (
               <p className="shrink-0 px-1 text-[12.5px] leading-[1.55] text-terra">
-                No se pudo leer la cadena. Los saldos y los estados de aquí abajo pueden estar
-                incompletos.
+                {T.cartera.noSePudoLeer}
               </p>
             )}
 
@@ -133,9 +134,9 @@ export default function Cartera(): React.ReactElement {
               <div className="flex shrink-0 gap-2 overflow-x-auto pb-0.5">
                 {(
                   [
-                    ['todos', `Todos · ${filas.length}`],
-                    ['activos', `Activos · ${t.activos}`],
-                    ['pausados', `Pausados · ${t.pausados}`],
+                    ['todos', T.cartera.todos(filas.length)],
+                    ['activos', T.cartera.activos(t.activos)],
+                    ['pausados', T.cartera.pausados(t.pausados)],
                   ] as [Filtro, string][]
                 ).map(([id, texto]) => (
                   <button
@@ -155,7 +156,7 @@ export default function Cartera(): React.ReactElement {
             )}
 
             {isLoading && filas.length === 0 && (
-              <p className="shrink-0 px-1 text-[12.5px] text-ink-3">Leyendo la cadena…</p>
+              <p className="shrink-0 px-1 text-[12.5px] text-ink-3">{T.cartera.leyendo}</p>
             )}
 
             {visibles.map((f) => (
@@ -164,6 +165,7 @@ export default function Cartera(): React.ReactElement {
                 fila={f}
                 onAbrir={() => navegar(`/panel/${f.direccion}`)}
                 onDejar={() => alDejar(f.direccion)}
+                T={T}
               />
             ))}
 
@@ -173,7 +175,7 @@ export default function Cartera(): React.ReactElement {
               className="pulsable mt-1 flex shrink-0 items-center gap-3 rounded-[14px] border border-dashed border-line p-3.5 text-left"
             >
               <Icono nombre="mas" tamano={18} color="#948DAE" grosor={1.9} className="shrink-0" />
-              <p className="text-[13.5px] font-medium">Seguir a otro</p>
+              <p className="text-[13.5px] font-medium">{T.cartera.seguirAOtro}</p>
             </button>
           </>
         )}
@@ -192,13 +194,16 @@ function Fila({
   fila,
   onAbrir,
   onDejar,
+  T,
 }: {
   fila: FilaCartera;
   onAbrir: () => void;
   onDejar: () => void;
+  T: Textos;
 }): React.ReactElement {
   const [confirmar, setConfirmar] = useState(false);
   const aviso = avisar(fila);
+  const frase = aviso ? redactar(aviso, T) : null;
   const t = tono(fila);
   const c = t ? COLORES[t] : null;
   const conDinero = fila.panal > 0n || fila.mon > 0n;
@@ -222,7 +227,12 @@ function Fila({
               <span className="font-mono">
                 {fila.direccion.slice(0, 6)}…{fila.direccion.slice(-4)}
               </span>{' '}
-              · {fila.registrado ? (fila.activo ? 'Activo' : 'Pausado') : 'Sin registrar'}
+              ·{' '}
+              {fila.registrado
+                ? fila.activo
+                  ? T.cartera.activo
+                  : T.cartera.pausado
+                : T.cartera.sinRegistrar}
               {fila.registrado && ` · ${montoCuadro(fila.precio)} ${fila.moneda}`}
             </p>
           </div>
@@ -237,7 +247,7 @@ function Fila({
                     {montoCuadro(fila.mon)}
                   </p>
                 )}
-                <p className="mt-0.5 text-[10.5px] text-ink-3">sin cobrar</p>
+                <p className="mt-0.5 text-[10.5px] text-ink-3">{T.cartera.sinCobrar}</p>
               </>
             ) : (
               <p className="font-mono text-[13.5px] text-ink-3">0</p>
@@ -245,9 +255,9 @@ function Fila({
           </div>
         </div>
 
-        {aviso && c && (
+        {frase && c && (
           <p className={`mt-2.5 border-t border-line pt-2.5 text-[11.5px] leading-[1.45] ${c.texto}`}>
-            {aviso}
+            {frase}
           </p>
         )}
       </button>
@@ -255,8 +265,7 @@ function Fila({
       {confirmar ? (
         <div className="border-t border-line px-3.5 py-2.5">
           <p className="text-[11.5px] leading-[1.5] text-ink-2">
-            Se quita de tu lista. El agente sigue igual, y puedes volver a seguirlo pegando su
-            dirección.
+            {T.cartera.dejarTexto}
           </p>
           <div className="mt-2 flex gap-2">
             <button
@@ -264,14 +273,14 @@ function Fila({
               onClick={() => setConfirmar(false)}
               className="pulsable tocable grow rounded-full border border-line py-2 text-[12.5px] text-ink-2"
             >
-              Ahora no
+              {T.comun.ahoraNo}
             </button>
             <button
               type="button"
               onClick={onDejar}
               className="pulsable tocable grow rounded-full bg-sand py-2 text-[12.5px] font-medium text-terra"
             >
-              Dejar de seguir
+              {T.cartera.dejarDeSeguir}
             </button>
           </div>
         </div>
@@ -297,4 +306,23 @@ function Cifra({ valor, simbolo }: { valor: bigint; simbolo: string }): React.Re
       <span className="text-[12.5px] font-semibold text-honey">{simbolo}</span>
     </div>
   );
+}
+
+/**
+ * La clave que decidió `avisar`, ya como frase.
+ *
+ * La decisión y su redacción viven separadas a propósito: `lib/cartera.ts`
+ * elige cuál es el problema más grave —lo mismo en los cuatro idiomas— y esto
+ * lo escribe.
+ */
+function redactar(a: Aviso, T: Textos): string {
+  const av = T.cartera.avisos;
+  switch (a.clave) {
+    case 'vencidos':
+      return av.vencidos(a.n);
+    case 'abiertos':
+      return av.abiertos(a.n);
+    default:
+      return av[a.clave];
+  }
 }

@@ -8,6 +8,8 @@ import { useAgente } from '~/lib/agente';
 import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
 import { monto, precio } from '~/lib/formato';
+import { useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * La ficha del agente.
@@ -31,6 +33,7 @@ export default function Agente(): React.ReactElement {
   const navegar = useNavigate();
   const { agents, loading } = usePanalAgents();
   const { data: datos } = useAgente(direccion);
+  const T = useTextos();
 
   const agente = useMemo(
     () =>
@@ -46,7 +49,7 @@ export default function Agente(): React.ReactElement {
         <button
           type="button"
           onClick={() => navegar(-1)}
-          aria-label="Volver"
+          aria-label={T.agente.volver}
           className="pulsable flex h-11 w-11 items-center justify-center"
         >
           <Icono nombre="atras" tamano={24} color="#C8C3DC" grosor={2} />
@@ -70,20 +73,22 @@ export default function Agente(): React.ReactElement {
           </div>
         </div>
 
-        {agente && <Verificacion agente={agente} />}
-        {agente && <OrigenDelNombre agente={agente} />}
+        {agente && <Verificacion agente={agente} T={T} />}
+        {agente && <OrigenDelNombre agente={agente} T={T} />}
 
         {agente && (
           <div className="flex divide-x divide-line overflow-hidden rounded-[14px] border border-line">
-            <Dato valor={String(agente.tasksCompleted)} pie="tareas completadas" />
+            <Dato valor={String(agente.tasksCompleted)} pie={T.agente.tareasCompletadas} />
             <Dato
               valor={agente.reviews > 0 ? agente.rating.toFixed(1) : '—'}
-              pie={agente.reviews > 0 ? `${agente.reviews} valoraciones` : 'sin valoraciones'}
+              pie={
+                agente.reviews > 0 ? T.agente.valoraciones(agente.reviews) : T.agente.sinValoraciones
+              }
               color={agente.reviews > 0 ? 'text-honey' : 'text-ink-3'}
             />
             <Dato
               valor={precio(agente.totalEarned) ?? '0'}
-              pie={`${currencySymbol(agente.currency)} cobrados`}
+              pie={T.agente.cobrados(currencySymbol(agente.currency))}
             />
           </div>
         )}
@@ -94,31 +99,31 @@ export default function Agente(): React.ReactElement {
 
         <div className="divide-y divide-line overflow-hidden rounded-[14px] border border-line">
           <Precio
-            titulo="Hablar"
-            pie="respuesta al momento · sin disputa"
+            titulo={T.agente.hablar}
+            pie={T.agente.hablarPie}
             valor={
               datos?.cobro
                 ? `${monto(datos.cobro.amount)} ${datos.cobro.simbolo}`
-                : 'no disponible'
+                : T.agente.noDisponible
             }
             color={datos?.cobro ? 'text-honey' : 'text-ink-3'}
           />
           <Precio
-            titulo="Encargar un trabajo"
-            pie="plazo · entrega anclada · disputa"
+            titulo={T.agente.encargar}
+            pie={T.agente.encargarPie}
             valor={
               !agente
                 ? '…'
                 : precio(agente.pricePerTask)
                   ? `${precio(agente.pricePerTask)} ${currencySymbol(agente.currency)}`
-                  : 'sin precio'
+                  : T.agente.sinPrecio
             }
             color={agente && precio(agente.pricePerTask) ? 'text-monad-mist' : 'text-ink-3'}
           />
         </div>
 
         {loading && !agente && (
-          <p className="pt-4 text-center text-[13px] text-ink-3">Buscándolo en la cadena…</p>
+          <p className="pt-4 text-center text-[13px] text-ink-3">{T.agente.buscando}</p>
         )}
       </div>
 
@@ -129,45 +134,44 @@ export default function Agente(): React.ReactElement {
           disabled={!datos?.cobro}
           className="pulsable h-[52px] grow rounded-full border border-honey text-[15px] font-semibold text-honey disabled:opacity-40"
         >
-          Hablar
+          {T.agente.botonHablar}
         </button>
         <button
           type="button"
           onClick={() => navegar(`/chat/${direccion}?encargar=1`)}
           className="pulsable h-[52px] grow rounded-full bg-monad text-[15px] font-semibold text-white shadow-monad"
         >
-          Encargar
+          {T.agente.botonEncargar}
         </button>
       </div>
     </div>
   );
 }
 
-function Verificacion({ agente }: { agente: OnchainAgent }): React.ReactElement {
+function Verificacion({ agente, T }: { agente: OnchainAgent; T: Textos }): React.ReactElement {
   const caso = {
     verified: {
       color: 'text-olive',
       borde: 'border-olive/35',
       fondo: 'bg-olive/10',
-      titulo: 'Verificado',
-      texto: 'Su dominio publica un agent.json que declara esta dirección. El nombre lo escribe cualquiera; el dominio no.',
+      titulo: T.agente.verificado,
+      texto: T.agente.verificadoTexto,
     },
     unverified: {
       color: 'text-terra',
       borde: 'border-terra/40',
       fondo: 'bg-terra/10',
-      titulo: 'No verificado',
-      texto:
-        agente.verificationReason ??
-        'Se miró su dominio y no confirma esta dirección. Puede ser una suplantación.',
+      titulo: T.agente.noVerificado,
+      // El motivo lo escribe el verificador y llega ya en un idioma: se enseña
+      // tal cual, que decir algo concreto vale más que decirlo traducido.
+      texto: agente.verificationReason ?? T.agente.noVerificadoTexto,
     },
     unchecked: {
       color: 'text-honey',
       borde: 'border-honey-line',
       fondo: 'bg-honey-soft',
-      titulo: 'Sin comprobar',
-      texto:
-        'Nadie ha mirado todavía si algún dominio declara esta dirección. No es lo mismo que verificado: es que no se sabe.',
+      titulo: T.agente.sinComprobar,
+      texto: T.agente.sinComprobarTexto,
     },
   }[agente.verification];
 
@@ -186,7 +190,13 @@ function Verificacion({ agente }: { agente: OnchainAgent }): React.ReactElement 
  * mismo como identificador y NO valen lo mismo como señal: en una venta lo
  * único que viaja es el nombre, y la reputación se queda con quien lo vendió.
  */
-function OrigenDelNombre({ agente }: { agente: OnchainAgent }): React.ReactElement | null {
+function OrigenDelNombre({
+  agente,
+  T,
+}: {
+  agente: OnchainAgent;
+  T: Textos;
+}): React.ReactElement | null {
   // `useAhora` en vez de Date.now(): leer el reloj en el render da resultados
   // distintos en cada repintado y React no puede garantizar nada sobre eso.
   const ahora = useAhora(60_000);
@@ -198,8 +208,8 @@ function OrigenDelNombre({ agente }: { agente: OnchainAgent }): React.ReactEleme
   const reciente = comprado && dias <= 30;
 
   const texto = !n.origen
-    ? `No se sabe cómo llegó a tener el nombre · hace ${dias} d`
-    : `Nombre ${n.origen} hace ${dias} d`;
+    ? T.agente.nombreSinOrigen(dias)
+    : T.agente.nombreOrigen(T.agente.origenes[n.origen], dias);
 
   return (
     <div className="flex items-start gap-2.5">
@@ -216,8 +226,7 @@ function OrigenDelNombre({ agente }: { agente: OnchainAgent }): React.ReactEleme
         </p>
         {reciente && (
           <p className="mt-1 text-[12px] leading-[1.5] text-ink-2">
-            Los números de abajo son de esta dirección, no del nombre. La reputación no viaja en una
-            venta: se queda con quien lo vendió.
+            {T.agente.nombreReciente}
           </p>
         )}
       </div>

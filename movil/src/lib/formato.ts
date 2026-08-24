@@ -1,4 +1,5 @@
 import { formatEther, formatUnits } from 'viem';
+import { etiquetaIdioma, textos } from '~/i18n/idiomas';
 
 /**
  * Cuántos decimales necesita una cantidad para no mentir.
@@ -25,7 +26,7 @@ function decimalesPara(n: number): number {
 }
 
 function escribir(n: number): string {
-  return n.toLocaleString('es-ES', {
+  return n.toLocaleString(etiquetaIdioma(), {
     minimumFractionDigits: 0,
     maximumFractionDigits: decimalesPara(n),
   });
@@ -42,7 +43,7 @@ function escribir(n: number): string {
 export function monto(wei: bigint | string): string {
   const n = Number(formatEther(typeof wei === 'string' ? BigInt(wei) : wei));
   if (n === 0) return '0';
-  if (n < 0.0001) return '<0,0001';
+  if (n < 0.0001) return `<${separar('0', '0001')}`;
   return escribir(n);
 }
 
@@ -64,8 +65,8 @@ export function monto(wei: bigint | string): string {
 export function montoCuadro(wei: bigint | string): string {
   const n = Number(formatEther(typeof wei === 'string' ? BigInt(wei) : wei));
   if (n === 0) return '0';
-  if (n < 0.0001) return '<0,0001';
-  return n.toLocaleString('es-ES', {
+  if (n < 0.0001) return `<${separar('0', '0001')}`;
+  return n.toLocaleString(etiquetaIdioma(), {
     minimumFractionDigits: 0,
     maximumFractionDigits: decimalesPara(n),
     useGrouping: 'always',
@@ -80,15 +81,15 @@ export function montoCuadro(wei: bigint | string): string {
  */
 export function cuando(ms: number, ahora = Date.now()): string {
   const seg = Math.floor((ahora - ms) / 1000);
-  if (seg < 60) return 'ahora';
+  if (seg < 60) return textos().tiempo.ahora;
   const dia = new Date(ms);
   const hoy = new Date(ahora);
   const mismoDia = dia.toDateString() === hoy.toDateString();
-  if (mismoDia) return dia.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  if (mismoDia) return dia.toLocaleTimeString(etiquetaIdioma(), { hour: '2-digit', minute: '2-digit' });
   const ayer = new Date(ahora - 86_400_000);
-  if (dia.toDateString() === ayer.toDateString()) return 'ayer';
-  if (seg < 7 * 86_400) return dia.toLocaleDateString('es-ES', { weekday: 'short' }).slice(0, 3);
-  return dia.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+  if (dia.toDateString() === ayer.toDateString()) return textos().tiempo.ayer;
+  if (seg < 7 * 86_400) return dia.toLocaleDateString(etiquetaIdioma(), { weekday: 'short' }).slice(0, 3);
+  return dia.toLocaleDateString(etiquetaIdioma(), { day: '2-digit', month: '2-digit' });
 }
 
 /**
@@ -102,18 +103,19 @@ export const AUTO_RELEASE_MS = 3 * 24 * 60 * 60 * 1000;
 
 export function restante(entregadoMs: number, ahora = Date.now()): string {
   const queda = entregadoMs + AUTO_RELEASE_MS - ahora;
-  if (queda <= 0) return 'ya se puede liberar';
+  const T = textos().tiempo;
+  if (queda <= 0) return T.yaSePuedeLiberar;
   const h = Math.floor(queda / 3_600_000);
   if (h >= 24) {
     const d = Math.floor(h / 24);
-    return `${d} d ${h - d * 24} h`;
+    return T.dias(d, h - d * 24);
   }
-  if (h >= 1) return `${h} h`;
-  return `${Math.max(1, Math.floor(queda / 60_000))} min`;
+  if (h >= 1) return T.horas(h);
+  return T.minutos(Math.max(1, Math.floor(queda / 60_000)));
 }
 
 /**
- * Un precio en MON o en $PANAL, en español y sin redondear a cero.
+ * Un precio en MON o en $PANAL, sin redondear a cero.
  *
  * `formatMon(x, 0)` —lo que se usaba— hace `toFixed(0)`, así que un agente que
  * cobra 0,5 MON por tarea salía en el mercado como «0 MON / tarea»: gratis. Y
@@ -127,7 +129,7 @@ export function restante(entregadoMs: number, ahora = Date.now()): string {
  */
 export function precio(n: number): string | null {
   if (!Number.isFinite(n) || n <= 0) return null;
-  if (n < 0.0001) return '<0,0001';
+  if (n < 0.0001) return `<${separar('0', '0001')}`;
   return escribir(n);
 }
 
@@ -143,8 +145,7 @@ export function precio(n: number): string | null {
  */
 export function exacto(wei: bigint, decimales = 18): string {
   const [entera, decimal] = formatUnits(wei, decimales).split('.');
-  const miles = entera.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return decimal ? `${miles},${decimal}` : miles;
+  return separar(entera!, decimal ?? '');
 }
 
 /**
@@ -181,7 +182,23 @@ export function conDecimales(bruto: bigint, decimales: number): string {
   const cuantos = Number(`${entera}.${decimal}`) < 0.01 ? 4 : 2;
   const cortada = decimal.slice(0, cuantos).padEnd(cuantos, '0');
   // Algo que existe pero no cabe ni en cuatro decimales no es un cero.
-  if (entera === '0' && /^0+$/.test(cortada)) return '<0,0001';
-  const miles = entera.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return `${miles},${cortada}`;
+  if (entera === '0' && /^0+$/.test(cortada)) return `<${separar('0', '0001')}`;
+  return separar(entera, cortada);
+}
+
+/**
+ * Pone los separadores del idioma a un número YA cortado.
+ *
+ * No se usa `toLocaleString` directamente porque redondearía, y el motivo de
+ * cortar a mano era justo ese: un saldo no puede pasarse hacia arriba. Así que
+ * el corte se hace con cadenas y los separadores se le piden a `Intl`, que es
+ * quien sabe que el inglés escribe «1,000.00» donde el español «1.000,00».
+ */
+function separar(entera: string, decimal: string): string {
+  const partes = new Intl.NumberFormat(etiquetaIdioma()).formatToParts(1000.1);
+  const miles = partes.find((p) => p.type === 'group')?.value ?? '.';
+  const coma = partes.find((p) => p.type === 'decimal')?.value ?? ',';
+  // El separador de miles va desde la derecha, de tres en tres.
+  const conMiles = entera.replace(/\B(?=(\d{3})+(?!\d))/g, miles);
+  return decimal ? `${conMiles}${coma}${decimal}` : conMiles;
 }

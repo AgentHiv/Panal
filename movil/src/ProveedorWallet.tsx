@@ -16,6 +16,7 @@ import Icono from '~/componentes/Icono';
 import { conectorLlavero } from '~/lib/conector';
 import { abrirSesion, idRecordado, useSesion } from '~/lib/sesion';
 import { abrir as abrirLlavero, listar } from '~/lib/llavero';
+import { useTextos } from '~/i18n/idiomas';
 import type { WalletGuardada } from '~/lib/llavero';
 
 /**
@@ -89,6 +90,7 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
 
   const navegar = useNavigate();
   const sesion = useSesion();
+  const T = useTextos();
   // Uno solo por montaje: cada `connect` con una función crea un conector
   // nuevo, y con la misma referencia al menos no se multiplican por render.
   const conector = useMemo(() => conectorLlavero(), []);
@@ -175,7 +177,7 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
       const llave = await abrirLlavero(pin);
       if (!llave) {
         setOcupadoPin(false);
-        setErrorPin('Ese PIN no es');
+        setErrorPin(T.llavero.pinMalo);
         return;
       }
       try {
@@ -185,12 +187,12 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
         setErrorPin(null);
         setHoja(false);
       } catch {
-        setErrorPin('No se pudo abrir esa wallet.');
+        setErrorPin(T.importar.noSePudoAbrir);
       } finally {
         setOcupadoPin(false);
       }
     },
-    [abriendo, conector, connect],
+    [abriendo, conector, connect, T],
   );
 
   const conectar = useCallback(() => {
@@ -305,14 +307,14 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
                 setErrorPin(null);
               }}
               className="pulsable tocable flex h-9 w-9 items-center justify-center rounded-full border border-line"
-              aria-label="Cerrar"
+              aria-label={T.comun.cerrar}
             >
               <Icono nombre="cerrar" tamano={15} color="#C8C3DC" grosor={1.9} />
             </button>
           </div>
           <Teclado
             titulo={abriendo.nombre}
-            explicacion="Tu PIN del llavero. Con él, firmar deja de sacarte de la app."
+            explicacion={T.hojaWallet.pinTitulo}
             onCompleto={(pin) => void conLaDelTelefono(pin)}
             error={errorPin}
             ocupado={ocupadoPin}

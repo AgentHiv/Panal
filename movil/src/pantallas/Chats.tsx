@@ -12,6 +12,8 @@ import Icono from '~/componentes/Icono';
 import Arranque from '~/pantallas/Arranque';
 import { cuando as formatoCuando } from '~/lib/formato';
 import Menu from '~/componentes/Menu';
+import { useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * La bandeja. Es la pantalla de inicio de la app, como en cualquier
@@ -27,6 +29,7 @@ import Menu from '~/componentes/Menu';
  */
 export default function Chats(): React.ReactElement {
   const { address, connected } = useWallet();
+  const T = useTextos();
   const { tasks } = useMyTasks();
 
   const conversaciones = useMemo<ResumenConversacion[]>(() => {
@@ -40,12 +43,14 @@ export default function Chats(): React.ReactElement {
   return (
     <div className="flex min-h-0 grow flex-col">
       <header className="flex shrink-0 items-center justify-between px-5 pb-3 pt-5">
-        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">Chats</h1>
+        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">
+          {T.chats.titulo}
+        </h1>
         <div className="flex items-center gap-2">
         <Menu />
         <Link
           to="/mercado"
-          aria-label="Buscar un agente"
+          aria-label={T.chats.buscarAgente}
           className="pulsable flex h-11 w-11 items-center justify-center rounded-full bg-monad shadow-monad"
         >
           <Icono nombre="mas" tamano={19} color="#fff" grosor={2.2} />
@@ -56,7 +61,7 @@ export default function Chats(): React.ReactElement {
       <ul className="min-h-0 grow overflow-y-auto px-3 pb-3">
         {conversaciones.map((c) => (
           <li key={c.agente}>
-            <Fila conversacion={c} />
+            <Fila conversacion={c} T={T} />
           </li>
         ))}
       </ul>
@@ -64,20 +69,26 @@ export default function Chats(): React.ReactElement {
   );
 }
 
-function Fila({ conversacion }: { conversacion: ResumenConversacion }): React.ReactElement {
+function Fila({
+  conversacion,
+  T,
+}: {
+  conversacion: ResumenConversacion;
+  T: Textos;
+}): React.ReactElement {
   const { adelanto, agente, abiertos } = conversacion;
 
   const texto =
     adelanto.clase === 'mensaje'
-      ? `${adelanto.mensaje.de === 'yo' ? 'Tú: ' : ''}${adelanto.mensaje.texto}`
-      : (adelanto.encargo.brief ?? `Encargo #${adelanto.encargo.id}`);
+      ? `${adelanto.mensaje.de === 'yo' ? T.chats.tu : ''}${adelanto.mensaje.texto}`
+      : (adelanto.encargo.brief ?? T.chats.encargoNumero(String(adelanto.encargo.id)));
 
   // Un encargo entregado pide algo de ti; uno abierto solo espera.
   const chip =
     adelanto.clase === 'encargo' && adelanto.encargo.estado === ESTADO.Entregado
-      ? { texto: 'Entregado · te queda aprobar', color: 'text-olive', borde: 'border-olive/35' }
+      ? { texto: T.chats.entregado, color: 'text-olive', borde: 'border-olive/35' }
       : abiertos > 0
-        ? { texto: 'Encargo en marcha', color: 'text-honey', borde: 'border-honey/35' }
+        ? { texto: T.chats.enMarcha, color: 'text-honey', borde: 'border-honey/35' }
         : null;
 
   return (

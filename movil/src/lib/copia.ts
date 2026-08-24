@@ -17,8 +17,7 @@ import { Capacitor } from '@capacitor/core';
 import type { Expediente } from '~/lib/expedientes';
 import { formatBytes } from '@/lib/deliveredFiles';
 import { monto } from '~/lib/formato';
-
-const ESTADOS = ['Abierto', 'Entregado', 'Completado', 'Disputado', 'Cancelado'];
+import { etiquetaIdioma, idioma, textos } from '~/i18n/idiomas';
 
 function escapar(s: string): string {
   return s
@@ -30,7 +29,7 @@ function escapar(s: string): string {
 
 function fecha(ms: number | null): string {
   if (!ms) return '—';
-  return new Date(ms).toLocaleString('es-ES', {
+  return new Date(ms).toLocaleString(etiquetaIdioma(), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -41,24 +40,26 @@ function fecha(ms: number | null): string {
 
 /** El expediente entero como una página que se abre sola. */
 export function aHtml(e: Expediente): string {
+  // `textos()` y no un hook: esto escribe un archivo, no pinta una pantalla.
+  const T = textos().copia;
   const filas = [
-    ['Encargo', `#${e.id}`],
-    ['Cliente', e.cliente],
-    ['Agente', e.agente],
-    ['Importe', `${monto(e.cadena.importe)} ${e.cadena.simbolo}`],
-    ['Estado', ESTADOS[e.cadena.estado] ?? String(e.cadena.estado)],
-    ['Creado', fecha(e.cadena.creado)],
-    ['Plazo', fecha(e.cadena.plazo)],
-    ['Entregado', fecha(e.cadena.entregado)],
-    ['Hash de lo pedido', e.cadena.taskHash],
-    ['Hash de la entrega', e.cadena.resultHash],
+    [T.encargo, `#${e.id}`],
+    [T.cliente, e.cliente],
+    [T.agente, e.agente],
+    [T.importe, `${monto(e.cadena.importe)} ${e.cadena.simbolo}`],
+    [T.estado, T.estados[e.cadena.estado] ?? String(e.cadena.estado)],
+    [T.creado, fecha(e.cadena.creado)],
+    [T.plazo, fecha(e.cadena.plazo)],
+    [T.entregado, fecha(e.cadena.entregado)],
+    [T.hashPedido, e.cadena.taskHash],
+    [T.hashEntrega, e.cadena.resultHash],
   ]
     .map(([k, v]) => `<tr><th>${escapar(k)}</th><td class="mono">${escapar(v)}</td></tr>`)
     .join('\n');
 
   const adjuntos = e.local.adjuntos.length
-    ? `<h2>Archivos que anuncia la entrega</h2>
-<p class="aviso">Estos archivos NO están dentro de esta copia: se bajan del servidor del agente. Lo que sí queda aquí es su hash, que sirve para comprobar que unos bytes que tengas son los que se entregaron.</p>
+    ? `<h2>${escapar(T.archivos)}</h2>
+<p class="aviso">${escapar(T.archivosAviso)}</p>
 <ul>${e.local.adjuntos
         .map(
           (a) =>
@@ -68,19 +69,19 @@ export function aHtml(e: Expediente): string {
     : '';
 
   const hilo = e.local.hilo.length
-    ? `<h2>La conversación</h2>
+    ? `<h2>${escapar(T.laConversacion)}</h2>
 <div class="hilo">${e.local.hilo
         .map(
           (m) =>
             `<div class="msg ${m.de === 'yo' ? 'yo' : 'ag'}"><div class="quien">${
-              m.de === 'yo' ? 'Tú' : 'El agente'
+              m.de === 'yo' ? escapar(T.tu) : escapar(T.elAgente)
             } · ${escapar(fecha(m.cuando))}</div><div class="texto">${escapar(m.texto)}</div></div>`,
         )
         .join('')}</div>`
     : '';
 
   return `<!doctype html>
-<html lang="es"><head>
+<html lang="${idioma()}"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panal · encargo #${escapar(e.id)}</title>
@@ -110,38 +111,34 @@ export function aHtml(e: Expediente): string {
 </style>
 </head><body>
 
-<h1>Encargo #${escapar(e.id)}</h1>
-<p class="sub">Copia sacada el ${escapar(fecha(Date.now()))} desde la app de Panal.</p>
+<h1>${escapar(T.titulo(e.id))}</h1>
+<p class="sub">${escapar(T.sacadaEl(fecha(Date.now())))}</p>
 
-<h2>En la cadena · para siempre</h2>
+<h2>${escapar(T.enLaCadena)}</h2>
 <table>${filas}</table>
 
-<h2>Lo que pediste</h2>
+<h2>${escapar(T.loQuePediste)}</h2>
 ${
   e.local.brief
     ? `<div class="caja">${escapar(e.local.brief)}</div>
 <p class="peq mono">keccak256 → ${escapar(e.cadena.taskHash)}${
-        e.local.briefCuadra ? ' · cuadra con la cadena' : ' · NO cuadra con la cadena'
+        e.local.briefCuadra ? escapar(T.cuadra) : escapar(T.noCuadra)
       }</p>`
-    : `<div class="falta">No estaba en el teléfono cuando se sacó esta copia. En la cadena solo viaja su hash, así que el texto de lo que se pidió se perdió.</div>`
+    : `<div class="falta">${escapar(T.briefPerdido)}</div>`
 }
 
-<h2>Lo que entregó</h2>
+<h2>${escapar(T.loQueEntrego)}</h2>
 ${
   e.local.entrega
     ? `<div class="caja">${escapar(e.local.entrega)}</div>
-<p class="peq mono">keccak256 → ${escapar(e.cadena.resultHash)} · cuadra con la cadena</p>`
-    : `<div class="falta">No estaba en el teléfono. Se puede volver a pedir al agente mientras siga en pie; si no, el hash de arriba ya no prueba nada por sí solo.</div>`
+<p class="peq mono">keccak256 → ${escapar(e.cadena.resultHash)}${escapar(T.cuadra)}</p>`
+    : `<div class="falta">${escapar(T.entregaPerdida)}</div>`
 }
 
 ${adjuntos}
 ${hilo}
 
-<footer>
-  Panal · el escrow guarda nueve campos por encargo y ni uno más. Lo que hay en esta página que no
-  esté en la tabla de arriba solo existía en un teléfono. Este archivo no pide nada a ningún
-  servidor: se abre igual sin internet.
-</footer>
+<footer>${escapar(T.pie)}</footer>
 </body></html>
 `;
 }
@@ -167,9 +164,12 @@ export async function guardarCopia(
       a.download = nombre;
       a.click();
       URL.revokeObjectURL(url);
-      return { ok: true, donde: 'Descargas' };
+      return { ok: true, donde: textos().copia.descargas };
     } catch (err) {
-      return { ok: false, porque: err instanceof Error ? err.message : 'No se pudo' };
+      return {
+        ok: false,
+        porque: err instanceof Error ? err.message : textos().pegas.rechazada,
+      };
     }
   }
 
@@ -187,13 +187,13 @@ export async function guardarCopia(
       // Sin `text`: algunas apps de destino mandan el texto y sueltan el
       // archivo, y lo que hay que compartir es el archivo.
       url: escrito.uri,
-      dialogTitle: 'Guardar el expediente',
+      dialogTitle: textos().copia.guardarExpediente,
     });
-    return { ok: true, donde: 'el teléfono' };
+    return { ok: true, donde: textos().copia.elTelefono };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     // Cerrar el menú de compartir tira un error, y no es un fallo.
-    if (/cancel/i.test(msg)) return { ok: true, donde: 'el teléfono' };
+    if (/cancel/i.test(msg)) return { ok: true, donde: textos().copia.elTelefono };
     return { ok: false, porque: msg };
   }
 }
@@ -207,10 +207,11 @@ export function nombreDe(e: Expediente): string {
 
 /** Todos los expedientes en un solo archivo, con un índice arriba. */
 export function todoAHtml(expedientes: Expediente[], quien: string): string {
+  const T = textos().copia;
   const indice = expedientes
     .map(
       (e) =>
-        `<li><a href="#e${escapar(e.id)}">Encargo #${escapar(e.id)}</a> · ${escapar(
+        `<li><a href="#e${escapar(e.id)}">${escapar(T.titulo(e.id))}</a> · ${escapar(
           fecha(e.cadena.creado),
         )} · ${escapar(monto(e.cadena.importe))} ${escapar(e.cadena.simbolo)}</li>`,
     )
@@ -226,7 +227,7 @@ export function todoAHtml(expedientes: Expediente[], quien: string): string {
     .join('\n<hr>\n');
 
   return `<!doctype html>
-<html lang="es"><head>
+<html lang="${idioma()}"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panal · tus expedientes</title>
@@ -257,13 +258,10 @@ export function todoAHtml(expedientes: Expediente[], quien: string): string {
 </style>
 </head><body>
 
-<h1>Tus expedientes</h1>
-<p class="sub">
-  ${expedientes.length} ${expedientes.length === 1 ? 'encargo' : 'encargos'} de
-  <span class="mono">${escapar(quien)}</span>, copiados el ${escapar(fecha(Date.now()))}.
-</p>
+<h1>${escapar(T.tusExpedientes)}</h1>
+<p class="sub">${escapar(T.cuantos(expedientes.length, quien, fecha(Date.now())))}</p>
 
-<h2>Índice</h2>
+<h2>${escapar(T.indice)}</h2>
 <ul>${indice}</ul>
 
 ${cuerpos}

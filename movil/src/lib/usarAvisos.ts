@@ -5,6 +5,7 @@ import { currencySymbol } from '@/contracts/config';
 import { getTaskBrief } from '@/lib/taskBriefs';
 import { AUTO_RELEASE_MS, monto } from '~/lib/formato';
 import { avisosEncendidos, hayAvisos, idDe, pedirPermiso, programar } from '~/lib/avisos';
+import { textos } from '~/i18n/idiomas';
 
 /**
  * Los avisos, enganchados a las tareas que ya se leen.
@@ -47,6 +48,9 @@ export function useAvisos(): void {
 
     let vigente = true;
     void (async () => {
+      // `textos()` y no `useTextos()`: esto no pinta nada, y un aviso se
+      // escribe en el idioma que hay puesto cuando se programa.
+      const T = textos();
       if (permiso.current === null) permiso.current = await pedirPermiso();
       if (!permiso.current || !vigente) return;
 
@@ -69,10 +73,10 @@ export function useAvisos(): void {
               const restan = Math.max(0, Math.floor((Number(t.deadline) * 1000 - ahora) / 3_600_000));
               nuevos.push({
                 id: aviso,
-                titulo: `Tu agente lleva sin entregar el #${id}`,
+                titulo: T.avisos.sinEntregarTitulo(id),
                 cuerpo: restan
-                  ? `Quedan ${restan} h de plazo. Si vence, el cliente recupera ${monto(t.amountWei)} ${simbolo} y no cobras.`
-                  : `El plazo venció: el cliente puede recuperar ${monto(t.amountWei)} ${simbolo}.`,
+                  ? T.avisos.sinEntregarCuerpo(restan, monto(t.amountWei), simbolo)
+                  : T.avisos.sinEntregarVencido(monto(t.amountWei), simbolo),
                 ruta: `/guardia/${t.worker.toLowerCase()}`,
               });
             }
@@ -84,8 +88,8 @@ export function useAvisos(): void {
               yaAvisado.current.add(aviso);
               nuevos.push({
                 id: aviso,
-                titulo: `Han disputado el #${id}`,
-                cuerpo: `Los ${monto(t.amountWei)} ${simbolo} quedan congelados hasta que decida el árbitro.`,
+                titulo: T.avisos.disputaTitulo(id),
+                cuerpo: T.avisos.disputaCuerpo(monto(t.amountWei), simbolo),
                 ruta: `/guardia/${t.worker.toLowerCase()}`,
               });
             }
@@ -103,8 +107,8 @@ export function useAvisos(): void {
             yaAvisado.current.add(entrega);
             nuevos.push({
               id: entrega,
-              titulo: `Entregaron el encargo #${id}`,
-              cuerpo: brief ?? 'Toca para revisar la entrega.',
+              titulo: T.avisos.entregaTitulo(id),
+              cuerpo: brief ?? T.avisos.entregaCuerpo,
               ruta: `/chat/${t.worker.toLowerCase()}`,
             });
           }
@@ -117,8 +121,8 @@ export function useAvisos(): void {
             yaAvisado.current.add(cuenta);
             nuevos.push({
               id: cuenta,
-              titulo: `Quedan 6 h para que #${id} se apruebe solo`,
-              cuerpo: `Si no haces nada se pagan ${monto(t.amountWei)} ${simbolo} y cuenta como 5 estrellas.`,
+              titulo: T.avisos.cuentaAtrasTitulo(id),
+              cuerpo: T.avisos.cuentaAtrasCuerpo(monto(t.amountWei), simbolo),
               ruta: `/chat/${t.worker.toLowerCase()}`,
               cuando,
             });
@@ -131,8 +135,8 @@ export function useAvisos(): void {
             yaAvisado.current.add(plazo);
             nuevos.push({
               id: plazo,
-              titulo: `#${id} venció sin entrega`,
-              cuerpo: `Puedes recuperar los ${monto(t.amountWei)} ${simbolo} que bloqueaste.`,
+              titulo: T.avisos.plazoTitulo(id),
+              cuerpo: T.avisos.plazoCuerpo(monto(t.amountWei), simbolo),
               ruta: `/chat/${t.worker.toLowerCase()}`,
             });
           }

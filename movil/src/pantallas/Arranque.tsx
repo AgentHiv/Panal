@@ -3,6 +3,8 @@ import { useWallet } from '@/hooks/useWallet';
 import { useSaldos } from '~/lib/usarSaldos';
 import Icono from '~/componentes/Icono';
 import Menu from '~/componentes/Menu';
+import { useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * El primer arranque: lo que se ve al abrir la app sin nada dentro.
@@ -22,6 +24,7 @@ import Menu from '~/componentes/Menu';
 export default function Arranque(): React.ReactElement {
   const navegar = useNavigate();
   const { connected, connecting, connect } = useWallet();
+  const T = useTextos();
 
   return (
     <div className="flex min-h-0 grow flex-col">
@@ -29,7 +32,9 @@ export default function Arranque(): React.ReactElement {
           él quien acaba de instalarla no tiene ninguna forma de llegar al
           llavero ni de ver en qué red está. */}
       <header className="flex shrink-0 items-center justify-between px-5 pb-1 pt-5">
-        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">Chats</h1>
+        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">
+          {T.arranque.titulo}
+        </h1>
         <Menu />
       </header>
 
@@ -41,28 +46,27 @@ export default function Arranque(): React.ReactElement {
       <div className="flex min-h-0 grow flex-col overflow-y-auto px-5 pb-5">
         <PanalVacio />
 
-        {connected ? <Dentro /> : <Fuera conectando={connecting} onConectar={connect} />}
+        {connected ? <Dentro T={T} /> : <Fuera conectando={connecting} onConectar={connect} T={T} />}
 
         <div className="mt-5 shrink-0 overflow-hidden rounded-2xl border border-line">
           <Puerta
             icono="chat"
-            titulo="Hablar con un agente"
-            pie="se paga por mensaje, en $PANAL"
-            estado="sin gas"
+            titulo={T.arranque.hablarTitulo}
+            pie={T.arranque.hablarPie}
+            estado={T.arranque.hablarEstado}
             bueno
           />
           <div className="h-px bg-line" />
           <Puerta
             icono="candado"
-            titulo="Encargar un trabajo"
-            pie="el dinero queda en depósito hasta que entregue"
-            estado="en MON"
+            titulo={T.arranque.encargarTitulo}
+            pie={T.arranque.encargarPie}
+            estado={T.arranque.encargarEstado}
           />
         </div>
 
         <p className="mt-3 shrink-0 rounded-xl bg-sand px-3.5 py-3 text-[12px] leading-[1.5] text-ink-3">
-          $PANAL se cambia en nad.fun y MON lo traes a tu dirección desde donde ya tengas. Panal no
-          vende ninguna de las dos.
+          {T.arranque.dondeSeCompra}
         </p>
 
         <button
@@ -71,10 +75,10 @@ export default function Arranque(): React.ReactElement {
           className="pulsable mt-4 flex h-[52px] shrink-0 items-center justify-center gap-2 rounded-full border border-line text-[15px] font-semibold text-ink-2"
         >
           <Icono nombre="bolsa" tamano={18} color="#C8C3DC" />
-          Ver el mercado
+          {T.arranque.verMercado}
         </button>
         <p className="mt-2 shrink-0 text-center text-[11.5px] text-ink-3">
-          Mirar los agentes y sus precios no cuesta nada.
+          {T.arranque.verMercadoPie}
         </p>
       </div>
     </div>
@@ -85,17 +89,19 @@ export default function Arranque(): React.ReactElement {
 function Fuera({
   conectando,
   onConectar,
+  T,
 }: {
   conectando: boolean;
   onConectar: () => void;
+  T: Textos;
 }): React.ReactElement {
   return (
     <>
       <h2 className="shrink-0 text-pretty text-center font-display text-[22px] font-semibold -tracking-[0.015em]">
-        Agentes que cobran solos
+        {T.arranque.fueraTitulo}
       </h2>
       <p className="mt-2 shrink-0 text-pretty text-center text-[14px] leading-[1.55] text-ink-2">
-        Tu wallet es tu cuenta: no hay registro ni contraseña. Conéctala y ya puedes empezar.
+        {T.arranque.fueraTexto}
       </p>
       <button
         type="button"
@@ -103,26 +109,24 @@ function Fuera({
         disabled={conectando}
         className="pulsable mt-5 flex h-[52px] shrink-0 items-center justify-center gap-2 rounded-full bg-monad text-[15px] font-semibold text-white shadow-monad disabled:opacity-60"
       >
-        {conectando ? 'Conectando…' : 'Conectar wallet'}
+        {conectando ? T.comun.conectando : T.comun.conectarWallet}
       </button>
     </>
   );
 }
 
 /** Con wallet y sin conversaciones: lo que tienes y con qué se hace qué. */
-function Dentro(): React.ReactElement {
+function Dentro({ T }: { T: Textos }): React.ReactElement {
   const { panal, mon, cargando } = useSaldos();
   const sinNada = !cargando && panal?.valor === 0n && mon?.valor === 0n;
 
   return (
     <>
       <h2 className="shrink-0 text-pretty text-center font-display text-[22px] font-semibold -tracking-[0.015em]">
-        {sinNada ? 'Tu wallet está a cero' : 'Todavía no has hablado con nadie'}
+        {sinNada ? T.arranque.aCero : T.arranque.sinHablar}
       </h2>
       <p className="mt-2 shrink-0 text-pretty text-center text-[14px] leading-[1.55] text-ink-2">
-        {sinNada
-          ? 'Hace falta $PANAL para hablar con un agente, o MON para encargarle un trabajo.'
-          : 'Elige un agente en el mercado y empieza por preguntarle algo.'}
+        {sinNada ? T.arranque.aCeroTexto : T.arranque.sinHablarTexto}
       </p>
 
       <div className="mt-5 flex shrink-0 gap-2.5">

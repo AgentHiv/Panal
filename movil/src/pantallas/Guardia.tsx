@@ -17,6 +17,8 @@ import { useFicha, usePendiente, useTareasDe } from '~/lib/agentes';
 import { DISPUTA_MS, cuantasUrgentes, revisar } from '~/lib/guardia';
 import type { Fila, Motivo } from '~/lib/guardia';
 import { monto } from '~/lib/formato';
+import { useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * Guardia · lo que tu agente tiene sin cerrar.
@@ -30,11 +32,12 @@ import { monto } from '~/lib/formato';
  * árbitro. Un botón «Entregar ahora» prometería algo que esta pantalla no puede
  * cumplir.
  */
-const PINTA: Record<Motivo, { titulo: string; color: string; icono: NombreIcono }> = {
-  'sin-entregar': { titulo: 'Abierta y sin entregar', color: '#C9653B', icono: 'reloj' },
-  'sin-cobrar': { titulo: 'Ganado y sin cobrar', color: '#E29A2E', icono: 'cartera' },
-  'sin-aprobar': { titulo: 'Entregada, esperando al cliente', color: '#92A268', icono: 'check' },
-  disputa: { titulo: 'En disputa', color: '#B7A8FC', icono: 'info' },
+/** El color y el icono no cambian de idioma; el título sí, y sale de `T`. */
+const PINTA: Record<Motivo, { clave: keyof Textos['guardia']; color: string; icono: NombreIcono }> = {
+  'sin-entregar': { clave: 'motivoSinEntregar', color: '#C9653B', icono: 'reloj' },
+  'sin-cobrar': { clave: 'motivoSinCobrar', color: '#E29A2E', icono: 'cartera' },
+  'sin-aprobar': { clave: 'motivoSinAprobar', color: '#92A268', icono: 'check' },
+  disputa: { clave: 'motivoDisputa', color: '#B7A8FC', icono: 'info' },
 };
 
 export default function Guardia(): React.ReactElement {
@@ -47,6 +50,7 @@ export default function Guardia(): React.ReactElement {
   const { data: pendiente, refetch: releerPendiente } = usePendiente(dir);
   const { data: tareas = [], isLoading } = useTareasDe(dir);
   const [soloUrgentes, setSoloUrgentes] = useState(false);
+  const T = useTextos();
 
   const mando = connected && address?.toLowerCase() === dir;
   // Un `Date.now()` en el render se congela: un plazo que vence mientras
@@ -68,19 +72,21 @@ export default function Guardia(): React.ReactElement {
           type="button"
           onClick={() => navegar(-1)}
           className="pulsable tocable -ml-1 flex h-9 w-9 items-center justify-center"
-          aria-label="Volver"
+          aria-label={T.guardia.volver}
         >
           <Icono nombre="atras" tamano={19} color="#F2EFFA" />
         </button>
         <div className="min-w-0 grow">
-          <h1 className="font-display text-[19px] font-semibold -tracking-[0.015em]">Guardia</h1>
+          <h1 className="font-display text-[19px] font-semibold -tracking-[0.015em]">
+            {T.guardia.titulo}
+          </h1>
           <p className="truncate text-[11.5px] text-ink-3">
-            {ficha?.nombre ?? 'Lo que tiene sin cerrar'}
+            {ficha?.nombre ?? T.guardia.subtitulo}
           </p>
         </div>
         {urgentes > 0 && (
           <span className="shrink-0 rounded-full border border-terra/40 bg-terra/10 px-2.5 py-1 text-[11px] text-terra">
-            {urgentes} sin cerrar
+            {T.guardia.sinCerrar(urgentes)}
           </span>
         )}
       </header>
@@ -89,8 +95,8 @@ export default function Guardia(): React.ReactElement {
         {filas.length > 1 && (
           <div className="flex shrink-0 gap-2">
             {[
-              [false, `Todo · ${filas.length}`],
-              [true, `Corre prisa · ${urgentes}`],
+              [false, T.guardia.todo(filas.length)],
+              [true, T.guardia.correPrisa(urgentes)],
             ].map(([valor, texto]) => (
               <button
                 key={String(valor)}
@@ -109,17 +115,17 @@ export default function Guardia(): React.ReactElement {
         )}
 
         {isLoading && filas.length === 0 && (
-          <p className="shrink-0 px-1 text-[12.5px] text-ink-3">Leyendo la cadena…</p>
+          <p className="shrink-0 px-1 text-[12.5px] text-ink-3">{T.guardia.leyendo}</p>
         )}
 
         {!isLoading && filas.length === 0 && (
           <div className="flex grow flex-col items-center justify-center px-6 pb-10">
             <Icono nombre="escudo" tamano={40} color="#342E4A" grosor={1.5} />
             <p className="mt-4 text-center font-display text-[17px] font-semibold">
-              No hay nada sin cerrar
+              {T.guardia.nadaTitulo}
             </p>
             <p className="mt-2 max-w-[270px] text-pretty text-center text-[12.5px] leading-[1.55] text-ink-2">
-              Ni encargos abiertos, ni entregas esperando, ni dinero dentro del depósito.
+              {T.guardia.nadaTexto}
             </p>
           </div>
         )}
@@ -131,13 +137,13 @@ export default function Guardia(): React.ReactElement {
             ahora={ahora}
             mando={mando}
             onCobrado={() => void releerPendiente()}
+            T={T}
           />
         ))}
 
         {filas.length > 0 && (
           <p className="mt-1 shrink-0 px-1 text-[11.5px] leading-[1.55] text-ink-3">
-            Todo esto sale de la cadena, no de tu servidor. Es a propósito: sirve precisamente
-            cuando lo que ha fallado es tu servidor y su propio vigilante cree que va todo bien.
+            {T.guardia.deLaCadena}
           </p>
         )}
       </div>
@@ -150,11 +156,13 @@ function FilaGuardia({
   ahora,
   mando,
   onCobrado,
+  T,
 }: {
   fila: Fila;
   ahora: number;
   mando: boolean;
   onCobrado: () => void;
+  T: Textos;
 }): React.ReactElement {
   const p = PINTA[fila.motivo];
   const { writeContract, data: hash, isPending } = useWriteContract();
@@ -176,7 +184,7 @@ function FilaGuardia({
       <div className="flex items-center gap-2">
         <Icono nombre={p.icono} tamano={15} color={p.color} grosor={2.1} />
         <p className="grow text-[13px] font-semibold" style={{ color: p.color }}>
-          {p.titulo}
+          {T.guardia[p.clave] as string}
         </p>
         {fila.ref && (
           <span className="shrink-0 font-mono text-[12px]" style={{ color: p.color }}>
@@ -185,12 +193,11 @@ function FilaGuardia({
         )}
       </div>
 
-      <p className="mt-2 text-[12.5px] leading-[1.55] text-ink-2">{explicar(fila, vencida)}</p>
+      <p className="mt-2 text-[12.5px] leading-[1.55] text-ink-2">{explicar(fila, vencida, T)}</p>
 
       {fila.vence !== null && (
         <p className={`mt-2 font-mono text-[12px] ${vencida ? 'text-terra' : 'text-ink-3'}`}>
-          {vencida ? 'el plazo venció ' : 'quedan '}
-          {queda(fila.vence, ahora)}
+          {vencida ? T.guardia.plazoVencio : T.guardia.quedan} {queda(fila.vence, ahora, T)}
         </p>
       )}
 
@@ -210,21 +217,19 @@ function FilaGuardia({
           disabled={trabajando}
           className="pulsable tocable mt-3 w-full rounded-full bg-monad py-2.5 text-[14px] font-semibold text-white shadow-monad disabled:opacity-50"
         >
-          {trabajando ? 'Firmando…' : `Cobrar ${monto(fila.importe)} ${fila.simbolo}`}
+          {trabajando ? T.guardia.firmando : T.guardia.cobrar(monto(fila.importe), fila.simbolo)}
         </button>
       )}
 
       {fila.motivo === 'sin-entregar' && (
         <p className="mt-2.5 border-t pt-2.5 text-[11.5px] leading-[1.5] text-ink-3" style={{ borderColor: `${p.color}33` }}>
-          Desde aquí no se puede entregar: eso lo firma tu agente con su clave, y el resultado está
-          en tu servidor. Lo que da esta pantalla es enterarte a tiempo.
+          {T.guardia.noSePuedeEntregar}
         </p>
       )}
 
       {fila.motivo === 'disputa' && (
         <p className="mt-2.5 border-t pt-2.5 text-[11.5px] leading-[1.5] text-ink-3" style={{ borderColor: `${p.color}33` }}>
-          Si el árbitro no resuelve en {Math.round(DISPUTA_MS / 86_400_000)} días, el pago vuelve
-          entero al cliente y lo puede reclamar cualquiera.
+          {T.guardia.disputaPie(Math.round(DISPUTA_MS / 86_400_000))}
         </p>
       )}
     </div>
@@ -239,32 +244,28 @@ function FilaGuardia({
  * más código del que vale: nombrar el depósito lo esquiva y además es lo que
  * es — el dinero está dentro del escrow, no en manos de nadie.
  */
-function explicar(f: Fila, vencida: boolean): string {
-  const deposito = `el depósito de ${monto(f.importe)} ${f.simbolo}`;
+function explicar(f: Fila, vencida: boolean, T: Textos): string {
+  const deposito = T.guardia.deposito(monto(f.importe), f.simbolo);
   switch (f.motivo) {
     case 'sin-entregar':
       return vencida
-        ? `El plazo pasó y no hay nada anclado. El cliente puede recuperar ${deposito} cuando quiera, y entonces no cobras.`
-        : `Tu agente todavía no ha anclado nada. Si nadie entrega antes del plazo, el cliente recupera ${deposito} y tú no cobras.`;
+        ? T.guardia.explSinEntregarVencido(deposito)
+        : T.guardia.explSinEntregar(deposito);
     case 'sin-cobrar':
       // La cantidad va en el texto y no solo en el botón: siguiendo un agente
       // que no es tuyo no hay botón, y sin ella la fila no decía nada.
-      return `Hay ${monto(f.importe)} ${f.simbolo} liquidados y todavía dentro del depósito. No caducan, pero tampoco salen solos.`;
+      return T.guardia.explSinCobrar(monto(f.importe), f.simbolo);
     case 'sin-aprobar':
-      return `Ya está anclada. Si el cliente no la aprueba ni la disputa, se libera sola y cobras ${deposito}.`;
+      return T.guardia.explSinAprobar(deposito);
     case 'disputa':
-      return `El cliente la abrió. ${mayus(deposito)} está congelado: ni tú ni él cobráis hasta que el árbitro decida.`;
+      return T.guardia.explDisputa(deposito);
   }
 }
 
-const mayus = (s: string): string => s[0]!.toUpperCase() + s.slice(1);
-
 /** «21 h», «2 d 6 h». Sin segundos: aquí nadie mira los segundos. */
-function queda(vence: number, ahora: number): string {
+function queda(vence: number, ahora: number, T: Textos): string {
   const ms = Math.abs(vence - ahora);
   const horas = Math.floor(ms / 3_600_000);
-  if (horas < 48) return `${horas} h`;
-  const dias = Math.floor(horas / 24);
-  const resto = horas % 24;
-  return resto ? `${dias} d ${resto} h` : `${dias} d`;
+  if (horas < 48) return T.guardia.horas(horas);
+  return T.guardia.diasHoras(Math.floor(horas / 24), horas % 24);
 }

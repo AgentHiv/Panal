@@ -58,6 +58,7 @@
 import { english, generateMnemonic, mnemonicToAccount, privateKeyToAccount } from 'viem/accounts';
 import type { HDAccount, PrivateKeyAccount } from 'viem';
 import { claseDeSecreto, limpiarClave, limpiarFrase, validarPalabras } from '~/lib/envio';
+import { textos } from '~/i18n/idiomas';
 
 const CLAVE = 'panal:llavero:v1';
 
@@ -262,7 +263,7 @@ export async function crearWallet(llave: Llave, nombre: string): Promise<WalletN
 
   const wallet: WalletGuardada = {
     id: crypto.randomUUID(),
-    nombre: nombre.trim() || 'Sin nombre',
+    nombre: nombre.trim() || textos().comun.sinNombre,
     direccion: cuenta.address,
     creada: Date.now(),
     copiada: false,
@@ -313,9 +314,12 @@ export async function cuentaDe(llave: Llave, id: string): Promise<HDAccount | Pr
 
 /* ── traer una wallet de fuera ───────────────────────────────────────────── */
 
+/** Por qué no entró. Clave y no frase: la pantalla la escribe en su idioma. */
+export type PegaImportar = 'ni-palabras-ni-clave' | 'palabras-no-cuadran' | 'ilegible' | 'repetida';
+
 export type Importacion =
   | { ok: true; wallet: WalletGuardada }
-  | { ok: false; pega: string };
+  | { ok: false; pega: PegaImportar };
 
 /**
  * Mete en el llavero una wallet que ya existía.
@@ -340,10 +344,7 @@ export async function importarWallet(
 
   const clase = claseDeSecreto(secreto);
   if (!clase)
-    return {
-      ok: false,
-      pega: 'Eso no son 12 palabras ni una clave privada. Pega una de las dos cosas.',
-    };
+    return { ok: false, pega: 'ni-palabras-ni-clave' };
 
   let texto: string;
   let direccion: string;
@@ -354,18 +355,15 @@ export async function importarWallet(
     } else {
       texto = limpiarFrase(secreto);
       if (!validarPalabras(texto))
-        return {
-          ok: false,
-          pega: 'Esas palabras no cuadran. Míralas de nuevo: alguna no es de la lista, o están en otro orden.',
-        };
+        return { ok: false, pega: 'palabras-no-cuadran' };
       direccion = mnemonicToAccount(texto).address;
     }
   } catch {
-    return { ok: false, pega: 'No se ha podido leer eso como una wallet.' };
+    return { ok: false, pega: 'ilegible' };
   }
 
   if (g.wallets.some((w) => w.direccion.toLowerCase() === direccion.toLowerCase()))
-    return { ok: false, pega: 'Esa wallet ya está en el llavero.' };
+    return { ok: false, pega: 'repetida' };
 
   const wallet: WalletGuardada = {
     id: crypto.randomUUID(),
@@ -399,7 +397,7 @@ export function renombrar(id: string, nombre: string): void {
   if (!g) return;
   const w = g.wallets.find((x) => x.id === id);
   if (!w) return;
-  w.nombre = nombre.trim() || 'Sin nombre';
+  w.nombre = nombre.trim() || textos().comun.sinNombre;
   escribir(g);
 }
 

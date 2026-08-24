@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Icono from '~/componentes/Icono';
+import { useTextos } from '~/i18n/idiomas';
 
 /**
  * El teclado del PIN.
@@ -28,6 +29,7 @@ export default function Teclado({
   ocupado?: boolean;
 }): React.ReactElement {
   const [pin, setPin] = useState('');
+  const T = useTextos();
 
   /**
    * Se vacía SIEMPRE al completar los seis, no cuando llega un error.
@@ -110,7 +112,7 @@ export default function Teclado({
         )}
       </div>
 
-      <p className="mt-4 h-4 text-[12px] text-ink-3">{ocupado ? 'Abriendo…' : ''}</p>
+      <p className="mt-4 h-4 text-[12px] text-ink-3">{ocupado ? T.comun.abriendo : ''}</p>
     </div>
   );
 }

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/hooks/useWallet';
 import Icono from '~/componentes/Icono';
 import { esDireccion, seguidos, seguir, useFicha } from '~/lib/agentes';
+import { useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * Tus agentes.
@@ -24,6 +26,7 @@ export default function Agentes(): React.ReactElement {
   const [modo, setModo] = useState<Modo>('seguir');
   const [texto, setTexto] = useState('');
   const [lista, setLista] = useState<string[]>(() => seguidos());
+  const T = useTextos();
 
   const alSeguir = (): void => {
     const dir = texto.trim();
@@ -37,20 +40,19 @@ export default function Agentes(): React.ReactElement {
   return (
     <div className="flex min-h-0 grow flex-col">
       <header className="shrink-0 px-5 pb-3 pt-5">
-        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">Tus agentes</h1>
-        <p className="mt-1.5 text-[13px] leading-[1.55] text-ink-2">
-          Hay dos formas de entrar, y no son la misma cosa. Elige por dónde va a firmar tu agente, no
-          por comodidad.
-        </p>
+        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">
+          {T.agentes.titulo}
+        </h1>
+        <p className="mt-1.5 text-[13px] leading-[1.55] text-ink-2">{T.agentes.entradilla}</p>
       </header>
 
       <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-5 pb-5">
         <Opcion
           puesta={modo === 'seguir'}
           onElegir={() => setModo('seguir')}
-          titulo="Seguirlo"
-          texto="Pegas su dirección y lo ves entero: cuánto ha ganado, qué le queda por cobrar, qué encargos tiene. No firma nada porque no hay nada que firmar."
-          pie="La clave de tu agente no sale de tu servidor."
+          titulo={T.agentes.seguirTitulo}
+          texto={T.agentes.seguirTexto}
+          pie={T.agentes.seguirPie}
           pieColor="text-olive"
           icono="buscar"
         />
@@ -58,16 +60,16 @@ export default function Agentes(): React.ReactElement {
         <Opcion
           puesta={modo === 'administrar'}
           onElegir={() => setModo('administrar')}
-          titulo="Administrarlo"
-          texto="Todo lo anterior, y además cobrar, cambiar el precio, pausarlo y editar su ficha. Cada cosa es una firma suya."
-          pie="Es la misma clave que firma sus entregas"
+          titulo={T.agentes.administrarTitulo}
+          texto={T.agentes.administrarTexto}
+          pie={T.agentes.administrarPie}
           pieColor="text-honey"
           icono="llave"
         />
 
         {modo === 'seguir' ? (
           <div className="shrink-0 rounded-[14px] border border-line p-3.5">
-            <p className="text-[13px] font-medium">La dirección del agente</p>
+            <p className="text-[13px] font-medium">{T.agentes.laDireccion}</p>
             <input
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
@@ -83,17 +85,16 @@ export default function Agentes(): React.ReactElement {
               disabled={!esDireccion(texto)}
               className="pulsable tocable mt-2.5 w-full rounded-full bg-monad py-3 text-[14.5px] font-semibold text-white shadow-monad disabled:opacity-40 disabled:shadow-none"
             >
-              Verlo
+              {T.agentes.verlo}
             </button>
           </div>
         ) : (
           <div className="shrink-0 rounded-[14px] border border-honey-line bg-honey-soft p-3.5">
             <p className="text-[12.5px] leading-[1.55] text-ink-2">
-              El registro no distingue entre el agente y su dueño:{' '}
-              <span className="font-mono text-[11.5px] text-honey">updatePrice</span> y{' '}
-              <span className="font-mono text-[11.5px] text-honey">setActive</span> actúan sobre
-              quien firma. Para mandar desde el móvil tienes que conectar la wallet del propio
-              agente — la que ahora mismo está en tu servidor.
+              {T.agentes.registroNoDistingue}{' '}
+              <span className="font-mono text-[11.5px] text-honey">updatePrice</span> +{' '}
+              <span className="font-mono text-[11.5px] text-honey">setActive</span>{' '}
+              {T.agentes.actuanSobreQuienFirma}
             </p>
             {connected ? (
               <button
@@ -101,7 +102,7 @@ export default function Agentes(): React.ReactElement {
                 onClick={() => navegar(`/panel/${address!.toLowerCase()}`)}
                 className="pulsable tocable mt-3 w-full rounded-full bg-monad py-3 text-[14.5px] font-semibold text-white shadow-monad"
               >
-                Administrar {address!.slice(0, 6)}…{address!.slice(-4)}
+                {T.agentes.administrarA(`${address!.slice(0, 6)}…${address!.slice(-4)}`)}
               </button>
             ) : (
               <button
@@ -110,7 +111,7 @@ export default function Agentes(): React.ReactElement {
                 disabled={connecting}
                 className="pulsable tocable mt-3 w-full rounded-full bg-monad py-3 text-[14.5px] font-semibold text-white shadow-monad disabled:opacity-60"
               >
-                {connecting ? 'Conectando…' : 'Conectar la wallet del agente'}
+                {connecting ? T.comun.conectando : T.agentes.conectarLaDelAgente}
               </button>
             )}
           </div>
@@ -119,19 +120,21 @@ export default function Agentes(): React.ReactElement {
         {lista.length > 0 && (
           <>
             <div className="mt-1 flex shrink-0 items-baseline justify-between gap-2">
-              <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">Los que sigues</p>
+              <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
+                {T.agentes.losQueSigues}
+              </p>
               {lista.length > 1 && (
                 <button
                   type="button"
                   onClick={() => navegar('/cartera')}
                   className="pulsable text-[12px] text-honey"
                 >
-                  Verlos juntos
+                  {T.agentes.verlosJuntos}
                 </button>
               )}
             </div>
             {lista.map((d) => (
-              <FilaSeguido key={d} direccion={d} onAbrir={() => navegar(`/panel/${d}`)} />
+              <FilaSeguido key={d} direccion={d} onAbrir={() => navegar(`/panel/${d}`)} T={T} />
             ))}
           </>
         )}
@@ -143,10 +146,8 @@ export default function Agentes(): React.ReactElement {
         >
           <Icono nombre="mas" tamano={18} color="#948DAE" grosor={1.9} className="shrink-0" />
           <div className="min-w-0 grow">
-            <p className="text-[13.5px] font-medium">Dar de alta uno nuevo</p>
-            <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">
-              Con una wallet vacía: la que registres es la que será el agente
-            </p>
+            <p className="text-[13.5px] font-medium">{T.agentes.altaTitulo}</p>
+            <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">{T.agentes.altaPie}</p>
           </div>
         </button>
       </div>
@@ -198,9 +199,11 @@ function Opcion({
 function FilaSeguido({
   direccion,
   onAbrir,
+  T,
 }: {
   direccion: string;
   onAbrir: () => void;
+  T: Textos;
 }): React.ReactElement {
   const { data: ficha } = useFicha(direccion);
 
@@ -216,7 +219,7 @@ function FilaSeguido({
         </p>
         <p className="mt-0.5 font-mono text-[11px] text-ink-3">
           {direccion.slice(0, 6)}…{direccion.slice(-4)}
-          {ficha && !ficha.activo && <span className="ml-2 text-terra">pausado</span>}
+          {ficha && !ficha.activo && <span className="ml-2 text-terra">{T.agentes.pausado}</span>}
         </p>
       </div>
       <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180 shrink-0" />

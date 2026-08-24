@@ -65,7 +65,7 @@ dice(
 );
 dice(
   'y lo dice por el gas, no por el saldo',
-  /MON/.test(e.revisar({ ...conPanal, saldoMon: 0n }).pega ?? ''),
+  e.revisar({ ...conPanal, saldoMon: 0n }).pega === 'sin-mon-para-gas',
 );
 dice(
   '$PANAL con poquísimo MON pasa pero avisa',
@@ -73,7 +73,7 @@ dice(
 );
 dice(
   'el destino se juzga antes que la cantidad',
-  e.revisar({ ...base, destino: 'yo qué sé', importe: '' }).pega.includes('dirección'),
+  e.revisar({ ...base, destino: 'yo qué sé', importe: '' }).pega === 'destino-malo',
 );
 
 console.log('\nlimpiar lo que se pega');

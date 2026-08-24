@@ -178,15 +178,19 @@ export function armar(
 export interface Periodo {
   /** `2026-08`, que ordena solo. */
   clave: string;
-  etiqueta: string;
+  /**
+   * El año y el mes en crudo, no «agosto de 2026».
+   *
+   * El rótulo lo escribe la pantalla con el idioma puesto. Aquí no se puede:
+   * este módulo es puro —se prueba en Node, sin navegador— y el nombre del mes
+   * depende del idioma, que es cosa de la interfaz.
+   */
+  anio: number;
+  /** 1-12, como lo dice la gente y no como lo cuenta `Date`. */
+  mes: number;
   desde: number;
   hasta: number;
 }
-
-const MESES = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-];
 
 /** Los meses en los que este agente cobró algo. Sin meses vacíos por medio. */
 export function periodosDe(cuentas: Cuentas[]): Periodo[] {
@@ -204,7 +208,8 @@ export function periodosDe(cuentas: Cuentas[]): Periodo[] {
       const [anio, mes] = clave.split('-').map(Number);
       return {
         clave,
-        etiqueta: `${MESES[mes! - 1]} de ${anio}`,
+        anio: anio!,
+        mes: mes!,
         desde: new Date(anio!, mes! - 1, 1).getTime() / 1000,
         hasta: new Date(anio!, mes!, 1).getTime() / 1000,
       };

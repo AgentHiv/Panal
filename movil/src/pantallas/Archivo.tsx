@@ -11,6 +11,7 @@ import type { Expediente } from '~/lib/expedientes';
 import { guardarCopia, todoAHtml } from '~/lib/copia';
 import { monto, cuando } from '~/lib/formato';
 import Menu from '~/componentes/Menu';
+import { useTextos, textos } from '~/i18n/idiomas';
 
 /**
  * Tus expedientes.
@@ -30,6 +31,7 @@ export default function Archivo(): React.ReactElement {
   const [filtro, setFiltro] = useState<Filtro>('todos');
   const [copiando, setCopiando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const T = useTextos();
 
   const nombreDeAgente = useMemo(() => {
     const mapa = new Map(agents.map((a) => [a.workerAddress.toLowerCase(), a.name]));
@@ -62,7 +64,7 @@ export default function Archivo(): React.ReactElement {
       todoAHtml(expedientes, address),
     );
     setCopiando(false);
-    setAviso(r.ok ? `Copia lista en ${r.donde}.` : `No se pudo sacar la copia: ${r.porque}`);
+    setAviso(r.ok ? T.archivo.copiaLista(r.donde) : T.archivo.copiaFallo(r.porque));
   };
 
   // Con la cabecera, no en su lugar: sin ella esta pantalla se quedaba sin
@@ -71,10 +73,7 @@ export default function Archivo(): React.ReactElement {
     return (
       <div className="flex min-h-0 grow flex-col">
         <Cabecera />
-        <Vacia
-          titulo="Conecta tu wallet"
-          texto="Los expedientes son de una dirección: son sus encargos y sus conversaciones."
-        />
+        <Vacia titulo={T.archivo.conectaTitulo} texto={T.archivo.conectaTexto} />
       </div>
     );
   }
@@ -93,12 +92,10 @@ export default function Archivo(): React.ReactElement {
         >
           <div className="flex items-baseline justify-between gap-2">
             <p className={`text-[13px] font-semibold ${s.apretado ? 'text-honey' : 'text-ink'}`}>
-              {s.apretado
-                ? `Quedan ${s.briefsTope - s.briefs} antes de empezar a perder`
-                : 'El archivo va holgado'}
+              {s.apretado ? T.archivo.apretado(s.briefsTope - s.briefs) : T.archivo.holgado}
             </p>
             <p className="shrink-0 font-mono text-[12px] text-ink-3">
-              {s.briefs} de {s.briefsTope}
+              {T.archivo.deTantos(s.briefs, s.briefsTope)}
             </p>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-sand">
@@ -108,10 +105,7 @@ export default function Archivo(): React.ReactElement {
             />
           </div>
           <p className="mt-2.5 text-[12px] leading-[1.55] text-ink-2">
-            La app guarda {s.briefsTope} briefs y, al llegar ahí, va tirando los más viejos sin
-            avisar. Los hilos tienen su propio tope: {s.hilosTope} conversaciones ({s.hilos}{' '}
-            guardadas). Y todo esto vive en este teléfono: borrar los datos de la app lo pierde, y
-            cambiar de móvil no se lo lleva.
+            {T.archivo.salud(s.briefsTope, s.hilosTope, s.hilos)}
           </p>
         </div>
 
@@ -124,10 +118,10 @@ export default function Archivo(): React.ReactElement {
           <Icono nombre="bajar" tamano={18} color="#B7A8FC" grosor={1.9} className="shrink-0" />
           <div className="min-w-0 grow">
             <p className="text-[13.5px] font-medium">
-              {copiando ? 'Preparando…' : 'Sacar una copia de todo'}
+              {copiando ? T.archivo.preparando : T.archivo.sacarCopia}
             </p>
             <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">
-              Un archivo que se abre sin la app y no caduca
+              {T.archivo.sacarCopiaPie}
             </p>
           </div>
         </button>
@@ -137,9 +131,9 @@ export default function Archivo(): React.ReactElement {
         <div className="flex shrink-0 gap-2 overflow-x-auto pb-0.5">
           {(
             [
-              ['todos', `Todos · ${expedientes.length}`],
-              ['completos', `Completos · ${completos}`],
-              ['huecos', `Con huecos · ${expedientes.length - completos}`],
+              ['todos', T.archivo.todos(expedientes.length)],
+              ['completos', T.archivo.completos(completos)],
+              ['huecos', T.archivo.conHuecos(expedientes.length - completos)],
             ] as [Filtro, string][]
           ).map(([id, texto]) => (
             <button
@@ -158,13 +152,12 @@ export default function Archivo(): React.ReactElement {
         </div>
 
         {loading && expedientes.length === 0 && (
-          <p className="shrink-0 px-1 text-[12.5px] text-ink-3">Leyendo la cadena…</p>
+          <p className="shrink-0 px-1 text-[12.5px] text-ink-3">{T.archivo.leyendo}</p>
         )}
 
         {!loading && expedientes.length === 0 && (
           <p className="shrink-0 px-1 text-[12.5px] leading-[1.55] text-ink-2">
-            Todavía no has encargado nada. Cuando lo hagas, aquí queda el expediente: lo que pediste,
-            lo que te entregaron y la conversación entera.
+            {T.archivo.sinNada}
           </p>
         )}
 
@@ -179,7 +172,7 @@ export default function Archivo(): React.ReactElement {
             >
               <div className="flex items-start gap-2.5">
                 <p className="min-w-0 grow text-[14px] font-medium leading-[1.4]">
-                  {e.local.brief ? primeraLinea(e.local.brief) : 'Sin el texto de lo que pediste'}
+                  {e.local.brief ? primeraLinea(e.local.brief) : T.archivo.sinBrief}
                 </p>
                 <span className="shrink-0 font-mono text-[12px] text-ink-3">#{e.id}</span>
               </div>
@@ -214,13 +207,19 @@ function estaCompleto(e: Expediente): boolean {
   return !yaEntregado || e.local.entrega !== null;
 }
 
+/**
+ * Se lee `textos()` en vez de recibir `T`: esta función la llaman `estaCompleto`
+ * y el filtro, fuera de todo componente. Pasar la tabla por ahí obligaría a
+ * enhebrarla por tres firmas que no pintan nada.
+ */
 function resumen(e: Expediente): string {
-  if (e.local.brief === null) return 'Solo lo de la cadena · el brief se perdió';
+  const T = textos();
+  if (e.local.brief === null) return T.archivo.soloCadena;
   const yaEntregado =
     e.cadena.estado === ESTADO.Entregado || e.cadena.estado === ESTADO.Completado;
-  if (yaEntregado && e.local.entrega === null) return 'Falta la entrega';
-  const conHilo = e.local.hilo.length > 0 ? ', entrega y hilo' : ' y entrega';
-  return yaEntregado ? `Completo · brief${conHilo}` : 'Brief guardado · aún sin entregar';
+  if (yaEntregado && e.local.entrega === null) return T.archivo.faltaEntrega;
+  if (!yaEntregado) return T.archivo.sinEntregar;
+  return e.local.hilo.length > 0 ? T.archivo.completoConHilo : T.archivo.completoSinHilo;
 }
 
 function primeraLinea(texto: string): string {
@@ -229,15 +228,14 @@ function primeraLinea(texto: string): string {
 }
 
 function Cabecera(): React.ReactElement {
+  const T = useTextos();
   return (
     <header className="flex shrink-0 items-start justify-between gap-3 px-5 pb-3 pt-5">
       <div className="min-w-0">
         <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">
-          Tus expedientes
+          {T.archivo.titulo}
         </h1>
-        <p className="mt-0.5 text-[12.5px] text-ink-3">
-          Lo que la cadena no guarda de cada encargo
-        </p>
+        <p className="mt-0.5 text-[12.5px] text-ink-3">{T.archivo.subtitulo}</p>
       </div>
       <Menu />
     </header>

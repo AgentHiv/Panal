@@ -26,6 +26,7 @@
 
 import type { Cuentas, Linea } from '~/lib/cuentas';
 import { montoCuadro } from '~/lib/formato';
+import { etiquetaIdioma, idioma, textos } from '~/i18n/idiomas';
 
 function escapar(s: string): string {
   return s
@@ -36,7 +37,7 @@ function escapar(s: string): string {
 }
 
 function fechaLarga(ts: number): string {
-  return new Date(ts * 1000).toLocaleDateString('es-ES', {
+  return new Date(ts * 1000).toLocaleDateString(etiquetaIdioma(), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -55,13 +56,15 @@ export interface DatosRecibo {
 
 /** Un A5 que se imprime. Sin una sola petición de red. */
 export function reciboHtml({ linea, agente, direccionAgente, brief }: DatosRecibo): string {
+  // `textos()` y no un hook: esto genera un archivo, no pinta una pantalla.
+  const T = textos().recibo;
   const filas = [
-    ['Precio del encargo', `${montoCuadro(linea.bruto)} ${linea.moneda}`, false],
+    [T.precioEncargo, `${montoCuadro(linea.bruto)} ${linea.moneda}`, false],
     ...(linea.devuelto > 0n
-      ? [['Devuelto al cliente (disputa)', `−${montoCuadro(linea.devuelto)} ${linea.moneda}`, false]]
+      ? [[T.devuelto, `−${montoCuadro(linea.devuelto)} ${linea.moneda}`, false]]
       : []),
-    ['Comisión de Panal', `−${montoCuadro(linea.comision)} ${linea.moneda}`, false],
-    ['Cobrado', `${montoCuadro(linea.pagado)} ${linea.moneda}`, true],
+    [T.comision, `−${montoCuadro(linea.comision)} ${linea.moneda}`, false],
+    [T.cobrado, `${montoCuadro(linea.pagado)} ${linea.moneda}`, true],
   ]
     .map(
       ([et, cif, fuerte]) =>
@@ -72,10 +75,10 @@ export function reciboHtml({ linea, agente, direccionAgente, brief }: DatosRecib
     .join('');
 
   return `<!doctype html>
-<html lang="es"><head>
+<html lang="${idioma()}"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Recibo · encargo ${escapar(linea.id)}</title>
+<title>${escapar(T.tituloPagina(linea.id))}</title>
 <style>
   /* A5 y en claro: esto se imprime. */
   @page { size: A5; margin: 14mm; }
@@ -103,60 +106,54 @@ export function reciboHtml({ linea, agente, direccionAgente, brief }: DatosRecib
 </style>
 </head><body>
 
-<h1>Recibo de cobro</h1>
-<p class="sub">Encargo n.º ${escapar(linea.id)} · ${escapar(fechaLarga(linea.ts))}</p>
+<h1>${escapar(T.titulo)}</h1>
+<p class="sub">${escapar(T.sub(linea.id, fechaLarga(linea.ts)))}</p>
 
 <div class="dosc">
   <div>
-    <h2>Cobra</h2>
+    <h2>${escapar(T.cobra)}</h2>
     <div class="caja">
-      <div class="hueco">[TU NOMBRE O RAZÓN SOCIAL]</div>
-      <div class="hueco">[NIF / VAT]</div>
-      <div class="hueco">[DIRECCIÓN]</div>
-      <div class="mono" style="margin-top:7px">agente ${escapar(agente)}<br>${escapar(
+      <div class="hueco">${escapar(T.huecoNombre)}</div>
+      <div class="hueco">${escapar(T.huecoNif)}</div>
+      <div class="hueco">${escapar(T.huecoDireccion)}</div>
+      <div class="mono" style="margin-top:7px">${escapar(T.agente(agente))}<br>${escapar(
         corta(direccionAgente),
       )}</div>
     </div>
   </div>
   <div>
-    <h2>Pagó</h2>
+    <h2>${escapar(T.pago)}</h2>
     <div class="caja">
       <div class="mono">${escapar(linea.cliente)}</div>
       <p style="margin:7px 0 0;font-size:11px;color:#6B6480;line-height:1.5">
-        Es una dirección de Monad, no una identidad fiscal. Panal no sabe quién hay detrás.
+        ${escapar(T.esUnaDireccion)}
       </p>
     </div>
   </div>
 </div>
 
-<h2>Por</h2>
+<h2>${escapar(T.por)}</h2>
 <div class="caja">${
     brief
       ? escapar(brief)
-      : `<span class="hueco">[DESCRIPCIÓN DEL TRABAJO]</span><p style="margin:7px 0 0;font-size:11px;color:#6B6480;line-height:1.5">El texto de lo que se pidió no está en este teléfono: la cadena solo guarda su hash, y quien lo escribió fue el cliente.</p>`
+      : `<span class="hueco">${escapar(T.huecoTrabajo)}</span><p style="margin:7px 0 0;font-size:11px;color:#6B6480;line-height:1.5">${escapar(T.briefPerdido)}</p>`
   }</div>
 
 <table>${filas}</table>
 
-<h2>La transacción que lo prueba</h2>
+<h2>${escapar(T.laTransaccion)}</h2>
 <div class="caja mono">${escapar(linea.txHash ?? '—')}</div>
 
 ${
   linea.resultHash
-    ? `<h2>Huella de lo entregado</h2>
+    ? `<h2>${escapar(T.huellaEntrega)}</h2>
 <div class="caja mono">${escapar(linea.resultHash)}</div>`
     : ''
 }
 
 <div class="aviso">
-  <b>Esto acredita un cobro. No es una factura.</b>
-  <p>
-    Una factura necesita un cliente identificado y un tratamiento fiscal que dependen de dónde
-    tributes, y aquí el cliente es una dirección. Este papel dice cuánto entró, cuándo, de dónde y
-    con qué transacción se puede comprobar en la cadena — que es lo que tu gestoría necesita para
-    emitir la factura que corresponda. Las cifras están en ${escapar(linea.moneda)}, sin convertir:
-    su precio lo pone un mercado y cambia, así que ponerle euros aquí sería inventarse una cifra.
-  </p>
+  <b>${escapar(T.noEsFacturaTitulo)}</b>
+  <p>${escapar(T.noEsFacturaTexto(linea.moneda))}</p>
 </div>
 </body></html>
 `;
@@ -172,9 +169,10 @@ ${
  * nada. Con `,` de separador, un Excel en es-ES mete toda la fila en una celda.
  */
 export function informeCsv(cuentas: Cuentas[], agente: string, direccion: string): string {
+  const C = textos().recibo.csv;
   const es = (v: bigint): string => montoCuadro(v).replace(/\./g, '');
   const filas: string[][] = [
-    ['encargo', 'fecha', 'cliente', 'moneda', 'facturado', 'devuelto', 'comision', 'cobrado', 'nota', 'transaccion', 'hash_entrega'],
+    [C.encargo, C.fecha, C.cliente, C.moneda, C.facturado, C.devuelto, C.comision, C.cobrado, C.nota, C.transaccion, C.hashEntrega],
   ];
 
   for (const c of cuentas) {
@@ -188,19 +186,19 @@ export function informeCsv(cuentas: Cuentas[], agente: string, direccion: string
         es(l.devuelto),
         es(l.comision),
         es(l.pagado),
-        l.rating !== null ? `${l.rating} estrellas` : '',
+        l.rating !== null ? C.estrellas(l.rating) : '',
         l.txHash ?? '',
         l.resultHash ?? '',
       ]);
     }
     filas.push([]);
-    filas.push([`TOTAL ${c.moneda}`, '', '', c.moneda, es(c.bruto), es(c.devuelto), es(c.comision), es(c.neto), '', '', '']);
+    filas.push([C.total(c.moneda), '', '', c.moneda, es(c.bruto), es(c.devuelto), es(c.comision), es(c.neto), '', '', '']);
     filas.push([]);
   }
 
   filas.push([]);
-  filas.push([`Agente ${agente} (${direccion}). Cifras sin convertir a euros: su precio lo pone un mercado.`]);
-  filas.push(['Esto acredita cobros; no es una factura. Lo que se cobra por mensaje suelto NO aparece aquí.']);
+  filas.push([C.pieAgente(agente, direccion)]);
+  filas.push([C.pieAviso]);
 
   // Se citan siempre: un `;` dentro de un campo partiría la fila, y las notas
   // las escribe gente.

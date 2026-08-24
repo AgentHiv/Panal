@@ -6,7 +6,17 @@
  * que redondeaba la cantidad que se iba a mandar, y una dirección que partía
  * dejando una cifra suelta en la línea de abajo.
  */
+// Se fija el idioma antes de importar: los separadores dependen de él y el
+// Node del CI puede tener otro puesto.
+globalThis.localStorage = {
+  _d: new Map([['panal:idioma:v1', 'es']]),
+  getItem(k) { return this._d.has(k) ? this._d.get(k) : null; },
+  setItem(k, v) { this._d.set(k, String(v)); },
+  removeItem(k) { this._d.delete(k); },
+};
+
 const f = await import('../src/lib/formato.ts');
+const { cambiarIdioma } = await import('../src/i18n/idiomas.ts');
 
 let bien = 0;
 let mal = 0;
@@ -54,6 +64,16 @@ const DIR = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 dice('empieza por 0x suelto', f.troceada(DIR).startsWith('0x f39F'));
 dice('no pierde ni un carácter', f.troceada(DIR).replace(/\s/g, '') === DIR);
 dice('agrupa de cuatro en cuatro', f.troceada(DIR).split(' ').slice(1).every((g) => g.length === 4));
+
+console.log('\nlos separadores siguen al idioma');
+cambiarIdioma('en');
+dice('en inglés los miles van con coma', f.conDecimales(1000n * UNO, 18) === '1,000.00');
+dice('y los decimales con punto', f.exacto(wei('1,995')) === '1.995');
+dice('el «menos de» también cambia', f.conDecimales(1n, 18) === '<0.0001');
+cambiarIdioma('zh');
+dice('en chino, como en inglés', f.conDecimales(1000n * UNO, 18) === '1,000.00');
+cambiarIdioma('es');
+dice('y al volver al español, como antes', f.conDecimales(1000n * UNO, 18) === '1.000,00');
 
 console.log(`\n${bien} bien · ${mal} mal\n`);
 process.exit(mal === 0 ? 0 : 1);
