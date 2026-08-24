@@ -89,6 +89,7 @@ export const en: Textos = {
     noSePudo: "Couldn't connect",
     sinWalletConnect:
       'This build was compiled without WalletConnect, so there is no way to open a wallet from here. The APK needs to be built with',
+    usarOtra: 'Use another',
     pinTitulo: 'Your keyring PIN. With it, signing stops taking you out of the app.',
   },
 

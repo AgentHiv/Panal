@@ -92,6 +92,7 @@ export const es = {
     noSePudo: 'No se pudo conectar',
     sinWalletConnect:
       'Esta versión se compiló sin WalletConnect, así que no hay forma de abrir una wallet desde aquí. Hace falta compilar el APK con',
+    usarOtra: 'Usar otra',
     pinTitulo: 'Tu PIN del llavero. Con él, firmar deja de sacarte de la app.',
   },
 

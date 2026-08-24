@@ -89,6 +89,7 @@ export const pt: Textos = {
     noSePudo: 'Não foi possível ligar',
     sinWalletConnect:
       'Esta versão foi compilada sem WalletConnect, por isso não há forma de abrir uma wallet a partir daqui. É preciso compilar o APK com',
+    usarOtra: 'Usar outra',
     pinTitulo: 'O PIN do teu porta-chaves. Com ele, assinar deixa de te tirar da app.',
   },
 

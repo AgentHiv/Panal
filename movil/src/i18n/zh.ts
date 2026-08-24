@@ -84,6 +84,7 @@ export const zh: Textos = {
     preparando: '正在准备连接…',
     noSePudo: '连接失败',
     sinWalletConnect: '这个版本编译时没有带 WalletConnect，所以无法从这里打开钱包。APK 需要用以下变量编译：',
+    usarOtra: '换一个',
     pinTitulo: '你的钥匙串 PIN。有了它，签名就不再把你赶出应用。',
   },
 

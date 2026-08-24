@@ -195,8 +195,14 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
     [abriendo, conector, connect, T],
   );
 
-  const conectar = useCallback(() => {
-    if (isConnected || isPending) return;
+  /**
+   * Abre la hoja de elegir wallet y levanta la sesión de WalletConnect.
+   *
+   * Va aparte de `conectar` desde que existe el atajo al PIN: si se entra por
+   * ahí, NO hay que levantar ninguna sesión contra el relé — sería una sesión
+   * pendiente que nadie va a aprobar.
+   */
+  const abrirHoja = useCallback(() => {
     // La hoja se abre YA, sin URI todavía: levantar la sesión contra el relé
     // tarda un segundo largo y un botón que no responde parece roto —que es
     // exactamente el fallo que estamos arreglando—.
@@ -233,7 +239,31 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
         },
       },
     );
-  }, [connect, isConnected, isPending, wc]);
+  }, [connect, wc]);
+
+  /**
+   * Conectar, y al reabrir la app ir DERECHO al PIN.
+   *
+   * Al cerrar la app la clave descifrada se pierde a propósito —si se
+   * guardara, el PIN no serviría de nada—, así que hay que volver a teclearlo.
+   * Lo que sí sobra es el camino: la app ya sabe cuál wallet usabas, y aun así
+   * enseñaba la hoja entera para que la eligieras otra vez. Tres toques donde
+   * basta uno, cada vez que Android se lleva la app por delante.
+   *
+   * Solo se toma el atajo si esa wallet SIGUE en el llavero: si se borró, el
+   * teclado pediría el PIN de algo que ya no está.
+   */
+  const conectar = useCallback(() => {
+    if (isConnected || isPending) return;
+    const recordada = idRecordado();
+    const suya = recordada ? listar().find((w) => w.id === recordada) : undefined;
+    if (suya) {
+      setErrorPin(null);
+      setAbriendo(suya);
+      return;
+    }
+    abrirHoja();
+  }, [abrirHoja, isConnected, isPending]);
 
   /**
    * Cerrar con una conexión a medias cierra TAMBIÉN la sesión pendiente.
@@ -299,7 +329,21 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
 
       {abriendo && (
         <div className="fixed inset-0 z-50 flex flex-col bg-paper">
-          <div className="con-barra-arriba flex shrink-0 justify-end px-4 pt-3">
+          <div className="con-barra-arriba flex shrink-0 items-center justify-between px-4 pt-3">
+            {/* Se llega aquí directo al reabrir la app, así que tiene que haber
+                una salida a elegir otra wallet — o la de siempre. Sin esto, la
+                única forma de cambiar sería borrar la del llavero. */}
+            <button
+              type="button"
+              onClick={() => {
+                setAbriendo(null);
+                setErrorPin(null);
+                abrirHoja();
+              }}
+              className="pulsable tocable rounded-full px-2 py-1.5 text-[13px] font-medium text-ink-3"
+            >
+              {T.hojaWallet.usarOtra}
+            </button>
             <button
               type="button"
               onClick={() => {
