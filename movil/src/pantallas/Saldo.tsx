@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useWallet } from '@/hooks/useWallet';
 import { activeChain } from '@/contracts/config';
 import { useSaldos } from '~/lib/usarSaldos';
+import { useSesion } from '~/lib/sesion';
 import { copiar } from '~/lib/wallets';
 import Icono from '~/componentes/Icono';
 
@@ -22,6 +23,7 @@ export default function Saldo(): React.ReactElement {
   const { address, addressShort, connected, connecting, connect, disconnect, wrongNetwork, switchToMonad } =
     useWallet();
   const { panal, mon, cargando } = useSaldos();
+  const sesion = useSesion();
   const [copiado, setCopiado] = useState(false);
 
   const alCopiar = async (): Promise<void> => {
@@ -82,7 +84,19 @@ export default function Saldo(): React.ReactElement {
 
           {/* La dirección va abajo y entera: es para recibir, no para mirarla. */}
           <div className="shrink-0 rounded-[14px] border border-line p-3.5">
-            <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">Tu dirección</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">Tu dirección</p>
+              {/* Cuál de las dos está firmando. No es un detalle: decide si al
+                  aprobar algo se abre otra app o no se abre nada. */}
+              <span className="flex items-center gap-1.5 text-[11px] text-ink-3">
+                <Icono
+                  nombre={sesion.abierta ? 'llave' : 'eslabon'}
+                  tamano={12}
+                  color={sesion.abierta ? '#E29A2E' : '#948DAE'}
+                />
+                {sesion.abierta ? 'Firma en este teléfono' : 'Firma en tu wallet'}
+              </span>
+            </div>
             <p className="seleccionable mt-2 break-all font-mono text-[12.5px] leading-[1.5] text-ink-2">
               {address}
             </p>

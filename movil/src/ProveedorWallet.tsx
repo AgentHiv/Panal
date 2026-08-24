@@ -1,11 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { WalletContext, shortAddress } from '@/hooks/useWallet';
 import type { WalletState } from '@/hooks/useWallet';
 import { activeChain } from '@/contracts/config';
 import { WALLETCONNECT_ID } from '@/lib/wallets';
 import HojaWallet from '~/componentes/HojaWallet';
+import AvisoFirma from '~/componentes/AvisoFirma';
+import { abrirFuera } from '~/lib/wallets';
+import { PIDE_FIRMA, enlaceDeVuelta, olvidarWallet, walletRecordada } from '~/lib/regreso';
+import type { Redireccion } from '~/lib/regreso';
+import Teclado from '~/componentes/Teclado';
+import Icono from '~/componentes/Icono';
+import { conectorLlavero } from '~/lib/conector';
+import { abrirSesion, idRecordado, useSesion } from '~/lib/sesion';
+import { abrir as abrirLlavero, listar } from '~/lib/llavero';
+import type { WalletGuardada } from '~/lib/llavero';
 
 /**
  * El mismo contrato que la web, la interfaz de nadie.
@@ -25,7 +36,37 @@ import HojaWallet from '~/componentes/HojaWallet';
  *
  * Aquí solo se usa WalletConnect: es lo único que puede funcionar dentro del
  * APK. `injected` sigue en la config compartida porque la WEB sí lo necesita.
+ *
+ * LO SEGUNDO QUE ESTABA ROTO
+ * --------------------------
+ * Conectar iba, pero FIRMAR no llegaba nunca. La petición sale por el relé y
+ * la wallet está en segundo plano; si nadie la trae al frente, se queda ahí
+ * esperando y la app parece colgada. WalletConnect trae la redirección hecha y
+ * estaba muerta por dos motivos —falta la clave que escribe el modal que
+ * quitamos, y redirige con `window.open`, que en un WebView no sale a
+ * Android—; los dos están explicados en `lib/regreso.ts`.
+ *
+ * LA TERCERA FORMA DE FIRMAR
+ * --------------------------
+ * Y la que quita la incomodidad de raíz: la wallet del propio teléfono. Con
+ * ella no hay relé, ni otra app, ni redirección que pueda fallar — se firma
+ * donde se está. Va por un conector de wagmi propio (`lib/conector.ts`), así
+ * que las quince pantallas de la app no distinguen una de otra.
+ *
+ * Se arregla envolviendo `request` del proveedor. No hay API pública para
+ * «va a salir una petición»: el evento `session_request_sent` vive en el
+ * `SignClient` de dentro y llegar hasta él es agarrarse a tres capas de
+ * campos internos. `request` es la única puerta por la que pasa TODO lo que
+ * wagmi pide, y envolverla da las dos cosas que hacen falta: ir a buscar a la
+ * wallet, y saber cuándo hay algo esperando para poder decirlo en pantalla.
  */
+/** Lo poco que hace falta saber del proveedor de WalletConnect. */
+interface ProveedorWC {
+  request: (args: { method: string; params?: unknown }) => Promise<unknown>;
+  session?: { peer?: { metadata?: { redirect?: Redireccion } } };
+  __panalEnvuelto?: boolean;
+}
+
 export default function ProveedorWallet({ children }: { children: ReactNode }): React.ReactElement {
   const { address, isConnected, status } = useAccount();
   const { connect, connectors, isPending } = useConnect();
@@ -37,6 +78,22 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
   /** La URI de la sesión, mientras se espera aprobación en la wallet. */
   const [uri, setUri] = useState<string | null>(null);
   const [fallo, setFallo] = useState<string | null>(null);
+  /** Hay una petición esperando aprobación en la otra app. */
+  const [firmando, setFirmando] = useState(false);
+  /** Por dónde se vuelve a esa app. `null` si no lo sabemos. */
+  const [vuelta, setVuelta] = useState<string | null>(null);
+  /** La wallet del llavero que se está desbloqueando, si hay alguna. */
+  const [abriendo, setAbriendo] = useState<WalletGuardada | null>(null);
+  const [errorPin, setErrorPin] = useState<string | null>(null);
+  const [ocupadoPin, setOcupadoPin] = useState(false);
+
+  const navegar = useNavigate();
+  const sesion = useSesion();
+  // Uno solo por montaje: cada `connect` con una función crea un conector
+  // nuevo, y con la misma referencia al menos no se multiplican por render.
+  const conector = useMemo(() => conectorLlavero(), []);
+  // Se leen al abrir la hoja, no en cada render: el llavero está en disco.
+  const [delTelefono, setDelTelefono] = useState<WalletGuardada[]>([]);
 
   const wc = useMemo(() => connectors.find((c) => c.id === WALLETCONNECT_ID), [connectors]);
 
@@ -56,6 +113,86 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
     return () => wc.emitter.off('message', alMensaje);
   }, [wc]);
 
+  /**
+   * Ir a buscar a la wallet cuando sale una firma, y decirlo en pantalla.
+   *
+   * Se envuelve una sola vez por proveedor —`envuelto` lo marca— porque el
+   * efecto se vuelve a ejecutar al reconectar y envolver dos veces abriría la
+   * wallet dos veces por firma.
+   */
+  useEffect(() => {
+    if (!isConnected || !wc) return;
+    let vivo = true;
+    let deshacer: (() => void) | null = null;
+
+    void (async () => {
+      const p = (await wc.getProvider()) as ProveedorWC;
+      if (!vivo || p.__panalEnvuelto) return;
+
+      const salida = enlaceDeVuelta(p.session?.peer?.metadata?.redirect, walletRecordada());
+      setVuelta(salida);
+
+      const original = p.request.bind(p);
+      p.__panalEnvuelto = true;
+      p.request = async (args) => {
+        if (!PIDE_FIRMA.has(args.method)) return original(args);
+        setFirmando(true);
+        if (salida) abrirFuera(salida);
+        try {
+          return await original(args);
+        } finally {
+          setFirmando(false);
+        }
+      };
+
+      deshacer = () => {
+        Reflect.deleteProperty(p, 'request');
+        Reflect.deleteProperty(p, '__panalEnvuelto');
+      };
+    })();
+
+    return () => {
+      vivo = false;
+      deshacer?.();
+    };
+  }, [isConnected, wc]);
+
+  /**
+   * Conectar la wallet de este teléfono.
+   *
+   * El PIN se pide aquí y no dentro del conector porque un conector de wagmi
+   * no puede enseñar nada: `connect()` devuelve cuentas o falla. Así que la
+   * secuencia es al revés de lo que parece — primero se abre el llavero, y
+   * solo cuando ya hay una cuenta lista se le dice a wagmi que conecte.
+   */
+  const conLaDelTelefono = useCallback(
+    async (pin: string): Promise<void> => {
+      if (!abriendo) return;
+      setOcupadoPin(true);
+      // Un respiro para que React pinte el sexto punto antes de que PBKDF2
+      // bloquee el hilo medio segundo.
+      await new Promise((r) => setTimeout(r, 30));
+      const llave = await abrirLlavero(pin);
+      if (!llave) {
+        setOcupadoPin(false);
+        setErrorPin('Ese PIN no es');
+        return;
+      }
+      try {
+        await abrirSesion(llave, abriendo);
+        connect({ connector: conector });
+        setAbriendo(null);
+        setErrorPin(null);
+        setHoja(false);
+      } catch {
+        setErrorPin('No se pudo abrir esa wallet.');
+      } finally {
+        setOcupadoPin(false);
+      }
+    },
+    [abriendo, conector, connect],
+  );
+
   const conectar = useCallback(() => {
     if (isConnected || isPending) return;
     // La hoja se abre YA, sin URI todavía: levantar la sesión contra el relé
@@ -63,6 +200,7 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
     // exactamente el fallo que estamos arreglando—.
     setUri(null);
     setFallo(null);
+    setDelTelefono(listar());
     setHoja(true);
     if (!wc) return; // La hoja explica que se compiló sin WalletConnect.
 
@@ -123,7 +261,10 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
       address: address ?? null,
       addressShort: address ? shortAddress(address) : null,
       connect: conectar,
-      disconnect: () => disconnect(),
+      disconnect: () => {
+        olvidarWallet();
+        disconnect();
+      },
       wrongNetwork: isConnected && chainId !== activeChain.id,
       switchToMonad: () => switchChain({ chainId: activeChain.id }),
       chainId: isConnected ? chainId : null,
@@ -137,12 +278,50 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
     <WalletContext.Provider value={valor}>
       {children}
       <HojaWallet
-        abierta={hoja}
+        abierta={hoja && !abriendo}
         uri={uri}
         hayWalletConnect={!!wc}
         fallo={fallo}
+        delTelefono={delTelefono}
+        recordada={idRecordado()}
+        onElegirDelTelefono={(w) => {
+          setErrorPin(null);
+          setAbriendo(w);
+        }}
+        onIrAlLlavero={() => {
+          cerrarHoja();
+          navegar('/llavero');
+        }}
         onCerrar={cerrarHoja}
       />
+
+      {abriendo && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-paper">
+          <div className="con-barra-arriba flex shrink-0 justify-end px-4 pt-3">
+            <button
+              type="button"
+              onClick={() => {
+                setAbriendo(null);
+                setErrorPin(null);
+              }}
+              className="pulsable tocable flex h-9 w-9 items-center justify-center rounded-full border border-line"
+              aria-label="Cerrar"
+            >
+              <Icono nombre="cerrar" tamano={15} color="#C8C3DC" grosor={1.9} />
+            </button>
+          </div>
+          <Teclado
+            titulo={abriendo.nombre}
+            explicacion="Tu PIN del llavero. Con él, firmar deja de sacarte de la app."
+            onCompleto={(pin) => void conLaDelTelefono(pin)}
+            error={errorPin}
+            ocupado={ocupadoPin}
+          />
+        </div>
+      )}
+
+      {/* Con la wallet del teléfono no hay a dónde ir: se firma aquí. */}
+      <AvisoFirma visible={firmando && !sesion.abierta} enlace={vuelta} />
     </WalletContext.Provider>
   );
 }

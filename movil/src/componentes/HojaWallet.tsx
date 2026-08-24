@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { WALLETS, abrirFuera, copiar } from '~/lib/wallets';
+import { recordarWallet } from '~/lib/regreso';
 import Icono from '~/componentes/Icono';
+import type { WalletGuardada } from '~/lib/llavero';
 
 /**
  * La hoja de conectar la wallet.
@@ -11,18 +13,40 @@ import Icono from '~/componentes/Icono';
  * Sube desde abajo y no ocupa la pantalla entera a propósito: conectar no es
  * un trámite de registro, es un momento dentro de lo que estabas haciendo, y
  * al volver de la wallet quieres reconocer dónde estabas.
+ *
+ * AHORA HAY DOS FORMAS, Y NO SON IGUALES
+ *
+ * La del teléfono va primera porque es la que resuelve el problema por el que
+ * se abre esta hoja: con ella, cada firma se aprueba aquí dentro y no hay que
+ * salir a otra aplicación por cada mensaje de chat. La de fuera va segunda
+ * porque es la que ya tiene la gente y donde está su dinero.
+ *
+ * Las dos van con su letra pequeña al lado. No es documentación: la diferencia
+ * es de verdad y afecta a lo que puede pasar con el dinero. Una wallet de
+ * fuera te enseña lo que firmas en su propia pantalla; la de aquí no, y quien
+ * la elija tiene derecho a saberlo ANTES, no al leer una nota luego.
  */
 export default function HojaWallet({
   abierta,
   uri,
   hayWalletConnect,
   fallo,
+  delTelefono,
+  recordada,
+  onElegirDelTelefono,
+  onIrAlLlavero,
   onCerrar,
 }: {
   abierta: boolean;
   uri: string | null;
   hayWalletConnect: boolean;
   fallo: string | null;
+  /** Las wallets del llavero de este teléfono. */
+  delTelefono: WalletGuardada[];
+  /** Cuál se usó la última vez, para ponerla arriba. */
+  recordada: string | null;
+  onElegirDelTelefono: (w: WalletGuardada) => void;
+  onIrAlLlavero: () => void;
   onCerrar: () => void;
 }): React.ReactElement | null {
   const [copiado, setCopiado] = useState(false);
@@ -50,6 +74,24 @@ export default function HojaWallet({
           Tu wallet es tu cuenta. Panal no guarda ninguna clave ni te pide correo.
         </p>
 
+        <DelTelefono
+          wallets={ordenar(delTelefono, recordada)}
+          onElegir={onElegirDelTelefono}
+          onCrear={onIrAlLlavero}
+        />
+
+        <div className="mt-5 flex items-center gap-3">
+          <div className="h-px grow bg-line" />
+          <span className="text-[11px] uppercase tracking-[0.06em] text-ink-3">
+            o la que ya usas
+          </span>
+          <div className="h-px grow bg-line" />
+        </div>
+        <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">
+          Se abre tu wallet, apruebas allí y vuelves. Cada firma te saca de Panal, pero lo que
+          firmas te lo enseña ella.
+        </p>
+
         {!hayWalletConnect ? (
           <SinWalletConnect />
         ) : fallo ? (
@@ -63,7 +105,13 @@ export default function HojaWallet({
                 marca de una lista. */}
             <button
               type="button"
-              onClick={() => abrirFuera(uri)}
+              onClick={() => {
+                // Aquí elige Android, así que no sabemos cuál será. Se borra
+                // lo apuntado antes para no acabar mandando a la wallet de la
+                // sesión anterior.
+                recordarWallet(null);
+                abrirFuera(uri);
+              }}
               className="pulsable mt-5 flex h-[54px] w-full items-center justify-center gap-2.5 rounded-full bg-monad text-[15px] font-semibold text-white shadow-monad"
             >
               <Icono nombre="fuera" tamano={18} color="#fff" grosor={2} />
@@ -73,21 +121,20 @@ export default function HojaWallet({
               Se abre la wallet que tengas instalada, apruebas allí y vuelves aquí.
             </p>
 
-            <div className="mt-5 flex items-center gap-3">
-              <div className="h-px grow bg-line" />
-              <span className="text-[11px] uppercase tracking-[0.06em] text-ink-3">
-                o elige la tuya
-              </span>
-              <div className="h-px grow bg-line" />
-            </div>
-
-            <ul className="mt-3 overflow-hidden rounded-[14px] border border-line">
+            <ul className="mt-4 overflow-hidden rounded-[14px] border border-line">
               {WALLETS.map((w, i) => (
                 <li key={w.id}>
                   {i > 0 && <div className="h-px bg-line" />}
                   <button
                     type="button"
-                    onClick={() => abrirFuera(w.enlace(uri))}
+                    onClick={() => {
+                      // Se apunta CUÁL para poder volver a ella cuando haya
+                      // una firma esperando (`lib/regreso.ts`). Es el plan B:
+                      // lo normal es que la wallet mande su propio enlace de
+                      // vuelta en los metadatos de la sesión.
+                      recordarWallet(w.base);
+                      abrirFuera(w.enlace(uri));
+                    }}
                     className="pulsable tocable flex w-full items-center gap-3 px-3.5 py-3"
                   >
                     <SelloHex color={w.color} sigla={w.sigla} />
@@ -176,5 +223,74 @@ function SinWalletConnect(): React.ReactElement {
         aquí. Hace falta compilar el APK con <span className="font-mono">VITE_WALLETCONNECT_PROJECT_ID</span>.
       </p>
     </div>
+  );
+}
+
+/* ── la wallet de este teléfono ──────────────────────────────────────────── */
+
+/** La última usada arriba: es casi siempre la que se va a volver a usar. */
+function ordenar(wallets: WalletGuardada[], recordada: string | null): WalletGuardada[] {
+  if (!recordada) return wallets;
+  const i = wallets.findIndex((w) => w.id === recordada);
+  return i <= 0 ? wallets : [wallets[i], ...wallets.filter((_, j) => j !== i)];
+}
+
+function DelTelefono({
+  wallets,
+  onElegir,
+  onCrear,
+}: {
+  wallets: WalletGuardada[];
+  onElegir: (w: WalletGuardada) => void;
+  onCrear: () => void;
+}): React.ReactElement {
+  if (wallets.length === 0) {
+    return (
+      <button
+        type="button"
+        onClick={onCrear}
+        className="pulsable mt-5 flex w-full items-center gap-3 rounded-[14px] border border-dashed border-line p-3.5 text-left"
+      >
+        <Icono nombre="llave" tamano={18} color="#E29A2E" className="shrink-0" />
+        <div className="min-w-0 grow">
+          <p className="text-[13.5px] font-medium">Crear una wallet aquí</p>
+          <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">
+            Se genera en el teléfono y firma sin salir de la app. Un minuto.
+          </p>
+        </div>
+        <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180" />
+      </button>
+    );
+  }
+
+  return (
+    <>
+      <p className="mt-5 text-[11px] uppercase tracking-[0.06em] text-ink-3">La de este teléfono</p>
+      <ul className="mt-2 overflow-hidden rounded-[14px] border border-line">
+        {wallets.map((w, i) => (
+          <li key={w.id}>
+            {i > 0 && <div className="h-px bg-line" />}
+            <button
+              type="button"
+              onClick={() => onElegir(w)}
+              className="pulsable tocable flex w-full items-center gap-3 px-3.5 py-3"
+            >
+              <SelloHex color="#E29A2E" sigla={w.nombre.slice(0, 1).toUpperCase()} />
+              <span className="min-w-0 grow text-left">
+                <span className="block truncate text-[14px] font-medium">{w.nombre}</span>
+                <span className="mt-0.5 block font-mono text-[11px] text-ink-3">
+                  {w.direccion.slice(0, 6)}…{w.direccion.slice(-4)}
+                </span>
+              </span>
+              <Icono nombre="candado" tamano={15} color="#948DAE" />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">
+        Firma aquí dentro, sin abrir nada más. Lo que apruebas es lo que te enseña Panal: no hay una
+        segunda pantalla que te lo repita.
+      </p>
+    </>
   );
 }
