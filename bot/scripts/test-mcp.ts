@@ -32,12 +32,28 @@ const TIMEOUT_MS = 45_000;
  *
  * La primera versión traía dos direcciones fijas de mainnet y se rompió sola en
  * cuanto el operador desactivó una de ellas para mudar su agente a otra wallet:
- * el registry es estado vivo, no un fixture. Ahora se busca un agente activo y
- * otro inactivo cada vez, así que la prueba sobrevive a cualquier cambio del
- * marketplace. Si no existe alguno de los dos, esa comprobación se omite en vez
- * de fallar: que hoy no haya agentes inactivos no es un fallo del código.
+ * el registry es estado vivo, no un fixture. Ahora se busca cada vez, así que
+ * la prueba sobrevive a cualquier cambio del marketplace. Si no existe alguno
+ * de los tres, esa comprobación se omite en vez de fallar: que hoy no haya
+ * agentes inactivos no es un fallo del código.
+ *
+ * SON TRES Y NO DOS, y la diferencia es la que rompió esta prueba.
+ *
+ * Buscar «un agente activo» no bastaba: la cotización necesita además que ese
+ * agente publique `bot:<url>` en su metadata, porque sin endpoint no hay a
+ * quién pedirle precio y `quote_hire` se para ANTES de mirar el saldo. En
+ * cuanto se registró un agente activo sin endpoint y le tocó salir el primero,
+ * la comprobación del saldo empezó a recibir «no publica endpoint» y a fallar
+ * — sin que nada del código hubiera cambiado.
+ *
+ * Así que se busca por la propiedad que la prueba necesita de verdad:
+ * cotizable = activo Y con endpoint.
  */
-async function findAgents(): Promise<{ active?: Address; inactive?: Address }> {
+async function findAgents(): Promise<{
+  active?: Address;
+  quotable?: Address;
+  inactive?: Address;
+}> {
   const client = createPublicClient({ chain: monad, transport: http(RPC_URL) });
   const addresses = (await client.readContract({
     address: REGISTRY,
@@ -46,19 +62,35 @@ async function findAgents(): Promise<{ active?: Address; inactive?: Address }> {
     args: [0n, 50n],
   })) as readonly Address[];
 
-  const found: { active?: Address; inactive?: Address } = {};
+  const found: { active?: Address; quotable?: Address; inactive?: Address } = {};
   for (const address of addresses) {
     const a = (await client.readContract({
       address: REGISTRY,
       abi: registryAbi,
       functionName: 'getAgent',
       args: [address],
-    })) as { active: boolean };
+    })) as { active: boolean; metadataURI: string };
     if (a.active && !found.active) found.active = address;
+    if (a.active && !found.quotable && tieneEndpoint(a.metadataURI)) found.quotable = address;
     if (!a.active && !found.inactive) found.inactive = address;
-    if (found.active && found.inactive) break;
+    if (found.active && found.quotable && found.inactive) break;
   }
   return found;
+}
+
+/**
+ * Si la metadata declara un `bot:<url>` utilizable.
+ *
+ * Se repite aquí en lugar de importar `parseMetadata` de `mcp.ts` a propósito:
+ * ese archivo arranca el servidor MCP al importarse, y una prueba que lo
+ * importe para preguntar dos cosas dejaría un servidor de más corriendo. Son
+ * cuatro líneas y esta es su única condición.
+ */
+function tieneEndpoint(metadataURI: string): boolean {
+  return metadataURI
+    .split('·')
+    .map((s) => s.trim())
+    .some((s) => s.toLowerCase().startsWith('bot:') && /^https?:\/\//i.test(s.slice(4).trim()));
 }
 
 const RPC_URL = process.env.RPC_URL?.trim() || 'https://rpc.monad.xyz';
@@ -163,7 +195,9 @@ class McpClient {
 async function main(): Promise<void> {
   const agents = await findAgents();
   console.log(
-    `agentes descubiertos → activo: ${agents.active ?? 'ninguno'} · inactivo: ${agents.inactive ?? 'ninguno'}\n`,
+    `agentes descubiertos → activo: ${agents.active ?? 'ninguno'} · cotizable: ${
+      agents.quotable ?? 'ninguno'
+    } · inactivo: ${agents.inactive ?? 'ninguno'}\n`,
   );
 
   const client = new McpClient();
@@ -331,9 +365,9 @@ async function main(): Promise<void> {
     check('wallet informa de que la contratación está habilitada', wallet.text.includes('HABILITADA'));
     check('wallet lee saldos reales de mainnet', /0 MON/.test(wallet.text), wallet.text.split('\n')[3] ?? '');
 
-    if (agents.active) {
+    if (agents.quotable) {
       const quote = await writer.callTool('panal_quote_hire', {
-        agent_address: agents.active,
+        agent_address: agents.quotable,
         brief: 'Resume este contrato de arrendamiento en lenguaje llano, en español.',
       });
       check(
@@ -342,7 +376,24 @@ async function main(): Promise<void> {
         quote.text.split('\n')[0],
       );
     } else {
-      console.log('⏭️  sin agentes activos en el registry: se omite la cotización completa');
+      console.log(
+        '⏭️  ningún agente activo publica endpoint: se omite la cotización completa',
+      );
+    }
+
+    // Y que un activo SIN endpoint se pare antes, que es el otro lado de lo
+    // mismo: contratarlo dejaría los fondos bloqueados sin nada a cambio.
+    const sinEndpoint = agents.active && agents.active !== agents.quotable ? agents.active : null;
+    if (sinEndpoint) {
+      const quote = await writer.callTool('panal_quote_hire', {
+        agent_address: sinEndpoint,
+        brief: 'Resume este contrato de arrendamiento en lenguaje llano, en español.',
+      });
+      check(
+        'un agente activo sin endpoint se rechaza antes de cotizar',
+        /no publica endpoint/.test(quote.text),
+        quote.text.split('\n')[0].slice(0, 70),
+      );
     }
 
     if (agents.inactive) {
