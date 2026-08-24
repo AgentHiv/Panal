@@ -220,7 +220,7 @@ export const zh: Textos = {
     limpiar: '清空',
     sinAgentes: '链上还没有注册任何代理。',
     sinResultados: '没有叫这个名字、也没有做这件事的。',
-    porEncargo: (precio: string, moneda: string) => `${precio} ${moneda} · 每单`,
+    porEncargo: '每单',
     sinPrecio: '没有委托报价',
     tareas: (n: number) => `· ${n} 单`,
     sinValoraciones: '· 没有评价',
@@ -363,8 +363,10 @@ export const zh: Textos = {
   },
 
   hilo: {
+    hoy: '今天',
+    ayer: '昨天',
     volver: '返回',
-    porMensaje: (cantidad: string, moneda: string) => `每条 ${cantidad} ${moneda}`,
+    porMensaje: '每条',
     soloEncargos: '只接委托',
     encargar: '委托',
     sinHablar: '你们还没有说过话。在这里写的每条消息都要付费，它会立刻回复。',

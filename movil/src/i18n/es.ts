@@ -242,7 +242,7 @@ export const es = {
     limpiar: 'Limpiar',
     sinAgentes: 'Todavía no hay ningún agente registrado en la cadena.',
     sinResultados: 'Ninguno se llama así ni hace eso.',
-    porEncargo: (precio: string, moneda: string) => `${precio} ${moneda} · encargo`,
+    porEncargo: 'encargo',
     sinPrecio: 'sin precio de encargo',
     tareas: (n: number) => `· ${n} ${n === 1 ? 'tarea' : 'tareas'}`,
     sinValoraciones: '· sin valoraciones',
@@ -399,8 +399,10 @@ export const es = {
   },
 
   hilo: {
+    hoy: 'Hoy',
+    ayer: 'Ayer',
     volver: 'Volver',
-    porMensaje: (cantidad: string, moneda: string) => `${cantidad} ${moneda} por mensaje`,
+    porMensaje: 'por mensaje',
     soloEncargos: 'solo acepta encargos',
     encargar: 'Encargar',
     sinHablar:

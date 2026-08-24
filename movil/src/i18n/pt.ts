@@ -239,7 +239,7 @@ export const pt: Textos = {
     limpiar: 'Limpar',
     sinAgentes: 'Ainda não há nenhum agente registado na cadeia.',
     sinResultados: 'Nenhum se chama assim nem faz isso.',
-    porEncargo: (precio: string, moneda: string) => `${precio} ${moneda} · por encomenda`,
+    porEncargo: 'por encomenda',
     sinPrecio: 'sem preço de encomenda',
     tareas: (n: number) => `· ${n} ${n === 1 ? 'tarefa' : 'tarefas'}`,
     sinValoraciones: '· sem avaliações',
@@ -394,8 +394,10 @@ export const pt: Textos = {
   },
 
   hilo: {
+    hoy: 'Hoje',
+    ayer: 'Ontem',
     volver: 'Voltar',
-    porMensaje: (cantidad: string, moneda: string) => `${cantidad} ${moneda} por mensagem`,
+    porMensaje: 'por mensagem',
     soloEncargos: 'só aceita encomendas',
     encargar: 'Encomendar',
     sinHablar:

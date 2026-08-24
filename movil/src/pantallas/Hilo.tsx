@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useWalletClient } from 'wagmi';
 import { useWallet } from '@/hooks/useWallet';
@@ -18,7 +18,7 @@ import HojaFirmar from '~/componentes/HojaFirmar';
 import HojaEncargar from '~/componentes/HojaEncargar';
 import HojaRevisar from '~/componentes/HojaRevisar';
 import { monto } from '~/lib/formato';
-import { useTextos } from '~/i18n/idiomas';
+import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 
 type Abierta = null | 'firmar' | 'encargar' | 'revisar';
@@ -173,10 +173,19 @@ export default function Hilo(): React.ReactElement {
           <Hexagono semilla={agente} inicial={(datos?.nombre ?? 'A').slice(0, 1)} tamano={34} />
           <div className="min-w-0">
             <p className="truncate text-[15px] font-semibold">{datos?.nombre ?? '…'}</p>
-            <p className="font-mono text-[11.5px] text-ink-3">
-              {datos?.cobro
-                ? T.hilo.porMensaje(monto(datos.cobro.amount), datos.cobro.simbolo)
-                : T.hilo.soloEncargos}
+            {/* Igual que en el mercado: la cifra en mono, la explicación no.
+                «solo acepta encargos» en monoespaciada parecía un dato. */}
+            <p className="text-[11.5px] text-ink-3">
+              {datos?.cobro ? (
+                <>
+                  <span className="font-mono text-ink-2">
+                    {monto(datos.cobro.amount)} {datos.cobro.simbolo}
+                  </span>{' '}
+                  {T.hilo.porMensaje}
+                </>
+              ) : (
+                T.hilo.soloEncargos
+              )}
             </p>
           </div>
         </Link>
@@ -195,13 +204,19 @@ export default function Hilo(): React.ReactElement {
             {T.hilo.sinHablar}
           </p>
         )}
-        {entradas.map((e) => (
-          <EntradaHilo
-            key={claveDeEntrada(e)}
-            entrada={e}
-            onRevisar={() => setEncargoRevisando(e.clase === 'encargo' ? e.encargo.id : null)}
-            T={T}
-          />
+        {entradas.map((e, i) => (
+          <Fragment key={claveDeEntrada(e)}>
+            {/* Un separador cuando cambia el día. En una herramienta de
+                trabajo lo primero que se busca de un mensaje es CUÁNDO, y el
+                hilo no lo decía en ninguna parte: cuarenta burbujas iguales
+                sin una sola fecha. */}
+            {cambiaElDia(entradas[i - 1], e) && <Dia cuando={e.cuando} />}
+            <EntradaHilo
+              entrada={e}
+              onRevisar={() => setEncargoRevisando(e.clase === 'encargo' ? e.encargo.id : null)}
+              T={T}
+            />
+          </Fragment>
         ))}
         <div ref={finDelHilo} />
       </div>
@@ -289,6 +304,9 @@ function EntradaHilo({
     const mio = entrada.mensaje.de === 'yo';
     return (
       <div
+        className={`flex shrink-0 flex-col gap-0.5 ${mio ? 'items-end' : 'items-start'}`}
+      >
+      <div
         className={`seleccionable max-w-[82%] shrink-0 rounded-2xl border px-3.5 py-2.5 ${
           mio
             ? 'self-end rounded-br-[5px] border-[#4A3E75] bg-[#2A2340]'
@@ -296,6 +314,11 @@ function EntradaHilo({
         }`}
       >
         <p className="whitespace-pre-wrap text-[14px] leading-[1.5]">{entrada.mensaje.texto}</p>
+      </div>
+        {/* La hora, fuera de la burbuja y en pequeño: se consulta, no se lee. */}
+        <span className="px-1 font-mono text-[10.5px] text-ink-3">
+          {hora(entrada.mensaje.cuando)}
+        </span>
       </div>
     );
   }
@@ -400,4 +423,50 @@ function motivo(err: unknown, T: Textos): string {
   if (/user rejected|rechaz/i.test(msg)) return T.hilo.cancelaste;
   if (/fetch|network|failed to fetch/i.test(msg)) return T.hilo.sinRed;
   return msg;
+}
+
+/* ── el tiempo, que un hilo de trabajo necesita ──────────────────────────── */
+
+/** «17:42», en el reloj del idioma puesto. */
+function hora(ms: number): string {
+  return new Date(ms).toLocaleTimeString(etiquetaIdioma(), { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Si entre dos entradas ha cambiado el día. La primera siempre lo cambia. */
+function cambiaElDia(previa: Entrada | undefined, actual: Entrada): boolean {
+  if (!previa) return true;
+  return new Date(previa.cuando).toDateString() !== new Date(actual.cuando).toDateString();
+}
+
+/**
+ * La raya con la fecha.
+ *
+ * «Hoy» y «Ayer» con nombre porque es como lo dice la gente; de ahí para
+ * atrás, la fecha entera. Sin el año si es de este: en un hilo de la semana
+ * pasada el año no aporta y ocupa.
+ */
+function Dia({ cuando }: { cuando: number }): React.ReactElement {
+  const T = useTextos();
+  const d = new Date(cuando);
+  const hoy = new Date();
+  const ayer = new Date(hoy.getTime() - 86_400_000);
+
+  const texto =
+    d.toDateString() === hoy.toDateString()
+      ? T.hilo.hoy
+      : d.toDateString() === ayer.toDateString()
+        ? T.hilo.ayer
+        : d.toLocaleDateString(etiquetaIdioma(), {
+            day: 'numeric',
+            month: 'long',
+            ...(d.getFullYear() === hoy.getFullYear() ? {} : { year: 'numeric' }),
+          });
+
+  return (
+    <div className="my-1 flex shrink-0 items-center gap-3">
+      <div className="h-px grow bg-line" />
+      <span className="text-[11px] uppercase tracking-[0.06em] text-ink-3">{texto}</span>
+      <div className="h-px grow bg-line" />
+    </div>
+  );
 }

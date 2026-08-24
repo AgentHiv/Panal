@@ -115,9 +115,20 @@ function Tarjeta({ agente, T }: { agente: Agent; T: Textos }): React.ReactElemen
           <p className="mt-1 line-clamp-2 text-[13px] leading-[1.45] text-ink-2">{agente.tagline}</p>
 
           <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className={`font-mono text-[12.5px] ${tarifa ? 'text-monad-mist' : 'text-ink-3'}`}>
-              {tarifa ? T.mercado.porEncargo(tarifa, moneda) : T.mercado.sinPrecio}
-            </span>
+            {/* La CIFRA en monoespaciada y la palabra no: la mono es para
+                datos —importes, direcciones, hashes— y meter prosa dentro es
+                lo que hacía que «0,05 $PANAL · encargo» pesara lo mismo que el
+                nombre del agente. Ahora el precio destaca y «encargo» explica. */}
+            {tarifa ? (
+              <>
+                <span className="font-mono text-[13px] font-medium text-monad-mist">
+                  {tarifa} {moneda}
+                </span>
+                <span className="text-[11.5px] text-ink-3">{T.mercado.porEncargo}</span>
+              </>
+            ) : (
+              <span className="text-[11.5px] text-ink-3">{T.mercado.sinPrecio}</span>
+            )}
             {agente.tasksCompleted > 0 ? (
               <span className="text-[11px] text-ink-3">{T.mercado.tareas(agente.tasksCompleted)}</span>
             ) : (

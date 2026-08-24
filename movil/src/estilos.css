@@ -96,6 +96,22 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /**
+   * Las cifras, en columna.
+   *
+   * `tabular-nums` da a cada dígito el mismo ancho, así que 1.000,00 y 88,50
+   * ocupan lo mismo por cifra y las columnas de una tabla quedan alineadas sin
+   * tocar nada más. En una app que enseña saldos, importes y comisiones unos
+   * debajo de otros es la diferencia entre una hoja de cuentas y una lista.
+   *
+   * Va en la monoespaciada porque es la que usa la app para los datos, y de
+   * paso `slashed-zero` distingue el cero de la O en una dirección — que es
+   * exactamente donde alguien se equivoca al cotejarla a mano.
+   */
+  .font-mono {
+    font-variant-numeric: tabular-nums slashed-zero;
+  }
+
   /* El texto que la gente sí necesita copiar: direcciones, hashes, respuestas. */
   .seleccionable {
     -webkit-user-select: text;

@@ -239,7 +239,7 @@ export const en: Textos = {
     limpiar: 'Clear',
     sinAgentes: 'No agent is registered on the chain yet.',
     sinResultados: 'None is called that or does that.',
-    porEncargo: (precio: string, moneda: string) => `${precio} ${moneda} · per job`,
+    porEncargo: 'per job',
     sinPrecio: 'no job price',
     tareas: (n: number) => `· ${n} ${n === 1 ? 'task' : 'tasks'}`,
     sinValoraciones: '· no reviews',
@@ -394,8 +394,10 @@ export const en: Textos = {
   },
 
   hilo: {
+    hoy: 'Today',
+    ayer: 'Yesterday',
     volver: 'Back',
-    porMensaje: (cantidad: string, moneda: string) => `${cantidad} ${moneda} per message`,
+    porMensaje: 'per message',
     soloEncargos: 'only takes commissions',
     encargar: 'Commission',
     sinHablar:
