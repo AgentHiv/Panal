@@ -35,10 +35,29 @@
  * teléfono, y el WebView no llega ahí sin un plugin nativo. La pantalla lo
  * dice, y este comentario existe para que nadie lo suba de categoría por el
  * camino.
+ *
+ * LO QUE ENTRA DE FUERA
+ *
+ * Además de crearlas, el llavero admite wallets que ya existen: doce (o
+ * veinticuatro) palabras, o una clave privada suelta. Se guardan igual de
+ * cifradas y se distinguen por `tipo`, porque una clave privada no tiene doce
+ * palabras que enseñar y la pantalla no puede prometerlas.
+ *
+ * Una wallet que entra de fuera nace con `copiada: true`: su copia de
+ * seguridad existe ya en algún sitio —de allí ha salido— y avisar de que «no
+ * está apuntada» sería un aviso falso, que es peor que ninguno.
+ *
+ * FIRMAR ES OTRO ARCHIVO
+ *
+ * `cuentaDe` devuelve la cuenta de viem lista para firmar, y hasta ahí llega
+ * esto: quien la usa para mandar dinero es `lib/enviar.ts`. La promesa de que
+ * este archivo no hace una sola petición de red sigue en pie.
  * ───────────────────────────────────────────────────────────────────────────
  */
 
-import { english, generateMnemonic, mnemonicToAccount } from 'viem/accounts';
+import { english, generateMnemonic, mnemonicToAccount, privateKeyToAccount } from 'viem/accounts';
+import type { HDAccount, PrivateKeyAccount } from 'viem';
+import { claseDeSecreto, limpiarClave, limpiarFrase, validarPalabras } from '~/lib/envio';
 
 const CLAVE = 'panal:llavero:v1';
 
@@ -48,6 +67,9 @@ const VUELTAS = 310_000;
 /** Lo que se cifra para poder decir «ese PIN no es» sin tener ninguna wallet. */
 const TESTIGO = 'panal:llavero';
 
+/** Qué se guardó: doce palabras, o una clave privada a secas. */
+export type Tipo = 'palabras' | 'clave';
+
 export interface WalletGuardada {
   id: string;
   nombre: string;
@@ -56,14 +78,29 @@ export interface WalletGuardada {
   creada: number;
   /** Si el dueño ha dicho que ya apuntó las doce palabras. */
   copiada: boolean;
+  tipo: Tipo;
+  /** Si vino de fuera en vez de nacer aquí. */
+  importada: boolean;
 }
+
+/**
+ * Una fila del disco. `tipo` e `importada` van opcionales porque las wallets
+ * escritas antes de que existieran no los tienen, y un llavero de verdad no se
+ * puede migrar a la fuerza: si el campo falta, es una wallet de doce palabras
+ * creada aquí, que es lo único que había entonces.
+ */
+type Fila = Omit<WalletGuardada, 'tipo' | 'importada'> & {
+  tipo?: Tipo;
+  importada?: boolean;
+  semilla: Cifrado;
+};
 
 /** Lo guardado en el disco. Las direcciones van en claro; las semillas no. */
 interface Guardado {
   version: 1;
   sal: string;
   testigo: Cifrado;
-  wallets: (WalletGuardada & { semilla: Cifrado })[];
+  wallets: Fila[];
 }
 
 interface Cifrado {
@@ -170,6 +207,8 @@ export function listar(): WalletGuardada[] {
     direccion: w.direccion,
     creada: w.creada,
     copiada: w.copiada,
+    tipo: w.tipo ?? 'palabras',
+    importada: w.importada ?? false,
   }));
 }
 
@@ -227,6 +266,8 @@ export async function crearWallet(llave: Llave, nombre: string): Promise<WalletN
     direccion: cuenta.address,
     creada: Date.now(),
     copiada: false,
+    tipo: 'palabras',
+    importada: false,
   };
 
   g.wallets.push({ ...wallet, semilla: await cifrar(llave, frase) });
@@ -235,12 +276,112 @@ export async function crearWallet(llave: Llave, nombre: string): Promise<WalletN
   return { wallet, palabras: frase.split(' ') };
 }
 
-/** Las doce palabras de una wallet ya guardada. Exige el llavero abierto. */
-export async function verPalabras(llave: Llave, id: string): Promise<string[]> {
+export interface Secreto {
+  tipo: Tipo;
+  /** La frase entera, o la clave privada con su `0x`. */
+  texto: string;
+}
+
+/** Lo que se guardó, descifrado. Exige el llavero abierto. */
+export async function verSecreto(llave: Llave, id: string): Promise<Secreto> {
   const g = leer();
   const w = g?.wallets.find((x) => x.id === id);
   if (!w) throw new Error('Esa wallet no está');
-  return (await descifrar(llave, w.semilla)).split(' ');
+  return { tipo: w.tipo ?? 'palabras', texto: await descifrar(llave, w.semilla) };
+}
+
+/** Las doce palabras. Falla si esa wallet entró como clave privada. */
+export async function verPalabras(llave: Llave, id: string): Promise<string[]> {
+  const s = await verSecreto(llave, id);
+  if (s.tipo !== 'palabras') throw new Error('Esa wallet no tiene palabras');
+  return s.texto.split(' ');
+}
+
+/**
+ * La cuenta de viem, lista para firmar.
+ *
+ * Es la única puerta por la que sale la clave de este archivo, y sale ya
+ * envuelta: quien la recibe puede firmar con ella, pero no leerla. Para leerla
+ * está `verSecreto`, que se llama desde una pantalla que enseña un aviso.
+ */
+export async function cuentaDe(llave: Llave, id: string): Promise<HDAccount | PrivateKeyAccount> {
+  const s = await verSecreto(llave, id);
+  return s.tipo === 'clave'
+    ? privateKeyToAccount(s.texto as `0x${string}`)
+    : mnemonicToAccount(s.texto);
+}
+
+/* ── traer una wallet de fuera ───────────────────────────────────────────── */
+
+export type Importacion =
+  | { ok: true; wallet: WalletGuardada }
+  | { ok: false; pega: string };
+
+/**
+ * Mete en el llavero una wallet que ya existía.
+ *
+ * Devuelve la pega en vez de lanzarla porque aquí todos los fallos son de
+ * quien escribe, no del programa: una palabra mal, una clave a medias, una
+ * wallet que ya estaba. Eso se enseña en la pantalla tal cual, y un `throw`
+ * habría acabado siendo un «no se pudo importar» que no dice cuál de las tres.
+ *
+ * La suma de control la comprueba viem (`validateMnemonic`), no nosotros: una
+ * frase con dos palabras intercambiadas sigue siendo doce palabras válidas y
+ * da una dirección distinta y vacía. Sin esa comprobación, importar mal
+ * parecería haber funcionado.
+ */
+export async function importarWallet(
+  llave: Llave,
+  nombre: string,
+  secreto: string,
+): Promise<Importacion> {
+  const g = leer();
+  if (!g) throw new Error('No hay llavero');
+
+  const clase = claseDeSecreto(secreto);
+  if (!clase)
+    return {
+      ok: false,
+      pega: 'Eso no son 12 palabras ni una clave privada. Pega una de las dos cosas.',
+    };
+
+  let texto: string;
+  let direccion: string;
+  try {
+    if (clase === 'clave') {
+      texto = limpiarClave(secreto) as string;
+      direccion = privateKeyToAccount(texto as `0x${string}`).address;
+    } else {
+      texto = limpiarFrase(secreto);
+      if (!validarPalabras(texto))
+        return {
+          ok: false,
+          pega: 'Esas palabras no cuadran. Míralas de nuevo: alguna no es de la lista, o están en otro orden.',
+        };
+      direccion = mnemonicToAccount(texto).address;
+    }
+  } catch {
+    return { ok: false, pega: 'No se ha podido leer eso como una wallet.' };
+  }
+
+  if (g.wallets.some((w) => w.direccion.toLowerCase() === direccion.toLowerCase()))
+    return { ok: false, pega: 'Esa wallet ya está en el llavero.' };
+
+  const wallet: WalletGuardada = {
+    id: crypto.randomUUID(),
+    nombre: nombre.trim() || 'Importada',
+    direccion,
+    creada: Date.now(),
+    // Su copia de seguridad está fuera desde antes: de ahí ha venido.
+    copiada: true,
+    tipo: clase,
+    importada: true,
+  };
+
+  g.wallets.push({ ...wallet, semilla: await cifrar(llave, texto) });
+  escribir(g);
+
+  return { ok: true, wallet };
 }
 
 /** Marca que las palabras ya están apuntadas fuera del teléfono. */

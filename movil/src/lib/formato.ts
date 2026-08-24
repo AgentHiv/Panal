@@ -1,4 +1,4 @@
-import { formatEther } from 'viem';
+import { formatEther, formatUnits } from 'viem';
 
 /**
  * Cuántos decimales necesita una cantidad para no mentir.
@@ -129,4 +129,59 @@ export function precio(n: number): string | null {
   if (!Number.isFinite(n) || n <= 0) return null;
   if (n < 0.0001) return '<0,0001';
   return escribir(n);
+}
+
+/**
+ * La cantidad EXACTA, sin redondear ni una cifra.
+ *
+ * Existe por un fallo que se vio en una foto: la pantalla de confirmar decía
+ * «2,00 MON» cuando lo que se iba a firmar eran 1,995 —lo que deja el botón
+ * «Todo» tras apartar el gas—. `monto` redondea a dos decimales de 1 en
+ * adelante, que está bien para leer un precio y está MAL para lo último que
+ * alguien mira antes de mandar dinero. Aquí no se redondea nada: se enseñan
+ * todas las cifras que tenga.
+ */
+export function exacto(wei: bigint, decimales = 18): string {
+  const [entera, decimal] = formatUnits(wei, decimales).split('.');
+  const miles = entera.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return decimal ? `${miles},${decimal}` : miles;
+}
+
+/**
+ * Una dirección en grupos de cuatro.
+ *
+ * Es como se comprueba una dirección a ojo sin perder el sitio, y además
+ * parte por los grupos al llegar al borde en vez de dejar una cifra suelta
+ * en la línea siguiente.
+ */
+export function troceada(dir: string): string {
+  return `0x ${dir.slice(2).replace(/(.{4})/g, '$1 ').trim()}`;
+}
+
+/**
+ * Un saldo se lee de un vistazo o no se lee.
+ *
+ * Dos decimales para las cantidades normales; cuatro solo cuando con dos
+ * saldría «0,00» teniendo algo, que es peor que un número largo: parece que no
+ * tienes nada.
+ *
+ * SE CORTA, NO SE REDONDEA. `toLocaleString` redondea al más cercano, y eso
+ * hacía que 1,995 MON se enseñaran como «2,00»: la pantalla decía que tienes
+ * más de lo que tienes, y al escribir esa cifra saltaba un «no hay tanto» que
+ * parece un fallo de la app. Un saldo puede quedarse corto; no puede pasarse.
+ *
+ * Los miles se agrupan a mano porque el español NO agrupa cuatro cifras por
+ * defecto: sin eso, mil salía «1000,00» y diez mil «10.000,00», y los saldos
+ * del llavero —uno debajo de otro, MON al lado de $PANAL— quedaban
+ * desalineados justo donde hay que comparar dos cantidades de un vistazo.
+ */
+export function conDecimales(bruto: bigint, decimales: number): string {
+  if (bruto === 0n) return '0';
+  const [entera, decimal = ''] = formatUnits(bruto, decimales).split('.');
+  const cuantos = Number(`${entera}.${decimal}`) < 0.01 ? 4 : 2;
+  const cortada = decimal.slice(0, cuantos).padEnd(cuantos, '0');
+  // Algo que existe pero no cabe ni en cuatro decimales no es un cero.
+  if (entera === '0' && /^0+$/.test(cortada)) return '<0,0001';
+  const miles = entera.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${miles},${cortada}`;
 }

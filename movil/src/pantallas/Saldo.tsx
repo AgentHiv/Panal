@@ -114,7 +114,8 @@ export default function Saldo(): React.ReactElement {
             <div className="min-w-0 grow">
               <p className="text-[13.5px] font-medium">Tu llavero</p>
               <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">
-                Crea wallets en este teléfono. La clave se cifra con un PIN y no sale de aquí.
+                Wallets de este teléfono: verles el saldo, mandar, recibir y traer las que ya
+                tengas. La clave se cifra con un PIN y no sale de aquí.
               </p>
             </div>
             <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180" />
