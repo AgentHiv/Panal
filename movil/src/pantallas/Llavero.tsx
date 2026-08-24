@@ -19,6 +19,8 @@ import {
   verSecreto,
 } from '~/lib/llavero';
 import type { Llave, Secreto, WalletGuardada } from '~/lib/llavero';
+import { useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * El llavero.
@@ -77,6 +79,7 @@ export default function Llavero(): React.ReactElement {
   // Antes de los `return` de abajo: los hooks no admiten atajos. Con el
   // llavero cerrado la lista está vacía y la consulta ni sale.
   const saldos = useSaldosLlavero(wallets.map((w) => w.direccion));
+  const T = useTextos();
 
   const refrescar = useCallback(() => setWallets(listar()), []);
 
@@ -89,7 +92,7 @@ export default function Llavero(): React.ReactElement {
       return;
     }
     if (estado.primero !== pin) {
-      setError('No coinciden. Vuelve a empezar.');
+      setError(T.llavero.pinNoCoinciden);
       setPaso({ que: 'estrenar', primero: null });
       return;
     }
@@ -100,7 +103,7 @@ export default function Llavero(): React.ReactElement {
       refrescar();
       setPaso({ que: 'abierto' });
     } catch {
-      setError('No se pudo crear el llavero en este teléfono.');
+      setError(T.llavero.noSePudoCrear);
       setPaso({ que: 'estrenar', primero: null });
     } finally {
       setOcupado(false);
@@ -115,7 +118,7 @@ export default function Llavero(): React.ReactElement {
     const k = await abrir(pin);
     setOcupado(false);
     if (!k) {
-      setError('Ese PIN no es');
+      setError(T.llavero.pinMalo);
       return;
     }
     setLlave(k);
@@ -138,7 +141,7 @@ export default function Llavero(): React.ReactElement {
         recien: true,
       });
     } catch {
-      setError('No se pudo guardar la wallet. Puede que no quede sitio en el teléfono.');
+      setError(T.llavero.noSePudoGuardar);
     } finally {
       setOcupado(false);
     }
@@ -153,12 +156,8 @@ export default function Llavero(): React.ReactElement {
   if (paso.que === 'estrenar') {
     return (
       <Teclado
-        titulo={paso.primero === null ? 'Pon un PIN' : 'Otra vez, para confirmar'}
-        explicacion={
-          paso.primero === null
-            ? 'Seis dígitos. Cifran las wallets que crees aquí, y no hay forma de recuperarlo: si se te olvida, se pierden.'
-            : 'Repite los mismos seis dígitos.'
-        }
+        titulo={paso.primero === null ? T.llavero.pinTitulo : T.llavero.pinOtraVez}
+        explicacion={paso.primero === null ? T.llavero.pinExplicacion : T.llavero.pinRepite}
         onCompleto={alEstrenar}
         error={error}
         ocupado={ocupado}
@@ -169,8 +168,8 @@ export default function Llavero(): React.ReactElement {
   if (paso.que === 'bloqueado') {
     return (
       <Teclado
-        titulo="Tu llavero"
-        explicacion="Las wallets que guardas en este teléfono. Nada sale de aquí."
+        titulo={T.llavero.bloqueadoTitulo}
+        explicacion={T.llavero.bloqueadoExplicacion}
         onCompleto={alAbrir}
         error={error}
         ocupado={ocupado}
@@ -184,6 +183,7 @@ export default function Llavero(): React.ReactElement {
         wallet={paso.wallet}
         secreto={paso.secreto}
         recien={paso.recien}
+        T={T}
         onListo={() => {
           if (paso.recien) marcarCopiada(paso.wallet.id);
           refrescar();
@@ -197,11 +197,11 @@ export default function Llavero(): React.ReactElement {
     <div className="relative flex min-h-0 grow flex-col">
       <header className="flex shrink-0 items-end justify-between px-5 pb-3 pt-5">
         <div>
-          <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">Tu llavero</h1>
+          <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">
+            {T.llavero.titulo}
+          </h1>
           <p className="mt-0.5 text-[12.5px] text-ink-3">
-            {wallets.length === 0
-              ? 'Vacío, de momento'
-              : `${wallets.length} ${wallets.length === 1 ? 'wallet' : 'wallets'} en este teléfono`}
+            {wallets.length === 0 ? T.llavero.vacio : T.llavero.cuantas(wallets.length)}
           </p>
         </div>
         <div className="flex gap-2">
@@ -210,7 +210,7 @@ export default function Llavero(): React.ReactElement {
               type="button"
               onClick={saldos.refrescar}
               className="pulsable tocable flex h-9 w-9 items-center justify-center rounded-full border border-line"
-              aria-label="Volver a mirar los saldos"
+              aria-label={T.llavero.refrescar}
             >
               <Icono nombre="recargar" tamano={15} color="#C8C3DC" grosor={1.9} />
             </button>
@@ -224,7 +224,7 @@ export default function Llavero(): React.ReactElement {
               setPaso({ que: 'bloqueado' });
             }}
             className="pulsable tocable flex h-9 w-9 items-center justify-center rounded-full border border-line"
-            aria-label="Bloquear el llavero"
+            aria-label={T.llavero.bloquear}
           >
             <Icono nombre="candado" tamano={15} color="#C8C3DC" grosor={1.9} />
           </button>
@@ -268,9 +268,7 @@ export default function Llavero(): React.ReactElement {
             {!w.copiada && (
               <div className="mt-2.5 flex items-center gap-1.5">
                 <Icono nombre="info" tamano={12} color="#C9653B" grosor={2.4} />
-                <span className="text-[11.5px] text-terra">
-                  Sin copia — si pierdes el móvil, se pierde
-                </span>
+                <span className="text-[11.5px] text-terra">{T.llavero.sinCopia}</span>
               </div>
             )}
           </button>
@@ -284,10 +282,10 @@ export default function Llavero(): React.ReactElement {
             className="pulsable flex grow basis-0 flex-col gap-1.5 rounded-[14px] border border-dashed border-line p-3.5 text-left disabled:opacity-50"
           >
             <Icono nombre="mas" tamano={18} color="#948DAE" grosor={1.9} />
-            <p className="text-[13.5px] font-medium">{ocupado ? 'Creando…' : 'Crear una'}</p>
-            <p className="text-[11.5px] leading-[1.45] text-ink-3">
-              Se genera aquí y no la ve nadie más
+            <p className="text-[13.5px] font-medium">
+              {ocupado ? T.llavero.creando : T.llavero.crear}
             </p>
+            <p className="text-[11.5px] leading-[1.45] text-ink-3">{T.llavero.crearPie}</p>
           </button>
 
           <button
@@ -296,10 +294,8 @@ export default function Llavero(): React.ReactElement {
             className="pulsable flex grow basis-0 flex-col gap-1.5 rounded-[14px] border border-dashed border-line p-3.5 text-left"
           >
             <Icono nombre="bajar" tamano={18} color="#948DAE" grosor={1.9} />
-            <p className="text-[13.5px] font-medium">Traer una</p>
-            <p className="text-[11.5px] leading-[1.45] text-ink-3">
-              Con sus palabras o su clave privada
-            </p>
+            <p className="text-[13.5px] font-medium">{T.llavero.traer}</p>
+            <p className="text-[11.5px] leading-[1.45] text-ink-3">{T.llavero.traerPie}</p>
           </button>
         </div>
 
@@ -307,7 +303,7 @@ export default function Llavero(): React.ReactElement {
 
         {saldos.fallo && wallets.length > 0 && (
           <p className="shrink-0 px-1 text-[12px] leading-[1.5] text-terra">
-            No se ha podido leer el saldo. Es la red, no la wallet: lo que haya dentro sigue ahí.
+            {T.llavero.noSePudoLeer}
           </p>
         )}
 
@@ -315,14 +311,8 @@ export default function Llavero(): React.ReactElement {
         <div className="mt-3 flex shrink-0 gap-2.5 rounded-[14px] border border-honey-line bg-honey-soft p-3.5">
           <Icono nombre="info" tamano={16} color="#E29A2E" grosor={2} className="mt-px shrink-0" />
           <div className="min-w-0">
-            <p className="text-[12.5px] font-semibold text-honey">Hasta dónde llega este PIN</p>
-            <p className="mt-1 text-[12px] leading-[1.55] text-ink-2">
-              Las claves están cifradas con él dentro del cajón privado de la app: ninguna otra app
-              las lee, y ya no salen en la copia de Google. Lo que el PIN NO para es a alguien con tu
-              teléfono desbloqueado y tiempo. Para eso hace falta el chip seguro del móvil, y a eso
-              el WebView no llega sin escribir un trozo nativo. Guarda aquí lo que usas, no lo que
-              guardas.
-            </p>
+            <p className="text-[12.5px] font-semibold text-honey">{T.llavero.hastaDonde}</p>
+            <p className="mt-1 text-[12px] leading-[1.55] text-ink-2">{T.llavero.hastaDondeTexto}</p>
           </div>
         </div>
       </div>
@@ -334,6 +324,7 @@ export default function Llavero(): React.ReactElement {
           sinLeer={saldos.cargando || saldos.fallo}
           onCerrar={() => setAbierta(null)}
           onVerSecreto={() => void alVerSecreto(abierta)}
+          T={T}
           onEnviar={() => {
             setEnviando(abierta);
             setAbierta(null);
@@ -357,14 +348,18 @@ export default function Llavero(): React.ReactElement {
           saldos={saldos.por[enviando.direccion.toLowerCase()] ?? SIN_SALDO}
           onCerrar={() => setEnviando(null)}
           onHecho={saldos.refrescar}
+          T={T}
         />
       )}
 
-      {recibiendo && <HojaRecibir wallet={recibiendo} onCerrar={() => setRecibiendo(null)} />}
+      {recibiendo && (
+        <HojaRecibir wallet={recibiendo} onCerrar={() => setRecibiendo(null)} T={T} />
+      )}
 
       {importando && llave && (
         <HojaImportar
           llave={llave}
+          T={T}
           onCerrar={() => setImportando(false)}
           onHecho={(w) => {
             setImportando(false);
@@ -422,11 +417,13 @@ function SecretoEnPantalla({
   secreto,
   recien,
   onListo,
+  T,
 }: {
   wallet: WalletGuardada;
   secreto: Secreto;
   recien: boolean;
   onListo: () => void;
+  T: Textos;
 }): React.ReactElement {
   const palabras = secreto.tipo === 'palabras' ? secreto.texto.split(' ') : [];
 
@@ -434,12 +431,14 @@ function SecretoEnPantalla({
     <div className="flex min-h-0 grow flex-col">
       <header className="shrink-0 px-5 pb-2 pt-5">
         <h1 className="font-display text-[24px] font-semibold -tracking-[0.015em]">
-          {secreto.tipo === 'palabras' ? `Tus ${palabras.length} palabras` : 'Su clave privada'}
+          {secreto.tipo === 'palabras'
+            ? T.llavero.palabrasTitulo(palabras.length)
+            : T.llavero.claveTitulo}
         </h1>
         <p className="mt-1.5 text-[13px] leading-[1.55] text-ink-2">
           {secreto.tipo === 'palabras'
-            ? `Apúntalas en papel y guárdalas fuera del teléfono. Son la única forma de recuperar ${wallet.nombre} si pierdes el móvil — nadie más tiene copia, ni Panal.`
-            : `Con esto se controla ${wallet.nombre} desde cualquier sitio. Guárdala donde guardas lo importante, no en una foto.`}
+            ? T.llavero.palabrasTexto(wallet.nombre)
+            : T.llavero.claveTexto(wallet.nombre)}
         </p>
       </header>
 
@@ -470,10 +469,7 @@ function SecretoEnPantalla({
 
         <div className="flex shrink-0 gap-2.5 rounded-[14px] border border-terra/40 bg-terra/10 p-3.5">
           <Icono nombre="info" tamano={16} color="#C9653B" grosor={2} className="mt-px shrink-0" />
-          <p className="text-[12px] leading-[1.55] text-ink-2">
-            No la guardes en una foto, ni en notas, ni en un chat. Quien la tenga puede vaciar esta
-            wallet desde cualquier sitio, sin el teléfono y sin el PIN.
-          </p>
+          <p className="text-[12px] leading-[1.55] text-ink-2">{T.llavero.peligro}</p>
         </div>
 
         <button
@@ -481,7 +477,7 @@ function SecretoEnPantalla({
           onClick={onListo}
           className="pulsable tocable mt-1 shrink-0 rounded-full bg-monad py-3.5 text-[15px] font-semibold text-white shadow-monad"
         >
-          {recien ? 'Ya las tengo apuntadas' : 'Listo'}
+          {recien ? T.llavero.yaApuntadas : T.comun.listo}
         </button>
       </div>
     </div>
@@ -499,6 +495,7 @@ function Detalle({
   onEnviar,
   onRecibir,
   onBorrar,
+  T,
 }: {
   wallet: WalletGuardada;
   saldo: Par;
@@ -508,6 +505,7 @@ function Detalle({
   onEnviar: () => void;
   onRecibir: () => void;
   onBorrar: () => void;
+  T: Textos;
 }): React.ReactElement {
   const [copiado, setCopiado] = useState(false);
   const [seguro, setSeguro] = useState(false);
@@ -536,7 +534,7 @@ function Detalle({
           className="pulsable tocable flex grow items-center justify-center gap-2 rounded-full bg-monad py-3 text-[14px] font-semibold text-white shadow-monad disabled:opacity-40 disabled:shadow-none"
         >
           <Icono nombre="fuera" tamano={15} color="#FFFFFF" />
-          Mandar
+          {T.llavero.mandar}
         </button>
         <button
           type="button"
@@ -544,18 +542,18 @@ function Detalle({
           className="pulsable tocable flex grow items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-ink-2"
         >
           <Icono nombre="bajar" tamano={15} color="#948DAE" />
-          Recibir
+          {T.llavero.recibir}
         </button>
       </div>
       {vacia && (
         <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">
-          No hay nada que mandar todavía. Toca «Recibir» para ver a dónde mandárselo.
+          {T.llavero.vaciaPie}
         </p>
       )}
 
       <div className="my-4 h-px bg-line" />
 
-      <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">Su dirección</p>
+      <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">{T.comun.suDireccion}</p>
       <p className="seleccionable mt-2 break-all font-mono text-[12.5px] leading-[1.5] text-ink-2">
         {wallet.direccion}
       </p>
@@ -570,7 +568,7 @@ function Detalle({
           tamano={15}
           color={copiado ? '#92A268' : '#948DAE'}
         />
-        {copiado ? 'Copiada' : 'Copiar dirección'}
+        {copiado ? T.comun.copiada : T.comun.copiarDireccion}
       </button>
 
       <button
@@ -579,13 +577,11 @@ function Detalle({
         className="pulsable tocable mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-line py-2.5 text-[13.5px] font-medium text-ink-2"
       >
         <Icono nombre="llave" tamano={15} color="#948DAE" />
-        {wallet.tipo === 'clave' ? 'Ver la clave privada' : 'Ver las 12 palabras'}
+        {wallet.tipo === 'clave' ? T.llavero.verClave : T.llavero.verPalabras}
       </button>
 
       <p className="mt-3 text-[12px] leading-[1.55] text-ink-3">
-        {wallet.importada
-          ? 'Traída de fuera. Sigue existiendo donde estaba: borrarla de aquí no la borra de allí.'
-          : 'Creada en este teléfono. Su copia de seguridad son sus 12 palabras y no hay otra.'}
+        {wallet.importada ? T.llavero.importada : T.llavero.creadaAqui}
       </p>
 
       <div className="my-4 h-px bg-line" />
@@ -597,17 +593,15 @@ function Detalle({
           className="pulsable tocable flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-[13.5px] font-medium text-terra"
         >
           <Icono nombre="papelera" tamano={15} color="#C9653B" />
-          Borrar del teléfono
+          {T.llavero.borrarDelTelefono}
         </button>
       ) : (
         <div className="rounded-[14px] border border-terra/40 bg-terra/10 p-3.5">
           <p className="text-[13px] font-semibold text-terra">
-            {wallet.copiada ? '¿Seguro?' : 'No has apuntado sus 12 palabras'}
+            {wallet.copiada ? T.llavero.seguro : T.llavero.sinApuntar}
           </p>
           <p className="mt-1 text-[12px] leading-[1.55] text-ink-2">
-            {wallet.copiada
-              ? 'Se va de este teléfono. Con sus palabras —o su clave— la recuperas en cualquier wallet; sin ellas, no.'
-              : 'Si la borras ahora, lo que haya dentro no lo recupera nadie. Ni tú, ni Panal.'}
+            {wallet.copiada ? T.llavero.seguroTexto : T.llavero.sinApuntarTexto}
           </p>
           <div className="mt-3 flex gap-2">
             <button
@@ -615,14 +609,14 @@ function Detalle({
               onClick={() => setSeguro(false)}
               className="pulsable tocable grow rounded-full border border-line py-2.5 text-[13.5px] font-medium text-ink-2"
             >
-              Ahora no
+              {T.comun.ahoraNo}
             </button>
             <button
               type="button"
               onClick={onBorrar}
               className="pulsable tocable grow rounded-full bg-terra py-2.5 text-[13.5px] font-semibold text-white"
             >
-              Borrar
+              {T.comun.borrar}
             </button>
           </div>
         </div>

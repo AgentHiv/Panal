@@ -5,8 +5,8 @@ import { panalEscrowV2Abi } from '@/contracts/abis';
 import type { EncargoEnHilo } from '@/lib/conversaciones';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
 import { monto, restante } from '~/lib/formato';
+import { useTextos } from '~/i18n/idiomas';
 
-const LEYENDAS = ['Sin valorar', 'Muy mal', 'Mal', 'Regular', 'Bien', 'Muy bien'];
 
 /**
  * Revisar una entrega: aprobar con nota, o disputar.
@@ -30,6 +30,7 @@ export default function HojaRevisar({
 }): React.ReactElement | null {
   const [estrellas, setEstrellas] = useState(0);
   const [disputando, setDisputando] = useState(false);
+  const T = useTextos();
   const { writeContract, data: hash, isPending } = useWriteContract();
   const recibo = useWaitForTransactionReceipt({ hash });
 
@@ -71,13 +72,12 @@ export default function HojaRevisar({
     return (
       <Hoja
         abierta
-        titulo="Abrir una disputa"
+        titulo={T.revisar.disputaTitulo}
         onCerrar={() => setDisputando(false)}
         bloqueada={trabajando}
       >
         <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2">
-          Los {monto(encargo.importe)} {encargo.simbolo} se congelan. Ni tú ni el agente cobráis
-          hasta que se resuelva.
+          {T.revisar.disputaTexto(monto(encargo.importe), encargo.simbolo)}
         </p>
 
         {/* Sin campo de motivo a propósito: openDispute no acepta texto, y
@@ -85,38 +85,35 @@ export default function HojaRevisar({
             ya puede ver lo que hace falta para juzgar. */}
         <div className="mt-4 rounded-[14px] border border-line px-4 py-3.5">
           <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-            Lo que verá quien decide
+            {T.revisar.loQueVeraQuienDecide}
           </p>
           <ul className="mt-2.5 flex flex-col gap-2 text-[13px] text-ink-2">
-            <li>Lo que pediste, palabra por palabra</li>
-            <li>El archivo entregado y su hash</li>
-            <li>La conversación entera</li>
+            <li>{T.revisar.pruebaBrief}</li>
+            <li>{T.revisar.pruebaEntrega}</li>
+            <li>{T.revisar.pruebaHilo}</li>
           </ul>
         </div>
 
         <Tarjeta>
           <Fila
-            etiqueta="Decide"
-            pie="un 2-de-3, no una sola clave"
+            etiqueta={T.revisar.decide}
+            pie={T.revisar.decidePie}
             valor="0xc384…1Fe0"
             color="text-ink-3"
           />
         </Tarjeta>
 
-        <Nota>
-          Si el árbitro no resuelve en 14 días, recuperas el pago entero. Lo puede reclamar
-          cualquiera y no hace falta su permiso.
-        </Nota>
+        <Nota>{T.revisar.catorceDias}</Nota>
 
         <div className="mt-[18px] flex gap-2.5 pb-1">
           <div className="grow">
             <Boton variante="secundario" onClick={() => setDisputando(false)} disabled={trabajando}>
-              Ahora no
+              {T.comun.ahoraNo}
             </Boton>
           </div>
           <div className="grow-[1.4]">
             <Boton variante="peligro" onClick={abrirDisputa} disabled={trabajando}>
-              {trabajando ? 'Abriendo…' : 'Abrir disputa'}
+              {trabajando ? T.revisar.abriendo : T.revisar.abrirDisputa}
             </Boton>
           </div>
         </div>
@@ -125,7 +122,7 @@ export default function HojaRevisar({
   }
 
   return (
-    <Hoja abierta titulo="Revisar la entrega" onCerrar={onCerrar} bloqueada={trabajando}>
+    <Hoja abierta titulo={T.revisar.titulo} onCerrar={onCerrar} bloqueada={trabajando}>
       {encargo.entregado && (
         <div className="mt-3 flex items-center gap-2.5 rounded-xl border border-honey-line bg-honey-soft px-3.5 py-3">
           <svg
@@ -144,24 +141,27 @@ export default function HojaRevisar({
             <path d="M12 7.5V12l3 2" />
           </svg>
           <p className="text-[12.5px] leading-[1.45] text-honey">
-            Se aprueba solo en <strong className="font-semibold">{restante(encargo.entregado)}</strong>
+            {T.revisar.seApruebaSolo}{' '}
+            <strong className="font-semibold">{restante(encargo.entregado)}</strong>
             , con 5 estrellas.
           </p>
         </div>
       )}
 
       <div className="mt-3.5 rounded-[14px] border border-line px-4 py-3">
-        <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">Lo que pediste</p>
+        <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
+          {T.revisar.loQuePediste}
+        </p>
         <p className="seleccionable mt-1.5 text-[13.5px] leading-[1.5] text-ink-2">
-          {encargo.brief ?? 'El texto no está en este teléfono. En la cadena solo viaja su hash.'}
+          {encargo.brief ?? T.revisar.briefPerdido}
         </p>
       </div>
 
       <div className="mt-4">
         <div className="flex items-baseline justify-between">
-          <p className="text-[13.5px] font-semibold">Tu valoración</p>
+          <p className="text-[13.5px] font-semibold">{T.revisar.tuValoracion}</p>
           <p className={`text-[12.5px] ${estrellas > 0 ? 'text-ink-2' : 'text-ink-3'}`}>
-            {LEYENDAS[estrellas]}
+            {T.revisar.leyendas[estrellas]}
           </p>
         </div>
         <div className="-ml-2.5 mt-0.5 flex gap-0.5">
@@ -171,7 +171,7 @@ export default function HojaRevisar({
               type="button"
               onClick={() => setEstrellas(v)}
               disabled={trabajando}
-              aria-label={`${v} de 5`}
+              aria-label={T.revisar.estrellas(v)}
               className="pulsable flex h-11 w-11 items-center justify-center"
             >
               <svg
@@ -190,18 +190,18 @@ export default function HojaRevisar({
           ))}
         </div>
         <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">
-          Queda en el registro del agente. No se puede cambiar después.
+          {T.revisar.quedaEnElRegistro}
         </p>
       </div>
 
       <Tarjeta>
         <Fila
-          etiqueta="Al agente"
+          etiqueta={T.revisar.alAgente}
           valor={`${monto(alAgente)} ${encargo.simbolo}`}
           color="text-ink"
         />
         <Fila
-          etiqueta="Protocolo · 2,5 %"
+          etiqueta={T.revisar.protocolo}
           valor={`${monto(comision)} ${encargo.simbolo}`}
           color="text-ink-2"
         />
@@ -214,10 +214,10 @@ export default function HojaRevisar({
           disabled={estrellas < 1 || trabajando}
         >
           {trabajando
-            ? 'Firmando…'
+            ? T.revisar.firmando
             : estrellas > 0
-              ? `Aprobar y pagar ${monto(encargo.importe)} ${encargo.simbolo}`
-              : 'Elige una valoración'}
+              ? T.revisar.aprobarYPagar(monto(encargo.importe), encargo.simbolo)
+              : T.revisar.eligeValoracion}
         </Boton>
       </div>
 
@@ -241,7 +241,7 @@ export default function HojaRevisar({
           <path d="M12 4.5l8.5 15h-17z" />
           <path d="M12 10v4" />
         </svg>
-        Algo no cuadra · abrir disputa
+        {T.revisar.algoNoCuadra}
       </button>
     </Hoja>
   );

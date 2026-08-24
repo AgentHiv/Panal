@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTextos } from '~/i18n/idiomas';
 
 /**
  * La hoja que sube desde abajo. Es el gesto de la app: todo lo que cuesta
@@ -22,13 +23,14 @@ export default function Hoja({
   bloqueada?: boolean;
   children: ReactNode;
 }): React.ReactElement | null {
+  const T = useTextos();
   if (!abierta) return null;
 
   return (
     <div className="absolute inset-0 z-20 flex flex-col justify-end bg-[rgba(12,10,18,.72)]">
       <button
         type="button"
-        aria-label="Cerrar"
+        aria-label={T.comun.cerrar}
         className="grow"
         onClick={bloqueada ? undefined : onCerrar}
       />

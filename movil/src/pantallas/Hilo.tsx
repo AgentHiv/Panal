@@ -4,7 +4,8 @@ import { useWalletClient } from 'wagmi';
 import { useWallet } from '@/hooks/useWallet';
 import { useMyTasks } from '@/hooks/useMyTasks';
 import { anadirMensaje, leerHilo, nuevoId } from '@/lib/historial';
-import { cotizar, enviarMensaje, motivoLegible } from '@/lib/chat';
+import { cotizar, enviarMensaje } from '@/lib/chat';
+import { X402Error } from '@panal/sdk';
 import { encargosDelCliente, fusionarHilo, claveDeEntrada, ESTADO } from '@/lib/conversaciones';
 import type { Entrada } from '@/lib/conversaciones';
 import { currencySymbol, activeChain } from '@/contracts/config';
@@ -17,6 +18,8 @@ import HojaFirmar from '~/componentes/HojaFirmar';
 import HojaEncargar from '~/componentes/HojaEncargar';
 import HojaRevisar from '~/componentes/HojaRevisar';
 import { monto } from '~/lib/formato';
+import { useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 type Abierta = null | 'firmar' | 'encargar' | 'revisar';
 
@@ -43,6 +46,7 @@ export default function Hilo(): React.ReactElement {
   const [cotizacion, setCotizacion] = useState<X402Accept | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const T = useTextos();
   const [encargoRevisando, setEncargoRevisando] = useState<string | null>(null);
 
   const encargos = useMemo(
@@ -68,11 +72,11 @@ export default function Hilo(): React.ReactElement {
       setCotizacion(q);
       setHoja('firmar');
     } catch (err) {
-      setError(motivoLegible(err));
+      setError(motivo(err, T));
     } finally {
       setEnviando(false);
     }
-  }, [address, borrador, connect, connected, datos]);
+  }, [address, borrador, connect, connected, datos, T]);
 
   const confirmarFirma = useCallback(async () => {
     if (!datos?.cobro || !walletClient || !address || !cotizacion) return;
@@ -111,12 +115,12 @@ export default function Hilo(): React.ReactElement {
       setHoja(null);
       setCotizacion(null);
     } catch (err) {
-      setError(motivoLegible(err));
+      setError(motivo(err, T));
       setHoja(null);
     } finally {
       setEnviando(false);
     }
-  }, [address, agente, borrador, cotizacion, datos, walletClient]);
+  }, [address, agente, borrador, cotizacion, datos, walletClient, T]);
 
   const enRevision = encargos.find((e) => e.id === encargoRevisando) ?? null;
 
@@ -139,7 +143,7 @@ export default function Hilo(): React.ReactElement {
         <button
           type="button"
           onClick={() => navegar('/chats')}
-          aria-label="Volver"
+          aria-label={T.hilo.volver}
           className="pulsable flex h-11 w-8 items-center"
         >
           <Icono nombre="atras" tamano={24} color="#C8C3DC" grosor={2} />
@@ -150,8 +154,8 @@ export default function Hilo(): React.ReactElement {
             <p className="truncate text-[15px] font-semibold">{datos?.nombre ?? '…'}</p>
             <p className="font-mono text-[11.5px] text-ink-3">
               {datos?.cobro
-                ? `${monto(datos.cobro.amount)} ${datos.cobro.simbolo} por mensaje`
-                : 'solo acepta encargos'}
+                ? T.hilo.porMensaje(monto(datos.cobro.amount), datos.cobro.simbolo)
+                : T.hilo.soloEncargos}
             </p>
           </div>
         </Link>
@@ -160,15 +164,14 @@ export default function Hilo(): React.ReactElement {
           onClick={() => (connected ? setHoja('encargar') : connect())}
           className="pulsable h-[34px] shrink-0 rounded-full border border-honey px-3.5 text-[12px] font-semibold text-honey"
         >
-          Encargar
+          {T.hilo.encargar}
         </button>
       </header>
 
       <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-3.5 py-4">
         {entradas.length === 0 && (
           <p className="mt-8 text-center text-[13.5px] leading-relaxed text-ink-3">
-            Todavía no habéis hablado. Lo que escribas aquí se paga por mensaje y te responde al
-            momento.
+            {T.hilo.sinHablar}
           </p>
         )}
         {entradas.map((e) => (
@@ -176,6 +179,7 @@ export default function Hilo(): React.ReactElement {
             key={claveDeEntrada(e)}
             entrada={e}
             onRevisar={() => setEncargoRevisando(e.clase === 'encargo' ? e.encargo.id : null)}
+            T={T}
           />
         ))}
         <div ref={finDelHilo} />
@@ -192,7 +196,7 @@ export default function Hilo(): React.ReactElement {
           <input
             value={borrador}
             onChange={(ev) => setBorrador(ev.target.value)}
-            placeholder={datos?.cobro ? 'Escribe tu mensaje…' : 'Este agente no cobra por mensaje'}
+            placeholder={datos?.cobro ? T.hilo.escribeHueco : T.hilo.sinCobroHueco}
             disabled={!datos?.cobro || enviando}
             className="seleccionable h-11 grow rounded-full border border-line bg-sand px-4 text-[14px] text-ink outline-none placeholder:text-ink-3 disabled:opacity-60"
           />
@@ -200,7 +204,7 @@ export default function Hilo(): React.ReactElement {
             type="button"
             onClick={abrirFirma}
             disabled={!datos?.cobro || !borrador.trim() || enviando}
-            aria-label="Enviar"
+            aria-label={T.hilo.enviar}
             className="pulsable flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-monad shadow-monad disabled:opacity-40"
           >
             <Icono nombre="atras" tamano={19} color="#fff" grosor={2.2} className="rotate-180" />
@@ -208,8 +212,8 @@ export default function Hilo(): React.ReactElement {
         </div>
         <p className="mt-2 pl-1.5 text-[11.5px] text-ink-3">
           {datos?.cobro
-            ? `${monto(datos.cobro.amount)} ${datos.cobro.simbolo} por mensaje · una firma, sin gas`
-            : 'Sin cobro por mensaje publicado'}
+            ? T.hilo.piePrecio(monto(datos.cobro.amount), datos.cobro.simbolo)
+            : T.hilo.sinCobroPie}
         </p>
       </div>
 
@@ -254,9 +258,11 @@ export default function Hilo(): React.ReactElement {
 function EntradaHilo({
   entrada,
   onRevisar,
+  T,
 }: {
   entrada: Entrada;
   onRevisar: () => void;
+  T: Textos;
 }): React.ReactElement {
   if (entrada.clase === 'mensaje') {
     const mio = entrada.mensaje.de === 'yo';
@@ -276,31 +282,31 @@ function EntradaHilo({
   const e = entrada.encargo;
   const estados: Record<number, { texto: string; color: string; fondo: string; accion: boolean }> = {
     [ESTADO.Abierto]: {
-      texto: 'Pago bloqueado · el agente trabaja',
+      texto: T.hilo.abierto,
       color: 'text-honey',
       fondo: '',
       accion: false,
     },
     [ESTADO.Entregado]: {
-      texto: 'Entregado · revísalo',
+      texto: T.hilo.entregado,
       color: 'text-olive',
       fondo: 'bg-sand',
       accion: true,
     },
     [ESTADO.Completado]: {
-      texto: 'Completado',
+      texto: T.hilo.completado,
       color: 'text-ink-3',
       fondo: '',
       accion: false,
     },
     [ESTADO.Disputado]: {
-      texto: 'En disputa · el pago está congelado',
+      texto: T.hilo.disputado,
       color: 'text-terra',
       fondo: 'bg-terra/10',
       accion: false,
     },
     [ESTADO.Cancelado]: {
-      texto: 'Cancelado · el pago volvió',
+      texto: T.hilo.cancelado,
       color: 'text-ink-3',
       fondo: '',
       accion: false,
@@ -313,22 +319,22 @@ function EntradaHilo({
       <div className="flex items-center gap-2 bg-honey-soft px-3.5 py-2.5">
         <Icono nombre="candado" tamano={15} color="#E29A2E" grosor={2} />
         <span className="text-[12px] font-semibold uppercase tracking-[0.04em] text-honey">
-          Encargo · pago bloqueado
+          {T.hilo.cabeceraEncargo}
         </span>
       </div>
       <div className="px-3.5 py-3">
         <p className="seleccionable text-[14px] font-medium leading-[1.5]">
-          {e.brief ?? `Encargo #${e.id}`}
+          {e.brief ?? T.hilo.encargoNumero(String(e.id))}
         </p>
         <div className="mt-3 flex gap-5">
           <div>
-            <p className="text-[10.5px] uppercase tracking-[0.08em] text-ink-3">Precio</p>
+            <p className="text-[10.5px] uppercase tracking-[0.08em] text-ink-3">{T.hilo.precio}</p>
             <p className="mt-0.5 font-mono text-[15px]">
               {monto(e.importe)} {e.simbolo}
             </p>
           </div>
           <div>
-            <p className="text-[10.5px] uppercase tracking-[0.08em] text-ink-3">Nº</p>
+            <p className="text-[10.5px] uppercase tracking-[0.08em] text-ink-3">{T.hilo.numero}</p>
             <p className="mt-0.5 font-mono text-[15px]">#{e.id}</p>
           </div>
         </div>
@@ -346,4 +352,23 @@ function EntradaHilo({
       </div>
     </article>
   );
+}
+
+/**
+ * El error, dicho para quien acaba de intentar pagar.
+ *
+ * No se reutiliza `motivoLegible` de la capa compartida: allí los dos casos
+ * conocidos están escritos en español y esa capa la comparte la web, que se
+ * queda tal como está. Aquí se mira el error EN CRUDO —no su texto ya
+ * traducido— y se elige la frase en el idioma de la app.
+ *
+ * Un `X402Error` sí sale tal cual: lo escribe el agente al otro lado, en el
+ * idioma que use, y decir algo concreto vale más que decirlo traducido.
+ */
+function motivo(err: unknown, T: Textos): string {
+  if (err instanceof X402Error) return err.message;
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/user rejected|rechaz/i.test(msg)) return T.hilo.cancelaste;
+  if (/fetch|network|failed to fetch/i.test(msg)) return T.hilo.sinRed;
+  return msg;
 }

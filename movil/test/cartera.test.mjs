@@ -19,36 +19,36 @@ const agente = (extra = {}) => ({
 console.log('\nlo que se avisa, y en qué orden de gravedad');
 dice('uno sano no dice nada', avisar(agente()) === null);
 dice('y no se pinta', tono(agente()) === null);
-dice('sin registrar, lo primero', avisar(agente({ registrado: false, vencidos: 3 })).includes('No está registrada'));
+dice('sin registrar, lo primero', avisar(agente({ registrado: false, vencidos: 3 })).clave === 'sin-registrar');
 dice('un plazo vencido manda sobre lo demás',
-  avisar(agente({ vencidos: 1, activo: false, conEndpoint: false })).includes('plazo vencido'));
+  avisar(agente({ vencidos: 1, activo: false, conEndpoint: false })).clave === 'vencidos');
 dice('y va en rojo', tono(agente({ vencidos: 1 })) === 'rojo');
-dice('en plural cuenta cuántos', avisar(agente({ vencidos: 3 })).includes('3 encargos'));
+dice('en plural cuenta cuántos', avisar(agente({ vencidos: 3 })).n === 3);
 
 console.log('\npausado');
 dice('pausado con dinero dentro avisa de las dos cosas',
-  avisar(agente({ activo: false, panal: 100n })) === 'Pausado y con dinero dentro.');
+  avisar(agente({ activo: false, panal: 100n })).clave === 'pausado-con-dinero');
 dice('y si además no tiene endpoint, lo dice',
-  avisar(agente({ activo: false, conEndpoint: false, panal: 100n })).includes('endpoint'));
+  avisar(agente({ activo: false, conEndpoint: false, panal: 100n })).clave === 'pausado-con-dinero-sin-endpoint');
 dice('en miel, que no es urgente pero cuesta dinero', tono(agente({ activo: false, panal: 100n })) === 'miel');
 dice('pausado y a cero es solo informativo',
-  avisar(agente({ activo: false })).includes('no sale en el mercado'));
+  avisar(agente({ activo: false })).clave === 'pausado');
 dice('y va en gris', tono(agente({ activo: false })) === 'gris');
 
 console.log('\nactivo pero mudo');
-dice('activo sin endpoint avisa', avisar(agente({ conEndpoint: false })).includes('Sin endpoint'));
+dice('activo sin endpoint avisa', avisar(agente({ conEndpoint: false })).clave === 'sin-endpoint');
 dice('en miel', tono(agente({ conEndpoint: false })) === 'miel');
 
 console.log('\nencargos abiertos en plazo');
-dice('uno abierto se menciona', avisar(agente({ abiertos: 1 })) === 'Tiene un encargo abierto.');
-dice('varios, con número', avisar(agente({ abiertos: 4 })).includes('4 encargos'));
+dice('uno abierto se menciona', avisar(agente({ abiertos: 1 })).clave === 'abiertos');
+dice('varios, con número', avisar(agente({ abiertos: 4 })).n === 4);
 dice('en gris: es normal, no un problema', tono(agente({ abiertos: 2 })) === 'gris');
-dice('pero un vencido le gana', avisar(agente({ abiertos: 4, vencidos: 1 })).includes('vencido'));
+dice('pero un vencido le gana', avisar(agente({ abiertos: 4, vencidos: 1 })).clave === 'vencidos');
 
 console.log('\nsolo un aviso por fila');
 const a = avisar(agente({ activo: false, conEndpoint: false, panal: 5n, abiertos: 2, vencidos: 1 }));
-dice('con todo mal, sale uno solo', a.split('.').filter((x) => x.trim()).length <= 2);
-dice('y es el más grave', a.includes('vencido'));
+dice('con todo mal, sale uno solo', typeof a.clave === 'string');
+dice('y es el más grave', a.clave === 'vencidos');
 
 console.log('\nlas firmas que hacen falta de verdad');
 let t = totales([agente({ panal: 100n }), agente({ mon: 50n }), agente()]);

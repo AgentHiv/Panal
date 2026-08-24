@@ -106,18 +106,18 @@ dice(
 
 const repetida = await ll.importarWallet(llave3, 'La misma', FRASE.toUpperCase());
 dice('la misma wallet dos veces se rechaza', repetida.ok === false);
-dice('y lo dice sin lanzar nada', !repetida.ok && repetida.pega.includes('ya está'));
+dice('y lo dice sin lanzar nada', !repetida.ok && repetida.pega === 'repetida');
 
 const numerada = await ll.importarWallet(
   llave3,
   'Pegada de una lista',
   FRASE.split(' ').map((p, i) => `${i + 1}. ${p}`).join('\n'),
 );
-dice('pegada con numeración se rechaza por repetida, no por ilegible', numerada.pega.includes('ya está'));
+dice('pegada con numeración se rechaza por repetida, no por ilegible', numerada.pega === 'repetida');
 
 const rota = await ll.importarWallet(llave3, 'Rota', FRASE.replace(/yellow$/, 'zoo'));
 dice('doce palabras con la suma de control mal NO entran', rota.ok === false);
-dice('y lo dice por las palabras', !rota.ok && rota.pega.includes('palabras'));
+dice('y lo dice por las palabras', !rota.ok && rota.pega === 'palabras-no-cuadran');
 
 const basura = await ll.importarWallet(llave3, 'Basura', 'hola qué tal');
 dice('cualquier cosa se rechaza', basura.ok === false);

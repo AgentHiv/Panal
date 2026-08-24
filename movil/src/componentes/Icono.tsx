@@ -28,6 +28,7 @@ const TRAZOS: Record<string, string[]> = {
   copiar: ['M9.5 9.5h9v9h-9z', 'M6.5 14.5h-1v-9h9v1'],
   fuera: ['M14 5h5v5', 'M19 5l-7.5 7.5', 'M17.5 13.5V18a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 18V8A1.5 1.5 0 0 1 6 6.5h4.5'],
   cerrar: ['M6 6l12 12', 'M18 6L6 18'],
+  menu: ['M4.5 7.5h15', 'M4.5 12h15', 'M4.5 16.5h15'],
   recargar: ['M20 12a8 8 0 1 1-2.34-5.66', 'M20 4v4h-4'],
 
   // Estado

@@ -19,6 +19,8 @@ import Icono from '~/componentes/Icono';
 import { armarFicha, partirFicha, useFicha, usePendiente, useTareasDe } from '~/lib/agentes';
 import { revisar, cuantasUrgentes } from '~/lib/guardia';
 import { monto } from '~/lib/formato';
+import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * El panel de un agente.
@@ -47,6 +49,7 @@ export default function PanelAgente(): React.ReactElement {
   const { data: tareas = [], isLoading: cargandoTareas } = useTareasDe(dir);
 
   const [hoja, setHoja] = useState<Panel>(null);
+  const T = useTextos();
 
   // El muro, aplicado: mandar sobre un agente es SER ese agente.
   const mando = connected && address?.toLowerCase() === dir;
@@ -62,11 +65,8 @@ export default function PanelAgente(): React.ReactElement {
 
   if (!ficha?.registrado) {
     return (
-      <Marco onVolver={() => navegar(-1)} titulo="Sin registrar">
-        <p className="px-5 text-[13.5px] leading-[1.55] text-ink-2">
-          Esa dirección no está registrada como agente en Panal. Puede que sea una wallet normal, o
-          que el alta no llegara a firmarse.
-        </p>
+      <Marco onVolver={() => navegar(-1)} titulo={T.panel.sinRegistrar}>
+        <p className="px-5 text-[13.5px] leading-[1.55] text-ink-2">{T.panel.sinRegistrarTexto}</p>
       </Marco>
     );
   }
@@ -78,7 +78,7 @@ export default function PanelAgente(): React.ReactElement {
           type="button"
           onClick={() => navegar(-1)}
           className="pulsable tocable -ml-1 flex h-9 w-9 items-center justify-center"
-          aria-label="Volver"
+          aria-label={T.panel.volver}
         >
           <Icono nombre="atras" tamano={19} color="#F2EFFA" />
         </button>
@@ -87,7 +87,7 @@ export default function PanelAgente(): React.ReactElement {
             {ficha.nombre}
           </h1>
           <p className="truncate font-mono text-[11px] text-ink-3">
-            {dir.slice(0, 6)}…{dir.slice(-4)} · desde {mes(ficha.desde)}
+            {dir.slice(0, 6)}…{dir.slice(-4)} · {T.panel.desde(mes(ficha.desde))}
           </p>
         </div>
         <span
@@ -95,14 +95,16 @@ export default function PanelAgente(): React.ReactElement {
             mando ? 'border-monad text-monad-mist' : 'border-line text-ink-3'
           }`}
         >
-          {mando ? 'administras' : 'sigues'}
+          {mando ? T.panel.administras : T.panel.sigues}
         </span>
       </header>
 
       <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-5 py-4">
         {/* Lo primero: el dinero que está dentro y no sale solo. */}
         <div className="shrink-0 rounded-[18px] border border-honey-line bg-honey-soft p-[18px]">
-          <p className="text-[11.5px] uppercase tracking-[0.06em] text-honey">Ganado y sin cobrar</p>
+          <p className="text-[11.5px] uppercase tracking-[0.06em] text-honey">
+            {T.panel.ganadoSinCobrar}
+          </p>
           {pendiente?.hay ? (
             <>
               <div className="mt-2.5 flex flex-col gap-1.5">
@@ -115,17 +117,17 @@ export default function PanelAgente(): React.ReactElement {
                   onClick={() => setHoja('cobrar')}
                   className="pulsable tocable mt-3.5 w-full rounded-full bg-monad py-3 text-[15px] font-semibold text-white shadow-monad"
                 >
-                  Cobrar
+                  {T.panel.cobrar}
                 </button>
               ) : (
                 <p className="mt-3 text-[11.5px] leading-[1.5] text-ink-3">
-                  Solo puede sacarlo el propio agente:{' '}
-                  <span className="font-mono">withdraw</span> paga a quien firma.
+                  {T.panel.soloElAgenteAntes} <span className="font-mono">withdraw</span>{' '}
+                  {T.panel.soloElAgenteDespues}
                 </p>
               )}
             </>
           ) : (
-            <p className="mt-2 text-[13px] text-ink-2">Todo cobrado. Está en su wallet.</p>
+            <p className="mt-2 text-[13px] text-ink-2">{T.panel.todoCobrado}</p>
           )}
         </div>
 
@@ -133,11 +135,10 @@ export default function PanelAgente(): React.ReactElement {
           <div className="shrink-0 rounded-[14px] border border-terra/40 bg-terra/10 p-3.5">
             <div className="flex items-center gap-2">
               <Icono nombre="info" tamano={15} color="#C9653B" grosor={2.2} />
-              <p className="text-[13px] font-semibold text-terra">Está pausado</p>
+              <p className="text-[13px] font-semibold text-terra">{T.panel.pausadoTitulo}</p>
             </div>
             <p className="mt-1.5 text-[12px] leading-[1.55] text-ink-2">
-              No aparece en el mercado y no puede entrarle ningún encargo nuevo. Los que ya
-              estuvieran abiertos siguen su curso.
+              {T.panel.pausadoTexto}
             </p>
           </div>
         )}
@@ -146,7 +147,7 @@ export default function PanelAgente(): React.ReactElement {
         <div className="shrink-0 divide-y divide-line overflow-hidden rounded-[14px] border border-line">
           <Mando
             icono="reloj"
-            titulo="Aceptar trabajo"
+            titulo={T.panel.aceptarTrabajo}
             funcion="setActive"
             mando={mando}
             onTocar={() => setHoja('estado')}
@@ -166,7 +167,7 @@ export default function PanelAgente(): React.ReactElement {
           />
           <Mando
             icono="cartera"
-            titulo="Precio por encargo"
+            titulo={T.panel.precioPorEncargo}
             funcion="updatePrice"
             mando={mando}
             onTocar={() => setHoja('precio')}
@@ -178,7 +179,7 @@ export default function PanelAgente(): React.ReactElement {
           />
           <Mando
             icono="fuera"
-            titulo="Ficha y endpoint"
+            titulo={T.panel.fichaYEndpoint}
             funcion="updateMetadata"
             mando={mando}
             onTocar={() => setHoja('ficha')}
@@ -188,7 +189,7 @@ export default function PanelAgente(): React.ReactElement {
               ) : (
                 <span className="flex items-center gap-1 text-[11.5px] text-terra">
                   <Icono nombre="info" tamano={12} color="#C9653B" grosor={2.4} />
-                  sin endpoint
+                  {T.panel.sinEndpoint}
                 </span>
               )
             }
@@ -197,8 +198,9 @@ export default function PanelAgente(): React.ReactElement {
 
         {!ficha.botUrl && (
           <Nota tono="miel">
-            Su ficha no declara <span className="font-mono">bot:</span>, así que nadie puede hablarle
-            por mensaje. Solo acepta encargos {ficha.activo ? '' : '— y ahora mismo tampoco'}.
+            {T.panel.sinBotAntes} <span className="font-mono">bot:</span>
+            {T.panel.sinBotDespues}
+            {ficha.activo ? '' : T.panel.sinBotYPausado}.
           </Nota>
         )}
 
@@ -214,13 +216,13 @@ export default function PanelAgente(): React.ReactElement {
             className="shrink-0"
           />
           <div className="min-w-0 grow">
-            <p className="text-[13.5px] font-medium">Guardia</p>
+            <p className="text-[13.5px] font-medium">{T.panel.guardia}</p>
             <p className="mt-0.5 text-[11.5px] text-ink-3">
               {cargandoTareas
-                ? 'Mirando…'
+                ? T.panel.mirando
                 : urgentes > 0
-                  ? `${urgentes} sin cerrar que corren prisa`
-                  : 'Nada pendiente'}
+                  ? T.panel.urgentes(urgentes)
+                  : T.panel.nadaPendiente}
             </p>
           </div>
           <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180 shrink-0" />
@@ -233,28 +235,26 @@ export default function PanelAgente(): React.ReactElement {
         >
           <Icono nombre="hoja" tamano={18} color="#948DAE" className="shrink-0" />
           <div className="min-w-0 grow">
-            <p className="text-[13.5px] font-medium">Informe</p>
-            <p className="mt-0.5 text-[11.5px] text-ink-3">
-              Lo que entró y lo que se quedó, con recibo por encargo
-            </p>
+            <p className="text-[13.5px] font-medium">{T.panel.informe}</p>
+            <p className="mt-0.5 text-[11.5px] text-ink-3">{T.panel.informePie}</p>
           </div>
           <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180 shrink-0" />
         </button>
 
         <p className="mt-1 shrink-0 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-          Últimos encargos
+          {T.panel.ultimosEncargos}
         </p>
         {tareas.length === 0 ? (
           // Mientras se lee NO se dice que no hay nada: la pantalla llegó a
           // decir «todavía no le han encargado nada» de un agente que sí tenía
           // un encargo abierto, y eso es peor que un momento en blanco.
           <p className="shrink-0 px-1 text-[12.5px] text-ink-3">
-            {cargandoTareas ? 'Leyendo la cadena…' : 'Todavía no le han encargado nada.'}
+            {cargandoTareas ? T.panel.leyendoCadena : T.panel.sinEncargos}
           </p>
         ) : (
           <div className="shrink-0 divide-y divide-line overflow-hidden rounded-[14px] border border-line">
             {tareas.slice(0, 8).map((t) => {
-              const e = pinta(t.status);
+              const e = pinta(t.status, T);
               return (
                 <div key={t.id.toString()} className="flex items-center gap-2.5 px-3.5 py-3">
                   <span
@@ -263,7 +263,7 @@ export default function PanelAgente(): React.ReactElement {
                   />
                   <div className="min-w-0 grow">
                     <p className="truncate text-[13px]">
-                      {getTaskBrief(t.taskHash) ?? `Encargo #${t.id}`}
+                      {getTaskBrief(t.taskHash) ?? T.panel.encargoNumero(String(t.id))}
                     </p>
                     <p className="mt-0.5 text-[11px] text-ink-3">{e.texto}</p>
                   </div>
@@ -352,12 +352,11 @@ function HojaCobrar({
   // paralelo que haya que acordarse de limpiar.
   const enCurso = (variables?.args as readonly string[] | undefined)?.[0]?.toLowerCase();
   const trabajando = isPending || recibo.isLoading;
+  const T = useTextos();
 
   return (
-    <Hoja abierta titulo="Cobrar lo ganado" onCerrar={onCerrar} bloqueada={trabajando}>
-      <Nota>
-        Cada moneda se saca por separado: el contrato cobra de una en una. Son dos firmas.
-      </Nota>
+    <Hoja abierta titulo={T.panel.cobrarTitulo} onCerrar={onCerrar} bloqueada={trabajando}>
+      <Nota>{T.panel.cobrarNota}</Nota>
 
       <div className="mt-3.5 flex flex-col gap-2.5">
         {pendiente.panal > 0n && (
@@ -367,6 +366,7 @@ function HojaCobrar({
             trabajando={trabajando && enCurso === PANAL_TOKEN_ADDRESS.toLowerCase()}
             deshabilitado={trabajando}
             onSacar={() => sacar(PANAL_TOKEN_ADDRESS)}
+            T={T}
           />
         )}
         {pendiente.mon > 0n && (
@@ -376,18 +376,18 @@ function HojaCobrar({
             trabajando={trabajando && enCurso === NATIVE_CURRENCY.toLowerCase()}
             deshabilitado={trabajando}
             onSacar={() => sacar(NATIVE_CURRENCY)}
+            T={T}
           />
         )}
       </div>
 
       <p className="mt-3.5 text-[11.5px] leading-[1.5] text-ink-3">
-        Lo cobrado va a esta misma dirección, que es la del agente. Para que vaya a otra hace falta
-        cambiar el contrato.
+        {T.panel.vaASuDireccion}
       </p>
 
       <div className="mt-4">
         <Boton variante="secundario" onClick={onCerrar} disabled={trabajando}>
-          Cerrar
+          {T.comun.cerrar}
         </Boton>
       </div>
     </Hoja>
@@ -400,12 +400,14 @@ function LineaCobro({
   trabajando,
   deshabilitado,
   onSacar,
+  T,
 }: {
   valor: bigint;
   simbolo: string;
   trabajando: boolean;
   deshabilitado: boolean;
   onSacar: () => void;
+  T: Textos;
 }): React.ReactElement {
   return (
     <div className="flex items-center gap-3 rounded-[14px] border border-line p-3.5">
@@ -413,7 +415,7 @@ function LineaCobro({
         <p className="font-mono text-[17px] text-ink">
           {monto(valor)} <span className="text-[13px] text-ink-2">{simbolo}</span>
         </p>
-        <p className="mt-0.5 text-[11px] text-ink-3">una firma</p>
+        <p className="mt-0.5 text-[11px] text-ink-3">{T.panel.unaFirma}</p>
       </div>
       <button
         type="button"
@@ -421,7 +423,7 @@ function LineaCobro({
         disabled={deshabilitado}
         className="pulsable tocable shrink-0 rounded-full bg-monad px-4 py-2 text-[13.5px] font-semibold text-white disabled:opacity-40"
       >
-        {trabajando ? 'Firmando…' : 'Sacar'}
+        {trabajando ? T.panel.firmando : T.panel.sacar}
       </button>
     </div>
   );
@@ -454,13 +456,11 @@ function HojaPrecio({
 
   const nuevo = parsear(texto);
   const trabajando = isPending || recibo.isLoading;
+  const T = useTextos();
 
   return (
-    <Hoja abierta titulo="Precio por encargo" onCerrar={onCerrar} bloqueada={trabajando}>
-      <p className="mt-2 text-[12.5px] leading-[1.55] text-ink-2">
-        Lo que cobra por un trabajo con depósito. Los mensajes sueltos se cobran aparte, en su
-        servidor.
-      </p>
+    <Hoja abierta titulo={T.panel.precioPorEncargo} onCerrar={onCerrar} bloqueada={trabajando}>
+      <p className="mt-2 text-[12.5px] leading-[1.55] text-ink-2">{T.panel.precioTexto}</p>
 
       <div className="mt-3.5 flex items-center gap-2.5 rounded-[14px] border border-line p-3.5">
         <input
@@ -487,14 +487,11 @@ function HojaPrecio({
         </div>
       </div>
 
-      <Nota>
-        Solo afecta a los encargos que entren a partir de ahora. Lo que ya está bloqueado se liquida
-        al precio que se pactó.
-      </Nota>
+      <Nota>{T.panel.precioNota}</Nota>
 
       <div className="mt-4 flex gap-2.5">
         <Boton variante="secundario" onClick={onCerrar} disabled={trabajando}>
-          Cancelar
+          {T.comun.cancelar}
         </Boton>
         <Boton
           onClick={() =>
@@ -507,7 +504,7 @@ function HojaPrecio({
           }
           disabled={nuevo === null || trabajando}
         >
-          {trabajando ? 'Firmando…' : 'Firmar el cambio'}
+          {trabajando ? T.panel.firmando : T.panel.firmarCambio}
         </Boton>
       </div>
     </Hoja>
@@ -536,23 +533,22 @@ function HojaEstado({
   }, [recibo.isSuccess]);
 
   const trabajando = isPending || recibo.isLoading;
+  const T = useTextos();
 
   return (
     <Hoja
       abierta
-      titulo={activo ? 'Pausar el agente' : 'Volver a aceptar trabajo'}
+      titulo={activo ? T.panel.pausarTitulo : T.panel.reactivarTitulo}
       onCerrar={onCerrar}
       bloqueada={trabajando}
     >
       <p className="mt-2 text-[12.5px] leading-[1.55] text-ink-2">
-        {activo
-          ? 'Dejará de salir en el mercado y no podrá entrarle ningún encargo nuevo. Los que ya estén abiertos siguen su curso, y sigues teniendo que entregarlos.'
-          : 'Volverá a salir en el mercado y podrá entrarle trabajo. Asegúrate de que su servidor está en pie antes de firmar esto.'}
+        {activo ? T.panel.pausarTexto : T.panel.reactivarTexto}
       </p>
 
       <div className="mt-4 flex gap-2.5">
         <Boton variante="secundario" onClick={onCerrar} disabled={trabajando}>
-          Ahora no
+          {T.comun.ahoraNo}
         </Boton>
         <Boton
           variante={activo ? 'peligro' : 'principal'}
@@ -566,7 +562,7 @@ function HojaEstado({
           }
           disabled={trabajando}
         >
-          {trabajando ? 'Firmando…' : activo ? 'Pausar' : 'Reactivar'}
+          {trabajando ? T.panel.firmando : activo ? T.panel.pausar : T.panel.reactivar}
         </Boton>
       </div>
     </Hoja>
@@ -603,28 +599,29 @@ function HojaFicha({
 
   const nueva = armarFicha(nombre, descripcion, bot);
   const trabajando = isPending || recibo.isLoading;
+  const T = useTextos();
 
   return (
-    <Hoja abierta titulo="Ficha y endpoint" onCerrar={onCerrar} bloqueada={trabajando}>
-      <Campo etiqueta="Nombre" valor={nombre} onCambio={setNombre} />
-      <Campo etiqueta="Qué hace" valor={descripcion} onCambio={setDescripcion} />
+    <Hoja abierta titulo={T.panel.fichaYEndpoint} onCerrar={onCerrar} bloqueada={trabajando}>
+      <Campo etiqueta={T.panel.nombre} valor={nombre} onCambio={setNombre} />
+      <Campo etiqueta={T.panel.queHace} valor={descripcion} onCambio={setDescripcion} />
       <Campo
-        etiqueta="Dónde escucha"
+        etiqueta={T.panel.dondeEscucha}
         valor={bot}
         onCambio={setBot}
-        marcador="https://tu-agente.lat"
+        marcador={T.panel.dondeEscuchaHueco}
         mono
       />
 
       {!bot.trim() && (
         <Nota tono="miel">
-          Sin dirección nadie podrá hablarle. La app busca <span className="font-mono">bot:</span> en
-          la ficha para saber dónde mandar los mensajes; sin eso solo aceptará encargos con depósito.
+          {T.panel.sinBotFichaAntes} <span className="font-mono">bot:</span>{' '}
+          {T.panel.sinBotFichaDespues}
         </Nota>
       )}
 
       <p className="mt-3.5 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-        Lo que se va a escribir
+        {T.panel.loQueSeEscribe}
       </p>
       {/* Se enseña literalmente: la ficha es texto libre separado por «·», no
           un JSON, y descubrir el formato al ver tu agente mal listado es peor. */}
@@ -634,7 +631,7 @@ function HojaFicha({
 
       <div className="mt-4 flex gap-2.5">
         <Boton variante="secundario" onClick={onCerrar} disabled={trabajando}>
-          Cancelar
+          {T.comun.cancelar}
         </Boton>
         <Boton
           onClick={() =>
@@ -647,7 +644,7 @@ function HojaFicha({
           }
           disabled={!nueva || trabajando}
         >
-          {trabajando ? 'Firmando…' : 'Firmar'}
+          {trabajando ? T.panel.firmando : T.panel.firmar}
         </Boton>
       </div>
     </Hoja>
@@ -740,6 +737,7 @@ function Marco({
   onVolver: () => void;
   children: React.ReactNode;
 }): React.ReactElement {
+  const T = useTextos();
   return (
     <div className="flex min-h-0 grow flex-col">
       <header className="flex shrink-0 items-center gap-3 border-b border-line px-4 py-3">
@@ -747,7 +745,7 @@ function Marco({
           type="button"
           onClick={onVolver}
           className="pulsable tocable -ml-1 flex h-9 w-9 items-center justify-center"
-          aria-label="Volver"
+          aria-label={T.panel.volver}
         >
           <Icono nombre="atras" tamano={19} color="#F2EFFA" />
         </button>
@@ -759,25 +757,30 @@ function Marco({
 }
 
 function Cargando(): React.ReactElement {
+  const T = useTextos();
   return (
     <div className="flex min-h-0 grow items-center justify-center">
-      <p className="text-[13px] text-ink-3">Leyendo el registro…</p>
+      <p className="text-[13px] text-ink-3">{T.panel.leyendoRegistro}</p>
     </div>
   );
 }
 
-const PINTA: Record<number, { texto: string; color: string }> = {
-  [ESTADO.Abierto]: { texto: 'Abierto · sin entregar', color: '#B7A8FC' },
-  [ESTADO.Entregado]: { texto: 'Entregado · esperando al cliente', color: '#E29A2E' },
-  [ESTADO.Completado]: { texto: 'Cobrado', color: '#92A268' },
-  [ESTADO.Disputado]: { texto: 'En disputa', color: '#C9653B' },
-  [ESTADO.Cancelado]: { texto: 'Cancelado', color: '#948DAE' },
+const PINTA: Record<number, { clave: keyof Textos['panel']; color: string }> = {
+  [ESTADO.Abierto]: { clave: 'tAbierto', color: '#B7A8FC' },
+  [ESTADO.Entregado]: { clave: 'tEntregado', color: '#E29A2E' },
+  [ESTADO.Completado]: { clave: 'tCompletado', color: '#92A268' },
+  [ESTADO.Disputado]: { clave: 'tDisputado', color: '#C9653B' },
+  [ESTADO.Cancelado]: { clave: 'tCancelado', color: '#948DAE' },
 };
 
-const pinta = (estado: number) => PINTA[estado] ?? { texto: '—', color: '#948DAE' };
+const pinta = (estado: number, T: Textos): { texto: string; color: string } => {
+  const p = PINTA[estado];
+  return p ? { texto: T.panel[p.clave] as string, color: p.color } : { texto: '—', color: '#948DAE' };
+};
 
+/** «ago 2026», en el idioma puesto. */
 function mes(ms: number): string {
-  return new Date(ms).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+  return new Date(ms).toLocaleDateString(etiquetaIdioma(), { month: 'short', year: 'numeric' });
 }
 
 /** «12,5» o «12.5» → wei. `null` si no es un número que se pueda firmar. */

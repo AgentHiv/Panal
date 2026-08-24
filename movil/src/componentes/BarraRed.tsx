@@ -1,6 +1,7 @@
 import { useWallet } from '@/hooks/useWallet';
 import { activeChain } from '@/contracts/config';
 import Icono from '~/componentes/Icono';
+import { useTextos } from '~/i18n/idiomas';
 
 /**
  * La wallet está conectada pero en otra red.
@@ -14,6 +15,7 @@ import Icono from '~/componentes/Icono';
  */
 export default function BarraRed(): React.ReactElement | null {
   const { wrongNetwork, switchToMonad } = useWallet();
+  const T = useTextos();
   if (!wrongNetwork) return null;
 
   return (
@@ -24,10 +26,10 @@ export default function BarraRed(): React.ReactElement | null {
     >
       <Icono nombre="info" tamano={15} color="#fff" grosor={2} />
       <span className="grow text-[12.5px] font-semibold text-white">
-        Tu wallet está en otra red
+        {T.barraRed.otraRed}
       </span>
       <span className="shrink-0 text-[12.5px] font-semibold text-white underline">
-        Cambiar a {activeChain.name}
+        {T.barraRed.cambiar(activeChain.name)}
       </span>
     </button>
   );

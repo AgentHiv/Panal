@@ -11,6 +11,7 @@ import { enviar, esperar } from '~/lib/enviar';
 import type { Par } from '~/lib/usarSaldos';
 import { conDecimales } from '~/lib/usarSaldos';
 import { exacto, troceada } from '~/lib/formato';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * Mandar dinero desde una wallet del llavero.
@@ -31,12 +32,14 @@ export default function HojaEnviar({
   saldos,
   onCerrar,
   onHecho,
+  T,
 }: {
   wallet: WalletGuardada;
   llave: Llave;
   saldos: Par;
   onCerrar: () => void;
   onHecho: () => void;
+  T: Textos;
 }): React.ReactElement {
   const [moneda, setMoneda] = useState<Moneda>('MON');
   const [destino, setDestino] = useState('');
@@ -82,7 +85,7 @@ export default function HojaEnviar({
       destino: destino.trim() as `0x${string}`,
     });
     if (!r.ok) {
-      setPega(r.pega);
+      setPega(T.pegas[r.pega]);
       setPaso('confirmar');
       return;
     }
@@ -90,7 +93,7 @@ export default function HojaEnviar({
     try {
       const bien = await esperar(r.hash);
       if (!bien) {
-        setPega('La red la ha rechazado al ejecutarla. No se ha movido nada.');
+        setPega(T.enviar.revertida);
         setPaso('confirmar');
         return;
       }
@@ -109,7 +112,7 @@ export default function HojaEnviar({
     return (
       <Hoja
         abierta
-        titulo={paso === 'hecho' ? 'Mandado' : 'Mandando…'}
+        titulo={paso === 'hecho' ? T.enviar.mandado : T.enviar.mandando}
         onCerrar={onCerrar}
         bloqueada={paso === 'yendo'}
       >
@@ -124,7 +127,7 @@ export default function HojaEnviar({
           <p className="mt-4 font-mono text-[22px] font-medium">
             {exacto(chequeo.wei)} {moneda}
           </p>
-          <p className="mt-1.5 text-[12.5px] text-ink-3">a {corta(destino.trim())}</p>
+          <p className="mt-1.5 text-[12.5px] text-ink-3">{T.enviar.a(corta(destino.trim()))}</p>
         </div>
 
         {hash && (
@@ -135,20 +138,17 @@ export default function HojaEnviar({
             className="pulsable tocable flex w-full items-center justify-center gap-2 rounded-full border border-line py-2.5 text-[13.5px] font-medium text-ink-2"
           >
             <Icono nombre="fuera" tamano={15} color="#948DAE" />
-            Verla en el explorador
+            {T.comun.verEnElExplorador}
           </a>
         )}
 
         {paso === 'hecho' && (
           <div className="mt-2.5 pb-1">
-            <Boton onClick={onCerrar}>Listo</Boton>
+            <Boton onClick={onCerrar}>{T.comun.listo}</Boton>
           </div>
         )}
         {paso === 'yendo' && (
-          <Nota>
-            No cierres la app. Si tarda, la transacción ya está mandada: se ve en el explorador con
-            el enlace de arriba.
-          </Nota>
+          <Nota>{T.enviar.noCierres}</Nota>
         )}
       </Hoja>
     );
@@ -158,14 +158,13 @@ export default function HojaEnviar({
 
   if (paso === 'confirmar') {
     return (
-      <Hoja abierta titulo="Repásalo" onCerrar={onCerrar}>
-        <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2">
-          Se firma con la clave de este teléfono, así que no se va a abrir ninguna otra app a
-          enseñártelo. Esto es lo que se manda.
-        </p>
+      <Hoja abierta titulo={T.enviar.repasa} onCerrar={onCerrar}>
+        <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2">{T.enviar.repasaTexto}</p>
 
         <div className="mt-4 rounded-[14px] border border-line p-3.5">
-          <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">A esta dirección</p>
+          <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
+            {T.enviar.aEstaDireccion}
+          </p>
           <p className="seleccionable mt-2 font-mono text-[13.5px] leading-[1.7] tracking-[0.02em]">
             {troceada(destino.trim())}
           </p>
@@ -173,27 +172,24 @@ export default function HojaEnviar({
 
         <Tarjeta>
           {/* Sin redondear: lo que se lee aquí es exactamente lo que se firma. */}
-          <Fila etiqueta="Cantidad" valor={`${exacto(chequeo.wei)} ${moneda}`} destacada />
-          <Fila etiqueta="Desde" pie={wallet.nombre} valor={corta(wallet.direccion)} />
-          <Fila etiqueta="Red" valor={activeChain.name} />
-          <Fila etiqueta="Comisión de red" pie="La paga esta wallet" valor="En MON" />
+          <Fila etiqueta={T.enviar.cantidad} valor={`${exacto(chequeo.wei)} ${moneda}`} destacada />
+          <Fila etiqueta={T.enviar.desde} pie={wallet.nombre} valor={corta(wallet.direccion)} />
+          <Fila etiqueta={T.enviar.red} valor={activeChain.name} />
+          <Fila etiqueta={T.enviar.comision} pie={T.enviar.comisionPie} valor={T.enviar.enMon} />
         </Tarjeta>
 
-        <Nota tono="miel">
-          Una vez mandado no hay quien lo devuelva, ni Panal ni nadie. Si esa dirección no es, el
-          dinero se queda donde caiga.
-        </Nota>
+        <Nota tono="miel">{T.enviar.sinVuelta}</Nota>
 
         {pega && <p className="mt-3 text-[12.5px] leading-[1.5] text-terra">{pega}</p>}
 
         <div className="mt-[18px] flex gap-2.5 pb-1">
           <div className="grow">
             <Boton variante="secundario" onClick={() => setPaso('escribir')}>
-              Atrás
+              {T.comun.atras}
             </Boton>
           </div>
           <div className="grow-[1.6]">
-            <Boton onClick={() => void alFirmar()}>Firmar y mandar</Boton>
+            <Boton onClick={() => void alFirmar()}>{T.enviar.firmar}</Boton>
           </div>
         </div>
       </Hoja>
@@ -203,7 +199,7 @@ export default function HojaEnviar({
   /* ── escribir ──────────────────────────────────────────────────────────── */
 
   return (
-    <Hoja abierta titulo={`Mandar desde ${wallet.nombre}`} onCerrar={onCerrar}>
+    <Hoja abierta titulo={T.enviar.titulo(wallet.nombre)} onCerrar={onCerrar}>
       <div className="mt-3.5 flex gap-2">
         {(['MON', '$PANAL'] as const).map((m) => (
           <button
@@ -219,11 +215,11 @@ export default function HojaEnviar({
         ))}
       </div>
       <p className="mt-2 text-[11.5px] text-ink-3">
-        Tienes {conDecimales(saldo, 18)} {moneda} en esta wallet.
+        {T.enviar.tienes(conDecimales(saldo, 18), moneda)}
       </p>
 
       <label className="mt-4 block text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-        A quién
+        {T.enviar.aQuien}
       </label>
       <div className="mt-2 flex gap-2">
         <input
@@ -240,12 +236,12 @@ export default function HojaEnviar({
           onClick={() => void alPegar()}
           className="pulsable tocable shrink-0 rounded-[12px] border border-line px-3.5 text-[13px] font-medium text-ink-2"
         >
-          Pegar
+          {T.enviar.pegar}
         </button>
       </div>
 
       <label className="mt-4 block text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-        Cuánto
+        {T.enviar.cuanto}
       </label>
       <div className="mt-2 flex gap-2">
         <input
@@ -260,7 +256,7 @@ export default function HojaEnviar({
           onClick={alTodo}
           className="pulsable tocable shrink-0 rounded-[12px] border border-line px-3.5 text-[13px] font-medium text-ink-2"
         >
-          Todo
+          {T.enviar.todo}
         </button>
       </div>
 
@@ -268,19 +264,21 @@ export default function HojaEnviar({
           juzgar: gritarle «falta la dirección» a una casilla vacía que acabas
           de abrir no ayuda a nadie. */}
       {(destino.trim() || importe.trim()) && chequeo.pega && (
-        <p className="mt-3 text-[12.5px] leading-[1.5] text-terra">{chequeo.pega}</p>
+        <p className="mt-3 text-[12.5px] leading-[1.5] text-terra">
+          {chequeo.pega === 'no-hay-tanto'
+            ? T.pegas['no-hay-tanto'](moneda)
+            : T.pegas[chequeo.pega]}
+        </p>
       )}
-      {chequeo.aviso && <Nota tono="miel">{chequeo.aviso}</Nota>}
+      {chequeo.aviso && <Nota tono="miel">{T.pegas[chequeo.aviso]}</Nota>}
 
       {moneda === 'MON' && (
-        <p className="mt-3 text-[11.5px] leading-[1.5] text-ink-3">
-          «Todo» deja una pizca de MON para la comisión de red. Sin ella la transacción no sale.
-        </p>
+        <p className="mt-3 text-[11.5px] leading-[1.5] text-ink-3">{T.enviar.todoPie}</p>
       )}
 
       <div className="mt-[18px] pb-1">
         <Boton onClick={() => setPaso('confirmar')} disabled={!chequeo.ok}>
-          Continuar
+          {T.enviar.continuar}
         </Boton>
       </div>
     </Hoja>

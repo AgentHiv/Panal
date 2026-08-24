@@ -10,6 +10,8 @@ import type { Cuentas, Linea, Periodo } from '~/lib/informe';
 import { informeCsv, reciboHtml } from '~/lib/recibo';
 import { guardarCopia } from '~/lib/copia';
 import { montoCuadro } from '~/lib/formato';
+import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * Informe · lo que entró y lo que se quedó.
@@ -35,6 +37,7 @@ export default function Informe(): React.ReactElement {
   const [periodo, setPeriodo] = useState<Periodo | null>(null);
   const [recibo, setRecibo] = useState<Linea | null>(null);
   const [bajando, setBajando] = useState(false);
+  const T = useTextos();
   const [aviso, setAviso] = useState<string | null>(null);
 
   const consulta = useQuery({
@@ -74,7 +77,7 @@ export default function Informe(): React.ReactElement {
       'text/csv',
     );
     setBajando(false);
-    setAviso(r.ok ? `Hoja de cálculo lista en ${r.donde}.` : `No se pudo: ${r.porque}`);
+    setAviso(r.ok ? T.informe.informeListo(r.donde) : T.informe.reciboFallo(r.porque));
   };
 
   return (
@@ -84,39 +87,40 @@ export default function Informe(): React.ReactElement {
           type="button"
           onClick={() => navegar(-1)}
           className="pulsable tocable -ml-1 flex h-9 w-9 items-center justify-center"
-          aria-label="Volver"
+          aria-label={T.informe.volver}
         >
           <Icono nombre="atras" tamano={19} color="#F2EFFA" />
         </button>
         <div className="min-w-0 grow">
-          <h1 className="font-display text-[19px] font-semibold -tracking-[0.015em]">Informe</h1>
-          <p className="truncate text-[11.5px] text-ink-3">{nombre} · lo que entró y lo que se quedó</p>
+          <h1 className="font-display text-[19px] font-semibold -tracking-[0.015em]">
+            {T.informe.titulo}
+          </h1>
+          <p className="truncate text-[11.5px] text-ink-3">{T.informe.subtitulo(nombre)}</p>
         </div>
       </header>
 
       <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-5 py-4">
         {periodos.length > 0 && (
           <div className="flex shrink-0 gap-2 overflow-x-auto pb-0.5">
-            <Chip puesto={periodo === null} onElegir={() => setPeriodo(null)} texto="Todo" />
+            <Chip puesto={periodo === null} onElegir={() => setPeriodo(null)} texto={T.informe.todo} />
             {periodos.map((p) => (
               <Chip
                 key={p.clave}
                 puesto={periodo?.clave === p.clave}
                 onElegir={() => setPeriodo(p)}
-                texto={p.etiqueta}
+                texto={mesDe(p)}
               />
             ))}
           </div>
         )}
 
         {consulta.isLoading && (
-          <p className="shrink-0 px-1 text-[12.5px] text-ink-3">Leyendo el índice…</p>
+          <p className="shrink-0 px-1 text-[12.5px] text-ink-3">{T.informe.leyendo}</p>
         )}
 
         {consulta.isError && (
           <p className="shrink-0 px-1 text-[12.5px] leading-[1.55] text-terra">
-            El índice no responde. Sin él no se pueden hacer las cuentas: la cadena guarda cuánto se
-            bloqueó, pero lo que de verdad se cobró está en los eventos de liquidación.
+            {T.informe.indiceCaido}
           </p>
         )}
 
@@ -124,9 +128,7 @@ export default function Informe(): React.ReactElement {
             liquidado nada» sería afirmar algo que no se ha podido comprobar. */}
         {!consulta.isLoading && !consulta.isError && cuentas.length === 0 && (
           <p className="shrink-0 px-1 text-[12.5px] leading-[1.55] text-ink-2">
-            {periodo
-              ? 'En ese periodo no se liquidó ningún encargo.'
-              : 'Todavía no se ha liquidado ningún encargo de este agente. Lo que esté abierto o entregado aún no ha entrado en caja.'}
+            {periodo ? T.informe.periodoVacio : T.informe.nadaLiquidado}
           </p>
         )}
 
@@ -136,6 +138,7 @@ export default function Informe(): React.ReactElement {
             cuentas={c}
             principal={i === 0}
             onRecibo={(l) => setRecibo(l)}
+            T={T}
           />
         ))}
 
@@ -146,12 +149,11 @@ export default function Informe(): React.ReactElement {
             <div className="mt-1 flex shrink-0 gap-2.5 rounded-[14px] border border-honey-line bg-honey-soft p-3.5">
               <Icono nombre="info" tamano={16} color="#E29A2E" grosor={2} className="mt-px shrink-0" />
               <div className="min-w-0">
-                <p className="text-[12.5px] font-semibold text-honey">Aquí no están los mensajes</p>
+                <p className="text-[12.5px] font-semibold text-honey">
+                  {T.informe.faltanMensajesTitulo}
+                </p>
                 <p className="mt-1 text-[12px] leading-[1.55] text-ink-2">
-                  Esto es solo lo que pasó por el depósito. Lo que cobras por mensaje suelto se paga
-                  con una transferencia del token y no queda registrado como encargo, así que no
-                  aparece. Para agentes que viven de eso, este informe enseña una parte pequeña — y
-                  conviene que lo sepas antes de dárselo a nadie.
+                  {T.informe.faltanMensajesTexto}
                 </p>
               </div>
             </div>
@@ -163,11 +165,10 @@ export default function Informe(): React.ReactElement {
               className="pulsable tocable mt-1 flex shrink-0 items-center justify-center gap-2 rounded-full bg-monad py-3.5 text-[15px] font-semibold text-white shadow-monad disabled:opacity-60"
             >
               <Icono nombre="bajar" tamano={16} color="#fff" />
-              {bajando ? 'Preparando…' : 'Descargar el informe'}
+              {bajando ? T.informe.preparando : T.informe.descargar}
             </button>
             <p className="shrink-0 px-1 text-[11.5px] leading-[1.5] text-ink-3">
-              Una hoja de cálculo con una fila por encargo y el hash de cada transacción, para que tu
-              gestoría pueda comprobarlo sin fiarse de la app.
+              {T.informe.descargarPie}
             </p>
             {aviso && <p className="shrink-0 px-1 text-[12px] text-ink-2">{aviso}</p>}
           </>
@@ -193,10 +194,12 @@ function Bloque({
   cuentas: c,
   principal,
   onRecibo,
+  T,
 }: {
   cuentas: Cuentas;
   principal: boolean;
   onRecibo: (l: Linea) => void;
+  T: Textos;
 }): React.ReactElement {
   if (!principal) {
     // La segunda moneda va aparte y sin cascada: sumarla con la primera daría
@@ -205,8 +208,8 @@ function Bloque({
       <div className="shrink-0 rounded-[14px] border border-line p-3.5">
         <div className="flex items-baseline justify-between gap-2">
           <div>
-            <p className="text-[13px] font-medium">En {c.moneda}</p>
-            <p className="mt-0.5 text-[11.5px] text-ink-3">se lleva aparte, no se suma</p>
+            <p className="text-[13px] font-medium">{T.informe.en(c.moneda)}</p>
+            <p className="mt-0.5 text-[11.5px] text-ink-3">{T.informe.aparte}</p>
           </div>
           <p className="shrink-0 font-mono text-[17px] text-monad-mist">{montoCuadro(c.neto)}</p>
         </div>
@@ -217,29 +220,33 @@ function Bloque({
   return (
     <>
       <div className="shrink-0 rounded-[18px] border border-line bg-cream p-[18px]">
-        <Escalon etiqueta="Facturado" pie={`${c.lineas.length} encargos liquidados`} cifra={montoCuadro(c.bruto)} />
+        <Escalon
+          etiqueta={T.informe.facturado}
+          pie={T.informe.encargosLiquidados(c.lineas.length)}
+          cifra={montoCuadro(c.bruto)}
+        />
         {c.devuelto > 0n && (
           <Escalon
-            etiqueta="Devuelto en disputa"
-            pie={devueltas(c)}
+            etiqueta={T.informe.devueltoEnDisputa}
+            pie={devueltas(c, T)}
             cifra={`−${montoCuadro(c.devuelto)}`}
             color="#C9653B"
             linea
           />
         )}
         <Escalon
-          etiqueta="Comisión de Panal"
-          pie="2,5 % de lo que cobra cada uno"
+          etiqueta={T.informe.comision}
+          pie={T.informe.comisionPie}
           cifra={`−${montoCuadro(c.comision)}`}
           color="#948DAE"
           linea
         />
-        <Escalon etiqueta="Tuyo" cifra={montoCuadro(c.neto)} color="#E29A2E" grande linea />
-        <p className="mt-2.5 text-right text-[11.5px] text-ink-3">todo en {c.moneda}</p>
+        <Escalon etiqueta={T.informe.tuyo} cifra={montoCuadro(c.neto)} color="#E29A2E" grande linea />
+        <p className="mt-2.5 text-right text-[11.5px] text-ink-3">{T.informe.todoEn(c.moneda)}</p>
       </div>
 
       <p className="mt-1 shrink-0 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-        Encargo por encargo
+        {T.informe.encargoPorEncargo}
       </p>
       <div className="shrink-0 divide-y divide-line overflow-hidden rounded-[14px] border border-line">
         {c.lineas.map((l) => (
@@ -255,7 +262,7 @@ function Bloque({
                 {dia(l.ts)} · <span className="font-mono text-[11.5px]">{l.cliente.slice(0, 6)}…</span>
               </p>
               {l.disputada && (
-                <p className="mt-0.5 text-[11px] text-terra">Disputada · devuelto en parte</p>
+                <p className="mt-0.5 text-[11px] text-terra">{T.informe.disputada}</p>
               )}
             </div>
             <div className="shrink-0 text-right">
@@ -327,6 +334,7 @@ function HojaRecibo({
 }): React.ReactElement {
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const T = useTextos();
 
   const alGuardar = async (): Promise<void> => {
     setGuardando(true);
@@ -335,24 +343,28 @@ function HojaRecibo({
       reciboHtml({ linea, agente, direccionAgente: direccion, brief }),
     );
     setGuardando(false);
-    setAviso(r.ok ? `Recibo listo en ${r.donde}.` : `No se pudo: ${r.porque}`);
+    setAviso(r.ok ? T.informe.reciboListo(r.donde) : T.informe.reciboFallo(r.porque));
   };
 
   return (
-    <Hoja abierta titulo={`Encargo n.º ${linea.id}`} onCerrar={onCerrar}>
+    <Hoja abierta titulo={T.informe.reciboTitulo(String(linea.id))} onCerrar={onCerrar}>
       <p className="mt-1 text-[12.5px] text-ink-3">{dia(linea.ts)} · {linea.moneda}</p>
 
       <div className="mt-3.5 divide-y divide-line overflow-hidden rounded-[14px] border border-line">
-        <Fila k="Precio del encargo" v={montoCuadro(linea.bruto)} />
+        <Fila k={T.informe.precioEncargo} v={montoCuadro(linea.bruto)} />
         {linea.devuelto > 0n && (
-          <Fila k="Devuelto al cliente" v={`−${montoCuadro(linea.devuelto)}`} color="text-terra" />
+          <Fila
+            k={T.informe.devueltoAlCliente}
+            v={`−${montoCuadro(linea.devuelto)}`}
+            color="text-terra"
+          />
         )}
-        <Fila k="Comisión de Panal" v={`−${montoCuadro(linea.comision)}`} color="text-ink-3" />
-        <Fila k="Cobrado" v={montoCuadro(linea.pagado)} color="text-honey" fuerte />
+        <Fila k={T.informe.comision} v={`−${montoCuadro(linea.comision)}`} color="text-ink-3" />
+        <Fila k={T.informe.cobrado} v={montoCuadro(linea.pagado)} color="text-honey" fuerte />
       </div>
 
       <p className="mt-3.5 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-        La transacción que lo prueba
+        {T.informe.laTransaccion}
       </p>
       <p className="seleccionable mt-1.5 break-all font-mono text-[11.5px] leading-[1.5] text-ink-2">
         {linea.txHash ?? '—'}
@@ -360,11 +372,11 @@ function HojaRecibo({
 
       <div className="mt-4">
         <Boton onClick={alGuardar} disabled={guardando}>
-          {guardando ? 'Preparando…' : 'Guardar el recibo'}
+          {guardando ? T.informe.preparando : T.informe.guardarRecibo}
         </Boton>
       </div>
       <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">
-        Un A5 para imprimir. Acredita el cobro; no es una factura — el propio papel explica por qué.
+        {T.informe.reciboPie}
       </p>
       {aviso && <p className="mt-2 text-[12px] text-ink-2">{aviso}</p>}
     </Hoja>
@@ -416,11 +428,30 @@ function Chip({
   );
 }
 
-function devueltas(c: Cuentas): string {
+function devueltas(c: Cuentas, T: Textos): string {
   const ids = c.lineas.filter((l) => l.devuelto > 0n).map((l) => `#${l.id}`);
-  return ids.length === 1 ? `un encargo, ${ids[0]}` : `${ids.length} encargos: ${ids.join(', ')}`;
+  return ids.length === 1
+    ? T.informe.unEncargo(ids[0]!)
+    : T.informe.variosEncargos(ids.length, ids.join(', '));
 }
 
 function dia(ts: number): string {
-  return new Date(ts * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  return new Date(ts * 1000).toLocaleDateString(etiquetaIdioma(), {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+/**
+ * «agosto de 2026», en el idioma puesto.
+ *
+ * El nombre del mes lo da `Intl`, no una lista escrita a mano: son doce
+ * palabras por idioma que ya vienen con el navegador, y en chino además el
+ * orden es otro —«2026年8月»— que una plantilla nuestra no acertaría.
+ */
+function mesDe(p: Periodo): string {
+  return new Date(p.anio, p.mes - 1, 1).toLocaleDateString(etiquetaIdioma(), {
+    month: 'long',
+    year: 'numeric',
+  });
 }

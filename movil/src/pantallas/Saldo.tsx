@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom';
 import { useWallet } from '@/hooks/useWallet';
 import { activeChain } from '@/contracts/config';
 import { useSaldos } from '~/lib/usarSaldos';
+import { useSesion } from '~/lib/sesion';
 import { copiar } from '~/lib/wallets';
 import Icono from '~/componentes/Icono';
+import Menu from '~/componentes/Menu';
+import { useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * El saldo.
@@ -22,6 +26,8 @@ export default function Saldo(): React.ReactElement {
   const { address, addressShort, connected, connecting, connect, disconnect, wrongNetwork, switchToMonad } =
     useWallet();
   const { panal, mon, cargando } = useSaldos();
+  const sesion = useSesion();
+  const T = useTextos();
   const [copiado, setCopiado] = useState(false);
 
   const alCopiar = async (): Promise<void> => {
@@ -34,30 +40,32 @@ export default function Saldo(): React.ReactElement {
 
   return (
     <div className="flex min-h-0 grow flex-col">
-      <header className="shrink-0 px-5 pb-3 pt-5">
-        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">Saldo</h1>
+      <header className="flex shrink-0 items-center justify-between px-5 pb-3 pt-5">
+        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">
+          {T.saldo.titulo}
+        </h1>
+        <Menu />
       </header>
 
       {!connected ? (
-        <SinWallet conectando={connecting} onConectar={connect} />
+        <SinWallet conectando={connecting} onConectar={connect} T={T} />
       ) : (
         <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-5 pb-5">
           {wrongNetwork && (
             <div className="shrink-0 rounded-[14px] border border-terra/40 bg-terra/10 p-3.5">
               <div className="flex items-center gap-2">
                 <Icono nombre="info" tamano={16} color="#C9653B" />
-                <p className="text-[13px] font-semibold text-terra">Wallet en otra red</p>
+                <p className="text-[13px] font-semibold text-terra">{T.saldo.otraRedTitulo}</p>
               </div>
               <p className="mt-1.5 text-[12px] leading-[1.5] text-ink-2">
-                Panal vive en {activeChain.name}. Mientras tu wallet esté en otra red no se puede
-                firmar nada.
+                {T.saldo.otraRedTexto(activeChain.name)}
               </p>
               <button
                 type="button"
                 onClick={switchToMonad}
                 className="pulsable tocable mt-3 w-full rounded-full bg-terra py-2.5 text-[14px] font-semibold text-white"
               >
-                Cambiar a {activeChain.name}
+                {T.barraRed.cambiar(activeChain.name)}
               </button>
             </div>
           )}
@@ -67,8 +75,8 @@ export default function Saldo(): React.ReactElement {
             color="#E29A2E"
             valor={panal?.texto ?? null}
             cargando={cargando}
-            paraQue="Paga cada mensaje que le mandas a un agente."
-            pie="Hablar no gasta gas: en x402 firmas tú y la transacción la manda quien cobra."
+            paraQue={T.saldo.panalParaQue}
+            pie={T.saldo.panalPie}
           />
 
           <Moneda
@@ -76,13 +84,27 @@ export default function Saldo(): React.ReactElement {
             color="#B7A8FC"
             valor={mon?.texto ?? null}
             cargando={cargando}
-            paraQue="Paga los encargos con escrow, y el gas de bloquearlos."
-            pie="Sin MON puedes hablar, pero no encargar un trabajo."
+            paraQue={T.saldo.monParaQue}
+            pie={T.saldo.monPie}
           />
 
           {/* La dirección va abajo y entera: es para recibir, no para mirarla. */}
           <div className="shrink-0 rounded-[14px] border border-line p-3.5">
-            <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">Tu dirección</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
+                {T.comun.tuDireccion}
+              </p>
+              {/* Cuál de las dos está firmando. No es un detalle: decide si al
+                  aprobar algo se abre otra app o no se abre nada. */}
+              <span className="flex items-center gap-1.5 text-[11px] text-ink-3">
+                <Icono
+                  nombre={sesion.abierta ? 'llave' : 'eslabon'}
+                  tamano={12}
+                  color={sesion.abierta ? '#E29A2E' : '#948DAE'}
+                />
+                {sesion.abierta ? T.menu.firmaAqui : T.menu.firmaFuera}
+              </span>
+            </div>
             <p className="seleccionable mt-2 break-all font-mono text-[12.5px] leading-[1.5] text-ink-2">
               {address}
             </p>
@@ -96,11 +118,10 @@ export default function Saldo(): React.ReactElement {
                 tamano={15}
                 color={copiado ? '#92A268' : '#948DAE'}
               />
-              {copiado ? 'Copiada' : 'Copiar dirección'}
+              {copiado ? T.comun.copiada : T.comun.copiarDireccion}
             </button>
             <p className="mt-2.5 text-[11.5px] leading-[1.5] text-ink-3">
-              $PANAL se cambia en nad.fun, y MON lo traes aquí desde donde ya tengas. Panal no vende
-              ninguna de las dos.
+              {T.saldo.dondeSeCompra}
             </p>
           </div>
 
@@ -112,11 +133,8 @@ export default function Saldo(): React.ReactElement {
           >
             <Icono nombre="llave" tamano={18} color="#E29A2E" className="shrink-0" />
             <div className="min-w-0 grow">
-              <p className="text-[13.5px] font-medium">Tu llavero</p>
-              <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">
-                Wallets de este teléfono: verles el saldo, mandar, recibir y traer las que ya
-                tengas. La clave se cifra con un PIN y no sale de aquí.
-              </p>
+              <p className="text-[13.5px] font-medium">{T.saldo.llavero}</p>
+              <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">{T.saldo.llaveroPie}</p>
             </div>
             <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180" />
           </Link>
@@ -129,10 +147,8 @@ export default function Saldo(): React.ReactElement {
           >
             <Icono nombre="hexagono" tamano={18} color="#B7A8FC" className="shrink-0" />
             <div className="min-w-0 grow">
-              <p className="text-[13.5px] font-medium">Tus agentes</p>
-              <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">
-                Sigue uno o administra el tuyo: cobrar, precio, pausa y ficha.
-              </p>
+              <p className="text-[13.5px] font-medium">{T.saldo.agentes}</p>
+              <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">{T.saldo.agentesPie}</p>
             </div>
             <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180" />
           </Link>
@@ -142,7 +158,7 @@ export default function Saldo(): React.ReactElement {
             onClick={disconnect}
             className="pulsable tocable mt-1 shrink-0 rounded-full py-3 text-center text-[13.5px] font-medium text-ink-3"
           >
-            Desconectar {addressShort}
+            {T.saldo.desconectar(addressShort ?? '')}
           </button>
         </div>
       )}
@@ -189,9 +205,11 @@ function Moneda({
 function SinWallet({
   conectando,
   onConectar,
+  T,
 }: {
   conectando: boolean;
   onConectar: () => void;
+  T: Textos;
 }): React.ReactElement {
   return (
     <div className="flex min-h-0 grow flex-col items-center justify-center px-6 pb-10">
@@ -213,10 +231,10 @@ function SinWallet({
       </svg>
 
       <h2 className="mt-5 text-center font-display text-[20px] font-semibold -tracking-[0.015em]">
-        Conecta tu wallet
+        {T.saldo.conectaTitulo}
       </h2>
       <p className="mt-2 max-w-[280px] text-pretty text-center text-[13.5px] leading-[1.55] text-ink-2">
-        Es tu cuenta y tu saldo a la vez. No hay registro, ni correo, ni contraseña que recordar.
+        {T.saldo.conectaTexto}
       </p>
 
       <button
@@ -225,7 +243,7 @@ function SinWallet({
         disabled={conectando}
         className="pulsable mt-7 flex h-[52px] w-full max-w-[300px] items-center justify-center gap-2 rounded-full bg-monad text-[15px] font-semibold text-white shadow-monad disabled:opacity-60"
       >
-        {conectando ? 'Conectando…' : 'Conectar wallet'}
+        {conectando ? T.comun.conectando : T.comun.conectarWallet}
       </button>
     </div>
   );

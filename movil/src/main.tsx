@@ -23,11 +23,13 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={cola}>
-        <ProveedorWallet>
-          <BrowserRouter>
+        {/* El router por fuera del proveedor de wallet: la hoja de conectar
+            ofrece crear una wallet aquí mismo, y para eso necesita navegar. */}
+        <BrowserRouter>
+          <ProveedorWallet>
             <App />
-          </BrowserRouter>
-        </ProveedorWallet>
+          </ProveedorWallet>
+        </BrowserRouter>
       </QueryClientProvider>
     </WagmiProvider>
   </StrictMode>,

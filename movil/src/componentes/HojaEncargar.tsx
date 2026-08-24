@@ -13,12 +13,14 @@ import { saveTaskBrief } from '@/lib/taskBriefs';
 import type { DatosAgente } from '~/lib/agente';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
 import { monto } from '~/lib/formato';
+import { useTextos } from '~/i18n/idiomas';
 
-const PLAZOS = [
-  { etiqueta: '6 h', horas: 6 },
-  { etiqueta: '24 h', horas: 24 },
-  { etiqueta: '3 d', horas: 72 },
-  { etiqueta: '7 d', horas: 168 },
+/** El número y su unidad van aparte: en chino «6 h» se escribe «6 小时». */
+const PLAZOS: { horas: number; unidad: 'horas' | 'dias'; cuantos: number }[] = [
+  { horas: 6, unidad: 'horas', cuantos: 6 },
+  { horas: 24, unidad: 'horas', cuantos: 24 },
+  { horas: 72, unidad: 'dias', cuantos: 3 },
+  { horas: 168, unidad: 'dias', cuantos: 7 },
 ];
 
 /**
@@ -108,6 +110,8 @@ export default function HojaEncargar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo.isSuccess]);
 
+  const T = useTextos();
+
   if (!datos) return null;
 
   // La fase se DEDUCE de las transacciones, no se guarda aparte: dos copias del
@@ -116,24 +120,28 @@ export default function HojaEncargar({
   const trabajando = aprobando || isPending || recibo.isLoading;
 
   return (
-    <Hoja abierta={abierta} titulo="Encargar trabajo" onCerrar={onCerrar} bloqueada={trabajando}>
-      <p className="mt-3 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">Qué le pides</p>
+    <Hoja abierta={abierta} titulo={T.encargar.titulo} onCerrar={onCerrar} bloqueada={trabajando}>
+      <p className="mt-3 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
+        {T.encargar.quePides}
+      </p>
       <textarea
         value={brief}
         onChange={(e) => setBrief(e.target.value)}
         rows={3}
-        placeholder="Describe el trabajo. Esto es lo que verá el agente."
+        placeholder={T.encargar.briefHueco}
         disabled={trabajando}
         className="seleccionable mt-2 w-full resize-none rounded-[14px] border border-line bg-sand px-3.5 py-3 text-[14px] leading-[1.5] text-ink outline-none placeholder:text-ink-3"
       />
 
-      <p className="mt-3.5 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">Plazo</p>
+      <p className="mt-3.5 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
+        {T.encargar.plazo}
+      </p>
       <div className="mt-2 flex gap-2">
         {PLAZOS.map((p) => {
           const elegido = p.horas === horas;
           return (
             <button
-              key={p.etiqueta}
+              key={p.horas}
               type="button"
               onClick={() => setHoras(p.horas)}
               disabled={trabajando}
@@ -141,46 +149,43 @@ export default function HojaEncargar({
                 elegido ? 'border-honey bg-honey-soft text-honey' : 'border-line text-ink-2'
               }`}
             >
-              {p.etiqueta}
+              {T.encargar[p.unidad](p.cuantos)}
             </button>
           );
         })}
       </div>
       <p className="mt-2 text-[11.5px] leading-[1.45] text-ink-3">
-        Si no entrega a tiempo, recuperas el pago entero.
+        {T.encargar.plazoPie}
       </p>
 
       <Tarjeta>
         <Fila
-          etiqueta="Precio del agente"
+          etiqueta={T.encargar.precioAgente}
           valor={`${monto(precio)} ${simbolo}`}
           color="text-ink"
         />
         <Fila
-          etiqueta="Protocolo · 2,5 %"
+          etiqueta={T.encargar.protocolo}
           valor={`${monto(comision)} ${simbolo}`}
           color="text-ink-2"
         />
         <Fila
-          etiqueta="Bloqueas ahora"
+          etiqueta={T.encargar.bloqueasAhora}
           valor={`${monto(precio)} ${simbolo}`}
           destacada
           color="text-ink"
         />
       </Tarjeta>
 
-      <Nota>
-        El dinero queda retenido hasta que apruebes. La entrega se ancla en la cadena y puedes abrir
-        una disputa.
-      </Nota>
+      <Nota>{T.encargar.retenido}</Nota>
 
       <div className="mt-[18px] pb-1">
         <Boton onClick={empezar} disabled={!brief.trim() || trabajando}>
           {aprobando
-            ? 'Aprobando el token…'
+            ? T.encargar.aprobandoToken
             : trabajando
-              ? 'Bloqueando…'
-              : `Bloquear ${monto(precio)} ${simbolo}`}
+              ? T.encargar.bloqueando
+              : T.encargar.bloquear(monto(precio), simbolo)}
         </Boton>
       </div>
     </Hoja>

@@ -48,6 +48,33 @@ export function hayAvisos(): boolean {
   return plugin() !== null;
 }
 
+const APAGADOS = 'panal:avisos-apagados:v1';
+
+/**
+ * Si la persona los quiere.
+ *
+ * Encendidos por defecto: los motivos por los que salta un aviso son todos
+ * dinero que se pierde si nadie mira —un plazo que vence, un pago que se
+ * aprueba solo, una disputa—, así que apagarlos tiene que ser una decisión,
+ * no un descuido. Pero tiene que poder tomarse, y hasta ahora no había dónde.
+ */
+export function avisosEncendidos(): boolean {
+  try {
+    return localStorage.getItem(APAGADOS) !== 'si';
+  } catch {
+    return true;
+  }
+}
+
+export function encenderAvisos(encendidos: boolean): void {
+  try {
+    if (encendidos) localStorage.removeItem(APAGADOS);
+    else localStorage.setItem(APAGADOS, 'si');
+  } catch {
+    /* sin disco, quedan encendidos: es lo seguro */
+  }
+}
+
 export async function pedirPermiso(): Promise<boolean> {
   const p = plugin();
   if (!p) return false;

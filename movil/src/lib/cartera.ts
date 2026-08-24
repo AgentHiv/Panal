@@ -51,37 +51,39 @@ export interface Totales {
 }
 
 /**
- * Lo que hay que decirle al dueño de esta fila, si hay algo.
+ * Cuál de los avisos posibles toca, si toca alguno.
+ *
+ * Devuelve la CLAVE y no la frase. No es un rodeo: esta función decide cuál es
+ * el problema más grave de una fila, y esa decisión es la misma en los cuatro
+ * idiomas. Con la frase dentro, la prueba comprobaba la redacción —que cambia—
+ * en vez de la decisión —que no—; ahora comprueba lo que de verdad importa.
  *
  * Solo una cosa por fila: la más grave. Una tarjeta con tres avisos no se lee,
  * y la lista está para recorrerla con el pulgar.
  */
-export function avisar(f: FilaCartera): string | null {
-  if (!f.registrado) return 'No está registrada como agente.';
+export type Aviso =
+  | { clave: 'sin-registrar' }
+  | { clave: 'vencidos'; n: number }
+  | { clave: 'pausado-con-dinero' }
+  | { clave: 'pausado-con-dinero-sin-endpoint' }
+  | { clave: 'pausado' }
+  | { clave: 'sin-endpoint' }
+  | { clave: 'abiertos'; n: number };
 
-  if (f.vencidos > 0) {
-    return f.vencidos === 1
-      ? 'Tiene un encargo con el plazo vencido y sin entregar.'
-      : `Tiene ${f.vencidos} encargos con el plazo vencido y sin entregar.`;
-  }
+export function avisar(f: FilaCartera): Aviso | null {
+  if (!f.registrado) return { clave: 'sin-registrar' };
+
+  if (f.vencidos > 0) return { clave: 'vencidos', n: f.vencidos };
 
   const conDinero = f.panal > 0n || f.mon > 0n;
 
   if (!f.activo && conDinero) {
-    return f.conEndpoint
-      ? 'Pausado y con dinero dentro.'
-      : 'Pausado y con dinero dentro. Su ficha tampoco declara endpoint.';
+    return { clave: f.conEndpoint ? 'pausado-con-dinero' : 'pausado-con-dinero-sin-endpoint' };
   }
-  if (!f.activo && !conDinero) {
-    return 'Pausado: no sale en el mercado y no puede entrarle trabajo.';
-  }
+  if (!f.activo && !conDinero) return { clave: 'pausado' };
   // Activo y sin endpoint: aparece en el mercado, pero nadie puede hablarle.
-  if (!f.conEndpoint) {
-    return 'Sin endpoint en su ficha: solo acepta encargos, no mensajes.';
-  }
-  if (f.abiertos > 0) {
-    return f.abiertos === 1 ? 'Tiene un encargo abierto.' : `Tiene ${f.abiertos} encargos abiertos.`;
-  }
+  if (!f.conEndpoint) return { clave: 'sin-endpoint' };
+  if (f.abiertos > 0) return { clave: 'abiertos', n: f.abiertos };
   return null;
 }
 

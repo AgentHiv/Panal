@@ -12,6 +12,7 @@ import {
 import Icono from '~/componentes/Icono';
 import { armarFicha, useFicha } from '~/lib/agentes';
 import { listar } from '~/lib/llavero';
+import { useTextos } from '~/i18n/idiomas';
 
 /**
  * Dar de alta un agente.
@@ -35,6 +36,7 @@ export default function Alta(): React.ReactElement {
   const [bot, setBot] = useState('');
   const [precio, setPrecio] = useState('');
   const [enPanal, setEnPanal] = useState(true);
+  const T = useTextos();
 
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const recibo = useWaitForTransactionReceipt({ hash });
@@ -62,17 +64,17 @@ export default function Alta(): React.ReactElement {
           type="button"
           onClick={() => navegar(-1)}
           className="pulsable tocable -ml-1 flex h-9 w-9 items-center justify-center"
-          aria-label="Volver"
+          aria-label={T.alta.volver}
         >
           <Icono nombre="atras" tamano={19} color="#F2EFFA" />
         </button>
         <h1 className="font-display text-[19px] font-semibold -tracking-[0.015em]">
-          Dar de alta un agente
+          {T.alta.titulo}
         </h1>
       </header>
 
       <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-5 py-4">
-        <Titulo>Quién va a ser el agente</Titulo>
+        <Titulo>{T.alta.quienSera}</Titulo>
 
         {connected ? (
           <div className="shrink-0 rounded-[14px] border border-line bg-cream p-3.5">
@@ -81,13 +83,12 @@ export default function Alta(): React.ReactElement {
             </p>
             <p className="mt-1 text-[11.5px] text-ink-3">
               {delLlavero.some((w) => w.direccion.toLowerCase() === address!.toLowerCase())
-                ? 'De tu llavero'
-                : 'La wallet conectada'}
+                ? T.alta.delLlavero
+                : T.alta.laConectada}
             </p>
             {yaEs?.registrado && (
               <p className="mt-2 text-[12px] leading-[1.5] text-terra">
-                Esta wallet YA está registrada como «{yaEs.nombre}». Una dirección solo puede ser un
-                agente; para otro hace falta otra wallet.
+                {T.alta.yaRegistrada(yaEs.nombre)}
               </p>
             )}
           </div>
@@ -98,16 +99,16 @@ export default function Alta(): React.ReactElement {
             disabled={connecting}
             className="pulsable tocable shrink-0 rounded-full bg-monad py-3 text-[14.5px] font-semibold text-white shadow-monad disabled:opacity-60"
           >
-            {connecting ? 'Conectando…' : 'Conectar la wallet que será el agente'}
+            {connecting ? T.comun.conectando : T.alta.conectarLaQueSera}
           </button>
         )}
 
         <div className="flex shrink-0 gap-2.5 rounded-[14px] border border-honey-line bg-honey-soft p-3.5">
           <Icono nombre="info" tamano={16} color="#E29A2E" grosor={2} className="mt-px shrink-0" />
           <p className="text-[12px] leading-[1.55] text-ink-2">
-            La wallet que firme esto <span className="font-semibold text-honey">se convierte en el
-            agente</span>: el registro no distingue una cosa de otra. Y su clave tendrá que estar en
-            el servidor que lo haga funcionar, así que usa una nueva — no la que guarda tu dinero.
+            {T.alta.avisoClaveAntes}{' '}
+            <span className="font-semibold text-honey">{T.alta.seConvierteEn}</span>
+            {T.alta.avisoClaveDespues}
           </p>
         </div>
 
@@ -118,25 +119,29 @@ export default function Alta(): React.ReactElement {
             className="pulsable shrink-0 rounded-[14px] border border-dashed border-line p-3 text-left"
           >
             <p className="text-[12.5px] text-ink-2">
-              Tienes {delLlavero.length}{' '}
-              {delLlavero.length === 1 ? 'wallet' : 'wallets'} en el llavero de este teléfono.
+              {T.alta.tienesEnLlavero(delLlavero.length)}
             </p>
           </button>
         )}
 
-        <Titulo>Su ficha</Titulo>
-        <Campo etiqueta="Nombre" valor={nombre} onCambio={setNombre} marcador="Audit" />
+        <Titulo>{T.alta.suFicha}</Titulo>
         <Campo
-          etiqueta="Qué hace"
-          valor={descripcion}
-          onCambio={setDescripcion}
-          marcador="Audita contratos y entrega el informe"
+          etiqueta={T.alta.nombre}
+          valor={nombre}
+          onCambio={setNombre}
+          marcador={T.alta.nombreHueco}
         />
         <Campo
-          etiqueta="Dónde escucha"
+          etiqueta={T.alta.queHace}
+          valor={descripcion}
+          onCambio={setDescripcion}
+          marcador={T.alta.queHaceHueco}
+        />
+        <Campo
+          etiqueta={T.alta.dondeEscucha}
           valor={bot}
           onCambio={setBot}
-          marcador="https://tu-agente.lat"
+          marcador={T.alta.dondeEscuchaHueco}
           mono
         />
 
@@ -145,19 +150,17 @@ export default function Alta(): React.ReactElement {
             <Icono nombre="info" tamano={16} color="#C9653B" grosor={2} className="mt-px shrink-0" />
             <div className="min-w-0">
               <p className="text-[12.5px] font-semibold text-terra">
-                Sin dirección, nadie podrá hablarle
+                {T.alta.sinDireccionTitulo}
               </p>
               <p className="mt-1 text-[12px] leading-[1.55] text-ink-2">
-                La app busca <span className="font-mono">bot:</span> en la ficha para saber dónde
-                mandar los mensajes. Sin eso solo aceptará encargos con depósito, y el botón de
-                hablar le saldrá apagado a todo el mundo. Ya le pasa a uno de los agentes
-                registrados.
+                {T.alta.sinDireccionAntes} <span className="font-mono">bot:</span>{' '}
+                {T.alta.sinDireccionDespues}
               </p>
             </div>
           </div>
         )}
 
-        <Titulo>Lo que cobra por encargo</Titulo>
+        <Titulo>{T.alta.loQueCobra}</Titulo>
         <div className="flex shrink-0 items-center gap-2.5 rounded-[14px] border border-line p-3.5">
           <input
             value={precio}
@@ -184,7 +187,7 @@ export default function Alta(): React.ReactElement {
           </div>
         </div>
 
-        <Titulo>Lo que se va a escribir en la cadena</Titulo>
+        <Titulo>{T.alta.loQueSeEscribe}</Titulo>
         <p className="seleccionable shrink-0 break-all rounded-[11px] border border-line bg-sand px-3 py-2.5 font-mono text-[11.5px] leading-[1.5] text-ink-2">
           {ficha || '—'}
         </p>
@@ -192,8 +195,8 @@ export default function Alta(): React.ReactElement {
         {error && (
           <p className="shrink-0 px-1 text-[12px] text-terra">
             {/rejected|denied|user/i.test(error.message)
-              ? 'La firma se canceló.'
-              : 'No se pudo firmar el alta.'}
+              ? T.alta.firmaCancelada
+              : T.alta.noSePudoFirmar}
           </p>
         )}
 
@@ -210,11 +213,10 @@ export default function Alta(): React.ReactElement {
           disabled={!listo || trabajando}
           className="pulsable tocable mt-1 shrink-0 rounded-full bg-monad py-3.5 text-[15px] font-semibold text-white shadow-monad disabled:opacity-40 disabled:shadow-none"
         >
-          {trabajando ? 'Firmando el alta…' : 'Firmar el alta'}
+          {trabajando ? T.alta.firmando : T.alta.firmarAlta}
         </button>
         <p className="shrink-0 px-1 text-[11.5px] leading-[1.5] text-ink-3">
-          Lo firma la wallet de arriba y paga su gas, así que necesita algo de MON. El precio y la
-          ficha se pueden cambiar después; la dirección no.
+          {T.alta.pieGas}
         </p>
       </div>
     </div>

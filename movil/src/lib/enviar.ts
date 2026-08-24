@@ -26,7 +26,16 @@ import { activeChain, PANAL_TOKEN_ADDRESS, publicClient } from '@/contracts/conf
 import { panalTokenAbi } from '@/contracts/abis';
 import type { Moneda } from '~/lib/envio';
 
-export type Resultado = { ok: true; hash: `0x${string}` } | { ok: false; pega: string };
+/** Lo que dijo el nodo, ya clasificado. La pantalla lo escribe en su idioma. */
+export type PegaRed =
+  | 'noLlega'
+  | 'sinSaldo'
+  | 'otraEnMarcha'
+  | 'sinRed'
+  | 'cancelado'
+  | 'rechazada';
+
+export type Resultado = { ok: true; hash: `0x${string}` } | { ok: false; pega: PegaRed };
 
 export interface Orden {
   cuenta: Account;
@@ -75,22 +84,22 @@ export async function esperar(hash: `0x${string}`): Promise<boolean> {
 }
 
 /**
- * Los errores del nodo, dichos como se los cuenta uno a otra persona.
+ * Los errores del nodo, clasificados para poder decirlos en cristiano.
  *
  * Un `execution reverted` o un JSON-RPC -32000 en medio de la pantalla no le
  * dice a nadie qué hacer. Lo que sí dice algo es «te falta MON para la
  * comisión», que además es el fallo que se va a llevar nueve de cada diez.
+ *
+ * Devuelve la clave y no la frase: este archivo firma transacciones, no sabe
+ * en qué idioma está la app.
  */
-function traducir(e: unknown): string {
+function traducir(e: unknown): PegaRed {
   const texto = (e instanceof Error ? `${e.name} ${e.message}` : String(e)).toLowerCase();
-  if (texto.includes('insufficient funds') || texto.includes('exceeds the balance'))
-    return 'No llega para la cantidad más la comisión de red. Manda un poco menos.';
-  if (texto.includes('transfer amount exceeds balance'))
-    return 'La wallet no tiene ese saldo.';
-  if (texto.includes('nonce'))
-    return 'Hay otra transacción de esta wallet todavía en marcha. Espera a que termine.';
+  if (texto.includes('insufficient funds') || texto.includes('exceeds the balance')) return 'noLlega';
+  if (texto.includes('transfer amount exceeds balance')) return 'sinSaldo';
+  if (texto.includes('nonce')) return 'otraEnMarcha';
   if (texto.includes('timeout') || texto.includes('fetch') || texto.includes('network'))
-    return 'No se ha podido hablar con la red. Comprueba la conexión y vuelve a intentarlo.';
-  if (texto.includes('user rejected')) return 'Cancelado.';
-  return 'La red ha rechazado la transacción. No se ha movido nada.';
+    return 'sinRed';
+  if (texto.includes('user rejected')) return 'cancelado';
+  return 'rechazada';
 }

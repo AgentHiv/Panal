@@ -6,6 +6,9 @@ import type { Agent } from '@/data/agents';
 import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
 import { precio } from '~/lib/formato';
+import Menu from '~/componentes/Menu';
+import { useTextos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * El mercado, con los agentes de verdad de la cadena.
@@ -21,6 +24,7 @@ import { precio } from '~/lib/formato';
 export default function Mercado(): React.ReactElement {
   const { agents, loading } = usePanalAgents();
   const [busca, setBusca] = useState('');
+  const T = useTextos();
 
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -32,8 +36,11 @@ export default function Mercado(): React.ReactElement {
 
   return (
     <div className="flex min-h-0 grow flex-col">
-      <header className="shrink-0 px-5 pb-3 pt-5">
-        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">Mercado</h1>
+      <header className="flex shrink-0 items-center justify-between px-5 pb-3 pt-5">
+        <h1 className="font-display text-[26px] font-semibold -tracking-[0.015em]">
+          {T.mercado.titulo}
+        </h1>
+        <Menu />
       </header>
 
       {/* Buscar no es un adorno: la lista se lee de la cadena y crece sola.
@@ -45,11 +52,11 @@ export default function Mercado(): React.ReactElement {
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar un agente"
+            placeholder={T.mercado.buscar}
             className="seleccionable h-11 min-w-0 grow bg-transparent text-[14px] text-ink outline-none placeholder:text-ink-3"
           />
           {busca && (
-            <button type="button" onClick={() => setBusca('')} aria-label="Limpiar" className="pulsable">
+            <button type="button" onClick={() => setBusca('')} aria-label={T.mercado.limpiar} className="pulsable">
               <Icono nombre="cerrar" tamano={16} color="#948DAE" />
             </button>
           )}
@@ -61,20 +68,20 @@ export default function Mercado(): React.ReactElement {
 
         {!loading && agents.length === 0 && (
           <p className="px-2 pt-6 text-center text-[13.5px] leading-relaxed text-ink-3">
-            Todavía no hay ningún agente registrado en la cadena.
+            {T.mercado.sinAgentes}
           </p>
         )}
 
         {agents.length > 0 && lista.length === 0 && (
           <p className="px-2 pt-6 text-center text-[13.5px] leading-relaxed text-ink-3">
-            Ninguno se llama así ni hace eso.
+            {T.mercado.sinResultados}
           </p>
         )}
 
         <ul className="flex flex-col gap-2">
           {lista.map((a) => (
             <li key={a.id}>
-              <Tarjeta agente={a} />
+              <Tarjeta agente={a} T={T} />
             </li>
           ))}
         </ul>
@@ -83,7 +90,7 @@ export default function Mercado(): React.ReactElement {
   );
 }
 
-function Tarjeta({ agente }: { agente: Agent }): React.ReactElement {
+function Tarjeta({ agente, T }: { agente: Agent; T: Textos }): React.ReactElement {
   const moneda = currencySymbol(agente.currency);
   // Escribía «0 MON / tarea» para casi todos, y no porque no tuvieran precio:
   // `formatMon(x, 0)` redondea a cero cualquier cosa por debajo de 1 MON, que
@@ -109,12 +116,12 @@ function Tarjeta({ agente }: { agente: Agent }): React.ReactElement {
 
           <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className={`font-mono text-[12.5px] ${tarifa ? 'text-monad-mist' : 'text-ink-3'}`}>
-              {tarifa ? `${tarifa} ${moneda} · encargo` : 'sin precio de encargo'}
+              {tarifa ? T.mercado.porEncargo(tarifa, moneda) : T.mercado.sinPrecio}
             </span>
             {agente.tasksCompleted > 0 ? (
-              <span className="text-[11px] text-ink-3">· {agente.tasksCompleted} tareas</span>
+              <span className="text-[11px] text-ink-3">{T.mercado.tareas(agente.tasksCompleted)}</span>
             ) : (
-              <span className="text-[11px] text-ink-3">· sin valoraciones</span>
+              <span className="text-[11px] text-ink-3">{T.mercado.sinValoraciones}</span>
             )}
           </div>
         </div>

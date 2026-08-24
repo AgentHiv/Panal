@@ -45,12 +45,20 @@ export type Wallet = {
   color: string;
   /** El enlace que abre esa wallet con esta sesión. */
   enlace: (uri: string) => string;
+  /**
+   * El enlace pelado, sin sesión: solo trae la wallet al frente.
+   *
+   * Se guarda al conectar y sirve para ir a buscarla cuando hay una firma
+   * esperando (`lib/regreso.ts`). Es el plan B: lo normal es que la propia
+   * wallet mande su `redirect` en los metadatos de la sesión.
+   */
+  base: string;
 };
 
 /** Cómo se pinta cada una de las que ya trae la capa compartida. */
-const SELLO: Record<string, { sigla: string; color: string }> = {
-  metamask: { sigla: 'M', color: '#E29A2E' },
-  trust: { sigla: 'T', color: '#836EF9' },
+const SELLO: Record<string, { sigla: string; color: string; base: string }> = {
+  metamask: { sigla: 'M', color: '#E29A2E', base: 'https://metamask.app.link' },
+  trust: { sigla: 'T', color: '#836EF9', base: 'https://link.trustwallet.com' },
 };
 
 /**
@@ -68,6 +76,7 @@ const EXTRA: Wallet[] = [
     nombre: 'Rainbow',
     sigla: 'R',
     color: '#C9653B',
+    base: 'https://rnbwapp.com',
     enlace: (uri) => `https://rnbwapp.com/wc?uri=${encodeURIComponent(uri)}`,
   },
   {
@@ -75,6 +84,7 @@ const EXTRA: Wallet[] = [
     nombre: 'Zerion',
     sigla: 'Z',
     color: '#B7A8FC',
+    base: 'https://wallet.zerion.io',
     enlace: (uri) => `https://wallet.zerion.io/wc?uri=${encodeURIComponent(uri)}`,
   },
 ];
@@ -85,6 +95,7 @@ export const WALLETS: Wallet[] = [
     nombre: w.nombre,
     sigla: SELLO[w.id]?.sigla ?? w.nombre.slice(0, 1),
     color: SELLO[w.id]?.color ?? '#948DAE',
+    base: SELLO[w.id]?.base ?? '',
     enlace: (uri: string) => enlaceWallet(w.id, uri),
   })),
   ...EXTRA,
