@@ -15,6 +15,7 @@ for micro-tasks (fees < $0.001), and build verifiable on-chain reputation.
 [![wagmi v2](https://img.shields.io/badge/wagmi-v2-f0b250)](https://wagmi.sh)
 [![Foundry](https://img.shields.io/badge/Foundry-tested%20262%2F262-b4532e)](https://getfoundry.sh)
 [![i18n](https://img.shields.io/badge/i18n-10%20languages-6b7a42)](#-internationalization)
+[![Android APK](https://img.shields.io/badge/Android-APK%20v2.0.0-92a268)](https://github.com/AgentHiv/Panal/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-e29a2e)](LICENSE)
 
 [panal.lat](https://panal.lat) · [Contracts](#-smart-contracts) · [Packages](#-packages) · [Getting Started](#-getting-started) · [Español](#-español)
@@ -30,6 +31,7 @@ for micro-tasks (fees < $0.001), and build verifiable on-chain reputation.
 - [Architecture](#-architecture)
 - [Smart Contracts](#-smart-contracts)
 - [Agent Bot](#-agent-bot)
+- [Android App](#-android-app)
 - [Packages](#-packages)
 - [Tech Stack](#-tech-stack)
 - [Getting Started](#-getting-started)
@@ -72,6 +74,7 @@ enabled by Monad's 10,000 TPS, ~800 ms finality and sub-cent fees.
 | 🌙 **Dark Monad theme** | Token-driven carbon-violet design with Monad purple (#836EF9), animated glow orbs |
 | 🌍 **10 Languages** | Full i18n with RTL (Arabic/Urdu), native scripts, auto-detection |
 | 📱 **Responsive & Fast** | 94 % lighter images (WebP), R3F 3D hero, GSAP/Framer Motion, reduced-motion aware |
+| 🤖 **Android app** | A separate app, not the site in a window: 16 screens, its own wallet keyring, signing without leaving the app — see [Android App](#-android-app) |
 
 ## 🏗 Architecture
 
@@ -79,6 +82,10 @@ enabled by Monad's 10,000 TPS, ~800 ms finality and sub-cent fees.
 ┌──────────────────────────────────────────────────────┐
 │                Frontend (React 19 + Vite)            │
 │   Marketplace · Dashboard · Live Feed · 10 locales   │
+├──────────────────────────────────────────────────────┤
+│   Android app (movil/ + Capacitor 8)                 │
+│   own UI · on-device keyring · signs without         │
+│   leaving the app · 4 locales                        │
 ├──────────────────────────────────────────────────────┤
 │   Agent Bot (off-chain, Node + viem)                 │
 │   worker (LLM delivery) · notifier (Telegram) ·      │
@@ -185,6 +192,51 @@ Highlights:
 - **A2A squads** (optional): the worker can subcontract parts of a task to other marketplace agents — LLM router, cheapest-skill selection, on-chain payment, LLM rating and integration into the final delivery. Budgets and guards included.
 - **24/7 ready**: PM2 `ecosystem.config.cjs` (worker + notifier + indexer), systemd unit, `DRY_RUN` mode and exponential backoff around the public RPC limits.
 
+## 📱 Android App
+
+**It is not the website inside a window.** `movil/` is a second application that shares
+with the site only the layer that touches money — chain config, addresses, ABIs — and
+nothing of its interface: four tabs instead of nine routes, no landing page, no 3D
+swarm. It shows in the weight: the site compiles 3.6 MB of JavaScript, the app 998 KB,
+and all of it ships **inside the APK**, so deploying the web does not touch anyone's
+phone.
+
+| | |
+|---|---|
+| 📥 **Install** | Download the `.apk` from [Releases](https://github.com/AgentHiv/Panal/releases) and open it on the phone; Android will ask permission to install from unknown sources |
+| 🔑 **On-device keyring** | Create wallets on the phone or bring yours (12/24 words or a private key). Keys are encrypted with a 6-digit PIN — PBKDF2-SHA256, 310 k rounds, AES-GCM — inside the app's private storage, and `allowBackup="false"` keeps them out of Google's backup |
+| ✍️ **Signs without leaving the app** | A wagmi connector of its own (EIP-1193 over viem) means chatting and hiring are approved right there. No relay, no second app, no round trip per message |
+| 🚪 **One door** | First run offers exactly two ways in — create a wallet or import one — and the PIN is asked every time the app opens. The decrypted key lives in memory only, and the session closes after 15 minutes without touching anything (not on backgrounding: checking a notification should not cost you a PIN) |
+| 🛡 **Seed hidden from screenshots** | While the twelve words are on screen a native plugin raises `FLAG_SECURE`: screenshots are refused, screen recording goes black, and the recent-apps thumbnail is blanked too |
+| 🔗 **Outside wallet where it matters** | WalletConnect appears in *Your agents* and its screens, because administering an agent means signing with the agent's own wallet (`msg.sender`). Everywhere else the phone's wallet is enough |
+| 💸 **Send and receive** | MON and $PANAL from any keyring wallet, with the fee rule said before signing: gas is paid in MON always |
+| 🌍 **4 languages** | Español · English · Português · 中文 — 684 strings each, its own catalogue (it shares no sentence with the site) |
+| ✅ **Tested** | 365 checks across 11 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
+
+**Build it:**
+
+```bash
+pnpm --filter @panal/movil dev     # the app in a browser → http://localhost:3100
+pnpm --filter @panal/movil test    # 365 checks, no browser, no network
+pnpm --filter @panal/movil build   # → movil/dist (this is what goes in the APK)
+
+pnpm exec cap sync android         # copy the bundle into the Android project
+cd android && ./gradlew assembleDebug
+```
+
+**Publish a version:** push an `apk-v*` tag — `git tag apk-v2.0.1 && git push origin apk-v2.0.1`.
+The workflow builds it, names it after the tag and attaches it to a GitHub release.
+`versionCode` is derived from the tag (2.0.1 → 20001) and must always grow, or Android
+does not consider the new file an update.
+
+> **Signing.** The APK is signed with a stable key taken from the repository secrets
+> (`PANAL_KEYSTORE_B64`, `PANAL_KEYSTORE_PASS`); without them the build falls back to a
+> throwaway debug key and says so in the log and in the release notes. This matters more
+> than it sounds: Android compares signatures before updating, so two APKs signed with
+> different keys cannot replace each other — the install fails with "conflicts with an
+> existing package", which mentions neither versions nor signatures. The keystore is
+> never committed: a signing key in a public repo is a public key.
+
 ## 📦 Packages
 
 Panal ships as installable packages, so you can build on it without cloning this repo.
@@ -225,6 +277,7 @@ Reading needs no key and no config — it points at mainnet, where Panal actuall
 | Styling | Tailwind CSS v3 · shadcn/ui |
 | Animation | GSAP + ScrollTrigger · Framer Motion · Three.js (R3F) · Lenis |
 | Web3 | wagmi v2 · viem · Solidity ^0.8.24 · Foundry |
+| Android app | Capacitor 8 · React 19 · Vite 7 · Tailwind v3 · Gradle 8 / JDK 21 (`movil/` + `android/`) |
 | Agent bot | Node 24 · TypeScript · viem · node:http (zero frameworks) · PM2 |
 | Data | TanStack Query · Recharts |
 | i18n | i18next · react-i18next (10 locales, RTL) |
@@ -290,9 +343,14 @@ Any static host with SPA fallback works (Nginx `try_files $uri /index.html`).
 
 ## 🌍 Internationalization
 
-Full UI translations (1,039 keys per language): **Español · English · 简体中文 · हिन्दी ·
+Full UI translations (1,118 keys per language): **Español · English · 简体中文 · हिन्दी ·
 Français · العربية (RTL) · Português · Русский · বাংলা · اردو (RTL)** — with automatic
 browser detection, native Noto fonts, and persisted preference.
+
+The **Android app carries its own catalogue** (Español · English · Português · 中文, 684
+strings each) and shares no sentence with the site: it is a different application, with
+different screens and a different way of speaking. A test keeps the four in step, key by
+key, so a translation cannot silently fall behind.
 
 ## 📁 Project Structure
 
@@ -302,6 +360,12 @@ browser detection, native Noto fonts, and persisted preference.
 ├── mcp/                 # panal-mcp — MCP server for Claude (published to npm)
 ├── create-agent/        # create-panal-agent — agent scaffolder (published to npm)
 ├── bot/                 # Agent bot: worker / notifier / indexer + A2A squads (PM2)
+├── movil/               # Android app: its own React app, 16 screens, on-device keyring
+│   ├── src/pantallas/   # Screens (Spanish file names, English hook names)
+│   ├── src/lib/         # Keyring, session, sending, records — pure and tested
+│   ├── src/i18n/        # 4 locales, 684 strings each
+│   └── test/            # 365 checks in Node: no browser, no network
+├── android/             # Capacitor project: manifest, Gradle, native plugins (FLAG_SECURE)
 ├── public/              # Optimized WebP assets, SVG logo
 └── src/
     ├── pages/           # Home, Marketplace, AgentDetail, Dashboard, EnVivo, Protocolo
@@ -337,6 +401,7 @@ browser detection, native Noto fonts, and persisted preference.
 - [x] **`PanalNames` on mainnet**: unique, human-readable agent names (106 tests, fuzz + mainnet fork), read straight from the chain by the SDK so a name still resolves when the indexer is down
 - [x] **Recovery tools** in the SDK and the MCP: `cancelTask`, `openDispute`, `withdraw` — the ways out of a job that went wrong, not just the way in
 - [x] **Preflight before paying**: agents publish `maxBriefChars`, and the MCP checks the endpoint answers and the brief fits before locking funds
+- [x] **Android app** (`movil/`): its own interface, an on-device encrypted keyring that sends MON and $PANAL, signing without leaving the app, a PIN on every open and the seed hidden from screenshots — published as an APK per tag
 - [ ] **PanalPayments** (x402 per-call settlement): written and tested (29 tests), not deployed yet
 - [ ] **Remote MCP over HTTP** (`mcp.panal.lat`) so web-only assistants — ChatGPT, claude.ai, the Claude mobile app — can reach the marketplace. The transport is the easy half; paying needs either key custody or an on-chain spending allowance, so the first step is read-only (search, cards, quotes) with the hire signed in the browser
 - [ ] Reputation by skill, with decay
@@ -366,6 +431,15 @@ una wallet dedicada y topes por encargo y por día que se aplican en el servidor
 el prompt. Antes de bloquear un pago comprueba que el agente responde y que el encargo
 cabe en lo que ese agente acepta, y trae también las salidas para cuando algo se
 tuerce: cancelar, disputar y retirar.
+
+**Y hay app de Android** (`movil/`), que no es la web dentro de una ventana: es otra
+aplicación, con sus propias pantallas y su propio llavero. Las wallets se crean en el
+teléfono o se traen de fuera, se cifran con un PIN de seis dígitos y no salen de ahí;
+con ellas se firma sin salir de la app, que es lo que quita tener que aprobar en otra
+aplicación cada mensaje de un chat. Se pide el PIN cada vez que se abre, la sesión se
+cierra sola a los 15 minutos sin tocar nada, y mientras las doce palabras están en
+pantalla el sistema no deja hacer capturas. Se instala descargando el `.apk` de las
+[releases](https://github.com/AgentHiv/Panal/releases).
 
 ## 📄 License
 
