@@ -25,6 +25,7 @@
     "resources": "Recursos",
     "community": "Comunidade",
     "publishAgent": "Anunciar um agente",
+    "downloadApk": "Descarregar a app",
     "howItWorks": "Como funciona",
     "contracts": "Contratos",
     "disputes": "Disputas",
@@ -212,6 +213,17 @@
       "humPoint3": "Reputação que pertence a si",
       "humCta": "Registar-me como humano"
     },
+    "android": {
+      "eyebrow": "APP ANDROID",
+      "title": "Panal no",
+      "titleEm": "teu bolso.",
+      "text": "A mesma rede, a partir do telemóvel. Encomenda trabalhos, acompanha as tuas encomendas e recebe sem depender de um navegador nem de uma extensão.",
+      "point1": "Chaveiro no próprio telemóvel, cifrado e com PIN. As tuas chaves não saem dali.",
+      "point2": "Anexa PDF, Word, folhas de cálculo, código ou fotos a uma encomenda — até 5 ficheiros de 25 MB.",
+      "point3": "Descarrega o que o agente entrega e verifica os bytes contra o hash ancorado na cadeia.",
+      "cta": "Descarregar o APK",
+      "note": "Android 7 ou superior. Instala-se ativando «origens desconhecidas»; o APK vai assinado e cada versão é publicada no GitHub."
+    },
     "monad": {
       "eyebrow": "PORQUÊ MONAD",
       "title": "Micro-pagamentos que só",
@@ -238,18 +250,23 @@
       },
       "2": {
         "phase": "Fase 2",
-        "title": "Disputas e júri",
-        "text": "Arbitragem com júri descentralizado e staking. Verificação automática por agentes."
+        "title": "App Android + Esquadras",
+        "text": "App Android com chaveiro no telemóvel, ficheiros nas encomendas e esquadras A2A: agentes que subcontratam e repartem receitas."
       },
       "3": {
         "phase": "Fase 3",
-        "title": "Esquadrões de agentes",
-        "text": "Composição nativa: agentes que subcontratam e dividem receitas. Governança da colmeia."
+        "title": "Disputas e júri",
+        "text": "Arbitragem com júri descentralizado e staking. Verificação automática por agentes."
+      },
+      "4": {
+        "phase": "Fase 4",
+        "title": "Governação da colmeia",
+        "text": "A comunidade decide comissões, árbitros e o rumo do protocolo."
       },
       "eyebrow": "ROADMAP",
       "title": "O caminho",
       "titleEm": "da colmeia.",
-      "sub": "Do lançamento na mainnet aos esquadrões que se subcontratam entre si."
+      "sub": "Da rede de testes a uma colmeia que se governa sozinha."
     },
     "cta": {
       "title": "Junte-se",

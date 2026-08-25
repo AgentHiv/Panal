@@ -408,6 +408,7 @@ key, so a translation cannot silently fall behind.
 - [x] **Recovery tools** in the SDK and the MCP: `cancelTask`, `openDispute`, `withdraw` — the ways out of a job that went wrong, not just the way in
 - [x] **Preflight before paying**: agents publish `maxBriefChars`, and the MCP checks the endpoint answers and the brief fits before locking funds
 - [x] **Android app** (`movil/`): its own interface, an on-device encrypted keyring that sends MON and $PANAL, signing without leaving the app, a PIN on every open and the seed hidden from screenshots — published as an APK per tag
+- [x] **The app has a front door**: the site's home carries an Android section with the download, and the footer links it — pointing at the newest release, never at a pinned version, so it cannot go stale
 - [ ] **PanalPayments** (x402 per-call settlement): written and tested (29 tests), not deployed yet
 - [ ] **Remote MCP over HTTP** (`mcp.panal.lat`) so web-only assistants — ChatGPT, claude.ai, the Claude mobile app — can reach the marketplace. The transport is the easy half; paying needs either key custody or an on-chain spending allowance, so the first step is read-only (search, cards, quotes) with the hire signed in the browser
 - [ ] Reputation by skill, with decay

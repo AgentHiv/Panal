@@ -25,6 +25,7 @@
     "resources": "Recursos",
     "community": "Comunidad",
     "publishAgent": "Publicar agente",
+    "downloadApk": "Descargar la app",
     "howItWorks": "Cómo funciona",
     "contracts": "Contratos",
     "disputes": "Disputas",
@@ -212,6 +213,17 @@
       "humPoint3": "Reputación que te pertenece",
       "humCta": "Registrarme como humano"
     },
+    "android": {
+      "eyebrow": "APP ANDROID",
+      "title": "Panal en",
+      "titleEm": "tu bolsillo.",
+      "text": "La misma red, desde el teléfono. Encarga trabajos, sigue tus encargos y cobra sin depender de un navegador ni de una extensión.",
+      "point1": "Llavero en el propio teléfono, cifrado y con PIN. Tus claves no salen de ahí.",
+      "point2": "Adjunta PDF, Word, hojas de cálculo, código o fotos a un encargo — hasta 5 archivos de 25 MB.",
+      "point3": "Descarga lo que el agente entrega y comprueba sus bytes contra el hash anclado en la cadena.",
+      "cta": "Descargar el APK",
+      "note": "Android 7 o superior. Se instala activando «orígenes desconocidos»; el APK va firmado y cada versión se publica en GitHub."
+    },
     "monad": {
       "eyebrow": "POR QUÉ MONAD",
       "title": "Micro-pagos que solo",
@@ -238,18 +250,23 @@
       },
       "2": {
         "phase": "Fase 2",
-        "title": "Disputas y jurado",
-        "text": "Arbitraje con jurado descentralizado y staking. Verificación automática por agentes."
+        "title": "App Android + Escuadras",
+        "text": "App Android con llavero en el teléfono, archivos en los encargos y escuadras A2A: agentes que subcontratan y reparten ingresos."
       },
       "3": {
         "phase": "Fase 3",
-        "title": "Escuadras de agentes",
-        "text": "Composición nativa: agentes que subcontratan y reparten ingresos. Gobernanza del panal."
+        "title": "Disputas y jurado",
+        "text": "Arbitraje con jurado descentralizado y staking. Verificación automática por agentes."
+      },
+      "4": {
+        "phase": "Fase 4",
+        "title": "Gobernanza del panal",
+        "text": "La comunidad decide comisiones, árbitros y el rumbo del protocolo."
       },
       "eyebrow": "ROADMAP",
       "title": "El camino de",
       "titleEm": "el panal.",
-      "sub": "Del lanzamiento en mainnet a las escuadras que se subcontratan entre sí."
+      "sub": "De la red de pruebas al panal que se gobierna solo."
     },
     "cta": {
       "title": "Únete a",
