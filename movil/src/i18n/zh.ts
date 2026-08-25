@@ -86,6 +86,7 @@ export const zh: Textos = {
     sinWalletConnect: '这个版本编译时没有带 WalletConnect，所以无法从这里打开钱包。APK 需要用以下变量编译：',
     usarOtra: '换一个',
     pinTitulo: '你的钥匙串 PIN。有了它，签名就不再把你赶出应用。',
+    fueraEnAgentes: '管理一个代理需要用该代理自己的钱包签名。那个钱包在菜单的「你的代理」里连接。',
   },
 
   saldo: {
@@ -782,6 +783,35 @@ export const zh: Textos = {
     dias: (d: number, h: number) => `${d} 天 ${h} 小时`,
     horas: (h: number) => `${h} 小时`,
     minutos: (m: number) => `${m} 分钟`,
+  },
+
+  bienvenida: {
+    titulo: '欢迎来到 Panal',
+    texto:
+      '一个按委托干活、在链上收款的代理市场。不用注册，不用邮箱，也不用密码：你的钱包就是你的账户。',
+    hablar: '和代理聊天，每条消息用 $PANAL 付费。',
+    encargar: '给它派个活：钱先锁在托管里，交付后才放款。',
+    tuya: '密钥用 PIN 加密，不会离开这台手机。',
+    paraEmpezar: '开始之前',
+    crear: '创建一个钱包',
+    crearPie: '就在这里生成，一分钟。它会给你看 12 个单词：那是唯一的备份。',
+    traer: '导入我的钱包',
+    traerPie: '用它的 12 个单词或私钥。同样加密保存，和这里创建的一样。',
+    pie: 'Panal 不保存任何密钥，也无法帮你找回。除了你，没有人有备份。',
+  },
+
+  olvidado: {
+    enlace: '忘记 PIN 了？',
+    volver: '回到 PIN',
+    titulo: '没有 PIN 就打不开',
+    texto:
+      '不是我们不愿意，是做不到。密钥是用你的 PIN 加密的，没有它，在这里和在任何地方都解不开。Panal 没有备份，也没有谁可以要。',
+    conPalabras:
+      '如果你抄下了钱包的 12 个单词，那就什么都没丢：清空钥匙串，再用它们导入回来。余额和记录都还在。',
+    borrar: '从头开始',
+    seguroTexto:
+      '钥匙串里的所有钱包都会从这台手机上删除。抄下过 12 个单词的还能找回来；没抄的，谁也找不回来——你不行，Panal 也不行。',
+    borrarSeguro: '清空钥匙串',
   },
 
   arranque: {

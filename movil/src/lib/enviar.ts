@@ -24,7 +24,7 @@ import { createWalletClient, http } from 'viem';
 import type { Account } from 'viem';
 import { activeChain, PANAL_TOKEN_ADDRESS, publicClient } from '@/contracts/config';
 import { panalTokenAbi } from '@/contracts/abis';
-import type { Moneda } from '~/lib/envio';
+import type { Moneda } from '@/lib/envio';
 
 /** Lo que dijo el nodo, ya clasificado. La pantalla lo escribe en su idioma. */
 export type PegaRed =

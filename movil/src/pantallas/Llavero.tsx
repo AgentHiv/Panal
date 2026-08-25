@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Icono from '~/componentes/Icono';
 import Hoja from '~/componentes/Hoja';
 import Teclado from '~/componentes/Teclado';
@@ -19,6 +20,8 @@ import {
   verSecreto,
 } from '~/lib/llavero';
 import type { Llave, Secreto, WalletGuardada } from '~/lib/llavero';
+import { abrirSesion } from '~/lib/sesion';
+import { useSinCapturas } from '~/lib/pantalla';
 import { useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 
@@ -52,6 +55,15 @@ import type { Textos } from '~/i18n/idiomas';
  * Con el cambio de registro que describe `design/Cambios.dc.html` —dueño
  * distinto de agente— esta wallet pasa a ser la DUEÑA: manda y cobra sin salir
  * del teléfono.
+ *
+ * DE DÓNDE SE LLEGA AQUÍ LA PRIMERA VEZ
+ *
+ * De la bienvenida, con `?hacer=crear` o `?hacer=traer`. Esta pantalla ya sabía
+ * hacer las dos cosas —poner el PIN, crear, importar—, así que la bienvenida no
+ * las repite: manda aquí y dice cuál. Lo único que cambia con ese parámetro es
+ * el final: en vez de quedarse en el llavero, se abre la sesión con la wallet
+ * recién hecha y se entra en la app. Sin eso, quien acaba de crear su primera
+ * wallet tendría que volver a teclear el PIN para poder usarla.
  */
 type Paso =
   | { que: 'estrenar'; primero: string | null }
@@ -62,6 +74,11 @@ type Paso =
 const SIN_SALDO: Par = { mon: 0n, panal: 0n };
 
 export default function Llavero(): React.ReactElement {
+  const navegar = useNavigate();
+  const [parametros] = useSearchParams();
+  /** `crear` o `traer` si se llega desde la bienvenida; si no, nada. */
+  const hacer = parametros.get('hacer');
+
   // El primer paso se decide leyendo el disco, y eso se puede hacer aquí
   // mismo: no hace falta pintar un estado «cargando» que dure un fotograma.
   const [paso, setPaso] = useState<Paso>(() =>
@@ -98,10 +115,15 @@ export default function Llavero(): React.ReactElement {
     }
     setOcupado(true);
     try {
-      setLlave(await crearLlavero(pin));
+      const k = await crearLlavero(pin);
+      setLlave(k);
       setError(null);
       refrescar();
       setPaso({ que: 'abierto' });
+      // Recién puesto el PIN, se sigue con lo que se eligió en la bienvenida
+      // en vez de dejar a la persona delante de un llavero vacío.
+      if (hacer === 'crear') await alCrearWallet(k);
+      else if (hacer === 'traer') setImportando(true);
     } catch {
       setError(T.llavero.noSePudoCrear);
       setPaso({ que: 'estrenar', primero: null });
@@ -125,14 +147,34 @@ export default function Llavero(): React.ReactElement {
     setError(null);
     refrescar();
     setPaso({ que: 'abierto' });
+    // Con el llavero ya estrenado se llega aquí en vez de a `alEstrenar`: si
+    // se venía de la bienvenida, el camino sigue igual.
+    if (hacer === 'crear' && listar().length === 0) await alCrearWallet(k);
+    else if (hacer === 'traer') setImportando(true);
   };
 
-  const alCrearWallet = async (): Promise<void> => {
-    if (!llave) return;
+  /**
+   * Termina el alta que empezó en la bienvenida: sesión abierta y a la app.
+   *
+   * Solo cuando se llegó con `?hacer=`. Entrando por el menú, crear una wallet
+   * más no tiene por qué cambiar con cuál estás firmando.
+   */
+  const terminarAlta = async (w: WalletGuardada, k: Llave | null): Promise<void> => {
+    if (!hacer || !k) return;
+    await abrirSesion(k, w);
+    // `replace` para que el botón de atrás no devuelva a la pantalla de alta,
+    // que ya no tiene nada que hacer.
+    navegar('/chats', { replace: true });
+  };
+
+  // La clave llega por parámetro porque al estrenar el llavero se encadena
+  // desde `alEstrenar`, y allí `llave` todavía es el estado viejo.
+  const alCrearWallet = async (k: Llave | null = llave): Promise<void> => {
+    if (!k) return;
     setOcupado(true);
     try {
       const n = listar().length + 1;
-      const { wallet, palabras } = await crearWallet(llave, `Wallet ${n}`);
+      const { wallet, palabras } = await crearWallet(k, `Wallet ${n}`);
       refrescar();
       setPaso({
         que: 'secreto',
@@ -188,6 +230,7 @@ export default function Llavero(): React.ReactElement {
           if (paso.recien) marcarCopiada(paso.wallet.id);
           refrescar();
           setPaso({ que: 'abierto' });
+          void terminarAlta(paso.wallet, llave);
         }}
       />
     );
@@ -364,6 +407,10 @@ export default function Llavero(): React.ReactElement {
           onHecho={(w) => {
             setImportando(false);
             refrescar();
+            if (hacer) {
+              void terminarAlta(w, llave);
+              return;
+            }
             setAbierta(w);
           }}
         />
@@ -425,6 +472,10 @@ function SecretoEnPantalla({
   onListo: () => void;
   T: Textos;
 }): React.ReactElement {
+  // Nada de capturas mientras esto esté delante: es la wallet entera, y una
+  // captura acaba en la galería y de ahí en la nube. Se destapa solo al salir.
+  useSinCapturas();
+
   const palabras = secreto.tipo === 'palabras' ? secreto.texto.split(' ') : [];
 
   return (

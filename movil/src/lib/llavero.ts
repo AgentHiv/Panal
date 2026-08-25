@@ -413,3 +413,26 @@ export function borrar(id: string): void {
   g.wallets = g.wallets.filter((x) => x.id !== id);
   escribir(g);
 }
+
+/**
+ * Tira el llavero entero: el PIN, el testigo y todas las wallets cifradas.
+ *
+ * ESTO EXISTE POR UN MOTIVO CONCRETO. Desde que la app pide el PIN al abrirse,
+ * olvidarlo no deja a alguien sin sus wallets: lo deja sin la APP, delante de
+ * una pantalla que no se puede pasar y que no lleva a ningún sitio. La única
+ * salida honesta es poder empezar de cero.
+ *
+ * Y de cero es de cero: sin el PIN no hay forma de descifrar lo que hay
+ * dentro, ni aquí ni en ninguna parte, así que borrarlo no pierde nada que se
+ * pudiera recuperar de otro modo. Lo que sí se pierde para siempre es una
+ * wallet cuyas doce palabras no estén apuntadas fuera del teléfono. Quien lo
+ * pulse tiene que saber exactamente eso, y por eso la pantalla lo dice con esas
+ * palabras antes de preguntar.
+ */
+export function borrarLlavero(): void {
+  try {
+    localStorage.removeItem(CLAVE);
+  } catch {
+    /* si no se puede escribir, tampoco se pudo guardar nada */
+  }
+}

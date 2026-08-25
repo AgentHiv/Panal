@@ -3,6 +3,7 @@ import Hoja, { Boton, Nota } from '~/componentes/Hoja';
 import { importarWallet } from '~/lib/llavero';
 import type { Llave, WalletGuardada } from '~/lib/llavero';
 import { claseDeSecreto } from '~/lib/envio';
+import { useSinCapturas } from '~/lib/pantalla';
 import type { Textos } from '~/i18n/idiomas';
 
 /**
@@ -28,6 +29,10 @@ export default function HojaImportar({
   onHecho: (w: WalletGuardada) => void;
   T: Textos;
 }): React.ReactElement {
+  // Aquí también: lo que se pega en esa casilla son las mismas doce palabras
+  // que en la otra pantalla, y una captura las guarda igual de bien.
+  useSinCapturas();
+
   const [nombre, setNombre] = useState('');
   const [secreto, setSecreto] = useState('');
   const [pega, setPega] = useState<string | null>(null);

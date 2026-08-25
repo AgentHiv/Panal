@@ -5,6 +5,14 @@
  * (react-query, refetch 15–30 s). Enviar firma una transferencia real;
  * Recibir muestra un QR real de la address. Sin mocks ni address de ejemplo.
  * Móvil: bloques en columna y botones Enviar/Recibir a ancho completo.
+ *
+ * ENVIAR MANDA LAS DOS MONEDAS. Hasta ahora solo salía MON, y el $PANAL que la
+ * propia tarjeta enseñaba justo al lado no se podía mover desde aquí: había que
+ * abrir otra wallet para mandar el token del sitio en el que estás. Las dos
+ * comparten formulario y no comparten camino — MON es una transacción a secas,
+ * $PANAL es una llamada a `transfer` del contrato— y sobre todo no comparten
+ * quién paga el gas: la comisión se paga en MON SIEMPRE, así que una wallet con
+ * $PANAL y cero MON no puede mandar nada. Eso se dice aquí, antes de firmar.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -13,9 +21,9 @@ import { useQuery } from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import { ArrowDownLeft, ArrowUpRight, Check, Copy, ExternalLink, Loader2, TriangleAlert, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
-import { useBalance, useReadContract, useSendTransaction, useSwitchChain } from 'wagmi';
+import { useBalance, useReadContract, useSendTransaction, useSwitchChain, useWriteContract } from 'wagmi';
 import { panalEscrowV2Abi, panalTokenAbi } from '@/contracts/abis';
-import { formatEther, formatUnits, isAddress, parseAbiItem, parseEther } from 'viem';
+import { formatEther, formatUnits, parseAbiItem } from 'viem';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +40,8 @@ import { useWallet } from '@/hooks/useWallet';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { EXPLORER_TX, NATIVE_CURRENCY, PANAL_ESCROW_ADDRESS, PANAL_ESCROW_V2_ADDRESS, activeChain, publicClient , IS_MAINNET, PANAL_TOKEN_ADDRESS, V2_ENABLED } from '@/contracts/config';
 import { panalEscrowAbi } from '@/contracts/abis';
+import { maximo, revisar } from '@/lib/envio';
+import type { Moneda, Pega } from '@/lib/envio';
 import { WalletSparkline } from './charts';
 import { formatMonEs } from './data';
 
@@ -264,6 +274,9 @@ export default function WalletCard() {
   const [sendOpen, setSendOpen] = useState(false);
   const [dest, setDest] = useState('');
   const [amount, setAmount] = useState('');
+  /* Solo hay dos monedas y solo en mainnet: en testnet no existe el token, así
+     que allí el selector no aparece en vez de ofrecer algo que no se puede. */
+  const [moneda, setMoneda] = useState<Moneda>('MON');
   const [qrUrl, setQrUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -298,7 +311,24 @@ export default function WalletCard() {
 
   /* ---------- Envío real ---------- */
 
-  const { sendTransaction, data: txHash, isPending: signing, reset: resetSend } = useSendTransaction();
+  /**
+   * Dos monedas, dos firmas distintas.
+   *
+   * MON es la moneda de la red: se manda con una transacción y ya. $PANAL es un
+   * contrato, así que mandarlo es llamar a su `transfer` — otro hook de wagmi,
+   * otro gas y otra forma de fallar—, aunque en pantalla sea el mismo
+   * formulario. Solo puede haber una en marcha a la vez, así que el hash es el
+   * que haya de las dos.
+   */
+  const { sendTransaction, data: monHash, isPending: signingMon, reset: resetMon } = useSendTransaction();
+  const {
+    writeContract,
+    data: panalHash,
+    isPending: signingPanal,
+    reset: resetPanal,
+  } = useWriteContract();
+  const txHash = monHash ?? panalHash;
+  const signing = signingMon || signingPanal;
   const { confirming, mined, reverted } = useTxReceipt(txHash);
   const toastedHash = useRef<string | null>(null);
 
@@ -322,10 +352,60 @@ export default function WalletCard() {
   }, [mined, reverted, txHash, t]);
 
   const destTrim = dest.trim();
-  const amountStr = amount.replace(',', '.').trim();
-  const destValid = isAddress(destTrim);
-  const amountValid = /^\d+(\.\d{1,18})?$/.test(amountStr) && Number(amountStr) > 0;
-  const sendValid = destValid && amountValid;
+
+  /**
+   * Las cuentas las hace `@/lib/envio`, que es el MISMO módulo que usa la app
+   * del móvil. No es reutilizar por reutilizar: «no te queda MON para la
+   * comisión» tiene que decir lo mismo en los dos sitios, y dos copias de esa
+   * regla acabarían discrepando delante de alguien que va a firmar.
+   *
+   * $PANAL son 18 decimales —leídos del contrato en mainnet—, los mismos que
+   * MON, así que `revisar` los da por buenos sin preguntar.
+   */
+  const monBal = balance?.value;
+  /* Con el saldo sin llegar todavía no se puede decir «no tienes tanto»: sería
+     acusar de no tener a quien puede que tenga. Se calla y no deja firmar. */
+  const saldosListos = monBal !== undefined && (moneda === 'MON' || panalBal !== undefined);
+  const revision = revisar({
+    moneda,
+    importe: amount,
+    destino: dest,
+    mio: addr ?? '',
+    saldoMon: monBal ?? 0n,
+    saldoPanal: panalBal ?? 0n,
+  });
+
+  const pegaTexto = (p: Pega): string | null => {
+    switch (p) {
+      case 'destino-malo':
+        return t('wallet.invalidAddress');
+      case 'destino-soy-yo':
+        return t('wallet.sameAddress');
+      case 'cantidad-mala':
+        return t('wallet.invalidAmount');
+      case 'cantidad-cero':
+        return t('wallet.amountZero');
+      case 'no-hay-tanto':
+        return t('wallet.notEnough', { coin: moneda });
+      case 'deja-gas':
+        return t('wallet.keepGas');
+      case 'sin-mon-para-gas':
+        return t('wallet.noGas');
+      default:
+        // sin-destino / sin-cantidad: el hueco vacío ya lo está diciendo.
+        return null;
+    }
+  };
+
+  const pega = revision.pega;
+  const deDestino = pega === 'destino-malo' || pega === 'destino-soy-yo';
+  const deSaldo = pega === 'no-hay-tanto' || pega === 'deja-gas' || pega === 'sin-mon-para-gas';
+  const pegaDestino = pega && deDestino && destTrim.length > 0 ? pegaTexto(pega) : null;
+  const pegaCantidad =
+    pega && !deDestino && amount.trim().length > 0 && (!deSaldo || saldosListos)
+      ? pegaTexto(pega)
+      : null;
+  const sendValid = revision.ok && saldosListos;
 
   const submitSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -340,21 +420,33 @@ export default function WalletCard() {
       });
       return;
     }
-    sendTransaction(
-      { to: destTrim as `0x${string}`, value: parseEther(amountStr), chainId: activeChain.id },
+    const alFallar = {
+      onError: (err: Error) =>
+        toast(t('wallet.sendFailed'), {
+          description: err.message.includes('User rejected') ? t('hire.step3.rejected') : err.message.split('\n')[0],
+        }),
+    };
+    if (moneda === 'MON') {
+      sendTransaction({ to: destTrim as `0x${string}`, value: revision.wei, chainId: activeChain.id }, alFallar);
+      return;
+    }
+    writeContract(
       {
-        onError: (err) =>
-          toast(t('wallet.sendFailed'), {
-            description: err.message.includes('User rejected') ? t('hire.step3.rejected') : err.message.split('\n')[0],
-          }),
+        address: PANAL_TOKEN_ADDRESS,
+        abi: panalTokenAbi,
+        functionName: 'transfer',
+        args: [destTrim as `0x${string}`, revision.wei],
+        chainId: activeChain.id,
       },
+      alFallar,
     );
   };
 
   const closeSend = (open: boolean) => {
     setSendOpen(open);
     if (!open) {
-      resetSend();
+      resetMon();
+      resetPanal();
       setDest('');
       setAmount('');
       toastedHash.current = null;
@@ -413,7 +505,7 @@ export default function WalletCard() {
                 </DialogTrigger>
                 <DialogContent className="max-h-[92dvh] w-[calc(100vw-2rem)] overflow-y-auto border-line bg-paper sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle className="font-display text-ink">{t('wallet.sendTitle')}</DialogTitle>
+                    <DialogTitle className="font-display text-ink">{t('wallet.sendTitle', { coin: moneda })}</DialogTitle>
                     <DialogDescription className="text-ink-2">
                       {t('wallet.sendDesc', { address: addressShort })}
                     </DialogDescription>
@@ -485,6 +577,31 @@ export default function WalletCard() {
                     </div>
                   ) : (
                     <form onSubmit={submitSend} className="flex flex-col gap-4">
+                      {/* El selector solo en mainnet: en testnet no hay token
+                          que elegir, y una pestaña muerta sobra. */}
+                      {IS_MAINNET && (
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-[0.8125rem] font-medium text-ink-2">{t('wallet.coin')}</span>
+                          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('wallet.coin')}>
+                            {(['MON', '$PANAL'] as const).map((c) => (
+                              <button
+                                key={c}
+                                type="button"
+                                role="radio"
+                                aria-checked={moneda === c}
+                                onClick={() => setMoneda(c)}
+                                className={`rounded-xl border px-4 py-2.5 font-mono text-[0.8125rem] transition-colors ${
+                                  moneda === c
+                                    ? 'border-honey bg-honey-soft text-ink'
+                                    : 'border-line bg-paper text-ink-2 hover:border-honey/50'
+                                }`}
+                              >
+                                {c}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <label className="flex flex-col gap-1.5">
                         <span className="text-[0.8125rem] font-medium text-ink-2">{t('wallet.destAddress')}</span>
                         <Input
@@ -494,15 +611,34 @@ export default function WalletCard() {
                           placeholder="0x…"
                           className="rounded-xl border-line bg-paper font-mono text-[0.8125rem]"
                         />
-                        {destTrim.length > 0 && !destValid && (
+                        {pegaDestino && (
                           <span className="flex items-center gap-1.5 text-[0.75rem] text-terra">
                             <TriangleAlert size={12} aria-hidden />
-                            {t('wallet.invalidAddress')}
+                            {pegaDestino}
                           </span>
                         )}
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[0.8125rem] font-medium text-ink-2">{t('wallet.amount')}</span>
+                        <span className="flex items-baseline justify-between gap-2">
+                          <span className="text-[0.8125rem] font-medium text-ink-2">
+                            {t('wallet.amount', { coin: moneda })}
+                          </span>
+                          {/* «Máx» en MON no es el saldo entero: deja la pizca
+                              que cuesta la propia transacción. Sin eso, el
+                              botón que existe para no equivocarse escribiría
+                              justo la cantidad que no puede salir. */}
+                          {saldosListos && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAmount(formatUnits(maximo(moneda, monBal ?? 0n, panalBal ?? 0n), 18))
+                              }
+                              className="text-[0.75rem] font-medium text-honey-deep underline-offset-2 hover:underline"
+                            >
+                              {t('wallet.max')}
+                            </button>
+                          )}
+                        </span>
                         <Input
                           value={amount}
                           onChange={(e) => setAmount(e.target.value)}
@@ -511,13 +647,21 @@ export default function WalletCard() {
                           placeholder="0.010"
                           className="rounded-xl border-line bg-paper font-mono text-[0.8125rem]"
                         />
-                        {amountStr.length > 0 && !amountValid && (
+                        {pegaCantidad && (
                           <span className="flex items-center gap-1.5 text-[0.75rem] text-terra">
                             <TriangleAlert size={12} aria-hidden />
-                            {t('wallet.invalidAmount')}
+                            {pegaCantidad}
                           </span>
                         )}
                       </label>
+                      {/* Un aviso, no una pega: se puede firmar igual. Queda
+                          tan poco MON que la siguiente puede no salir. */}
+                      {revision.aviso === 'poco-mon' && saldosListos && (
+                        <p className="flex items-start gap-1.5 rounded-xl bg-honey-soft px-3 py-2 text-[0.75rem] leading-relaxed text-ink-2">
+                          <TriangleAlert size={12} className="mt-0.5 shrink-0 text-honey-deep" aria-hidden />
+                          {t('wallet.lowGas')}
+                        </p>
+                      )}
                       {wrongNetwork ? (
                         <button
                           type="button"

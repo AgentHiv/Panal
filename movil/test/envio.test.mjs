@@ -7,7 +7,15 @@
  * control mal se rechaza — que es lo que viem NO hace y por lo que existe
  * `validarPalabras`.
  */
-const e = await import('../src/lib/envio.ts');
+/*
+ * Dos módulos, un solo `e`: las cuentas del dinero se fueron a la capa
+ * compartida —la web también manda $PANAL ahora— y las palabras se quedaron en
+ * el llavero, que es lo único que las usa. Se juntan aquí para seguir
+ * comprobando lo mismo que antes, que es de lo que trata este archivo.
+ */
+const dinero = await import('../../src/lib/envio.ts');
+const palabras = await import('../src/lib/envio.ts');
+const e = { ...dinero, ...palabras };
 
 let bien = 0;
 let mal = 0;
