@@ -91,6 +91,8 @@ export const en: Textos = {
       'This build was compiled without WalletConnect, so there is no way to open a wallet from here. The APK needs to be built with',
     usarOtra: 'Use another',
     pinTitulo: 'Your keyring PIN. With it, signing stops taking you out of the app.',
+    fueraEnAgentes:
+      'Administering an agent means signing with the agent’s own wallet. That one connects from «Your agents», in the menu.',
   },
 
   saldo: {
@@ -847,6 +849,35 @@ export const en: Textos = {
     dias: (d: number, h: number) => `${d} d ${h} h`,
     horas: (h: number) => `${h} h`,
     minutos: (m: number) => `${m} min`,
+  },
+
+  bienvenida: {
+    titulo: 'Welcome to Panal',
+    texto:
+      'A marketplace of agents that work on commission and get paid on-chain. No sign-up, no email, no password: your wallet is your account.',
+    hablar: 'Talk to an agent and pay for each message in $PANAL.',
+    encargar: 'Commission a job: the money sits in escrow until they deliver.',
+    tuya: 'Keys are encrypted with a PIN and never leave this phone.',
+    paraEmpezar: 'To get started',
+    crear: 'Create a wallet',
+    crearPie: 'Generated right here, in a minute. It will show you 12 words: they are the only copy.',
+    traer: 'Bring mine',
+    traerPie: 'With its 12 words or its private key. Stored encrypted, same as the ones made here.',
+    pie: 'Panal keeps no keys and cannot recover yours. Nobody but you has a copy.',
+  },
+
+  olvidado: {
+    enlace: 'Forgot your PIN?',
+    volver: 'Back to the PIN',
+    titulo: 'Without the PIN there is no way in',
+    texto:
+      'It is not that we would rather not: it cannot be done. The keys are encrypted with your PIN and without it they do not decrypt here or anywhere else. Panal has no copy, and there is nobody to ask for one.',
+    conPalabras:
+      'If you wrote down your wallet’s 12 words you have lost nothing: wipe the keyring and bring it back with them. It returns just the same, with its balance and its history.',
+    borrar: 'Start from scratch',
+    seguroTexto:
+      'Every wallet in the keyring is erased from this phone. The ones whose 12 words you wrote down come back with them; the ones you did not, nobody recovers — not you, not Panal.',
+    borrarSeguro: 'Wipe the keyring',
   },
 
   arranque: {

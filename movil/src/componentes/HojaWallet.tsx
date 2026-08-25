@@ -27,11 +27,19 @@ import type { Textos } from '~/i18n/idiomas';
  * es de verdad y afecta a lo que puede pasar con el dinero. Una wallet de
  * fuera te enseña lo que firmas en su propia pantalla; la de aquí no, y quien
  * la elija tiene derecho a saberlo ANTES, no al leer una nota luego.
+ *
+ * Y LA DE FUERA NO SALE SIEMPRE (`conFuera`). Solo hace falta para administrar
+ * un agente —el registro on-chain actúa sobre quien firma, así que hay que
+ * firmar con la wallet del propio agente—, y ponerla delante de todo el mundo
+ * hacía que la primera decisión de la app fuera entre dos caminos cuya
+ * diferencia todavía no se puede entender. Donde no se ofrece, se dice dónde
+ * está: una opción que desaparece sin explicación se busca durante un rato.
  */
 export default function HojaWallet({
   abierta,
   uri,
   hayWalletConnect,
+  conFuera,
   fallo,
   delTelefono,
   recordada,
@@ -42,6 +50,8 @@ export default function HojaWallet({
   abierta: boolean;
   uri: string | null;
   hayWalletConnect: boolean;
+  /** Si aquí tiene sentido ofrecer una wallet de fuera (zona de agentes). */
+  conFuera: boolean;
   fallo: string | null;
   /** Las wallets del llavero de este teléfono. */
   delTelefono: WalletGuardada[];
@@ -84,6 +94,12 @@ export default function HojaWallet({
           T={T}
         />
 
+        {!conFuera ? (
+          <p className="mb-2 mt-5 rounded-xl bg-sand px-3.5 py-3 text-[11.5px] leading-[1.55] text-ink-3">
+            {T.hojaWallet.fueraEnAgentes}
+          </p>
+        ) : (
+          <>
         <div className="mt-5 flex items-center gap-3">
           <div className="h-px grow bg-line" />
           <span className="text-[11px] uppercase tracking-[0.06em] text-ink-3">
@@ -163,6 +179,8 @@ export default function HojaWallet({
             <p className="mt-2 pb-1 text-center text-[11.5px] leading-[1.45] text-ink-3">
               {T.hojaWallet.copiarPie}
             </p>
+          </>
+        )}
           </>
         )}
       </div>

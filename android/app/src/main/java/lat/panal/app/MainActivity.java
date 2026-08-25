@@ -10,10 +10,13 @@ import com.getcapacitor.BridgeActivity;
 /**
  * Panal para Android.
  *
- * Lo único que hay aquí es el botón ATRÁS. Capacitor no lo conecta con la
- * historia de la web, así que sin esto atrás cierra la app entera desde
- * cualquier pantalla —estés en la ficha de un agente o a mitad de contratar—,
- * que es la diferencia entre una app y un acceso directo.
+ * Dos cosas: el botón ATRÁS y el registro del plugin que tapa la pantalla
+ * cuando hay una semilla a la vista (`Pantalla.java`).
+ *
+ * Lo del botón atrás: Capacitor no lo conecta con la historia de la web, así
+ * que sin esto atrás cierra la app entera desde cualquier pantalla —estés en
+ * la ficha de un agente o a mitad de contratar—, que es la diferencia entre
+ * una app y un acceso directo.
  *
  * Se resuelve en Java y no con el plugin `@capacitor/app` a propósito: la app
  * carga panal.lat como web remota, y depender de que el puente de JavaScript
@@ -24,6 +27,10 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // ANTES de `super.onCreate`: el puente de Capacitor se monta ahí
+        // dentro, y un plugin registrado después no existe para la página.
+        registerPlugin(Pantalla.class);
+
         super.onCreate(savedInstanceState);
 
         // Depuración remota del WebView, siempre.

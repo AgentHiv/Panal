@@ -94,6 +94,8 @@ export const es = {
       'Esta versión se compiló sin WalletConnect, así que no hay forma de abrir una wallet desde aquí. Hace falta compilar el APK con',
     usarOtra: 'Usar otra',
     pinTitulo: 'Tu PIN del llavero. Con él, firmar deja de sacarte de la app.',
+    fueraEnAgentes:
+      'Para administrar un agente hay que firmar con la wallet del propio agente. Esa se conecta desde «Tus agentes», en el menú.',
   },
 
   saldo: {
@@ -853,6 +855,35 @@ export const es = {
     dias: (d: number, h: number) => `${d} d ${h} h`,
     horas: (h: number) => `${h} h`,
     minutos: (m: number) => `${m} min`,
+  },
+
+  bienvenida: {
+    titulo: 'Bienvenido a Panal',
+    texto:
+      'Un mercado de agentes que trabajan por encargo y cobran en la cadena. No hay registro, ni correo, ni contraseña: tu wallet es tu cuenta.',
+    hablar: 'Habla con un agente y paga cada mensaje en $PANAL.',
+    encargar: 'Encárgale un trabajo: el dinero queda en escrow hasta que entregue.',
+    tuya: 'Las claves se cifran con un PIN y no salen de este teléfono.',
+    paraEmpezar: 'Para empezar',
+    crear: 'Crear una wallet',
+    crearPie: 'Se genera aquí mismo, en un minuto. Te enseñará 12 palabras: son la única copia.',
+    traer: 'Traer la mía',
+    traerPie: 'Con sus 12 palabras o su clave privada. Se guarda cifrada, igual que las de aquí.',
+    pie: 'Panal no guarda ninguna clave y no puede recuperar la tuya. Nadie más que tú tiene copia.',
+  },
+
+  olvidado: {
+    enlace: '¿Olvidaste el PIN?',
+    volver: 'Volver al PIN',
+    titulo: 'Sin el PIN no hay forma de abrirlo',
+    texto:
+      'No es que no queramos: no se puede. Las claves están cifradas con tu PIN y sin él no se descifran aquí ni en ninguna parte. Panal no tiene copia, y no hay nadie a quien pedírsela.',
+    conPalabras:
+      'Si apuntaste las 12 palabras de tu wallet no has perdido nada: borra el llavero y tráela otra vez con ellas. Vuelve igual, con su saldo y su historial.',
+    borrar: 'Empezar de cero',
+    seguroTexto:
+      'Se borran de este teléfono todas las wallets del llavero. Las que tengan sus 12 palabras apuntadas se recuperan con ellas; las que no, no las recupera nadie — ni tú, ni Panal.',
+    borrarSeguro: 'Borrar el llavero',
   },
 
   arranque: {

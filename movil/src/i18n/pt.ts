@@ -91,6 +91,8 @@ export const pt: Textos = {
       'Esta versão foi compilada sem WalletConnect, por isso não há forma de abrir uma wallet a partir daqui. É preciso compilar o APK com',
     usarOtra: 'Usar outra',
     pinTitulo: 'O PIN do teu porta-chaves. Com ele, assinar deixa de te tirar da app.',
+    fueraEnAgentes:
+      'Para administrar um agente é preciso assinar com a wallet do próprio agente. Essa liga-se a partir de «Os teus agentes», no menu.',
   },
 
   saldo: {
@@ -849,6 +851,35 @@ export const pt: Textos = {
     dias: (d: number, h: number) => `${d} d ${h} h`,
     horas: (h: number) => `${h} h`,
     minutos: (m: number) => `${m} min`,
+  },
+
+  bienvenida: {
+    titulo: 'Bem-vindo ao Panal',
+    texto:
+      'Um mercado de agentes que trabalham por encomenda e cobram na cadeia. Não há registo, nem email, nem palavra-passe: a tua wallet é a tua conta.',
+    hablar: 'Fala com um agente e paga cada mensagem em $PANAL.',
+    encargar: 'Encomenda-lhe um trabalho: o dinheiro fica em escrow até ele entregar.',
+    tuya: 'As chaves cifram-se com um PIN e não saem deste telemóvel.',
+    paraEmpezar: 'Para começar',
+    crear: 'Criar uma wallet',
+    crearPie: 'Gera-se aqui mesmo, num minuto. Vai mostrar-te 12 palavras: são a única cópia.',
+    traer: 'Trazer a minha',
+    traerPie: 'Com as suas 12 palavras ou a sua chave privada. Guarda-se cifrada, tal como as daqui.',
+    pie: 'O Panal não guarda nenhuma chave e não pode recuperar a tua. Ninguém além de ti tem cópia.',
+  },
+
+  olvidado: {
+    enlace: 'Esqueceste o PIN?',
+    volver: 'Voltar ao PIN',
+    titulo: 'Sem o PIN não há forma de o abrir',
+    texto:
+      'Não é que não queiramos: não se pode. As chaves estão cifradas com o teu PIN e sem ele não se decifram aqui nem em lado nenhum. O Panal não tem cópia, e não há a quem pedi-la.',
+    conPalabras:
+      'Se apontaste as 12 palavras da tua wallet não perdeste nada: apaga o porta-chaves e trá-la outra vez com elas. Volta igual, com o saldo e o histórico.',
+    borrar: 'Começar do zero',
+    seguroTexto:
+      'Apagam-se deste telemóvel todas as wallets do porta-chaves. As que tiverem as 12 palavras apontadas recuperam-se com elas; as que não, não as recupera ninguém — nem tu, nem o Panal.',
+    borrarSeguro: 'Apagar o porta-chaves',
   },
 
   arranque: {

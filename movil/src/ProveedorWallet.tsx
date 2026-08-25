@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { WalletContext, shortAddress } from '@/hooks/useWallet';
 import type { WalletState } from '@/hooks/useWallet';
@@ -14,8 +14,10 @@ import type { Redireccion } from '~/lib/regreso';
 import Teclado from '~/componentes/Teclado';
 import Icono from '~/componentes/Icono';
 import { conectorLlavero } from '~/lib/conector';
-import { abrirSesion, caducar, idRecordado, tocar, useSesion } from '~/lib/sesion';
-import { abrir as abrirLlavero, listar } from '~/lib/llavero';
+import { abrirSesion, caducar, cerrarSesion, idRecordado, tocar, useSesion } from '~/lib/sesion';
+import { abrir as abrirLlavero, borrarLlavero, hayLlavero, listar } from '~/lib/llavero';
+import Bienvenida from '~/pantallas/Bienvenida';
+import Olvidado from '~/componentes/Olvidado';
 import { useTextos } from '~/i18n/idiomas';
 import type { WalletGuardada } from '~/lib/llavero';
 
@@ -60,6 +62,37 @@ import type { WalletGuardada } from '~/lib/llavero';
  * campos internos. `request` es la única puerta por la que pasa TODO lo que
  * wagmi pide, y envolverla da las dos cosas que hacen falta: ir a buscar a la
  * wallet, y saber cuándo hay algo esperando para poder decirlo en pantalla.
+ *
+ * ───────────────────────────────────────────────────────────────────────────
+ * Y ADEMÁS, ESTE ES EL PORTERO DE LA APP
+ *
+ * Tres puertas, en este orden, y ninguna se puede saltar:
+ *
+ *   1. SIN LLAVERO → la bienvenida, con dos caminos: crear una wallet o traer
+ *      la que ya tienes. No hay un tercero. Sin wallet no hay dirección, sin
+ *      dirección no hay saldo, y sin saldo no se puede hablar con un agente ni
+ *      encargarle nada: un botón de «saltar» llevaría a una app entera en la
+ *      que no se puede hacer nada, que es literalmente lo que había antes.
+ *
+ *   2. CON LLAVERO Y SIN SESIÓN → el PIN, y sin forma de cerrarlo. Se pide al
+ *      abrir la app SIEMPRE, y también cuando la sesión se cierra sola por
+ *      inactividad estando la app delante. La clave descifrada vive solo en
+ *      memoria (`lib/sesion.ts`), así que al arrancar nunca hay sesión: esto
+ *      no añade una comprobación nueva, hace que la que ya existía no se pueda
+ *      esquivar mirando el resto de la app sin desbloquear nada.
+ *
+ *      Con una salida, porque si no sería una trampa: quien olvide el PIN se
+ *      quedaría sin app y sin explicación. `Olvidado` dice lo único que se
+ *      puede decir —esto no se recupera— y deja empezar de cero.
+ *
+ *   3. LA WALLET DE FUERA SOLO DONDE HACE FALTA. Conectar por WalletConnect
+ *      no es una segunda forma de entrar: es lo que exige ADMINISTRAR un
+ *      agente, porque el registro on-chain actúa sobre `msg.sender` y hay que
+ *      firmar con la wallet del propio agente. Ofrecerlo en la primera
+ *      pantalla ponía dos caminos distintos delante de alguien que todavía no
+ *      sabe que existe esa diferencia. Ahora aparece en «Tus agentes» y sus
+ *      pantallas, que es donde significa algo.
+ * ───────────────────────────────────────────────────────────────────────────
  */
 /** Lo poco que hace falta saber del proveedor de WalletConnect. */
 interface ProveedorWC {
@@ -87,15 +120,62 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
   const [abriendo, setAbriendo] = useState<WalletGuardada | null>(null);
   const [errorPin, setErrorPin] = useState<string | null>(null);
   const [ocupadoPin, setOcupadoPin] = useState(false);
+  /** La pantalla de «he olvidado el PIN», que es la única salida del cerrojo. */
+  const [olvidado, setOlvidado] = useState(false);
+  /** Ya eligió en la bienvenida y está creando o trayendo su wallet. */
+  const [empezando, setEmpezando] = useState(false);
 
   const navegar = useNavigate();
+  const { pathname } = useLocation();
   const sesion = useSesion();
   const T = useTextos();
   // Uno solo por montaje: cada `connect` con una función crea un conector
   // nuevo, y con la misma referencia al menos no se multiplican por render.
   const conector = useMemo(() => conectorLlavero(), []);
-  // Se leen al abrir la hoja, no en cada render: el llavero está en disco.
-  const [delTelefono, setDelTelefono] = useState<WalletGuardada[]>([]);
+  /**
+   * El llavero, leído del disco y no en cada render.
+   *
+   * Se vuelve a mirar cuando cambia algo que puede haberlo cambiado: la
+   * pantalla en la que estamos, si hay sesión abierta o si hay wallet
+   * conectada. Es el ajuste durante el render que documenta React, y no un
+   * efecto, para que no haya un primer fotograma decidiendo con la lista vieja
+   * — que aquí sería enseñar la bienvenida a quien ya tiene llavero.
+   */
+  const [guardadas, setGuardadas] = useState<WalletGuardada[]>(listar);
+  const [hayLlave, setHayLlave] = useState(hayLlavero);
+  const marca = `${pathname}|${sesion.abierta}|${isConnected}`;
+  const [vista, setVista] = useState(marca);
+  if (vista !== marca) {
+    setVista(marca);
+    setGuardadas(listar());
+    setHayLlave(hayLlavero());
+    // Salir de la pantalla del llavero a medias es cambiar de idea: la
+    // bienvenida vuelve, porque la app sigue sin wallet con la que hacer nada.
+    if (!pathname.startsWith('/llavero')) setEmpezando(false);
+  }
+
+  /**
+   * Reabrir la app no es desconectarse. Mientras wagmi recupera la sesión
+   * guardada, `isConnected` es `false`; sin mirar `status` la app enseñaría
+   * «conectar» a quien ya está dentro y solo tiene que esperar un instante.
+   */
+  const conectando = isPending || status === 'reconnecting';
+
+  /**
+   * Dónde se ofrece conectar una wallet DE FUERA.
+   *
+   * Solo en las pantallas de agentes, y no por ordenar el menú: administrar un
+   * agente exige firmar con la wallet DEL AGENTE, porque `updatePrice`,
+   * `setActive` y `withdraw` actúan sobre `msg.sender` y el registro no
+   * distingue entre el agente y su dueño. Esa clave suele vivir en el servidor
+   * del agente, así que la única forma de traerla al teléfono sin sacarla de
+   * donde está es WalletConnect.
+   *
+   * En el resto de la app no aparece: para hablar y encargar sirve la wallet
+   * de este teléfono, que además es la que evita salir a otra aplicación en
+   * cada firma.
+   */
+  const conFuera = /^\/(agentes|panel|guardia|alta)(\/|$)/.test(pathname);
 
   const wc = useMemo(() => connectors.find((c) => c.id === WALLETCONNECT_ID), [connectors]);
 
@@ -203,8 +283,7 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
    * solo cuando ya hay una cuenta lista se le dice a wagmi que conecte.
    */
   const conLaDelTelefono = useCallback(
-    async (pin: string): Promise<void> => {
-      if (!abriendo) return;
+    async (pin: string, cual: WalletGuardada): Promise<void> => {
       setOcupadoPin(true);
       // Un respiro para que React pinte el sexto punto antes de que PBKDF2
       // bloquee el hilo medio segundo.
@@ -216,8 +295,11 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
         return;
       }
       try {
-        await abrirSesion(llave, abriendo);
-        connect({ connector: conector });
+        // Abrir la sesión es lo único que hace falta: conectar wagmi lo hace
+        // el efecto de abajo, mirando la sesión. Así el llavero abierto desde
+        // SU pantalla —al crear la primera wallet, por ejemplo— también deja
+        // la app conectada, sin repetir aquí ese trozo.
+        await abrirSesion(llave, cual);
         setAbriendo(null);
         setErrorPin(null);
         setHoja(false);
@@ -227,8 +309,26 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
         setOcupadoPin(false);
       }
     },
-    [abriendo, conector, connect, T],
+    [T],
   );
+
+  /**
+   * Quien abra la sesión, conecta.
+   *
+   * La sesión del llavero y la conexión de wagmi son dos cosas distintas y
+   * tienen que ir juntas: se puede abrir el llavero desde el cerrojo, desde la
+   * hoja de wallets o desde la pantalla del llavero al crear la primera. Con
+   * el `connect` metido en cada uno de esos sitios, el que se olvidara dejaría
+   * una app con la clave descifrada en memoria y un botón de «conectar» en
+   * pantalla.
+   *
+   * Con una wallet de fuera ya conectada no se hace nada: abrir el llavero
+   * para mirar un saldo no es motivo para echar a la wallet que está en uso.
+   */
+  useEffect(() => {
+    if (!sesion.abierta || isConnected || conectando) return;
+    connect({ connector: conector });
+  }, [conector, connect, conectando, isConnected, sesion.abierta]);
 
   /**
    * Abre la hoja de elegir wallet y levanta la sesión de WalletConnect.
@@ -243,9 +343,12 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
     // exactamente el fallo que estamos arreglando—.
     setUri(null);
     setFallo(null);
-    setDelTelefono(listar());
+    setGuardadas(listar());
     setHoja(true);
     if (!wc) return; // La hoja explica que se compiló sin WalletConnect.
+    // Y NO se levanta ninguna sesión si aquí no se ofrece la wallet de fuera:
+    // sería una sesión esperando en el relé que nadie va a aprobar nunca.
+    if (!conFuera) return;
 
     connect(
       { connector: wc },
@@ -274,7 +377,7 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
         },
       },
     );
-  }, [connect, wc]);
+  }, [conFuera, connect, wc]);
 
   /**
    * Conectar, y al reabrir la app ir DERECHO al PIN.
@@ -314,13 +417,6 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
     if (isPending && wc) void wc.disconnect().catch(() => {});
   }, [isPending, wc]);
 
-  /**
-   * Reabrir la app no es desconectarse. Mientras wagmi recupera la sesión
-   * guardada, `isConnected` es `false`; sin mirar `status` la app enseñaría
-   * «conectar» a quien ya está dentro y solo tiene que esperar un instante.
-   */
-  const conectando = isPending || status === 'reconnecting';
-
   const valor = useMemo<WalletState>(
     () => ({
       connected: isConnected,
@@ -341,15 +437,96 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
     [address, chainId, conectando, conectar, disconnect, isConnected, switchChain],
   );
 
+  /**
+   * EL CERROJO. Hay llavero, hay wallets y no hay con qué firmar: el PIN.
+   *
+   * Se calcula, no se dispara una vez al arrancar. Así cubre los tres caminos
+   * por los que se puede acabar sin sesión —abrir la app, que caduque por
+   * inactividad estando delante, y desconectar a mano— con una sola regla, en
+   * vez de tres efectos que tarde o temprano dejarían un hueco.
+   *
+   * Se levanta mientras hay una hoja o la pantalla del PIN olvidado abiertas:
+   * son las dos salidas legítimas, y taparlas con el propio cerrojo lo
+   * convertiría en un callejón.
+   *
+   * Y SE LEVANTA EN EL LLAVERO, que tiene su propio candado. Si no, salían DOS
+   * teclados de PIN uno encima de otro pidiendo el mismo PIN: se teclea en el
+   * de arriba, se desbloquea la app, y detrás sigue el otro esperando —el
+   * mismo PIN, dos veces seguidas, sin ninguna razón visible—. Lo encontró el
+   * recorrido del llavero, no el typecheck.
+   *
+   * No abre ninguna puerta: allí no se llega sin pasar por el menú, y el menú
+   * está detrás del cerrojo. Y esa pantalla enseña las doce palabras, así que
+   * su candado propio tiene que seguir estando — es el único sitio de la app
+   * donde vuelve a hacer falta el PIN aunque ya estés dentro.
+   *
+   * `conectando` importa: al arrancar, wagmi recupera su sesión guardada y
+   * durante ese instante `isConnected` todavía es `false`. Sin esperarlo,
+   * quien usa una wallet de fuera vería parpadear un teclado de PIN que no le
+   * corresponde.
+   */
+  const cerrojo =
+    hayLlave &&
+    guardadas.length > 0 &&
+    !sesion.abierta &&
+    !isConnected &&
+    !conectando &&
+    !hoja &&
+    !olvidado &&
+    !pathname.startsWith('/llavero');
+
+  /** Cuál se ofrece desbloquear: la elegida, la de siempre, o la primera. */
+  const paraAbrir =
+    abriendo ?? guardadas.find((w) => w.id === idRecordado()) ?? guardadas[0] ?? null;
+  const pidiendoPin = abriendo ?? (cerrojo ? paraAbrir : null);
+
   return (
     <WalletContext.Provider value={valor}>
       {children}
+
+      {/* Sin llavero no hay app: primero se crea o se trae una wallet. Va por
+          encima de todo y no como ruta a propósito — una ruta se puede dejar
+          atrás con el botón de atrás, y esto no. */}
+      {!hayLlave && !empezando && (
+        <Bienvenida
+          onCrear={() => {
+            setEmpezando(true);
+            navegar('/llavero?hacer=crear');
+          }}
+          onTraer={() => {
+            setEmpezando(true);
+            navegar('/llavero?hacer=traer');
+          }}
+        />
+      )}
+
+      {olvidado && (
+        <Olvidado
+          T={T}
+          onVolver={() => setOlvidado(false)}
+          onBorrar={() => {
+            borrarLlavero();
+            olvidarWallet();
+            cerrarSesion();
+            disconnect();
+            setOlvidado(false);
+            setAbriendo(null);
+            setErrorPin(null);
+            setGuardadas([]);
+            setHayLlave(false);
+            setEmpezando(false);
+            navegar('/chats');
+          }}
+        />
+      )}
+
       <HojaWallet
         abierta={hoja && !abriendo}
         uri={uri}
         hayWalletConnect={!!wc}
+        conFuera={conFuera}
         fallo={fallo}
-        delTelefono={delTelefono}
+        delTelefono={guardadas}
         recordada={idRecordado()}
         onElegirDelTelefono={(w) => {
           setErrorPin(null);
@@ -362,10 +539,10 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
         onCerrar={cerrarHoja}
       />
 
-      {abriendo && (
+      {pidiendoPin && (
         <div className="fixed inset-0 z-50 flex flex-col bg-paper">
           <div className="con-barra-arriba flex shrink-0 items-center justify-between px-4 pt-3">
-            {/* Se llega aquí directo al reabrir la app, así que tiene que haber
+            {/* Se llega aquí directo al abrir la app, así que tiene que haber
                 una salida a elegir otra wallet — o la de siempre. Sin esto, la
                 única forma de cambiar sería borrar la del llavero. */}
             <button
@@ -379,22 +556,36 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
             >
               {T.hojaWallet.usarOtra}
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setAbriendo(null);
-                setErrorPin(null);
-              }}
-              className="pulsable tocable flex h-9 w-9 items-center justify-center rounded-full border border-line"
-              aria-label={T.comun.cerrar}
-            >
-              <Icono nombre="cerrar" tamano={15} color="#C8C3DC" grosor={1.9} />
-            </button>
+            {/* La X solo cuando esto NO es el cerrojo. Si lo es, cerrarlo
+                dejaría la app abierta sin nada con lo que firmar, que es
+                justo lo que se viene a evitar; la salida de ahí es el PIN, o
+                decir que se ha olvidado. */}
+            {cerrojo ? (
+              <button
+                type="button"
+                onClick={() => setOlvidado(true)}
+                className="pulsable tocable rounded-full px-2 py-1.5 text-[12.5px] font-medium text-ink-3"
+              >
+                {T.olvidado.enlace}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setAbriendo(null);
+                  setErrorPin(null);
+                }}
+                className="pulsable tocable flex h-9 w-9 items-center justify-center rounded-full border border-line"
+                aria-label={T.comun.cerrar}
+              >
+                <Icono nombre="cerrar" tamano={15} color="#C8C3DC" grosor={1.9} />
+              </button>
+            )}
           </div>
           <Teclado
-            titulo={abriendo.nombre}
+            titulo={pidiendoPin.nombre}
             explicacion={T.hojaWallet.pinTitulo}
-            onCompleto={(pin) => void conLaDelTelefono(pin)}
+            onCompleto={(pin) => void conLaDelTelefono(pin, pidiendoPin)}
             error={errorPin}
             ocupado={ocupadoPin}
           />
