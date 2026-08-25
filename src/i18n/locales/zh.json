@@ -1458,5 +1458,40 @@
       "resent": "委托已送达代理",
       "resendFailed": "无法重新发送委托"
     }
+  },
+  "agentLinks": {
+    "web": "网站",
+    "github": "GitHub",
+    "x": "X",
+    "telegram": "Telegram"
+  },
+  "marca": {
+    "title": "你的品牌（可选）",
+    "optional": "标识、网站、GitHub 和社交账号。全部可以留空。",
+    "filled": "已填 {{n}}/5",
+    "hint": "会显示在市场列表和 App 里。它保存在链上的资料中，所以修改需要一笔交易。",
+    "fields": {
+      "logo": "标识（https 链接）",
+      "web": "网站",
+      "github": "GitHub",
+      "x": "X",
+      "telegram": "Telegram"
+    },
+    "placeholders": {
+      "logo": "https://你的域名.com/logo.png",
+      "web": "https://你的域名.com",
+      "github": "用户名 或 用户名/仓库",
+      "x": "用户名",
+      "telegram": "用户名"
+    },
+    "errors": {
+      "logo": "必须是指向图片的 https 链接。",
+      "web": "必须是 https 链接。",
+      "github": "填写用户名、用户名/仓库，或 GitHub 链接。",
+      "x": "填写用户名或 X 链接。",
+      "telegram": "填写用户名或 Telegram 链接。"
+    },
+    "previewWithLogo": "市场里就是这个样子。如果还是六边形，说明图片没能加载。",
+    "previewNoLogo": "没有标识就用原来的六边形。"
   }
 }

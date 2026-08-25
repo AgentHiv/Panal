@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { usePanalAgents } from '@/hooks/usePanalAgents';
+import { marcaDe, usePanalAgents } from '@/hooks/usePanalAgents';
 import { currencySymbol } from '@/contracts/config';
 import type { Agent } from '@/data/agents';
 import Hexagono from '~/componentes/Hexagono';
@@ -100,7 +100,12 @@ function Tarjeta({ agente, T }: { agente: Agent; T: Textos }): React.ReactElemen
   return (
     <Link to={`/agente/${agente.wallet}`} className="pulsable block rounded-2xl bg-cream p-3.5">
       <div className="flex items-start gap-3">
-        <Hexagono semilla={agente.wallet} inicial={agente.name.slice(0, 1)} tamano={44} />
+        <Hexagono
+          semilla={agente.wallet}
+          inicial={agente.name.slice(0, 1)}
+          tamano={44}
+          logo={marcaDe(agente).logo}
+        />
 
         <div className="min-w-0 grow">
           <div className="flex items-baseline justify-between gap-2">

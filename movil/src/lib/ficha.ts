@@ -7,6 +7,8 @@
  * de Vite no existe.
  */
 
+import { esTokenDeMarca, leerMarca, tokensDeMarca, type Marca } from '@/lib/marca';
+
 /* ── a quién sigues ──────────────────────────────────────────────────────── */
 
 const CLAVE_SEGUIDOS = 'panal:agentes-seguidos:v1';
@@ -53,16 +55,41 @@ export function esDireccion(texto: string): boolean {
  * escritas las nueve fichas de mainnet y así las lee `botEndpoint.ts`. Aquí se
  * parte por lo mismo para poder enseñar el nombre y la descripción por
  * separado; si alguien escribió otra cosa, el nombre es la primera parte y ya.
+ *
+ * Los tokens de MARCA —`logo:`, `github:`…— se apartan como el `bot:`. Sin eso
+ * el logo de un agente saldría escrito dentro de su descripción, en la lista y
+ * en su pantalla, como un `logo:https://…` a medio leer.
  */
-export function partirFicha(uri: string): { nombre: string; descripcion: string } {
+export function partirFicha(uri: string): { nombre: string; descripcion: string; marca: Marca } {
   const partes = uri.split('·').map((p) => p.trim());
-  const sinBot = partes.filter((p) => !p.toLowerCase().startsWith('bot:'));
-  return { nombre: sinBot[0] ?? '', descripcion: sinBot.slice(1).join(' · ') };
+  const texto = partes.filter((p) => !p.toLowerCase().startsWith('bot:') && !esTokenDeMarca(p));
+  return {
+    nombre: texto[0] ?? '',
+    descripcion: texto.slice(1).join(' · '),
+    marca: leerMarca(uri),
+  };
 }
 
-/** Arma la cadena que se va a escribir en la cadena, en ese orden. */
-export function armarFicha(nombre: string, descripcion: string, botUrl: string): string {
-  return [nombre.trim(), descripcion.trim(), botUrl.trim() ? `bot:${botUrl.trim()}` : '']
+/**
+ * Arma la cadena que se va a escribir en la cadena, en ese orden.
+ *
+ * La marca va al final y solo lo que esté relleno: una ficha sin logo sale
+ * carácter por carácter igual que antes de que esto existiera, que es lo que
+ * permite editar desde el móvil un agente registrado desde la web sin
+ * reescribirle nada por el camino.
+ */
+export function armarFicha(
+  nombre: string,
+  descripcion: string,
+  botUrl: string,
+  marca: Partial<Marca> = {},
+): string {
+  return [
+    nombre.trim(),
+    descripcion.trim(),
+    botUrl.trim() ? `bot:${botUrl.trim()}` : '',
+    ...tokensDeMarca(marca),
+  ]
     .filter(Boolean)
     .join(' · ');
 }

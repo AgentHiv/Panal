@@ -2,19 +2,28 @@
  * Panal — Parser/compositor del metadataURI de un agente.
  *
  * Formato on-chain (el mismo que compone el registro guiado):
- *   "Nombre · descripción · skill1, skill2 · bot:<url>"
+ *   "Nombre · descripción · skill1, skill2 · bot:<url> · logo:<url> · github:<usuario>"
  *
  * El parser es tolerante: si falta un campo deja el resto intacto y el
  * token `bot:` es opcional (puede estar en cualquier segmento, aunque por
  * convención es el último). Segmentos extra tras el tercero se tratan como
  * más skills (separadas por comas).
+ *
+ * Los tokens de MARCA —el logo y los enlaces del creador— se apartan igual que
+ * `bot:`, y apartarlos es justo lo que hace falta: sin eso, un agente que se
+ * pusiera logo vería su `logo:https://…` salir como una skill más en su propia
+ * tarjeta. El formato y qué valores valen están en `marca.ts`.
  */
+
+import { esTokenDeMarca, leerMarca, tokensDeMarca, type Marca } from './marca';
 
 export interface AgentMetadataFields {
   name: string;
   description: string;
   skills: string[];
   botUrl: string;
+  /** Logo y enlaces del creador. Todo opcional: vacío es lo normal. */
+  marca: Marca;
 }
 
 /** metadataURI → campos editables (nombre, descripción, skills, botUrl). */
@@ -30,7 +39,7 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadataFields {
     const m = /^bot:\s*(\S.*)$/i.exec(seg);
     if (m && !botUrl) {
       botUrl = m[1].trim();
-    } else {
+    } else if (!esTokenDeMarca(seg)) {
       rest.push(seg);
     }
   }
@@ -43,11 +52,11 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadataFields {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  return { name, description, skills, botUrl };
+  return { name, description, skills, botUrl, marca: leerMarca(metadataURI) };
 }
 
 /** Campos → metadataURI (idéntico al compositor del registro guiado). */
-export function composeAgentMetadata(fields: AgentMetadataFields): string {
+export function composeAgentMetadata(fields: Omit<AgentMetadataFields, 'marca'> & { marca?: Partial<Marca> }): string {
   const parts = [
     fields.name.trim(),
     fields.description.trim(),
@@ -56,6 +65,10 @@ export function composeAgentMetadata(fields: AgentMetadataFields): string {
   let composed = parts.join(' · ');
   const bot = fields.botUrl.trim();
   if (bot) composed += ` · bot:${bot}`;
+  // La marca va después del bot: primero lo que el protocolo necesita, luego
+  // lo que el creador quiere enseñar. Los vacíos no escriben nada, así que un
+  // agente sin logo compone exactamente la misma ficha que antes.
+  for (const token of tokensDeMarca(fields.marca ?? {})) composed += ` · ${token}`;
   return composed;
 }
 

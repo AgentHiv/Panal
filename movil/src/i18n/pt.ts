@@ -363,6 +363,29 @@ export const pt: Textos = {
     aprobandoToken: 'A aprovar o token…',
     bloqueando: 'A bloquear…',
     bloquear: (cantidad: string, moneda: string) => `Bloquear ${cantidad} ${moneda}`,
+    archivos: 'Ficheiros',
+    anadirArchivo: 'Adicionar',
+    quitarArchivo: (nombre: string) => `Remover ${nombre}`,
+    archivosPie: (max: number, tope: string) =>
+      `Até ${max} ficheiros de ${tope}. São anunciados dentro do pedido antes de pagar, por isso a garantia também os cobre.`,
+    archivoGrande: (nombre: string, tope: string) => `«${nombre}» passa de ${tope}.`,
+    archivoSinNombre: (nombre: string) => `«${nombre}» não tem um nome utilizável.`,
+    archivoNoSeLee: (nombre: string) => `Não foi possível ler «${nombre}». Se está na nuvem, descarregue-o primeiro para o telemóvel.`,
+    archivosDemasiados: (max: number) => `No máximo ${max} ficheiros.`,
+    sinArchivos: 'Este agente não aceita ficheiros. Explique tudo no texto.',
+    enviandoAlAgente: 'Pagamento bloqueado. A levar o pedido ao agente…',
+    subiendoArchivos: (n: number) => `A enviar ${n} ${n === 1 ? 'ficheiro' : 'ficheiros'}…`,
+    entregado: 'O agente já tem o pedido.',
+    noLlego: 'O pedido não chegou ao agente.',
+    pagoASalvo:
+      'O pagamento continua bloqueado e a tarefa existe na cadeia. O texto está guardado neste telemóvel, por isso tentar de novo não custa nada.',
+    reintentar: 'Tentar de novo',
+    sinIdDeTarea: 'A transação não diz que número ficou com a tarefa.',
+    sinEndpoint: 'Este agente não publica onde escuta, por isso não há para onde enviar.',
+    agenteRespondio: (codigo: number) => `O agente respondeu ${codigo}.`,
+    archivosFallaron: (n: number) => `${n} ${n === 1 ? 'ficheiro não subiu' : 'ficheiros não subiram'}.`,
+    firmaCancelada: 'Cancelou a assinatura.',
+    noSePudoHablar: 'Não foi possível falar com o agente.',
   },
 
   revisar: {
@@ -421,6 +444,36 @@ export const pt: Textos = {
     cancelado: 'Cancelado · o pagamento voltou',
     cancelaste: 'Cancelaste a assinatura. Não se cobrou nada.',
     sinRed: 'Não foi possível falar com o agente. Se não chegou a responder, não se cobrou nada.',
+  },
+
+  marca: {
+    titulo: 'A sua marca',
+    opcional: 'Logótipo, site, GitHub e redes. Nada disto é obrigatório.',
+    puestos: (n: number) => `${n} de 5 preenchidos`,
+    pie: 'Aparece no mercado e na aplicação. Fica guardado na ficha on-chain, por isso alterá-lo custa uma assinatura.',
+    campos: {
+      logo: 'Logótipo (URL https)',
+      web: 'Site',
+      github: 'GitHub',
+      x: 'X',
+      telegram: 'Telegram',
+    },
+    huecos: {
+      logo: 'https://o-seu-dominio.com/logo.png',
+      web: 'https://o-seu-dominio.com',
+      github: 'utilizador ou utilizador/repo',
+      x: 'utilizador',
+      telegram: 'utilizador',
+    },
+    errores: {
+      logo: 'Tem de ser um URL https para uma imagem.',
+      web: 'Tem de ser um URL https.',
+      github: 'Escreva o utilizador, utilizador/repo ou o link do GitHub.',
+      x: 'Escreva o utilizador ou o link do X.',
+      telegram: 'Escreva o utilizador ou o link do Telegram.',
+    },
+    vistaConLogo: 'É assim que vai aparecer no mercado. Se continuar a ver a inicial, a imagem não carrega.',
+    vistaSinLogo: 'Sem logótipo aparece a célula de sempre.',
   },
 
   alta: {

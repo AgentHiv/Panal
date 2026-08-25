@@ -368,6 +368,29 @@ export const es = {
     aprobandoToken: 'Aprobando el token…',
     bloqueando: 'Bloqueando…',
     bloquear: (cantidad: string, moneda: string) => `Bloquear ${cantidad} ${moneda}`,
+    archivos: 'Archivos',
+    anadirArchivo: 'Añadir',
+    quitarArchivo: (nombre: string) => `Quitar ${nombre}`,
+    archivosPie: (max: number, tope: string) =>
+      `Hasta ${max} archivos de ${tope}. Se anuncian dentro del encargo antes de pagar, así que el escrow también los cubre.`,
+    archivoGrande: (nombre: string, tope: string) => `«${nombre}» pasa de ${tope}.`,
+    archivoSinNombre: (nombre: string) => `«${nombre}» no tiene un nombre que se pueda usar.`,
+    archivoNoSeLee: (nombre: string) => `No se pudo leer «${nombre}». Si está en la nube, descárgalo antes al teléfono.`,
+    archivosDemasiados: (max: number) => `Como mucho ${max} archivos.`,
+    sinArchivos: 'Este agente no acepta archivos. Cuéntaselo todo en el texto.',
+    enviandoAlAgente: 'Pago bloqueado. Llevándole el encargo al agente…',
+    subiendoArchivos: (n: number) => `Subiendo ${n} ${n === 1 ? 'archivo' : 'archivos'}…`,
+    entregado: 'El agente ya tiene el encargo.',
+    noLlego: 'El encargo no le ha llegado al agente.',
+    pagoASalvo:
+      'El pago sigue bloqueado y la tarea existe en la cadena. El texto está guardado en este teléfono, así que reintentar no cuesta nada.',
+    reintentar: 'Reintentar',
+    sinIdDeTarea: 'La transacción no dice qué número tiene la tarea.',
+    sinEndpoint: 'Este agente no publica dónde escucha, así que no hay a dónde mandarlo.',
+    agenteRespondio: (codigo: number) => `El agente respondió ${codigo}.`,
+    archivosFallaron: (n: number) => `${n} ${n === 1 ? 'archivo no subió' : 'archivos no subieron'}.`,
+    firmaCancelada: 'Has cancelado la firma.',
+    noSePudoHablar: 'No se pudo hablar con el agente.',
   },
 
   revisar: {
@@ -426,6 +449,36 @@ export const es = {
     cancelado: 'Cancelado · el pago volvió',
     cancelaste: 'Has cancelado la firma. No se ha cobrado nada.',
     sinRed: 'No se pudo hablar con el agente. Si no llegó a responder, no se ha cobrado nada.',
+  },
+
+  marca: {
+    titulo: 'Su marca',
+    opcional: 'Logo, web, GitHub y redes. Nada de esto hace falta.',
+    puestos: (n: number) => `${n} de 5 puestos`,
+    pie: 'Sale en el mercado y en la app. Se guarda en su ficha de la cadena, así que cambiarlo cuesta una firma.',
+    campos: {
+      logo: 'Logo (URL https)',
+      web: 'Web',
+      github: 'GitHub',
+      x: 'X',
+      telegram: 'Telegram',
+    },
+    huecos: {
+      logo: 'https://tu-dominio.com/logo.png',
+      web: 'https://tu-dominio.com',
+      github: 'usuario o usuario/repo',
+      x: 'usuario',
+      telegram: 'usuario',
+    },
+    errores: {
+      logo: 'Tiene que ser una URL https a una imagen.',
+      web: 'Tiene que ser una URL https.',
+      github: 'Pon el usuario, usuario/repo o el enlace de GitHub.',
+      x: 'Pon el usuario o el enlace de X.',
+      telegram: 'Pon el usuario o el enlace de Telegram.',
+    },
+    vistaConLogo: 'Así se verá en el mercado. Si sigue saliendo la inicial, la imagen no carga.',
+    vistaSinLogo: 'Sin logo sale la celda de siempre.',
   },
 
   alta: {

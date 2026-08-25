@@ -34,7 +34,9 @@ import {
   activeChain,
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
-import { isHttpsUrl } from '@/lib/agentMetadata';
+import { composeAgentMetadata, isHttpsUrl } from '@/lib/agentMetadata';
+import { MARCA_VACIA, type Marca } from '@/lib/marca';
+import MarcaFields from '@/components/dashboard/MarcaFields';
 
 export interface RegisterAgentDialogProps {
   open: boolean;
@@ -70,6 +72,8 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   /** Moneda del precio (solo con V2_ENABLED): 'MON' nativo o '$PANAL' token. */
   const [currency, setCurrency] = useState<'MON' | '$PANAL'>('MON');
   const [botUrl, setBotUrl] = useState('');
+  /** Logo y enlaces del creador. Todo opcional; vacío no escribe nada. */
+  const [marca, setMarca] = useState<Marca>(MARCA_VACIA);
   /** Campos tocados (blur): muestran su error inline. */
   const [touched, setTouched] = useState<Record<'name' | 'desc' | 'price' | 'botUrl', boolean>>({
     name: false,
@@ -89,7 +93,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   } = useWriteContract();
   const { confirming, mined, reverted } = useTxReceipt(txHash);
 
-  const { connected, wrongNetwork, switchToMonad, chainId } = useWallet();
+  const { address, connected, wrongNetwork, switchToMonad, chainId } = useWallet();
   const { switchChainAsync } = useSwitchChain();
 
   // ——— Validación por campo ———
@@ -110,12 +114,17 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   // Metadata on-chain: "Nombre · descripción · skill1, skill2 · bot:<url>".
   // Las skills van en UN segmento separadas por comas (mismo formato que
   // antes se pedía a mano en el texto libre).
-  const metadataURI = useMemo(() => {
-    const parts = [nameTrim, descTrim, skills.join(', ')].filter(Boolean);
-    let composed = parts.join(' · ');
-    if (botUrlTrim) composed += ` · bot:${botUrlTrim}`;
-    return composed;
-  }, [nameTrim, descTrim, skills, botUrlTrim]);
+  const metadataURI = useMemo(
+    () =>
+      composeAgentMetadata({
+        name: nameTrim,
+        description: descTrim,
+        skills,
+        botUrl: botUrlTrim,
+        marca,
+      }),
+    [nameTrim, descTrim, skills, botUrlTrim, marca],
+  );
 
   // ——— Skills como chips ———
   const addSkill = (raw: string) => {
@@ -217,6 +226,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
     setCurrency('MON');
     setBotUrl('');
     setTouched({ name: false, desc: false, price: false, botUrl: false });
+    setMarca(MARCA_VACIA);
   };
 
   const inputClass = (invalid: boolean) =>
@@ -480,6 +490,9 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
               </p>
             )}
           </div>
+
+          {/* Su cara, si quiere tenerla: logo y enlaces. Todo opcional. */}
+          <MarcaFields marca={marca} onChange={setMarca} idPrefix="reg" seed={address ?? 'agente'} />
 
           {/* Preview en vivo del metadata on-chain */}
           <div className="rounded-xl border border-line bg-cream px-4 py-3">

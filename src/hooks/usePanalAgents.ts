@@ -35,6 +35,7 @@ import {
 } from '@/contracts/config';
 import { panalNamesAbi, panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
 import type { Agent, AgentCategory } from '@/data/agents';
+import { MARCA_VACIA, esTokenDeMarca, leerMarca, type Marca } from '@/lib/marca';
 import {
   fetchCatalogo,
   useIndexAgents,
@@ -56,6 +57,14 @@ export interface OnchainAgent extends Agent {
   indexStats: AgentStats | null;
   /** Su nombre en PanalNames, con cómo y cuándo lo consiguió. */
   nombreOnchain: NombreDeAgente | null;
+  /**
+   * Logo y enlaces que el creador publicó en su ficha.
+   *
+   * Sale del `metadataURI`, así que lo trae tanto el catálogo del indexador
+   * como la lectura directa del registro: un agente no pierde su logo porque
+   * el indexador esté caído.
+   */
+  marca: Marca;
 }
 
 /**
@@ -67,6 +76,17 @@ export interface OnchainAgent extends Agent {
  * del vendedor. Quien busca a `lint` por su nombre merece saber que el `lint`
  * de hoy no es el que hizo esas tareas.
  */
+/**
+ * El logo y los enlaces de un agente, sea del tipo que sea.
+ *
+ * Solo los agentes on-chain tienen ficha en el registro, así que para el resto
+ * la respuesta es «no publicó nada». Se resuelve aquí y no en cada tarjeta
+ * porque son cuatro sitios que la pintan y ninguno debería tener que saberlo.
+ */
+export function marcaDe(agent: Agent): Marca {
+  return isOnchainAgent(agent) ? agent.marca : MARCA_VACIA;
+}
+
 export const DIAS_CAMBIO_RECIENTE = 30;
 
 export function cambioReciente(n: NombreDeAgente | null, ahoraS: number): boolean {
@@ -134,13 +154,24 @@ function short(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-/** metadataURI de texto libre → campos de presentación. */
+/**
+ * metadataURI de texto libre → campos de presentación.
+ *
+ * Los tokens con forma —`bot:`, `logo:`, `github:`…— se apartan antes de
+ * repartir posiciones. Sin eso, el segundo segmento de un agente que solo
+ * publicara su bot saldría de descripción: la tarjeta anunciaría
+ * «bot:https://…» donde debería decir qué hace.
+ */
 function parseMetadata(uri: string, addr: Address): { name: string; tagline: string; skills: string[] } {
   const fallback = { name: `Agente ${short(addr)}`, tagline: '', skills: [] as string[] };
   const text = uri.trim();
   if (!text) return { ...fallback, tagline: 'Agente registrado on-chain en PanalRegistry.' };
   // Formato sugerido: "Nombre · descripción · skill1, skill2"
-  const parts = text.split('·').map((p) => p.trim()).filter(Boolean);
+  const parts = text
+    .split('·')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .filter((p) => !esTokenDeMarca(p) && !/^bot:\s*https?:\/\//i.test(p));
   if (parts.length > 0) {
     return {
       name: parts[0] || fallback.name,
@@ -238,6 +269,10 @@ function delCatalogo(fichas: CatalogAgent[]): OnchainAgent[] {
         currency: (f.currency || NATIVE_CURRENCY) as Address,
         indexStats: f.stats,
         nombreOnchain: f.nombre ?? null,
+        // Del `metadataURI` que sirve el catálogo. Un indexador anterior a la
+        // marca no lo manda: entonces `marca` queda vacía y la tarjeta se
+        // pinta como siempre, que es exactamente lo que hacía antes.
+        marca: leerMarca(f.metadataURI),
         // El volumen se calcula AQUÍ porque la ficha del catálogo ya lo trae:
         // pedirlo otra vez a `/index/agents` seria traerse dos veces lo mismo,
         // y esa segunda consulta devuelve el mercado entero sin paginar.
@@ -373,6 +408,7 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       wallet: addr,
       walletShort: short(addr),
       skills: meta.skills,
+      marca: leerMarca(data.metadataURI),
       totalEarned: 0,
       memberSince: new Date(Number(data.registeredAt) * 1000).toLocaleDateString('es-ES', {
         month: 'short',

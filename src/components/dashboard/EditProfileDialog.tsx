@@ -27,6 +27,8 @@ import {
   isHttpsUrl,
   parseAgentMetadata,
 } from '@/lib/agentMetadata';
+import type { Marca } from '@/lib/marca';
+import MarcaFields from '@/components/dashboard/MarcaFields';
 
 /** Máximo de skills (chips) por agente (mismo límite que el registro). */
 const MAX_SKILLS = 6;
@@ -40,6 +42,14 @@ export interface EditProfileDialogProps {
   metadataURI: string;
   /** Nombre visible del agente (título del diálogo). */
   agentName: string;
+  /**
+   * La dirección del agente, para el avatar de la vista previa.
+   *
+   * Tiene que ser LA MISMA semilla que usa su tarjeta del panel, o la vista
+   * previa enseñaría un hexágono distinto del que ve todo el mundo y parecería
+   * que poner un logo le ha cambiado el avatar.
+   */
+  agentAddress: string;
   /** Tras minarse la tx (refetch del perfil on-chain). */
   onMined: () => void;
 }
@@ -49,6 +59,7 @@ export default function EditProfileDialog({
   onOpenChange,
   metadataURI,
   agentName,
+  agentAddress,
   onMined,
 }: EditProfileDialogProps) {
   return (
@@ -59,6 +70,7 @@ export default function EditProfileDialog({
         <EditProfileForm
           metadataURI={metadataURI}
           agentName={agentName}
+          agentAddress={agentAddress}
           onMined={onMined}
           onOpenChange={onOpenChange}
         />
@@ -70,11 +82,13 @@ export default function EditProfileDialog({
 function EditProfileForm({
   metadataURI,
   agentName,
+  agentAddress,
   onMined,
   onOpenChange,
 }: {
   metadataURI: string;
   agentName: string;
+  agentAddress: string;
   onMined: () => void;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -87,6 +101,14 @@ function EditProfileForm({
   const [skillInput, setSkillInput] = useState('');
   const [skillError, setSkillError] = useState<'dup' | 'max' | null>(null);
   const [botUrl, setBotUrl] = useState(initial.botUrl);
+  /**
+   * Logo y enlaces, tal y como estaban en la ficha.
+   *
+   * Salen del `metadataURI` que ya se está leyendo, así que un agente que edite
+   * su descripción no pierde el logo por no haber tocado esa parte: lo que no
+   * se cambia se vuelve a escribir igual.
+   */
+  const [marca, setMarca] = useState<Marca>(initial.marca);
   /** Campos tocados (blur): muestran su error inline. */
   const [touched, setTouched] = useState<Record<'name' | 'desc' | 'botUrl', boolean>>({
     name: false,
@@ -117,8 +139,9 @@ function EditProfileForm({
         description: descTrim,
         skills,
         botUrl: botUrlTrim,
+        marca,
       }),
-    [nameTrim, descTrim, skills, botUrlTrim],
+    [nameTrim, descTrim, skills, botUrlTrim, marca],
   );
 
   // ——— Skills como chips (Enter/coma, mismo patrón del registro) ———
@@ -345,6 +368,9 @@ function EditProfileForm({
               </p>
             )}
           </div>
+
+          {/* Su cara: logo y enlaces. Todo opcional, y se abre solo si ya hay algo. */}
+          <MarcaFields marca={marca} onChange={setMarca} idPrefix="edit" seed={agentAddress || agentName} />
 
           {/* Preview en vivo del metadata compuesto */}
           <div className="rounded-xl border border-line bg-cream px-4 py-3">

@@ -257,11 +257,16 @@ export class PanalClient {
         } catch {
           continue;
         }
+        // La ficha en crudo, si el indexador la manda. Los enlaces del creador
+        // salen de ahí, y quedarse con ella entera es además más fiel que
+        // recomponerla: lo que este SDK no entienda se conserva tal cual.
+        const uri = typeof raw.metadataURI === 'string' ? raw.metadataURI : '';
         const metadata: AgentMetadata = {
           name: typeof raw.name === 'string' ? raw.name : '',
           description: typeof raw.description === 'string' ? raw.description : '',
           skills,
           botUrl: typeof raw.botUrl === 'string' ? raw.botUrl : null,
+          links: parseAgentMetadata(uri).links,
         };
         out.push({
           address: getAddress(address),
@@ -272,7 +277,7 @@ export class PanalClient {
           ),
           active: raw.active !== false,
           registeredAt,
-          metadataURI: formatAgentMetadata(metadata),
+          metadataURI: uri || formatAgentMetadata(metadata),
           metadata,
           // Solo `true` cuenta como verificado. Un indexador viejo no manda el
           // campo, y tratar «no lo sé» como «sí» es justo al revés de lo que

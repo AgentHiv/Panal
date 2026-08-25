@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import EmptyState from '@/components/EmptyState';
 import HexAvatar from '@/components/HexAvatar';
+import AgentLinks from '@/components/AgentLinks';
 import HireDialog from '@/components/HireDialog';
 import LiveDot from '@/components/LiveDot';
 import RatingStars from '@/components/RatingStars';
@@ -21,7 +22,8 @@ import { FadeUp, WordReveal } from '@/components/market/motion';
 import { responseInWords } from '@/components/market/detail-data';
 import { cn } from '@/lib/utils';
 import { EXPLORER_ADDRESS, currencySymbol } from '@/contracts/config';
-import { isOnchainAgent } from '@/hooks/usePanalAgents';
+import { isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
+import { MARCA_VACIA } from '@/lib/marca';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 import { useTopAgents } from '@/hooks/useTopAgents';
 import { Loader2 } from 'lucide-react';
@@ -54,6 +56,8 @@ export default function AgentDetail() {
   // Su nombre en PanalNames, si lo tiene. `agent` puede no existir todavia,
   // asi que no se puede leer directo.
   const nombreUnico = agent && isOnchainAgent(agent) ? agent.nombreOnchain : null;
+  // Su logo y sus enlaces. Igual que arriba: `agent` puede no estar todavía.
+  const marca = agent ? marcaDe(agent) : MARCA_VACIA;
   const [tab, setTab] = useState<TabValue>('resumen');
   const [hireOpen, setHireOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -152,7 +156,13 @@ export default function AgentDetail() {
                   transition={{ duration: 0.7, ease: [0.34, 1.4, 0.44, 1] }}
                   className="relative w-fit shrink-0"
                 >
-                  <HexAvatar seed={agent.wallet} size={128} className="drop-shadow-[0_12px_24px_rgba(27,24,20,0.16)]" />
+                  <HexAvatar
+                    seed={agent.wallet}
+                    size={128}
+                    logo={marca.logo}
+                    alt={agent.name}
+                    className="drop-shadow-[0_12px_24px_rgba(27,24,20,0.16)]"
+                  />
                   <span
                     className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-paper shadow-card"
                     title={t(STATUS_LABELS[agent.status])}
@@ -288,6 +298,20 @@ export default function AgentDetail() {
               {/* descripción */}
               <FadeUp y={16} delay={0.45}>
                 <p className="mt-6 max-w-2xl text-[1.125rem] leading-[1.65] text-ink-2">{agent.description}</p>
+              </FadeUp>
+
+              {/*
+                Los enlaces del creador: su web, su repositorio, sus cuentas.
+                Esta es la pagina donde alguien decide pagarle a un desconocido,
+                y hasta ahora no habia NADA que mirar fuera de lo que el propio
+                agente escribia de si mismo. Un repositorio que se puede abrir
+                dice mas que cualquier descripcion.
+
+                Van despues de la descripcion a proposito: primero que hace,
+                luego quien lo hizo.
+              */}
+              <FadeUp y={16} delay={0.5}>
+                <AgentLinks marca={marca} className="mt-5" />
               </FadeUp>
             </div>
 

@@ -41,10 +41,30 @@ async function main(): Promise<void> {
     description: 'Traducción técnica EN<->ES',
     skills: ['traducción', 'revisión'],
     botUrl: 'https://bot.ejemplo.com',
+    // El logo y los enlaces del creador. Vacíos no escriben nada, así que un
+    // agente que no publique marca compone la ficha de siempre.
+    links: { logo: '', web: '', github: '', x: '', telegram: '' },
   };
   const encoded = formatAgentMetadata(meta);
   const decoded = parseAgentMetadata(encoded);
   check('ida y vuelta sin pérdida', JSON.stringify(decoded) === JSON.stringify(meta), encoded);
+  check(
+    'sin marca, la ficha es la de siempre',
+    encoded === 'TraductorBot · Traducción técnica EN<->ES · traducción, revisión · bot:https://bot.ejemplo.com',
+    encoded,
+  );
+
+  // Con marca: los tokens van al final, el usuario se guarda limpio, y nada de
+  // eso se cuela en la descripción ni en las skills.
+  const conMarca = formatAgentMetadata({
+    ...meta,
+    links: { ...meta.links, logo: 'https://bot.ejemplo.com/logo.png', github: 'https://github.com/ejemplo/bot', x: '@ejemplo' },
+  });
+  const leida = parseAgentMetadata(conMarca);
+  check('la marca se escribe al final', conMarca.endsWith('logo:https://bot.ejemplo.com/logo.png · github:ejemplo/bot · x:ejemplo'), conMarca);
+  check('y se vuelve a leer entera', leida.links.github === 'ejemplo/bot' && leida.links.x === 'ejemplo');
+  check('sin tocar la descripción', leida.description === meta.description, leida.description);
+  check('ni las skills', leida.skills.join(',') === 'traducción,revisión', leida.skills.join(','));
 
   // Un `·` en la descripción desplazaría las skills a otro segmento y dejaría
   // la ficha descuadrada sin ningún error visible.

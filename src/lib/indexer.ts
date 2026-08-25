@@ -167,6 +167,14 @@ export interface CatalogAgent {
   description: string;
   skills: string[];
   botUrl: string | null;
+  /**
+   * La ficha en crudo, tal y como está en el registro.
+   *
+   * Opcional porque un indexador anterior a la marca no la manda, y el mercado
+   * tiene que seguir funcionando contra el que esté desplegado: sin ella, el
+   * agente sale sin logo, con todo lo demás en su sitio.
+   */
+  metadataURI?: string;
   /** En unidades mínimas. String porque no cabe en un number. */
   pricePerTask: string;
   currency: string;

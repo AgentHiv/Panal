@@ -363,6 +363,29 @@ export const en: Textos = {
     aprobandoToken: 'Approving the token…',
     bloqueando: 'Locking…',
     bloquear: (cantidad: string, moneda: string) => `Lock ${cantidad} ${moneda}`,
+    archivos: 'Files',
+    anadirArchivo: 'Add',
+    quitarArchivo: (nombre: string) => `Remove ${nombre}`,
+    archivosPie: (max: number, tope: string) =>
+      `Up to ${max} files of ${tope}. They are announced inside the brief before you pay, so the escrow covers them too.`,
+    archivoGrande: (nombre: string, tope: string) => `“${nombre}” is over ${tope}.`,
+    archivoSinNombre: (nombre: string) => `“${nombre}” has no usable file name.`,
+    archivoNoSeLee: (nombre: string) => `Could not read “${nombre}”. If it lives in the cloud, download it to the phone first.`,
+    archivosDemasiados: (max: number) => `${max} files at most.`,
+    sinArchivos: 'This agent does not accept files. Put everything in the text.',
+    enviandoAlAgente: 'Payment locked. Delivering the brief to the agent…',
+    subiendoArchivos: (n: number) => `Uploading ${n} ${n === 1 ? 'file' : 'files'}…`,
+    entregado: 'The agent has the brief.',
+    noLlego: 'The brief did not reach the agent.',
+    pagoASalvo:
+      'The payment is still locked and the task exists on-chain. The text is saved on this phone, so retrying costs nothing.',
+    reintentar: 'Retry',
+    sinIdDeTarea: 'The transaction does not say which number the task got.',
+    sinEndpoint: 'This agent does not publish where it listens, so there is nowhere to send it.',
+    agenteRespondio: (codigo: number) => `The agent answered ${codigo}.`,
+    archivosFallaron: (n: number) => `${n} ${n === 1 ? 'file' : 'files'} failed to upload.`,
+    firmaCancelada: 'You cancelled the signature.',
+    noSePudoHablar: 'Could not reach the agent.',
   },
 
   revisar: {
@@ -421,6 +444,36 @@ export const en: Textos = {
     cancelado: 'Cancelled · the payment came back',
     cancelaste: 'You cancelled the signature. Nothing was charged.',
     sinRed: "Couldn't reach the agent. If it never answered, nothing was charged.",
+  },
+
+  marca: {
+    titulo: 'Their branding',
+    opcional: 'Logo, website, GitHub and socials. None of it is required.',
+    puestos: (n: number) => `${n} of 5 filled in`,
+    pie: 'Shows in the marketplace and in the app. It lives in their on-chain profile, so changing it costs a signature.',
+    campos: {
+      logo: 'Logo (https URL)',
+      web: 'Website',
+      github: 'GitHub',
+      x: 'X',
+      telegram: 'Telegram',
+    },
+    huecos: {
+      logo: 'https://your-domain.com/logo.png',
+      web: 'https://your-domain.com',
+      github: 'user or user/repo',
+      x: 'username',
+      telegram: 'username',
+    },
+    errores: {
+      logo: 'Must be an https URL pointing to an image.',
+      web: 'Must be an https URL.',
+      github: 'Enter the username, user/repo, or the GitHub link.',
+      x: 'Enter the username or the X link.',
+      telegram: 'Enter the username or the Telegram link.',
+    },
+    vistaConLogo: 'This is how it will look in the marketplace. If the initial is still there, the image is not loading.',
+    vistaSinLogo: 'With no logo you get the usual cell.',
   },
 
   alta: {

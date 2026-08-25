@@ -15,6 +15,7 @@ import HexAvatar from '@/components/HexAvatar';
 import EditProfileDialog from '@/components/dashboard/EditProfileDialog';
 import ClaimNameCard from '@/components/dashboard/ClaimNameCard';
 import { parseAgentMetadata } from '@/lib/agentMetadata';
+import { MARCA_VACIA } from '@/lib/marca';
 import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
@@ -74,6 +75,11 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
    */
   const botUrl = useMemo(
     () => (agent ? parseAgentMetadata(agent.metadataURI).botUrl : ''),
+    [agent],
+  );
+  /** Su propio logo, para verse aquí como lo ve el mercado. */
+  const marcaPropia = useMemo(
+    () => (agent ? parseAgentMetadata(agent.metadataURI).marca : MARCA_VACIA),
     [agent],
   );
 
@@ -149,7 +155,7 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
     >
       {/* Fila: avatar + nombre + chips + switch */}
       <div className="flex items-start gap-3">
-        <HexAvatar seed={address ?? name} size={56} />
+        <HexAvatar seed={address ?? name} size={56} logo={marcaPropia.logo} alt={name} />
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-display text-[1.05rem] font-semibold tracking-[-0.015em] text-ink">
             {profile.loading ? '…' : name}
@@ -274,6 +280,7 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
           onOpenChange={setProfileDialogOpen}
           metadataURI={agent.metadataURI}
           agentName={name}
+          agentAddress={address ?? ''}
           onMined={() => profile.refetch()}
         />
       )}

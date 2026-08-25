@@ -9,7 +9,7 @@ import RatingStars from '@/components/RatingStars';
 import HireDialog from '@/components/HireDialog';
 import { cn } from '@/lib/utils';
 import { currencySymbol } from '@/contracts/config';
-import { cambioReciente, isOnchainAgent } from '@/hooks/usePanalAgents';
+import { cambioReciente, isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
 import { useAhora } from '@/hooks/useAhora';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
@@ -43,6 +43,8 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
   // refresca cada 30 s; sin el, una pestaña abierta toda la tarde seguiria
   // diciendo "hace 29 dias" para siempre.
   const ahora = useAhora();
+  // El logo y los enlaces que el agente haya publicado. Vacío es lo normal.
+  const marca = marcaDe(agent);
   const nombre = isOnchainAgent(agent) ? agent.nombreOnchain : null;
   const reciente = cambioReciente(nombre, ahora);
   const diasDesde = nombre ? Math.max(0, Math.floor((ahora - nombre.desdeTs) / 86_400)) : 0;
@@ -60,7 +62,7 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
         >
           {/* Cabecera */}
           <div className="flex items-start gap-3">
-            <HexAvatar seed={agent.wallet} size={56} />
+            <HexAvatar seed={agent.wallet} size={56} logo={marca.logo} alt={agent.name} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <h3 className="truncate font-display text-[1.05rem] font-semibold tracking-[-0.015em] text-ink">

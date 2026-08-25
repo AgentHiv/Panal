@@ -16,6 +16,8 @@ import { ESTADO } from '@/lib/conversaciones';
 import { getTaskBrief } from '@/lib/taskBriefs';
 import Hoja, { Boton, Nota } from '~/componentes/Hoja';
 import Icono from '~/componentes/Icono';
+import CamposMarca from '~/componentes/CamposMarca';
+import type { Marca } from '@/lib/marca';
 import { armarFicha, partirFicha, useFicha, usePendiente, useTareasDe } from '~/lib/agentes';
 import { revisar, cuantasUrgentes } from '~/lib/guardia';
 import { monto } from '~/lib/formato';
@@ -302,6 +304,7 @@ export default function PanelAgente(): React.ReactElement {
       {hoja === 'ficha' && (
         <HojaFicha
           uri={ficha.metadataURI}
+          direccion={dir}
           onCerrar={() => setHoja(null)}
           onHecho={() => void releerFicha()}
         />
@@ -573,16 +576,26 @@ function HojaEstado({
 
 function HojaFicha({
   uri,
+  direccion,
   onCerrar,
   onHecho,
 }: {
   uri: string;
+  direccion: string;
   onCerrar: () => void;
   onHecho: () => void;
 }): React.ReactElement {
   const inicial = partirFicha(uri);
   const [nombre, setNombre] = useState(inicial.nombre);
   const [descripcion, setDescripcion] = useState(inicial.descripcion);
+  /**
+   * Logo y enlaces, tal y como estaban.
+   *
+   * Salen de la misma ficha que ya se está leyendo, así que editar la
+   * descripción no borra el logo por no haber tocado esa parte: lo que no se
+   * cambia se vuelve a escribir igual.
+   */
+  const [marca, setMarca] = useState<Marca>(inicial.marca);
   const [bot, setBot] = useState(() => {
     const parte = uri.split('·').find((p) => p.trim().toLowerCase().startsWith('bot:'));
     return parte ? parte.trim().slice(4) : '';
@@ -597,7 +610,7 @@ function HojaFicha({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo.isSuccess]);
 
-  const nueva = armarFicha(nombre, descripcion, bot);
+  const nueva = armarFicha(nombre, descripcion, bot, marca);
   const trabajando = isPending || recibo.isLoading;
   const T = useTextos();
 
@@ -619,6 +632,8 @@ function HojaFicha({
           {T.panel.sinBotFichaDespues}
         </Nota>
       )}
+
+      <CamposMarca marca={marca} onCambio={setMarca} semilla={direccion} />
 
       <p className="mt-3.5 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
         {T.panel.loQueSeEscribe}
