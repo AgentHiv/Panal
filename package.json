@@ -10,6 +10,7 @@
     "check:i18n": "node scripts/check-i18n.mjs",
     "test:brief-retry": "tsx scripts/test-brief-retry.ts",
     "test:adjuntos": "tsx scripts/test-adjuntos.ts",
+    "test:entregados": "tsx scripts/test-entregados.ts",
     "test:marca": "tsx scripts/test-marca.ts",
     "test:wallets": "tsx scripts/test-wallets.ts",
     "test:deeplinks": "tsx scripts/test-deeplinks.ts",
