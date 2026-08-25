@@ -198,6 +198,76 @@ export async function guardarCopia(
   }
 }
 
+/**
+ * Un Blob como base64, sin la cabecera del data URL.
+ *
+ * `readAsDataURL` es el único camino que hay en un WebView: no existe
+ * `Buffer`, y pasar los bytes por `String.fromCharCode` revienta la pila con
+ * un archivo de varios MB.
+ */
+function aBase64(datos: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onerror = () => reject(lector.error ?? new Error('no se pudo leer el archivo'));
+    lector.onload = () => {
+      const r = String(lector.result);
+      // Viene como "data:<mime>;base64,<datos>" y writeFile quiere solo lo de
+      // después de la coma.
+      resolve(r.slice(r.indexOf(',') + 1));
+    };
+    lector.readAsDataURL(datos);
+  });
+}
+
+/**
+ * Guarda un archivo que entregó el agente.
+ *
+ * BYTES, NO TEXTO. `guardarCopia` escribe HTML con `Encoding.UTF8`, y ese
+ * camino rompe un PDF o un .docx: reinterpreta cada byte como carácter y lo que
+ * se guarda ya no abre. Capacitor escribe binario cuando `data` va en base64 y
+ * NO se le pasa `encoding`, así que la conversión es obligatoria.
+ *
+ * El nombre llega ya limpio de `parseFilesManifest` —lo escribe el agente, y
+ * `sanitizeFileName` le quita las barras— así que no puede salirse de la caché.
+ */
+export async function guardarArchivo(nombre: string, datos: Blob): Promise<Resultado> {
+  if (!Capacitor.isNativePlatform()) {
+    try {
+      const url = URL.createObjectURL(datos);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombre;
+      a.click();
+      URL.revokeObjectURL(url);
+      return { ok: true, donde: textos().copia.descargas };
+    } catch (err) {
+      return {
+        ok: false,
+        porque: err instanceof Error ? err.message : textos().pegas.rechazada,
+      };
+    }
+  }
+
+  try {
+    const escrito = await Filesystem.writeFile({
+      path: nombre,
+      data: await aBase64(datos),
+      directory: Directory.Cache,
+    });
+    await Share.share({
+      title: nombre,
+      url: escrito.uri,
+      dialogTitle: textos().copia.guardarArchivo,
+    });
+    return { ok: true, donde: textos().copia.elTelefono };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // Cerrar el menú de compartir tira un error, y no es un fallo.
+    if (/cancel/i.test(msg)) return { ok: true, donde: textos().copia.elTelefono };
+    return { ok: false, porque: msg };
+  }
+}
+
 /** Un nombre de archivo que se ordena solo y no choca. */
 export function nombreDe(e: Expediente): string {
   const d = new Date(e.cadena.creado);

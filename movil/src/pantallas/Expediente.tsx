@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSignMessage } from 'wagmi';
 import { useWallet } from '@/hooks/useWallet';
@@ -6,11 +6,16 @@ import { useMyTasks } from '@/hooks/useMyTasks';
 import { currencySymbol } from '@/contracts/config';
 import { ESTADO } from '@/lib/conversaciones';
 import { buildResultUrl, cabecerasFirma, expiraEn, resultSignMessage } from '@/lib/botEndpoint';
-import { formatBytes } from '@/lib/deliveredFiles';
+import {
+  FileVerificationError,
+  downloadDeliveredFile,
+  formatBytes,
+} from '@/lib/deliveredFiles';
+import type { DeliveredFile } from '@/lib/deliveredFiles';
 import { useAgente } from '~/lib/agente';
 import { armar, guardarEntrega } from '~/lib/expedientes';
 import type { Expediente as Expe } from '~/lib/expedientes';
-import { aHtml, guardarCopia, nombreDe } from '~/lib/copia';
+import { aHtml, guardarArchivo, guardarCopia, nombreDe } from '~/lib/copia';
 import { monto } from '~/lib/formato';
 import Icono from '~/componentes/Icono';
 import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
@@ -39,6 +44,9 @@ const ESTADOS: Record<number, { clave: keyof Textos['expediente']; color: string
   [ESTADO.Cancelado]: { clave: 'cancelado', color: '#948DAE' },
 };
 
+type EstadoBajada = 'bajando' | 'ok' | 'nocuadra' | 'fallo';
+type Credencial = { firma: string; expira: number };
+
 export default function Expediente(): React.ReactElement {
   const { id } = useParams();
   const navegar = useNavigate();
@@ -48,6 +56,13 @@ export default function Expediente(): React.ReactElement {
 
   const [trayendo, setTrayendo] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
+  /**
+   * La firma se guarda porque la MISMA abre el texto y todos los archivos.
+   * Sin esto, bajar tres adjuntos pediría tres firmas seguidas.
+   */
+  const [credencial, setCredencial] = useState<Credencial | null>(null);
+  /** Cómo va cada descarga, por hash: el nombre puede repetirse, el hash no. */
+  const [descargas, setDescargas] = useState<Record<string, EstadoBajada>>({});
   const [copiando, setCopiando] = useState(false);
   const T = useTextos();
   const [aviso, setAviso] = useState<string | null>(null);
@@ -64,6 +79,29 @@ export default function Expediente(): React.ReactElement {
     // localStorage, y sin esto la pantalla seguiría diciendo que no la tienes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tarea, address, version]);
+
+  /**
+   * Una firma válida para hablar con el agente, reaprovechando la anterior.
+   *
+   * La misma firma abre el texto y todos los archivos, así que traer la entrega
+   * y bajar sus tres adjuntos es UNA firma, no cuatro. Se renueva con un minuto
+   * de margen: una que caduque a mitad de la descarga la rechazaría el agente
+   * con un 403, y desde fuera eso parece un fallo suyo.
+   */
+  const pedirCredencial = useCallback(
+    // En `useCallback` y no suelta: mira el reloj, y leerlo durante el render
+    // da resultados que cambian solos. Aquí solo corre al tocar el archivo.
+    async (idTarea: bigint): Promise<Credencial> => {
+      const ahora = Math.floor(Date.now() / 1000);
+      if (credencial && credencial.expira > ahora + 60) return credencial;
+      const expira = expiraEn();
+      const firma = await signMessageAsync({ message: resultSignMessage(idTarea, expira) });
+      const nueva = { firma, expira };
+      setCredencial(nueva);
+      return nueva;
+    },
+    [credencial, signMessageAsync],
+  );
 
   if (loading && !e) {
     return <Mensaje texto={T.expediente.leyendo} />;
@@ -84,6 +122,49 @@ export default function Expediente(): React.ReactElement {
   const color = estado?.color ?? '#948DAE';
 
   /**
+   * Baja un archivo de la entrega, comprueba sus bytes y lo pasa al teléfono.
+   *
+   * Los adjuntos NO se guardan aquí: un PDF de 20 MB no cabe en localStorage y
+   * echaría de él lo que sí importa, que es el texto. Se bajan del agente cada
+   * vez. El hash contra el que se comprueban viajó DENTRO de la entrega, y esa
+   * entrega ya cuadró con la cadena al guardarse, así que el archivo queda
+   * anclado igual de firme que el texto.
+   *
+   * Si no cuadra NO se guarda. Es el único momento en que todo esto sirve de
+   * algo: significa que lo servido no es lo que se entregó, y el cliente tiene
+   * con qué abrir una disputa.
+   */
+  const bajarArchivo = async (archivo: DeliveredFile): Promise<void> => {
+    const botUrl = datosAgente?.botUrl;
+    if (!botUrl || !address || !tarea) {
+      setFallo(T.expediente.sinEndpoint);
+      return;
+    }
+    setDescargas((d) => ({ ...d, [archivo.hash]: 'bajando' }));
+    setAviso(null);
+    try {
+      const cred = await pedirCredencial(tarea.id);
+      const blob = await downloadDeliveredFile(archivo, botUrl, address, cred);
+      const r = await guardarArchivo(archivo.name, blob);
+      setDescargas((d) => ({ ...d, [archivo.hash]: r.ok ? 'ok' : 'fallo' }));
+      if (!r.ok) setAviso(r.porque);
+    } catch (err) {
+      const roto = err instanceof FileVerificationError && /hash|size/.test(err.message);
+      const msg = err instanceof Error ? err.message : String(err);
+      // Rechazar la firma no es un fallo: el botón vuelve a su sitio callado.
+      if (!roto && /reject|denied|user/i.test(msg)) {
+        setDescargas((d) => {
+          const resto = { ...d };
+          delete resto[archivo.hash];
+          return resto;
+        });
+        return;
+      }
+      setDescargas((d) => ({ ...d, [archivo.hash]: roto ? 'nocuadra' : 'fallo' }));
+    }
+  };
+
+  /**
    * Trae la entrega del agente y la guarda si cuadra con la cadena.
    *
    * El endpoint sale del REGISTRO, nunca de algo que venga en la entrega: si la
@@ -99,8 +180,7 @@ export default function Expediente(): React.ReactElement {
     setTrayendo(true);
     setFallo(null);
     try {
-      const expira = expiraEn();
-      const firma = await signMessageAsync({ message: resultSignMessage(tarea.id, expira) });
+      const { firma, expira } = await pedirCredencial(tarea.id);
       const res = await fetch(buildResultUrl(botUrl, tarea.id), {
         headers: cabecerasFirma(address, firma, expira),
       });
@@ -254,20 +334,52 @@ export default function Expediente(): React.ReactElement {
               <p className="seleccionable mt-2 whitespace-pre-wrap text-[13.5px] leading-[1.55]">
                 {e.local.entrega}
               </p>
-              {e.local.adjuntos.map((a) => (
-                <div
-                  key={a.hash}
-                  className="mt-2.5 flex items-center gap-2.5 rounded-[11px] border border-line bg-sand px-3 py-2.5"
-                >
-                  <Icono nombre="hoja" tamano={17} color="#B7A8FC" className="shrink-0" />
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-medium">{a.name}</p>
-                    <p className="mt-0.5 text-[11px] text-ink-3">
-                      {T.expediente.adjuntoPie(formatBytes(a.size))}
-                    </p>
-                  </div>
-                </div>
-              ))}
+              {e.local.adjuntos.map((a) => {
+                const bajada = descargas[a.hash];
+                return (
+                  <button
+                    key={a.hash}
+                    type="button"
+                    onClick={() => void bajarArchivo(a)}
+                    disabled={bajada === 'bajando'}
+                    aria-label={T.expediente.adjuntoBajar}
+                    className="pulsable tocable mt-2.5 flex w-full items-center gap-2.5 rounded-[11px] border border-line bg-sand px-3 py-2.5 text-left disabled:opacity-60"
+                  >
+                    <Icono nombre="hoja" tamano={17} color="#B7A8FC" className="shrink-0" />
+                    <div className="min-w-0 grow">
+                      <p className="truncate text-[13px] font-medium">{a.name}</p>
+                      <p className="mt-0.5 text-[11px] text-ink-3">
+                        {T.expediente.adjuntoPie(formatBytes(a.size))}
+                      </p>
+                      {bajada && (
+                        <p
+                          className={`mt-0.5 text-[11px] ${
+                            bajada === 'ok'
+                              ? 'text-olive'
+                              : bajada === 'bajando'
+                                ? 'text-ink-3'
+                                : 'text-terra'
+                          }`}
+                        >
+                          {bajada === 'bajando'
+                            ? T.expediente.adjuntoBajando
+                            : bajada === 'ok'
+                              ? T.expediente.adjuntoGuardado
+                              : bajada === 'nocuadra'
+                                ? T.expediente.adjuntoNoCuadra
+                                : T.expediente.adjuntoFallo}
+                        </p>
+                      )}
+                    </div>
+                    <Icono
+                      nombre={bajada === 'ok' ? 'check' : 'bajar'}
+                      tamano={15}
+                      color={bajada === 'ok' ? '#92A268' : '#948DAE'}
+                      className="shrink-0"
+                    />
+                  </button>
+                );
+              })}
               <p className="mt-2.5 font-mono text-[11px] text-ink-3">
                 keccak256 → {cortaHash(e.cadena.resultHash)}
               </p>

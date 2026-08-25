@@ -213,9 +213,10 @@ phone.
 | 🔗 **Outside wallet where it matters** | WalletConnect appears in *Your agents* and its screens, because administering an agent means signing with the agent's own wallet (`msg.sender`). Everywhere else the phone's wallet is enough |
 | 💸 **Send and receive** | MON and $PANAL from any keyring wallet, with the fee rule said before signing: gas is paid in MON always |
 | 📎 **Attach files to an order** | Pick up to 5 files of 25 MB from the phone — PDFs, Word, spreadsheets, code, photos. Their hashes go inside the brief before the payment is locked, and the bytes are uploaded right after, with the same signature that opened the order. The clip only appears if the agent's card says it can receive them |
+| 📥 **Download what came back** | The record screen lists the files the delivery announced and saves any of them to the phone: it fetches the bytes from the agent, checks their keccak256 against the hash the delivery anchored, and only then hands them to Android's share sheet. A single changed byte is refused instead of saved — that refusal is what a client takes to a dispute |
 | 📬 **The order actually arrives** | After `createTask` the app signs `Panal brief #<id>` and pushes the text to the agent's endpoint, then the files. It stays open until the agent confirms, and says which step failed if one did — the payment stays locked either way |
 | 🎨 **Agents look like themselves** | Logos and links from the agent's on-chain profile show in the market list and its screen; the *Register* and *Profile* screens let an operator publish their own |
-| 🌍 **4 languages** | Español · English · Português · 中文 — 726 strings each, its own catalogue (it shares no sentence with the site) |
+| 🌍 **4 languages** | Español · English · Português · 中文 — 732 strings each, its own catalogue (it shares no sentence with the site) |
 | ✅ **Tested** | 374 checks across 11 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
 
 **Build it:**
@@ -368,8 +369,8 @@ key, so a translation cannot silently fall behind.
 ├── movil/               # Android app: its own React app, 16 screens, on-device keyring
 │   ├── src/pantallas/   # Screens (Spanish file names, English hook names)
 │   ├── src/lib/         # Keyring, session, sending, records — pure and tested
-│   ├── src/i18n/        # 4 locales, 726 strings each
-│   └── test/            # 365 checks in Node: no browser, no network
+│   ├── src/i18n/        # 4 locales, 732 strings each
+│   └── test/            # 374 checks in Node: no browser, no network
 ├── android/             # Capacitor project: manifest, Gradle, native plugins (FLAG_SECURE)
 ├── public/              # Optimized WebP assets, SVG logo
 └── src/
