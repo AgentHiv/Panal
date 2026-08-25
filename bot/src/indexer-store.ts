@@ -129,6 +129,15 @@ export interface AgentProfile {
   description: string;
   skills: string[];
   botUrl: string | null;
+  /**
+   * La ficha en crudo, tal y como está en el registro.
+   *
+   * Se publica entera además de troceada porque el mercado saca de ahí el logo
+   * y los enlaces del creador (`src/lib/marca.ts`), y trocearlos aquí obligaría
+   * a desplegar el indexador cada vez que se admita un token nuevo. Así el
+   * formato puede crecer en el cliente sin tocar este servicio.
+   */
+  metadataURI: string;
   /** Precio por tarea en unidades mínimas (string: no cabe en un number). */
   pricePerTask: string;
   currency: string;

@@ -1458,5 +1458,40 @@
       "resent": "La commande est bien arrivée",
       "resendFailed": "Impossible de renvoyer la commande"
     }
+  },
+  "agentLinks": {
+    "web": "Site web",
+    "github": "GitHub",
+    "x": "X",
+    "telegram": "Telegram"
+  },
+  "marca": {
+    "title": "Votre identité (facultatif)",
+    "optional": "Logo, site web, GitHub et réseaux. Rien de tout cela n’est obligatoire.",
+    "filled": "{{n}} sur 5 remplis",
+    "hint": "Apparaît sur votre fiche du marché et dans l’application. C’est stocké dans votre fiche on-chain, donc le modifier coûte une transaction.",
+    "fields": {
+      "logo": "Logo (URL https)",
+      "web": "Site web",
+      "github": "GitHub",
+      "x": "X",
+      "telegram": "Telegram"
+    },
+    "placeholders": {
+      "logo": "https://votre-domaine.com/logo.png",
+      "web": "https://votre-domaine.com",
+      "github": "utilisateur ou utilisateur/dépôt",
+      "x": "nom d’utilisateur",
+      "telegram": "nom d’utilisateur"
+    },
+    "errors": {
+      "logo": "Ce doit être une URL https vers une image.",
+      "web": "Ce doit être une URL https.",
+      "github": "Indiquez votre nom d’utilisateur, utilisateur/dépôt ou le lien GitHub.",
+      "x": "Indiquez votre nom d’utilisateur ou le lien X.",
+      "telegram": "Indiquez votre nom d’utilisateur ou le lien Telegram."
+    },
+    "previewWithLogo": "Voilà comment le marché vous verra. Si l’hexagone est toujours là, l’image ne se charge pas.",
+    "previewNoLogo": "Sans logo, c’est l’hexagone habituel."
   }
 }

@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
+import { MARCA_VACIA, enlacesDe } from '@/lib/marca';
+import { TRAZOS_MARCA } from '@/lib/iconosMarca';
 import type { OnchainAgent } from '@/hooks/usePanalAgents';
 import { currencySymbol } from '@/contracts/config';
 import { useAhora } from '@/hooks/useAhora';
@@ -43,6 +45,10 @@ export default function Agente(): React.ReactElement {
     [agents, direccion],
   );
 
+  // Lo que el creador publicó en su ficha. Vacío es lo normal.
+  const marca = agente ? agente.marca : MARCA_VACIA;
+  const enlaces = enlacesDe(marca);
+
   return (
     <div className="flex min-h-0 grow flex-col">
       <header className="flex shrink-0 items-center px-3 pt-3">
@@ -62,6 +68,7 @@ export default function Agente(): React.ReactElement {
             semilla={direccion}
             inicial={(agente?.name ?? datos?.nombre ?? 'A').slice(0, 1)}
             tamano={64}
+            logo={marca.logo}
           />
           <div className="min-w-0">
             <h1 className="truncate font-display text-[24px] font-semibold -tracking-[0.02em]">
@@ -95,6 +102,34 @@ export default function Agente(): React.ReactElement {
 
         {agente?.tagline && (
           <p className="seleccionable text-[14px] leading-[1.55] text-ink-2">{agente.tagline}</p>
+        )}
+
+        {/*
+          Sus enlaces: web, repositorio, cuentas. Esta es la pantalla donde
+          alguien decide pagarle a un desconocido, y hasta ahora no había nada
+          que mirar fuera de lo que el propio agente escribía de sí mismo.
+
+          `_blank` no abre una pestaña dentro de la app: en Android sale al
+          navegador del teléfono, que es lo que hay que querer aquí — la app
+          guarda un llavero, y no tiene por qué enseñar dentro páginas de nadie.
+        */}
+        {enlaces.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {enlaces.map(({ clave, url, rotulo }) => (
+              <a
+                key={clave}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="pulsable flex h-9 items-center gap-1.5 rounded-full border border-line px-3 text-[12.5px] text-ink-2"
+              >
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 fill-current" aria-hidden>
+                  <path d={TRAZOS_MARCA[clave]} />
+                </svg>
+                <span className="max-w-[140px] truncate">{rotulo}</span>
+              </a>
+            ))}
+          </div>
         )}
 
         <div className="divide-y divide-line overflow-hidden rounded-[14px] border border-line">

@@ -30,6 +30,9 @@ const TRAZOS: Record<string, string[]> = {
   cerrar: ['M6 6l12 12', 'M18 6L6 18'],
   menu: ['M4.5 7.5h15', 'M4.5 12h15', 'M4.5 16.5h15'],
   recargar: ['M20 12a8 8 0 1 1-2.34-5.66', 'M20 4v4h-4'],
+  // El galón de desplegar. Apunta abajo en reposo y la pantalla lo gira 180
+  // al abrir, así que no hace falta un segundo trazo para el estado abierto.
+  desplegar: ['M5.5 9.5 12 16l6.5-6.5'],
 
   // Estado
   escudo: ['M12 3l7.5 3.2v5c0 4.6-3.1 8.8-7.5 10-4.4-1.2-7.5-5.4-7.5-10v-5z', 'M9 12l2 2 4-4'],

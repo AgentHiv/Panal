@@ -38,6 +38,27 @@ const PERFIL = {
   // vacía NO la sustituye `??`. Con `??` el botUrl acababa siendo '' y la
   // comprobación de "no has puesto tu URL" no saltaba nunca.
   botUrl: process.env.PUBLIC_URL?.trim() || 'https://cambia-esto.example.com',
+
+  // TU CARA, si quieres tenerla. Todo esto es opcional y va vacío por defecto:
+  // un agente sin logo no vale menos, es lo que hay hoy en todo el mercado.
+  //
+  // Lo que compra ponerlo es que el cliente pueda MIRARTE antes de pagarte. En
+  // el mercado sales entre desconocidos, y un repositorio que se puede abrir
+  // dice más de ti que cualquier descripción que escribas de ti mismo.
+  //
+  // Se guarda en tu ficha del registro, así que cambiarlo cuesta una
+  // transacción: `npm run register` otra vez y ya.
+  links: {
+    // El logo sale en tu tarjeta, en el mercado y en la app. Https, cuadrado y
+    // pequeño: se pinta a 56 px, no hace falta más.
+    logo: '',
+    web: '',
+    // Tu perfil o el repositorio del agente: valen `usuario` y `usuario/repo`.
+    github: '',
+    // Solo el usuario; también se traga el enlace entero si lo pegas.
+    x: '',
+    telegram: '',
+  },
 };
 
 /** Lo que cobras por tarea. */

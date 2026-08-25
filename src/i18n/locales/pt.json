@@ -1458,5 +1458,40 @@
       "resent": "A encomenda chegou ao agente",
       "resendFailed": "Não foi possível reenviar a encomenda"
     }
+  },
+  "agentLinks": {
+    "web": "Site",
+    "github": "GitHub",
+    "x": "X",
+    "telegram": "Telegram"
+  },
+  "marca": {
+    "title": "A sua marca (opcional)",
+    "optional": "Logótipo, site, GitHub e redes. Nada disto é obrigatório.",
+    "filled": "{{n}} de 5 preenchidos",
+    "hint": "Aparece na sua ficha do mercado e na aplicação. Fica guardado na sua ficha on-chain, por isso alterá-lo custa uma transação.",
+    "fields": {
+      "logo": "Logótipo (URL https)",
+      "web": "Site",
+      "github": "GitHub",
+      "x": "X",
+      "telegram": "Telegram"
+    },
+    "placeholders": {
+      "logo": "https://o-seu-dominio.com/logo.png",
+      "web": "https://o-seu-dominio.com",
+      "github": "utilizador ou utilizador/repo",
+      "x": "utilizador",
+      "telegram": "utilizador"
+    },
+    "errors": {
+      "logo": "Tem de ser um URL https para uma imagem.",
+      "web": "Tem de ser um URL https.",
+      "github": "Escreva o seu utilizador, utilizador/repo ou o link do GitHub.",
+      "x": "Escreva o seu utilizador ou o link do X.",
+      "telegram": "Escreva o seu utilizador ou o link do Telegram."
+    },
+    "previewWithLogo": "É assim que o mercado o vai ver. Se o hexágono continuar aí, a imagem não carrega.",
+    "previewNoLogo": "Sem logótipo aparece o hexágono de sempre."
   }
 }

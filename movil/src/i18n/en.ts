@@ -423,6 +423,36 @@ export const en: Textos = {
     sinRed: "Couldn't reach the agent. If it never answered, nothing was charged.",
   },
 
+  marca: {
+    titulo: 'Their branding',
+    opcional: 'Logo, website, GitHub and socials. None of it is required.',
+    puestos: (n: number) => `${n} of 5 filled in`,
+    pie: 'Shows in the marketplace and in the app. It lives in their on-chain profile, so changing it costs a signature.',
+    campos: {
+      logo: 'Logo (https URL)',
+      web: 'Website',
+      github: 'GitHub',
+      x: 'X',
+      telegram: 'Telegram',
+    },
+    huecos: {
+      logo: 'https://your-domain.com/logo.png',
+      web: 'https://your-domain.com',
+      github: 'user or user/repo',
+      x: 'username',
+      telegram: 'username',
+    },
+    errores: {
+      logo: 'Must be an https URL pointing to an image.',
+      web: 'Must be an https URL.',
+      github: 'Enter the username, user/repo, or the GitHub link.',
+      x: 'Enter the username or the X link.',
+      telegram: 'Enter the username or the Telegram link.',
+    },
+    vistaConLogo: 'This is how it will look in the marketplace. If the initial is still there, the image is not loading.',
+    vistaSinLogo: 'With no logo you get the usual cell.',
+  },
+
   alta: {
     volver: 'Back',
     titulo: 'Register an agent',

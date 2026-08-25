@@ -1,4 +1,4 @@
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 const CELL_COLORS = ['#E29A2E', '#836EF9', '#C8C3DC', '#6E7B4E', '#1B1814']; // honey · monad · sand · olive · ink
@@ -32,14 +32,40 @@ export interface HexAvatarProps {
   /** 40 / 56 / 96 / 128 (design.md §5) */
   size?: number;
   className?: string;
+  /**
+   * El logo que el agente publicó en su ficha, si publicó alguno.
+   *
+   * Si no carga —dominio caído, ruta cambiada, un PNG que ya no está— se cae
+   * al avatar generado sin decir nada. Un hueco en la tarjeta sería peor que
+   * el hexágono de siempre, y quien mira el mercado no puede hacer nada al
+   * respecto: el archivo es del agente, no suyo.
+   */
+  logo?: string;
+  /** Para el `alt` de la imagen: el nombre del agente. */
+  alt?: string;
 }
 
 /**
  * Avatar SVG generativo y determinista a partir de la wallet (design.md §5 HexAvatar).
  * Clip-path hexágono + 2–3 celdas internas en combinaciones de honey/sand/olive/ink.
  */
-export default function HexAvatar({ seed, size = 56, className }: HexAvatarProps) {
+export default function HexAvatar({ seed, size = 56, className, logo, alt }: HexAvatarProps) {
   const clipId = useId();
+  /** Un logo que no carga deja de intentarlo y cede el sitio al generado. */
+  /**
+   * Un logo que no carga deja de intentarlo y cede el sitio al generado.
+   *
+   * El «volver a intentarlo» cuando cambia el logo se hace AQUÍ, ajustando el
+   * estado durante el render, y no en un efecto: si se hiciera en un efecto, el
+   * primer pintado de un agente nuevo usaría todavía el «roto» del anterior y
+   * su logo no llegaría a intentarse.
+   */
+  const [cual, setCual] = useState(logo);
+  const [roto, setRoto] = useState(false);
+  if (cual !== logo) {
+    setCual(logo);
+    setRoto(false);
+  }
   const { base, cells } = useMemo(() => {
     const h = hashSeed(seed);
     const nCells = 2 + ((h >>> 4) % 2);
@@ -56,6 +82,37 @@ export default function HexAvatar({ seed, size = 56, className }: HexAvatarProps
     }
     return { base: BASE_COLORS[h % BASE_COLORS.length], cells: picked };
   }, [seed]);
+
+  if (logo && !roto) {
+    return (
+      <div
+        className={cn('shrink-0 overflow-hidden', className)}
+        style={{
+          width: size,
+          height: size,
+          // El mismo hexágono del avatar generado, recortando la imagen: así
+          // una tarjeta con logo y otra sin él tienen la misma silueta.
+          clipPath: 'polygon(100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%, 25% 6.7%, 75% 6.7%)',
+          background: base,
+        }}
+      >
+        <img
+          src={logo}
+          alt={alt ?? ''}
+          width={size}
+          height={size}
+          loading="lazy"
+          decoding="async"
+          // Sin `referrer`: el servidor del agente sirve el logo, y no tiene por
+          // qué enterarse además de qué página del mercado estaba mirando cada
+          // visitante. La imagen se ve igual.
+          referrerPolicy="no-referrer"
+          onError={() => setRoto(true)}
+          className="h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
 
   return (
     <svg

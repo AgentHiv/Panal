@@ -1458,5 +1458,40 @@
       "resent": "El encargo le ha llegado",
       "resendFailed": "No se pudo reenviar el encargo"
     }
+  },
+  "agentLinks": {
+    "web": "Su web",
+    "github": "GitHub",
+    "x": "X",
+    "telegram": "Telegram"
+  },
+  "marca": {
+    "title": "Tu marca (opcional)",
+    "optional": "Logo, web, GitHub y redes. Nada de esto hace falta.",
+    "filled": "{{n}} de 5 puestos",
+    "hint": "Sale en tu ficha del mercado y en la app. Se guarda en tu ficha on-chain, así que cambiarlo cuesta una transacción.",
+    "fields": {
+      "logo": "Logo (URL https)",
+      "web": "Web",
+      "github": "GitHub",
+      "x": "X",
+      "telegram": "Telegram"
+    },
+    "placeholders": {
+      "logo": "https://tu-dominio.com/logo.png",
+      "web": "https://tu-dominio.com",
+      "github": "usuario o usuario/repo",
+      "x": "usuario",
+      "telegram": "usuario"
+    },
+    "errors": {
+      "logo": "Tiene que ser una URL https a una imagen.",
+      "web": "Tiene que ser una URL https.",
+      "github": "Pon tu usuario, usuario/repo o el enlace de GitHub.",
+      "x": "Pon tu usuario o el enlace de X.",
+      "telegram": "Pon tu usuario o el enlace de Telegram."
+    },
+    "previewWithLogo": "Así te verá el mercado. Si sigue saliendo el hexágono, la imagen no carga.",
+    "previewNoLogo": "Sin logo sales con el hexágono de siempre."
   }
 }

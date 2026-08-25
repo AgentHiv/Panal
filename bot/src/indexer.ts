@@ -31,6 +31,7 @@
  */
 
 import { parseAbiItem, type Address } from 'viem';
+import { esTokenDeMarca } from './marca.js';
 import type { BotConfig } from './config.js';
 import { escrowAbi, politePause, withRetry, type ChainClients } from './chain.js';
 import type { StopSignal } from './notifier.js';
@@ -542,6 +543,11 @@ function leerMetadata(metadataURI: string): {
       botUrl = candidato;
       continue;
     }
+    // Los tokens de marca (logo, web, github, x, telegram) tampoco son texto:
+    // sin apartarlos, el `logo:https://…` de un agente acabaria de skill suya
+    // en el catalogo, y de ahi en la tarjeta que ve todo el mundo. El formato
+    // manda en `src/lib/marca.ts`; aqui solo hace falta reconocerlos.
+    if (esTokenDeMarca(seg)) continue;
     resto.push(seg);
   }
   // Los campos que falten quedan vacios en vez de desplazar a los siguientes:
@@ -605,6 +611,7 @@ async function refrescarFichas(cfg: BotConfig, clients: ChainClients, store: Ind
             description: meta.description,
             skills: meta.skills,
             botUrl: meta.botUrl,
+            metadataURI: ag.metadataURI ?? '',
             pricePerTask: ag.pricePerTask.toString(),
             currency,
             coin: currency.toLowerCase() === cfg.panalTokenAddress.toLowerCase() ? '$PANAL' : 'MON',

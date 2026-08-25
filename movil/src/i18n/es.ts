@@ -428,6 +428,36 @@ export const es = {
     sinRed: 'No se pudo hablar con el agente. Si no llegó a responder, no se ha cobrado nada.',
   },
 
+  marca: {
+    titulo: 'Su marca',
+    opcional: 'Logo, web, GitHub y redes. Nada de esto hace falta.',
+    puestos: (n: number) => `${n} de 5 puestos`,
+    pie: 'Sale en el mercado y en la app. Se guarda en su ficha de la cadena, así que cambiarlo cuesta una firma.',
+    campos: {
+      logo: 'Logo (URL https)',
+      web: 'Web',
+      github: 'GitHub',
+      x: 'X',
+      telegram: 'Telegram',
+    },
+    huecos: {
+      logo: 'https://tu-dominio.com/logo.png',
+      web: 'https://tu-dominio.com',
+      github: 'usuario o usuario/repo',
+      x: 'usuario',
+      telegram: 'usuario',
+    },
+    errores: {
+      logo: 'Tiene que ser una URL https a una imagen.',
+      web: 'Tiene que ser una URL https.',
+      github: 'Pon el usuario, usuario/repo o el enlace de GitHub.',
+      x: 'Pon el usuario o el enlace de X.',
+      telegram: 'Pon el usuario o el enlace de Telegram.',
+    },
+    vistaConLogo: 'Así se verá en el mercado. Si sigue saliendo la inicial, la imagen no carga.',
+    vistaSinLogo: 'Sin logo sale la celda de siempre.',
+  },
+
   alta: {
     volver: 'Volver',
     titulo: 'Dar de alta un agente',

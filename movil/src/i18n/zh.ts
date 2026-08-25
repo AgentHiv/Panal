@@ -389,6 +389,36 @@ export const zh: Textos = {
     sinRed: '联系不上这个代理。如果它没有回复，就没有扣费。',
   },
 
+  marca: {
+    titulo: '它的品牌',
+    opcional: '标识、网站、GitHub 和社交账号。全部可以留空。',
+    puestos: (n: number) => `已填 ${n}/5`,
+    pie: '会显示在市场和 App 里。它保存在链上的资料中，所以修改需要签一次名。',
+    campos: {
+      logo: '标识（https 链接）',
+      web: '网站',
+      github: 'GitHub',
+      x: 'X',
+      telegram: 'Telegram',
+    },
+    huecos: {
+      logo: 'https://你的域名.com/logo.png',
+      web: 'https://你的域名.com',
+      github: '用户名 或 用户名/仓库',
+      x: '用户名',
+      telegram: '用户名',
+    },
+    errores: {
+      logo: '必须是指向图片的 https 链接。',
+      web: '必须是 https 链接。',
+      github: '填写用户名、用户名/仓库，或 GitHub 链接。',
+      x: '填写用户名或 X 链接。',
+      telegram: '填写用户名或 Telegram 链接。',
+    },
+    vistaConLogo: '市场里就是这个样子。如果还是显示首字母，说明图片没能加载。',
+    vistaSinLogo: '没有标识就显示原来的六边形。',
+  },
+
   alta: {
     volver: '返回',
     titulo: '注册一个代理',

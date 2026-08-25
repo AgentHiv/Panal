@@ -42,6 +42,7 @@
  */
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { esTokenDeMarca, leerMarca } from './marca.js';
 import { allowedOrigin, clientIp } from './net.js';
 import { generateResult } from './llm.js';
 import {
@@ -204,6 +205,14 @@ export interface AgentJson {
   chainId: number;
   contracts: { escrow: Address; registry: Address; token: Address };
   skills: string[];
+  /**
+   * Logo y enlaces que el creador publicó en su ficha del registro.
+   *
+   * Se repiten aquí, en la tarjeta, para que un cliente que ya está hablando
+   * con el bot no tenga que ir a leer la cadena solo para saber de quién es.
+   * Sólo salen los que estén: un agente sin marca sirve la tarjeta de siempre.
+   */
+  links: Record<string, string>;
   price: { amountWei: string; currency: Address; symbol: string } | null;
   active: boolean | null;
   endpoints: {
@@ -250,16 +259,29 @@ export interface AgentJson {
   howToHire: string[];
 }
 
-/** Parsea el metadataURI "Nombre · descripción · skill1, skill2 · bot:<url>". */
-function parseMetadataURI(uri: string): { name?: string; description?: string; skills: string[] } {
+/**
+ * Parsea el metadataURI "Nombre · descripción · skill1, skill2 · bot:<url>".
+ *
+ * Los tokens `bot:` y los de marca salen fuera antes de repartir posiciones: si
+ * se quedaran, el `logo:https://…` de un agente saldría anunciado como skill
+ * suya en su propia tarjeta.
+ */
+function parseMetadataURI(uri: string): {
+  name?: string;
+  description?: string;
+  skills: string[];
+  links: Record<string, string>;
+} {
   const parts = uri
     .split('·')
     .map((p) => p.trim())
-    .filter((p) => p && !p.toLowerCase().startsWith('bot:'));
+    .filter((p) => p && !p.toLowerCase().startsWith('bot:') && !esTokenDeMarca(p));
+  const links = leerMarca(uri);
   return {
     name: parts[0],
     description: parts[1],
     skills: parts[2] ? parts[2].split(',').map((s) => s.trim()).filter(Boolean).slice(0, 8) : [],
+    links,
   };
 }
 
@@ -326,6 +348,7 @@ export async function buildAgentJson(
       token: cfg.panalTokenAddress,
     },
     skills: meta.skills,
+    links: meta.links,
     price: agent
       ? {
           amountWei: agent.pricePerTask.toString(),

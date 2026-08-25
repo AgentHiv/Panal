@@ -97,6 +97,32 @@ dice('sin endpoint no escribe bot:', !armarFicha('A', 'B', '').includes('bot:'))
 dice('sin descripción no deja el separador suelto', armarFicha('A', '', 'https://x.lat') === 'A · bot:https://x.lat');
 dice('recorta espacios', armarFicha('  A  ', '  B  ', '  https://x.lat  ') === 'A · B · bot:https://x.lat');
 
+console.log('\nla marca del creador: logo y enlaces');
+const CON_MARCA =
+  'Audit · Audita contratos · bot:https://audit.panal.lat · logo:https://audit.lat/l.png · github:auditlabs/audit';
+p = partirFicha(CON_MARCA);
+dice('el logo NO acaba dentro de la descripción', p.descripcion === 'Audita contratos');
+dice('el nombre sigue siendo el nombre', p.nombre === 'Audit');
+dice('el logo se lee', p.marca.logo === 'https://audit.lat/l.png');
+dice('y el github también', p.marca.github === 'auditlabs/audit');
+dice('lo que no puso queda vacío', p.marca.x === '' && p.marca.telegram === '');
+dice(
+  'se vuelve a armar igual, con marca y todo',
+  armarFicha(p.nombre, p.descripcion, 'https://audit.panal.lat', p.marca) === CON_MARCA,
+);
+// Lo que de verdad importa al editar desde el teléfono: tocar la descripción
+// de un agente que tiene logo no puede borrarle el logo.
+dice(
+  'editar la descripción no borra el logo',
+  armarFicha(p.nombre, 'Otra cosa', 'https://audit.panal.lat', p.marca).includes('logo:https://audit.lat/l.png'),
+);
+dice('un agente sin marca escribe la ficha de siempre', armarFicha('A', 'B', 'https://x.lat') === 'A · B · bot:https://x.lat');
+// La descripción es texto libre y alguien va a escribir dos puntos dentro.
+dice(
+  'una descripción con «web:» sigue siendo descripción',
+  partirFicha('Copy · web: la mejor del mercado').descripcion === 'web: la mejor del mercado',
+);
+
 console.log('\ndirecciones');
 dice('una buena pasa', esDireccion('0x6073e8b4e0c5a1f2d3b4c5d6e7f8a9b0c1d2b7B4'));
 dice('con espacios alrededor también', esDireccion('  0x6073e8b4e0c5a1f2d3b4c5d6e7f8a9b0c1d2b7B4  '));

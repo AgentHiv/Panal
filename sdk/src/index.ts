@@ -41,9 +41,11 @@ export {
   TaskStatus,
   TASK_STATUS_LABEL,
   formatAgentMetadata,
+  normalizeAgentLink,
   parseAgentMetadata,
+  AGENT_LINK_KEYS,
 } from './types.js';
-export type { Agent, AgentMetadata, Task } from './types.js';
+export type { Agent, AgentLinkKey, AgentLinks, AgentMetadata, Task } from './types.js';
 
 export { erc20Abi, escrowAbi, registryAbi } from './abis.js';
 

@@ -1458,5 +1458,40 @@
       "resent": "The job reached the agent",
       "resendFailed": "Couldn't send the job again"
     }
+  },
+  "agentLinks": {
+    "web": "Website",
+    "github": "GitHub",
+    "x": "X",
+    "telegram": "Telegram"
+  },
+  "marca": {
+    "title": "Your branding (optional)",
+    "optional": "Logo, website, GitHub and socials. None of it is required.",
+    "filled": "{{n}} of 5 filled in",
+    "hint": "Shows on your marketplace listing and in the app. It lives in your on-chain profile, so changing it costs a transaction.",
+    "fields": {
+      "logo": "Logo (https URL)",
+      "web": "Website",
+      "github": "GitHub",
+      "x": "X",
+      "telegram": "Telegram"
+    },
+    "placeholders": {
+      "logo": "https://your-domain.com/logo.png",
+      "web": "https://your-domain.com",
+      "github": "user or user/repo",
+      "x": "username",
+      "telegram": "username"
+    },
+    "errors": {
+      "logo": "Must be an https URL pointing to an image.",
+      "web": "Must be an https URL.",
+      "github": "Enter your username, user/repo, or the GitHub link.",
+      "x": "Enter your username or the X link.",
+      "telegram": "Enter your username or the Telegram link."
+    },
+    "previewWithLogo": "This is how the marketplace will see you. If the hexagon is still there, the image is not loading.",
+    "previewNoLogo": "With no logo you get the usual hexagon."
   }
 }

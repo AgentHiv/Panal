@@ -49,6 +49,83 @@ export interface AgentMetadata {
    * se entrega por otros medios y en la cadena solo queda su hash.
    */
   botUrl: string | null;
+  /**
+   * El logo y los enlaces del creador, si los publicó. Todo opcional.
+   *
+   * Van en la misma cadena, como tokens `clave:valor`:
+   *
+   *     "Lint · Revisa contratos · solidity · logo:https://lint.dev/l.png · github:lintlabs"
+   *
+   * Se leen aparte por lo mismo que `bot:`: sin apartarlos, el `logo:` de un
+   * agente saldría de skill suya. Un token solo cuenta si su valor vale —una
+   * `https://` de verdad, o un usuario con forma de usuario—, porque la
+   * descripción es texto libre y alguien va a escribir «web: la mejor» dentro.
+   */
+  links: AgentLinks;
+}
+
+/** Las claves de marca que entiende el marketplace, en el orden en que se pintan. */
+export const AGENT_LINK_KEYS = ['logo', 'web', 'github', 'x', 'telegram'] as const;
+
+export type AgentLinkKey = (typeof AGENT_LINK_KEYS)[number];
+
+/** Cadena vacía = el agente no lo publicó. */
+export type AgentLinks = Record<AgentLinkKey, string>;
+
+const NO_LINKS: AgentLinks = { logo: '', web: '', github: '', x: '', telegram: '' };
+
+/**
+ * Deja un valor de marca como se guarda, o vacío si no sirve.
+ *
+ * Acepta las tres formas que la gente usa de verdad —`@panal`, `panal` y
+ * `https://x.com/panal`— y guarda siempre la misma. La referencia es
+ * `src/lib/marca.ts` del marketplace: si cambias una, cambia la otra.
+ */
+export function normalizeAgentLink(key: AgentLinkKey, raw: string): string {
+  const value = raw.trim().slice(0, 120);
+  if (!value) return '';
+  // Un espacio o un `·` por dentro invalida en vez de borrarse: borrarlos
+  // convertiría «dos palabras» en el usuario `dospalabras`, que es de otro.
+  if (/[\u00b7\s]/.test(value)) return '';
+  if (key === 'logo' || key === 'web') {
+    try {
+      const u = new URL(value);
+      return u.protocol === 'https:' && u.hostname.includes('.') ? value : '';
+    } catch {
+      return '';
+    }
+  }
+  const hosts: Record<string, RegExp> = {
+    github: /^(www\.)?github\.com$/i,
+    x: /^(www\.)?(x|twitter)\.com$/i,
+    telegram: /^(www\.)?(t\.me|telegram\.me)$/i,
+  };
+  let user = value.replace(/^@/, '');
+  if (/^https?:\/\//i.test(user)) {
+    try {
+      const u = new URL(user);
+      if (!hosts[key]!.test(u.hostname)) return '';
+      user = u.pathname.replace(/^\/+|\/+$/g, '');
+    } catch {
+      return '';
+    }
+  }
+  user = user.replace(/^@/, '');
+  if (!user) return '';
+  const simple = /^[A-Za-z0-9][A-Za-z0-9._-]{0,38}$/;
+  if (key === 'github') return simple.test(user) || /^[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9._-]{1,100}$/.test(user) ? user : '';
+  if (key === 'telegram') return simple.test(user) || /^\+[A-Za-z0-9_-]{5,64}$/.test(user) ? user : '';
+  return simple.test(user) ? user : '';
+}
+
+/** `github:panal/lint` → la pareja, o null si no es un token de marca válido. */
+function parseLinkToken(segment: string): [AgentLinkKey, string] | null {
+  const i = segment.indexOf(':');
+  if (i <= 0) return null;
+  const key = segment.slice(0, i).trim().toLowerCase() as AgentLinkKey;
+  if (!(AGENT_LINK_KEYS as readonly string[]).includes(key)) return null;
+  const value = normalizeAgentLink(key, segment.slice(i + 1));
+  return value ? [key, value] : null;
 }
 
 /** Un agente del registry, con su metadata ya interpretada. */
@@ -135,10 +212,16 @@ export interface Task {
  * descripción desplazaría las skills a otro segmento y dejaría la ficha del
  * agente descuadrada sin ningún error visible.
  */
-export function formatAgentMetadata(meta: AgentMetadata): string {
+export function formatAgentMetadata(meta: Omit<AgentMetadata, 'links'> & { links?: Partial<AgentLinks> }): string {
   const clean = (s: string) => s.replace(/·/g, '-').replace(/\s+/g, ' ').trim();
   const parts = [clean(meta.name), clean(meta.description), meta.skills.map(clean).join(', ')];
   if (meta.botUrl) parts.push(`bot:${meta.botUrl.trim()}`);
+  // La marca al final: primero lo que el protocolo necesita, luego lo que el
+  // creador quiere enseñar. Sin enlaces sale exactamente la ficha de siempre.
+  for (const key of AGENT_LINK_KEYS) {
+    const value = normalizeAgentLink(key, meta.links?.[key] ?? '');
+    if (value) parts.push(`${key}:${value}`);
+  }
   return parts.join(' · ');
 }
 
@@ -154,11 +237,19 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadata {
     .filter(Boolean);
 
   let botUrl: string | null = null;
+  const links: AgentLinks = { ...NO_LINKS };
   const rest: string[] = [];
   for (const seg of segments) {
     const candidate = seg.toLowerCase().startsWith('bot:') ? seg.slice(4).trim() : null;
     if (candidate && /^https?:\/\//i.test(candidate)) {
       botUrl = candidate;
+      continue;
+    }
+    const link = parseLinkToken(seg);
+    // El primero manda: una ficha con dos `logo:` no puede quedar a merced del
+    // orden en que se lean.
+    if (link) {
+      if (!links[link[0]]) links[link[0]] = link[1];
       continue;
     }
     rest.push(seg);
@@ -175,5 +266,6 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadata {
       .map((s) => s.trim())
       .filter(Boolean),
     botUrl,
+    links,
   };
 }

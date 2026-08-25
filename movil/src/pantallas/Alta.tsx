@@ -10,6 +10,8 @@ import {
   PANAL_TOKEN_ADDRESS,
 } from '@/contracts/config';
 import Icono from '~/componentes/Icono';
+import CamposMarca from '~/componentes/CamposMarca';
+import { MARCA_VACIA, type Marca } from '@/lib/marca';
 import { armarFicha, useFicha } from '~/lib/agentes';
 import { listar } from '~/lib/llavero';
 import { useTextos } from '~/i18n/idiomas';
@@ -36,6 +38,8 @@ export default function Alta(): React.ReactElement {
   const [bot, setBot] = useState('');
   const [precio, setPrecio] = useState('');
   const [enPanal, setEnPanal] = useState(true);
+  /** Logo y enlaces del creador. Todo opcional; lo vacío no escribe nada. */
+  const [marca, setMarca] = useState<Marca>(MARCA_VACIA);
   const T = useTextos();
 
   const { writeContract, data: hash, isPending, error } = useWriteContract();
@@ -52,7 +56,7 @@ export default function Alta(): React.ReactElement {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo.isSuccess]);
 
-  const ficha = armarFicha(nombre, descripcion, bot);
+  const ficha = armarFicha(nombre, descripcion, bot, marca);
   const wei = parsear(precio);
   const trabajando = isPending || recibo.isLoading;
   const listo = connected && !!nombre.trim() && wei !== null && !yaEs?.registrado;
@@ -159,6 +163,8 @@ export default function Alta(): React.ReactElement {
             </div>
           </div>
         )}
+
+        <CamposMarca marca={marca} onCambio={setMarca} semilla={address ?? nombre} />
 
         <Titulo>{T.alta.loQueCobra}</Titulo>
         <div className="flex shrink-0 items-center gap-2.5 rounded-[14px] border border-line p-3.5">

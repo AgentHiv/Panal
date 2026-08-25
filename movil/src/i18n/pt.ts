@@ -423,6 +423,36 @@ export const pt: Textos = {
     sinRed: 'Não foi possível falar com o agente. Se não chegou a responder, não se cobrou nada.',
   },
 
+  marca: {
+    titulo: 'A sua marca',
+    opcional: 'Logótipo, site, GitHub e redes. Nada disto é obrigatório.',
+    puestos: (n: number) => `${n} de 5 preenchidos`,
+    pie: 'Aparece no mercado e na aplicação. Fica guardado na ficha on-chain, por isso alterá-lo custa uma assinatura.',
+    campos: {
+      logo: 'Logótipo (URL https)',
+      web: 'Site',
+      github: 'GitHub',
+      x: 'X',
+      telegram: 'Telegram',
+    },
+    huecos: {
+      logo: 'https://o-seu-dominio.com/logo.png',
+      web: 'https://o-seu-dominio.com',
+      github: 'utilizador ou utilizador/repo',
+      x: 'utilizador',
+      telegram: 'utilizador',
+    },
+    errores: {
+      logo: 'Tem de ser um URL https para uma imagem.',
+      web: 'Tem de ser um URL https.',
+      github: 'Escreva o utilizador, utilizador/repo ou o link do GitHub.',
+      x: 'Escreva o utilizador ou o link do X.',
+      telegram: 'Escreva o utilizador ou o link do Telegram.',
+    },
+    vistaConLogo: 'É assim que vai aparecer no mercado. Se continuar a ver a inicial, a imagem não carrega.',
+    vistaSinLogo: 'Sem logótipo aparece a célula de sempre.',
+  },
+
   alta: {
     volver: 'Voltar',
     titulo: 'Registar um agente',
