@@ -157,11 +157,53 @@ jobs:
         id: firma
         env:
           KEYSTORE_B64: ${{ secrets.PANAL_KEYSTORE_B64 }}
+          # Solo para el diagnostico de abajo. NUNCA se imprime su valor: lo que
+          # se dice es si llega y cuanto mide, que es lo que distingue las causas.
+          KEYSTORE_PASS: ${{ secrets.PANAL_KEYSTORE_PASS }}
+          # Si alguien lo pego en la pestana Variables en vez de en Secrets, es
+          # aqui donde aparece. Estan juntas en la misma pantalla y se confunden.
+          KEYSTORE_COMO_VARIABLE: ${{ vars.PANAL_KEYSTORE_B64 }}
         run: |
           if [ -z "$KEYSTORE_B64" ]; then
             echo "estable=no" >> "$GITHUB_OUTPUT"
             echo "::warning::Sin PANAL_KEYSTORE_B64: este APK se firma con una clave de usar y tirar, distinta en cada ejecucion, y NO se podra instalar encima de una version anterior."
+
+            # POR QUE ESTE DIAGNOSTICO. Tres releases seguidas salieron con clave
+            # de usar y tirar mientras se daba el secreto por puesto: el aviso
+            # decia QUE faltaba y nunca POR QUE, asi que cada intento costaba una
+            # version quemada y una vuelta entera para descubrir lo mismo.
+            #
+            # Solo se imprimen longitudes y sies/noes. El valor de un secreto no
+            # sale de aqui ni troceado: GitHub enmascara lo que reconoce, pero no
+            # hay que fiar la clave de firma de la app a que acierte.
+            echo "::group::Por que no llega"
+            if [ -n "$KEYSTORE_COMO_VARIABLE" ]; then
+              echo "CAUSA ENCONTRADA: PANAL_KEYSTORE_B64 esta en la pestana Variables, no en Secrets."
+              echo "  Las dos pestanas viven en la misma pantalla y se confunden. Borralo de"
+              echo "  Variables y crealo en Settings > Secrets and variables > Actions > Secrets."
+            elif [ -n "$KEYSTORE_PASS" ]; then
+              echo "PANAL_KEYSTORE_PASS SI llega a este job (${#KEYSTORE_PASS} caracteres), y PANAL_KEYSTORE_B64 no."
+              echo "  O sea que los secretos del repositorio SI se ven aqui: el problema es de ESE nombre."
+              echo "  Mira que este escrito exactamente PANAL_KEYSTORE_B64, sin espacios ni minusculas,"
+              echo "  y que se guardara con contenido (un secreto vacio se acepta sin protestar)."
+            else
+              echo "NINGUNO de los dos secretos de firma llega a este job."
+              echo "  Eso no es una errata en un nombre: es que este workflow no los ve. Suele ser"
+              echo "  uno de estos tres:"
+              echo "    - se crearon como Environment secret, y este job no declara environment:"
+              echo "    - son secretos de ORGANIZACION con acceso por repositorios seleccionados,"
+              echo "      y AgentHiv/Panal no esta en esa lista"
+              echo "    - se pegaron en otro repositorio"
+              echo "  Comprueba que salen listados en github.com/AgentHiv/Panal/settings/secrets/actions"
+              echo "  bajo 'Repository secrets', no bajo 'Environment secrets' ni en otra pantalla."
+            fi
+            echo "::endgroup::"
             exit 0
+          fi
+          echo "PANAL_KEYSTORE_B64 llega: ${#KEYSTORE_B64} caracteres."
+          if [ -z "$KEYSTORE_PASS" ]; then
+            echo "::error::Llega el almacen pero no PANAL_KEYSTORE_PASS. Gradle fallaria mas adelante con un error de contrasenas que no apunta aqui."
+            exit 1
           fi
           echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/panal.p12"
           # Que el secreto sea de verdad un almacen y no un pegote a medias: si
