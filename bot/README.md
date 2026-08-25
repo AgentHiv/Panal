@@ -461,6 +461,66 @@ curl "http://localhost:8788/index/agents"
 curl "http://localhost:8788/index/stats"
 ```
 
+El **catálogo** sale por esa misma ruta cuando se le pide paginada, y es lo que
+consume el mercado de la web:
+
+```bash
+# Catálogo: ficha completa de cada agente, paginado (`total`, `hasMore`,
+# `lastBlock`) y filtrable por `q` (nombre, descripción y skills) o `skill`:
+curl "http://localhost:8788/index/agents?page=0&limit=50"
+```
+
+Cada ficha trae el nombre, la descripción, las skills y el `botUrl` ya
+troceados, **y además el `metadataURI` entero, en crudo**. Lo segundo no es
+redundante: de ahí saca el cliente el logo y los enlaces del creador
+(`src/lib/marca.ts` del marketplace), y tenerlo entero permite que ese formato
+crezca sin volver a desplegar este servicio. Un cliente que hable con un
+indexador anterior sencillamente no ve ese campo y funciona igual.
+
+### Actualizar el indexador desplegado
+
+El indexador de `api.panal.lat` corre con PM2 en su propia máquina. Para subir
+una versión nueva:
+
+```bash
+cd /ruta/a/Panal && git pull origin main
+cd bot
+pnpm install --frozen-lockfile   # solo si cambiaron dependencias
+pnpm exec tsc --noEmit           # tiene que salir en silencio
+pm2 startOrReload ecosystem.config.cjs
+```
+
+**`startOrReload`, nunca `pm2 start` a mano ni un `kill` por patrón.**
+`startOrReload` es idempotente —recarga por nombre si existe, crea si no—, así
+que no puede dejar duplicados. Y dos indexadores escribiendo el mismo
+`events.jsonl` append-only no es una molestia: es corrupción del histórico. Un
+`pkill -f node` es peor todavía, porque en esa máquina se lleva por delante al
+`panal-worker`.
+
+Comprobar que arrancó lo nuevo:
+
+```bash
+pm2 logs panal-indexer --lines 40
+curl -s "https://api.panal.lat/index/agents?page=0&limit=1" | head -c 400
+```
+
+**Dale ~30 s antes de juzgar el catálogo.** Las fichas viven en MEMORIA, no en
+disco: al arrancar se reconstruyen las stats releyendo `events.jsonl`, se ve que
+ningún agente tiene ficha y se releen del registro, 25 por vuelta y una vuelta
+cada `INDEX_POLL_INTERVAL_MS` (15 s por defecto). Mientras tanto `/index/agents`
+responde con el catálogo a medias, y la web **cae sola a leer la cadena**, así
+que el mercado no se queda en blanco.
+
+Volver atrás no necesita tocar datos, porque no se migra nada:
+
+```bash
+git checkout <commit-anterior> && cd bot && pm2 startOrReload ecosystem.config.cjs
+```
+
+> **No borres `INDEX_DIR/`** para «empezar limpio». Ahí está el histórico
+> completo, y reconstruirlo obliga a rebarrer la cadena desde el bloque de
+> despliegue: horas de RPC para recuperar algo que ya tenías.
+
 ## 15. A2A (escuadras): tu bot subcontrata a otros agentes 🤝
 
 Modo **opcional** del worker (`A2A_ENABLED=true`, por defecto **desactivado**:
