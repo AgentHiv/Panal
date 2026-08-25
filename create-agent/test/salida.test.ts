@@ -20,7 +20,15 @@
  * bueno.
  */
 
-import { comoArchivo, comoTabla, formatoPedido, textoADocx, textoAXlsx } from '../template/src/salida.js';
+import {
+  comoAdjunto,
+  comoArchivo,
+  comoNombre,
+  comoTabla,
+  formatoPedido,
+  textoADocx,
+  textoAXlsx,
+} from '../template/src/salida.js';
 import { leerZip } from '../template/src/zip.js';
 import { textoDeDocx, textoDeXlsx } from '../template/src/adjuntos.js';
 
@@ -164,9 +172,74 @@ const conLegible = comoArchivo('md', 'x', 'T', '{"a":1}', 'A: 1');
 check('se puede dar una versión legible aparte', String(conLegible.data).includes('A: 1'));
 check('y no la del texto entregado', !String(conLegible.data).includes('{"a":1}'));
 
+console.log('\n── Cómo se llama el archivo ──\n');
+
+// El nombre lo escribe el modelo, así que llega como llegue: con comillas,
+// con extensión, con la frase entera. Aquí sólo se comprueba la limpieza.
+check('un título normal', comoNombre('División de dos enteros') === 'división-de-dos-enteros');
+check('se queda en minúsculas', comoNombre('Casos Límite Del Carrito') === 'casos-límite-del-carrito');
+check('las tildes NO se quitan', comoNombre('facturación anual').includes('ó'));
+check('las comillas del modelo se van', comoNombre('"informe de ventas"') === 'informe-de-ventas');
+check('y las tipográficas también', comoNombre('«informe de ventas»') === 'informe-de-ventas');
+check('la extensión que sobra, fuera', comoNombre('informe de ventas.pdf') === 'informe-de-ventas');
+check('varias líneas: se coge la primera', comoNombre('Informe de ventas\nY una explicación') === 'informe-de-ventas');
+check('las líneas vacías de delante no cuentan', comoNombre('\n\n  Informe  ') === 'informe');
+
+// LO QUE DE VERDAD IMPORTA: el nombre va en el idioma del cliente, y eso
+// significa su alfabeto. Transliterar al ASCII sería devolverle un nombre que
+// no reconoce, que es el problema que esto viene a arreglar.
+check('en chino se queda en chino', comoNombre('两个整数相除') === '两个整数相除');
+check('en árabe, en árabe', comoNombre('قسمة عددين صحيحين') === 'قسمة-عددين-صحيحين');
+check('en ruso, en ruso', comoNombre('Деление двух целых чисел') === 'деление-двух-целых-чисел');
+check('en hindi, en hindi', comoNombre('दो पूर्णांकों का विभाजन').startsWith('दो'));
+
+// Un nombre no puede salirse de su carpeta ni romper una cabecera.
+check('sin barras', !comoNombre('../../etc/passwd').includes('/'));
+check('y sin lo que Windows prohíbe', comoNombre('a:b*c?d"e<f>g|h') === 'a-b-c-d-e-f-g-h');
+check('nada de empezar por punto', !comoNombre('...oculto').startsWith('.'));
+check('ni acabar en guion', !comoNombre('informe —').endsWith('-'));
+check('lo que no deja nada, no deja nada', comoNombre('///') === '');
+check('ni una respuesta vacía', comoNombre('') === '');
+check(
+  'un título kilométrico se corta',
+  [...comoNombre('palabra '.repeat(40))].length <= 60,
+  String([...comoNombre('palabra '.repeat(40))].length),
+);
+// Por code points: cortando por unidades UTF-16 se parte un emoji en dos y el
+// nombre acaba con medio carácter, que en algunos sistemas no se puede abrir.
+check('y no parte un carácter por la mitad', !/[\uD800-\uDBFF]$/.test(comoNombre('🐝'.repeat(80))));
+
+console.log('\n── La cabecera con la que se descarga ──\n');
+
+// Una cabecera HTTP sólo admite latin-1. Desde que el nombre va en el idioma
+// del cliente, interpolarlo a pelo hacía que Node lanzara ERR_INVALID_CHAR y
+// la descarga respondiera 500: el archivo estaba entregado, pagado y anclado,
+// y no había forma de bajárselo.
+const cabeceraAscii = comoAdjunto('division-de-enteros.pdf');
+check('un nombre ASCII va en filename=', cabeceraAscii.includes('filename="division-de-enteros.pdf"'));
+check('y también en filename*=', cabeceraAscii.includes("filename*=UTF-8''division-de-enteros.pdf"));
+
+const cabeceraChina = comoAdjunto('两个整数相除.pdf');
+check('el nombre de verdad va percent-encoded', cabeceraChina.includes(`filename*=UTF-8''${encodeURIComponent('两个整数相除.pdf')}`));
+check('con un respaldo ASCII para quien no lo entienda', /filename="[\x20-\x7e]+"/.test(cabeceraChina), cabeceraChina);
+check('y ese respaldo no lleva comillas', !/filename="[^"]*"[^;]*"/.test(cabeceraChina), cabeceraChina);
+
+// La prueba que cierra el caso: que Node la acepte. Es lo que fallaba.
+check('Node la escribe sin lanzar', ((): boolean => {
+  try {
+    new Response('x', { headers: { 'content-disposition': cabeceraChina } });
+    return true;
+  } catch {
+    return false;
+  }
+})());
+
+check('un nombre con comillas no parte la cabecera', !comoAdjunto('el "informe".pdf').split('filename="')[1]!.split('"')[0]!.includes('"'));
+check('y uno que se queda sin ASCII tiene respaldo igual', comoAdjunto('两个整数').includes('filename="archivo"'));
+
 console.log(
   fallos === 0
-    ? '\n✅ Se entiende qué formato pidió, y el archivo sale igual byte a byte cada vez\n'
+    ? '\n✅ El formato se entiende, el archivo sale igual byte a byte, y su nombre llega entero en cualquier alfabeto\n'
     : `\n❌ ${fallos} comprobación(es) fallidas\n`,
 );
 process.exit(fallos === 0 ? 0 : 1);

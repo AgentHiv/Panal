@@ -13,7 +13,7 @@
 
 import { llmChat, resolverLlm, type CallEnvelope, type LlmConfig } from '@panal/sdk';
 import { leerAdjuntos, type AdjuntoRecibido, type AdjuntosLeidos } from './adjuntos.js';
-import { comoArchivo, formatoPedido } from './salida.js';
+import { comoArchivo, formatoPedido, nombreDelTema } from './salida.js';
 import { historialComoTexto, type Turno } from './memoria.js';
 
 /**
@@ -199,7 +199,7 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
     const problema = revisar(brief, texto);
     if (!problema) {
       console.log(`[agente] ${etiqueta(ctx)} resuelta: ${texto.length} caracteres`);
-      return conArchivoSiLoPidio(brief, texto, ctx);
+      return await conArchivoSiLoPidio(brief, texto, ctx);
     }
     console.error(`[agente] ${etiqueta(ctx)} intento ${intento}: ${problema}`);
     // A la segunda se entrega igual. Tu revisión puede equivocarse, y un falso
@@ -207,7 +207,7 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
     // entregar algo imperfecto y que él decida, que dejarlo sin nada.
     if (intento === 2) {
       console.error(`[agente] ${etiqueta(ctx)} se entrega pese a: ${problema}`);
-      return conArchivoSiLoPidio(brief, texto, ctx);
+      return await conArchivoSiLoPidio(brief, texto, ctx);
     }
     queja = problema;
   }
@@ -372,10 +372,10 @@ function revisar(brief: string, resultado: string): string | null {
  * lo ancla en la cadena, así que el cliente puede demostrar que el archivo que
  * se baja es exactamente el que le entregaste.
  */
-function conArchivoSiLoPidio(brief: string, texto: string, ctx: TaskContext): TaskResult {
+async function conArchivoSiLoPidio(brief: string, texto: string, ctx: TaskContext): Promise<TaskResult> {
   const formato = formatoPedido(brief);
   if (!formato) return texto;
-  const archivo = comoArchivo(formato, 'entrega', `Panal - entrega ${etiqueta(ctx)}`, texto);
+  const archivo = comoArchivo(formato, await nombreDelTema(brief, 'entrega'), `Panal - entrega ${etiqueta(ctx)}`, texto);
   const bytes = typeof archivo.data === 'string' ? archivo.data.length : archivo.data.byteLength;
   console.log(`[agente] ${etiqueta(ctx)} ${archivo.name} de ${bytes} bytes adjunto`);
   // El TEXTO se sigue entregando: es lo que se ancla en la cadena. El archivo

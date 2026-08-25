@@ -15,6 +15,7 @@
  * peso y confusión.
  */
 
+import { llmChat, resolverLlm } from '@panal/sdk';
 import { textoAPdf } from './pdf.js';
 import { escribirZip } from './zip.js';
 
@@ -332,6 +333,156 @@ export function comoTabla(texto: string): string | null {
     columnas.map((c) => c.replace(/[_-]+/g, ' ')).join('\t'),
     ...filas.map((f) => columnas.map((c) => celda(f[c])).join('\t')),
   ].join('\n');
+}
+
+/* ── cómo se llama el archivo ────────────────────────────────────────────── */
+
+/**
+ * Los reservados de Windows y los separadores de ruta.
+ *
+ * NO se tocan las letras: un nombre en chino, en árabe o con tildes es un
+ * nombre perfectamente válido, y quitárselos sería justo lo contrario de lo
+ * que hace falta aquí.
+ */
+const PROHIBIDOS = /[/\\:*?"<>|]/g;
+
+/** Cuántos caracteres como mucho. Un nombre no es un resumen. */
+const MAX_NOMBRE = 60;
+
+/** ¿Es un carácter imprimible? Los de control no valen en un nombre. */
+function imprimible(c: string): boolean {
+  const p = c.codePointAt(0) ?? 0;
+  return p >= 0x20 && p !== 0x7f;
+}
+
+/**
+ * Un título cualquiera, convertido en nombre de archivo.
+ *
+ * Se exporta para poder probarlo sin gastar una llamada al modelo.
+ */
+export function comoNombre(crudo: string): string {
+  const linea = crudo.split(/\r?\n/).find((l) => l.trim()) ?? '';
+  const limpio = [...linea]
+    .filter(imprimible)
+    .join('')
+    .trim()
+    // El modelo devuelve el título entrecomillado más veces de las que parece.
+    .replace(/^["'`«“]+|["'`»”]+$/g, '')
+    // Y a veces le pone extensión, que aquí la pone `comoArchivo`.
+    .replace(/\.(pdf|docx?|xlsx?|md|txt|csv|json|zip)$/i, '')
+    .replace(PROHIBIDOS, ' ')
+    .replace(/\s+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^[-.]+|[-.]+$/g, '')
+    .toLowerCase();
+  // Por code points y no con `.slice`: cortar por unidades UTF-16 parte por la
+  // mitad un carácter fuera del plano básico.
+  return [...limpio].slice(0, MAX_NOMBRE).join('').replace(/[-.]+$/, '');
+}
+
+/**
+ * La cabecera `content-disposition` de un archivo que se descarga.
+ *
+ * DOS FORMAS DEL NOMBRE, Y LAS DOS HACEN FALTA (RFC 6266). Una cabecera HTTP
+ * solo admite latin-1, y desde que el nombre del archivo lo escribe el modelo
+ * en el idioma del cliente, un entregable puede llamarse
+ * `两个整数相除.pdf`. Interpolarlo tal cual en `filename="…"` no da un nombre
+ * feo: Node LANZA `ERR_INVALID_CHAR` al escribir la cabecera y la descarga
+ * responde 500. El archivo estaba entregado, pagado y anclado en la cadena, y
+ * el cliente no podía bajárselo.
+ *
+ *   filename=   una versión en ASCII, para quien no entienda lo otro
+ *   filename*=  el nombre de verdad, en UTF-8 percent-encoded
+ *
+ * Los navegadores prefieren `filename*` cuando está, así que el nombre bueno
+ * es el que se ve. Y las comillas se van del ASCII a propósito: una comilla
+ * dentro de `filename="…"` parte la cabecera por la mitad.
+ */
+export function comoAdjunto(nombre: string): string {
+  const ascii =
+    [...nombre]
+      .map((c) => {
+        const p = c.codePointAt(0) ?? 0;
+        return p >= 0x20 && p < 0x7f && c !== '"' && c !== '\\' ? c : '_';
+      })
+      .join('')
+      .replace(/_{2,}/g, '_')
+      .replace(/^[_.]+|[_.]+$/g, '') || 'archivo';
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(nombre)}`;
+}
+
+/**
+ * Lo que se le pide al modelo. Corto a propósito: es un nombre, no un resumen.
+ *
+ * Las dos reglas que de verdad cambian el resultado son las dos últimas. Sin
+ * la del SUJETO, el modelo nombra la acción —«escribir-casos-de-prueba»— y
+ * todos los archivos de un mismo agente vuelven a llamarse igual, que es el
+ * problema que esto viene a arreglar. Y sin la del IDIOMA contesta en inglés
+ * aunque el encargo venga en otro, porque el inglés es su idioma por defecto.
+ */
+const PIDE_UN_NOMBRE =
+  'You name files. Given a client request, reply with ONLY a file name for the deliverable.\n' +
+  'Two to five words. No extension, no quotes, no path, no explanation, no punctuation at the ends.\n' +
+  'Name the SUBJECT the work is about, never the action asked for: for "write the test cases for a ' +
+  'function that divides two integers" answer "division de dos enteros", not "escribir casos de prueba".\n' +
+  'Write it in the SAME language the client wrote in, in their own script. Do not translate it to English.';
+
+/**
+ * El nombre del archivo que se entrega, sacado del TEMA del encargo.
+ *
+ * ANTES TODOS SE LLAMABAN IGUAL. Cada agente tenía un nombre fijo —
+ * `casos-de-prueba.pdf`, `revision.pdf`, `traducciones.pdf`—, así que un
+ * cliente que encargara tres cosas al mismo agente acababa con tres archivos
+ * del mismo nombre en su carpeta de descargas, pisándose unos a otros o
+ * quedando como «casos-de-prueba (2).pdf». Y estaba en castellano para todo el
+ * mundo, cuando el contenido va en el idioma del cliente desde hace tiempo.
+ *
+ * EL TEMA SALE DEL ENCARGO, no de la entrega. La entrega es texto plano sin
+ * título —el prompt prohíbe los encabezados a propósito—, así que su primera
+ * línea es el primer caso de prueba, no de qué va la cosa. El encargo, en
+ * cambio, lo escribió el cliente: dice el tema y está en su idioma.
+ *
+ * NUNCA LANZA Y NUNCA DEVUELVE VACÍO. Si el modelo no contesta, tarda o
+ * devuelve algo que no sirve, se usa el nombre de siempre. Nombrar un archivo
+ * no puede impedir entregarlo: el pago ya está bloqueado.
+ */
+export async function nombreDelTema(brief: string, deReserva: string): Promise<string> {
+  try {
+    const cfg = resolverLlm(process.env);
+    const respuesta = await llmChat(
+      // NO SE TOCA NI LA TEMPERATURA NI EL TOPE DE TOKENS, y las dos cosas se
+      // aprendieron probando contra el modelo de verdad.
+      //
+      // Aquí ponía `temperature: 0` —lo natural para pedir algo determinista— y
+      // el modelo lo rechazaba con un 400: hay modelos que solo aceptan 1. Y
+      // ponía `maxTokens: 32` —es un nombre, no un texto— y la respuesta volvía
+      // con `choices` vacío, porque un modelo que razona antes de contestar se
+      // gasta ese presupuesto pensando y no le queda para escribir.
+      //
+      // Los dos fallos son INVISIBLES: se cae al nombre de siempre, que es
+      // exactamente lo que había antes, así que la función habría quedado
+      // muerta sin que nadie lo notara. Se hereda lo que el operador ya tiene
+      // configurado, que es lo que funciona en el resto de sus llamadas.
+      //
+      // Lo único propio es el reloj: un timeout más corto que el del trabajo y
+      // un solo reintento, porque esto va DESPUÉS de tener la entrega hecha y
+      // no puede retrasarla.
+      { ...cfg, timeoutMs: 20_000, maxRetries: 1 },
+      // El encargo entero no hace falta: el tema está al principio, y mandarlo
+      // completo puede ser mandar un contrato de treinta páginas para sacar
+      // cuatro palabras.
+      { system: PIDE_UN_NOMBRE, user: brief.trim().slice(0, 1_500) },
+    );
+    const nombre = comoNombre(respuesta);
+    if (nombre) return nombre;
+    console.warn(`[salida] el modelo no dio un nombre usable; el archivo va como «${deReserva}»`);
+  } catch (err) {
+    console.warn(
+      `[salida] no se pudo nombrar el archivo (${err instanceof Error ? err.message.split('\n')[0] : err}); ` +
+        `va como «${deReserva}»`,
+    );
+  }
+  return deReserva;
 }
 
 /**
