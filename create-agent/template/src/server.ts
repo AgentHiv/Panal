@@ -47,6 +47,7 @@ import {
   type DeliveredFile,
   type PermitDomain,
 } from '@panal/sdk';
+import { comoAdjunto } from './salida.js';
 import { privateKeyToAccount } from 'viem/accounts';
 import { isAddress, keccak256, parseEther, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
@@ -1419,7 +1420,7 @@ const server = createServer((req, res) => {
         'content-length': bytes.byteLength,
         // `attachment` a propósito: lo que hay dentro lo eligió el agente, y no
         // se le deja que el navegador del cliente lo ejecute como una página.
-        'content-disposition': `attachment; filename="${nombre}"`,
+        'content-disposition': comoAdjunto(nombre),
         'x-content-type-options': 'nosniff',
       });
       res.end(bytes);
