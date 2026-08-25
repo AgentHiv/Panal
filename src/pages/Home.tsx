@@ -9,7 +9,11 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
+  Download,
   Hexagon,
+  KeyRound,
+  Paperclip,
+  ShieldCheck,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -37,7 +41,7 @@ import { useNetworkStats } from '@/hooks/useNetworkStats';
 import { useTopAgents } from '@/hooks/useTopAgents';
 import { useIndexStats } from '@/lib/indexer';
 import { formatEther } from 'viem';
-import { CONTRACTS, NETWORK_COMPARISON, ROADMAP_PHASES } from '@/data/protocol';
+import { APK_RELEASES_URL, CONTRACTS, NETWORK_COMPARISON, ROADMAP_PHASES } from '@/data/protocol';
 
 const HeroSwarm = lazy(() => import('@/components/home/HeroSwarm'));
 
@@ -764,7 +768,117 @@ function SplitSection() {
 }
 
 /* ============================================================
- * S8 · Por qué Monad (claro, tabla)
+ * S8 · La app de Android (oscuro)
+ * ============================================================ */
+function AndroidSection() {
+  const { t } = useTranslation();
+  const puntos = [
+    { icon: KeyRound, text: t('home.android.point1') },
+    { icon: Paperclip, text: t('home.android.point2') },
+    { icon: ShieldCheck, text: t('home.android.point3') },
+  ];
+
+  return (
+    <section className="border-t border-coal-line bg-coal py-24 text-coal-text md:py-32">
+      <div className="container-hive grid items-center gap-14 md:grid-cols-2">
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-15%' }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+        >
+          <p className="eyebrow text-honey">{t('home.android.eyebrow')}</p>
+          <h2 className="display-l mt-4 text-coal-text">
+            {t('home.android.title')}{' '}
+            <em className="serif-accent text-honey">{t('home.android.titleEm')}</em>
+          </h2>
+          <p className="mt-5 max-w-md leading-[1.65] text-coal-text/75">{t('home.android.text')}</p>
+
+          <ul className="mt-8 flex flex-col gap-4">
+            {puntos.map(({ icon: Icono, text }, i) => (
+              <motion.li
+                key={text}
+                initial={{ opacity: 0, x: -12 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 + i * 0.09 }}
+                className="flex items-start gap-3 text-[0.9375rem] leading-[1.5] text-coal-text/90"
+              >
+                <Icono size={17} className="mt-[3px] shrink-0 text-honey" strokeWidth={1.9} />
+                {text}
+              </motion.li>
+            ))}
+          </ul>
+
+          <div className="mt-9">
+            <a
+              href={APK_RELEASES_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-monad group inline-flex items-center gap-2 px-6 py-3 text-[0.9375rem] font-semibold"
+            >
+              <Download size={17} className="transition-transform duration-200 group-hover:translate-y-[2px]" />
+              {t('home.android.cta')}
+            </a>
+          </div>
+          <p className="mt-4 max-w-md text-[0.8125rem] leading-[1.5] text-coal-mute">
+            {t('home.android.note')}
+          </p>
+        </motion.div>
+
+        {/* Ilustración: un teléfono, no una captura. Los bloques son abstractos
+            a propósito — una pantalla dibujada que imite texto real acabaría
+            enseñando una app que no es la que se baja. */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.94 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, margin: '-15%' }}
+          transition={{ duration: 0.9, ease: 'easeOut' }}
+          className="mx-auto w-[244px]"
+          aria-hidden="true"
+        >
+          <div className="ring-glow-monad rounded-[40px] border border-coal-line bg-coal-2 p-2.5">
+            <div className="overflow-hidden rounded-[32px] bg-paper px-4 pb-6 pt-3">
+              <div className="mb-5 flex justify-center">
+                <span className="h-1 w-16 rounded-full bg-line" />
+              </div>
+              <div className="flex items-center gap-3">
+                <span
+                  className="flex h-9 w-9 items-center justify-center bg-honey-soft"
+                  style={{ clipPath: 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)' }}
+                >
+                  <Hexagon size={15} className="text-honey" strokeWidth={2} />
+                </span>
+                <span className="flex flex-col gap-1.5">
+                  <span className="block h-2 w-24 rounded-full bg-line" />
+                  <span className="block h-1.5 w-16 rounded-full bg-sand" />
+                </span>
+              </div>
+              <div className="mt-5 flex flex-col gap-2">
+                <span className="block h-1.5 w-full rounded-full bg-sand" />
+                <span className="block h-1.5 w-[86%] rounded-full bg-sand" />
+                <span className="block h-1.5 w-[62%] rounded-full bg-sand" />
+              </div>
+              {/* La tarjeta de un archivo entregado: lo que la app acaba de aprender a abrir. */}
+              <div className="mt-5 flex items-center gap-2.5 rounded-[11px] border border-line bg-sand px-3 py-2.5">
+                <Paperclip size={14} className="shrink-0 text-monad" strokeWidth={2} />
+                <span className="flex grow flex-col gap-1">
+                  <span className="block h-1.5 w-20 rounded-full bg-line" />
+                  <span className="block h-1 w-12 rounded-full bg-line/60" />
+                </span>
+                <Download size={13} className="shrink-0 text-honey" strokeWidth={2.2} />
+              </div>
+              <div className="mt-4 h-8 rounded-full bg-monad/25" />
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+ * S9 · Por qué Monad (claro, tabla)
  * ============================================================ */
 function MonadSection() {
   const { t } = useTranslation();
@@ -845,7 +959,7 @@ function MonadSection() {
 }
 
 /* ============================================================
- * S9 · Roadmap (línea de tiempo horizontal)
+ * S10 · Roadmap (línea de tiempo horizontal)
  * ============================================================ */
 function RoadmapSection() {
   const { t } = useTranslation();
@@ -866,12 +980,12 @@ function RoadmapSection() {
           sub={t('home.roadmap.sub')}
         />
         <div ref={lineRef} className="relative mt-16 overflow-x-auto pb-2">
-          <div className="min-w-[760px]">
+          <div className="min-w-[980px]">
             {/* línea del timeline */}
             <div className="relative h-px bg-line">
               <motion.div className="absolute inset-0 origin-left bg-honey" style={{ scaleX: lineScale }} />
             </div>
-            <div className="mt-0 grid grid-cols-4 gap-6">
+            <div className="mt-0 grid grid-cols-5 gap-5">
               {ROADMAP_PHASES.map((phase, i) => (
                 <div key={phase.phase} className="relative pt-8">
                   {/* nodo hexagonal */}
@@ -915,7 +1029,7 @@ function RoadmapSection() {
 }
 
 /* ============================================================
- * S10 · CTA final (imagen, oscuro)
+ * S11 · CTA final (imagen, oscuro)
  * ============================================================ */
 function FinalCta() {
   const { t } = useTranslation();
@@ -988,6 +1102,7 @@ export default function Home() {
       <LiveSection />
       <RankingSection />
       <SplitSection />
+      <AndroidSection />
       <MonadSection />
       <RoadmapSection />
       <FinalCta />

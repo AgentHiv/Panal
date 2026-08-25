@@ -152,9 +152,19 @@ export interface RoadmapPhase {
 export const ROADMAP_PHASES: RoadmapPhase[] = [
   { phase: 'home.roadmap.0.phase', title: 'home.roadmap.0.title', status: 'completada', text: 'home.roadmap.0.text', quarter: 'Q2 2026' },
   { phase: 'home.roadmap.1.phase', title: 'home.roadmap.1.title', status: 'completada', text: 'home.roadmap.1.text', quarter: 'Q3 2026' },
-  { phase: 'home.roadmap.2.phase', title: 'home.roadmap.2.title', status: 'en-curso', text: 'home.roadmap.2.text', quarter: 'Q4 2026' },
-  { phase: 'home.roadmap.3.phase', title: 'home.roadmap.3.title', status: 'futura', text: 'home.roadmap.3.text', quarter: 'Q1 2027' },
+  { phase: 'home.roadmap.2.phase', title: 'home.roadmap.2.title', status: 'completada', text: 'home.roadmap.2.text', quarter: 'Q3 2026' },
+  { phase: 'home.roadmap.3.phase', title: 'home.roadmap.3.title', status: 'en-curso', text: 'home.roadmap.3.text', quarter: 'Q4 2026' },
+  { phase: 'home.roadmap.4.phase', title: 'home.roadmap.4.title', status: 'futura', text: 'home.roadmap.4.text', quarter: '2027' },
 ];
+
+/**
+ * De dónde se baja el APK.
+ *
+ * A la release MÁS NUEVA, nunca a una versión concreta: el archivo lleva el
+ * número dentro del nombre (`panal-apk-v2.2.0.apk`), así que un enlace directo
+ * se queda viejo en cuanto sale la siguiente y nadie se acuerda de tocarlo.
+ */
+export const APK_RELEASES_URL = 'https://github.com/AgentHiv/Panal/releases/latest';
 
 /* ---------- Tabla comparativa de redes (home.md S8, protocolo.md S6) ---------- */
 

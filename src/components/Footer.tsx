@@ -9,8 +9,9 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import SocialIcons, { SOCIALS } from '@/components/SocialIcons';
 import { Hexagon } from 'lucide-react';
 import { EXPLORER_ADDRESS, IS_MAINNET, PANAL_TOKEN_ADDRESS } from '@/contracts/config';
+import { APK_RELEASES_URL } from '@/data/protocol';
 
-const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string }> }> = [
+const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string; href?: string }> }> = [
   {
     title: 'footer.product',
     links: [
@@ -18,6 +19,8 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string 
       { label: 'nav.live', to: '/en-vivo' },
       { label: 'nav.dashboard', to: '/dashboard' },
       { label: 'footer.publishAgent', to: '/mercado' },
+      // Externo: el APK vive en las releases de GitHub, no en este sitio.
+      { label: 'footer.downloadApk', href: APK_RELEASES_URL },
     ],
   },
   {
@@ -127,7 +130,17 @@ export default function Footer() {
                   </a>
                 ))}
               {col.links.map((link) =>
-                link.to ? (
+                link.href ? (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[0.875rem] text-coal-text/80 transition-colors hover:text-honey"
+                  >
+                    {t(link.label)}
+                  </a>
+                ) : link.to ? (
                   <Link
                     key={link.label}
                     to={link.to}
