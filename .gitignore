@@ -11,3 +11,11 @@ bot/data/
 
 # Cache de compilacion de TypeScript de la app: se regenera sola.
 movil/tsconfig.tsbuildinfo
+
+# Almacenes de firma de Android. NUNCA en el repositorio: quien tenga la clave
+# puede firmar un APK que Android acepta como actualizacion de Panal, con los
+# datos de la app —el llavero cifrado incluido— ya dentro. Va en un secreto del
+# repositorio (`PANAL_KEYSTORE_B64`), no aqui.
+*.p12
+*.jks
+*.keystore

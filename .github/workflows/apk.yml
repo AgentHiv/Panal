@@ -5,10 +5,13 @@
 # SDK de Android por una app es riesgo sin contrapartida. Los runners de GitHub
 # ya traen todo eso instalado.
 #
-# Sale un APK DE DEPURACIÓN, firmado con la clave de debug que Android genera
-# sola. Se instala en cualquier teléfono activando "orígenes desconocidos", y
-# es lo que hace falta para repartirlo y probarlo. Para la Play Store hace falta
-# firmarlo con una clave propia: ver el paso comentado al final.
+# El APK se firma con la CLAVE ESTABLE del repositorio si existe el secreto
+# `PANAL_KEYSTORE_B64`, y con la clave de depuración que Android genera sola si
+# no existe. La diferencia no es cosmética: solo con la clave estable se puede
+# instalar una versión nueva encima de la anterior. Está explicado entero en
+# `android/app/build.gradle`, junto a las huellas de los APK ya publicados.
+#
+# En los dos casos se instala activando "orígenes desconocidos".
 #
 # No corre en cada push. Un APK por commit no le sirve a nadie y son minutos de
 # CI: se lanza a mano, o publicando una etiqueta `apk-v1.0.0`. Ojo: la app va
@@ -147,14 +150,49 @@ jobs:
       - name: Sincronizar el proyecto Android
         run: pnpm exec cap sync android
 
+      # El almacen de firma sale de un secreto y se escribe FUERA del arbol de
+      # trabajo: dentro acabaria dentro del APK como recurso, y sobre todo
+      # podria colarse en un commit. `RUNNER_TEMP` se borra al terminar.
+      - name: Preparar la firma
+        id: firma
+        env:
+          KEYSTORE_B64: ${{ secrets.PANAL_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "estable=no" >> "$GITHUB_OUTPUT"
+            echo "::warning::Sin PANAL_KEYSTORE_B64: este APK se firma con una clave de usar y tirar, distinta en cada ejecucion, y NO se podra instalar encima de una version anterior."
+            exit 0
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/panal.p12"
+          # Que el secreto sea de verdad un almacen y no un pegote a medias: si
+          # llega vacio, Gradle falla al final de la compilacion con un error de
+          # contrasenas que no apunta a esto.
+          test -s "$RUNNER_TEMP/panal.p12"
+          echo "estable=si" >> "$GITHUB_OUTPUT"
+
       - name: Compilar
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        env:
+          PANAL_KEYSTORE: ${{ steps.firma.outputs.estable == 'si' && format('{0}/panal.p12', runner.temp) || '' }}
+          PANAL_KEYSTORE_PASS: ${{ secrets.PANAL_KEYSTORE_PASS }}
+          PANAL_KEY_ALIAS: ${{ secrets.PANAL_KEY_ALIAS || 'panal' }}
+        run: |
+          # `release` solo cuando hay clave estable: sin ella saldria un APK sin
+          # firmar, que no se puede instalar en ningun telefono.
+          if [ -n "$PANAL_KEYSTORE" ]; then
+            ./gradlew assembleRelease --no-daemon
+          else
+            ./gradlew assembleDebug --no-daemon
+          fi
 
       - name: Renombrar con la versión
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk \
-             "panal-${GITHUB_REF_NAME//\//-}.apk"
+          if [ "${{ steps.firma.outputs.estable }}" = "si" ]; then
+            ORIGEN=android/app/build/outputs/apk/release/app-release.apk
+          else
+            ORIGEN=android/app/build/outputs/apk/debug/app-debug.apk
+          fi
+          cp "$ORIGEN" "panal-${GITHUB_REF_NAME//\//-}.apk"
 
       # El artefacto se descarga SIEMPRE dentro de un .zip; eso lo decide
       # GitHub y no se puede cambiar. En un teléfono es un problema real: al
@@ -181,7 +219,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           APK="panal-${GITHUB_REF_NAME}.apk"
-          NOTAS="APK firmado en depuración. En el móvil: descárgalo y ábrelo; Android pedirá permiso para instalar de orígenes desconocidos.
+          if [ "${{ steps.firma.outputs.estable }}" = "si" ]; then
+            FIRMA="Firmado con la clave estable de Panal: se instala encima de la versión anterior sin desinstalar nada."
+          else
+            FIRMA="ATENCIÓN: firmado con una clave de usar y tirar. Para instalarlo hay que DESINSTALAR antes la versión anterior, y eso se lleva por delante el llavero del teléfono. El secreto \`PANAL_KEYSTORE_B64\` del repositorio es lo que hace que deje de pasar."
+          fi
+          NOTAS="$FIRMA En el móvil: descárgalo y ábrelo; Android pedirá permiso para instalar de orígenes desconocidos.
 
           Es la app de Panal, no el sitio web dentro de una ventana: tres pestañas y su propia interfaz. Va entera dentro del APK, así que NO se actualiza sola — cada cambio necesita una versión nueva."
 
@@ -197,16 +240,11 @@ jobs:
               --title "Panal Android $GITHUB_REF_NAME" --notes "$NOTAS"
           fi
 
-      # Cuando toque publicar en la Play Store, aquí va la firma de release.
-      # Necesita un keystore propio, guardado como secreto del repositorio:
+      # LA CLAVE NO SE REGENERA NUNCA. Si se pierde, ningun telefono que tenga
+      # Panal instalado podra actualizarlo: habria que desinstalar y volver a
+      # empezar, con el llavero cifrado del telefono por medio. Y si algun dia
+      # esto llega a la Play Store, perderla significa no poder publicar mas
+      # actualizaciones de esa aplicacion jamas.
       #
-      #   - name: Firmar
-      #     env:
-      #       KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
-      #       KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
-      #     run: |
-      #       echo "$KEYSTORE_B64" | base64 -d > android/app/panal.keystore
-      #       cd android && ./gradlew assembleRelease --no-daemon
-      #
-      # La clave NO se regenera: si se pierde, la Play Store no acepta más
-      # actualizaciones de esa app nunca. Se guarda fuera del repositorio.
+      # Se guarda fuera del repositorio y ademas en algun sitio que no sea este
+      # servidor: los secretos de GitHub no se pueden volver a leer.

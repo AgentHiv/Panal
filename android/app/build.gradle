@@ -51,11 +51,67 @@ android {
             enableV1Signing = true
             enableV2Signing = true
         }
+
+        /**
+         * LA CLAVE ESTABLE. Es lo que decide si una version nueva se puede
+         * INSTALAR ENCIMA de la anterior o no.
+         *
+         * Esto no es teoria. Los APK publicados vienen firmados cada uno con
+         * una clave distinta, y se puede comprobar en los propios archivos:
+         *
+         *   panal-apk-v1.0.1.apk  ->  85:42:A9:24:A0:F0:2F:75:EA:AE:51:BD...
+         *   panal-apk-v1.1.0.apk  ->  15:82:CC:53:A8:B6:E7:60:56:92:9C:C0...
+         *
+         * Los dos dicen "CN=Android Debug" y los dos se crearon con minutos de
+         * diferencia (20 y 21 de agosto). El motivo: sin `storeFile`, Gradle
+         * firma con `~/.android/debug.keystore`, y en un runner de GitHub ese
+         * archivo NO EXISTE al empezar, asi que se genera uno nuevo con una
+         * clave nueva en cada ejecucion.
+         *
+         * Android compara la firma antes de actualizar. Si no es la misma
+         * clave, no considera que sea la misma app: rechaza la instalacion con
+         * "conflicto con un paquete existente" o "aplicacion no instalada", que
+         * no menciona firmas por ningun lado y parece un archivo corrupto o un
+         * problema de espacio. La unica salida para quien lo sufre es
+         * desinstalar —perdiendo el llavero cifrado del telefono— y volver a
+         * instalar.
+         *
+         * Con una clave fija, esa clase entera de fallo desaparece: todas las
+         * versiones futuras se actualizan encima de las anteriores.
+         *
+         * DE DONDE SALE LA CLAVE. De variables de entorno, no del repositorio.
+         * Un almacen de firma dentro de un repositorio publico es una clave
+         * publica: cualquiera podria firmar un APK que Android aceptaria como
+         * actualizacion de Panal, heredando los datos de la app —incluido el
+         * llavero cifrado—. El flujo lo saca de un secreto del repositorio
+         * (`PANAL_KEYSTORE_B64`), lo escribe fuera del arbol y pasa la ruta por
+         * aqui.
+         *
+         * Sin esas variables no se define nada y `assembleDebug` sigue
+         * funcionando como siempre. Compilar a mano no necesita ningun secreto.
+         */
+        if (System.getenv("PANAL_KEYSTORE")) {
+            release {
+                storeFile file(System.getenv("PANAL_KEYSTORE"))
+                storePassword System.getenv("PANAL_KEYSTORE_PASS")
+                keyAlias System.getenv("PANAL_KEY_ALIAS") ?: "panal"
+                // En un PKCS12 la clave y el almacen comparten contrasena: Java
+                // no admite otra cosa, y pedir dos seria inventarse un ajuste
+                // que no existe.
+                keyPassword System.getenv("PANAL_KEYSTORE_PASS")
+                storeType "PKCS12"
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (System.getenv("PANAL_KEYSTORE")) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
