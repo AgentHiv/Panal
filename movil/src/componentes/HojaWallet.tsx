@@ -28,6 +28,14 @@ import type { Textos } from '~/i18n/idiomas';
  * fuera te enseña lo que firmas en su propia pantalla; la de aquí no, y quien
  * la elija tiene derecho a saberlo ANTES, no al leer una nota luego.
  *
+ * Y TAMBIÉN SIRVE PARA CAMBIARSE, que es lo que no había.
+ *
+ * Con una wallet ya firmando, esta hoja deja de ser «conecta» y pasa a ser
+ * «cambia»: el título lo dice, y la que está en uso sale marcada en vez de con
+ * el candado. Sin esa marca, una lista de cuatro filas iguales no contesta la
+ * única pregunta que se hace quien la abre —¿con cuál estoy pagando ahora?—, y
+ * la respuesta importa antes de tocar nada.
+ *
  * Y LA DE FUERA NO SALE SIEMPRE (`conFuera`). Solo hace falta para administrar
  * un agente —el registro on-chain actúa sobre quien firma, así que hay que
  * firmar con la wallet del propio agente—, y ponerla delante de todo el mundo
@@ -43,6 +51,7 @@ export default function HojaWallet({
   fallo,
   delTelefono,
   recordada,
+  enUso,
   onElegirDelTelefono,
   onIrAlLlavero,
   onCerrar,
@@ -57,6 +66,8 @@ export default function HojaWallet({
   delTelefono: WalletGuardada[];
   /** Cuál se usó la última vez, para ponerla arriba. */
   recordada: string | null;
+  /** Cuál está firmando AHORA, o `null` si todavía no hay ninguna. */
+  enUso: string | null;
   onElegirDelTelefono: (w: WalletGuardada) => void;
   onIrAlLlavero: () => void;
   onCerrar: () => void;
@@ -81,14 +92,15 @@ export default function HojaWallet({
         <div className="mx-auto mb-4 h-1 w-[38px] rounded-full bg-line" />
 
         <h2 className="font-display text-[21px] font-semibold -tracking-[0.015em]">
-          {T.hojaWallet.titulo}
+          {enUso ? T.hojaWallet.tituloCambiar : T.hojaWallet.titulo}
         </h2>
         <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2">
-          {T.hojaWallet.entradilla}
+          {enUso ? T.hojaWallet.entradillaCambiar : T.hojaWallet.entradilla}
         </p>
 
         <DelTelefono
           wallets={ordenar(delTelefono, recordada)}
+          enUso={enUso}
           onElegir={onElegirDelTelefono}
           onCrear={onIrAlLlavero}
           T={T}
@@ -258,11 +270,13 @@ function ordenar(wallets: WalletGuardada[], recordada: string | null): WalletGua
 
 function DelTelefono({
   wallets,
+  enUso,
   onElegir,
   onCrear,
   T,
 }: {
   wallets: WalletGuardada[];
+  enUso: string | null;
   onElegir: (w: WalletGuardada) => void;
   onCrear: () => void;
   T: Textos;
@@ -307,12 +321,22 @@ function DelTelefono({
                   {w.direccion.slice(0, 6)}…{w.direccion.slice(-4)}
                 </span>
               </span>
-              <Icono nombre="candado" tamano={15} color="#948DAE" />
+              {/* La que firma va marcada; las demás, con el candado que dice
+                  que hay que teclear el PIN para pasarse a ellas. */}
+              {w.id === enUso ? (
+                <span className="shrink-0 rounded-full border border-honey-line bg-honey-soft px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-honey">
+                  {T.hojaWallet.enUso}
+                </span>
+              ) : (
+                <Icono nombre="candado" tamano={15} color="#948DAE" />
+              )}
             </button>
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">{T.hojaWallet.dentroPie}</p>
+      <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">
+        {enUso ? T.hojaWallet.cambiarPie : T.hojaWallet.dentroPie}
+      </p>
     </>
   );
 }

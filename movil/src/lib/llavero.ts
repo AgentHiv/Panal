@@ -68,6 +68,26 @@ const VUELTAS = 310_000;
 /** Lo que se cifra para poder decir «ese PIN no es» sin tener ninguna wallet. */
 const TESTIGO = 'panal:llavero';
 
+/**
+ * Lo que cabe en un nombre.
+ *
+ * Es el mismo `maxLength` del campo de importar, y aquí se repite a propósito:
+ * el `maxLength` de un input lo respeta quien escribe, no quien pega, y el
+ * nombre se pinta en filas de una línea que un texto largo revienta.
+ */
+export const MAX_NOMBRE = 28;
+
+/**
+ * Deja el nombre en algo que quepa en una fila, o el de repuesto.
+ *
+ * Los saltos de línea se van: pegar dos líneas en el campo dejaba un nombre que
+ * en la lista se ve cortado y en la hoja de firmar empuja el botón fuera.
+ */
+export function limpiarNombre(nombre: string, repuesto: string): string {
+  const limpio = nombre.replace(/\s+/g, ' ').trim().slice(0, MAX_NOMBRE);
+  return limpio || repuesto;
+}
+
 /** Qué se guardó: doce palabras, o una clave privada a secas. */
 export type Tipo = 'palabras' | 'clave';
 
@@ -213,6 +233,21 @@ export function listar(): WalletGuardada[] {
   }));
 }
 
+/**
+ * El nombre que se le pone sola a una wallet nueva: el primer número libre.
+ *
+ * Contar las que hay y sumar uno parece lo mismo y no lo es. Con tres wallets,
+ * borrar la segunda y crear otra daba «Wallet 3» habiendo ya una «Wallet 3»: dos
+ * filas idénticas en una lista donde lo que se elige es con cuál se paga.
+ */
+export function nombrePorDefecto(): string {
+  const puestos = new Set(listar().map((w) => w.nombre));
+  for (let n = 1; ; n++) {
+    const propuesta = `Wallet ${n}`;
+    if (!puestos.has(propuesta)) return propuesta;
+  }
+}
+
 /** Estrena el llavero con un PIN. Falla si ya había uno, para no pisarlo. */
 export async function crearLlavero(pin: string): Promise<Llave> {
   if (leer()) throw new Error('Ya hay un llavero en este teléfono');
@@ -263,7 +298,7 @@ export async function crearWallet(llave: Llave, nombre: string): Promise<WalletN
 
   const wallet: WalletGuardada = {
     id: crypto.randomUUID(),
-    nombre: nombre.trim() || textos().comun.sinNombre,
+    nombre: limpiarNombre(nombre, textos().comun.sinNombre),
     direccion: cuenta.address,
     creada: Date.now(),
     copiada: false,
@@ -367,7 +402,7 @@ export async function importarWallet(
 
   const wallet: WalletGuardada = {
     id: crypto.randomUUID(),
-    nombre: nombre.trim() || 'Importada',
+    nombre: limpiarNombre(nombre, 'Importada'),
     direccion,
     creada: Date.now(),
     // Su copia de seguridad está fuera desde antes: de ahí ha venido.
@@ -392,13 +427,22 @@ export function marcarCopiada(id: string): void {
   escribir(g);
 }
 
-export function renombrar(id: string, nombre: string): void {
+/**
+ * Le cambia el nombre a una wallet, y devuelve el que se ha quedado.
+ *
+ * Devuelve el nombre en vez de nada porque el que se guarda no es siempre el
+ * que se escribió —se recorta, y en blanco se cae al de repuesto—, y quien
+ * llama tiene que enseñar lo que hay en el disco y no lo que tecleó. `null` si
+ * esa wallet ya no está: la pantalla que la tenía abierta se quedó vieja.
+ */
+export function renombrar(id: string, nombre: string): string | null {
   const g = leer();
-  if (!g) return;
+  if (!g) return null;
   const w = g.wallets.find((x) => x.id === id);
-  if (!w) return;
-  w.nombre = nombre.trim() || textos().comun.sinNombre;
+  if (!w) return null;
+  w.nombre = limpiarNombre(nombre, textos().comun.sinNombre);
   escribir(g);
+  return w.nombre;
 }
 
 /**

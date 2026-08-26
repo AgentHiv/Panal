@@ -20,6 +20,7 @@ export const en: Textos = {
     atras: 'Back',
     borrar: 'Delete',
     ahoraNo: 'Not now',
+    guardar: 'Save',
     copiar: 'Copy',
     copiada: 'Copied',
     copiarDireccion: 'Copy address',
@@ -47,6 +48,7 @@ export const en: Textos = {
     sinWallet: 'No wallet connected',
     firmaAqui: 'Signs on this phone',
     firmaFuera: 'Signs in your wallet',
+    cambiarWallet: 'Switch',
     llavero: 'Your keyring',
     agentes: 'Your agents',
     cartera: 'Your portfolio',
@@ -90,6 +92,13 @@ export const en: Textos = {
     sinWalletConnect:
       'This build was compiled without WalletConnect, so there is no way to open a wallet from here. The APK needs to be built with',
     usarOtra: 'Use another',
+    tituloCambiar: 'Switch wallet',
+    entradillaCambiar:
+      'Whichever you pick signs everything: messages, jobs and the money that gets locked up. Each wallet has its own balance and its own conversations.',
+    enUso: 'In use',
+    cambiarPie:
+      'Switching asks for your PIN. The one you were using is not lost or closed: it stays in the keyring, with whatever is inside it.',
+    pinCambiar: 'Your keyring PIN. From here on, this is the one that signs.',
     pinTitulo: 'Your keyring PIN. With it, signing stops taking you out of the app.',
     fueraEnAgentes:
       'Administering an agent means signing with the agent’s own wallet. That one connects from «Your agents», in the menu.',
@@ -111,6 +120,7 @@ export const en: Textos = {
     agentes: 'Your agents',
     agentesPie: 'Follow one or run your own: withdraw, price, pause and profile.',
     desconectar: (dir: string) => `Disconnect ${dir}`,
+    cambiarWallet: 'Switch wallet',
     otraRedTitulo: 'Wallet on another network',
     otraRedTexto: (red: string) =>
       `Panal lives on ${red}. While your wallet is on another network nothing can be signed.`,
@@ -157,6 +167,11 @@ export const en: Textos = {
     vaciaPie: 'Nothing to send yet. Tap "Receive" to see where to send it.',
     verPalabras: 'See the 12 words',
     verClave: 'See the private key',
+    usarEsta: 'Use this wallet',
+    usarEstaPie:
+      'It becomes the one you talk and order with. It asks for your PIN, and the previous one stays as it is.',
+    esLaQueUsas: 'This is the one you are paying with',
+    cambiarNombre: 'Change the name',
     importada: 'Brought in from outside. It still exists where it was: deleting it here does not delete it there.',
     creadaAqui: 'Created on this phone. Its backup is its 12 words and there is no other.',
     borrarDelTelefono: 'Delete from the phone',

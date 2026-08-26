@@ -44,6 +44,10 @@ const TRAZOS: Record<string, string[]> = {
   // Archivo y llavero
   papelera: ['M5 7h14', 'M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7', 'M6.5 7l.8 11.6A1.6 1.6 0 0 0 8.9 20h6.2a1.6 1.6 0 0 0 1.6-1.4L17.5 7'],
   llave: ['M15 4.5a4.5 4.5 0 1 1-4.28 5.88L4.5 16.5V20h3.5v-2.5h2.5V15h2.1l1.12-1.12A4.5 4.5 0 0 1 15 4.5z', 'M16.6 8.4h.01'],
+  // El lápiz va sobre la misma diagonal que la llave para que los dos botones
+  // de la ficha de una wallet —ver las palabras, cambiarle el nombre— no
+  // parezcan de dos juegos distintos.
+  lapiz: ['M4.5 19.5v-3.3L15.9 4.8a1.6 1.6 0 0 1 2.3 0l1 1a1.6 1.6 0 0 1 0 2.3L7.8 19.5z', 'M14.4 6.3l3.3 3.3'],
   hoja: ['M6.5 3.5h7L18 8v12.5H6.5z', 'M13.5 3.5V8H18'],
   bajar: ['M12 4.5v11', 'M7.5 11.5 12 16l4.5-4.5', 'M5 19.5h14'],
   carpeta: ['M3.8 6.8A1.8 1.8 0 0 1 5.6 5h3.2l1.9 2.4h7.7a1.8 1.8 0 0 1 1.8 1.8v8A1.8 1.8 0 0 1 18.4 19H5.6a1.8 1.8 0 0 1-1.8-1.8z'],

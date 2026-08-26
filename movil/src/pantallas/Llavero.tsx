@@ -10,6 +10,7 @@ import { copiar } from '~/lib/wallets';
 import { conDecimales, useSaldosLlavero } from '~/lib/usarSaldos';
 import type { Par } from '~/lib/usarSaldos';
 import {
+  MAX_NOMBRE,
   abrir,
   borrar,
   crearLlavero,
@@ -17,10 +18,13 @@ import {
   hayLlavero,
   listar,
   marcarCopiada,
+  nombrePorDefecto,
+  renombrar,
   verSecreto,
 } from '~/lib/llavero';
 import type { Llave, Secreto, WalletGuardada } from '~/lib/llavero';
-import { abrirSesion } from '~/lib/sesion';
+import { abrirSesion, renombrarEnSesion, useSesion } from '~/lib/sesion';
+import { useCambio } from '~/lib/cambio';
 import { useSinCapturas } from '~/lib/pantalla';
 import { useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
@@ -97,6 +101,11 @@ export default function Llavero(): React.ReactElement {
   // llavero cerrado la lista está vacía y la consulta ni sale.
   const saldos = useSaldosLlavero(wallets.map((w) => w.direccion));
   const T = useTextos();
+  const sesion = useSesion();
+  const { cambiar, soltar } = useCambio();
+
+  /** Con cuál se está firmando ahora mismo, si es una de éstas. */
+  const enUso = sesion.abierta ? (sesion.wallet?.id ?? null) : null;
 
   const refrescar = useCallback(() => setWallets(listar()), []);
 
@@ -173,8 +182,7 @@ export default function Llavero(): React.ReactElement {
     if (!k) return;
     setOcupado(true);
     try {
-      const n = listar().length + 1;
-      const { wallet, palabras } = await crearWallet(k, `Wallet ${n}`);
+      const { wallet, palabras } = await crearWallet(k, nombrePorDefecto());
       refrescar();
       setPaso({
         que: 'secreto',
@@ -288,6 +296,14 @@ export default function Llavero(): React.ReactElement {
                 <p className="truncate text-[14.5px] font-semibold">{w.nombre}</p>
                 <p className="mt-0.5 font-mono text-[11px] text-ink-3">{corta(w.direccion)}</p>
               </div>
+              {/* Con cuál se está pagando, aquí y no solo dentro de la ficha:
+                  es la pregunta que trae a esta pantalla a quien tiene más de
+                  una, y abrir cuatro fichas para averiguarlo no es contestarla. */}
+              {w.id === enUso && (
+                <span className="shrink-0 rounded-full border border-honey-line bg-honey-soft px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-honey">
+                  {T.hojaWallet.enUso}
+                </span>
+              )}
               <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180" />
             </div>
 
@@ -365,8 +381,25 @@ export default function Llavero(): React.ReactElement {
           wallet={abierta}
           saldo={saldos.por[abierta.direccion.toLowerCase()] ?? SIN_SALDO}
           sinLeer={saldos.cargando || saldos.fallo}
+          enUso={abierta.id === enUso}
           onCerrar={() => setAbierta(null)}
           onVerSecreto={() => void alVerSecreto(abierta)}
+          onUsar={() => {
+            // La ficha se cierra antes: el PIN sale por encima de todo, y
+            // dejarla debajo hace que al acabar reaparezca una hoja que habla
+            // de la wallet que ya no es la de antes.
+            setAbierta(null);
+            cambiar(abierta);
+          }}
+          onRenombrar={(nombre) => {
+            const puesto = renombrar(abierta.id, nombre);
+            if (puesto === null) return;
+            // Y en la sesión, si es la que firma: la guarda como copia, así
+            // que sin esto el menú seguiría diciendo el nombre viejo.
+            renombrarEnSesion(abierta.id, puesto);
+            setAbierta({ ...abierta, nombre: puesto });
+            refrescar();
+          }}
           T={T}
           onEnviar={() => {
             setEnviando(abierta);
@@ -377,6 +410,11 @@ export default function Llavero(): React.ReactElement {
             setAbierta(null);
           }}
           onBorrar={() => {
+            // Si es la que está firmando, primero se suelta. Sin esto, su clave
+            // descifrada se quedaba en memoria y wagmi seguía anunciando
+            // conectada la dirección de una wallet que ya no existe: la app
+            // podía firmar con algo que el llavero ya no puede volver a abrir.
+            if (abierta.id === enUso) soltar();
             borrar(abierta.id);
             setAbierta(null);
             refrescar();
@@ -541,8 +579,11 @@ function Detalle({
   wallet,
   saldo,
   sinLeer,
+  enUso,
   onCerrar,
   onVerSecreto,
+  onUsar,
+  onRenombrar,
   onEnviar,
   onRecibir,
   onBorrar,
@@ -551,8 +592,12 @@ function Detalle({
   wallet: WalletGuardada;
   saldo: Par;
   sinLeer: boolean;
+  /** Si es ésta la que firma ahora mismo. */
+  enUso: boolean;
   onCerrar: () => void;
   onVerSecreto: () => void;
+  onUsar: () => void;
+  onRenombrar: (nombre: string) => void;
   onEnviar: () => void;
   onRecibir: () => void;
   onBorrar: () => void;
@@ -560,6 +605,8 @@ function Detalle({
 }): React.ReactElement {
   const [copiado, setCopiado] = useState(false);
   const [seguro, setSeguro] = useState(false);
+  /** El nombre a medio escribir, o `null` si no se está renombrando. */
+  const [borrador, setBorrador] = useState<string | null>(null);
 
   const alCopiar = async (): Promise<void> => {
     if (await copiar(wallet.direccion)) {
@@ -602,6 +649,30 @@ function Detalle({
         </p>
       )}
 
+      {/* Lo que faltaba: pasar a pagar con ésta.
+          Antes esta pantalla solo servía para mirar y para mandar dinero, así
+          que una wallet creada aquí se quedaba fuera de la app —no se podía
+          hablar con un agente ni encargarle nada desde ella— y no había ni un
+          sitio donde eso se pudiera cambiar. */}
+      {enUso ? (
+        <p className="mt-3 flex items-center justify-center gap-1.5 rounded-full border border-honey-line bg-honey-soft py-2.5 text-[13px] font-medium text-honey">
+          <Icono nombre="check" tamano={15} color="#E29A2E" grosor={2.2} />
+          {T.llavero.esLaQueUsas}
+        </p>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={onUsar}
+            className="pulsable tocable mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-honey-line bg-honey-soft py-3 text-[14px] font-semibold text-honey"
+          >
+            <Icono nombre="llave" tamano={15} color="#E29A2E" grosor={2} />
+            {T.llavero.usarEsta}
+          </button>
+          <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">{T.llavero.usarEstaPie}</p>
+        </>
+      )}
+
       <div className="my-4 h-px bg-line" />
 
       <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">{T.comun.suDireccion}</p>
@@ -630,6 +701,54 @@ function Detalle({
         <Icono nombre="llave" tamano={15} color="#948DAE" />
         {wallet.tipo === 'clave' ? T.llavero.verClave : T.llavero.verPalabras}
       </button>
+
+      {/* El nombre se podía poner al traer una wallet de fuera y nunca más.
+          Las que nacen aquí se llamaban «Wallet 1» para siempre, que con una
+          sola daba igual y con cuatro es la única forma de saber cuál es cuál
+          antes de pagar. Se escribe donde se lee, sin salir de la ficha. */}
+      {borrador === null ? (
+        <button
+          type="button"
+          onClick={() => setBorrador(wallet.nombre)}
+          className="pulsable tocable mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-line py-2.5 text-[13.5px] font-medium text-ink-2"
+        >
+          <Icono nombre="lapiz" tamano={15} color="#948DAE" />
+          {T.llavero.cambiarNombre}
+        </button>
+      ) : (
+        <div className="mt-2 rounded-[14px] border border-line bg-cream p-3">
+          <label className="block text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
+            {T.importar.comoLaLlamas}
+          </label>
+          <input
+            value={borrador}
+            onChange={(e) => setBorrador(e.target.value)}
+            maxLength={MAX_NOMBRE}
+            autoFocus
+            placeholder={wallet.nombre}
+            className="mt-2 w-full rounded-[12px] border border-line bg-paper px-3.5 py-2.5 text-[14px] outline-none placeholder:text-ink-3 focus:border-monad"
+          />
+          <div className="mt-2.5 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setBorrador(null)}
+              className="pulsable tocable grow basis-0 rounded-full border border-line py-2.5 text-[13.5px] font-medium text-ink-2"
+            >
+              {T.comun.cancelar}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onRenombrar(borrador);
+                setBorrador(null);
+              }}
+              className="pulsable tocable grow basis-0 rounded-full bg-monad py-2.5 text-[13.5px] font-semibold text-white shadow-monad"
+            >
+              {T.comun.guardar}
+            </button>
+          </div>
+        </div>
+      )}
 
       <p className="mt-3 text-[12px] leading-[1.55] text-ink-3">
         {wallet.importada ? T.llavero.importada : T.llavero.creadaAqui}

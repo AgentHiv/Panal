@@ -23,6 +23,7 @@ export const es = {
     atras: 'Atrás',
     borrar: 'Borrar',
     ahoraNo: 'Ahora no',
+    guardar: 'Guardar',
     copiar: 'Copiar',
     copiada: 'Copiada',
     copiarDireccion: 'Copiar dirección',
@@ -50,6 +51,7 @@ export const es = {
     sinWallet: 'Sin wallet conectada',
     firmaAqui: 'Firma en este teléfono',
     firmaFuera: 'Firma en tu wallet',
+    cambiarWallet: 'Cambiar',
     llavero: 'Tu llavero',
     agentes: 'Tus agentes',
     cartera: 'Tu cartera',
@@ -93,6 +95,13 @@ export const es = {
     sinWalletConnect:
       'Esta versión se compiló sin WalletConnect, así que no hay forma de abrir una wallet desde aquí. Hace falta compilar el APK con',
     usarOtra: 'Usar otra',
+    tituloCambiar: 'Cambiar de wallet',
+    entradillaCambiar:
+      'Con la que elijas se firma todo: los mensajes, los encargos y el dinero que se bloquea. Cada wallet tiene su saldo y sus conversaciones.',
+    enUso: 'En uso',
+    cambiarPie:
+      'Hay que poner el PIN para pasarse a otra. La que estabas usando no se pierde ni se cierra: sigue en el llavero, con lo que tenga dentro.',
+    pinCambiar: 'Tu PIN del llavero. A partir de ahí se firma con ésta.',
     pinTitulo: 'Tu PIN del llavero. Con él, firmar deja de sacarte de la app.',
     fueraEnAgentes:
       'Para administrar un agente hay que firmar con la wallet del propio agente. Esa se conecta desde «Tus agentes», en el menú.',
@@ -114,6 +123,7 @@ export const es = {
     agentes: 'Tus agentes',
     agentesPie: 'Sigue uno o administra el tuyo: cobrar, precio, pausa y ficha.',
     desconectar: (dir: string) => `Desconectar ${dir}`,
+    cambiarWallet: 'Cambiar de wallet',
     otraRedTitulo: 'Wallet en otra red',
     otraRedTexto: (red: string) =>
       `Panal vive en ${red}. Mientras tu wallet esté en otra red no se puede firmar nada.`,
@@ -160,6 +170,11 @@ export const es = {
     vaciaPie: 'No hay nada que mandar todavía. Toca «Recibir» para ver a dónde mandárselo.',
     verPalabras: 'Ver las 12 palabras',
     verClave: 'Ver la clave privada',
+    usarEsta: 'Usar esta wallet',
+    usarEstaPie:
+      'Pasa a ser con la que hablas y encargas. Te pide el PIN, y la de antes se queda como está.',
+    esLaQueUsas: 'Es con la que estás pagando',
+    cambiarNombre: 'Cambiar el nombre',
     importada: 'Traída de fuera. Sigue existiendo donde estaba: borrarla de aquí no la borra de allí.',
     creadaAqui: 'Creada en este teléfono. Su copia de seguridad son sus 12 palabras y no hay otra.',
     borrarDelTelefono: 'Borrar del teléfono',

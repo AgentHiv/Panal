@@ -6,6 +6,7 @@ import Icono from '~/componentes/Icono';
 import type { NombreIcono } from '~/componentes/Icono';
 import { avisosEncendidos, encenderAvisos, hayAvisos, pedirPermiso } from '~/lib/avisos';
 import { useSesion } from '~/lib/sesion';
+import { useCambio } from '~/lib/cambio';
 import { IDIOMAS, cambiarIdioma, useIdioma, useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 
@@ -50,6 +51,7 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
   const navegar = useNavigate();
   const { connected, addressShort, connect, disconnect } = useWallet();
   const sesion = useSesion();
+  const { cambiar } = useCambio();
   const T = useTextos();
   const idioma = useIdioma();
   const [avisos, setAvisos] = useState(() => avisosEncendidos());
@@ -94,7 +96,19 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
           <div className="border-b border-line px-4 py-3.5">
             {connected ? (
               <>
-                <p className="font-mono text-[13px] font-medium">{addressShort}</p>
+                {/* El NOMBRE primero cuando lo hay. Con varias wallets en el
+                    llavero, cuatro direcciones cortadas no se distinguen de un
+                    vistazo, y ésta es la línea que contesta con cuál se paga. */}
+                {sesion.wallet ? (
+                  <p className="truncate text-[13.5px] font-semibold">{sesion.wallet.nombre}</p>
+                ) : null}
+                <p
+                  className={`font-mono text-[13px] ${
+                    sesion.wallet ? 'mt-0.5 text-ink-3' : 'font-medium'
+                  }`}
+                >
+                  {addressShort}
+                </p>
                 <p className="mt-1 flex items-center gap-1.5 text-[11.5px] text-ink-3">
                   <Icono
                     nombre={sesion.abierta ? 'llave' : 'eslabon'}
@@ -107,17 +121,44 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
             ) : (
               <p className="text-[13px] text-ink-2">{T.menu.sinWallet}</p>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                onCerrar();
-                if (connected) disconnect();
-                else connect();
-              }}
-              className="pulsable mt-2.5 w-full rounded-full border border-line py-2 text-[12.5px] font-medium text-ink-2"
-            >
-              {connected ? T.comun.desconectar : T.comun.conectarWallet}
-            </button>
+            {connected ? (
+              // Dos botones y no uno. Antes solo estaba «Desconectar», y para
+              // cambiarse había que pulsarlo: un botón que dice que te saca de
+              // la app no es donde se busca «quiero pagar con la otra».
+              <div className="mt-2.5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCerrar();
+                    cambiar();
+                  }}
+                  className="pulsable grow basis-0 rounded-full border border-honey-line bg-honey-soft py-2 text-[12.5px] font-semibold text-honey"
+                >
+                  {T.menu.cambiarWallet}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCerrar();
+                    disconnect();
+                  }}
+                  className="pulsable grow basis-0 rounded-full border border-line py-2 text-[12.5px] font-medium text-ink-2"
+                >
+                  {T.comun.desconectar}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  onCerrar();
+                  connect();
+                }}
+                className="pulsable mt-2.5 w-full rounded-full border border-line py-2 text-[12.5px] font-medium text-ink-2"
+              >
+                {T.comun.conectarWallet}
+              </button>
+            )}
           </div>
 
           {/* El idioma reemplaza el contenido del panel en vez de abrir otra

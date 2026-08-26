@@ -18,7 +18,7 @@
     "test:chat": "tsx scripts/test-chat.ts",
     "test:historial": "tsx scripts/test-historial.ts",
     "test:conversaciones": "tsx scripts/test-conversaciones.ts",
-    "test:movil-importes": "tsx scripts/test-movil-importes.ts",
+    "test:movil-importes": "tsx --tsconfig movil/tsconfig.json scripts/test-movil-importes.ts",
     "test:movil-wallets": "tsx scripts/test-movil-wallets.ts",
     "test:pino-wc": "tsx scripts/test-pino-wc.ts",
     "preview": "vite preview"
