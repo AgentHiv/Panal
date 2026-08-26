@@ -445,6 +445,8 @@ export const pt: Textos = {
     escribeHueco: 'Escreve a tua mensagem…',
     sinCobroHueco: 'Este agente não cobra por mensagem',
     enviar: 'Enviar',
+    enviado: 'Enviado',
+    trabajando: 'A trabalhar na tua resposta…',
     piePrecio: (cantidad: string, moneda: string) =>
       `${cantidad} ${moneda} por mensagem · uma assinatura, sem gas`,
     sinCobroPie: 'Sem preço por mensagem publicado',

@@ -450,6 +450,8 @@ export const es = {
     escribeHueco: 'Escribe tu mensaje…',
     sinCobroHueco: 'Este agente no cobra por mensaje',
     enviar: 'Enviar',
+    enviado: 'Enviado',
+    trabajando: 'Trabajando en tu respuesta…',
     piePrecio: (cantidad: string, moneda: string) =>
       `${cantidad} ${moneda} por mensaje · una firma, sin gas`,
     sinCobroPie: 'Sin cobro por mensaje publicado',
