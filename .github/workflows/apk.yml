@@ -91,14 +91,38 @@ jobs:
       # pasaba, y ademas tarde: el unico sitio donde corren estas pruebas era
       # este, o sea al cortar una release, con la etiqueta ya empujada.
       - name: Compilar el SDK
-        run: pnpm --filter @panal/sdk build
+        run: |
+          pnpm --filter @panal/sdk build
+          # Que el `dist` este de verdad. `tsc` sale en verde sin emitir nada el
+          # dia que alguien le ponga `incremental` y el tsbuildinfo sobreviva:
+          # el fallo aparaceria en OTRO paso y con otra cara.
+          test -f sdk/dist/index.js || {
+            echo "::error::El SDK compilo pero no dejo sdk/dist/index.js"; exit 1; }
 
       # El llavero cifra claves privadas y los expedientes deciden si una
       # entrega cuadra con la cadena. Las dos cosas se comprueban en Node, sin
       # navegador y sin red, y tienen que pasar ANTES de compilar nada: un APK
       # que guarde mal una semilla no se puede retirar de los telefonos.
+      #
+      # Y SI FALLAN, QUE SE PUEDA LEER POR QUE.
+      #
+      # El log completo de una ejecucion solo lo baja quien tiene admin del
+      # repositorio; la API contesta 403 a todos los demas. Quien corta una
+      # release no siempre lo es, y entonces lo unico publico es «Process
+      # completed with exit code 1», que no dice nada. Las anotaciones SI son
+      # publicas, asi que el final del log sale por ahi.
       - name: Pruebas de la app
-        run: pnpm --filter @panal/movil test
+        run: |
+          set -o pipefail
+          if pnpm --filter @panal/movil test 2>&1 | tee "$RUNNER_TEMP/pruebas.log"; then
+            exit 0
+          fi
+          # `%` primero, o se escaparian las marcas que se escriben despues.
+          COLA=$(tail -30 "$RUNNER_TEMP/pruebas.log" \
+            | sed 's/%/%25/g; s/\r/%0D/g' \
+            | awk '{ printf "%s%%0A", $0 }')
+          echo "::error::Las pruebas de la app fallaron%0A%0A$COLA"
+          exit 1
 
       # La version del APK sale de la etiqueta, para que no vuelva a haber tres
       # releases que por dentro dicen ser la misma. `versionCode` tiene que
