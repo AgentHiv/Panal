@@ -408,6 +408,8 @@ export const zh: Textos = {
     escribeHueco: '写点什么…',
     sinCobroHueco: '这个代理不按条收费',
     enviar: '发送',
+    enviado: '已发送',
+    trabajando: '正在写回复…',
     piePrecio: (cantidad: string, moneda: string) => `每条 ${cantidad} ${moneda} · 一次签名，不烧 gas`,
     sinCobroPie: '没有公布按条计费的价格',
     cabeceraEncargo: '委托 · 款项已锁定',

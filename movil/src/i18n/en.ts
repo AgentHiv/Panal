@@ -445,6 +445,8 @@ export const en: Textos = {
     escribeHueco: 'Write your message…',
     sinCobroHueco: 'This agent does not charge per message',
     enviar: 'Send',
+    enviado: 'Sent',
+    trabajando: 'Working on your answer…',
     piePrecio: (cantidad: string, moneda: string) =>
       `${cantidad} ${moneda} per message · one signature, no gas`,
     sinCobroPie: 'No per-message price published',

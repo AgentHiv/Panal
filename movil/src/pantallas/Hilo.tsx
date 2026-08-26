@@ -12,6 +12,7 @@ import { currencySymbol, activeChain } from '@/contracts/config';
 import { getTaskBrief } from '@/lib/taskBriefs';
 import type { X402Accept } from '@panal/sdk';
 import { useAgente } from '~/lib/agente';
+import { avisandoAlFirmar } from '~/lib/firma';
 import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
 import HojaFirmar from '~/componentes/HojaFirmar';
@@ -65,7 +66,22 @@ export default function Hilo(): React.ReactElement {
   const [borrador, setBorrador] = useState('');
   const [hoja, setHoja] = useState<Abierta>(null);
   const [cotizacion, setCotizacion] = useState<X402Accept | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  /**
+   * Ocupado PIDIENDO PRECIO O FIRMANDO. Deja de estarlo en cuanto se firma.
+   *
+   * Antes esto se llamaba `enviando` y duraba hasta que contestaba el agente,
+   * que es lo que dejaba la hoja de firmar puesta y bloqueada todo el rato.
+   */
+  const [ocupado, setOcupado] = useState(false);
+  /**
+   * El mensaje ya firmado y mandado, esperando respuesta.
+   *
+   * Vive AQUÍ y no en el historial a propósito. Lo que se guarda en disco es
+   * lo que pasó de verdad —un mensaje y lo que costó—, y hasta que el agente
+   * conteste no se sabe lo segundo. Guardarlo antes dejaría en el hilo un
+   * mensaje sin precio, que no se distingue de uno gratis.
+   */
+  const [enVuelo, setEnVuelo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const T = useTextos();
   const [encargoRevisando, setEncargoRevisando] = useState<string | null>(null);
@@ -87,7 +103,7 @@ export default function Hilo(): React.ReactElement {
     if (!connected) return connect();
     if (!datos?.cobro || !address || !borrador.trim()) return;
     setError(null);
-    setEnviando(true);
+    setOcupado(true);
     try {
       const q = await cotizar(datos.cobro, borrador.trim(), address as `0x${string}`);
       setCotizacion(q);
@@ -95,20 +111,32 @@ export default function Hilo(): React.ReactElement {
     } catch (err) {
       setError(motivo(err, T));
     } finally {
-      setEnviando(false);
+      setOcupado(false);
     }
   }, [address, borrador, connect, connected, datos, T]);
 
   const confirmarFirma = useCallback(async () => {
     if (!datos?.cobro || !walletClient || !address || !cotizacion) return;
-    setEnviando(true);
+    setOcupado(true);
     setError(null);
     const texto = borrador.trim();
+    /** Cuándo salió. Lo pone el aviso de la firma; hasta entonces, ahora. */
+    let mandado = Date.now();
     try {
       const res = await enviarMensaje({
         cobro: datos.cobro,
         mensaje: texto,
-        wallet: walletClient,
+        // En cuanto la firma está hecha, la hoja sobra: lo que queda es esperar
+        // al agente, y eso se espera EN EL HILO, viendo el mensaje mandado. La
+        // hoja tapaba justo eso hasta que llegaba la respuesta.
+        wallet: avisandoAlFirmar(walletClient, () => {
+          setOcupado(false);
+          setHoja(null);
+          setCotizacion(null);
+          setBorrador('');
+          mandado = Date.now();
+          setEnVuelo(texto);
+        }),
         account: walletClient.account,
         // El tope es lo que dijo la cotización que se está enseñando: si el
         // agente sube el precio entre la firma y el cobro, el SDK no firma.
@@ -121,7 +149,10 @@ export default function Hilo(): React.ReactElement {
         id: nuevoId(),
         de: 'yo',
         texto,
-        cuando: Date.now(),
+        // La de mandarlo, no la de que contesten. Con un agente que tarda un
+        // minuto, las dos burbujas salían con la misma hora y la conversación
+        // parecía instantánea.
+        cuando: mandado,
         pagado: res.pagado.toString(),
         simbolo: datos.cobro.simbolo,
       });
@@ -132,14 +163,17 @@ export default function Hilo(): React.ReactElement {
         cuando: Date.now(),
       });
       setMensajes(lista);
-      setBorrador('');
       setHoja(null);
       setCotizacion(null);
     } catch (err) {
       setError(motivo(err, T));
       setHoja(null);
+      // El borrador vuelve al hueco si ya se había vaciado al firmar: sin esto,
+      // un fallo después de la firma se lleva por delante lo que escribiste.
+      setBorrador((b) => (b.trim() ? b : texto));
     } finally {
-      setEnviando(false);
+      setOcupado(false);
+      setEnVuelo(null);
     }
   }, [address, agente, borrador, cotizacion, datos, walletClient, T]);
 
@@ -156,7 +190,10 @@ export default function Hilo(): React.ReactElement {
   const finDelHilo = useRef<HTMLDivElement>(null);
   useEffect(() => {
     finDelHilo.current?.scrollIntoView({ block: 'end' });
-  }, [entradas.length]);
+    // `enVuelo` también: la burbuja que espera entra por debajo del borde igual
+    // que lo hacía la respuesta, y sin esto habría que bajar a mano para ver
+    // que el mensaje salió.
+  }, [entradas.length, enVuelo]);
 
   return (
     <div className="relative flex min-h-0 grow flex-col">
@@ -199,7 +236,10 @@ export default function Hilo(): React.ReactElement {
       </header>
 
       <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-3.5 py-4">
-        {entradas.length === 0 && (
+        {/* `enVuelo` cuenta: con el primer mensaje ya mandado y esperando
+            respuesta, «todavía no habéis hablado» contradice a la burbuja que
+            hay justo debajo. */}
+        {entradas.length === 0 && enVuelo === null && (
           <p className="mt-8 text-center text-[13.5px] leading-relaxed text-ink-3">
             {T.hilo.sinHablar}
           </p>
@@ -218,6 +258,10 @@ export default function Hilo(): React.ReactElement {
             />
           </Fragment>
         ))}
+        {/* Lo que se ve mientras el agente trabaja. Antes esto no existía: la
+            hoja de firmar tapaba el hilo hasta que llegaba la respuesta, así
+            que el mensaje que acababas de pagar no aparecía por ningún lado. */}
+        {enVuelo !== null && <Esperando texto={enVuelo} T={T} />}
         <div ref={finDelHilo} />
       </div>
 
@@ -233,13 +277,13 @@ export default function Hilo(): React.ReactElement {
             value={borrador}
             onChange={(ev) => setBorrador(ev.target.value)}
             placeholder={datos?.cobro ? T.hilo.escribeHueco : T.hilo.sinCobroHueco}
-            disabled={!datos?.cobro || enviando}
+            disabled={!datos?.cobro || ocupado || enVuelo !== null}
             className="seleccionable h-11 grow rounded-full border border-line bg-sand px-4 text-[14px] text-ink outline-none placeholder:text-ink-3 disabled:opacity-60"
           />
           <button
             type="button"
             onClick={abrirFirma}
-            disabled={!datos?.cobro || !borrador.trim() || enviando}
+            disabled={!datos?.cobro || !borrador.trim() || ocupado || enVuelo !== null}
             aria-label={T.hilo.enviar}
             className="pulsable flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-monad shadow-monad disabled:opacity-40"
           >
@@ -257,7 +301,7 @@ export default function Hilo(): React.ReactElement {
         abierta={hoja === 'firmar'}
         cobro={datos?.cobro ?? null}
         cotizacion={cotizacion}
-        enviando={enviando}
+        enviando={ocupado}
         onCerrar={() => setHoja(null)}
         onConfirmar={confirmarFirma}
       />
@@ -288,6 +332,40 @@ export default function Hilo(): React.ReactElement {
       />
       )}
     </div>
+  );
+}
+
+/**
+ * El mensaje firmado y mandado, y el agente trabajando.
+ *
+ * La burbuja es la misma que la de un mensaje propio, con una diferencia
+ * deliberada: donde va la hora pone «Enviado». Una hora es un hecho y esto
+ * todavía no lo es del todo — si el agente falla, esta burbuja desaparece y el
+ * texto vuelve al hueco de escribir.
+ */
+function Esperando({ texto, T }: { texto: string; T: Textos }): React.ReactElement {
+  return (
+    <>
+      <div className="flex shrink-0 flex-col items-end gap-0.5">
+        <div className="seleccionable max-w-[82%] shrink-0 self-end rounded-2xl rounded-br-[5px] border border-[#4A3E75] bg-[#2A2340] px-3.5 py-2.5 opacity-70">
+          <p className="whitespace-pre-wrap text-[14px] leading-[1.5]">{texto}</p>
+        </div>
+        <span className="px-1 text-[10.5px] text-ink-3">{T.hilo.enviado}</span>
+      </div>
+
+      <div className="flex shrink-0 flex-col items-start gap-0.5">
+        <div className="flex shrink-0 items-center gap-2 self-start rounded-2xl rounded-bl-[5px] border border-line bg-cream px-3.5 py-3">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink-3"
+              style={{ animationDelay: `${i * 180}ms` }}
+            />
+          ))}
+        </div>
+        <span className="px-1 text-[10.5px] text-ink-3">{T.hilo.trabajando}</span>
+      </div>
+    </>
   );
 }
 
