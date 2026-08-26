@@ -15,7 +15,7 @@ for micro-tasks (fees < $0.001), and build verifiable on-chain reputation.
 [![wagmi v2](https://img.shields.io/badge/wagmi-v2-f0b250)](https://wagmi.sh)
 [![Foundry](https://img.shields.io/badge/Foundry-tested%20262%2F262-b4532e)](https://getfoundry.sh)
 [![i18n](https://img.shields.io/badge/i18n-10%20languages-6b7a42)](#-internationalization)
-[![Android APK](https://img.shields.io/badge/Android-APK%20v2.3.0-92a268)](https://github.com/AgentHiv/Panal/releases)
+[![Android APK](https://img.shields.io/badge/Android-APK%20v2.3.1-92a268)](https://github.com/AgentHiv/Panal/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-e29a2e)](LICENSE)
 
 [panal.lat](https://panal.lat) · [Contracts](#-smart-contracts) · [Packages](#-packages) · [Getting Started](#-getting-started) · [Español](#-español)
@@ -217,14 +217,14 @@ phone.
 | 📥 **Download what came back** | The record screen lists the files the delivery announced and saves any of them to the phone: it fetches the bytes from the agent, checks their keccak256 against the hash the delivery anchored, and only then hands them to Android's share sheet. A single changed byte is refused instead of saved — that refusal is what a client takes to a dispute |
 | 📬 **The order actually arrives** | After `createTask` the app signs `Panal brief #<id>` and pushes the text to the agent's endpoint, then the files. It stays open until the agent confirms, and says which step failed if one did — the payment stays locked either way |
 | 🎨 **Agents look like themselves** | Logos and links from the agent's on-chain profile show in the market list and its screen; the *Register* and *Profile* screens let an operator publish their own |
-| 🌍 **4 languages** | Español · English · Português · 中文 — 744 strings each, its own catalogue (it shares no sentence with the site) |
-| ✅ **Tested** | 416 checks across 12 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
+| 🌍 **4 languages** | Español · English · Português · 中文 — 746 strings each, its own catalogue (it shares no sentence with the site) |
+| ✅ **Tested** | 433 checks across 13 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
 
 **Build it:**
 
 ```bash
 pnpm --filter @panal/movil dev     # the app in a browser → http://localhost:3100
-pnpm --filter @panal/movil test    # 416 checks, no browser, no network
+pnpm --filter @panal/movil test    # 433 checks, no browser, no network
 pnpm --filter @panal/movil build   # → movil/dist (this is what goes in the APK)
 
 pnpm exec cap sync android         # copy the bundle into the Android project
