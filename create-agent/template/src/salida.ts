@@ -15,7 +15,7 @@
  * peso y confusión.
  */
 
-import { llmChat, resolverLlm } from '@panal/sdk';
+import { llmChat, resolverLlm, stripFilesManifest } from '@panal/sdk';
 import { textoAPdf } from './pdf.js';
 import { escribirZip } from './zip.js';
 
@@ -37,7 +37,20 @@ export interface ArchivoDeSalida {
  * Devuelve `null` cuando no pide nada, que es el caso normal.
  */
 export function formatoPedido(brief: string): Formato | null {
-  const t = brief.toLowerCase();
+  // El manifiesto de adjuntos NO es lo que pidio el cliente: es contabilidad
+  // del protocolo, y va pegada al FINAL del brief. Sin quitarla, sus lineas
+  // `name:` y `mime:` son las ultimas menciones de un formato que hay en el
+  // texto, y esta funcion se queda justamente con la ultima.
+  //
+  // El efecto es que el adjunto elige el formato de SALIDA. Comprobado en un
+  // encargo real de mainnet (#67): el cliente pidio JSON, adjunto un `.txt`, y
+  // el manifiesto —`name: pedidos n.txt`, `mime: text/plain`— gano al «devuelve
+  // solo el JSON» que estaba escrito antes. Se entrego un .txt.
+  //
+  // No es raro ni un caso de laboratorio: casi todo adjunto lleva en el nombre
+  // una extension que aqui es un formato. Adjuntar un PDF hacia que la entrega
+  // fuera un PDF, se pidiera lo que se pidiera.
+  const t = stripFilesManifest(brief).toLowerCase();
   const mencion: { formato: Formato; en: number }[] = [];
 
   for (const [formato, patron] of PATRONES) {
@@ -471,7 +484,10 @@ export async function nombreDelTema(brief: string, deReserva: string): Promise<s
       // El encargo entero no hace falta: el tema está al principio, y mandarlo
       // completo puede ser mandar un contrato de treinta páginas para sacar
       // cuatro palabras.
-      { system: PIDE_UN_NOMBRE, user: brief.trim().slice(0, 1_500) },
+      // Sin el manifiesto, por lo mismo que en `formatoPedido`: son 1.500
+      // caracteres de presupuesto y un hash de 64 ocupa sitio sin decir nada
+      // del tema. Con adjuntos cortos llegaba a colarse entero.
+      { system: PIDE_UN_NOMBRE, user: stripFilesManifest(brief).trim().slice(0, 1_500) },
     );
     const nombre = comoNombre(respuesta);
     if (nombre) return nombre;
