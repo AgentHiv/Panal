@@ -11,6 +11,10 @@
 #                 que alguien abre la web en ese idioma. Esto lo hace visible.
 #   contracts   — hermético (forge-std está versionado en el repo).
 #   bot         — hermético: los scripts corren en DRY_RUN, con la cadena simulada.
+#   movil       — hermético: el llavero, los expedientes y el camino de x402 en
+#                 Node, sin navegador y sin red. Corría SOLO dentro del workflow
+#                 del APK, o sea al cortar una release: una prueba rota se
+#                 descubría con la etiqueta ya empujada y el APK sin salir.
 #   mcp-mainnet — SÍ toca Monad mainnet. Es solo lectura (ni gas ni fondos), y es
 #                 la única forma de detectar que una dirección o un ABI dejaron de
 #                 cuadrar con la realidad. Lleva reintentos porque el RPC público
@@ -130,6 +134,36 @@ jobs:
             done
             if [ "$ok" -ne 1 ]; then echo "$suite falló las 3 veces"; exit 1; fi
           done
+
+  movil:
+    name: La app pasa sus pruebas
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      # `sdk/dist` está en .gitignore: recién clonado no existe, y las pruebas
+      # de la app importan `@panal/sdk` para comprobar el camino de x402 contra
+      # el código de verdad.
+      - name: Compilar el SDK
+        run: pnpm --filter @panal/sdk build
+
+      # Sin navegador y sin red: el llavero cifrado con PIN, los expedientes,
+      # la paridad de los cuatro idiomas y la frontera de la firma.
+      - name: Pruebas de la app
+        run: pnpm --filter @panal/movil test
 
   agente-generado:
     name: El agente generado compila y arranca

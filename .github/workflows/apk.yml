@@ -82,6 +82,17 @@ jobs:
       - name: Instalar dependencias
         run: pnpm install --frozen-lockfile
 
+      # EL SDK PRIMERO, y no es un adorno del orden.
+      #
+      # `sdk/dist` esta en .gitignore, asi que recien clonado el repositorio no
+      # existe. Las pruebas de la app importan `@panal/sdk` para comprobar el
+      # camino de x402 contra el codigo de verdad —que se firma primero y se
+      # manda despues— y sin el `dist` eso es un ERR_MODULE_NOT_FOUND. Aqui
+      # pasaba, y ademas tarde: el unico sitio donde corren estas pruebas era
+      # este, o sea al cortar una release, con la etiqueta ya empujada.
+      - name: Compilar el SDK
+        run: pnpm --filter @panal/sdk build
+
       # El llavero cifra claves privadas y los expedientes deciden si una
       # entrega cuadra con la cadena. Las dos cosas se comprueban en Node, sin
       # navegador y sin red, y tienen que pasar ANTES de compilar nada: un APK
