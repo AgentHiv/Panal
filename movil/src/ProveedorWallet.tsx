@@ -13,8 +13,10 @@ import { PIDE_FIRMA, enlaceDeVuelta, olvidarWallet, walletRecordada } from '~/li
 import type { Redireccion } from '~/lib/regreso';
 import Teclado from '~/componentes/Teclado';
 import Icono from '~/componentes/Icono';
-import { conectorLlavero } from '~/lib/conector';
+import { ID_LLAVERO, conectorLlavero } from '~/lib/conector';
 import { abrirSesion, caducar, cerrarSesion, idRecordado, tocar, useSesion } from '~/lib/sesion';
+import { CambioContext } from '~/lib/cambio';
+import type { Cambio } from '~/lib/cambio';
 import { abrir as abrirLlavero, borrarLlavero, hayLlavero, listar } from '~/lib/llavero';
 import Bienvenida from '~/pantallas/Bienvenida';
 import Olvidado from '~/componentes/Olvidado';
@@ -102,7 +104,7 @@ interface ProveedorWC {
 }
 
 export default function ProveedorWallet({ children }: { children: ReactNode }): React.ReactElement {
-  const { address, isConnected, status } = useAccount();
+  const { address, connector: enMarcha, isConnected, status } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
@@ -300,6 +302,13 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
         // SU pantalla —al crear la primera wallet, por ejemplo— también deja
         // la app conectada, sin repetir aquí ese trozo.
         await abrirSesion(llave, cual);
+        // Si lo que estaba conectado era una wallet de FUERA, hay que echarla:
+        // el efecto de abajo solo engancha el llavero cuando no hay nadie
+        // conectado, así que sin esto la sesión quedaba abierta —clave
+        // descifrada y todo— mientras la app seguía firmando por WalletConnect.
+        // Entre dos wallets del llavero no hace falta: de eso se entera wagmi
+        // por el aviso de `alCambiarDeWallet`, sin cortar la conexión.
+        if (isConnected && enMarcha?.id !== ID_LLAVERO) disconnect();
         setAbriendo(null);
         setErrorPin(null);
         setHoja(false);
@@ -309,7 +318,7 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
         setOcupadoPin(false);
       }
     },
-    [T],
+    [T, disconnect, enMarcha, isConnected],
   );
 
   /**
@@ -417,6 +426,47 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
     if (isPending && wc) void wc.disconnect().catch(() => {});
   }, [isPending, wc]);
 
+  /**
+   * Cambiar la wallet con la que se firma, estando ya dentro.
+   *
+   * `conectar` no vale para esto y por eso hacía falta otra puerta: se va de
+   * vacío si ya hay una wallet conectada —que es siempre, desde que el cerrojo
+   * pide el PIN al arrancar—, así que la hoja de elegir no se abría nunca
+   * después de la primera vez. Ese es literalmente el anclaje: las wallets que
+   * crearas después existían, se les veía el saldo, y no había forma de hablar
+   * con un agente desde ellas.
+   *
+   * SIEMPRE PASA POR EL PIN, y no es un descuido. La sesión guarda la CUENTA
+   * descifrada, no la llave que la descifró; con la llave dentro se podría
+   * cambiar sin teclear nada, pero entonces la app abierta encima de una mesa
+   * podría firmar con CUALQUIERA de las wallets del llavero, no solo con la que
+   * estaba en uso. Seis dígitos por cambio es el precio de que eso no pase, y
+   * cambiar de wallet no es algo que se haga cada minuto.
+   */
+  const pedirCambio = useCallback(
+    (cual?: WalletGuardada) => {
+      setErrorPin(null);
+      // Con una wallet ya elegida —se llega así desde el llavero— se va derecho
+      // a su PIN: enseñar la lista sería preguntar lo que ya está contestado.
+      if (cual) {
+        setGuardadas(listar());
+        setAbriendo(cual);
+        return;
+      }
+      abrirHoja();
+    },
+    [abrirHoja],
+  );
+
+  /** Soltar la que hay sin poner otra. Para borrar del llavero la que firma. */
+  const soltar = useCallback(() => {
+    cerrarSesion();
+    olvidarWallet();
+    disconnect();
+  }, [disconnect]);
+
+  const cambio = useMemo<Cambio>(() => ({ cambiar: pedirCambio, soltar }), [pedirCambio, soltar]);
+
   const valor = useMemo<WalletState>(
     () => ({
       connected: isConnected,
@@ -482,7 +532,7 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
 
   return (
     <WalletContext.Provider value={valor}>
-      {children}
+      <CambioContext.Provider value={cambio}>{children}</CambioContext.Provider>
 
       {/* Sin llavero no hay app: primero se crea o se trae una wallet. Va por
           encima de todo y no como ruta a propósito — una ruta se puede dejar
@@ -528,7 +578,15 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
         fallo={fallo}
         delTelefono={guardadas}
         recordada={idRecordado()}
+        enUso={sesion.abierta ? (sesion.wallet?.id ?? null) : null}
         onElegirDelTelefono={(w) => {
+          // Volver a elegir la que ya está firmando no es cambiar de nada: se
+          // cierra la hoja y ya. Pedirle el PIN otra vez sería cobrarle seis
+          // dígitos por no hacer nada.
+          if (sesion.abierta && sesion.wallet?.id === w.id) {
+            cerrarHoja();
+            return;
+          }
           setErrorPin(null);
           setAbriendo(w);
         }}
@@ -584,7 +642,10 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
           </div>
           <Teclado
             titulo={pidiendoPin.nombre}
-            explicacion={T.hojaWallet.pinTitulo}
+            // Cambiando ya hay sesión abierta, así que la frase de siempre
+            // —«con él, firmar deja de sacarte de la app»— cuenta algo que ya
+            // pasó. Lo que hace falta saber aquí es qué wallet queda firmando.
+            explicacion={sesion.abierta ? T.hojaWallet.pinCambiar : T.hojaWallet.pinTitulo}
             onCompleto={(pin) => void conLaDelTelefono(pin, pidiendoPin)}
             error={errorPin}
             ocupado={ocupadoPin}

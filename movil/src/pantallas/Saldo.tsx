@@ -4,6 +4,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { activeChain } from '@/contracts/config';
 import { useSaldos } from '~/lib/usarSaldos';
 import { useSesion } from '~/lib/sesion';
+import { useCambio } from '~/lib/cambio';
 import { copiar } from '~/lib/wallets';
 import Icono from '~/componentes/Icono';
 import Menu from '~/componentes/Menu';
@@ -27,6 +28,7 @@ export default function Saldo(): React.ReactElement {
     useWallet();
   const { panal, mon, cargando } = useSaldos();
   const sesion = useSesion();
+  const { cambiar } = useCambio();
   const T = useTextos();
   const [copiado, setCopiado] = useState(false);
 
@@ -91,9 +93,18 @@ export default function Saldo(): React.ReactElement {
           {/* La dirección va abajo y entera: es para recibir, no para mirarla. */}
           <div className="shrink-0 rounded-[14px] border border-line p-3.5">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-                {T.comun.tuDireccion}
-              </p>
+              {/* Con nombre, el nombre: es lo que se le puso para reconocerla,
+                  y «Tu dirección» ya lo dice la línea de abajo entera.
+                  Sin `uppercase`, que es como venía este rótulo: un nombre lo
+                  escribe una persona, y «Nómina» convertido en «NÓMINA» ya no
+                  es el que puso. Las mayúsculas son para las etiquetas. */}
+              {sesion.wallet ? (
+                <p className="min-w-0 truncate text-[13px] font-semibold">{sesion.wallet.nombre}</p>
+              ) : (
+                <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
+                  {T.comun.tuDireccion}
+                </p>
+              )}
               {/* Cuál de las dos está firmando. No es un detalle: decide si al
                   aprobar algo se abre otra app o no se abre nada. */}
               <span className="flex items-center gap-1.5 text-[11px] text-ink-3">
@@ -119,6 +130,17 @@ export default function Saldo(): React.ReactElement {
                 color={copiado ? '#92A268' : '#948DAE'}
               />
               {copiado ? T.comun.copiada : T.comun.copiarDireccion}
+            </button>
+            {/* Cambiar de wallet, donde se mira cuál hay. Antes esto solo se
+                podía hacer desconectando, y desconectar no es lo que se quiere
+                cuando lo que se busca es pagar con otra. */}
+            <button
+              type="button"
+              onClick={() => cambiar()}
+              className="pulsable tocable mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-line py-2.5 text-[13.5px] font-medium text-ink-2"
+            >
+              <Icono nombre="recargar" tamano={15} color="#948DAE" />
+              {T.saldo.cambiarWallet}
             </button>
             <p className="mt-2.5 text-[11.5px] leading-[1.5] text-ink-3">
               {T.saldo.dondeSeCompra}

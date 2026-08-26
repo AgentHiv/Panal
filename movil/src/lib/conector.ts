@@ -34,7 +34,7 @@ import { createConnector } from 'wagmi';
 import { SwitchChainError, UserRejectedRequestError, createWalletClient, http, numberToHex } from 'viem';
 import type { Address, Hex, TypedDataDefinition } from 'viem';
 import { activeChain, publicClient } from '@/contracts/config';
-import { cerrarSesion, cuentaViva } from '~/lib/sesion';
+import { alCambiarDeWallet, cerrarSesion, cuentaViva } from '~/lib/sesion';
 import { textos } from '~/i18n/idiomas';
 
 export const ID_LLAVERO = 'panal-llavero';
@@ -149,51 +149,76 @@ export type ProveedorLlavero = typeof PROVEEDOR;
  * comportamiento correcto al reabrir la app: wagmi no reconecta solo, la
  * pantalla vuelve a ofrecer conectar, y hay que poner el PIN. Es lo que debe
  * pasar — la alternativa sería una app que firma sola en cuanto se abre.
+ *
+ * Y ESCUCHA LOS CAMBIOS DE WALLET, que es lo que faltaba.
+ *
+ * wagmi pregunta las cuentas UNA vez, al conectar, y a partir de ahí trabaja
+ * con lo que guardó. Una extensión del navegador resuelve esto emitiendo
+ * `accountsChanged` cuando cambias de cuenta; este conector no emitía nada, así
+ * que elegir otra wallet del llavero descifraba su clave —y firmaba con ella—
+ * mientras `useAccount()` seguía devolviendo la dirección anterior. La app
+ * entera se quedaba mirando una wallet y pagando con otra.
+ *
+ * El aviso entra por `alCambiarDeWallet` y sale por `emitter.emit('change')`,
+ * que es lo mismo que wagmi usa por dentro para eso. Se engancha al conectar y
+ * se suelta al desconectar: cada `connect` con una función crea un conector
+ * nuevo, y sin soltarlo quedaría un oyente vivo por cada uno.
  */
 export function conectorLlavero() {
-  return createConnector<ProveedorLlavero>((config) => ({
-    id: ID_LLAVERO,
-    name: textos().comun.walletDelTelefono,
-    type: 'llavero',
+  return createConnector<ProveedorLlavero>((config) => {
+    /** Cómo soltar el oyente de cambios. `null` mientras no hay ninguno. */
+    let soltar: (() => void) | null = null;
 
-    async connect() {
-      const cuenta = exigirCuenta();
-      // El `as never` no tapa nada: wagmi tipa `accounts` según un genérico
-      // `withCapabilities` (EIP-5792) que este conector no anuncia, y no hay
-      // forma de satisfacer las dos ramas del condicional desde aquí.
-      return { accounts: [cuenta.address], chainId: activeChain.id } as never;
-    },
+    return {
+      id: ID_LLAVERO,
+      name: textos().comun.walletDelTelefono,
+      type: 'llavero',
 
-    async disconnect() {
-      cerrarSesion();
-    },
+      async connect() {
+        const cuenta = exigirCuenta();
+        soltar?.();
+        soltar = alCambiarDeWallet((direccion) => {
+          config.emitter.emit('change', { accounts: [direccion], chainId: activeChain.id });
+        });
+        // El `as never` no tapa nada: wagmi tipa `accounts` según un genérico
+        // `withCapabilities` (EIP-5792) que este conector no anuncia, y no hay
+        // forma de satisfacer las dos ramas del condicional desde aquí.
+        return { accounts: [cuenta.address], chainId: activeChain.id } as never;
+      },
 
-    async getAccounts() {
-      const cuenta = cuentaViva();
-      return (cuenta ? [cuenta.address] : []) as readonly Address[];
-    },
+      async disconnect() {
+        soltar?.();
+        soltar = null;
+        cerrarSesion();
+      },
 
-    async getChainId() {
-      return activeChain.id;
-    },
+      async getAccounts() {
+        const cuenta = cuentaViva();
+        return (cuenta ? [cuenta.address] : []) as readonly Address[];
+      },
 
-    async getProvider() {
-      return PROVEEDOR;
-    },
+      async getChainId() {
+        return activeChain.id;
+      },
 
-    async isAuthorized() {
-      return cuentaViva() !== null;
-    },
+      async getProvider() {
+        return PROVEEDOR;
+      },
 
-    async switchChain({ chainId }) {
-      const red = config.chains.find((c) => c.id === chainId);
-      if (!red || chainId !== activeChain.id)
-        throw new SwitchChainError(new Error(`Esta wallet solo usa ${activeChain.name}.`));
-      return red;
-    },
+      async isAuthorized() {
+        return cuentaViva() !== null;
+      },
 
-    onAccountsChanged() {},
-    onChainChanged() {},
-    onDisconnect() {},
-  }));
+      async switchChain({ chainId }) {
+        const red = config.chains.find((c) => c.id === chainId);
+        if (!red || chainId !== activeChain.id)
+          throw new SwitchChainError(new Error(`Esta wallet solo usa ${activeChain.name}.`));
+        return red;
+      },
+
+      onAccountsChanged() {},
+      onChainChanged() {},
+      onDisconnect() {},
+    };
+  });
 }

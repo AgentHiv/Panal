@@ -20,6 +20,7 @@ export const pt: Textos = {
     atras: 'Voltar',
     borrar: 'Apagar',
     ahoraNo: 'Agora não',
+    guardar: 'Guardar',
     copiar: 'Copiar',
     copiada: 'Copiado',
     copiarDireccion: 'Copiar endereço',
@@ -47,6 +48,7 @@ export const pt: Textos = {
     sinWallet: 'Sem wallet ligada',
     firmaAqui: 'Assina neste telemóvel',
     firmaFuera: 'Assina na tua wallet',
+    cambiarWallet: 'Mudar',
     llavero: 'O teu porta-chaves',
     agentes: 'Os teus agentes',
     cartera: 'A tua carteira',
@@ -90,6 +92,13 @@ export const pt: Textos = {
     sinWalletConnect:
       'Esta versão foi compilada sem WalletConnect, por isso não há forma de abrir uma wallet a partir daqui. É preciso compilar o APK com',
     usarOtra: 'Usar outra',
+    tituloCambiar: 'Mudar de wallet',
+    entradillaCambiar:
+      'Com a que escolheres assina-se tudo: as mensagens, as encomendas e o dinheiro que fica bloqueado. Cada wallet tem o seu saldo e as suas conversas.',
+    enUso: 'Em uso',
+    cambiarPie:
+      'Para passar a outra é preciso o PIN. A que estavas a usar não se perde nem se fecha: continua no porta-chaves, com o que tiver lá dentro.',
+    pinCambiar: 'O PIN do teu porta-chaves. A partir daqui assina-se com esta.',
     pinTitulo: 'O PIN do teu porta-chaves. Com ele, assinar deixa de te tirar da app.',
     fueraEnAgentes:
       'Para administrar um agente é preciso assinar com a wallet do próprio agente. Essa liga-se a partir de «Os teus agentes», no menu.',
@@ -111,6 +120,7 @@ export const pt: Textos = {
     agentes: 'Os teus agentes',
     agentesPie: 'Segue um ou administra o teu: cobrar, preço, pausa e ficha.',
     desconectar: (dir: string) => `Desligar ${dir}`,
+    cambiarWallet: 'Mudar de wallet',
     otraRedTitulo: 'Wallet noutra rede',
     otraRedTexto: (red: string) =>
       `O Panal vive na ${red}. Enquanto a tua wallet estiver noutra rede não se pode assinar nada.`,
@@ -157,6 +167,11 @@ export const pt: Textos = {
     vaciaPie: 'Ainda não há nada para enviar. Toca em «Receber» para veres para onde o mandar.',
     verPalabras: 'Ver as 12 palavras',
     verClave: 'Ver a chave privada',
+    usarEsta: 'Usar esta wallet',
+    usarEstaPie:
+      'Passa a ser aquela com que falas e encomendas. Pede-te o PIN, e a de antes fica como está.',
+    esLaQueUsas: 'É com esta que estás a pagar',
+    cambiarNombre: 'Mudar o nome',
     importada: 'Trazida de fora. Continua a existir onde estava: apagá-la daqui não a apaga de lá.',
     creadaAqui: 'Criada neste telemóvel. A cópia de segurança dela são as suas 12 palavras e não há outra.',
     borrarDelTelefono: 'Apagar do telemóvel',

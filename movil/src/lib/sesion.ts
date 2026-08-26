@@ -35,7 +35,7 @@
  */
 
 import { useSyncExternalStore } from 'react';
-import type { Account } from 'viem';
+import type { Account, Address } from 'viem';
 import { cuentaDe } from '~/lib/llavero';
 import type { Llave, WalletGuardada } from '~/lib/llavero';
 
@@ -53,6 +53,30 @@ export interface Sesion {
   /** Si hay una wallet del llavero lista para firmar. */
   abierta: boolean;
   wallet: WalletGuardada | null;
+}
+
+/**
+ * Quién quiere enterarse de que la wallet en uso ha CAMBIADO por otra.
+ *
+ * No es lo mismo que `useSesion`, y esa diferencia es la que dejaba la app
+ * anclada a la primera wallet. `useSesion` lo miran las pantallas; el que tiene
+ * que enterarse aquí es wagmi, que se guarda la dirección conectada en su
+ * propio estado y no vuelve a preguntarla nunca. Sin este aviso, elegir otra
+ * wallet descifraba su clave —y firmaba con ella— mientras las quince
+ * pantallas seguían enseñando la dirección vieja y pidiendo SUS saldos y SUS
+ * encargos. Firmar con una y mirar otra es peor que no poder cambiar.
+ *
+ * Lleva la dirección y no la wallet entera porque quien escucha es
+ * `lib/conector.ts`, y lo único que wagmi entiende es una dirección.
+ */
+type Testigo = (direccion: Address) => void;
+const testigos = new Set<Testigo>();
+
+export function alCambiarDeWallet(f: Testigo): () => void {
+  testigos.add(f);
+  return () => {
+    testigos.delete(f);
+  };
 }
 
 let instantanea: Sesion = { abierta: false, wallet: null };
@@ -85,7 +109,14 @@ export function useSesion(): Sesion {
  * esto viene a quitar.
  */
 export async function abrirSesion(llave: Llave, w: WalletGuardada): Promise<void> {
-  cuenta = await cuentaDe(llave, w.id);
+  // Cuál había ANTES, para saber si esto es abrir o es cambiar. Se lee antes
+  // del `await`, porque después `cuenta` ya es la nueva.
+  const antes = cuenta?.address ?? null;
+
+  // Descifrar primero y asignar después: si esto lanza, la sesión que ya estaba
+  // abierta se queda intacta, en vez de dejar la app a medio cambiar.
+  const nueva = await cuentaDe(llave, w.id);
+  cuenta = nueva;
   wallet = w;
   ultimoUso = Date.now();
   try {
@@ -94,6 +125,13 @@ export async function abrirSesion(llave: Llave, w: WalletGuardada): Promise<void
     /* recordar cuál es una comodidad, no un requisito */
   }
   avisar();
+
+  // Y solo si de verdad hay otra dirección detrás. Volver a abrir la MISMA
+  // wallet —al desbloquear la app, sin ir más lejos— no es un cambio, y
+  // anunciarlo movería a wagmi de sitio sin motivo en cada arranque.
+  if (antes && antes.toLowerCase() !== nueva.address.toLowerCase()) {
+    for (const f of testigos) f(nueva.address);
+  }
 }
 
 /** Tira la clave descifrada. Lo guardado sigue cifrado en el llavero. */
@@ -142,6 +180,19 @@ export function cuentaViva(): Account | null {
 
 export function walletViva(): WalletGuardada | null {
   return wallet;
+}
+
+/**
+ * El nombre nuevo, si a quien han renombrado es a la wallet en uso.
+ *
+ * La sesión se quedó con una COPIA de la fila del llavero al abrirse, así que
+ * renombrar en el disco no la toca: el menú, la hoja de firmar y el teclado del
+ * PIN seguirían diciendo «Wallet 1» después de haberla llamado «Nómina».
+ */
+export function renombrarEnSesion(id: string, nombre: string): void {
+  if (!wallet || wallet.id !== id) return;
+  wallet = { ...wallet, nombre };
+  avisar();
 }
 
 /** Cuál se usó la última vez, para ofrecerla ya marcada. */
