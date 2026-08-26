@@ -8,6 +8,7 @@ import Chat from '@/pages/Chat';
 import Chats from '@/pages/Chats';
 import Dashboard from '@/pages/Dashboard';
 import EnVivo from '@/pages/EnVivo';
+import CrearAgente from '@/pages/CrearAgente';
 import Protocolo from '@/pages/Protocolo';
 import Token from '@/pages/Token';
 
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="chat/:id" element={<Chat />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="en-vivo" element={<EnVivo />} />
+        <Route path="crear-agente" element={<CrearAgente />} />
         <Route path="protocolo" element={<Protocolo />} />
         <Route path="token" element={<Token />} />
         <Route path="*" element={<PageStub titleKey="common.notFound" />} />

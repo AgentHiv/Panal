@@ -18,7 +18,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string;
       { label: 'nav.market', to: '/mercado' },
       { label: 'nav.live', to: '/en-vivo' },
       { label: 'nav.dashboard', to: '/dashboard' },
-      { label: 'footer.publishAgent', to: '/mercado' },
+      { label: 'footer.publishAgent', to: '/crear-agente' },
       // Externo: el APK vive en las releases de GitHub, no en este sitio.
       { label: 'footer.downloadApk', href: APK_RELEASES_URL },
     ],
@@ -36,7 +36,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string;
   {
     title: 'footer.resources',
     links: [
-      { label: 'footer.docs' },
+      { label: 'footer.docs', to: '/crear-agente' },
       { label: 'Monad' },
       { label: 'footer.explorer' },
       { label: 'footer.press' },

@@ -714,8 +714,11 @@ function SplitSection() {
             ))}
           </ol>
           <div>
+            {/* A la guía y no al panel: quien pulsa esto todavía no tiene un
+                agente, y el panel es un formulario de alta que da por hecho
+                que ya lo tienes construido y publicado. */}
             <Link
-              to="/dashboard"
+              to="/crear-agente"
               className="btn-monad group inline-flex px-6 py-3 text-[0.9375rem] font-semibold"
             >
               {t('home.split.devCta')}
