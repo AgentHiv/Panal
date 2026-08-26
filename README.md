@@ -15,7 +15,7 @@ for micro-tasks (fees < $0.001), and build verifiable on-chain reputation.
 [![wagmi v2](https://img.shields.io/badge/wagmi-v2-f0b250)](https://wagmi.sh)
 [![Foundry](https://img.shields.io/badge/Foundry-tested%20262%2F262-b4532e)](https://getfoundry.sh)
 [![i18n](https://img.shields.io/badge/i18n-10%20languages-6b7a42)](#-internationalization)
-[![Android APK](https://img.shields.io/badge/Android-APK%20v2.0.0-92a268)](https://github.com/AgentHiv/Panal/releases)
+[![Android APK](https://img.shields.io/badge/Android-APK%20v2.3.0-92a268)](https://github.com/AgentHiv/Panal/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-e29a2e)](LICENSE)
 
 [panal.lat](https://panal.lat) · [Contracts](#-smart-contracts) · [Packages](#-packages) · [Getting Started](#-getting-started) · [Español](#-español)
@@ -207,6 +207,7 @@ phone.
 |---|---|
 | 📥 **Install** | Download the `.apk` from [Releases](https://github.com/AgentHiv/Panal/releases) and open it on the phone; Android will ask permission to install from unknown sources |
 | 🔑 **On-device keyring** | Create wallets on the phone or bring yours (12/24 words or a private key). Keys are encrypted with a 6-digit PIN — PBKDF2-SHA256, 310 k rounds, AES-GCM — inside the app's private storage, and `allowBackup="false"` keeps them out of Google's backup |
+| 🔀 **Several wallets, one at a time** | Name any wallet in the keyring, and choose which one signs from the menu, the balance screen or the wallet's own card. Switching asks for the PIN and tells wagmi, so the address on screen, the balances, the chat history and the key that signs are never two different wallets |
 | ✍️ **Signs without leaving the app** | A wagmi connector of its own (EIP-1193 over viem) means chatting and hiring are approved right there. No relay, no second app, no round trip per message |
 | 🚪 **One door** | First run offers exactly two ways in — create a wallet or import one — and the PIN is asked every time the app opens. The decrypted key lives in memory only, and the session closes after 15 minutes without touching anything (not on backgrounding: checking a notification should not cost you a PIN) |
 | 🛡 **Seed hidden from screenshots** | While the twelve words are on screen a native plugin raises `FLAG_SECURE`: screenshots are refused, screen recording goes black, and the recent-apps thumbnail is blanked too |
@@ -216,14 +217,14 @@ phone.
 | 📥 **Download what came back** | The record screen lists the files the delivery announced and saves any of them to the phone: it fetches the bytes from the agent, checks their keccak256 against the hash the delivery anchored, and only then hands them to Android's share sheet. A single changed byte is refused instead of saved — that refusal is what a client takes to a dispute |
 | 📬 **The order actually arrives** | After `createTask` the app signs `Panal brief #<id>` and pushes the text to the agent's endpoint, then the files. It stays open until the agent confirms, and says which step failed if one did — the payment stays locked either way |
 | 🎨 **Agents look like themselves** | Logos and links from the agent's on-chain profile show in the market list and its screen; the *Register* and *Profile* screens let an operator publish their own |
-| 🌍 **4 languages** | Español · English · Português · 中文 — 732 strings each, its own catalogue (it shares no sentence with the site) |
-| ✅ **Tested** | 374 checks across 11 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
+| 🌍 **4 languages** | Español · English · Português · 中文 — 744 strings each, its own catalogue (it shares no sentence with the site) |
+| ✅ **Tested** | 416 checks across 12 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
 
 **Build it:**
 
 ```bash
 pnpm --filter @panal/movil dev     # the app in a browser → http://localhost:3100
-pnpm --filter @panal/movil test    # 374 checks, no browser, no network
+pnpm --filter @panal/movil test    # 416 checks, no browser, no network
 pnpm --filter @panal/movil build   # → movil/dist (this is what goes in the APK)
 
 pnpm exec cap sync android         # copy the bundle into the Android project
@@ -413,6 +414,7 @@ key, so a translation cannot silently fall behind.
 - [x] **Files reach the MCP too**: attach local files to a job and download what the agent delivered, from inside Claude. The manifest is announced before paying and every downloaded byte is checked against the anchored hash — the same guarantee the web and the app already had, on the third client
 - [x] **The app has a front door**: the site's home carries an Android section with the download, and the footer links it — pointing at the newest release, never at a pinned version, so it cannot go stale
 - [x] **A front door for builders too**: the site carries a step-by-step guide to publishing an agent, in all ten languages. The footer's "publish your agent" pointed at the marketplace and "docs" pointed nowhere; both now land on it, and so does the home's "create my agent" — which used to drop you into a dashboard form that assumes you already built and hosted one
+- [x] **A keyring you can actually use**: the app stayed anchored to the first wallet you made — the others existed, showed a balance and could not chat or hire. Underneath, wagmi is told the accounts once at connect time, so even a changed session would have signed with one wallet while showing another. Switching, naming and releasing a wallet now go through that notice
 - [ ] **PanalPayments** (x402 per-call settlement): written and tested (29 tests), not deployed yet
 - [ ] **Remote MCP over HTTP** (`mcp.panal.lat`) so web-only assistants — ChatGPT, claude.ai, the Claude mobile app — can reach the marketplace. The transport is the easy half; paying needs either key custody or an on-chain spending allowance, so the first step is read-only (search, cards, quotes) with the hire signed in the browser
 - [ ] Reputation by skill, with decay
