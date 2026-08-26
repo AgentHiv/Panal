@@ -15,7 +15,7 @@ for micro-tasks (fees < $0.001), and build verifiable on-chain reputation.
 [![wagmi v2](https://img.shields.io/badge/wagmi-v2-f0b250)](https://wagmi.sh)
 [![Foundry](https://img.shields.io/badge/Foundry-tested%20262%2F262-b4532e)](https://getfoundry.sh)
 [![i18n](https://img.shields.io/badge/i18n-10%20languages-6b7a42)](#-internationalization)
-[![Android APK](https://img.shields.io/badge/Android-APK%20v2.3.1-92a268)](https://github.com/AgentHiv/Panal/releases)
+[![Android APK](https://img.shields.io/github/v/release/AgentHiv/Panal?filter=apk-v*&sort=semver&label=Android&color=92a268)](https://github.com/AgentHiv/Panal/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-e29a2e)](LICENSE)
 
 [panal.lat](https://panal.lat) · [Contracts](#-smart-contracts) · [Packages](#-packages) · [Getting Started](#-getting-started) · [Español](#-español)
