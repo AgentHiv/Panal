@@ -24,6 +24,14 @@
  *   MCP_TASK_DEADLINE_HOURS  plazo de entrega (default 24)
  *   MCP_SPEND_FILE           dónde persistir el gasto del día
  *
+ * Archivos:
+ *   MCP_ATTACH_DIR    única carpeta desde la que se puede adjuntar (default: cwd)
+ *   MCP_DOWNLOAD_DIR  dónde se guarda lo que entrega el agente (default: ./panal-descargas)
+ *
+ * El corral de `MCP_ATTACH_DIR` no es una comodidad: quien elige qué adjuntar
+ * es el modelo, y un adjunto sale de esta máquina hacia el servidor de un
+ * desconocido sin vuelta atrás. Ver `adjuntos.ts`.
+ *
  * Protocolo: JSON-RPC 2.0 sobre stdio, implementado a mano. stdout está
  * RESERVADO para los mensajes del protocolo —un `console.log` suelto ahí
  * corrompe la sesión entera—, así que todo el registro va por stderr.
@@ -39,11 +47,28 @@ import type { Address } from 'viem';
 import {
   NATIVE_CURRENCY,
   TaskStatus,
+  appendAttachmentsManifest,
   createPanalClient,
+  downloadDeliveredFile,
   erc20Abi,
+  matchAttachment,
+  parseAttachmentsManifest,
+  parseFilesManifest,
+  stripFilesManifest,
   type Agent,
+  type DeliveredFile,
   type PanalClient,
 } from '@panal/sdk';
+import {
+  MAX_ADJUNTOS,
+  capacidadesDeAgente,
+  guardarDescarga,
+  leerAdjuntoLocal,
+  raizAdjuntos,
+  raizDescargas,
+  subirAdjunto,
+  type AdjuntoLocal,
+} from './adjuntos.js';
 import { QuoteBook, SpendLedger, limitFor, limitsFromEnv } from './limits.js';
 import {
   briefSignMessage,
@@ -301,6 +326,72 @@ interface Tool {
 
 const str = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
 
+interface Entrega {
+  text: string;
+  archivos: DeliveredFile[];
+  botUrl: string;
+  signature: string;
+  expira: number;
+}
+
+/**
+ * Pide la entrega de una tarea y la verifica contra la cadena.
+ *
+ * Vive aquí porque lo usan dos herramientas —leer el resultado y bajarse sus
+ * archivos— y ninguna de las dos puede saltarse la verificación. Los archivos
+ * se anuncian DENTRO del texto de la entrega, así que bajarse uno fiándose de
+ * un manifiesto sin comprobar antes que ese texto es el anclado sería
+ * verificar contra lo que diga el agente: la cadena de custodia se rompe en el
+ * primer eslabón y todo lo de después es teatro.
+ *
+ * Devuelve el motivo en texto cuando no se puede, porque quien llama está
+ * escribiendo para una persona y aquí «no» casi siempre significa algo
+ * concreto y accionable.
+ */
+async function recogerEntrega(taskId: bigint): Promise<Entrega | { error: string }> {
+  if (!account) return { error: 'Without MCP_PRIVATE_KEY the request for the result cannot be signed.' };
+  const id = taskId.toString();
+
+  const task = await panal.getTask(taskId);
+  if (task.client.toLowerCase() !== account.address.toLowerCase()) {
+    return { error: `Task #${id} was hired by ${task.client}, not this wallet. Only the client can collect the result.` };
+  }
+  if (/^0x0+$/.test(task.resultHash)) {
+    return { error: `Task #${id} has no delivered result yet (status: ${TaskStatus[task.status] ?? task.status}).` };
+  }
+
+  const agent = await panal.getAgent(task.worker);
+  if (!agent.metadata.botUrl) {
+    return {
+      error:
+        `Agent ${agent.metadata.name || task.worker} publishes no endpoint, so the result cannot be downloaded ` +
+        `here. Its hash is on-chain (${task.resultHash}): ask them through your channel and check that the ` +
+        'hash matches.',
+    };
+  }
+
+  // La firma caduca: abre el resultado y todos los archivos de la tarea.
+  const expira = expiraEn();
+  const signature = await account.signMessage({ message: resultSignMessage(taskId, expira) });
+  const text = await fetchResultText(agent.metadata.botUrl, taskId, account.address, signature, expira);
+
+  // Lo que importa de todo esto: que el texto sea EXACTAMENTE el que se ancló.
+  // Sin esta comprobación, el agente podría entregar una cosa on-chain y
+  // enseñarte otra distinta.
+  const actual = keccak256(toBytes(text));
+  if (actual.toLowerCase() !== task.resultHash.toLowerCase()) {
+    return {
+      error:
+        `⚠️ The result the agent serves does NOT match the one anchored on-chain.\n` +
+        `  expected: ${task.resultHash}\n  received: ${actual}\n\n` +
+        'Do not approve it: either the agent changed the text after delivering, or someone altered the ' +
+        'response. You can open a dispute at https://panal.lat/dashboard.',
+    };
+  }
+
+  return { text, archivos: parseFilesManifest(text), botUrl: agent.metadata.botUrl, signature, expira };
+}
+
 const READ_TOOLS: Tool[] = [
   {
     name: 'panal_search_agents',
@@ -417,6 +508,9 @@ const READ_TOOLS: Tool[] = [
         currency: quote.asset,
         symbol,
         botUrl: agent.metadata.botUrl,
+        // Una consulta x402 se resuelve en una sola llamada HTTP: no hay tarea,
+        // ni taskId, ni sitio donde anunciar un adjunto. Aquí siempre va vacío.
+        adjuntos: [],
       });
 
       return [
@@ -531,6 +625,13 @@ const WRITE_TOOLS: Tool[] = [
       properties: {
         agent: { type: 'string', description: 'The agent 0x… address.' },
         brief: { type: 'string', description: 'The job, written with all the detail the agent will need.' },
+        files: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Optional paths of local files to attach to the job. They must live inside the folder this ' +
+            'server is allowed to read from. Only attach files the person actually asked you to send.',
+        },
       },
       required: ['agent', 'brief'],
     },
@@ -538,12 +639,56 @@ const WRITE_TOOLS: Tool[] = [
       const blocked = writesBlockedReason();
       if (blocked) return blocked;
       const address = str(args.agent);
-      const brief = str(args.brief);
+      const briefPedido = str(args.brief);
       if (!address || !isAddress(address)) return 'I need a valid 0x address for the agent.';
-      if (!brief) return 'I need the text of the job.';
+      if (!briefPedido) return 'I need the text of the job.';
+
+      const rutas = Array.isArray(args.files) ? args.files.map(str).filter((r): r is string => !!r) : [];
+      if (rutas.length > MAX_ADJUNTOS) {
+        return `That is ${rutas.length} attachments and the limit is ${MAX_ADJUNTOS} per job.`;
+      }
 
       const agent = await panal.getAgent(address);
       if (!agent.active) return `${agent.metadata.name || address} is delisted and does not take jobs.`;
+
+      // ---- Adjuntos -------------------------------------------------------
+      //
+      // Todo esto pasa ANTES de presupuestar, y ese es el punto: aquí todavía
+      // no hay dinero de por medio. El manifiesto entra en el brief, o sea en
+      // lo que se hashea al contratar, así que un adjunto no se puede añadir
+      // después — para entonces el taskHash ya está en la cadena.
+      const adjuntos: AdjuntoLocal[] = [];
+      if (rutas.length > 0) {
+        if (!agent.metadata.botUrl) {
+          return `${agent.metadata.name || address} publishes no endpoint, so there is nowhere to send files.`;
+        }
+        // Falla cerrado, y hay que insistir en por qué: sin esta pregunta el
+        // encargo se contrataría igual, el agente lo aceptaría igual —el hash
+        // cuadra, el manifiesto es texto— y entregaría sin haber visto el
+        // archivo. Se descubre pagando.
+        const capaz = await capacidadesDeAgente(agent.metadata.botUrl);
+        if (!capaz.adjuntos) {
+          return (
+            `${agent.metadata.name || address} does not accept attachments (its card publishes no upload ` +
+            `endpoint), so those ${rutas.length} file(s) would never reach it — and it would take the job ` +
+            `anyway and deliver without them, because the manifest is just text inside the brief. ` +
+            `Nothing was quoted and nothing was spent. Put what matters in the text of the job instead.`
+          );
+        }
+
+        for (const ruta of rutas) {
+          const leido = leerAdjuntoLocal(ruta, capaz.maxAdjuntoBytes ?? undefined);
+          if ('error' in leido) return `Cannot attach: ${leido.error}`;
+          adjuntos.push(leido);
+        }
+      }
+
+      // Esto —con el manifiesto dentro— es lo que se hashea y lo que hay que
+      // volver a entregar palabra por palabra si el envío falla.
+      const brief = appendAttachmentsManifest(
+        briefPedido,
+        adjuntos.map((a) => a.file),
+      );
 
       const amount = agent.pricePerTask;
       const symbol = symbolOf(agent.currency);
@@ -586,13 +731,23 @@ const WRITE_TOOLS: Tool[] = [
         currency: agent.currency,
         symbol,
         botUrl: agent.metadata.botUrl,
+        adjuntos: adjuntos.map((a) => ({ file: a.file, ruta: a.ruta })),
       });
 
       return [
         `Quote for ${quote.agentName}:`,
         `  Price: ${formatEther(amount)} ${symbol}`,
         `  Deadline: ${limits.deadlineHours} h from the moment it is hired`,
-        `  Job: ${brief.length > 200 ? `${brief.slice(0, 200)}…` : brief}`,
+        `  Job: ${briefPedido.length > 200 ? `${briefPedido.slice(0, 200)}…` : briefPedido}`,
+        // Se listan uno a uno, con su ruta real. Lo que se adjunta sale de esta
+        // máquina y no vuelve, así que la persona tiene que poder ver QUÉ
+        // archivos son antes de decir que sí — no un «3 adjuntos».
+        ...(adjuntos.length > 0
+          ? [
+              `  Attachments (${adjuntos.length}), sent after hiring:`,
+              ...adjuntos.map((a) => `    · ${a.file.name} — ${(a.file.size / 1024).toFixed(1)} KB — ${a.ruta}`),
+            ]
+          : []),
         '',
         `quote_id: ${quote.id}  (valid for 5 minutes)`,
         '',
@@ -696,6 +851,28 @@ const WRITE_TOOLS: Tool[] = [
       const negativa = revisarPresupuesto(quote.currency, quote.amount, quote.symbol);
       if (negativa) return negativa;
 
+      // Los adjuntos se releen y se verifican AQUÍ, con el dinero todavía
+      // quieto. El hash que se anunció ya está dentro del brief que va a
+      // hashearse; si el archivo cambió desde que se presupuestó, esos bytes
+      // ya no son los que la cadena va a cubrir y el agente los rechazaría
+      // —correctamente— después de haber cobrado. Fallar ahora cuesta pedir
+      // otro presupuesto; fallar diez líneas más abajo cuesta el encargo.
+      const subidas: AdjuntoLocal[] = [];
+      for (const pendiente of quote.adjuntos) {
+        const leido = leerAdjuntoLocal(pendiente.ruta);
+        if ('error' in leido) {
+          return `Not hired, nothing was spent: ${pendiente.file.name} could not be read again (${leido.error}).`;
+        }
+        if (!matchAttachment([pendiente.file], leido.bytes, pendiente.file.name)) {
+          return (
+            `Not hired, nothing was spent: ${pendiente.ruta} changed since it was quoted. ` +
+            `The announced hash is the one that would go on the chain, so the agent would reject these ` +
+            `bytes after being paid. Ask for a fresh quote to attach the current version.`
+          );
+        }
+        subidas.push(leido);
+      }
+
       const deadline = BigInt(Math.floor(Date.now() / 1000) + limits.deadlineHours * 3600);
       try {
         const result = await panal.hire({ agent: quote.worker, brief: quote.brief, deadline });
@@ -715,11 +892,48 @@ const WRITE_TOOLS: Tool[] = [
           if (fallo === null) {
             entregaBrief = `Job delivered to ${quote.botUrl}: the agent is already working on it.`;
             log(`brief #${result.taskId} entregado en ${quote.botUrl}`);
+
+            // Los bytes van DESPUÉS del encargo y no antes: el agente solo
+            // acepta lo que su brief anuncie, y hasta tenerlo no sabe cuáles
+            // son. La misma firma vale para los dos; pedir una por archivo no
+            // añadiría nada, porque lo que decide qué entra es el manifiesto
+            // que la cadena ya cubre.
+            if (subidas.length > 0) {
+              const fallidos: string[] = [];
+              for (const adj of subidas) {
+                const malo = await subirAdjunto(
+                  quote.botUrl,
+                  result.taskId,
+                  adj.file,
+                  adj.bytes,
+                  account!.address,
+                  firma,
+                );
+                if (malo) fallidos.push(`${adj.file.name} (${malo})`);
+                else log(`adjunto "${adj.file.name}" subido a #${result.taskId}`);
+              }
+              if (fallidos.length === 0) {
+                entregaBrief += `\n${subidas.length} attachment(s) uploaded: ${subidas.map((a) => a.file.name).join(', ')}.`;
+              } else {
+                // El agente NO empieza hasta tenerlos todos: se queda esperando
+                // en vez de trabajar a medias. Eso convierte esto en un
+                // reintento pendiente, no en un encargo perdido — y es
+                // importante decirlo, porque el silencio aquí parecería que ya
+                // está trabajando.
+                entregaBrief +=
+                  `\nWARNING: ${fallidos.length} of ${subidas.length} attachment(s) did NOT upload: ${fallidos.join('; ')}.\n` +
+                  `The agent waits for all of them before starting, so it has not begun. ` +
+                  `Retry with panal_send_brief ${result.taskId}, passing the same job text and the same ` +
+                  `files in \`files\`.`;
+                log(`adjuntos NO subidos en #${result.taskId}: ${fallidos.join('; ')}`);
+              }
+            }
           } else {
             entregaBrief =
               `WARNING: the payment is locked but the job did NOT arrive (${fallo}).\n` +
-              `The agent cannot start. Retry with panal_send_brief ${result.taskId}, ` +
-              `or the payment returns on its own when the deadline passes.`;
+              `The agent cannot start. Retry with panal_send_brief ${result.taskId}` +
+              (subidas.length > 0 ? ', passing the same job text and the same files in `files`' : '') +
+              `, or the payment returns on its own when the deadline passes.`;
             log(`brief #${result.taskId} NO entregado: ${fallo}`);
           }
         }
@@ -753,49 +967,120 @@ const WRITE_TOOLS: Tool[] = [
       required: ['task_id'],
     },
     handler: async (args) => {
-      if (!account) return 'Without MCP_PRIVATE_KEY the request for the result cannot be signed.';
       const id = Number(args.task_id);
-      if (!Number.isInteger(id) || id < 0) return 'El id de la tarea es un entero mayor o igual que cero.';
-      const taskId = BigInt(id);
-
-      const task = await panal.getTask(taskId);
-      if (task.client.toLowerCase() !== account.address.toLowerCase()) {
-        return `Task #${id} was hired by ${task.client}, not this wallet. Only the client can collect the result.`;
-      }
-      if (/^0x0+$/.test(task.resultHash)) {
-        return `Task #${id} has no delivered result yet (status: ${TaskStatus[task.status] ?? task.status}).`;
-      }
-
-      const agent = await panal.getAgent(task.worker);
-      if (!agent.metadata.botUrl) {
-        return (
-          `Agent ${agent.metadata.name || task.worker} publishes no endpoint, so the result cannot be downloaded ` +
-          `here. Its hash is on-chain (${task.resultHash}): ask them through your channel and check that the ` +
-          'hash matches.'
-        );
-      }
+      if (!Number.isInteger(id) || id < 0) return 'The task id is an integer greater than or equal to zero.';
 
       try {
-        // La firma caduca: abre el resultado y todos los archivos de la tarea.
-        const expira = expiraEn();
-        const signature = await account.signMessage({ message: resultSignMessage(taskId, expira) });
-        const text = await fetchResultText(agent.metadata.botUrl, taskId, account.address, signature, expira);
+        const entrega = await recogerEntrega(BigInt(id));
+        if ('error' in entrega) return entrega.error;
 
-        // Lo que importa de todo esto: que el texto sea EXACTAMENTE el que se
-        // ancló. Sin esta comprobación, el agente podría entregar una cosa
-        // on-chain y enseñarte otra distinta.
-        const actual = keccak256(toBytes(text));
-        if (actual.toLowerCase() !== task.resultHash.toLowerCase()) {
-          return (
-            `⚠️ The result the agent serves does NOT match the one anchored on-chain.\n` +
-            `  expected: ${task.resultHash}\n  received: ${actual}\n\n` +
-            'Do not approve it: either the agent changed the text after delivering, or someone altered the ' +
-            'response. You can open a dispute at https://panal.lat/dashboard.'
-          );
-        }
-        return `Result of task #${id} (hash verified against the chain):\n\n${text}`;
+        // Los archivos se anuncian DENTRO del texto que se acaba de verificar,
+        // asi que a estas alturas su hash esta tan anclado como la entrega. El
+        // bloque se saca de la vista porque es contabilidad, no resultado: en
+        // crudo son diez lineas de `hash:` y `path:` en mitad de lo que la
+        // persona queria leer.
+        const limpio = stripFilesManifest(entrega.text).trim();
+        const cabecera = `Result of task #${id} (hash verified against the chain):`;
+        if (entrega.archivos.length === 0) return `${cabecera}\n\n${limpio || entrega.text}`;
+
+        return [
+          cabecera,
+          '',
+          limpio,
+          '',
+          `${entrega.archivos.length} file(s) delivered with it:`,
+          ...entrega.archivos.map(
+            (f, i) => `  ${i + 1}. ${f.name} \u2014 ${(f.size / 1024).toFixed(1)} KB${f.mime ? ` \u2014 ${f.mime}` : ''}`,
+          ),
+          '',
+          'Their hashes travel inside the text above, which already matched the chain, so each file is ' +
+            `anchored as firmly as the delivery itself. Download them with panal_download_file ${id} ` +
+            '\u2014 the bytes are checked against those hashes and refused if they do not match.',
+        ].join('\n');
       } catch (err) {
         return `Could not collect the result: ${err instanceof Error ? err.message : err}`;
+      }
+    },
+  },
+  {
+    name: 'panal_download_file',
+    description:
+      'Download the files an agent delivered with a task and save them to disk. Each file hash is ' +
+      'announced inside the delivery text, which is itself checked against the chain, so bytes that do ' +
+      'not match are refused instead of saved. Costs nothing: it is collecting what was already paid for.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'number', description: 'Id of the delivered task.' },
+        file: {
+          type: 'string',
+          description: 'Name of one file to download. Omit it to download every file of the delivery.',
+        },
+      },
+      required: ['task_id'],
+    },
+    handler: async (args) => {
+      const id = Number(args.task_id);
+      if (!Number.isInteger(id) || id < 0) return 'The task id is an integer greater than or equal to zero.';
+      const pedido = str(args.file);
+
+      try {
+        const entrega = await recogerEntrega(BigInt(id));
+        if ('error' in entrega) return entrega.error;
+        if (entrega.archivos.length === 0) {
+          return `Task #${id} delivered text only, with no files attached. Read it with panal_get_result ${id}.`;
+        }
+
+        let queridos = entrega.archivos;
+        if (pedido) {
+          queridos = entrega.archivos.filter((f) => f.name.toLowerCase() === pedido.toLowerCase());
+          if (queridos.length === 0) {
+            return (
+              `Task #${id} delivered no file called "${pedido}". It delivered: ` +
+              `${entrega.archivos.map((f) => f.name).join(', ')}.`
+            );
+          }
+        }
+
+        const guardados: string[] = [];
+        const fallidos: string[] = [];
+        for (const archivo of queridos) {
+          try {
+            // La verificacion vive en el SDK y lanza si los bytes no dan el
+            // hash, en vez de devolverlos con un aviso. Es deliberado: quien
+            // llama los guardaria igual, y un archivo que no cuadra guardado
+            // en disco ya no se distingue de uno bueno.
+            const bytes = await downloadDeliveredFile(archivo, {
+              baseUrl: entrega.botUrl,
+              address: account!.address,
+              signature: entrega.signature,
+              expira: entrega.expira,
+            });
+            guardados.push(guardarDescarga(archivo.name, bytes));
+          } catch (err) {
+            fallidos.push(`${archivo.name} (${err instanceof Error ? err.message : String(err)})`);
+          }
+        }
+
+        const lineas: string[] = [];
+        if (guardados.length > 0) {
+          lineas.push(
+            `${guardados.length} file(s) from task #${id} downloaded and verified against the hash on the chain:`,
+            ...guardados.map((ruta) => `  \u00b7 ${ruta}`),
+          );
+        }
+        if (fallidos.length > 0) {
+          if (lineas.length > 0) lineas.push('');
+          lineas.push(
+            `${fallidos.length} could NOT be downloaded: ${fallidos.join('; ')}.`,
+            'A file whose bytes do not match the announced hash is refused, not saved: either the agent ' +
+              'is serving something other than what it anchored, or the file was altered on the way. ' +
+              'If it keeps failing, do not approve the task \u2014 you can open a dispute at https://panal.lat/dashboard.',
+          );
+        }
+        return lineas.join('\n');
+      } catch (err) {
+        return `Could not download: ${err instanceof Error ? err.message : err}`;
       }
     },
   },
@@ -810,6 +1095,13 @@ const WRITE_TOOLS: Tool[] = [
       properties: {
         task_id: { type: 'number', description: 'Id of the already-created task.' },
         brief: { type: 'string', description: 'The job, word for word as it was when hired.' },
+        files: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Paths of the same local files that were attached when hiring. Needed if the job announced ' +
+            'attachments: the agent does not start until it has every one of them.',
+        },
       },
       required: ['task_id', 'brief'],
     },
@@ -818,8 +1110,8 @@ const WRITE_TOOLS: Tool[] = [
       if (blocked) return blocked;
       const id = Number(args.task_id);
       if (!Number.isInteger(id) || id < 0) return 'I need a valid task id.';
-      const brief = str(args.brief);
-      if (!brief) return 'I need the text of the job.';
+      const briefPedido = str(args.brief);
+      if (!briefPedido) return 'I need the text of the job.';
 
       const task = await panal.getTask(BigInt(id));
       if (task.client.toLowerCase() !== account!.address.toLowerCase()) {
@@ -828,6 +1120,34 @@ const WRITE_TOOLS: Tool[] = [
       if (task.status !== TaskStatus.Open) {
         return `Task #${id} is ${TaskStatus[task.status]}: it no longer accepts the job.`;
       }
+
+      const rutas = Array.isArray(args.files) ? args.files.map(str).filter((r): r is string => !!r) : [];
+      const leidos: AdjuntoLocal[] = [];
+      for (const ruta of rutas) {
+        const leido = leerAdjuntoLocal(ruta);
+        if ('error' in leido) return `Cannot attach: ${leido.error}`;
+        leidos.push(leido);
+      }
+
+      // El texto que se hasheó al contratar lleva el manifiesto de adjuntos
+      // DENTRO, y ese manifiesto lo añadió este servidor, no quien llama. O sea
+      // que reintentar con el mismo texto que se pasó a panal_quote_hire falla
+      // el hash sin que nadie entienda por qué: el brief que la cadena cubre
+      // tiene unas líneas de más que nunca se escribieron a mano.
+      //
+      // Se reconstruye en vez de exigirlo. `appendAttachmentsManifest` es
+      // determinista para los mismos archivos en el mismo orden, así que si el
+      // resultado da el taskHash, ese ES el brief contratado — lo demuestra el
+      // hash, no la confianza.
+      let brief = briefPedido;
+      if (keccak256(toBytes(brief)) !== task.taskHash && leidos.length > 0) {
+        const conManifiesto = appendAttachmentsManifest(
+          briefPedido,
+          leidos.map((l) => l.file),
+        );
+        if (keccak256(toBytes(conManifiesto)) === task.taskHash) brief = conManifiesto;
+      }
+
       // Se comprueba aquí antes de molestar al agente: así el error dice que el
       // texto no es el mismo, en vez de un 409 sin contexto desde el endpoint.
       if (keccak256(toBytes(brief)) !== task.taskHash) {
@@ -836,19 +1156,68 @@ const WRITE_TOOLS: Tool[] = [
           `  hired hash: ${task.taskHash}`,
           `  your text hash: ${keccak256(toBytes(brief))}`,
           'It must be identical, character for character. One extra space already changes it.',
+          ...(leidos.length > 0
+            ? [
+                'If the job was hired with attachments, pass the same files in the same order: the ' +
+                  'manifest that goes inside the brief is rebuilt from them.',
+              ]
+            : []),
         ].join('\n');
       }
 
       const agent = await panal.getAgent(task.worker);
       if (!agent.metadata.botUrl) return 'That agent publishes no endpoint: there is nowhere to send the job.';
 
+      // Qué adjuntos anunció el encargo lo dice el propio brief, no quien
+      // llama: ese texto ya cuadró con el taskHash unas líneas más arriba, o
+      // sea que su manifiesto es exactamente el que la cadena cubre.
+      const anunciados = parseAttachmentsManifest(brief);
+      const subidas: AdjuntoLocal[] = [];
+      for (const leido of leidos) {
+        // Se empareja por HASH contra lo anunciado. El agente va a hacer
+        // exactamente esta comprobación y rechazar lo que no cuadre; hacerla
+        // aquí convierte un 403 sin contexto en una frase que se entiende.
+        if (!matchAttachment(anunciados, leido.bytes, leido.file.name)) {
+          return (
+            `${leido.ruta} is not one of the attachments this job announced, so the agent would refuse it. ` +
+            `It expects: ${anunciados.map((f) => `${f.name} (${f.size} bytes)`).join(', ') || 'no attachments at all'}.`
+          );
+        }
+        subidas.push(leido);
+      }
+      if (anunciados.length > 0 && subidas.length < anunciados.length) {
+        const faltan = anunciados.filter((a) => !subidas.some((s) => s.file.hash.toLowerCase() === a.hash.toLowerCase()));
+        if (faltan.length > 0) {
+          return (
+            `This job announces ${anunciados.length} attachment(s) and ${faltan.length} are missing from ` +
+            `the call: ${faltan.map((f) => f.name).join(', ')}. The agent does not start until it has them ` +
+            `all, so sending the text alone would leave it waiting. Pass every file in \`files\`.`
+          );
+        }
+      }
+
       const firma = await account!.signMessage({ message: briefSignMessage(BigInt(id)) });
       const fallo = await pushBrief(agent.metadata.botUrl, BigInt(id), brief, account!.address, firma);
-      if (fallo === null) {
-        log(`brief #${id} entregado (reintento) en ${agent.metadata.botUrl}`);
-        return `Job delivered. The agent is already working on task #${id}.`;
+      if (fallo !== null) {
+        return `It still does not arrive (${fallo}). The payment stays locked and returns on its own when the deadline passes.`;
       }
-      return `It still does not arrive (${fallo}). The payment stays locked and returns on its own when the deadline passes.`;
+      log(`brief #${id} entregado (reintento) en ${agent.metadata.botUrl}`);
+
+      const fallidos: string[] = [];
+      for (const adj of subidas) {
+        const malo = await subirAdjunto(agent.metadata.botUrl, BigInt(id), adj.file, adj.bytes, account!.address, firma);
+        if (malo) fallidos.push(`${adj.file.name} (${malo})`);
+        else log(`adjunto "${adj.file.name}" subido a #${id} (reintento)`);
+      }
+      if (fallidos.length > 0) {
+        return (
+          `The job arrived but ${fallidos.length} attachment(s) did not: ${fallidos.join('; ')}. ` +
+          `The agent waits for all of them before starting.`
+        );
+      }
+      return subidas.length > 0
+        ? `Job and ${subidas.length} attachment(s) delivered. The agent is already working on task #${id}.`
+        : `Job delivered. The agent is already working on task #${id}.`;
     },
   },
   {
@@ -1100,6 +1469,11 @@ function main(): void {
   const mode = writesBlockedReason() === null ? `ESCRITURA (${account!.address})` : 'solo lectura';
   log(`v${SERVER_VERSION} · Monad mainnet · ${mode}`);
   if (writesRequested && !account) log('⚠️  MCP_ENABLE_WRITES=true pero sin clave válida: sigue en solo lectura.');
+  // Se dicen al arrancar y no solo cuando algo falla. La de adjuntos decide qué
+  // puede salir de esta máquina, y un corral que se cree en otro sitio del que
+  // está no protege de nada: verlo aquí es la única forma de notarlo antes.
+  log(`adjuntos: solo desde ${raizAdjuntos()}`);
+  log(`descargas: ${raizDescargas()}`);
 
   const rl = createInterface({ input: process.stdin });
   rl.on('line', (line) => {

@@ -10,6 +10,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { Address } from 'viem';
+import type { AttachedFile } from '@panal/sdk';
 
 /** Vida de un presupuesto. Corto a propósito: el precio del agente puede cambiar. */
 const QUOTE_TTL_MS = 5 * 60 * 1000;
@@ -25,16 +26,33 @@ const QUOTE_TTL_MS = 5 * 60 * 1000;
  */
 export type QuoteKind = 'hire' | 'ask';
 
+/**
+ * Un adjunto ya anunciado en el brief, esperando a que se contrate.
+ *
+ * Se guarda la RUTA y no los bytes. Un presupuesto vive cinco minutos y puede
+ * haber varios a la vez; con un tope de 25 MB por archivo y diez por encargo,
+ * quedarse los bytes es sostener un cuarto de giga en memoria por si alguien
+ * dice que sí. Se vuelven a leer al contratar y se comprueba que siguen dando
+ * el hash anunciado — que además es la única forma de enterarse de que el
+ * archivo cambió entre el precio y el sí, y de abortar ANTES de pagar.
+ */
+export interface AdjuntoPresupuestado {
+  file: AttachedFile;
+  ruta: string;
+}
+
 export interface Quote {
   id: string;
   kind: QuoteKind;
   worker: Address;
   agentName: string;
+  /** El encargo TAL Y COMO SE HASHEA: con el manifiesto de adjuntos ya dentro. */
   brief: string;
   amount: bigint;
   currency: Address;
   symbol: string;
   botUrl: string | null;
+  adjuntos: AdjuntoPresupuestado[];
   expiresAt: number;
 }
 
