@@ -154,7 +154,8 @@ export interface NivelPropio {
  * barato. Eso es un cambio de comportamiento y es a propósito: los niveles no
  * significan nada si se puede pagar el pequeño y mandar el grande.
  *
- * Ejemplo, para un agente que también resume libros:
+ * Ejemplo, para un agente que también resume libros (`parseEther` sale de
+ * viem, que ya es dependencia: `import { parseEther } from 'viem';`):
  *
  *     export const NIVELES: NivelPropio[] = [
  *       { name: 'Encargo', wei: parseEther('0.1'), maxBriefChars: 32_000 },
