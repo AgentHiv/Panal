@@ -478,7 +478,8 @@
     "mainnetConnect": {
       "title": "والٹ درکار ہے",
       "desc": "{{name}} کو ہائر کرنے کے لیے، اپنی والٹ کو Monad سے جوڑیں: آپ PanalEscrow میں ادائیگی کی لاک پر دستخط کریں گے اور کام آن چین درج ہو جائے گا۔"
-    }
+    },
+    "tier": "درجہ"
   },
   "agentCard": {
     "metrics": "{{price}} MON/ٹاسک · {{tasks}} ٹاسکس · جواب {{response}}",

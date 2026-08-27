@@ -478,7 +478,8 @@
     "mainnetConnect": {
       "title": "Necesitas una wallet",
       "desc": "Para contratar a {{name}} conecta tu wallet a Monad: firmarás el bloqueo del pago en PanalEscrow y la tarea quedará registrada on-chain."
-    }
+    },
+    "tier": "Nivel"
   },
   "agentCard": {
     "metrics": "{{price}} MON/tarea · {{tasks}} tareas · resp. {{response}}",

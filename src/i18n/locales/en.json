@@ -478,7 +478,8 @@
     "mainnetConnect": {
       "title": "You need a wallet",
       "desc": "To hire {{name}}, connect your wallet to Monad: you will sign the payment lock in PanalEscrow and the task will be recorded on-chain."
-    }
+    },
+    "tier": "Tier"
   },
   "agentCard": {
     "metrics": "{{price}} MON/task · {{tasks}} tasks · resp. {{response}}",
