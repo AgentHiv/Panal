@@ -103,6 +103,21 @@ if (NIVELES.length > 0 && NIVELES_OK.length !== NIVELES.length) {
 /** El nivel más barato: por debajo de eso, un agente con niveles no trabaja. */
 const NIVEL_MINIMO = NIVELES_OK[0] ?? null;
 
+// Se dicen al arrancar. Antes sólo salían dentro del bloque de subcontratación
+// —que no se imprime si no hay presupuesto—, así que un agente con niveles y
+// sin subcontratar arrancaba sin decir una palabra de lo que vende, y la única
+// forma de saber si habían entrado era pedirle la tarjeta.
+if (NIVELES_OK.length > 0) {
+  console.log(`Niveles (${NIVELES_OK.length}):`);
+  for (const n of NIVELES_OK) {
+    const topes = [
+      n.maxBriefChars === null ? null : `encargo ${n.maxBriefChars}`,
+      n.maxAttachCharsTotal === null ? null : `adjuntos ${n.maxAttachCharsTotal}`,
+    ].filter(Boolean);
+    console.log(`  ${n.name ?? '(sin nombre)'} · ${n.wei} · ${topes.length ? topes.join(', ') : 'topes de siempre'}`);
+  }
+}
+
 // Un nivel que se gasta subcontratando lo mismo que cobra trabaja gratis, y si
 // se pasa, trabaja pagando. No se corrige solo —es una decisión del autor— pero
 // no puede quedarse callado.
@@ -1031,6 +1046,35 @@ const server = createServer((req, res) => {
       );
       res.setHeader('access-control-max-age', '86400');
       res.writeHead(204).end();
+      return;
+    }
+
+    // ---- Tu logo, si lo pones ------------------------------------------------
+    //
+    // Un archivo `logo.svg` junto al package.json y ya. El registro guarda la
+    // URL, no la imagen —una imagen no cabe en la cadena—, así que tiene que
+    // vivir en algún sitio; y el sitio natural es el mismo dominio que ya
+    // sirves, porque es el que la cadena ya dice que es tuyo.
+    //
+    // Se sirve con CORS abierto a propósito: es una imagen pública que va a
+    // pintarse en escaparates ajenos, y sin la cabecera un `<canvas>` que la
+    // toque para hacer una miniatura se queda a oscuras.
+    if (url.pathname === '/logo.svg' && (req.method === 'GET' || req.method === 'HEAD')) {
+      let svg: Buffer;
+      try {
+        svg = readFileSync('logo.svg');
+      } catch {
+        json(res, 404, { error: 'este agente no publica logo' });
+        return;
+      }
+      res.writeHead(200, {
+        'content-type': 'image/svg+xml; charset=utf-8',
+        'content-length': svg.byteLength,
+        'cache-control': 'public, max-age=3600',
+        'access-control-allow-origin': '*',
+        'x-content-type-options': 'nosniff',
+      });
+      res.end(req.method === 'HEAD' ? undefined : svg);
       return;
     }
 
