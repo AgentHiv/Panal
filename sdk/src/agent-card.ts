@@ -73,6 +73,37 @@ export interface FichaGetResult {
  * el del bot sí— y un esquema que obligue a rellenar lo que no se sabe termina
  * rellenándose con mentiras.
  */
+/**
+ * Un nivel de servicio: cuánto cobra y cuánto acepta a cambio.
+ *
+ * El registro guarda UN `pricePerTask` por agente y no va a guardar más, así
+ * que este es el único sitio donde un agente puede anunciar que hace el mismo
+ * trabajo en varios tamaños. Lo publica quien lo va a cumplir, que es la
+ * diferencia entre un nivel y un multiplicador inventado por el escaparate.
+ *
+ * Los topes se declaran EN CARACTERES a propósito. Son lo que el cliente puede
+ * contar antes de pagar y lo que cualquiera puede recontar después, porque el
+ * encargo se ancla en la cadena y el tamaño de cada adjunto viaja dentro de su
+ * manifiesto. Un nivel que prometiera «más esfuerzo» no se podría comprobar.
+ */
+export interface FichaNivel {
+  /** Nombre corto para enseñar. El cliente elige por aquí. */
+  name?: string;
+  /** Una línea de qué compra. */
+  description?: string;
+  /**
+   * Lo que hay que bloquear para tener este nivel, en unidades mínimas de la
+   * moneda del agente y como cadena decimal, igual que `price.amountWei`.
+   */
+  amountWei?: string;
+  /** Tope de caracteres del encargo en este nivel. */
+  maxBriefChars?: number;
+  /** Tope de caracteres que aporta CADA adjunto. */
+  maxAttachChars?: number;
+  /** Y el de todos los adjuntos juntos. */
+  maxAttachCharsTotal?: number;
+}
+
 export interface AgentCard {
   /** La dirección on-chain que este dominio declara suya. Es lo que verifica. */
   agent?: Address;
@@ -85,6 +116,16 @@ export interface AgentCard {
   description?: string;
   skills?: string[];
   price?: { amountWei?: string; currency?: Address; symbol?: string } | null;
+  /**
+   * Los niveles que ofrece, de menor a mayor. Opcional y casi siempre ausente.
+   *
+   * AUSENTE NO ES «tiene un nivel»: es que este agente no los ofrece, y hay
+   * que tratarlo exactamente como se le trataba antes de que esto existiera.
+   * Quien lee no debe inventarle niveles a partir de `price`, que es
+   * justamente lo que hacía el escaparate y por lo que enseñaba precios que
+   * luego no se cobraban.
+   */
+  tiers?: FichaNivel[];
   active?: boolean | null;
   contracts?: { escrow?: Address; registry?: Address; token?: Address };
   endpoints?: {
@@ -128,4 +169,105 @@ export function leerX402(card: unknown): FichaX402 | null {
 export function leerMaxBriefChars(card: unknown): number | null {
   const max = (card as AgentCard | null)?.endpoints?.postBrief?.maxBriefChars;
   return typeof max === 'number' && Number.isInteger(max) && max > 0 ? max : null;
+}
+
+/** Un nivel ya validado: precio en bigint y `null` en todo lo que la ficha no diga. */
+export interface Nivel {
+  name: string | null;
+  description: string | null;
+  /** Lo que hay que bloquear, en unidades mínimas de la moneda del agente. */
+  wei: bigint;
+  maxBriefChars: number | null;
+  maxAttachChars: number | null;
+  maxAttachCharsTotal: number | null;
+}
+
+/** Tope de niveles que se leen de una ficha ajena. Ocho ya son demasiados para elegir. */
+const MAX_NIVELES = 8;
+
+/**
+ * Cuántas entradas se miran para sacar esos ocho.
+ *
+ * El recorte va DESPUÉS de filtrar, no antes: recortando primero, un nivel
+ * bueno colocado detrás de ocho mal escritos desaparecía sin que nadie lo
+ * notara. Y aun así se mira un número fijo, porque la lista la escribe un
+ * desconocido y nadie tiene ocho niveles buenos detrás de doscientos malos.
+ */
+const MAX_MIRADOS = 200;
+
+/** Un entero positivo, o `null`. Misma regla que `leerMaxBriefChars`. */
+function tope(v: unknown): number | null {
+  return typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : null;
+}
+
+/** Texto de una ficha ajena: recortado, porque va a un escaparate. */
+function letrero(v: unknown, max: number): string | null {
+  if (typeof v !== 'string') return null;
+  const limpio = v.replace(/\s+/g, ' ').trim().slice(0, max);
+  return limpio || null;
+}
+
+/**
+ * Los niveles que ofrece un agente, de menor a mayor precio.
+ *
+ * Devuelve `[]` cuando la ficha no los declara, y eso significa que el agente
+ * NO ofrece niveles: quien llama tiene que seguir tratándolo como siempre, no
+ * fabricarle uno a partir de `price`.
+ *
+ * La ficha la sirve un desconocido, así que un nivel sin precio legible se cae
+ * de la lista en vez de tumbarla entera: un campo mal escrito no puede dejar
+ * incontratable a un agente que sí tiene otros niveles buenos.
+ */
+export function leerNiveles(card: unknown): Nivel[] {
+  const crudos = (card as AgentCard | null)?.tiers;
+  if (!Array.isArray(crudos)) return [];
+
+  const out: Nivel[] = [];
+  for (const n of crudos.slice(0, MAX_MIRADOS)) {
+    if (out.length >= MAX_NIVELES) break;
+    if (!n || typeof n !== 'object') continue;
+    const wei = enteroWei((n as FichaNivel).amountWei);
+    if (wei === null) continue;
+    out.push({
+      name: letrero((n as FichaNivel).name, 60),
+      description: letrero((n as FichaNivel).description, 200),
+      wei,
+      maxBriefChars: tope((n as FichaNivel).maxBriefChars),
+      maxAttachChars: tope((n as FichaNivel).maxAttachChars),
+      maxAttachCharsTotal: tope((n as FichaNivel).maxAttachCharsTotal),
+    });
+  }
+  // De menor a mayor: es el orden en que se enseñan y el que hace que
+  // `nivelPara` pueda quedarse con el último que entra en lo pagado.
+  return out.sort((a, b) => (a.wei < b.wei ? -1 : a.wei > b.wei ? 1 : 0));
+}
+
+/** `amountWei` como bigint. Solo dígitos: `BigInt('0x10')` valdría 16 y no es eso. */
+function enteroWei(v: unknown): bigint | null {
+  if (typeof v !== 'string' || !/^\d+$/.test(v.trim())) return null;
+  const n = BigInt(v.trim());
+  return n > 0n ? n : null;
+}
+
+/**
+ * Qué nivel compró quien bloqueó `pagado`.
+ *
+ * EL NIVEL LO DECIDE LA CADENA, NO EL ENCARGO. El brief lo escribe el cliente
+ * y podría afirmar que compró el más caro; el importe bloqueado no se puede
+ * discutir. Por eso esta función toma un `bigint` del escrow y nada más.
+ *
+ * Se queda con el nivel más alto que quepa en lo pagado. Pagar de más da el
+ * nivel pagado, no el siguiente: quien bloquea 10 veces el precio del mayor
+ * sigue comprando el mayor, y el resto es cosa del agente y su cliente.
+ *
+ * `null` significa que lo bloqueado no llega ni al nivel más barato. Qué hacer
+ * entonces —trabajar igual, devolver, no empezar— lo decide el agente; el SDK
+ * no lo va a decidir por él.
+ */
+export function nivelPara(niveles: Nivel[], pagado: bigint): Nivel | null {
+  let elegido: Nivel | null = null;
+  for (const n of niveles) {
+    if (n.wei <= pagado) elegido = n;
+  }
+  return elegido;
 }

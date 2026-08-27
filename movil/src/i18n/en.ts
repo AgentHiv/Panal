@@ -365,6 +365,8 @@ export const en: Textos = {
   encargar: {
     titulo: 'Commission a job',
     quePides: 'What you are asking for',
+    nivel: 'Tier',
+    nivelTope: (n: number) => `Up to ${n.toLocaleString()} characters`,
     briefHueco: 'Describe the job. This is what the agent will see.',
     plazo: 'Deadline',
     horas: (n: number) => `${n} h`,

@@ -5,7 +5,8 @@ import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ExternalLink, Loader2, Paperclip, Timer, TriangleAlert, X } from 'lucide-react';
 import { useSignMessage, useSwitchChain, useWriteContract } from 'wagmi';
-import { keccak256, parseEventLogs, toBytes } from 'viem';
+import { formatEther, keccak256, parseEventLogs, toBytes } from 'viem';
+import type { Nivel } from '@panal/sdk';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { saveTaskBrief } from '@/lib/taskBriefs';
 import {
@@ -15,6 +16,7 @@ import {
   enviarBriefConReintento,
   extractBotUrl,
   leerCapacidades,
+  type CapacidadesAgente,
 } from '@/lib/botEndpoint';
 import {
   MAX_ADJUNTOS,
@@ -59,6 +61,15 @@ export interface HireDialogProps {
   agent: Agent | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * El nivel elegido en la pestaña de servicios, si eligió uno.
+   *
+   * Lo único que cambia es CUÁNTO se bloquea. El agente sabrá qué nivel es
+   * mirando ese importe en la cadena, que es lo que no se puede falsificar;
+   * mandarle el nombre del nivel en el encargo no valdría de nada, porque el
+   * encargo lo escribe el cliente.
+   */
+  nivel?: Nivel | null;
 }
 
 const EXAMPLE_CHIPS = ['hire.chip1', 'hire.chip2', 'hire.chip3', 'hire.chip4'];
@@ -73,18 +84,26 @@ const DEADLINE_OPTIONS = [6, 24, 72, 168] as const;
  * así cada apertura empieza de cero. TODO es real: solo agentes on-chain y solo
  * con wallet conectada (fail-closed, sin sellado simulado).
  */
-export default function HireDialog({ agent, open, onOpenChange }: HireDialogProps) {
+export default function HireDialog({ agent, open, onOpenChange, nivel = null }: HireDialogProps) {
   if (!agent) return null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto border-line bg-paper p-0 sm:rounded-2xl">
-        <HireWizard agent={agent} onOpenChange={onOpenChange} />
+        <HireWizard agent={agent} onOpenChange={onOpenChange} nivel={nivel} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open: boolean) => void }) {
+function HireWizard({
+  agent,
+  onOpenChange,
+  nivel,
+}: {
+  agent: Agent;
+  onOpenChange: (open: boolean) => void;
+  nivel: Nivel | null;
+}) {
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [taskText, setTaskText] = useState('');
@@ -177,7 +196,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
         const botUrl = extractBotUrl(meta.metadataURI);
         if (vigente) botUrlRef.current = botUrl;
         // Sin endpoint publicado no hay a quién subirle nada.
-        const caps = botUrl ? await leerCapacidades(botUrl) : { adjuntos: false };
+        const caps: CapacidadesAgente = botUrl ? await leerCapacidades(botUrl) : { adjuntos: false, niveles: [] };
         if (!vigente) return;
         setAceptaAdjuntos(caps.adjuntos ? 'si' : 'no');
         if (caps.maxAdjuntoBytes) setTopeAdjunto(Math.min(caps.maxAdjuntoBytes, MAX_ADJUNTO_BYTES));
@@ -274,6 +293,15 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     } catch {
       // si el RPC falla, seguimos con el precio cacheado (misma fuente)
     }
+    /**
+     * Lo que se bloquea en el escrow.
+     *
+     * El nivel elegido, o el precio del registro si no se eligió ninguno. Es
+     * el ÚNICO número que dice qué compró el cliente: el agente lo lee de la
+     * cadena, no del encargo, que lo escribe el cliente y podría decir
+     * cualquier cosa.
+     */
+    const aBloquear = nivel?.wei ?? agent.priceWei;
     const brief = componerBrief();
     briefFirmado.current = brief;
     const taskHash = keccak256(toBytes(brief));
@@ -286,7 +314,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
         abi: panalEscrowAbi,
         functionName: 'createTask',
         args: [agent.workerAddress, taskHash, deadline],
-        value: agent.priceWei,
+        value: aBloquear,
         chainId: activeChain.id,
       });
     } else if (!isPanal) {
@@ -295,8 +323,8 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
         address: PANAL_ESCROW_V2_ADDRESS,
         abi: panalEscrowV2Abi,
         functionName: 'createTask',
-        args: [agent.workerAddress, taskHash, deadline, NATIVE_CURRENCY, agent.priceWei],
-        value: agent.priceWei,
+        args: [agent.workerAddress, taskHash, deadline, NATIVE_CURRENCY, aBloquear],
+        value: aBloquear,
         chainId: activeChain.id,
       });
     } else {
@@ -307,7 +335,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
         address: PANAL_TOKEN_ADDRESS,
         abi: panalTokenAbi,
         functionName: 'approve',
-        args: [PANAL_ESCROW_V2_ADDRESS, agent.priceWei],
+        args: [PANAL_ESCROW_V2_ADDRESS, aBloquear],
         chainId: activeChain.id,
       });
     }
@@ -329,11 +357,14 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     const taskHash = keccak256(toBytes(brief));
     saveTaskBrief(taskHash, brief); // caché local: el trabajador verá QUÉ se pidió
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineHours * 3600);
+    // El mismo importe que en `hire`: aquí sólo se encadena lo que ya se
+    // decidió antes del approve.
+    const aBloquear = nivel?.wei ?? agent.priceWei;
     writeContract({
       address: PANAL_ESCROW_V2_ADDRESS,
       abi: panalEscrowV2Abi,
       functionName: 'createTask',
-      args: [agent.workerAddress, taskHash, deadline, PANAL_TOKEN_ADDRESS, agent.priceWei],
+      args: [agent.workerAddress, taskHash, deadline, PANAL_TOKEN_ADDRESS, aBloquear],
       value: 0n,
       chainId: activeChain.id,
     });
@@ -489,7 +520,7 @@ function HireWizard({ agent, onOpenChange }: { agent: Agent; onOpenChange: (open
     void enviarBrief();
   }, [mined, receipt, realTxHash, address, agent, enviarBrief]);
 
-  const price = agent.pricePerTask;
+  const price = nivel ? Number(formatEther(nivel.wei)) : agent.pricePerTask;
   const fee = price * PROTOCOL_FEE;
   // Lo que bloquea/firma el cliente es exactamente `price`; el fee del 2,5 %
   // se descuenta del pago al agente al liberar el escrow (ver contrato).

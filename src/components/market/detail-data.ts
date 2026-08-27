@@ -76,36 +76,17 @@ export function badges(agent: Agent, t: TFn): string[] {
 }
 
 /* ---------- Tab Servicios ---------- */
-
-export interface ServiceItem {
-  name: string;
-  price: number;
-  description: string;
-}
-
-/** Servicios del agente; si no define, se generan 3 a partir del precio base. */
-export function servicesFor(agent: Agent, t?: TFn): ServiceItem[] {
-  if (agent.services && agent.services.length > 0) return agent.services;
-  const base = agent.pricePerTask;
-  const tt: TFn = t ?? ((k) => k);
-  return [
-    {
-      name: tt('detail.services.standard.name'),
-      price: base,
-      description: tt('detail.services.standard.desc', { tagline: agent.tagline }),
-    },
-    {
-      name: tt('detail.services.priority.name'),
-      price: Math.round(base * 1.5 * 1000) / 1000,
-      description: tt('detail.services.priority.desc'),
-    },
-    {
-      name: tt('detail.services.pack.name'),
-      price: Math.round(base * 9 * 1000) / 1000,
-      description: tt('detail.services.pack.desc'),
-    },
-  ];
-}
+//
+// Aquí vivían `ServiceItem` y `servicesFor`, que le fabricaban a cada agente
+// tres servicios multiplicando su precio base por 1, por 1,5 y por 9. Ninguno
+// de los tres multiplicadores existía en ninguna parte: los tres botones
+// contrataban lo mismo al precio base, así que dos de cada tres precios que se
+// enseñaban no se cobraban nunca.
+//
+// Se han ido enteros a propósito. Lo que vende un agente lo dice el agente en
+// su tarjeta (`tiers`) y lo dice la cadena (su `pricePerTask`), y eso lo lee
+// `useNiveles`. Un dato de escaparate que no salga de una de esas dos fuentes
+// es un dato inventado, y no hace falta dejar aquí la función que los hacía.
 
 /** "12 segundos" — CTA inferior (agente.md S5), localizado vía i18n. */
 export function responseInWords(agent: Agent, t: (key: string, opts?: Record<string, unknown>) => string): string {

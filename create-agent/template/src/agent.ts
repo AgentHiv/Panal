@@ -38,6 +38,18 @@ export interface TaskContext {
   deadline: bigint;
 
   /**
+   * QUÉ NIVEL COMPRÓ, si es que ofreces niveles.
+   *
+   * `null` es lo normal y significa que este agente no los ofrece: entonces
+   * todo funciona como siempre y no hay nada que mirar aquí.
+   *
+   * Lo decide `amount`, que está en la cadena, y NUNCA el texto del encargo:
+   * el brief lo escribe el cliente y podría proclamarse del nivel más caro.
+   * El motor ya lo ha resuelto por ti antes de llamarte.
+   */
+  nivel: NivelPropio | null;
+
+  /**
    * LO QUE EL CLIENTE TE ADJUNTÓ: una foto, un PDF que revisar, un CSV.
    *
    * Llegan verificados. El encargo anunció el hash de cada uno ANTES de que se
@@ -105,6 +117,110 @@ export interface TaskContext {
    * paga un precio fijo por mensaje.
    */
   historial: Turno[];
+}
+
+/**
+ * Un nivel de servicio: cuánto cobras y cuánto aceptas a cambio.
+ *
+ * Los topes van EN CARACTERES porque es lo que el cliente puede contar antes
+ * de pagar y cualquiera puede recontar después: el encargo se ancla en la
+ * cadena y el tamaño de cada adjunto viaja dentro de su manifiesto. Un nivel
+ * que prometiera «más esfuerzo» no habría manera de comprobarlo.
+ */
+export interface NivelPropio {
+  /** Cómo se llama en el escaparate. */
+  name: string;
+  /** Una línea de qué compra. */
+  description?: string;
+  /** Lo que tiene que bloquear en el escrow. `parseEther('0.3')` para MON. */
+  wei: bigint;
+  /** Tope del encargo en este nivel. Sin él, el de siempre. */
+  maxBriefChars?: number;
+  /** Cuánto texto aporta CADA adjunto en este nivel. */
+  maxAttachChars?: number;
+  /** Y todos juntos. */
+  maxAttachCharsTotal?: number;
+  /**
+   * Cuánto puede gastar tu agente SUBCONTRATANDO en este nivel.
+   *
+   * Sin esto, el de `SUBCONTRATA_MAX` del .env para todos los niveles por
+   * igual, que es lo que había antes. Ponerlo aquí es lo que permite que el
+   * nivel caro pueda comprar ayuda y el barato no.
+   *
+   * Que sea MENOR que `wei`, y con holgura: es dinero que sale de lo que te
+   * pagaron por este encargo. El motor avisa al arrancar si no lo es.
+   */
+  subcontrata?: bigint;
+}
+
+/**
+ * LOS NIVELES QUE VENDES. Vacío = no vendes niveles, que es lo normal.
+ *
+ * El registro guarda UN precio por agente, así que si quieres cobrar distinto
+ * por trabajos de distinto tamaño, es aquí. Y el primero debería costar lo
+ * mismo que tu `pricePerTask` registrado: es el que compra quien te contrata
+ * sin elegir nada, desde un cliente antiguo o desde una integración.
+ *
+ * En cuanto declaras uno, el motor deja de aceptar encargos por debajo del más
+ * barato. Eso es un cambio de comportamiento y es a propósito: los niveles no
+ * significan nada si se puede pagar el pequeño y mandar el grande.
+ *
+ * Ejemplo, para un agente que también resume libros (`parseEther` sale de
+ * viem, que ya es dependencia: `import { parseEther } from 'viem';`):
+ *
+ *     export const NIVELES: NivelPropio[] = [
+ *       { name: 'Encargo', wei: parseEther('0.1'), maxBriefChars: 32_000 },
+ *       {
+ *         name: 'Libro',
+ *         description: 'Hasta unas 300 páginas, en el encargo o adjuntas.',
+ *         wei: parseEther('0.3'),
+ *         maxBriefChars: 320_000,
+ *         maxAttachChars: 280_000,
+ *         maxAttachCharsTotal: 320_000,
+ *       },
+ *     ];
+ */
+export const NIVELES: NivelPropio[] = [];
+
+/**
+ * LAS ÚNICAS SKILLS QUE TU AGENTE PUEDE COMPRARLE A OTRO. Vacío = ninguna.
+ *
+ * Vacío es el valor por defecto y significa que NO SUBCONTRATA, aunque tenga
+ * presupuesto. Hacen falta las dos cosas: dinero y permiso.
+ *
+ * Existe porque quien elige la skill es un modelo, y el buscador generaliza
+ * cuando no encuentra a nadie: recorta por la izquierda, así que
+ * "python video encoding" acaba buscando "video". Un agente de código puede
+ * así pagarle a uno de vídeo, y lo malo es que el resultado PARECE correcto —
+ * pagó, le contestaron, entregó y ancló. Nadie ve un error; sólo la entrega
+ * es peor y el dinero se fue.
+ *
+ * La lista se comprueba en tres sitios, a propósito: se le dice al modelo qué
+ * puede pedir, se comprueba lo que contesta, y el SDK descarta cualquier
+ * variante que no esté aquí ANTES de cotizar. Un intento prohibido no cuesta
+ * ni una petición.
+ *
+ *     export const SUBCONTRATA_SKILLS = ['translation', 'legal'];
+ *
+ * Escríbelas como se venden en el mercado: una o dos palabras.
+ */
+export const SUBCONTRATA_SKILLS: string[] = [];
+
+/**
+ * ¿Puede este agente comprar esta skill?
+ *
+ * Va aparte y exportada porque es la regla que decide si sale dinero, y una
+ * regla así tiene que poder probarse sin levantar un agente. Compara sin
+ * distinguir mayúsculas ni espacios de más: la lista la escribe una persona y
+ * la skill la escribe un modelo.
+ *
+ * Con la lista vacía devuelve `false` para todo. Vacío es NO DELEGA, nunca
+ * «todo permitido»: la diferencia entre las dos lecturas se mide en dinero.
+ */
+export function skillPermitida(skill: string, permitidas: string[]): boolean {
+  const limpia = skill.trim().replace(/\s+/g, ' ').toLowerCase();
+  if (!limpia) return false;
+  return permitidas.some((p) => p.trim().replace(/\s+/g, ' ').toLowerCase() === limpia);
 }
 
 /** Un archivo que entregas junto al texto. */
@@ -178,7 +294,10 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
 
   // Se abre TODO lo que mandó el cliente: imágenes para que las mire el
   // modelo, y el texto de los PDF, Word, Excel y carpetas que vengan dentro.
-  const leido = await leerAdjuntos(ctx.adjuntos);
+  const leido = await leerAdjuntos(ctx.adjuntos, {
+    ...(ctx.nivel?.maxAttachChars === undefined ? {} : { porAdjunto: ctx.nivel.maxAttachChars }),
+    ...(ctx.nivel?.maxAttachCharsTotal === undefined ? {} : { total: ctx.nivel.maxAttachCharsTotal }),
+  });
   if (ctx.adjuntos.length > 0) {
     console.log(
       `[agente] ${etiqueta(ctx)} ${ctx.adjuntos.length} adjunto(s), ${leido.imagenes.length} para el modelo: ` +
@@ -233,10 +352,11 @@ async function pedirAyudaSiHaceFalta(
   ctx: TaskContext,
   cfg: LlmConfig,
 ): Promise<string | null> {
-  // Sin presupuesto no hay nada que decidir, y así se ahorra la llamada.
-  if (ctx.presupuesto <= 0n) return null;
+  // Sin presupuesto o sin permiso no hay nada que decidir, y así se ahorra la
+  // llamada al modelo. Las dos condiciones hacen falta.
+  if (ctx.presupuesto <= 0n || SUBCONTRATA_SKILLS.length === 0) return null;
 
-  const decision = await decidirDelegacion(brief, cfg);
+  const decision = await decidirDelegacion(brief, cfg, SUBCONTRATA_SKILLS);
   if (!decision) return null;
 
   try {
@@ -280,6 +400,7 @@ function extraerJson(crudo: string): unknown {
 async function decidirDelegacion(
   brief: string,
   cfg: LlmConfig,
+  permitidas: string[],
 ): Promise<{ skill: string; pregunta: string } | null> {
   try {
     const crudo = await llmChat(
@@ -293,7 +414,12 @@ async function decidirDelegacion(
           '{"delegate": false} if you can do the job yourself. This is the right answer almost always.\n' +
           '{"delegate": true, "skill": "…", "question": "…"} ONLY if the job clearly needs expertise ' +
           'outside your own, and a specialist answer would measurably improve the result.\n' +
-          '"skill" is one or two words to search a marketplace by (e.g. "translation", "legal", "json").\n' +
+          // Se le da la lista CERRADA en vez de dejarle inventar. Un modelo al
+          // que se le pide "one or two words" contesta lo que le parece, y
+          // luego el buscador generaliza esa invención hasta encontrar a
+          // cualquiera. Aquí sólo puede elegir de lo que su autor permitió.
+          `"skill" MUST be copied EXACTLY from this list, and nothing else is allowed: ${permitidas.join(', ')}.\n` +
+          'If none of those fits the job, answer {"delegate": false}.\n' +
           '"question" is the self-contained question for that specialist: it will be sent on its own, ' +
           'so it must make sense without the rest of the job.\n' +
           'Paying costs real money. If in doubt, do not delegate.',
@@ -305,6 +431,12 @@ async function decidirDelegacion(
     const skill = parsed.skill?.trim();
     const pregunta = parsed.question?.trim();
     if (!skill || !pregunta) return null;
+    // Y se comprueba lo que contestó. Un modelo puede ignorar la lista, y de
+    // hecho lo hace: pedirle que elija de un menú no es lo mismo que obligarle.
+    if (!skillPermitida(skill, permitidas)) {
+      console.error(`[agente] el modelo pidió subcontratar "${skill}", que no está permitida. Trabaja solo.`);
+      return null;
+    }
     return { skill, pregunta };
   } catch {
     // Decidir mal no puede tumbar el encargo: ante la duda, se trabaja solo.

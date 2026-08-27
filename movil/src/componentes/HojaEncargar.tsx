@@ -27,6 +27,7 @@ import {
   tamanoLegible,
   type Adjunto,
 } from '@/lib/adjuntos';
+import type { Nivel } from '@panal/sdk';
 import { useWallet } from '@/hooks/useWallet';
 import type { DatosAgente } from '~/lib/agente';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
@@ -107,6 +108,7 @@ export default function HojaEncargar({
    * como se quedan desincronizadas.
    */
   const [capacidades, setCapacidades] = useState<CapacidadesAgente | null>(null);
+  const [nivel, setNivel] = useState<Nivel | null>(null);
   const entradaArchivos = useRef<HTMLInputElement>(null);
 
   const [entrega, setEntrega] = useState<Entrega>('nada');
@@ -129,14 +131,23 @@ export default function HojaEncargar({
   const reciboApprove = useWaitForTransactionReceipt({ hash: hashApprove });
 
   const enPanal = datos ? currencySymbol(datos.moneda) === '$PANAL' : false;
-  const precio = datos?.precioTarea ?? 0n;
+  /** Los niveles que vende este agente. Vacío es lo normal. */
+  const niveles = capacidades?.niveles ?? [];
+  /**
+   * Lo que se bloquea: el nivel elegido, o el precio del registro.
+   *
+   * Es el único número que le dice al agente qué se compró, porque es el que
+   * queda en la cadena. Lo que ponga el encargo no cuenta: lo escribe el
+   * cliente.
+   */
+  const precio = nivel?.wei ?? datos?.precioTarea ?? 0n;
   const simbolo = datos ? currencySymbol(datos.moneda) : 'MON';
   // El 2,5 % sale del precio, no se suma: bloqueas el precio y el agente cobra menos.
   const comision = (precio * 250n) / 10_000n;
 
   const T = useTextos();
 
-  /* ── ¿acepta archivos? ─────────────────────────────────────────────────── */
+  /* ── ¿acepta archivos? ¿vende niveles? ─────────────────────────────────── */
 
   useEffect(() => {
     const botUrl = datos?.botUrl;
@@ -144,7 +155,12 @@ export default function HojaEncargar({
     let vigente = true;
     void (async () => {
       const leidas = await leerCapacidades(botUrl);
-      if (vigente) setCapacidades(leidas);
+      if (!vigente) return;
+      setCapacidades(leidas);
+      // Se elige el más barato solo. Debería costar lo mismo que su precio
+      // registrado, así que quien no toque nada bloquea lo de siempre; y si un
+      // agente vende niveles, por debajo del primero no acepta encargos.
+      setNivel(leidas.niveles[0] ?? null);
     })();
     return () => {
       vigente = false;
@@ -434,6 +450,46 @@ export default function HojaEncargar({
     <Hoja abierta={abierta} titulo={T.encargar.titulo} onCerrar={onCerrar} bloqueada={trabajando}>
       {!pagado && (
         <>
+          {/* Niveles. Sólo si el agente vende alguno; casi ninguno lo hace. */}
+          {niveles.length > 0 && (
+            <>
+              <p className="mt-3 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
+                {T.encargar.nivel}
+              </p>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {niveles.map((n) => {
+                  const elegido = nivel?.wei === n.wei;
+                  return (
+                    <li key={n.wei.toString()}>
+                      <button
+                        type="button"
+                        onClick={() => setNivel(n)}
+                        disabled={trabajando}
+                        className={`pulsable flex w-full items-center gap-3 rounded-[13px] border px-3.5 py-2.5 text-left disabled:opacity-40 ${
+                          elegido ? 'border-honey bg-honey/10' : 'border-line bg-sand'
+                        }`}
+                      >
+                        <span className="min-w-0 grow">
+                          <span className="block truncate text-[13.5px] font-semibold text-ink">
+                            {n.name ?? T.encargar.titulo}
+                          </span>
+                          {n.maxBriefChars !== null && (
+                            <span className="mt-0.5 block text-[11.5px] text-ink-3">
+                              {T.encargar.nivelTope(n.maxBriefChars)}
+                            </span>
+                          )}
+                        </span>
+                        <span className="shrink-0 font-mono text-[12.5px] text-ink">
+                          {monto(n.wei)} {simbolo}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+
           <p className="mt-3 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
             {T.encargar.quePides}
           </p>

@@ -369,6 +369,8 @@ export const es = {
   encargar: {
     titulo: 'Encargar trabajo',
     quePides: 'Qué le pides',
+    nivel: 'Nivel',
+    nivelTope: (n: number) => `Hasta ${n.toLocaleString()} caracteres`,
     briefHueco: 'Describe el trabajo. Esto es lo que verá el agente.',
     plazo: 'Plazo',
     // Las unidades también se traducen: «6 h» en chino se lee «6 小时».

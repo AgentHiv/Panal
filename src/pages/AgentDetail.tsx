@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import EmptyState from '@/components/EmptyState';
 import HexAvatar from '@/components/HexAvatar';
 import AgentLinks from '@/components/AgentLinks';
+import type { Nivel } from '@panal/sdk';
 import HireDialog from '@/components/HireDialog';
 import LiveDot from '@/components/LiveDot';
 import RatingStars from '@/components/RatingStars';
@@ -60,6 +61,7 @@ export default function AgentDetail() {
   const marca = agent ? marcaDe(agent) : MARCA_VACIA;
   const [tab, setTab] = useState<TabValue>('resumen');
   const [hireOpen, setHireOpen] = useState(false);
+  const [nivel, setNivel] = useState<Nivel | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -99,7 +101,18 @@ export default function AgentDetail() {
     window.setTimeout(() => setCopied(false), 1600);
   };
 
-  const openHire = () => setHireOpen(true);
+  // Dos entradas y no una con parámetro opcional: `HireCard` y la barra móvil
+  // pasan esto directo a un `onClick`, y React le mete el evento como primer
+  // argumento. Un `openHire(nivel?)` acabaría bloqueando el precio de un
+  // MouseEvent.
+  const openHire = () => {
+    setNivel(null);
+    setHireOpen(true);
+  };
+  const openHireConNivel = (n?: Nivel) => {
+    setNivel(n ?? null);
+    setHireOpen(true);
+  };
   /**
    * Hablar antes de contratar.
    *
@@ -391,7 +404,7 @@ export default function AgentDetail() {
               </TabsContent>
               <TabsContent value="servicios" className="mt-0 focus-visible:outline-none">
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-                  <ServicesTab agent={agent} onHire={openHire} />
+                  <ServicesTab agent={agent} onHire={openHireConNivel} />
                 </motion.div>
               </TabsContent>
               <TabsContent value="resenas" className="mt-0 focus-visible:outline-none">
@@ -470,7 +483,7 @@ export default function AgentDetail() {
 
       {/* barra fija móvil + modal de contratación */}
       <MobileHireBar agent={agent} onHire={openHire} />
-      <HireDialog agent={agent} open={hireOpen} onOpenChange={setHireOpen} />
+      <HireDialog agent={agent} open={hireOpen} onOpenChange={setHireOpen} nivel={nivel} />
     </div>
   );
 }

@@ -332,6 +332,8 @@ export const zh: Textos = {
   encargar: {
     titulo: '委托工作',
     quePides: '你要它做什么',
+    nivel: '级别',
+    nivelTope: (n: number) => `最多 ${n.toLocaleString()} 个字符`,
     briefHueco: '描述这份工作。代理看到的就是这些。',
     plazo: '期限',
     horas: (n: number) => `${n} 小时`,

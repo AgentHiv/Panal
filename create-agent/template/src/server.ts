@@ -30,10 +30,12 @@ import {
   assertCanServe,
   buildQuote,
   createPanalClient,
+  leerNiveles,
   LoopDetected,
   MAINNET_ADDRESSES,
   monad,
   matchAttachment,
+  nivelPara,
   parseAttachmentsManifest,
   parseEnvelope,
   parsePaymentHeader,
@@ -45,21 +47,21 @@ import {
   type AttachedFile,
   type CallEnvelope,
   type DeliveredFile,
+  type FichaNivel,
+  type Nivel,
   type PermitDomain,
 } from '@panal/sdk';
 import { comoAdjunto } from './salida.js';
 import { privateKeyToAccount } from 'viem/accounts';
 import { isAddress, keccak256, parseEther, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
-import { handleTask } from './agent.js';
-import type { AdjuntoRecibido, TaskContext, TaskFile, TaskResult } from './agent.js';
+import { handleTask, NIVELES, SUBCONTRATA_SKILLS } from './agent.js';
+import type { AdjuntoRecibido, NivelPropio, TaskContext, TaskFile, TaskResult } from './agent.js';
 import { arrancarVigilante } from './vigilante.js';
 import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const DATA_DIR = process.env.DATA_DIR ?? './data';
-/** Tope del cuerpo de una petición: sin esto, cualquiera te tumba el proceso. */
-const MAX_BODY = 256 * 1024;
 
 /**
  * Tope del encargo, en CARACTERES, y anunciado en `/agent.json`.
@@ -75,6 +77,80 @@ const MAX_BODY = 256 * 1024;
  * lo que se promete se cumpla siempre, y no solo con texto latino.
  */
 const MAX_BRIEF_CHARS = 32_000;
+
+// ---------------------------------------------------------------------------
+// Niveles: el mismo trabajo en varios tamaños.
+//
+// Los declara el agente en `agent.ts` y son OPCIONALES. Sin ninguno, todo lo
+// de aquí abajo se queda en los valores de siempre y este bloque no hace nada.
+//
+// Se pasan por `leerNiveles`, que es EL MISMO lector que usarán la web y la
+// app al leer la ficha. Así un agente no puede publicar un nivel que sus
+// propios clientes van a descartar: si aquí no sobrevive, no se anuncia.
+// ---------------------------------------------------------------------------
+
+const NIVELES_OK = leerNiveles({
+  tiers: NIVELES.map((n) => ({ ...n, amountWei: n.wei.toString() })),
+});
+
+if (NIVELES.length > 0 && NIVELES_OK.length !== NIVELES.length) {
+  console.error(
+    `[panal] ${NIVELES.length - NIVELES_OK.length} nivel(es) de agent.ts están mal escritos y no se van a anunciar. ` +
+      'Cada uno necesita un `wei` positivo.',
+  );
+}
+
+/** El nivel más barato: por debajo de eso, un agente con niveles no trabaja. */
+const NIVEL_MINIMO = NIVELES_OK[0] ?? null;
+
+// Un nivel que se gasta subcontratando lo mismo que cobra trabaja gratis, y si
+// se pasa, trabaja pagando. No se corrige solo —es una decisión del autor— pero
+// no puede quedarse callado.
+for (const n of NIVELES) {
+  if (n.subcontrata !== undefined && n.subcontrata >= n.wei) {
+    console.error(
+      `[panal] el nivel "${n.name}" cobra ${n.wei} y puede gastar ${n.subcontrata} subcontratando: ` +
+        'no te queda nada por el trabajo.',
+    );
+  }
+}
+
+
+/** El tope de encargo del nivel mayor, o el de siempre si no hay niveles. */
+const TOPE_BRIEF_MAYOR = Math.max(MAX_BRIEF_CHARS, ...NIVELES_OK.map((n) => n.maxBriefChars ?? 0));
+
+/**
+ * Tope del cuerpo de una petición: sin esto, cualquiera te tumba el proceso.
+ *
+ * Sale del nivel MAYOR y no de un número redondo, porque prometer 320 000
+ * caracteres y cortar el cuerpo a 256 KB es prometer algo que no se cumple.
+ * El ×4 es el peor caso de UTF-8 —un carácter puede ocupar cuatro bytes— y
+ * los 32 KB de propina cubren el resto del JSON: la firma, la dirección y el
+ * manifiesto de adjuntos que viaja dentro del encargo.
+ */
+const MAX_BODY = Math.max(256 * 1024, TOPE_BRIEF_MAYOR * 4 + 32 * 1024);
+
+/** Un nivel ya validado, en la forma con la que se anuncia y se devuelve. */
+function comoFicha(n: Nivel): FichaNivel {
+  return {
+    ...(n.name === null ? {} : { name: n.name }),
+    ...(n.description === null ? {} : { description: n.description }),
+    amountWei: n.wei.toString(),
+    ...(n.maxBriefChars === null ? {} : { maxBriefChars: n.maxBriefChars }),
+    ...(n.maxAttachChars === null ? {} : { maxAttachChars: n.maxAttachChars }),
+    ...(n.maxAttachCharsTotal === null ? {} : { maxAttachCharsTotal: n.maxAttachCharsTotal }),
+  };
+}
+
+/** Qué nivel compró quien bloqueó esto. `null` si el agente no vende niveles. */
+function nivelDe(pagado: bigint): NivelPropio | null {
+  if (NIVELES_OK.length === 0) return null;
+  const leido = nivelPara(NIVELES_OK, pagado);
+  if (!leido) return null;
+  // Se devuelve el declarado en `agent.ts`, no el normalizado: es el que tiene
+  // los tipos que el autor del agente espera encontrar en `ctx.nivel`.
+  return NIVELES.find((n) => n.wei === leido.wei) ?? null;
+}
 
 const key = process.env.AGENT_PRIVATE_KEY?.trim();
 if (!key || !/^0x[0-9a-fA-F]{64}$/.test(key)) {
@@ -159,7 +235,21 @@ const SUBCONTRATA_SALTOS = (() => {
 })();
 
 if (SUBCONTRATA_MAX > 0n) {
-  console.log(`Subcontratación activa: hasta ${process.env.SUBCONTRATA_MAX} ${X402_SYMBOL} por encargo`);
+  // Se dice el estado REAL, no sólo el del dinero. Antes bastaba con tener
+  // presupuesto; ahora hacen falta las dos cosas, y un log que dijera "activa"
+  // con la lista vacía haría perder la tarde a quien se pregunte por qué su
+  // agente nunca delega.
+  if (SUBCONTRATA_SKILLS.length > 0) {
+    console.log(
+      `Subcontratación activa: hasta ${process.env.SUBCONTRATA_MAX} ${X402_SYMBOL} por encargo, ` +
+        `y sólo en: ${SUBCONTRATA_SKILLS.join(', ')}`,
+    );
+  } else {
+    console.log(
+      `Subcontratación con presupuesto (${process.env.SUBCONTRATA_MAX} ${X402_SYMBOL}) pero SIN skills ` +
+        'permitidas: no va a delegar. Rellena SUBCONTRATA_SKILLS en agent.ts.',
+    );
+  }
 
   // Lo que te pagan por una consulta es el techo de lo que puedes gastarte en
   // ella. Con SUBCONTRATA_MAX igual o mayor que X402_PRICE, un encargo en el
@@ -509,18 +599,40 @@ function contexto(
   },
   sobre: CallEnvelope | null,
 ): TaskContext {
+  // Se resuelve aquí y no en cada llamador para que no haya dos maneras de
+  // decidirlo. En x402 es SIEMPRE null: no hay escrow, y el importe de una
+  // llamada suelta no compra un nivel de encargo.
+  const nivel = base.taskId === null ? null : nivelDe(base.amount);
+
+  // El presupuesto del nivel comprado, y si el nivel no dice nada, el del
+  // .env. Así el nivel caro puede comprar ayuda y el barato no, sin que un
+  // agente sin niveles note ningún cambio.
+  const presupuesto = nivel?.subcontrata ?? SUBCONTRATA_MAX;
+
   return {
     ...base,
+    nivel,
     envelope: sobre,
-    presupuesto: SUBCONTRATA_MAX,
+    presupuesto,
     consultar: async (skill: string, pregunta: string) => {
-      if (SUBCONTRATA_MAX <= 0n) {
+      if (presupuesto <= 0n) {
         throw new Error(
-          'Este agente no tiene presupuesto para subcontratar: pon SUBCONTRATA_MAX en el .env si quieres que delegue.',
+          nivel
+            ? `El nivel "${nivel.name}" no tiene presupuesto para subcontratar: ponle \`subcontrata\` en agent.ts.`
+            : 'Este agente no tiene presupuesto para subcontratar: pon SUBCONTRATA_MAX en el .env si quieres que delegue.',
+        );
+      }
+      // Dinero Y permiso. Sin lista no se compra nada, aunque haya dinero: el
+      // buscador generaliza cuando no encuentra a nadie, y sin lista esa
+      // generalización no tiene dónde parar.
+      if (SUBCONTRATA_SKILLS.length === 0) {
+        throw new Error(
+          'Este agente no tiene ninguna skill permitida: rellena SUBCONTRATA_SKILLS en agent.ts si quieres que delegue.',
         );
       }
       const res = await panal.ask(skill, pregunta, {
-        maxSpend: SUBCONTRATA_MAX,
+        maxSpend: presupuesto,
+        skillsPermitidas: SUBCONTRATA_SKILLS,
         depth: SUBCONTRATA_SALTOS,
         // El sobre recibido, si lo hay. Sin él se abre una cadena nueva.
         envelope: sobre,
@@ -710,10 +822,10 @@ function json(res: ServerResponse, status: number, body: unknown): void {
 /**
  * El cuerpo en crudo, con su propio tope.
  *
- * Va aparte de `readBody` a propósito: los 256 KB de MAX_BODY protegen las
- * rutas de texto y tienen que seguir siendo pequeños. Una foto no cabe ahí, y
- * subirle el tope a todas las rutas para que quepa sería abrir la puerta que
- * ese límite cierra.
+ * Va aparte de `readBody` a propósito: MAX_BODY protege las rutas de texto y
+ * está calculado para caberles justo —lo que hoy pida el nivel mayor y ni un
+ * byte más—. Una foto no entra ahí, y subirle el tope a todas las rutas para
+ * que quepa sería abrir la puerta que ese límite cierra.
  */
 async function readBodyBytes(req: IncomingMessage, max: number): Promise<Buffer> {
   const chunks: Buffer[] = [];
@@ -956,6 +1068,13 @@ const server = createServer((req, res) => {
             path: '/brief/:taskId',
             signMessage: 'Panal brief #<taskId>  (EIP-191, firmado por el cliente de la tarea)',
             body: `{"brief": string (máx. ${MAX_BRIEF_CHARS} chars), "address": "0x…", "signature": "0x…"}`,
+            // OJO: aquí va el tope BÁSICO, nunca el del nivel mayor.
+            //
+            // Un cliente antiguo no sabe elegir nivel, así que va a bloquear el
+            // precio del registro y comprar el básico. Anunciarle el tope del
+            // nivel grande le haría mandar un libro pagando lo pequeño, y
+            // enterarse con el dinero ya bloqueado. Quien sepa leer `tiers`
+            // verá los demás.
             maxBriefChars: MAX_BRIEF_CHARS,
           },
           postAttachment: {
@@ -974,6 +1093,9 @@ const server = createServer((req, res) => {
           },
           ...(x402 ? { x402Ask: x402 } : {}),
         },
+        // Los niveles, sólo si este agente vende alguno. Ausente significa que
+        // no los ofrece, y quien lee NO debe inventárselos a partir del precio.
+        ...(NIVELES_OK.length > 0 ? { tiers: NIVELES_OK.map(comoFicha) } : {}),
         // ALIAS ANTIGUO, en la raíz. Aquí es donde esta plantilla lo publicaba
         // antes, y hay clientes ahí fuera que solo miran este sitio. Se sirve
         // por compatibilidad y desaparecerá; lo que se lee es `endpoints`.
@@ -1141,13 +1263,15 @@ const server = createServer((req, res) => {
         json(res, 400, { error: 'faltan taskId, brief o signature' });
         return;
       }
-      // El tope que anuncia /agent.json, aplicado. Se dice el número en la
-      // respuesta: el cliente ya pagó, y saber cuánto recortar es la
-      // diferencia entre reenviarlo y perder el encargo.
-      if (body.brief.length > MAX_BRIEF_CHARS) {
+      // Primera guarda, y a propósito contra el tope MAYOR: aquí todavía no
+      // se sabe qué nivel se pagó —eso está en la cadena y cuesta un eth_call—
+      // y un texto que no cabe en el nivel más caro no cabe en ninguno. Lo que
+      // sí se puede decidir sin preguntarle a nadie, se decide sin preguntar.
+      if (body.brief.length > TOPE_BRIEF_MAYOR) {
         json(res, 400, {
-          error: `el encargo son ${body.brief.length} caracteres y el tope es ${MAX_BRIEF_CHARS}`,
-          maxBriefChars: MAX_BRIEF_CHARS,
+          error: `el encargo son ${body.brief.length} caracteres y el tope es ${TOPE_BRIEF_MAYOR}`,
+          maxBriefChars: TOPE_BRIEF_MAYOR,
+          ...(NIVELES_OK.length > 0 ? { tiers: NIVELES_OK.map(comoFicha) } : {}),
         });
         return;
       }
@@ -1192,6 +1316,34 @@ const server = createServer((req, res) => {
       }
       if (!(await signedBy(briefSignMessage(taskId), body.signature, task.client))) {
         json(res, 401, { error: 'la firma no es del cliente de esta tarea' });
+        return;
+      }
+
+      // El tope DEL NIVEL QUE PAGÓ. Se mira ahora y no arriba porque hasta
+      // aquí no se sabía el importe, y el importe es lo único que dice qué
+      // nivel compró: el brief lo escribe el cliente y podría proclamarse del
+      // más caro.
+      //
+      // Se dice el número y se dicen los niveles: el cliente ya tiene el pago
+      // bloqueado, y saber si le sobra texto o le falta nivel es la diferencia
+      // entre arreglarlo y esperar al plazo para recuperar el dinero.
+      const nivel = nivelDe(task.amount);
+      if (NIVEL_MINIMO && task.amount < NIVEL_MINIMO.wei) {
+        json(res, 400, {
+          error: `esta tarea bloqueó ${task.amount} y el nivel más barato cuesta ${NIVEL_MINIMO.wei}`,
+          tiers: NIVELES_OK.map(comoFicha),
+        });
+        return;
+      }
+      const topeDelNivel = nivel?.maxBriefChars ?? MAX_BRIEF_CHARS;
+      if (body.brief.length > topeDelNivel) {
+        json(res, 400, {
+          error:
+            `el encargo son ${body.brief.length} caracteres y el nivel que pagaste ` +
+            `(${nivel?.name ?? 'el básico'}) llega a ${topeDelNivel}`,
+          maxBriefChars: topeDelNivel,
+          ...(NIVELES_OK.length > 0 ? { tiers: NIVELES_OK.map(comoFicha) } : {}),
+        });
         return;
       }
       // Y que el texto sea EL que se encargó. Para esto existe el taskHash: sin

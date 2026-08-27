@@ -12,6 +12,9 @@
  * corresponde al cliente de la tarea.
  */
 
+import { leerNiveles } from '@panal/sdk';
+import type { Nivel } from '@panal/sdk';
+
 /**
  * Cuánto vale una firma de descarga. Corto a propósito.
  *
@@ -94,6 +97,16 @@ export interface CapacidadesAgente {
   adjuntos: boolean;
   /** El tope por archivo que anuncia, si lo dice. */
   maxAdjuntoBytes?: number;
+  /**
+   * Los niveles que vende, de menor a mayor. Vacío es lo NORMAL.
+   *
+   * Vacío significa que este agente no vende niveles y hay que tratarlo como
+   * se le trataba siempre: un precio, un tamaño. No es una invitación a
+   * fabricarle niveles multiplicando su precio, que es exactamente lo que
+   * hacía la pestaña de servicios y por lo que enseñaba precios que luego no
+   * se cobraban.
+   */
+  niveles: Nivel[];
 }
 
 /**
@@ -114,24 +127,31 @@ export interface CapacidadesAgente {
  * red lenta— se asume que no acepta. Ante la duda es mejor no ofrecer algo
  * que puede acabar en un cobro por trabajo no hecho.
  */
+/** Lo que se devuelve cuando la tarjeta no contesta: ni adjuntos ni niveles. */
+const SIN_NADA: CapacidadesAgente = { adjuntos: false, niveles: [] };
+
 export async function leerCapacidades(botUrl: string, timeoutMs = 6_000): Promise<CapacidadesAgente> {
   try {
     const res = await fetch(`${botUrl.replace(/\/+$/, '')}/agent.json`, {
       signal: AbortSignal.timeout(timeoutMs),
     });
-    if (!res.ok) return { adjuntos: false };
+    if (!res.ok) return SIN_NADA;
     const card = (await res.json()) as {
       endpoints?: { postAttachment?: { path?: string; maxAttachmentBytes?: number } };
     };
+    // Los niveles se leen aunque no acepte adjuntos: son cosas distintas y un
+    // agente puede vender tamaños de encargo sin recibir un solo archivo.
+    const niveles = leerNiveles(card);
     const subida = card.endpoints?.postAttachment;
-    if (!subida?.path) return { adjuntos: false };
+    if (!subida?.path) return { adjuntos: false, niveles };
     const tope = subida.maxAttachmentBytes;
     return {
       adjuntos: true,
       ...(typeof tope === 'number' && tope > 0 ? { maxAdjuntoBytes: tope } : {}),
+      niveles,
     };
   } catch {
-    return { adjuntos: false };
+    return SIN_NADA;
   }
 }
 

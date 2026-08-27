@@ -122,6 +122,24 @@ export function variantesDeSkill(skill: string): string[] {
   return out;
 }
 
+/**
+ * Las variantes que se pueden buscar de verdad, dada la lista de permitidas.
+ *
+ * Va aparte y exportada porque es LA regla que impide que un agente de código
+ * acabe pagando a uno de vídeo. Sin lista devuelve todas, que es como se
+ * comportaba esto antes de que la lista existiera.
+ *
+ * La comparación normaliza espacios y mayúsculas: la lista la escribe una
+ * persona en su `agent.ts` y la skill la escribe un modelo, y no van a coincidir
+ * en el formato.
+ */
+export function variantesPermitidas(skill: string, permitidas?: string[]): string[] {
+  const blancas = permitidas?.map((p) => p.trim().replace(/\s+/g, ' ').toLowerCase()).filter(Boolean);
+  return variantesDeSkill(skill).filter(
+    (v) => !blancas || blancas.includes(v.replace(/\s+/g, ' ').toLowerCase()),
+  );
+}
+
 function esNombre(v: unknown): v is { nombre: string; desdeTs: number; origen: 'reclamado' | 'comprado' | 'recibido' } {
   if (v === null || typeof v !== 'object') return false;
   const n = v as Record<string, unknown>;
@@ -823,6 +841,20 @@ export class PanalClient {
       envelope?: CallEnvelope | null;
       /** Saltos permitidos al abrir una cadena nueva. */
       depth?: number;
+      /**
+       * LAS ÚNICAS SKILLS QUE SE PUEDEN COMPRAR. Sin esto, cualquiera.
+       *
+       * Existe por la degradación de aquí abajo. Quien pide la skill suele ser
+       * un modelo, y al no encontrar a nadie se recorta por la izquierda:
+       * "python video encoding" acaba buscando "video". Para un agente de
+       * código eso es contratar a un agente de vídeo con su dinero, y lo peor
+       * es que el resultado parece razonable — pagó, le contestaron, entregó.
+       *
+       * Con esta lista, una variante que no esté en ella NI SE BUSCA. La
+       * comprobación va antes de cotizar, así que un intento prohibido no
+       * cuesta ni una petición.
+       */
+      skillsPermitidas?: string[];
     },
   ): Promise<AskResult & { agent: Address; skill: string }> {
     const wallet = this.wallet();
@@ -847,9 +879,21 @@ export class PanalClient {
     // núcleo va al final: "Spanish tax law" → "tax law" → "law". Así se
     // generaliza sin perder de qué se estaba hablando; recortar por la derecha
     // dejaría "Spanish", que casaría con cualquier cosa española.
+    // Las variantes que este agente tiene permitido comprar. Sin lista, todas.
+    const permitidas = options.skillsPermitidas;
+    const variantes = variantesPermitidas(skill, permitidas);
+    if (!variantes.length) {
+      throw new X402Error(
+        `Este agente no tiene permitido subcontratar "${skill}". ` +
+          (permitidas?.length
+            ? `Sólo puede comprar: ${permitidas.join(', ')}.`
+            : 'No tiene ninguna skill permitida.'),
+      );
+    }
+
     let candidates: Agent[] = [];
     let usada = skill;
-    for (const intento of variantesDeSkill(skill)) {
+    for (const intento of variantes) {
       candidates = (await this.searchAgents(intento, { skill: intento }))
         .filter((a) => !excluded.has(a.address.toLowerCase()) && a.metadata.botUrl)
         .slice(0, options.maxCandidates ?? 5);

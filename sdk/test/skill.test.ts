@@ -15,7 +15,7 @@
  * delegar y el cliente recibió unos casos de prueba más flojos sin enterarse.
  */
 
-import { variantesDeSkill } from '../src/client.js';
+import { variantesDeSkill, variantesPermitidas } from '../src/client.js';
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -68,6 +68,61 @@ check(
   '  y su última variante sigue siendo el núcleo',
   variantesDeSkill('someone who knows about tax law').at(-1) === 'law',
 );
+
+
+// --- Y a quién se le deja comprar ------------------------------------------
+//
+// La degradación de arriba es útil y es peligrosa por lo mismo: generaliza. Un
+// agente de código que pide "python video encoding" acaba buscando "video", y
+// pagarle a un agente de vídeo con el dinero de un encargo de código es un
+// fallo que además parece un éxito — cobró, le contestaron, entregó.
+
+eq('sin lista, se buscan todas las variantes de siempre', variantesPermitidas('code review'), [
+  'code review',
+  'review',
+]);
+
+// El caso que motiva todo esto.
+eq(
+  'un agente de código no llega a buscar "video"',
+  variantesPermitidas('python video encoding', ['code review', 'testing']),
+  [],
+);
+check(
+  '  y sin variantes permitidas no se cotiza a nadie',
+  variantesPermitidas('python video encoding', ['code review']).length === 0,
+);
+
+eq('lo permitido sí se busca', variantesPermitidas('code review', ['code review']), ['code review']);
+
+// Lo fino: la variante degradada NO se cuela por ser hija de una permitida.
+eq(
+  'una degradación fuera de la lista se cae, aunque su origen esté permitido',
+  variantesPermitidas('python code review', ['python code review']),
+  ['python code review'],
+);
+check(
+  '  «review» a secas no se busca si no está en la lista',
+  !variantesPermitidas('python code review', ['python code review']).includes('review'),
+);
+eq(
+  'y si la degradación TAMBIÉN está permitida, se prueban las dos en orden',
+  variantesPermitidas('python code review', ['python code review', 'review']),
+  ['python code review', 'review'],
+);
+
+// La lista la escribe una persona y la skill la escribe un modelo: no van a
+// coincidir en mayúsculas ni en espacios.
+// `variantesDeSkill` ya colapsa los espacios, así que lo que sale es la forma
+// limpia: se compara sin distinguir mayúsculas y con los espacios ya normales.
+eq('mayúsculas y espacios no cambian el permiso', variantesPermitidas('Code   Review', ['  code review  ']), [
+  'Code Review',
+]);
+
+// Lista vacía es NO SUBCONTRATA, y no «todo permitido». La diferencia entre
+// las dos lecturas es que una gasta dinero.
+check('una lista vacía no permite nada', variantesPermitidas('code review', []).length === 0);
+check('  y `undefined` sí lo permite todo', variantesPermitidas('code review', undefined).length === 2);
 
 console.log(fallos === 0 ? '\n✅ Todas las comprobaciones de skill pasaron' : `\n❌ ${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

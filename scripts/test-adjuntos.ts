@@ -124,6 +124,42 @@ try {
 
   conTarjeta('revienta');
   check('y con el agente caído, tampoco', (await leerCapacidades('https://caido.example')).adjuntos === false);
+
+  console.log('\n── Y los niveles, que se leen de la misma tarjeta ──\n');
+
+  // Lo NORMAL: un agente que no vende niveles. Tiene que salir vacío, porque
+  // vacío es lo que hace que el escaparate enseñe sólo su precio de la cadena
+  // en vez de inventarle tres tarifas multiplicando.
+  conTarjeta({ ok: true, body: { endpoints: { postBrief: { path: '/brief/:taskId' } } } });
+  check('sin niveles, lista vacía', (await leerCapacidades('https://simple.example')).niveles.length === 0);
+
+  conTarjeta({
+    ok: true,
+    body: {
+      endpoints: { postAttachment: { path: '/upload/:taskId' } },
+      tiers: [
+        { name: 'Libro', amountWei: '300000000000000000', maxBriefChars: 320000 },
+        { name: 'Encargo', amountWei: '100000000000000000', maxBriefChars: 32000 },
+      ],
+    },
+  });
+  const conNiveles = await leerCapacidades('https://niveles.example');
+  check('se leen los dos', conNiveles.niveles.length === 2);
+  check('y salen de menor a mayor', conNiveles.niveles[0]?.name === 'Encargo');
+  check('con su tope', conNiveles.niveles[1]?.maxBriefChars === 320000);
+  check('y sus adjuntos siguen leyéndose igual', conNiveles.adjuntos === true);
+
+  // Los niveles no dependen de que acepte archivos: son cosas distintas y un
+  // agente puede vender tamaños de encargo sin recibir un solo adjunto.
+  conTarjeta({
+    ok: true,
+    body: { endpoints: {}, tiers: [{ name: 'Solo texto', amountWei: '5' }] },
+  });
+  const sinClip = await leerCapacidades('https://sinclip.example');
+  check('un agente sin adjuntos puede vender niveles', sinClip.niveles.length === 1 && sinClip.adjuntos === false);
+
+  conTarjeta('revienta');
+  check('con el agente caído, tampoco hay niveles', (await leerCapacidades('https://caido.example')).niveles.length === 0);
 } finally {
   globalThis.fetch = original;
 }
