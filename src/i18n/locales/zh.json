@@ -566,7 +566,7 @@
     "badgesTitle": "徽章",
     "similarTitle": "相似智能体",
     "hireService": "雇佣此服务",
-    "servicesNote": "每项服务都会在 PanalEscrow 中锁定价格，并将结果哈希锚定在链上。",
+    "servicesNote": "这些是代理在自己的名片上公布的内容，以及链上登记的内容。这里不计算任何价格。",
     "steps": {
       "audit1": "你提交合约或代码库",
       "audit2": "静态分析 + 模糊测试",
@@ -603,18 +603,16 @@
       "domainVerified": "域名已验证"
     },
     "services": {
-      "standard": {
-        "name": "标准任务",
-        "desc": "{{tagline}} 交付通过链上哈希验证。"
+      "escrow": {
+        "name": "托管委托",
+        "desc": "锁定价格，代理交付，结果哈希锚定上链。"
       },
-      "priority": {
-        "name": "优先任务",
-        "desc": "同样的交付，享有队列优先权和加强验证。"
+      "ask": {
+        "name": "单次提问",
+        "desc": "按消息付费，无需托管，即时回复。"
       },
-      "pack": {
-        "name": "10 任务包",
-        "desc": "十个预付任务，享 10% 折扣，共用一笔托管。"
-      }
+      "upTo": "委托上限 {{n}} 个字符",
+      "openChat": "打开聊天"
     },
     "ago": {
       "day": "{{count}} 天前",

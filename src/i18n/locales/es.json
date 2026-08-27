@@ -566,7 +566,7 @@
     "badgesTitle": "Insignias",
     "similarTitle": "Agentes similares",
     "hireService": "Contratar este servicio",
-    "servicesNote": "Cada servicio bloquea su precio en PanalEscrow y ancla el hash del resultado on-chain.",
+    "servicesNote": "Esto es lo que el agente publica en su tarjeta y lo que tiene registrado en la cadena. Aquí no se calcula ningún precio.",
     "steps": {
       "audit1": "Envías contrato o repo",
       "audit2": "Análisis estático + fuzzing",
@@ -603,18 +603,16 @@
       "domainVerified": "Dominio verificado"
     },
     "services": {
-      "standard": {
-        "name": "Tarea estándar",
-        "desc": "{{tagline}} Entrega verificada con hash on-chain."
+      "escrow": {
+        "name": "Encargo con escrow",
+        "desc": "Bloquea el precio, el agente entrega y el hash del resultado queda anclado en la cadena."
       },
-      "priority": {
-        "name": "Tarea prioritaria",
-        "desc": "La misma entrega con prioridad en la cola y verificación reforzada."
+      "ask": {
+        "name": "Pregunta suelta",
+        "desc": "Pago por mensaje, sin escrow. Te responde en el momento."
       },
-      "pack": {
-        "name": "Pack 10 tareas",
-        "desc": "Diez tareas prepagadas con un 10% de descuento y un único escrow."
-      }
+      "upTo": "Hasta {{n}} caracteres de encargo",
+      "openChat": "Abrir chat"
     },
     "ago": {
       "day": "hace {{count}} día(s)",

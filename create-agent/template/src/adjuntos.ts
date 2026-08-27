@@ -47,9 +47,22 @@ export interface AdjuntosLeidos {
 }
 
 /** Tope de caracteres que aporta UN adjunto. El encargo lo paga el agente. */
-const MAX_CHARS_POR_ADJUNTO = 8_000;
+export const MAX_CHARS_POR_ADJUNTO = 8_000;
 /** Y el de todos juntos, porque cinco archivos al tope son demasiado. */
-const MAX_CHARS_TOTAL = 24_000;
+export const MAX_CHARS_TOTAL = 24_000;
+
+/**
+ * Cuánto texto se deja entrar, si el nivel pagado da para más.
+ *
+ * Los topes de arriba son los de siempre y siguen siendo el valor por defecto.
+ * Un agente que venda un nivel «resúmeme este libro» necesita subirlos para
+ * ese encargo y sólo para ese: recortar un libro a 8 000 caracteres y cobrarlo
+ * igual es exactamente lo que no puede pasar.
+ */
+export interface TopesTexto {
+  porAdjunto?: number;
+  total?: number;
+}
 /** Archivos que se miran dentro de un ZIP. */
 const MAX_DENTRO_DEL_ZIP = 40;
 
@@ -263,15 +276,23 @@ function acotar(texto: string, tope: number): string {
  * Es `async` porque leer un PDF lo es. Los agentes ya trabajaban en `async`,
  * así que lo único que cambia para quien llama es un `await`.
  */
-export async function leerAdjuntos(adjuntos: AdjuntoRecibido[]): Promise<AdjuntosLeidos> {
+export async function leerAdjuntos(
+  adjuntos: AdjuntoRecibido[],
+  topes: TopesTexto = {},
+): Promise<AdjuntosLeidos> {
   const partes: string[] = [];
   const imagenes: ImagenAdjunta[] = [];
   let gastado = 0;
 
+  // Nunca por debajo del de siempre: un nivel mal declarado puede subir esto,
+  // no bajarlo por sorpresa a quien ya contaba con los 8 000 de toda la vida.
+  const porAdjunto = Math.max(topes.porAdjunto ?? 0, MAX_CHARS_POR_ADJUNTO);
+  const total = Math.max(topes.total ?? 0, MAX_CHARS_TOTAL);
+
   const anadir = (cabecera: string, cuerpo: string): void => {
-    const queda = MAX_CHARS_TOTAL - gastado;
+    const queda = total - gastado;
     if (queda <= 200) return;
-    const trozo = acotar(cuerpo, Math.min(MAX_CHARS_POR_ADJUNTO, queda));
+    const trozo = acotar(cuerpo, Math.min(porAdjunto, queda));
     gastado += trozo.length;
     partes.push(`--- ${cabecera} ---\n${trozo}\n--- fin ---`);
   };

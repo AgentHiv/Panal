@@ -365,6 +365,8 @@ export const pt: Textos = {
   encargar: {
     titulo: 'Encomendar trabalho',
     quePides: 'O que lhe pedes',
+    nivel: 'Nível',
+    nivelTope: (n: number) => `Até ${n.toLocaleString()} caracteres`,
     briefHueco: 'Descreve o trabalho. É isto que o agente vai ver.',
     plazo: 'Prazo',
     horas: (n: number) => `${n} h`,

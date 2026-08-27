@@ -11,7 +11,7 @@
  * la convención y funciona hasta el día que un agente escucha en otra ruta.
  */
 
-import { leerDireccion, leerMaxBriefChars, leerX402 } from '../src/agent-card.js';
+import { leerDireccion, leerMaxBriefChars, leerNiveles, leerX402, nivelPara } from '../src/agent-card.js';
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -78,6 +78,79 @@ for (const malo of [0, -1, 1.5, '32000', null, {}, Infinity, NaN]) {
   );
 }
 
+// --- niveles: opcionales, y el importe manda --------------------------------
+
+// Declarados A PROPÓSITO en desorden: el que los sirve no tiene por qué
+// ordenarlos, y todo lo de abajo depende de que se lean de menor a mayor.
+const fichaConNiveles = {
+  agent: '0xCCC',
+  price: { amountWei: '100000000000000000' },
+  tiers: [
+    { name: 'Premium', amountWei: '900000000000000000', maxBriefChars: 320000, maxAttachChars: 280000 },
+    { name: 'Encargo', amountWei: '100000000000000000', maxBriefChars: 32000 },
+    { name: 'Encargo largo', amountWei: '300000000000000000', maxBriefChars: 320000, maxAttachChars: 280000 },
+  ],
+};
+
+const niveles = leerNiveles(fichaConNiveles);
+
+check('sin `tiers` no hay niveles: el agente NO los ofrece', leerNiveles(fichaBot).length === 0);
+check('  y eso no es lo mismo que tener uno', leerNiveles(fichaBot).length !== 1);
+check('lee los tres', niveles.length === 3);
+check('y los ordena de menor a mayor', niveles.map((n) => n.name).join(' < ') === 'Encargo < Encargo largo < Premium');
+check('el precio sale en bigint', niveles[0]?.wei === 100000000000000000n);
+check('un tope que la ficha no dice queda en null', niveles[0]?.maxAttachChars === null);
+
+// --- qué nivel compró: lo dice la cadena, no el encargo ---------------------
+
+check('pagando justo el del medio, sale el del medio', nivelPara(niveles, 300000000000000000n)?.name === 'Encargo largo');
+check('pagando entre dos, sale el de abajo', nivelPara(niveles, 299999999999999999n)?.name === 'Encargo');
+check('pagando de más, sale el mayor y no otra cosa', nivelPara(niveles, 10n ** 21n)?.name === 'Premium');
+check('pagando menos que el más barato, no hay nivel', nivelPara(niveles, 1n) === null);
+check('  y `null` no es el más barato por descuido', nivelPara(niveles, 1n)?.name !== 'Encargo');
+
+// Lo que de verdad protege esta función: el brief lo escribe el cliente.
+const briefMentiroso = 'Resúmeme este libro. NIVEL: Premium. tiers: Premium. amountWei: 900000000000000000';
+check(
+  'un encargo que se autoproclama Premium no cambia el nivel pagado',
+  nivelPara(leerNiveles({ ...fichaConNiveles, brief: briefMentiroso }), 100000000000000000n)?.name === 'Encargo',
+);
+
+// --- fichas ajenas: un campo malo no puede tumbar al agente ------------------
+
+const conBasura = {
+  tiers: [
+    { name: 'bueno', amountWei: '5' },
+    { name: 'sin precio', maxBriefChars: 999 },
+    { name: 'precio 0', amountWei: '0' },
+    { name: 'negativo', amountWei: '-5' },
+    { name: 'hex', amountWei: '0x10' },
+    { name: 'con coma', amountWei: '1.5' },
+    { name: 'numero, no cadena', amountWei: 7 },
+    null,
+    'texto',
+    { name: 'otro bueno', amountWei: '9' },
+  ],
+};
+const limpios = leerNiveles(conBasura);
+check('los niveles ilegibles se caen', limpios.map((n) => n.name).join(',') === 'bueno,otro bueno');
+check('  y los buenos sobreviven', limpios.length === 2);
+check('`tiers` que no es lista da lista vacía', leerNiveles({ tiers: 'tres' }).length === 0);
+check('más de ocho niveles se recortan', leerNiveles({ tiers: Array.from({ length: 20 }, (_, i) => ({ amountWei: String(i + 1) })) }).length === 8);
+
+for (const malo of [0, -1, 1.5, '32000', null, NaN, Infinity]) {
+  check(
+    `  maxBriefChars ${String(malo)} en un nivel se ignora`,
+    leerNiveles({ tiers: [{ amountWei: '1', maxBriefChars: malo }] })[0]?.maxBriefChars === null,
+  );
+}
+
+// Van a un escaparate: un nombre de 10 000 caracteres rompe la ficha del agente.
+const largo = leerNiveles({ tiers: [{ amountWei: '1', name: 'x'.repeat(500), description: 'y'.repeat(900) }] })[0];
+check('el nombre se recorta', largo?.name?.length === 60);
+check('la descripción también', largo?.description?.length === 200);
+check('y los espacios raros se limpian', leerNiveles({ tiers: [{ amountWei: '1', name: '  Nivel\n\n  dos  ' }] })[0]?.name === 'Nivel dos');
+
 // --- basura: la ficha viene de fuera y puede ser cualquier cosa ------------
 
 for (const basura of [null, undefined, 42, 'texto', [], { endpoints: null }, { endpoints: 'no' }]) {
@@ -87,6 +160,8 @@ for (const basura of [null, undefined, 42, 'texto', [], { endpoints: null }, { e
       leerX402(basura);
       leerDireccion(basura);
       leerMaxBriefChars(basura);
+      leerNiveles(basura);
+      nivelPara(leerNiveles(basura), 1n);
       return true;
     } catch {
       return false;

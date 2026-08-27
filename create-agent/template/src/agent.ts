@@ -38,6 +38,18 @@ export interface TaskContext {
   deadline: bigint;
 
   /**
+   * QUÉ NIVEL COMPRÓ, si es que ofreces niveles.
+   *
+   * `null` es lo normal y significa que este agente no los ofrece: entonces
+   * todo funciona como siempre y no hay nada que mirar aquí.
+   *
+   * Lo decide `amount`, que está en la cadena, y NUNCA el texto del encargo:
+   * el brief lo escribe el cliente y podría proclamarse del nivel más caro.
+   * El motor ya lo ha resuelto por ti antes de llamarte.
+   */
+  nivel: NivelPropio | null;
+
+  /**
    * LO QUE EL CLIENTE TE ADJUNTÓ: una foto, un PDF que revisar, un CSV.
    *
    * Llegan verificados. El encargo anunció el hash de cada uno ANTES de que se
@@ -106,6 +118,57 @@ export interface TaskContext {
    */
   historial: Turno[];
 }
+
+/**
+ * Un nivel de servicio: cuánto cobras y cuánto aceptas a cambio.
+ *
+ * Los topes van EN CARACTERES porque es lo que el cliente puede contar antes
+ * de pagar y cualquiera puede recontar después: el encargo se ancla en la
+ * cadena y el tamaño de cada adjunto viaja dentro de su manifiesto. Un nivel
+ * que prometiera «más esfuerzo» no habría manera de comprobarlo.
+ */
+export interface NivelPropio {
+  /** Cómo se llama en el escaparate. */
+  name: string;
+  /** Una línea de qué compra. */
+  description?: string;
+  /** Lo que tiene que bloquear en el escrow. `parseEther('0.3')` para MON. */
+  wei: bigint;
+  /** Tope del encargo en este nivel. Sin él, el de siempre. */
+  maxBriefChars?: number;
+  /** Cuánto texto aporta CADA adjunto en este nivel. */
+  maxAttachChars?: number;
+  /** Y todos juntos. */
+  maxAttachCharsTotal?: number;
+}
+
+/**
+ * LOS NIVELES QUE VENDES. Vacío = no vendes niveles, que es lo normal.
+ *
+ * El registro guarda UN precio por agente, así que si quieres cobrar distinto
+ * por trabajos de distinto tamaño, es aquí. Y el primero debería costar lo
+ * mismo que tu `pricePerTask` registrado: es el que compra quien te contrata
+ * sin elegir nada, desde un cliente antiguo o desde una integración.
+ *
+ * En cuanto declaras uno, el motor deja de aceptar encargos por debajo del más
+ * barato. Eso es un cambio de comportamiento y es a propósito: los niveles no
+ * significan nada si se puede pagar el pequeño y mandar el grande.
+ *
+ * Ejemplo, para un agente que también resume libros:
+ *
+ *     export const NIVELES: NivelPropio[] = [
+ *       { name: 'Encargo', wei: parseEther('0.1'), maxBriefChars: 32_000 },
+ *       {
+ *         name: 'Libro',
+ *         description: 'Hasta unas 300 páginas, en el encargo o adjuntas.',
+ *         wei: parseEther('0.3'),
+ *         maxBriefChars: 320_000,
+ *         maxAttachChars: 280_000,
+ *         maxAttachCharsTotal: 320_000,
+ *       },
+ *     ];
+ */
+export const NIVELES: NivelPropio[] = [];
 
 /** Un archivo que entregas junto al texto. */
 export interface TaskFile {
@@ -178,7 +241,10 @@ export async function handleTask(brief: string, ctx: TaskContext): Promise<TaskR
 
   // Se abre TODO lo que mandó el cliente: imágenes para que las mire el
   // modelo, y el texto de los PDF, Word, Excel y carpetas que vengan dentro.
-  const leido = await leerAdjuntos(ctx.adjuntos);
+  const leido = await leerAdjuntos(ctx.adjuntos, {
+    ...(ctx.nivel?.maxAttachChars === undefined ? {} : { porAdjunto: ctx.nivel.maxAttachChars }),
+    ...(ctx.nivel?.maxAttachCharsTotal === undefined ? {} : { total: ctx.nivel.maxAttachCharsTotal }),
+  });
   if (ctx.adjuntos.length > 0) {
     console.log(
       `[agente] ${etiqueta(ctx)} ${ctx.adjuntos.length} adjunto(s), ${leido.imagenes.length} para el modelo: ` +

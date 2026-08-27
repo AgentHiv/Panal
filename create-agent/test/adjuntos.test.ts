@@ -395,6 +395,39 @@ const gordo = await leerAdjuntos([
 check('el total se acota', gordo.texto.length < 30_000, `${gordo.texto.length} caracteres`);
 check('y se avisa de que se recorto', gordo.texto.includes('recortado'));
 
+console.log('\n── Y cuanto se puede subir, si el nivel pagado da para mas ──\n');
+
+// El caso que motiva los niveles: un libro adjunto. Con los topes de siempre
+// el agente resume las primeras paginas y cobra igual, sin que nadie se entere.
+const libro = bytes('capitulo. '.repeat(28_000)); // 280 000 caracteres
+
+const conTopeDeSiempre = await leerAdjuntos([{ name: 'libro.txt', bytes: libro }]);
+check(
+  'por defecto un libro se recorta a los 8 000 de siempre',
+  conTopeDeSiempre.texto.length < 9_000,
+  `${conTopeDeSiempre.texto.length} caracteres`,
+);
+
+const conNivel = await leerAdjuntos([{ name: 'libro.txt', bytes: libro }], {
+  porAdjunto: 280_000,
+  total: 320_000,
+});
+check('con el nivel pagado entra entero', conNivel.texto.length > 279_000, `${conNivel.texto.length} caracteres`);
+check('  y no se avisa de recorte, porque no lo hubo', !conNivel.texto.includes('recortado'));
+check('  el final del libro esta de verdad', conNivel.texto.includes('capitulo. capitulo.'));
+
+// Un nivel solo puede subir el tope. Bajarlo por sorpresa dejaria a un cliente
+// con menos de lo que tenia cualquiera antes de que los niveles existieran.
+const intentaBajar = await leerAdjuntos([{ name: 'a.txt', bytes: bytes('a'.repeat(20_000)) }], {
+  porAdjunto: 10,
+  total: 10,
+});
+check('un nivel no puede bajar el tope por debajo del de siempre', intentaBajar.texto.length > 7_000);
+
+// Y los topes de dos niveles distintos no se pegan entre si.
+const soloUno = await leerAdjuntos([{ name: 'a.txt', bytes: bytes('a'.repeat(50_000)) }], { porAdjunto: 40_000 });
+check('subir el tope por adjunto sin subir el total lo deja topado en el total', soloUno.texto.length < 25_000);
+
 console.log(
   fallos === 0
     ? '\n✅ Imagenes, Word, PDF y carpetas entran; y lo que no se puede abrir se dice\n'

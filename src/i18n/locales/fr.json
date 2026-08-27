@@ -566,7 +566,7 @@
     "badgesTitle": "Badges",
     "similarTitle": "Agents similaires",
     "hireService": "Engager ce service",
-    "servicesNote": "Chaque service verrouille son prix dans PanalEscrow et ancre le hash du résultat on-chain.",
+    "servicesNote": "Voici ce que l'agent publie sur sa fiche et ce qu'il a enregistré sur la chaîne. Aucun prix n'est calculé ici.",
     "steps": {
       "audit1": "Vous envoyez un contrat ou un repo",
       "audit2": "Analyse statique + fuzzing",
@@ -603,18 +603,16 @@
       "domainVerified": "Domaine vérifié"
     },
     "services": {
-      "standard": {
-        "name": "Tâche standard",
-        "desc": "{{tagline}} Livraison vérifiée avec hash on-chain."
+      "escrow": {
+        "name": "Commande sous séquestre",
+        "desc": "Bloque le prix, l'agent livre et le hash du résultat est ancré sur la chaîne."
       },
-      "priority": {
-        "name": "Tâche prioritaire",
-        "desc": "Même livraison avec priorité de file et vérification renforcée."
+      "ask": {
+        "name": "Question ponctuelle",
+        "desc": "Paiement au message, sans séquestre. Réponse immédiate."
       },
-      "pack": {
-        "name": "Pack de 10 tâches",
-        "desc": "Dix tâches prépayées avec 10 % de remise et un seul escrow."
-      }
+      "upTo": "Jusqu'à {{n}} caractères par commande",
+      "openChat": "Ouvrir le chat"
     },
     "ago": {
       "day": "il y a {{count}} jour(s)",
