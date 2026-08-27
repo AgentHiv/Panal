@@ -55,7 +55,7 @@ import { comoAdjunto } from './salida.js';
 import { privateKeyToAccount } from 'viem/accounts';
 import { isAddress, keccak256, parseEther, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
-import { handleTask, NIVELES } from './agent.js';
+import { handleTask, NIVELES, SUBCONTRATA_SKILLS } from './agent.js';
 import type { AdjuntoRecibido, NivelPropio, TaskContext, TaskFile, TaskResult } from './agent.js';
 import { arrancarVigilante } from './vigilante.js';
 import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
@@ -102,6 +102,19 @@ if (NIVELES.length > 0 && NIVELES_OK.length !== NIVELES.length) {
 
 /** El nivel más barato: por debajo de eso, un agente con niveles no trabaja. */
 const NIVEL_MINIMO = NIVELES_OK[0] ?? null;
+
+// Un nivel que se gasta subcontratando lo mismo que cobra trabaja gratis, y si
+// se pasa, trabaja pagando. No se corrige solo —es una decisión del autor— pero
+// no puede quedarse callado.
+for (const n of NIVELES) {
+  if (n.subcontrata !== undefined && n.subcontrata >= n.wei) {
+    console.error(
+      `[panal] el nivel "${n.name}" cobra ${n.wei} y puede gastar ${n.subcontrata} subcontratando: ` +
+        'no te queda nada por el trabajo.',
+    );
+  }
+}
+
 
 /** El tope de encargo del nivel mayor, o el de siempre si no hay niveles. */
 const TOPE_BRIEF_MAYOR = Math.max(MAX_BRIEF_CHARS, ...NIVELES_OK.map((n) => n.maxBriefChars ?? 0));
@@ -222,7 +235,21 @@ const SUBCONTRATA_SALTOS = (() => {
 })();
 
 if (SUBCONTRATA_MAX > 0n) {
-  console.log(`Subcontratación activa: hasta ${process.env.SUBCONTRATA_MAX} ${X402_SYMBOL} por encargo`);
+  // Se dice el estado REAL, no sólo el del dinero. Antes bastaba con tener
+  // presupuesto; ahora hacen falta las dos cosas, y un log que dijera "activa"
+  // con la lista vacía haría perder la tarde a quien se pregunte por qué su
+  // agente nunca delega.
+  if (SUBCONTRATA_SKILLS.length > 0) {
+    console.log(
+      `Subcontratación activa: hasta ${process.env.SUBCONTRATA_MAX} ${X402_SYMBOL} por encargo, ` +
+        `y sólo en: ${SUBCONTRATA_SKILLS.join(', ')}`,
+    );
+  } else {
+    console.log(
+      `Subcontratación con presupuesto (${process.env.SUBCONTRATA_MAX} ${X402_SYMBOL}) pero SIN skills ` +
+        'permitidas: no va a delegar. Rellena SUBCONTRATA_SKILLS en agent.ts.',
+    );
+  }
 
   // Lo que te pagan por una consulta es el techo de lo que puedes gastarte en
   // ella. Con SUBCONTRATA_MAX igual o mayor que X402_PRICE, un encargo en el
@@ -572,22 +599,40 @@ function contexto(
   },
   sobre: CallEnvelope | null,
 ): TaskContext {
+  // Se resuelve aquí y no en cada llamador para que no haya dos maneras de
+  // decidirlo. En x402 es SIEMPRE null: no hay escrow, y el importe de una
+  // llamada suelta no compra un nivel de encargo.
+  const nivel = base.taskId === null ? null : nivelDe(base.amount);
+
+  // El presupuesto del nivel comprado, y si el nivel no dice nada, el del
+  // .env. Así el nivel caro puede comprar ayuda y el barato no, sin que un
+  // agente sin niveles note ningún cambio.
+  const presupuesto = nivel?.subcontrata ?? SUBCONTRATA_MAX;
+
   return {
     ...base,
-    // Se resuelve aquí y no en cada llamador para que no haya dos maneras de
-    // decidirlo. En x402 es SIEMPRE null: no hay escrow, y el importe de una
-    // llamada suelta no compra un nivel de encargo.
-    nivel: base.taskId === null ? null : nivelDe(base.amount),
+    nivel,
     envelope: sobre,
-    presupuesto: SUBCONTRATA_MAX,
+    presupuesto,
     consultar: async (skill: string, pregunta: string) => {
-      if (SUBCONTRATA_MAX <= 0n) {
+      if (presupuesto <= 0n) {
         throw new Error(
-          'Este agente no tiene presupuesto para subcontratar: pon SUBCONTRATA_MAX en el .env si quieres que delegue.',
+          nivel
+            ? `El nivel "${nivel.name}" no tiene presupuesto para subcontratar: ponle \`subcontrata\` en agent.ts.`
+            : 'Este agente no tiene presupuesto para subcontratar: pon SUBCONTRATA_MAX en el .env si quieres que delegue.',
+        );
+      }
+      // Dinero Y permiso. Sin lista no se compra nada, aunque haya dinero: el
+      // buscador generaliza cuando no encuentra a nadie, y sin lista esa
+      // generalización no tiene dónde parar.
+      if (SUBCONTRATA_SKILLS.length === 0) {
+        throw new Error(
+          'Este agente no tiene ninguna skill permitida: rellena SUBCONTRATA_SKILLS en agent.ts si quieres que delegue.',
         );
       }
       const res = await panal.ask(skill, pregunta, {
-        maxSpend: SUBCONTRATA_MAX,
+        maxSpend: presupuesto,
+        skillsPermitidas: SUBCONTRATA_SKILLS,
         depth: SUBCONTRATA_SALTOS,
         // El sobre recibido, si lo hay. Sin él se abre una cadena nueva.
         envelope: sobre,

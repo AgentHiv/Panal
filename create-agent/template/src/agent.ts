@@ -140,6 +140,17 @@ export interface NivelPropio {
   maxAttachChars?: number;
   /** Y todos juntos. */
   maxAttachCharsTotal?: number;
+  /**
+   * Cuánto puede gastar tu agente SUBCONTRATANDO en este nivel.
+   *
+   * Sin esto, el de `SUBCONTRATA_MAX` del .env para todos los niveles por
+   * igual, que es lo que había antes. Ponerlo aquí es lo que permite que el
+   * nivel caro pueda comprar ayuda y el barato no.
+   *
+   * Que sea MENOR que `wei`, y con holgura: es dinero que sale de lo que te
+   * pagaron por este encargo. El motor avisa al arrancar si no lo es.
+   */
+  subcontrata?: bigint;
 }
 
 /**
@@ -170,6 +181,47 @@ export interface NivelPropio {
  *     ];
  */
 export const NIVELES: NivelPropio[] = [];
+
+/**
+ * LAS ÚNICAS SKILLS QUE TU AGENTE PUEDE COMPRARLE A OTRO. Vacío = ninguna.
+ *
+ * Vacío es el valor por defecto y significa que NO SUBCONTRATA, aunque tenga
+ * presupuesto. Hacen falta las dos cosas: dinero y permiso.
+ *
+ * Existe porque quien elige la skill es un modelo, y el buscador generaliza
+ * cuando no encuentra a nadie: recorta por la izquierda, así que
+ * "python video encoding" acaba buscando "video". Un agente de código puede
+ * así pagarle a uno de vídeo, y lo malo es que el resultado PARECE correcto —
+ * pagó, le contestaron, entregó y ancló. Nadie ve un error; sólo la entrega
+ * es peor y el dinero se fue.
+ *
+ * La lista se comprueba en tres sitios, a propósito: se le dice al modelo qué
+ * puede pedir, se comprueba lo que contesta, y el SDK descarta cualquier
+ * variante que no esté aquí ANTES de cotizar. Un intento prohibido no cuesta
+ * ni una petición.
+ *
+ *     export const SUBCONTRATA_SKILLS = ['translation', 'legal'];
+ *
+ * Escríbelas como se venden en el mercado: una o dos palabras.
+ */
+export const SUBCONTRATA_SKILLS: string[] = [];
+
+/**
+ * ¿Puede este agente comprar esta skill?
+ *
+ * Va aparte y exportada porque es la regla que decide si sale dinero, y una
+ * regla así tiene que poder probarse sin levantar un agente. Compara sin
+ * distinguir mayúsculas ni espacios de más: la lista la escribe una persona y
+ * la skill la escribe un modelo.
+ *
+ * Con la lista vacía devuelve `false` para todo. Vacío es NO DELEGA, nunca
+ * «todo permitido»: la diferencia entre las dos lecturas se mide en dinero.
+ */
+export function skillPermitida(skill: string, permitidas: string[]): boolean {
+  const limpia = skill.trim().replace(/\s+/g, ' ').toLowerCase();
+  if (!limpia) return false;
+  return permitidas.some((p) => p.trim().replace(/\s+/g, ' ').toLowerCase() === limpia);
+}
 
 /** Un archivo que entregas junto al texto. */
 export interface TaskFile {
@@ -300,10 +352,11 @@ async function pedirAyudaSiHaceFalta(
   ctx: TaskContext,
   cfg: LlmConfig,
 ): Promise<string | null> {
-  // Sin presupuesto no hay nada que decidir, y así se ahorra la llamada.
-  if (ctx.presupuesto <= 0n) return null;
+  // Sin presupuesto o sin permiso no hay nada que decidir, y así se ahorra la
+  // llamada al modelo. Las dos condiciones hacen falta.
+  if (ctx.presupuesto <= 0n || SUBCONTRATA_SKILLS.length === 0) return null;
 
-  const decision = await decidirDelegacion(brief, cfg);
+  const decision = await decidirDelegacion(brief, cfg, SUBCONTRATA_SKILLS);
   if (!decision) return null;
 
   try {
@@ -347,6 +400,7 @@ function extraerJson(crudo: string): unknown {
 async function decidirDelegacion(
   brief: string,
   cfg: LlmConfig,
+  permitidas: string[],
 ): Promise<{ skill: string; pregunta: string } | null> {
   try {
     const crudo = await llmChat(
@@ -360,7 +414,12 @@ async function decidirDelegacion(
           '{"delegate": false} if you can do the job yourself. This is the right answer almost always.\n' +
           '{"delegate": true, "skill": "…", "question": "…"} ONLY if the job clearly needs expertise ' +
           'outside your own, and a specialist answer would measurably improve the result.\n' +
-          '"skill" is one or two words to search a marketplace by (e.g. "translation", "legal", "json").\n' +
+          // Se le da la lista CERRADA en vez de dejarle inventar. Un modelo al
+          // que se le pide "one or two words" contesta lo que le parece, y
+          // luego el buscador generaliza esa invención hasta encontrar a
+          // cualquiera. Aquí sólo puede elegir de lo que su autor permitió.
+          `"skill" MUST be copied EXACTLY from this list, and nothing else is allowed: ${permitidas.join(', ')}.\n` +
+          'If none of those fits the job, answer {"delegate": false}.\n' +
           '"question" is the self-contained question for that specialist: it will be sent on its own, ' +
           'so it must make sense without the rest of the job.\n' +
           'Paying costs real money. If in doubt, do not delegate.',
@@ -372,6 +431,12 @@ async function decidirDelegacion(
     const skill = parsed.skill?.trim();
     const pregunta = parsed.question?.trim();
     if (!skill || !pregunta) return null;
+    // Y se comprueba lo que contestó. Un modelo puede ignorar la lista, y de
+    // hecho lo hace: pedirle que elija de un menú no es lo mismo que obligarle.
+    if (!skillPermitida(skill, permitidas)) {
+      console.error(`[agente] el modelo pidió subcontratar "${skill}", que no está permitida. Trabaja solo.`);
+      return null;
+    }
     return { skill, pregunta };
   } catch {
     // Decidir mal no puede tumbar el encargo: ante la duda, se trabaja solo.
