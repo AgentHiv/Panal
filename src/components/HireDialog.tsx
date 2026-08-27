@@ -106,6 +106,16 @@ function HireWizard({
 }) {
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
+  /** Los niveles que vende, leídos de su tarjeta. Vacío es lo normal. */
+  const [niveles, setNiveles] = useState<Nivel[]>([]);
+  /**
+   * El nivel que se va a comprar.
+   *
+   * Arranca con el que venga de la pestaña de servicios, si se entró por ahí.
+   * Radix desmonta este contenido al cerrar, así que cada apertura vuelve a
+   * leer la prop y no hay estado viejo que arrastrar.
+   */
+  const [elegido, setElegido] = useState<Nivel | null>(nivel);
   const [taskText, setTaskText] = useState('');
   /** Plazo de la tarea en horas (deadline on-chain elegido por el cliente). */
   const [deadlineHours, setDeadlineHours] = useState(72);
@@ -144,6 +154,15 @@ function HireWizard({
    * copia congelada cuesta una línea.
    */
   const briefFirmado = useRef<string | null>(null);
+  /**
+   * El importe que se decidió al pulsar «contratar».
+   *
+   * En $PANAL el pago son DOS transacciones —approve y createTask— y la
+   * segunda se dispara desde un efecto, cuando la primera se mina. Fijarlo
+   * aquí es lo que garantiza que las dos hablan del mismo número, en vez de
+   * depender de que el estado no haya cambiado entre una y otra.
+   */
+  const importeFirmado = useRef<bigint | null>(null);
   const [accepted, setAccepted] = useState(false);
 
   /* ---------- contratación real (PanalEscrow) ---------- */
@@ -200,6 +219,11 @@ function HireWizard({
         if (!vigente) return;
         setAceptaAdjuntos(caps.adjuntos ? 'si' : 'no');
         if (caps.maxAdjuntoBytes) setTopeAdjunto(Math.min(caps.maxAdjuntoBytes, MAX_ADJUNTO_BYTES));
+        setNiveles(caps.niveles);
+        // Si se entró por el botón grande no hay nivel elegido, y el que toca
+        // por defecto es el más barato: debería costar lo que el agente tiene
+        // registrado, así que quien no toque nada bloquea lo de siempre.
+        setElegido((previo) => previo ?? caps.niveles[0] ?? null);
       } catch {
         // Falla cerrado, igual que `leerCapacidades`.
         if (vigente) setAceptaAdjuntos('no');
@@ -301,7 +325,8 @@ function HireWizard({
      * cadena, no del encargo, que lo escribe el cliente y podría decir
      * cualquier cosa.
      */
-    const aBloquear = nivel?.wei ?? agent.priceWei;
+    const aBloquear = elegido?.wei ?? agent.priceWei;
+    importeFirmado.current = aBloquear;
     const brief = componerBrief();
     briefFirmado.current = brief;
     const taskHash = keccak256(toBytes(brief));
@@ -357,9 +382,10 @@ function HireWizard({
     const taskHash = keccak256(toBytes(brief));
     saveTaskBrief(taskHash, brief); // caché local: el trabajador verá QUÉ se pidió
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineHours * 3600);
-    // El mismo importe que en `hire`: aquí sólo se encadena lo que ya se
-    // decidió antes del approve.
-    const aBloquear = nivel?.wei ?? agent.priceWei;
+    // EL MISMO importe que aprobó `hire`, no uno recalculado: aquí sólo se
+    // encadena lo que ya se decidió. El approve se firmó por esa cantidad y
+    // createTask tiene que pedir exactamente esa.
+    const aBloquear = importeFirmado.current ?? agent.priceWei;
     writeContract({
       address: PANAL_ESCROW_V2_ADDRESS,
       abi: panalEscrowV2Abi,
@@ -520,7 +546,7 @@ function HireWizard({
     void enviarBrief();
   }, [mined, receipt, realTxHash, address, agent, enviarBrief]);
 
-  const price = nivel ? Number(formatEther(nivel.wei)) : agent.pricePerTask;
+  const price = elegido ? Number(formatEther(elegido.wei)) : agent.pricePerTask;
   const fee = price * PROTOCOL_FEE;
   // Lo que bloquea/firma el cliente es exactamente `price`; el fee del 2,5 %
   // se descuenta del pago al agente al liberar el escrow (ver contrato).
@@ -644,6 +670,51 @@ function HireWizard({
                       </p>
                     </div>
                   </div>
+                  {/* Niveles. Sólo si el agente vende alguno; casi ninguno lo
+                      hace, y entonces esto no existe y todo queda como estaba.
+                      Va aquí y no sólo en la pestaña de Servicios porque al
+                      diálogo se entra por tres sitios más —la tarjeta lateral,
+                      el botón del final y la barra del móvil— y por todos
+                      ellos se compraba el básico sin llegar a ver que había
+                      otros. */}
+                  {niveles.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-[0.8125rem] font-medium text-ink-2">{t('hire.tier')}</p>
+                      {niveles.map((n) => {
+                        const marcado = elegido?.wei === n.wei;
+                        return (
+                          <button
+                            key={n.wei.toString()}
+                            type="button"
+                            onClick={() => setElegido(n)}
+                            aria-pressed={marcado}
+                            className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
+                              marcado ? 'border-honey bg-honey-soft' : 'border-line bg-paper hover:border-honey'
+                            }`}
+                          >
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-[0.875rem] font-semibold text-ink">
+                                {n.name ?? t('detail.services.escrow.name')}
+                              </span>
+                              {n.description && (
+                                <span className="mt-0.5 block text-[0.8125rem] leading-[1.45] text-ink-2">
+                                  {n.description}
+                                </span>
+                              )}
+                              {n.maxBriefChars !== null && (
+                                <span className="mt-0.5 block font-mono text-[0.75rem] text-ink-3">
+                                  {t('detail.services.upTo', { n: n.maxBriefChars.toLocaleString() })}
+                                </span>
+                              )}
+                            </span>
+                            <span className="shrink-0 font-mono text-[0.875rem] font-semibold text-ink">
+                              {formatMon(Number(formatEther(n.wei)))} {symbol}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                   <textarea
                     value={taskText}
                     onChange={(e) => setTaskText(e.target.value)}

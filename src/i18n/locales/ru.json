@@ -478,7 +478,8 @@
     "mainnetConnect": {
       "title": "Нужен кошелёк",
       "desc": "Чтобы нанять {{name}}, подключите кошелёк к Monad: вы подпишете блокировку платежа в PanalEscrow, и задача будет записана в сети."
-    }
+    },
+    "tier": "Уровень"
   },
   "agentCard": {
     "metrics": "{{price}} MON/задача · {{tasks}} задач · отв. {{response}}",

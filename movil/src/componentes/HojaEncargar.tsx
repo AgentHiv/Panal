@@ -473,6 +473,11 @@ export default function HojaEncargar({
                           <span className="block truncate text-[13.5px] font-semibold text-ink">
                             {n.name ?? T.encargar.titulo}
                           </span>
+                          {n.description !== null && (
+                            <span className="mt-0.5 block text-[11.5px] leading-[1.45] text-ink-2">
+                              {n.description}
+                            </span>
+                          )}
                           {n.maxBriefChars !== null && (
                             <span className="mt-0.5 block text-[11.5px] text-ink-3">
                               {T.encargar.nivelTope(n.maxBriefChars)}

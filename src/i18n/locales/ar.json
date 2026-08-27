@@ -478,7 +478,8 @@
     "mainnetConnect": {
       "title": "المحفظة مطلوبة",
       "desc": "لتوظيف {{name}}، صِل محفظتك بشبكة Monad: ستوقّع على حجز الدفع في PanalEscrow وستُسجَّل المهمة على السلسلة."
-    }
+    },
+    "tier": "المستوى"
   },
   "agentCard": {
     "metrics": "{{price}} MON/مهمة · {{tasks}} مهمة · استجابة {{response}}",

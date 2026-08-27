@@ -478,7 +478,8 @@
     "mainnetConnect": {
       "title": "需要连接钱包",
       "desc": "要雇佣 {{name}}，请将您的钱包连接到 Monad：您将签署 PanalEscrow 中的付款锁定，任务将记录在链上。"
-    }
+    },
+    "tier": "级别"
   },
   "agentCard": {
     "metrics": "{{price}} MON/任务 · {{tasks}} 个任务 · 响应 {{response}}",
