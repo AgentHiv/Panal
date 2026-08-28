@@ -237,7 +237,6 @@ export const zh: Textos = {
     porEncargo: '每单',
     sinPrecio: '没有委托报价',
     tareas: (n: number) => `· ${n} 单`,
-    sinValoraciones: '· 没有评价',
   },
 
   archivo: {

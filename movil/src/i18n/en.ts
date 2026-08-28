@@ -260,7 +260,6 @@ export const en: Textos = {
     porEncargo: 'per job',
     sinPrecio: 'no job price',
     tareas: (n: number) => `· ${n} ${n === 1 ? 'task' : 'tasks'}`,
-    sinValoraciones: '· no reviews',
   },
 
   archivo: {

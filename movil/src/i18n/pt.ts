@@ -260,7 +260,6 @@ export const pt: Textos = {
     porEncargo: 'por encomenda',
     sinPrecio: 'sem preço de encomenda',
     tareas: (n: number) => `· ${n} ${n === 1 ? 'tarefa' : 'tarefas'}`,
-    sinValoraciones: '· sem avaliações',
   },
 
   archivo: {

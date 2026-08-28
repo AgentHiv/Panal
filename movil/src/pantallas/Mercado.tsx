@@ -108,13 +108,9 @@ function Tarjeta({ agente, T }: { agente: Agent; T: Textos }): React.ReactElemen
         />
 
         <div className="min-w-0 grow">
-          <div className="flex items-baseline justify-between gap-2">
+          <div className="flex items-center justify-between gap-2">
             <h2 className="truncate text-[15px] font-semibold">{agente.name}</h2>
-            {agente.reviews > 0 && (
-              <span className="shrink-0 font-mono text-[12px] text-honey">
-                {agente.rating.toFixed(1)} ★
-              </span>
-            )}
+            <Sello estado={agente.verification} T={T} />
           </div>
 
           <p className="mt-1 line-clamp-2 text-[13px] leading-[1.45] text-ink-2">{agente.tagline}</p>
@@ -134,10 +130,17 @@ function Tarjeta({ agente, T }: { agente: Agent; T: Textos }): React.ReactElemen
             ) : (
               <span className="text-[11.5px] text-ink-3">{T.mercado.sinPrecio}</span>
             )}
-            {agente.tasksCompleted > 0 ? (
+            {/* Y nada cuando no hay nada. Antes escribía «sin valoraciones» en
+                TODAS las tarjetas —ninguna tiene todavía— así que la misma
+                frase gris se repetía siete veces diciendo lo mismo: nada. Un
+                hueco vacío informa igual y no compite con el precio. */}
+            {agente.reviews > 0 && (
+              <span className="font-mono text-[11.5px] text-honey">
+                {agente.rating.toFixed(1)} ★
+              </span>
+            )}
+            {agente.tasksCompleted > 0 && (
               <span className="text-[11px] text-ink-3">{T.mercado.tareas(agente.tasksCompleted)}</span>
-            ) : (
-              <span className="text-[11px] text-ink-3">{T.mercado.sinValoraciones}</span>
             )}
           </div>
         </div>
@@ -145,6 +148,43 @@ function Tarjeta({ agente, T }: { agente: Agent; T: Textos }): React.ReactElemen
         <Icono nombre="atras" tamano={16} color="#4A4363" className="mt-3 shrink-0 rotate-180" />
       </div>
     </Link>
+  );
+}
+
+/**
+ * El sello de verificación, en la lista.
+ *
+ * La ficha del agente lleva escrito que lo primero que hay que mirar es esto
+ * —«elegir sin mirarlo es el fallo que más caro sale»— y sin embargo la
+ * pantalla donde se elige no lo enseñaba: había que entrar agente por agente
+ * para saber si alguien había comprobado su dominio. El dato ya venía en la
+ * lista; solo faltaba pintarlo.
+ *
+ * SON TRES ESTADOS Y SE VEN DISTINTOS. 'unchecked' va en gris y no en ámbar a
+ * propósito: hoy lo están TODOS, y siete avisos de color idénticos dejan de
+ * leerse como aviso en la segunda tarjeta. Gris dice lo que es —no se sabe—
+ * sin gritar, y el día que alguien se verifique el verde salta a la vista, que
+ * es justo para lo que sirve.
+ */
+const SELLO = {
+  verified: { icono: 'check', color: '#92A268', clase: 'text-olive', clave: 'verificado' },
+  unverified: { icono: 'info', color: '#C9653B', clase: 'text-terra', clave: 'noVerificado' },
+  unchecked: { icono: 'hexagono', color: '#948DAE', clase: 'text-ink-3', clave: 'sinComprobar' },
+} as const;
+
+function Sello({
+  estado,
+  T,
+}: {
+  estado: Agent['verification'];
+  T: Textos;
+}): React.ReactElement {
+  const s = SELLO[estado];
+  return (
+    <span className={`flex shrink-0 items-center gap-1 text-[11px] font-medium ${s.clase}`}>
+      <Icono nombre={s.icono} tamano={11} color={s.color} grosor={2.4} />
+      {T.agente[s.clave]}
+    </span>
   );
 }
 
