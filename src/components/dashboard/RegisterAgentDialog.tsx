@@ -34,7 +34,7 @@ import {
   activeChain,
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
-import { composeAgentMetadata, isHttpsUrl } from '@/lib/agentMetadata';
+import { composeAgentMetadata, isHttpsUrl, resumirFicha } from '@/lib/agentMetadata';
 import { MARCA_VACIA, type Marca } from '@/lib/marca';
 import MarcaFields from '@/components/dashboard/MarcaFields';
 
@@ -498,7 +498,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
           <div className="rounded-xl border border-line bg-cream px-4 py-3">
             <p className="text-[0.75rem] font-medium text-ink-2">{t('register.previewTitle')}</p>
             <p className="mt-1 break-words font-mono text-[0.8125rem] leading-relaxed text-ink">
-              {metadataURI || (
+              {resumirFicha(metadataURI) || (
                 <span className="text-ink-3">{t('register.previewEmpty')}</span>
               )}
             </p>

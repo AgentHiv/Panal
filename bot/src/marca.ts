@@ -27,6 +27,21 @@ export const CLAVES_MARCA = ['logo', 'web', 'github', 'x', 'telegram'] as const;
 export type ClaveMarca = (typeof CLAVES_MARCA)[number];
 
 /**
+ * Tope del logo incrustado, en caracteres, y los formatos que valen.
+ *
+ * SVG no está: es un documento con `<script>` dentro y esta cadena la pinta
+ * cualquiera. Lo que llega a la cadena es siempre una imagen inerte.
+ */
+const MAX_LOGO_DATA = 5000;
+const LOGO_INCRUSTADO = /^data:image\/(png|webp|jpeg|gif);base64,([A-Za-z0-9+/]+={0,2})$/;
+
+function esLogoIncrustado(valor: string): boolean {
+  if (valor.length > MAX_LOGO_DATA) return false;
+  const b64 = LOGO_INCRUSTADO.exec(valor)?.[2];
+  return b64 !== undefined && b64.length >= 64 && b64.length % 4 === 0;
+}
+
+/**
  * `github:panal/lint` → `['github', 'panal/lint']`, o null si no es marca.
  *
  * UN TOKEN SOLO CUENTA SI SU VALOR VALE. La descripción es texto libre, y
@@ -41,7 +56,14 @@ export function leerTokenDeMarca(segmento: string): [ClaveMarca, string] | null 
   const clave = segmento.slice(0, i).trim().toLowerCase() as ClaveMarca;
   if (!(CLAVES_MARCA as readonly string[]).includes(clave)) return null;
 
-  const valor = segmento.slice(i + 1).trim().slice(0, 120);
+  const entero = segmento.slice(i + 1).trim();
+  // El logo puede traer la imagen DENTRO, en base64, en vez de una URL. Se mira
+  // antes de recortar a 120: el recorte dejaría un `data:` a medias, que ocupa
+  // y no se ve. El formato lo manda `src/lib/marca.ts` del marketplace.
+  if (clave === 'logo' && entero.startsWith('data:')) {
+    return esLogoIncrustado(entero) ? [clave, entero] : null;
+  }
+  const valor = entero.slice(0, 120);
   if (!valor) return null;
   // Un espacio o un «·» por dentro invalida en vez de borrarse: borrarlos
   // convertiría «dos palabras» en el usuario `dospalabras`, que es de otro.

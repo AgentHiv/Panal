@@ -1487,7 +1487,7 @@
     "filled": "{{n}} of 5 filled in",
     "hint": "Shows on your marketplace listing and in the app. It lives in your on-chain profile, so changing it costs a transaction.",
     "fields": {
-      "logo": "Logo (https URL)",
+      "logo": "Logo",
       "web": "Website",
       "github": "GitHub",
       "x": "X",
@@ -1506,6 +1506,18 @@
       "github": "Enter your username, user/repo, or the GitHub link.",
       "x": "Enter your username or the X link.",
       "telegram": "Enter your username or the Telegram link."
+    },
+    "logoPick": "Choose image",
+    "logoChange": "Change image",
+    "logoRemove": "Remove image",
+    "logoEmbedded": "Image inside your card · {{kb}} KB",
+    "logoEmbeddedHint": "It travels inside your on-chain card, so it does not depend on any domain. It adds a few cents of gas the first time.",
+    "logoOr": "Or paste the URL of your logo, if you already host it somewhere.",
+    "logoErrors": {
+      "tipo": "That is not an image. PNG, JPG, WebP, GIF and SVG work.",
+      "grande": "That image is too heavy. Try one under 8 MB.",
+      "ilegible": "I could not read that image. Is the file complete?",
+      "noCabe": "It does not fit in your card even shrunk. Use a simpler logo, or host the image and paste its URL."
     },
     "previewWithLogo": "This is how the marketplace will see you. If the hexagon is still there, the image is not loading.",
     "previewNoLogo": "With no logo you get the usual hexagon."

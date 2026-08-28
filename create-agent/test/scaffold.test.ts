@@ -137,7 +137,7 @@ async function main(): Promise<void> {
   const dest = join(work, name);
   check('el generador termina bien', created.code === 0, created.out.split('\n').find((l) => l.includes('creado')) ?? '');
 
-  for (const file of ['package.json', 'tsconfig.json', '.env.example', '.gitignore', '.env', 'src/agent.ts', 'src/server.ts', 'src/register.ts', 'src/pdf.ts', 'src/vigilante.ts']) {
+  for (const file of ['package.json', 'tsconfig.json', '.env.example', '.gitignore', '.env', 'logo.svg', 'src/agent.ts', 'src/server.ts', 'src/register.ts', 'src/pdf.ts', 'src/vigilante.ts']) {
     check(`  ${file}`, existsSync(join(dest, file)));
   }
 
@@ -148,7 +148,43 @@ async function main(): Promise<void> {
   check('depende del SDK', Boolean(pkg.dependencies['@panal/sdk']), pkg.dependencies['@panal/sdk']);
   const register = readFileSync(join(dest, 'src', 'register.ts'), 'utf8');
   check('el perfil lleva el nombre', register.includes(`name: '${name}'`));
-  check('no queda ningún marcador sin sustituir', !register.includes('__NAME__'));
+  // Cualquier marcador, no solo __NAME__: los enlaces usan los suyos y uno que
+  // se quedara sin sustituir acabaría escrito en la cadena tal cual.
+  check('no queda ningún marcador sin sustituir', !/__[A-Z_]+__/.test(register), /__[A-Z_]+__/.exec(register)?.[0] ?? '');
+  check('sin banderas, los enlaces quedan vacíos', /logo: '',/.test(register) && /telegram: '',/.test(register));
+
+  // El logo con el que nace: es lo que hace que un agente recién generado no
+  // salga en el mercado igual que todos los demás.
+  const logo = readFileSync(join(dest, 'logo.svg'), 'utf8');
+  check('el logo generado es un SVG', logo.startsWith('<svg ') && logo.includes('</svg>'));
+  check('  y lleva la inicial del nombre', logo.includes('>A</text>'), logo.split('\n').find((l) => l.includes('text>')) ?? '');
+  check('  y no queda ningún marcador dentro', !/__[A-Z_]+__/.test(logo));
+
+  console.log('\n── 3b. El escaparate: logo y enlaces ──');
+
+  // Lo que se teclea acaba DENTRO de un literal de TypeScript. Una comilla no
+  // da un enlace mal puesto: da un archivo que no compila, o uno que compila
+  // haciendo otra cosa. Se comprueban las dos mitades: que lo bueno entra y que
+  // lo peligroso no.
+  const conMarca = 'agente-con-marca';
+  const marcado = run(
+    [conMarca, '--github', 'AgentHiv/Panal', '--x=@panal', '--web', 'https://panal.lat', '--telegram', "roto'; process.exit(1); //"],
+    work,
+  );
+  check('se genera con banderas', marcado.code === 0);
+  const regMarca = readFileSync(join(work, conMarca, 'src', 'register.ts'), 'utf8');
+  check('el GitHub llega al perfil', regMarca.includes("github: 'AgentHiv/Panal',"));
+  check('la forma --x=valor también', regMarca.includes("x: '@panal',"));
+  check('y la web', regMarca.includes("web: 'https://panal.lat',"));
+  check(
+    'un valor con comillas NO se escribe: se queda vacío',
+    // `process.exit(1)` a secas no vale de aserción: la plantilla ya lo usa en
+    // sus propios errores. Lo que no puede aparecer es lo TECLEADO.
+    regMarca.includes("telegram: '',") && !regMarca.includes("roto'"),
+    regMarca.split('\n').find((l) => l.includes('telegram:')) ?? '',
+  );
+  // Y sobre todo: el archivo tiene que seguir siendo TypeScript válido.
+  check('el register.ts sigue teniendo una sola línea por enlace', regMarca.split('\n').filter((l) => /^\s+telegram: /.test(l)).length === 1);
   // El perfil viene marcado para que se note lo que falta por rellenar, y el
   // registro se niega mientras siga así. Registrarse con los valores de la
   // plantilla deja un agente en el escaparate al que nadie encuentra: las
@@ -279,6 +315,26 @@ async function main(): Promise<void> {
         'se presenta con la wallet que generó el andamiaje',
         (card as { agent?: string } | null)?.agent?.toLowerCase() === shown?.toLowerCase(),
       );
+
+      // El logo, servido por el propio agente. Es lo que publica el registro
+      // cuando no pones ninguna URL a mano, así que si esta ruta no responde el
+      // agente se registra sin cara y arreglarlo cuesta otra transacción.
+      //
+      // Se piden LAS DOS rutas: los agentes ya registrados publicaron
+      // `…/logo.svg` y esa URL está escrita en la cadena.
+      for (const ruta of ['/logo', '/logo.svg']) {
+        const res = await fetch(`http://127.0.0.1:${port}${ruta}`);
+        const tipo = res.headers.get('content-type') ?? '';
+        check(
+          `${ruta} sirve una imagen`,
+          res.ok && tipo.startsWith('image/'),
+          `HTTP ${res.status} · ${tipo}`,
+        );
+        // Sin CORS abierto, un `<canvas>` que la toque para hacer la miniatura
+        // se queda a oscuras, y eso pasa en escaparates que no son nuestros.
+        check(`  y con CORS abierto`, res.headers.get('access-control-allow-origin') === '*');
+        check(`  y es el que se generó`, (await res.text()).includes('</svg>'));
+      }
 
       // Sin firma no se trabaja: si esto pasara, cualquiera colaría encargos
       // que nadie ha pagado.

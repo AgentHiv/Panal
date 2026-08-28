@@ -75,6 +75,31 @@ export type AgentLinks = Record<AgentLinkKey, string>;
 const NO_LINKS: AgentLinks = { logo: '', web: '', github: '', x: '', telegram: '' };
 
 /**
+ * Tope del logo cuando la imagen viaja DENTRO de la ficha, en caracteres.
+ *
+ * El logo tiene dos formas: una URL https —la imagen vive en el dominio del
+ * agente— o la imagen misma en base64. La segunda existe porque la primera
+ * pide un sitio donde alojar un archivo, que es justo lo que no tiene quien se
+ * registra desde la web. La referencia sigue siendo `src/lib/marca.ts` del
+ * marketplace: aquí solo hay que LEER igual, o un logo incrustado saldría
+ * recortado a 120 caracteres y con eso no se pinta nada.
+ */
+export const MAX_LOGO_DATA = 5000;
+
+/**
+ * `data:image/webp;base64,…`. SVG queda fuera a propósito: es un documento con
+ * `<script>` dentro, y esta cadena la pinta cualquiera, no solo un `<img>`.
+ */
+const EMBEDDED_LOGO = /^data:image\/(png|webp|jpeg|gif);base64,([A-Za-z0-9+/]+={0,2})$/;
+
+/** ¿Es una imagen incrustada válida en un token `logo:`? */
+export function isEmbeddedLogo(value: string): boolean {
+  if (value.length > MAX_LOGO_DATA) return false;
+  const b64 = EMBEDDED_LOGO.exec(value)?.[2];
+  return b64 !== undefined && b64.length >= 64 && b64.length % 4 === 0;
+}
+
+/**
  * Deja un valor de marca como se guarda, o vacío si no sirve.
  *
  * Acepta las tres formas que la gente usa de verdad —`@panal`, `panal` y
@@ -82,7 +107,11 @@ const NO_LINKS: AgentLinks = { logo: '', web: '', github: '', x: '', telegram: '
  * `src/lib/marca.ts` del marketplace: si cambias una, cambia la otra.
  */
 export function normalizeAgentLink(key: AgentLinkKey, raw: string): string {
-  const value = raw.trim().slice(0, 120);
+  const whole = raw.trim();
+  // Antes de recortar: una imagen incrustada mide miles de caracteres y el
+  // recorte la dejaría en un `data:` a medias — ocupa, se guarda y no se ve.
+  if (key === 'logo' && whole.startsWith('data:')) return isEmbeddedLogo(whole) ? whole : '';
+  const value = whole.slice(0, 120);
   if (!value) return '';
   // Un espacio o un `·` por dentro invalida en vez de borrarse: borrarlos
   // convertiría «dos palabras» en el usuario `dospalabras`, que es de otro.

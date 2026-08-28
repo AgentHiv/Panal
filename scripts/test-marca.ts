@@ -21,7 +21,10 @@
  */
 import {
   CLAVES_MARCA,
+  MAX_LOGO_DATA,
+  bytesDeLogo,
   enlaceDe,
+  esLogoIncrustado,
   esTokenDeMarca,
   hayMarca,
   leerMarca,
@@ -30,10 +33,11 @@ import {
   type ClaveMarca,
   type Marca,
 } from '../src/lib/marca.js';
-import { composeAgentMetadata, parseAgentMetadata } from '../src/lib/agentMetadata.js';
+import { composeAgentMetadata, parseAgentMetadata, resumirFicha } from '../src/lib/agentMetadata.js';
 import {
   AGENT_LINK_KEYS,
   formatAgentMetadata,
+  isEmbeddedLogo,
   normalizeAgentLink,
   parseAgentMetadata as parseSdk,
 } from '../sdk/src/types.js';
@@ -177,6 +181,79 @@ check('un «·» dentro de un valor no se guarda', tokensDeMarca({ x: 'lint·lab
 check('ni un espacio: «dos palabras» no es el usuario «dospalabras»', normalizarMarca('x', 'dos palabras') === '');
 check('  el SDK tampoco lo pega', normalizeAgentLink('x', 'dos palabras') === '');
 check('  ni el bot lo acepta', !esTokenBot('x:dos palabras'));
+
+/* ── el logo que viaja DENTRO de la ficha ────────────────────────────────── */
+
+console.log('\n── Una imagen incrustada, leída por los tres ──\n');
+
+/**
+ * Un base64 cualquiera del largo que toca. Ninguna de las tres capas decodifica
+ * la imagen —no pueden: no hay navegador— así que lo que se comprueba aquí es
+ * lo único que ellas deciden: el alfabeto, el largo y el tipo.
+ */
+const base64De = (largo: number): string => 'QUJDRA'.repeat(Math.ceil(largo / 6)).slice(0, largo);
+
+const LOGO_DATA = `data:image/webp;base64,${base64De(2000)}`;
+
+check('el marketplace guarda la imagen entera', normalizarMarca('logo', LOGO_DATA) === LOGO_DATA);
+check(
+  '  y el SDK NO la recorta a 120 caracteres',
+  normalizeAgentLink('logo', LOGO_DATA) === LOGO_DATA,
+  `sdk devolvió ${normalizeAgentLink('logo', LOGO_DATA).length} caracteres`,
+);
+check('  y el bot la reconoce como token', esTokenBot(`logo:${LOGO_DATA}`));
+check('las dos capas coinciden en si vale', esLogoIncrustado(LOGO_DATA) === isEmbeddedLogo(LOGO_DATA));
+check('el peso sale bien', bytesDeLogo(LOGO_DATA) === 1500, String(bytesDeLogo(LOGO_DATA)));
+
+const FICHA_CON_IMAGEN = composeAgentMetadata({
+  name: 'Lint',
+  description: 'Revisa contratos en Solidity',
+  skills: ['solidity', 'auditoría'],
+  botUrl: 'https://bot.lint.dev',
+  marca: { logo: LOGO_DATA, web: '', github: 'lintlabs', x: '', telegram: '' },
+});
+
+// Lo que de verdad se rompe si una capa no entiende el token: no es que falte
+// el logo, es que la ficha entera se corre y el agente sale con la descripción
+// donde iba el nombre.
+check('el nombre no se desplaza', parseSdk(FICHA_CON_IMAGEN).name === 'Lint');
+check('las skills siguen siendo skills', parseSdk(FICHA_CON_IMAGEN).skills.join(',') === 'solidity,auditoría');
+check('el bot no la cuela de skill', !parseAgentMetadata(FICHA_CON_IMAGEN).skills.some((s) => s.includes('data:')));
+check('la imagen vuelve entera', leerMarca(FICHA_CON_IMAGEN).logo === LOGO_DATA);
+check('  también por el SDK', parseSdk(FICHA_CON_IMAGEN).links.logo === LOGO_DATA);
+check('  también por el bot', leerMarcaBot(FICHA_CON_IMAGEN).logo === LOGO_DATA);
+check('y recomponerla no la cambia', composeAgentMetadata(parseAgentMetadata(FICHA_CON_IMAGEN)) === FICHA_CON_IMAGEN);
+
+// El preview del formulario tiene que dejar VER lo que se firma, y 2 000
+// caracteres de base64 tapan justo lo que hay que mirar.
+const resumida = resumirFicha(FICHA_CON_IMAGEN);
+check('el preview resume la imagen', resumida.includes('logo:<imagen 1.5 KB>'), resumida.slice(0, 120));
+check('  y deja el resto intacto', resumida.includes('Lint · Revisa contratos en Solidity') && resumida.includes('github:lintlabs'));
+
+console.log('\n── Lo que NO puede entrar en la ficha ──\n');
+
+const IMAGENES_MALAS: [string, string][] = [
+  // Un SVG es un documento con <script> dentro y esta cadena la pinta
+  // cualquiera: el formulario lo acepta, pero lo rasteriza antes de guardarlo.
+  ['un SVG', `data:image/svg+xml;base64,${base64De(200)}`],
+  ['algo que no es imagen', `data:text/html;base64,${base64De(200)}`],
+  ['sin base64', 'data:image/png,%3Csvg%3E'],
+  ['con un espacio dentro', `data:image/webp;base64,${base64De(100)} ${base64De(100)}`],
+  ['fuera del alfabeto', `data:image/webp;base64,${base64De(96)}·${base64De(100)}`],
+  ['más larga que el tope', `data:image/webp;base64,${base64De(MAX_LOGO_DATA)}`],
+  ['un base64 que no decodifica', `data:image/webp;base64,${base64De(101)}`],
+  ['una miniatura de un píxel', `data:image/webp;base64,${base64De(8)}`],
+];
+
+for (const [nombre, valor] of IMAGENES_MALAS) {
+  check(`${nombre}: el marketplace no lo guarda`, normalizarMarca('logo', valor) === '');
+  check(`  el SDK tampoco`, normalizeAgentLink('logo', valor) === '');
+  check(`  ni el bot`, !esTokenBot(`logo:${valor}`));
+}
+
+check('y `web:` no admite imágenes: es un enlace', normalizarMarca('web', LOGO_DATA) === '');
+check('  el SDK igual', normalizeAgentLink('web', LOGO_DATA) === '');
+check('  y el bot igual', !esTokenBot(`web:${LOGO_DATA}`));
 
 /* ── a dónde lleva cada enlace ───────────────────────────────────────────── */
 

@@ -67,6 +67,25 @@ export interface Catalog {
   warnBody: string;
   docs: string;
   /** Comentarios del `.env.example` generado. */
+  /** Lo que se dice del logo que se escribe en el proyecto. */
+  logoWritten: string;
+  /**
+   * Las preguntas del escaparate: el logo y los enlaces del creador.
+   *
+   * Se preguntan aquí y no en un `README` porque un campo que hay que ir a
+   * buscar a un archivo no lo rellena nadie, y son justo los que dejan que un
+   * cliente MIRE al agente antes de pagarle.
+   */
+  brand: {
+    title: string;
+    logo: string;
+    web: string;
+    github: string;
+    x: string;
+    telegram: string;
+    /** Un valor que no se puede escribir en la plantilla. `{name}` = lo tecleado. */
+    bad: string;
+  };
   env: {
     key: string;
     port: string;
@@ -91,6 +110,7 @@ const en: Catalog = {
 Options:
   --lang <code>   Interface language: ${LANG_CODES.join(', ')}
   --no-input      Never prompt. For CI and scripted setups.
+  --logo, --web, --github, --x, --telegram   Your links. All optional.
   --help          Show this help.
   --version       Show the version.
 
@@ -117,6 +137,16 @@ The language is taken from --lang, then PANAL_LANG, then your system locale.`,
   warnLabel: 'Careful:',
   warnBody: 'the endpoint must be public https. Without it the client cannot send you\nthe brief or download the result, and the agent is decoration.',
   docs: 'Full guide: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  logoWritten: 'Logo: logo.svg, with your initial. Overwrite it with yours.',
+  brand: {
+    title: 'Your shop window. All optional — press Enter to skip.',
+    logo: 'Logo URL (Enter: publish the one your agent serves)',
+    web: 'Website',
+    github: 'GitHub (user or user/repo)',
+    x: 'X (username)',
+    telegram: 'Telegram (username)',
+    bad: 'I cannot use "{name}", leaving it empty.',
+  },
   env: {
     key: 'Private key of your agent\'s DEDICATED wallet.\nIt is the one that gets paid and signs deliveries. Do not use your personal\nwallet: this one lives on a server. It only needs a little MON for gas.',
     port: 'Server port. Many hosts inject it themselves.',
@@ -188,6 +218,7 @@ const es: Catalog = {
 Opciones:
   --lang <código>  Idioma de la interfaz: ${LANG_CODES.join(', ')}
   --no-input       No preguntar nunca. Para CI y instalaciones automatizadas.
+  --logo, --web, --github, --x, --telegram   Tus enlaces. Todos opcionales.
   --help           Muestra esta ayuda.
   --version        Muestra la versión.
 
@@ -214,6 +245,16 @@ El idioma sale de --lang, luego de PANAL_LANG, y si no del locale del sistema.`,
   warnLabel: 'Ojo:',
   warnBody: 'el endpoint tiene que ser https y público. Sin él el cliente no puede\nmandarte el encargo ni descargar su resultado, y el agente queda de adorno.',
   docs: 'Guía completa: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  logoWritten: 'Logo: logo.svg, con tu inicial. Sobrescríbelo con el tuyo.',
+  brand: {
+    title: 'Tu escaparate. Todo es opcional: pulsa Enter para saltar.',
+    logo: 'URL de tu logo (Enter: publica el que sirve tu agente)',
+    web: 'Tu web',
+    github: 'GitHub (usuario o usuario/repo)',
+    x: 'X (usuario)',
+    telegram: 'Telegram (usuario)',
+    bad: 'No puedo usar «{name}», lo dejo vacío.',
+  },
   env: {
     key: 'Clave privada de la wallet DEDICADA de tu agente.\nEs la que cobra y la que firma las entregas. No uses tu wallet personal:\nesta vive en un servidor. Solo necesita un poco de MON para el gas.',
     port: 'Puerto del servidor. Muchos hostings lo inyectan solos.',
@@ -286,6 +327,7 @@ const zh: Catalog = {
 选项:
   --lang <代码>   界面语言: ${LANG_CODES.join(', ')}
   --no-input      从不提问。适用于 CI 和脚本化部署。
+  --logo, --web, --github, --x, --telegram   你的链接。全部可选。
   --help          显示此帮助。
   --version       显示版本号。
 
@@ -312,6 +354,16 @@ const zh: Catalog = {
   warnLabel: '注意：',
   warnBody: '端点必须是公网 https。否则客户既无法把任务发给你，也无法下载结果，\n这个代理就只是摆设。',
   docs: '完整指南：https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  logoWritten: 'Logo：logo.svg，用了你名字的首字母。换成你自己的即可。',
+  brand: {
+    title: '你的门面。全部可选——直接回车跳过。',
+    logo: 'Logo 链接（回车：使用你的代理自己提供的）',
+    web: '你的网站',
+    github: 'GitHub（用户名，或 用户名/仓库）',
+    x: 'X（用户名）',
+    telegram: 'Telegram（用户名）',
+    bad: '「{name}」用不了，留空。',
+  },
   env: {
     key: '你的代理【专用】钱包的私钥。\n它负责收款并为交付签名。不要使用你的个人钱包：这个私钥要放在服务器上。\n它只需要少量 MON 用于支付 gas。',
     port: '服务端口。很多托管平台会自动注入。',
@@ -379,6 +431,7 @@ const hi: Catalog = {
 विकल्प:
   --lang <कोड>    इंटरफ़ेस की भाषा: ${LANG_CODES.join(', ')}
   --no-input      कभी न पूछें। CI और स्क्रिप्टेड सेटअप के लिए।
+  --logo, --web, --github, --x, --telegram   आपके लिंक। सभी वैकल्पिक।
   --help          यह मदद दिखाएँ।
   --version       संस्करण दिखाएँ।
 
@@ -405,6 +458,16 @@ const hi: Catalog = {
   warnLabel: 'ध्यान दें:',
   warnBody: 'एंडपॉइंट सार्वजनिक https होना चाहिए। इसके बिना क्लाइंट न आपको काम भेज सकता है\nन परिणाम डाउनलोड कर सकता है, और एजेंट बेकार रह जाता है।',
   docs: 'पूरी गाइड: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  logoWritten: 'लोगो: logo.svg, आपके नाम के पहले अक्षर के साथ। अपना डालने के लिए इसे बदल दें।',
+  brand: {
+    title: 'आपकी पहचान। सब वैकल्पिक — छोड़ने के लिए Enter दबाएँ।',
+    logo: 'लोगो का URL (Enter: आपका एजेंट अपना खुद देता है)',
+    web: 'आपकी वेबसाइट',
+    github: 'GitHub (उपयोगकर्ता या उपयोगकर्ता/रेपो)',
+    x: 'X (उपयोगकर्ता नाम)',
+    telegram: 'Telegram (उपयोगकर्ता नाम)',
+    bad: '"{name}" काम नहीं आएगा, इसे खाली छोड़ रहा हूँ।',
+  },
   env: {
     key: 'आपके एजेंट के लिए समर्पित (DEDICATED) वॉलेट की निजी कुंजी।\nयही भुगतान पाती है और डिलीवरी पर हस्ताक्षर करती है। अपना निजी वॉलेट न लगाएँ:\nयह कुंजी सर्वर पर रहती है। इसे गैस के लिए बस थोड़ा MON चाहिए।',
     port: 'सर्वर पोर्ट। कई होस्टिंग इसे खुद भेजते हैं।',
@@ -476,6 +539,7 @@ const ar: Catalog = {
 الخيارات:
   --lang <رمز>    لغة الواجهة: ${LANG_CODES.join(', ')}
   --no-input      لا تسأل أبدًا. للتكامل المستمر والإعداد الآلي.
+  --logo, --web, --github, --x, --telegram   روابطك. كلها اختيارية.
   --help          إظهار هذه المساعدة.
   --version       إظهار الإصدار.
 
@@ -502,6 +566,16 @@ const ar: Catalog = {
   warnLabel: 'انتبه:',
   warnBody: 'يجب أن تكون نقطة النهاية https وعامة. بدونها لا يستطيع العميل إرسال الطلب\nإليك ولا تنزيل النتيجة، ويبقى الوكيل بلا فائدة.',
   docs: 'الدليل الكامل: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  logoWritten: 'الشعار: logo.svg بالحرف الأول من اسمك. استبدله بشعارك.',
+  brand: {
+    title: 'واجهتك. كل هذا اختياري — اضغط Enter للتخطي.',
+    logo: 'رابط شعارك (Enter: يُنشر الشعار الذي يقدّمه وكيلك)',
+    web: 'موقعك',
+    github: 'GitHub (المستخدم أو المستخدم/المستودع)',
+    x: 'X (اسم المستخدم)',
+    telegram: 'Telegram (اسم المستخدم)',
+    bad: 'لا يمكنني استخدام «{name}»، سأتركه فارغًا.',
+  },
   env: {
     key: 'المفتاح الخاص بمحفظة وكيلك المخصّصة.\nهي التي تتقاضى الأجر وتوقّع عمليات التسليم. لا تستخدم محفظتك الشخصية:\nهذا المفتاح يعيش على خادم. يكفيه قليل من MON لدفع الرسوم.',
     port: 'منفذ الخادم. كثير من الاستضافات تضبطه تلقائيًا.',
@@ -572,6 +646,7 @@ const fr: Catalog = {
 Options:
   --lang <code>   Langue de l'interface : ${LANG_CODES.join(', ')}
   --no-input      Ne jamais poser de question. Pour la CI et les scripts.
+  --logo, --web, --github, --x, --telegram   Tes liens. Tous facultatifs.
   --help          Affiche cette aide.
   --version       Affiche la version.
 
@@ -598,6 +673,16 @@ La langue vient de --lang, puis de PANAL_LANG, puis de la locale du système.`,
   warnLabel: 'Attention :',
   warnBody: 'le point d\'entrée doit être en https public. Sans lui, le client ne peut ni\nvous envoyer la commande ni récupérer le résultat : l\'agent ne sert à rien.',
   docs: 'Guide complet : https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  logoWritten: 'Logo : logo.svg, avec ton initiale. Remplace-le par le tien.',
+  brand: {
+    title: 'Ta vitrine. Tout est facultatif — Entrée pour passer.',
+    logo: 'URL de ton logo (Entrée : celui que sert ton agent)',
+    web: 'Ton site',
+    github: 'GitHub (utilisateur ou utilisateur/dépôt)',
+    x: 'X (nom d\'utilisateur)',
+    telegram: 'Telegram (nom d\'utilisateur)',
+    bad: 'Je ne peux pas utiliser « {name} », je le laisse vide.',
+  },
   env: {
     key: 'Clé privée du portefeuille DÉDIÉ de votre agent.\nC\'est elle qui encaisse et qui signe les livraisons. N\'utilisez pas votre\nportefeuille personnel : celle-ci vit sur un serveur. Un peu de MON suffit.',
     port: 'Port du serveur. Beaucoup d\'hébergeurs l\'injectent eux-mêmes.',
@@ -672,6 +757,7 @@ const pt: Catalog = {
 Opções:
   --lang <código>  Idioma da interface: ${LANG_CODES.join(', ')}
   --no-input       Nunca perguntar. Para CI e instalações automatizadas.
+  --logo, --web, --github, --x, --telegram   Os seus links. Todos opcionais.
   --help           Mostra esta ajuda.
   --version        Mostra a versão.
 
@@ -698,6 +784,16 @@ O idioma vem de --lang, depois de PANAL_LANG e, por fim, do locale do sistema.`,
   warnLabel: 'Atenção:',
   warnBody: 'o endpoint tem de ser https e público. Sem ele o cliente não consegue\nenviar-lhe o pedido nem descarregar o resultado, e o agente fica inútil.',
   docs: 'Guia completo: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  logoWritten: 'Logótipo: logo.svg, com a sua inicial. Substitua-o pelo seu.',
+  brand: {
+    title: 'A sua montra. Tudo opcional — Enter para saltar.',
+    logo: 'URL do seu logótipo (Enter: publica o que o seu agente serve)',
+    web: 'O seu site',
+    github: 'GitHub (utilizador ou utilizador/repo)',
+    x: 'X (utilizador)',
+    telegram: 'Telegram (utilizador)',
+    bad: 'Não posso usar «{name}», deixo-o vazio.',
+  },
   env: {
     key: 'Chave privada da carteira DEDICADA do seu agente.\nÉ ela que recebe e que assina as entregas. Não use a sua carteira pessoal:\nesta vive num servidor. Só precisa de um pouco de MON para o gas.',
     port: 'Porta do servidor. Muitos alojamentos injetam-na sozinhos.',
@@ -770,6 +866,7 @@ const ru: Catalog = {
 Опции:
   --lang <код>    Язык интерфейса: ${LANG_CODES.join(', ')}
   --no-input      Никогда не спрашивать. Для CI и автоматической установки.
+  --logo, --web, --github, --x, --telegram   Ваши ссылки. Все необязательные.
   --help          Показать эту справку.
   --version       Показать версию.
 
@@ -796,6 +893,16 @@ const ru: Catalog = {
   warnLabel: 'Важно:',
   warnBody: 'эндпоинт должен быть публичным и по https. Без этого клиент не сможет ни\nотправить вам заказ, ни скачать результат, и агент останется декорацией.',
   docs: 'Полное руководство: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  logoWritten: 'Логотип: logo.svg с первой буквой имени. Замените его своим.',
+  brand: {
+    title: 'Ваша витрина. Всё необязательно — Enter, чтобы пропустить.',
+    logo: 'Ссылка на логотип (Enter: возьмём тот, что отдаёт ваш агент)',
+    web: 'Ваш сайт',
+    github: 'GitHub (пользователь или пользователь/репозиторий)',
+    x: 'X (имя пользователя)',
+    telegram: 'Telegram (имя пользователя)',
+    bad: 'Не могу использовать «{name}», оставляю пустым.',
+  },
   env: {
     key: 'Приватный ключ ВЫДЕЛЕННОГО кошелька вашего агента.\nИменно он получает оплату и подписывает сдачу работы. Не используйте личный\nкошелёк: этот ключ живёт на сервере. Ему нужно немного MON только на газ.',
     port: 'Порт сервера. Многие хостинги подставляют его сами.',
@@ -869,6 +976,7 @@ const bn: Catalog = {
 বিকল্প:
   --lang <কোড>    ইন্টারফেসের ভাষা: ${LANG_CODES.join(', ')}
   --no-input      কখনও প্রশ্ন করবে না। CI ও স্ক্রিপ্টেড সেটআপের জন্য।
+  --logo, --web, --github, --x, --telegram   আপনার লিংক। সবই ঐচ্ছিক।
   --help          এই সাহায্য দেখায়।
   --version       সংস্করণ দেখায়।
 
@@ -895,6 +1003,16 @@ const bn: Catalog = {
   warnLabel: 'খেয়াল রাখুন:',
   warnBody: 'এন্ডপয়েন্ট অবশ্যই সর্বজনীন https হতে হবে। নইলে ক্লায়েন্ট আপনাকে কাজ পাঠাতেও\nপারবে না, ফলাফল নামাতেও পারবে না — এজেন্ট অকেজো থেকে যাবে।',
   docs: 'সম্পূর্ণ গাইড: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  logoWritten: 'লোগো: logo.svg, আপনার নামের প্রথম অক্ষর দিয়ে। নিজেরটা দিয়ে বদলে নিন।',
+  brand: {
+    title: 'আপনার সাইনবোর্ড। সবই ঐচ্ছিক — বাদ দিতে Enter চাপুন।',
+    logo: 'লোগোর URL (Enter: আপনার এজেন্ট নিজেরটাই দেবে)',
+    web: 'আপনার ওয়েবসাইট',
+    github: 'GitHub (ইউজার বা ইউজার/রেপো)',
+    x: 'X (ইউজারনেম)',
+    telegram: 'Telegram (ইউজারনেম)',
+    bad: '"{name}" ব্যবহার করা গেল না, খালি রাখছি।',
+  },
   env: {
     key: 'আপনার এজেন্টের নিবেদিত (DEDICATED) ওয়ালেটের প্রাইভেট কী।\nএটিই অর্থ গ্রহণ করে এবং ডেলিভারিতে স্বাক্ষর করে। ব্যক্তিগত ওয়ালেট ব্যবহার\nকরবেন না: এটি সার্ভারে থাকে। গ্যাসের জন্য সামান্য MON হলেই চলে।',
     port: 'সার্ভারের পোর্ট। অনেক হোস্টিং নিজেই এটি দেয়।',
@@ -965,6 +1083,7 @@ const ur: Catalog = {
 اختیارات:
   --lang <کوڈ>    انٹرفیس کی زبان: ${LANG_CODES.join(', ')}
   --no-input      کبھی نہ پوچھیں۔ CI اور خودکار سیٹ اپ کے لیے۔
+  --logo, --web, --github, --x, --telegram   آپ کے لنکس۔ سب اختیاری۔
   --help          یہ مدد دکھائیں۔
   --version       ورژن دکھائیں۔
 
@@ -991,6 +1110,16 @@ const ur: Catalog = {
   warnLabel: 'خیال رکھیں:',
   warnBody: 'اینڈ پوائنٹ کا عوامی https ہونا ضروری ہے۔ اس کے بغیر کلائنٹ نہ آپ کو کام بھیج\nسکتا ہے نہ نتیجہ اتار سکتا ہے، اور ایجنٹ بےکار رہ جاتا ہے۔',
   docs: 'مکمل رہنما: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  logoWritten: 'لوگو: logo.svg، آپ کے نام کے پہلے حرف کے ساتھ۔ اسے اپنے لوگو سے بدل دیں۔',
+  brand: {
+    title: 'آپ کی پہچان۔ سب اختیاری — چھوڑنے کے لیے Enter دبائیں۔',
+    logo: 'لوگو کا URL (Enter: آپ کا ایجنٹ اپنا خود دے گا)',
+    web: 'آپ کی ویب سائٹ',
+    github: 'GitHub (صارف یا صارف/ریپو)',
+    x: 'X (صارف نام)',
+    telegram: 'Telegram (صارف نام)',
+    bad: '«{name}» استعمال نہیں ہو سکتا، خالی چھوڑ رہا ہوں۔',
+  },
   env: {
     key: 'آپ کے ایجنٹ کے مخصوص (DEDICATED) والیٹ کی نجی کلید۔\nیہی ادائیگی وصول کرتی ہے اور ڈیلیوری پر دستخط کرتی ہے۔ اپنا ذاتی والیٹ نہ\nاستعمال کریں: یہ کلید سرور پر رہتی ہے۔ اسے گیس کے لیے تھوڑا سا MON چاہیے۔',
     port: 'سرور کا پورٹ۔ بہت سی ہوسٹنگ خود ہی دے دیتی ہیں۔',

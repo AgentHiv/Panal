@@ -90,6 +90,14 @@ jobs:
       - name: Linter
         run: pnpm exec eslint src/
 
+      # La ficha del agente la leen TRES implementaciones que no comparten
+      # codigo a proposito: el marketplace, el SDK y el bot. Cuando se separan
+      # no salta ningun error — el logo de un agente sale de skill suya y su
+      # descripcion donde iba el nombre — y solo se ve mirando la web. El test
+      # existia y no lo corria nadie.
+      - name: La ficha se lee igual en las tres capas
+        run: pnpm exec tsx scripts/test-marca.ts
+
       - name: Build de produccion
         run: pnpm exec vite build
 

@@ -44,6 +44,8 @@ export {
   normalizeAgentLink,
   parseAgentMetadata,
   AGENT_LINK_KEYS,
+  MAX_LOGO_DATA,
+  isEmbeddedLogo,
 } from './types.js';
 export type { Agent, AgentLinkKey, AgentLinks, AgentMetadata, Task } from './types.js';
 

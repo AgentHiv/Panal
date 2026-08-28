@@ -51,13 +51,19 @@ const PERFIL = {
   links: {
     // El logo sale en tu tarjeta, en el mercado y en la app. Https, cuadrado y
     // pequeño: se pinta a 56 px, no hace falta más.
-    logo: '',
-    web: '',
+    //
+    // DÉJALO VACÍO Y NO TIENES QUE HACER NADA: tu agente sirve el `logo.svg`
+    // que hay en esta carpeta, y al registrarte se comprueba que responde y se
+    // publica esa URL. El generador te escribió uno con la inicial de tu
+    // nombre; para poner el tuyo, sobrescribe el archivo (vale .svg, .png o
+    // .webp) y vuelve a ejecutar `npm run register`.
+    logo: '__LINK_LOGO__',
+    web: '__LINK_WEB__',
     // Tu perfil o el repositorio del agente: valen `usuario` y `usuario/repo`.
-    github: '',
+    github: '__LINK_GITHUB__',
     // Solo el usuario; también se traga el enlace entero si lo pegas.
-    x: '',
-    telegram: '',
+    x: '__LINK_X__',
+    telegram: '__LINK_TELEGRAM__',
   },
 };
 
@@ -172,6 +178,36 @@ async function compruebaEndpoint(botUrl: string, yo: string): Promise<string | n
   return null;
 }
 
+/**
+ * Tu logo, si no lo has puesto a mano pero tu agente sirve uno.
+ *
+ * La plantilla te deja un `logo.svg` en la carpeta y el servidor lo publica en
+ * `/logo`. Que exista el archivo no basta para escribirlo en la cadena: lo que
+ * se guarda es una URL, y una URL que no responde es un hueco en la tarjeta que
+ * cuesta otra transacción arreglar. Así que se pide de verdad antes de creerlo.
+ *
+ * NUNCA lanza ni bloquea el registro. Un logo es un extra; quedarse sin
+ * registrar por una imagen sería absurdo.
+ */
+async function logoQueSirves(botUrl: string): Promise<string> {
+  let url: string;
+  try {
+    url = new URL('/logo', botUrl).toString();
+  } catch {
+    return '';
+  }
+  try {
+    const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(8_000) });
+    const tipo = res.headers.get('content-type') ?? '';
+    // `image/` y no `200` a secas: un servidor delante que devuelva la página
+    // de error en HTML con estado 200 dejaría escrito en la cadena un logo que
+    // no es una imagen, y en la tarjeta un hueco sin explicación.
+    return res.ok && tipo.startsWith('image/') ? url : '';
+  } catch {
+    return '';
+  }
+}
+
 async function main(): Promise<void> {
   const key = process.env.AGENT_PRIVATE_KEY?.trim();
   if (!key || !/^0x[0-9a-fA-F]{64}$/.test(key)) {
@@ -215,23 +251,36 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  console.log(`\nPerfil:  ${formatAgentMetadata(PERFIL)}`);
-  console.log(`Precio:  ${formatEther(PRECIO)} ${MONEDA === NATIVE_CURRENCY ? 'MON' : '$PANAL'} por tarea\n`);
-
   // ¿Ya estabas? Registrarse dos veces revierte, así que se actualiza.
   const existente = await panal.getAgent(account.address).catch(() => null);
   const yaRegistrado = existente !== null && existente.registeredAt > 0n;
 
+  // Tu logo, si no lo pusiste a mano.
+  //
+  // Primero se mira si tu agente sirve uno; si no responde se conserva el que
+  // ya tuvieras publicado. Eso segundo importa más de lo que parece: sin ello,
+  // un corte de red de dos segundos durante un `npm run register` te borraría
+  // el logo de la ficha, y no lo dice nadie —la orden termina bien— hasta que
+  // alguien mira el mercado y ve el hexágono otra vez.
+  const puesto = PERFIL.links.logo.trim();
+  const servido = puesto ? '' : await logoQueSirves(PERFIL.botUrl);
+  const logo = puesto || servido || existente?.metadata.links.logo || '';
+  const perfil = { ...PERFIL, links: { ...PERFIL.links, logo } };
+  if (!puesto && logo) console.log(`Logo:    ${logo}${servido ? '' : ' (el que ya tenías: tu /logo no responde)'}`);
+
+  console.log(`\nPerfil:  ${formatAgentMetadata(perfil)}`);
+  console.log(`Precio:  ${formatEther(PRECIO)} ${MONEDA === NATIVE_CURRENCY ? 'MON' : '$PANAL'} por tarea\n`);
+
   if (yaRegistrado) {
     console.log('Ya estabas registrado: actualizo el perfil y el precio.');
-    await panal.updateMetadata(PERFIL);
+    await panal.updateMetadata(perfil);
     await panal.updatePrice(PRECIO, MONEDA);
     if (!existente.active) {
       await panal.setActive(true);
       console.log('Y te vuelvo a poner activo.');
     }
   } else {
-    await panal.registerAgent({ metadata: PERFIL, pricePerTask: PRECIO, currency: MONEDA });
+    await panal.registerAgent({ metadata: perfil, pricePerTask: PRECIO, currency: MONEDA });
     console.log('Registrado.');
   }
 
