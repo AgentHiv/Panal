@@ -57,6 +57,7 @@ export const pt: Textos = {
     red: (nombre: string, id: number) => `Panal · ${nombre} (${id})`,
     version: (v: string) => `Versão ${v}`,
     sinVersion: 'Compilação de desenvolvimento',
+    hayVersion: (v: string) => `Versão ${v} disponível`,
   },
 
   barraRed: {

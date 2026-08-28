@@ -57,6 +57,7 @@ export const en: Textos = {
     red: (nombre: string, id: number) => `Panal · ${nombre} (${id})`,
     version: (v: string) => `Version ${v}`,
     sinVersion: 'Development build',
+    hayVersion: (v: string) => `Version ${v} available`,
   },
 
   barraRed: {
