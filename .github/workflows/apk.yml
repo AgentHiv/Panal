@@ -296,14 +296,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           APK="panal-${GITHUB_REF_NAME}.apk"
+          # En INGLÉS, como todo lo que se publica de cara a GitHub. Los
+          # comentarios de este archivo siguen en español porque los lee quien
+          # mantiene el repositorio; esto lo lee quien se descarga la app.
           if [ "${{ steps.firma.outputs.estable }}" = "si" ]; then
-            FIRMA="Firmado con la clave estable de Panal: se instala encima de la versión anterior sin desinstalar nada."
+            FIRMA="Signed with Panal's stable key: it installs over the previous version, with nothing to uninstall."
           else
-            FIRMA="ATENCIÓN: firmado con una clave de usar y tirar. Para instalarlo hay que DESINSTALAR antes la versión anterior, y eso se lleva por delante el llavero del teléfono. El secreto \`PANAL_KEYSTORE_B64\` del repositorio es lo que hace que deje de pasar."
+            FIRMA="WARNING: signed with a throwaway key. Installing it means UNINSTALLING the previous version first, and that takes the phone's keyring with it. The repository secret \`PANAL_KEYSTORE_B64\` is what stops this from happening."
           fi
-          NOTAS="$FIRMA En el móvil: descárgalo y ábrelo; Android pedirá permiso para instalar de orígenes desconocidos.
+          NOTAS="$FIRMA On your phone: download it and open it; Android will ask for permission to install from unknown sources.
 
-          Es la app de Panal, no el sitio web dentro de una ventana: tres pestañas y su propia interfaz. Va entera dentro del APK, así que NO se actualiza sola — cada cambio necesita una versión nueva."
+          This is the Panal app, not the website in a window: three tabs and an interface of its own. It ships whole inside the APK, so it does NOT update itself — every change needs a new version."
 
           # Crear o, si ya existe, adjuntar. Publicar la release desde la web
           # de GitHub la crea ANTES de que este paso corra, y entonces
@@ -312,6 +315,20 @@ jobs:
           # tenerla. `--clobber` deja reintentar la misma etiqueta.
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" "$APK" --clobber
+            # Y se rehacen las notas, que antes se quedaban como estuvieran:
+            # relanzar una etiqueta subía el APK nuevo debajo de un texto
+            # viejo. Solo se tocan si están VACÍAS o si las escribió este
+            # mismo paso —se reconoce por la frase de los orígenes
+            # desconocidos, en los dos idiomas en que ha existido—. Si alguien
+            # las escribió a mano, se respetan: aquí no se pisa lo que ha
+            # redactado una persona.
+            CUERPO=$(gh release view "$GITHUB_REF_NAME" --json body -q .body || echo '')
+            case "$CUERPO" in
+              ''|*'unknown sources'*|*'orígenes desconocidos'*)
+                gh release edit "$GITHUB_REF_NAME" --notes "$NOTAS" ;;
+              *)
+                echo "La release ya tiene notas escritas a mano: no las toco." ;;
+            esac
           else
             gh release create "$GITHUB_REF_NAME" "$APK" \
               --title "Panal Android $GITHUB_REF_NAME" --notes "$NOTAS"
