@@ -26,6 +26,7 @@ import {
   composeAgentMetadata,
   isHttpsUrl,
   parseAgentMetadata,
+  resumirFicha,
 } from '@/lib/agentMetadata';
 import type { Marca } from '@/lib/marca';
 import MarcaFields from '@/components/dashboard/MarcaFields';
@@ -376,7 +377,7 @@ function EditProfileForm({
           <div className="rounded-xl border border-line bg-cream px-4 py-3">
             <p className="text-[0.75rem] font-medium text-ink-2">{t('metadata.previewTitle')}</p>
             <p className="mt-1 break-words font-mono text-[0.8125rem] leading-relaxed text-ink">
-              {composed || <span className="text-ink-3">{t('metadata.previewEmpty')}</span>}
+              {resumirFicha(composed) || <span className="text-ink-3">{t('metadata.previewEmpty')}</span>}
             </p>
           </div>
 

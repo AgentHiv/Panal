@@ -15,7 +15,7 @@
  * tarjeta. El formato y qué valores valen están en `marca.ts`.
  */
 
-import { esTokenDeMarca, leerMarca, tokensDeMarca, type Marca } from './marca';
+import { bytesDeLogo, esTokenDeMarca, leerMarca, tokensDeMarca, type Marca } from './marca';
 
 export interface AgentMetadataFields {
   name: string;
@@ -70,6 +70,24 @@ export function composeAgentMetadata(fields: Omit<AgentMetadataFields, 'marca'> 
   // agente sin logo compone exactamente la misma ficha que antes.
   for (const token of tokensDeMarca(fields.marca ?? {})) composed += ` · ${token}`;
   return composed;
+}
+
+/**
+ * La ficha tal y como se enseña en el preview del formulario.
+ *
+ * Es la misma cadena, con una excepción: un logo incrustado son miles de
+ * caracteres de base64, y volcarlos en el recuadro convertiría el preview
+ * —cuyo trabajo es dejar VER lo que se va a firmar— en un muro ilegible que
+ * esconde justo lo que importa, el nombre y las skills. Se resume por su peso,
+ * que además es el dato del que depende el gas.
+ *
+ * Solo para mirar: lo que se firma es siempre `composeAgentMetadata`.
+ */
+export function resumirFicha(metadataURI: string): string {
+  return metadataURI.replace(/logo:data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+/g, (token) => {
+    const kb = Math.round(bytesDeLogo(token.slice('logo:'.length)) / 102.4) / 10;
+    return kb > 0 ? `logo:<imagen ${kb} KB>` : token;
+  });
 }
 
 /**

@@ -12,6 +12,7 @@ import {
 import Icono from '~/componentes/Icono';
 import CamposMarca from '~/componentes/CamposMarca';
 import { MARCA_VACIA, type Marca } from '@/lib/marca';
+import { resumirFicha } from '@/lib/agentMetadata';
 import { armarFicha, useFicha } from '~/lib/agentes';
 import { listar } from '~/lib/llavero';
 import { useTextos } from '~/i18n/idiomas';
@@ -195,7 +196,7 @@ export default function Alta(): React.ReactElement {
 
         <Titulo>{T.alta.loQueSeEscribe}</Titulo>
         <p className="seleccionable shrink-0 break-all rounded-[11px] border border-line bg-sand px-3 py-2.5 font-mono text-[11.5px] leading-[1.5] text-ink-2">
-          {ficha || '—'}
+          {resumirFicha(ficha) || '—'}
         </p>
 
         {error && (

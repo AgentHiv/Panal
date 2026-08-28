@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ImagePlus, Loader2, X } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
 import { cn } from '@/lib/utils';
-import { CLAVES_MARCA, normalizarMarca, type ClaveMarca, type Marca } from '@/lib/marca';
+import { CLAVES_MARCA, bytesDeLogo, normalizarMarca, type ClaveMarca, type Marca } from '@/lib/marca';
+import { ErrorDeLogo, LOGO_ACEPTA, prepararLogo, type FalloDeLogo } from '@/lib/logoImagen';
 
 /**
  * Los campos de marca del agente: su logo, su web, su GitHub, sus redes.
@@ -22,6 +23,13 @@ import { CLAVES_MARCA, normalizarMarca, type ClaveMarca, type Marca } from '@/li
  * El error no bloquea el registro: un GitHub mal escrito no se guarda y ya. Lo
  * que NO puede pasar es que se guarde otra cosa —«dos palabras» convertido en
  * el usuario `dospalabras`, que es de alguien— así que se avisa en el momento.
+ *
+ * EL LOGO ES EL ÚNICO CAMPO QUE NO ES UN TEXTO. Pedir una URL es pedir un sitio
+ * donde alojar un archivo, y quien se registra desde el navegador tiene el logo
+ * en su ordenador. Así que aquí se elige el archivo y se guarda la imagen
+ * dentro de la ficha; la URL sigue estando, para quien ya la tiene. Lo que se
+ * guarda lo prepara `logoImagen.ts`, que además rasteriza los SVG: a la cadena
+ * nunca va un documento con scripts dentro.
  */
 export default function MarcaFields({
   marca,
@@ -36,13 +44,53 @@ export default function MarcaFields({
   /** La wallet, para el avatar de siempre cuando aún no hay logo. */
   seed: string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [abierto, setAbierto] = useState(() => CLAVES_MARCA.some((c) => marca[c] !== ''));
   /** Qué campos se han tocado: el error solo sale al salir del campo. */
   const [tocados, setTocados] = useState<Partial<Record<ClaveMarca, boolean>>>({});
 
+  /** El input de archivo real: se dispara desde el botón, que sí se puede pintar. */
+  const selector = useRef<HTMLInputElement>(null);
+  const [preparando, setPreparando] = useState(false);
+  const [falloLogo, setFalloLogo] = useState<FalloDeLogo | null>(null);
+
   const puestos = CLAVES_MARCA.filter((c) => normalizarMarca(c, marca[c]) !== '').length;
   const logoValido = normalizarMarca('logo', marca.logo);
+  /** ¿La imagen viaja dentro de la ficha, en vez de vivir en un dominio? */
+  const incrustado = logoValido.startsWith('data:');
+  /**
+   * El peso, escrito como se escribe en cada idioma.
+   *
+   * Un `1.1 KB` en español es un error de ortografía, no un redondeo: aquí el
+   * separador decimal es la coma. Lo pone `Intl`, que ya sabe de eso; pasar el
+   * número crudo a i18next lo dejaría con el punto de JavaScript en los diez.
+   */
+  const kbLogo = incrustado
+    ? new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
+        Math.round(bytesDeLogo(logoValido) / 102.4) / 10,
+      )
+    : '';
+
+  /**
+   * Del archivo que elige alguien al `data:` que se guarda.
+   *
+   * El fallo se enseña en el momento, sin esperar a ningún `blur`: aquí no hay
+   * un campo del que salir, y quien acaba de elegir una foto de 12 MB tiene que
+   * enterarse ya de que no ha entrado.
+   */
+  const tomarArchivo = async (archivo: File | undefined): Promise<void> => {
+    if (!archivo) return;
+    setFalloLogo(null);
+    setPreparando(true);
+    try {
+      const listo = await prepararLogo(archivo);
+      onChange({ ...marca, logo: listo.uri });
+    } catch (err) {
+      setFalloLogo(err instanceof ErrorDeLogo ? err.codigo : 'ilegible');
+    } finally {
+      setPreparando(false);
+    }
+  };
 
   return (
     <div className="rounded-xl border border-line">
@@ -57,7 +105,7 @@ export default function MarcaFields({
             {t('marca.title')}
           </span>
           <span className="block text-[0.75rem] text-ink-3">
-            {puestos > 0 ? t('marca.filled', { count: puestos }) : t('marca.optional')}
+            {puestos > 0 ? t('marca.filled', { n: puestos }) : t('marca.optional')}
           </span>
         </span>
         <ChevronDown
@@ -82,19 +130,84 @@ export default function MarcaFields({
                 >
                   {t(`marca.fields.${clave}`)}
                 </label>
-                <input
-                  id={`${idPrefix}-${clave}`}
-                  value={crudo}
-                  onChange={(e) => onChange({ ...marca, [clave]: e.target.value })}
-                  onBlur={() => setTocados((p) => ({ ...p, [clave]: true }))}
-                  inputMode={clave === 'logo' || clave === 'web' ? 'url' : 'text'}
-                  placeholder={t(`marca.placeholders.${clave}`)}
-                  aria-invalid={roto}
-                  className={cn(
-                    'h-11 rounded-xl border bg-paper px-3.5 font-mono text-[0.875rem] text-ink outline-none transition-colors placeholder:font-sans placeholder:text-ink-3 focus:border-honey',
-                    roto ? 'border-terra' : 'border-line',
-                  )}
-                />
+
+                {clave === 'logo' && (
+                  <>
+                    {/* El input de verdad no se pinta: no se puede dar estilo a
+                        su botón y cada navegador escribe un texto distinto. */}
+                    <input
+                      ref={selector}
+                      type="file"
+                      accept={LOGO_ACEPTA}
+                      className="hidden"
+                      onChange={(e) => {
+                        const archivo = e.target.files?.[0];
+                        // Se vacía para que elegir DOS VECES el mismo archivo
+                        // vuelva a disparar el evento; si no, el segundo intento
+                        // tras un error no hacía nada.
+                        e.target.value = '';
+                        void tomarArchivo(archivo);
+                      }}
+                    />
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => selector.current?.click()}
+                        disabled={preparando}
+                        className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey disabled:opacity-50"
+                      >
+                        {preparando ? (
+                          <Loader2 size={14} className="animate-spin" aria-hidden />
+                        ) : (
+                          <ImagePlus size={14} aria-hidden />
+                        )}
+                        {incrustado ? t('marca.logoChange') : t('marca.logoPick')}
+                      </button>
+                      {incrustado && (
+                        <>
+                          <span className="min-w-0 flex-1 truncate text-[0.75rem] text-ink-3">
+                            {t('marca.logoEmbedded', { kb: kbLogo })}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFalloLogo(null);
+                              onChange({ ...marca, logo: '' });
+                            }}
+                            aria-label={t('marca.logoRemove')}
+                            className="rounded-full border border-line p-1.5 text-ink-3 transition-colors hover:border-terra hover:text-terra"
+                          >
+                            <X size={13} aria-hidden />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    {falloLogo && (
+                      <p className="text-[0.75rem] text-terra">{t(`marca.logoErrors.${falloLogo}`)}</p>
+                    )}
+                    <p className="text-[0.75rem] leading-relaxed text-ink-3">
+                      {incrustado ? t('marca.logoEmbeddedHint') : t('marca.logoOr')}
+                    </p>
+                  </>
+                )}
+
+                {/* Con la imagen dentro de la ficha el campo de URL sobra, y
+                    dejarlo enseñando 5 000 caracteres de base64 sería ilegible. */}
+                {!(clave === 'logo' && incrustado) && (
+                  <input
+                    id={`${idPrefix}-${clave}`}
+                    value={crudo}
+                    onChange={(e) => onChange({ ...marca, [clave]: e.target.value })}
+                    onBlur={() => setTocados((p) => ({ ...p, [clave]: true }))}
+                    inputMode={clave === 'logo' || clave === 'web' ? 'url' : 'text'}
+                    placeholder={t(`marca.placeholders.${clave}`)}
+                    aria-invalid={roto}
+                    className={cn(
+                      'h-11 rounded-xl border bg-paper px-3.5 font-mono text-[0.875rem] text-ink outline-none transition-colors placeholder:font-sans placeholder:text-ink-3 focus:border-honey',
+                      roto ? 'border-terra' : 'border-line',
+                    )}
+                  />
+                )}
                 {roto && (
                   <p className="text-[0.75rem] text-terra">{t(`marca.errors.${clave}`)}</p>
                 )}

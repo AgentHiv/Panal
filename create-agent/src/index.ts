@@ -23,6 +23,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { CATALOG, LANGS, fill, isLang, resolveLang, type Catalog, type Lang } from './i18n.js';
+import { logoSvg } from './logo.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 /** La plantilla se empaqueta junto al binario (ver `files` del package.json). */
@@ -55,12 +56,41 @@ function fail(msg: string): never {
   process.exit(1);
 }
 
+/** Los enlaces del escaparate, en el mismo orden en que los pinta el mercado. */
+const ENLACES = ['logo', 'web', 'github', 'x', 'telegram'] as const;
+type Enlace = (typeof ENLACES)[number];
+type Enlaces = Record<Enlace, string>;
+const SIN_ENLACES: Enlaces = { logo: '', web: '', github: '', x: '', telegram: '' };
+
+/**
+ * Lo que se puede escribir dentro de la plantilla, y por qué es tan estrecho.
+ *
+ * Este valor acaba DENTRO de un literal de TypeScript, en `src/register.ts`.
+ * Una comilla, una barra invertida o un salto de línea no dan un enlace mal
+ * puesto: dan un archivo que no compila, o —peor— uno que compila haciendo otra
+ * cosa. El alfabeto de aquí es el de una URL y el de un nombre de usuario, y
+ * nada más.
+ *
+ * NO valida el enlace. De eso se encarga el SDK al registrar, con reglas por
+ * red (`usuario`, `usuario/repo`, `+invitación`…). Aquí solo se comprueba que
+ * se pueda escribir sin romper nada, y el tope de 120 es el mismo que aguanta
+ * la ficha on-chain.
+ */
+const ESCRIBIBLE = /^[A-Za-z0-9:/?#@!&()*+,;=._~%-]{1,120}$/;
+
+function limpiaEnlace(crudo: string): string {
+  const valor = crudo.trim();
+  return ESCRIBIBLE.test(valor) ? valor : '';
+}
+
 interface Args {
   name: string | null;
   lang: string | null;
   noInput: boolean;
   help: boolean;
   version: boolean;
+  /** Lo que venga por bandera; lo demás se pregunta, o se queda vacío. */
+  links: Enlaces;
 }
 
 /**
@@ -68,7 +98,14 @@ interface Args {
  * que teclea una persona y la segunda la que escriben los scripts.
  */
 function parseArgs(argv: string[]): Args {
-  const args: Args = { name: null, lang: null, noInput: false, help: false, version: false };
+  const args: Args = {
+    name: null,
+    lang: null,
+    noInput: false,
+    help: false,
+    version: false,
+    links: { ...SIN_ENLACES },
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === '--help' || a === '-h') args.help = true;
@@ -76,7 +113,16 @@ function parseArgs(argv: string[]): Args {
     else if (a === '--no-input' || a === '--yes' || a === '-y') args.noInput = true;
     else if (a === '--lang') args.lang = argv[++i] ?? '';
     else if (a.startsWith('--lang=')) args.lang = a.slice('--lang='.length);
-    else if (!a.startsWith('-') && args.name === null) args.name = a;
+    else {
+      // Los cinco enlaces, en las dos formas: `--x panal` y `--x=panal`.
+      const enlace = ENLACES.find((e) => a === `--${e}` || a.startsWith(`--${e}=`));
+      if (enlace) {
+        const crudo = a.includes('=') ? a.slice(a.indexOf('=') + 1) : (argv[++i] ?? '');
+        args.links[enlace] = limpiaEnlace(crudo);
+      } else if (!a.startsWith('-') && args.name === null) {
+        args.name = a;
+      }
+    }
   }
   return args;
 }
@@ -114,8 +160,45 @@ async function askLang(): Promise<Lang> {
   }
 }
 
+/**
+ * Las preguntas del escaparate: el logo y los enlaces del creador.
+ *
+ * Existen por una razón concreta: en el mercado un agente sale entre
+ * desconocidos, y un repositorio que se puede abrir dice más de él que
+ * cualquier frase que escriba sobre sí mismo. Antes esto solo se podía poner
+ * editando `src/register.ts` a mano, y un campo al que hay que ir no lo rellena
+ * nadie.
+ *
+ * TODAS SE SALTAN CON ENTER, y no se preguntan siquiera sin terminal
+ * interactiva ni con `--no-input`: quien monta esto en un Dockerfile no puede
+ * contestar, y una pregunta ahí cuelga el proceso para siempre.
+ *
+ * Lo que llega por bandera no se vuelve a preguntar.
+ */
+async function askLinks(t: Catalog, yaPuestos: Enlaces): Promise<Enlaces> {
+  const { createInterface } = await import('node:readline/promises');
+  const puestos: Enlaces = { ...yaPuestos };
+  console.log(`\n${c.bold(t.brand.title)}\n`);
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    for (const clave of ENLACES) {
+      if (puestos[clave]) continue;
+      const dicho = (await rl.question(`  ${t.brand[clave]}: `)).trim();
+      if (!dicho) continue;
+      const limpio = limpiaEnlace(dicho);
+      // Se avisa y se sigue. Un enlace raro no puede costarle a nadie volver a
+      // empezar el alta: lo puede poner luego en `src/register.ts`.
+      if (!limpio) console.log(c.yellow(`     ${fill(t.brand.bad, { name: dicho })}`));
+      else puestos[clave] = limpio;
+    }
+  } finally {
+    rl.close();
+  }
+  return puestos;
+}
+
 /** Copia la plantilla sustituyendo los marcadores. */
-function copyTemplate(dest: string, name: string, t: Catalog): void {
+function copyTemplate(dest: string, name: string, links: Enlaces, t: Catalog): void {
   cpSync(TEMPLATE, dest, { recursive: true });
 
   for (const [from, to] of Object.entries(RENAMES)) {
@@ -123,6 +206,17 @@ function copyTemplate(dest: string, name: string, t: Catalog): void {
     if (!existsSync(src)) fail(fill(t.errTemplateMissing, { name: from }));
     renameSync(src, join(dest, to));
   }
+
+  // Un enlace vacío deja `logo: ''` en el perfil, que es exactamente lo que
+  // había antes de que se pudieran pasar: no rellenar nada no cambia nada.
+  const marcadores: Record<string, string> = {
+    __NAME__: name,
+    __LINK_LOGO__: links.logo,
+    __LINK_WEB__: links.web,
+    __LINK_GITHUB__: links.github,
+    __LINK_X__: links.x,
+    __LINK_TELEGRAM__: links.telegram,
+  };
 
   const walk = (dir: string): void => {
     for (const entry of readdirSync(dir)) {
@@ -132,7 +226,10 @@ function copyTemplate(dest: string, name: string, t: Catalog): void {
         continue;
       }
       const before = readFileSync(full, 'utf8');
-      const after = before.replaceAll('__NAME__', name);
+      let after = before;
+      for (const [marcador, valor] of Object.entries(marcadores)) {
+        after = after.replaceAll(marcador, valor);
+      }
       if (after !== before) writeFileSync(full, after, 'utf8');
     }
   };
@@ -229,20 +326,31 @@ async function main(): Promise<void> {
   if (existsSync(dest) && readdirSync(dest).length > 0) fail(fill(t.errDirExists, { name }));
   if (!existsSync(TEMPLATE)) fail(fill(t.errTemplateMissing, { name: TEMPLATE }));
 
-  mkdirSync(dest, { recursive: true });
-  copyTemplate(dest, name, t);
-  const envExample = writeEnvExample(dest, t);
+  // El escaparate se pregunta AQUÍ: después de validar el nombre y la carpeta,
+  // para no hacer cinco preguntas y fallar luego, y antes de copiar nada,
+  // porque los enlaces se escriben dentro de la plantilla al copiarla.
+  const links = interactivo ? await askLinks(t, args.links) : args.links;
 
   // Wallet dedicada, generada aquí. La alternativa —"crea una wallet y pega la
   // clave"— es donde la gente acaba pegando la de su MetaMask personal, que es
   // exactamente lo que no debe vivir en un servidor.
   const privateKey = generatePrivateKey();
   const address = privateKeyToAccount(privateKey).address;
+
+  mkdirSync(dest, { recursive: true });
+  copyTemplate(dest, name, links, t);
+  const envExample = writeEnvExample(dest, t);
   writeFileSync(
     join(dest, '.env'),
     envExample.replace('AGENT_PRIVATE_KEY=', `AGENT_PRIVATE_KEY=${privateKey}`),
     'utf8',
   );
+
+  // Su cara desde el primer minuto. El servidor de la plantilla ya sirve este
+  // archivo en `/logo`, y el registro publica esa URL solo si no has puesto
+  // otra: un agente recién generado deja de salir igual que todos los demás sin
+  // que haya que hacer nada.
+  writeFileSync(join(dest, 'logo.svg'), logoSvg(name, address), 'utf8');
 
   // El README del proyecto, en su idioma. Es donde vive lo que no cabe en la
   // pantalla de alta: cómo se cobra, qué hace cada archivo y qué rompe agentes.
@@ -250,7 +358,8 @@ async function main(): Promise<void> {
 
   console.log(`\n${c.green('✓')} ${c.bold(fill(t.created, { name }))}\n`);
   console.log(`  ${t.walletLabel} ${c.bold(address)}`);
-  console.log(c.dim(`  ${fill(t.walletNote, { name })}\n`));
+  console.log(c.dim(`  ${fill(t.walletNote, { name })}`));
+  console.log(c.dim(`  ${t.logoWritten}\n`));
 
   console.log(c.bold(`${t.stepsTitle}\n`));
   console.log(`  ${c.bold('1.')} ${t.s1Title}`);

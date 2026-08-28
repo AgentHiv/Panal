@@ -55,6 +55,7 @@ const TRAZOS: Record<string, string[]> = {
 
   // Panal
   hexagono: ['M12 2.6 20.2 7v10L12 21.4 3.8 17V7z'],
+  imagen: ['M4.5 5.5h15v13h-15z', 'M4.5 15.6 9 11.1l3.6 3.6 3-3 3.9 3.9', 'M9.2 9.2h.01'],
 };
 
 export type NombreIcono = keyof typeof TRAZOS;

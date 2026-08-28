@@ -829,6 +829,42 @@ $('#enviar').onclick = async function(){
 };
 </script></body></html>`;
 
+/**
+ * Las rutas por las que se pide tu logo y los archivos donde se busca.
+ *
+ * El orden importa: si tienes un `logo.png` y un `logo.svg`, gana el SVG, que
+ * es el que escribe el generador y el que escala a cualquier tamaño.
+ */
+const RUTA_LOGO = /^\/logo(\.(svg|png|webp|jpe?g|gif))?$/;
+
+const LOGOS: [string, string][] = [
+  ['logo.svg', 'image/svg+xml; charset=utf-8'],
+  ['logo.png', 'image/png'],
+  ['logo.webp', 'image/webp'],
+  ['logo.jpg', 'image/jpeg'],
+  ['logo.jpeg', 'image/jpeg'],
+  ['logo.gif', 'image/gif'],
+];
+
+/**
+ * El primer logo que exista en la carpeta, o null si no publicas ninguno.
+ *
+ * Se lee en cada petición y no se cachea en memoria a propósito: cambiar de
+ * logo es dejar caer un archivo, y tener que reiniciar el agente —cortando los
+ * encargos en curso— para cambiar una imagen sería un precio absurdo. Los
+ * clientes ya lo cachean una hora por la cabecera.
+ */
+function buscaLogo(): { bytes: Buffer; tipo: string } | null {
+  for (const [archivo, tipo] of LOGOS) {
+    try {
+      return { bytes: readFileSync(archivo), tipo };
+    } catch {
+      // No está: se prueba el siguiente formato.
+    }
+  }
+  return null;
+}
+
 function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
@@ -1051,30 +1087,39 @@ const server = createServer((req, res) => {
 
     // ---- Tu logo, si lo pones ------------------------------------------------
     //
-    // Un archivo `logo.svg` junto al package.json y ya. El registro guarda la
-    // URL, no la imagen —una imagen no cabe en la cadena—, así que tiene que
-    // vivir en algún sitio; y el sitio natural es el mismo dominio que ya
-    // sirves, porque es el que la cadena ya dice que es tuyo.
+    // Un archivo `logo.svg` —o `logo.png`, o `logo.webp`— junto al package.json
+    // y ya. El generador te deja uno escrito con la inicial de tu agente, para
+    // que no salgas sin cara desde el primer minuto: sobrescríbelo con el tuyo
+    // y no hay nada más que tocar.
+    //
+    // El registro guarda la URL, así que la imagen tiene que vivir en algún
+    // sitio; y el sitio natural es el mismo dominio que ya sirves, porque es el
+    // que la cadena ya dice que es tuyo.
+    //
+    // RESPONDE A `/logo` Y A CUALQUIER EXTENSIÓN, y sirve el archivo que de
+    // verdad tengas, sea cual sea la que te pidan. Suena descuidado y no lo es:
+    // los agentes que ya están registrados publicaron `…/logo.svg` y esa URL
+    // está escrita en la cadena, así que cambiar de formato no puede obligarles
+    // a pagar otra transacción. Lo que decide cómo se pinta una imagen es el
+    // `content-type`, no la extensión de la URL.
     //
     // Se sirve con CORS abierto a propósito: es una imagen pública que va a
     // pintarse en escaparates ajenos, y sin la cabecera un `<canvas>` que la
     // toque para hacer una miniatura se queda a oscuras.
-    if (url.pathname === '/logo.svg' && (req.method === 'GET' || req.method === 'HEAD')) {
-      let svg: Buffer;
-      try {
-        svg = readFileSync('logo.svg');
-      } catch {
+    if (RUTA_LOGO.test(url.pathname) && (req.method === 'GET' || req.method === 'HEAD')) {
+      const logo = buscaLogo();
+      if (!logo) {
         json(res, 404, { error: 'este agente no publica logo' });
         return;
       }
       res.writeHead(200, {
-        'content-type': 'image/svg+xml; charset=utf-8',
-        'content-length': svg.byteLength,
+        'content-type': logo.tipo,
+        'content-length': logo.bytes.byteLength,
         'cache-control': 'public, max-age=3600',
         'access-control-allow-origin': '*',
         'x-content-type-options': 'nosniff',
       });
-      res.end(req.method === 'HEAD' ? undefined : svg);
+      res.end(req.method === 'HEAD' ? undefined : logo.bytes);
       return;
     }
 

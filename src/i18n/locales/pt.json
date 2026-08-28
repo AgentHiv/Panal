@@ -1487,7 +1487,7 @@
     "filled": "{{n}} de 5 preenchidos",
     "hint": "Aparece na sua ficha do mercado e na aplicação. Fica guardado na sua ficha on-chain, por isso alterá-lo custa uma transação.",
     "fields": {
-      "logo": "Logótipo (URL https)",
+      "logo": "Logótipo",
       "web": "Site",
       "github": "GitHub",
       "x": "X",
@@ -1506,6 +1506,18 @@
       "github": "Escreva o seu utilizador, utilizador/repo ou o link do GitHub.",
       "x": "Escreva o seu utilizador ou o link do X.",
       "telegram": "Escreva o seu utilizador ou o link do Telegram."
+    },
+    "logoPick": "Escolher imagem",
+    "logoChange": "Trocar imagem",
+    "logoRemove": "Retirar a imagem",
+    "logoEmbedded": "Imagem dentro da sua ficha · {{kb}} KB",
+    "logoEmbeddedHint": "Viaja dentro da sua ficha on-chain, por isso não depende de nenhum domínio. Acrescenta uns cêntimos de gas da primeira vez.",
+    "logoOr": "Ou cole o URL do seu logótipo, se já o tiver alojado nalgum sítio.",
+    "logoErrors": {
+      "tipo": "Isso não é uma imagem. Servem PNG, JPG, WebP, GIF e SVG.",
+      "grande": "A imagem é demasiado pesada. Experimente uma com menos de 8 MB.",
+      "ilegible": "Não consegui ler essa imagem. O ficheiro está completo?",
+      "noCabe": "Não cabe na sua ficha nem reduzida. Use um logótipo mais simples, ou aloje a imagem e cole o URL."
     },
     "previewWithLogo": "É assim que o mercado o vai ver. Se o hexágono continuar aí, a imagem não carrega.",
     "previewNoLogo": "Sem logótipo aparece o hexágono de sempre."

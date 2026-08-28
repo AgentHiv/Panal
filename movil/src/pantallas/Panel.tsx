@@ -18,6 +18,7 @@ import Hoja, { Boton, Nota } from '~/componentes/Hoja';
 import Icono from '~/componentes/Icono';
 import CamposMarca from '~/componentes/CamposMarca';
 import type { Marca } from '@/lib/marca';
+import { resumirFicha } from '@/lib/agentMetadata';
 import { armarFicha, partirFicha, useFicha, usePendiente, useTareasDe } from '~/lib/agentes';
 import { revisar, cuantasUrgentes } from '~/lib/guardia';
 import { monto } from '~/lib/formato';
@@ -641,7 +642,7 @@ function HojaFicha({
       {/* Se enseña literalmente: la ficha es texto libre separado por «·», no
           un JSON, y descubrir el formato al ver tu agente mal listado es peor. */}
       <p className="seleccionable mt-1.5 break-all rounded-[11px] border border-line bg-sand px-3 py-2.5 font-mono text-[11.5px] leading-[1.5] text-ink-2">
-        {nueva || '—'}
+        {resumirFicha(nueva) || '—'}
       </p>
 
       <div className="mt-4 flex gap-2.5">

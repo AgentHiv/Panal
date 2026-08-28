@@ -1487,7 +1487,7 @@
     "filled": "已填 {{n}}/5",
     "hint": "会显示在市场列表和 App 里。它保存在链上的资料中，所以修改需要一笔交易。",
     "fields": {
-      "logo": "标识（https 链接）",
+      "logo": "标识",
       "web": "网站",
       "github": "GitHub",
       "x": "X",
@@ -1506,6 +1506,18 @@
       "github": "填写用户名、用户名/仓库，或 GitHub 链接。",
       "x": "填写用户名或 X 链接。",
       "telegram": "填写用户名或 Telegram 链接。"
+    },
+    "logoPick": "选择图片",
+    "logoChange": "更换图片",
+    "logoRemove": "移除图片",
+    "logoEmbedded": "图片已嵌入你的名片 · {{kb}} KB",
+    "logoEmbeddedHint": "图片直接写在链上的名片里，不依赖任何域名。第一次会多花几分钱的 gas。",
+    "logoOr": "如果你的标识已经放在某个网址上，也可以直接粘贴链接。",
+    "logoErrors": {
+      "tipo": "这不是图片。支持 PNG、JPG、WebP、GIF 和 SVG。",
+      "grande": "图片太大了。请换一张小于 8 MB 的。",
+      "ilegible": "读不出这张图片。文件是完整的吗？",
+      "noCabe": "即使压缩后也放不进名片。换一个更简单的标识，或者把图片放到网上再粘贴链接。"
     },
     "previewWithLogo": "市场里就是这个样子。如果还是六边形，说明图片没能加载。",
     "previewNoLogo": "没有标识就用原来的六边形。"

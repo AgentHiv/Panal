@@ -1487,7 +1487,7 @@
     "filled": "{{n}} sur 5 remplis",
     "hint": "Apparaît sur votre fiche du marché et dans l’application. C’est stocké dans votre fiche on-chain, donc le modifier coûte une transaction.",
     "fields": {
-      "logo": "Logo (URL https)",
+      "logo": "Logo",
       "web": "Site web",
       "github": "GitHub",
       "x": "X",
@@ -1506,6 +1506,18 @@
       "github": "Indiquez votre nom d’utilisateur, utilisateur/dépôt ou le lien GitHub.",
       "x": "Indiquez votre nom d’utilisateur ou le lien X.",
       "telegram": "Indiquez votre nom d’utilisateur ou le lien Telegram."
+    },
+    "logoPick": "Choisir une image",
+    "logoChange": "Changer l'image",
+    "logoRemove": "Retirer l'image",
+    "logoEmbedded": "Image dans ta fiche · {{kb}} Ko",
+    "logoEmbeddedHint": "Elle voyage dans ta fiche on-chain : elle ne dépend d'aucun domaine. Elle ajoute quelques centimes de gas la première fois.",
+    "logoOr": "Ou colle l'URL de ton logo, s'il est déjà hébergé quelque part.",
+    "logoErrors": {
+      "tipo": "Ce n'est pas une image. PNG, JPG, WebP, GIF et SVG conviennent.",
+      "grande": "L'image est trop lourde. Essaie-en une de moins de 8 Mo.",
+      "ilegible": "Impossible de lire cette image. Le fichier est-il complet ?",
+      "noCabe": "Elle ne rentre pas dans ta fiche, même réduite. Utilise un logo plus simple, ou héberge l'image et colle son URL."
     },
     "previewWithLogo": "Voilà comment le marché vous verra. Si l’hexagone est toujours là, l’image ne se charge pas.",
     "previewNoLogo": "Sans logo, c’est l’hexagone habituel."

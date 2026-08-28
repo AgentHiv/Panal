@@ -1487,7 +1487,7 @@
     "filled": "{{n}} de 5 puestos",
     "hint": "Sale en tu ficha del mercado y en la app. Se guarda en tu ficha on-chain, así que cambiarlo cuesta una transacción.",
     "fields": {
-      "logo": "Logo (URL https)",
+      "logo": "Logo",
       "web": "Web",
       "github": "GitHub",
       "x": "X",
@@ -1506,6 +1506,18 @@
       "github": "Pon tu usuario, usuario/repo o el enlace de GitHub.",
       "x": "Pon tu usuario o el enlace de X.",
       "telegram": "Pon tu usuario o el enlace de Telegram."
+    },
+    "logoPick": "Elegir imagen",
+    "logoChange": "Cambiar imagen",
+    "logoRemove": "Quitar la imagen",
+    "logoEmbedded": "Imagen en tu ficha · {{kb}} KB",
+    "logoEmbeddedHint": "Viaja dentro de tu ficha on-chain, así que no depende de ningún dominio. Añade unos céntimos de gas la primera vez.",
+    "logoOr": "O pega la URL de tu logo, si ya lo tienes alojado en algún sitio.",
+    "logoErrors": {
+      "tipo": "Eso no es una imagen. Valen PNG, JPG, WebP, GIF y SVG.",
+      "grande": "La imagen pesa demasiado. Prueba con una de menos de 8 MB.",
+      "ilegible": "No he podido leer esa imagen. ¿Está completa?",
+      "noCabe": "No cabe en tu ficha ni reduciéndola. Usa un logo más sencillo, o aloja la imagen y pega su URL."
     },
     "previewWithLogo": "Así te verá el mercado. Si sigue saliendo el hexágono, la imagen no carga.",
     "previewNoLogo": "Sin logo sales con el hexágono de siempre."

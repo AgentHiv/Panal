@@ -22,6 +22,14 @@
  * es un agente peor pintado, es el que había hasta ahora. Cada creador pone lo
  * que quiere y deja vacío lo demás.
  *
+ * EL LOGO TIENE DOS FORMAS y las dos valen. Puede ser una URL —la imagen vive
+ * en tu dominio y la ficha solo dice dónde— o puede ser la imagen misma, en
+ * base64, dentro del token. La segunda existe porque la primera pide algo que
+ * mucha gente no tiene: un sitio https donde dejar un archivo. Con la imagen
+ * incrustada, quien se registra desde la web elige un PNG de su ordenador y
+ * ya está; y de paso el logo deja de depender de que un dominio siga vivo.
+ * El precio es el tamaño, y por eso hay un tope: ver `MAX_LOGO_DATA`.
+ *
  * ─────────────────────────────────────────────────────────────────────────
  * UN TOKEN SOLO CUENTA SI SU VALOR VALE, y eso no es celo: la descripción es
  * texto libre y alguien va a escribir «web: la mejor del mercado» dentro de
@@ -55,6 +63,74 @@ export const MARCA_VACIA: Marca = { logo: '', web: '', github: '', x: '', telegr
  * caracteres no es una URL, es un error de copiar y pegar.
  */
 export const MAX_VALOR = 120;
+
+/**
+ * Tope del logo cuando la imagen viaja DENTRO de la ficha, en caracteres.
+ *
+ * Un logo se podía poner de una sola forma: alojando la imagen en algún sitio
+ * https y pegando su URL. Eso deja fuera a quien no tiene dónde alojarla —que
+ * es casi todo el que se registra desde la web— y además ata la cara del
+ * agente a un dominio que puede caerse, cambiar de manos o servir otra cosa
+ * mañana. Una imagen pequeña cabe en la propia ficha, y ahí no se cae nadie.
+ *
+ * EL PRECIO ES REAL Y SE MIDIÓ. Escribir la ficha cuesta ~0,0155 MON; con
+ * 5 000 caracteres más sube a ~0,46 MON, que a 0,027 $/MON son 1,2 céntimos.
+ * Una vez, al registrarse. Ese es el techo que justifica el número: con el
+ * doble seguiría siendo barato, pero la ficha la leen el mercado entero y el
+ * indexador en cada vuelta, y eso sí se paga en cada carga y para siempre.
+ *
+ * Con 5 000 caracteres caben unos 3,6 KB de imagen: de sobra para un PNG o un
+ * WebP de 128×128, que es el tamaño al que se pinta un avatar (56 px en el
+ * mercado, el doble en pantallas densas).
+ */
+export const MAX_LOGO_DATA = 5000;
+
+/**
+ * Los formatos que se admiten DENTRO de la ficha. SVG no está, y su ausencia
+ * es la decisión de seguridad de este archivo.
+ *
+ * Un SVG es un documento, no una imagen: lleva `<script>`, `<foreignObject>` y
+ * referencias externas. Dentro de un `<img>` el navegador lo desactiva todo,
+ * así que aquí no pasaría nada — pero esta cadena la lee cualquiera, y basta
+ * un cliente que lo pinte con `<object>` o lo incruste en el DOM para que el
+ * agente decida qué código corre en la página de otro. No se puede pedir a
+ * todos los consumidores futuros que acierten; se puede no darles el problema.
+ *
+ * Quien tenga su logo en SVG no se queda fuera: el formulario lo acepta y lo
+ * rasteriza antes de guardarlo (`logoImagen.ts`). Lo que no viaja por la
+ * cadena es el documento.
+ */
+export const TIPOS_LOGO = ['png', 'webp', 'jpeg', 'gif'] as const;
+
+/** `data:image/webp;base64,…` — la única forma que se guarda incrustada. */
+const LOGO_INCRUSTADO = new RegExp(
+  `^data:image/(${TIPOS_LOGO.join('|')});base64,([A-Za-z0-9+/]+={0,2})$`,
+);
+
+/**
+ * ¿Es una imagen incrustada válida? Estricto a propósito.
+ *
+ * Se exige base64 —nada de `data:` con la carga en claro— porque el `,` y el
+ * `;` de un porcentaje-codificado son legales pero el espacio no, y un solo
+ * espacio parte la ficha por el separador. Con base64 el alfabeto no puede
+ * contener ni un espacio ni un «·», así que el token nunca puede romperla.
+ */
+export function esLogoIncrustado(valor: string): boolean {
+  if (valor.length > MAX_LOGO_DATA) return false;
+  const m = LOGO_INCRUSTADO.exec(valor);
+  const b64 = m?.[2];
+  if (!b64) return false;
+  // Un base64 que no es múltiplo de 4 no decodifica: sale una imagen rota que
+  // nadie puede arreglar porque está escrita en la cadena.
+  return b64.length >= 64 && b64.length % 4 === 0;
+}
+
+/** Cuánto ocupa la imagen de un logo incrustado, en bytes. 0 si no lo es. */
+export function bytesDeLogo(valor: string): number {
+  const b64 = LOGO_INCRUSTADO.exec(valor)?.[2];
+  if (!b64) return 0;
+  return Math.floor((b64.length * 3) / 4) - (b64.endsWith('==') ? 2 : b64.endsWith('=') ? 1 : 0);
+}
 
 /**
  * Una URL https, y solo https.
@@ -95,7 +171,8 @@ const DOMINIOS: Partial<Record<ClaveMarca, RegExp>> = {
  * enlace entero sería rechazar lo que da el botón «copiar» de la propia red.
  */
 export function normalizarMarca(clave: ClaveMarca, crudo: string): string {
-  const valor = crudo.trim().slice(0, MAX_VALOR);
+  const crudoSinBordes = crudo.trim();
+  const valor = crudoSinBordes.slice(0, MAX_VALOR);
   if (!valor) return '';
   // Un espacio o un «·» POR DENTRO invalida, no se borra. Borrarlos convertiría
   // «dos palabras» en el usuario `dospalabras`, que existe y no es el suyo: el
@@ -103,6 +180,13 @@ export function normalizarMarca(clave: ClaveMarca, crudo: string): string {
   // «·» separa los segmentos de la ficha, así que uno colado la partiría en dos.
   if (/[·\s]/.test(valor)) return '';
 
+  // El logo puede venir alojado (una URL) o incrustado (la imagen misma). Se
+  // mira antes de recortar a MAX_VALOR: una imagen incrustada mide miles de
+  // caracteres y el recorte la dejaría en un `data:` a medias, que es lo peor
+  // de los dos mundos —ocupa, se guarda y no se ve—.
+  if (clave === 'logo' && crudoSinBordes.startsWith('data:')) {
+    return esLogoIncrustado(crudoSinBordes) ? crudoSinBordes : '';
+  }
   if (clave === 'logo' || clave === 'web') return esHttps(valor) ? valor : '';
 
   // Un enlace pegado entero: se le quita el envoltorio y queda el usuario.
