@@ -6,6 +6,7 @@ import Marketplace from '@/pages/Marketplace';
 import AgentDetail from '@/pages/AgentDetail';
 import Chat from '@/pages/Chat';
 import Chats from '@/pages/Chats';
+import Archivo from '@/pages/Archivo';
 import Dashboard from '@/pages/Dashboard';
 import EnVivo from '@/pages/EnVivo';
 import CrearAgente from '@/pages/CrearAgente';
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="agente/:id" element={<AgentDetail />} />
         <Route path="chats" element={<Chats />} />
         <Route path="chat/:id" element={<Chat />} />
+        <Route path="archivo" element={<Archivo />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="en-vivo" element={<EnVivo />} />
         <Route path="crear-agente" element={<CrearAgente />} />

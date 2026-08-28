@@ -13,8 +13,8 @@ import {
 } from '@/lib/deliveredFiles';
 import type { DeliveredFile } from '@/lib/deliveredFiles';
 import { useAgente } from '~/lib/agente';
-import { armar, guardarEntrega } from '~/lib/expedientes';
-import type { Expediente as Expe } from '~/lib/expedientes';
+import { armar, guardarEntrega } from '@/lib/expedientes';
+import type { Expediente as Expe } from '@/lib/expedientes';
 import { aHtml, guardarArchivo, guardarCopia, nombreDe } from '~/lib/copia';
 import { monto } from '~/lib/formato';
 import Icono from '~/componentes/Icono';

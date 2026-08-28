@@ -31,6 +31,7 @@ import { buildResultUrl, cabecerasFirma, expiraEn, extractBotUrl, resultSignMess
 import { useWallet } from '@/hooks/useWallet';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { cn } from '@/lib/utils';
+import { guardarEntrega, leerEntrega } from '@/lib/expedientes';
 import {
   FileVerificationError,
   downloadDeliveredFile,
@@ -49,22 +50,41 @@ interface ResultPayload {
 }
 
 export default function ResultDialog({ task }: { task: RealTask }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { address } = useWallet();
   const { signMessageAsync } = useSignMessage();
 
-  const [phase, setPhase] = useState<Phase>('loadingAgent');
+  /**
+   * La copia de ESTE navegador, si la hay.
+   *
+   * Se lee en el inicializador y no en un efecto a propósito: así el texto ya
+   * está en el primer render y no hay un parpadeo de «firma para ver» delante
+   * de algo que ya se tiene. Y se vuelve a comprobar contra la cadena aquí, sin
+   * fiarse de que se comprobara al guardarla: el `resultHash` de esta tarea es
+   * el que manda, y una copia que no cuadre con él no vale como copia de nada.
+   */
+  const [copia] = useState(() => {
+    const g = leerEntrega(task.id.toString());
+    if (!g) return null;
+    return keccak256(toBytes(g.texto)).toLowerCase() === task.resultHash.toLowerCase() ? g : null;
+  });
+
+  const [phase, setPhase] = useState<Phase>(copia ? 'done' : 'loadingAgent');
   const [botUrl, setBotUrl] = useState<string | null>(null);
-  const [resultText, setResultText] = useState('');
-  const [verified, setVerified] = useState<boolean | null>(null);
+  const [resultText, setResultText] = useState(copia?.texto ?? '');
+  const [verified, setVerified] = useState<boolean | null>(copia ? true : null);
   const [reloadTick, setReloadTick] = useState(0);
   /** Archivos que anuncia la entrega, leídos del manifiesto del texto. */
-  const [files, setFiles] = useState<DeliveredFile[]>([]);
+  const [files, setFiles] = useState<DeliveredFile[]>(() =>
+    copia ? parseFilesManifest(copia.texto) : [],
+  );
   /**
    * La firma se guarda porque la MISMA abre el texto y todos los archivos. Sin
    * esto habría que pedirle al usuario una firma por cada PDF que se baje.
    */
   const [signature, setSignature] = useState<{ firma: string; expira: number } | null>(null);
+  /** Si lo que se ve salió del navegador y no del agente, ahora mismo. */
+  const [deCopia, setDeCopia] = useState(copia !== null);
   /** Estado de cada descarga, por nombre de archivo. */
   const [descargas, setDescargas] = useState<Record<string, 'bajando' | 'ok' | 'mismatch' | 'error'>>({});
 
@@ -75,8 +95,12 @@ export default function ResultDialog({ task }: { task: RealTask }) {
     // secuencia, no un estado derivado: lo que viene detrás es asíncrono y
     // tarda. Quitarlo dejaría el resultado de la tarea anterior en pantalla
     // mientras se lee la nueva.
+    //
+    // Con una copia delante NO se toca la fase: la URL del bot se sigue
+    // buscando —hace falta para bajar los archivos— pero por detrás, sin
+    // quitar de la pantalla el texto que ya se está leyendo.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPhase('loadingAgent');
+    if (!copia) setPhase('loadingAgent');
     (async () => {
       try {
         const agent = (await publicClient.readContract({
@@ -88,15 +112,35 @@ export default function ResultDialog({ task }: { task: RealTask }) {
         if (cancelled) return;
         const url = extractBotUrl(agent.metadataURI);
         setBotUrl(url);
-        setPhase(url ? 'ready' : 'noEndpoint');
+        if (!copia) setPhase(url ? 'ready' : 'noEndpoint');
       } catch {
-        if (!cancelled) setPhase('fetchError');
+        if (!cancelled && !copia) setPhase('fetchError');
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [task.worker, reloadTick]);
+  }, [task.worker, reloadTick, copia]);
+
+  /**
+   * La firma, pidiéndola solo si hace falta.
+   *
+   * La MISMA abre el texto y todos los archivos, así que se reutiliza mientras
+   * le quede vida. Esto existe porque con una copia guardada el texto se ve sin
+   * firmar nada, pero los archivos siguen viviendo en el agente: al pulsar
+   * «descargar» hay que pedirla ahí, y antes no había dónde.
+   */
+  const conFirma = async (): Promise<{ firma: string; expira: number }> => {
+    // Un margen de 10 s: una firma que caduca por el camino la rechaza el bot.
+    // El reloj se lee dentro de `expiraEn` y no aquí, que este cuerpo vive en
+    // el render y `Date.now()` suelto ahí no es puro.
+    if (signature && signature.expira > expiraEn(10)) return signature;
+    const expira = expiraEn();
+    const firma = await signMessageAsync({ message: resultSignMessage(task.id, expira) });
+    const nueva = { firma, expira };
+    setSignature(nueva);
+    return nueva;
+  };
 
   // 2+3. Firmar y descargar.
   const signAndFetch = async () => {
@@ -106,9 +150,7 @@ export default function ResultDialog({ task }: { task: RealTask }) {
       // La firma caduca, y la caducidad va dentro de lo firmado. Se guarda con
       // ella porque el agente la necesita para reconstruir el mensaje, y porque
       // la MISMA firma abre luego cada archivo de la entrega.
-      const expira = expiraEn();
-      const firma = await signMessageAsync({ message: resultSignMessage(task.id, expira) });
-      setSignature({ firma, expira });
+      const { firma, expira } = await conFirma();
       setPhase('fetching');
       const res = await fetch(buildResultUrl(botUrl, task.id), {
         headers: cabecerasFirma(address, firma, expira),
@@ -125,7 +167,13 @@ export default function ResultDialog({ task }: { task: RealTask }) {
       const text = typeof body.resultText === 'string' ? body.resultText : '';
       setResultText(text);
       // Verificación local contra el hash anclado on-chain (tupla tasks()).
-      setVerified(keccak256(toBytes(text)).toLowerCase() === task.resultHash.toLowerCase());
+      const cuadra = keccak256(toBytes(text)).toLowerCase() === task.resultHash.toLowerCase();
+      setVerified(cuadra);
+      // Y se guarda para la próxima vez. `guardarEntrega` vuelve a comprobar el
+      // hash y solo guarda si cuadra: una entrega que no cuadre con la cadena
+      // no se archiva como si fuera lo que se pagó.
+      guardarEntrega(task.id.toString(), text, task.resultHash);
+      setDeCopia(false);
       // Los archivos van anunciados DENTRO del texto, así que su hash queda
       // cubierto por el mismo resultHash que se acaba de comprobar arriba.
       setFiles(parseFilesManifest(text));
@@ -145,10 +193,12 @@ export default function ResultDialog({ task }: { task: RealTask }) {
    * entregó, y el cliente tiene con qué abrir una disputa.
    */
   const bajarArchivo = async (file: DeliveredFile) => {
-    if (!botUrl || !address || !signature) return;
+    if (!botUrl || !address) return;
     setDescargas((d) => ({ ...d, [file.name]: 'bajando' }));
     try {
-      const blob = await downloadDeliveredFile(file, botUrl, address, signature);
+      // Aquí puede pedirse la firma por primera vez: leyendo una copia guardada
+      // no ha hecho falta ninguna hasta ahora.
+      const blob = await downloadDeliveredFile(file, botUrl, address, await conFirma());
       const href = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = href;
@@ -284,6 +334,31 @@ export default function ResultDialog({ task }: { task: RealTask }) {
             {verified ? <BadgeCheck size={13} /> : <ShieldX size={13} />}
             {verified ? t('tasks.resultVerified') : t('tasks.resultMismatch')}
           </div>
+
+          {/* De dónde salió esto. Importa decirlo: una copia de este navegador
+              se lee aunque el agente haya apagado su bot, y por eso mismo puede
+              no ser lo último si el agente volvió a entregar. El botón vuelve a
+              pedírsela a él —solo si publica endpoint, claro—. */}
+          {deCopia && copia && (
+            <p className="text-[0.75rem] leading-snug text-ink-3">
+              {t('tasks.resultFromCopy', {
+                fecha: new Date(copia.guardada).toLocaleDateString(i18n.language, {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                }),
+              })}{' '}
+              {botUrl && (
+                <button
+                  type="button"
+                  onClick={() => void signAndFetch()}
+                  className="font-medium text-honey-deep underline underline-offset-2 hover:text-honey"
+                >
+                  {t('tasks.resultRefetch')}
+                </button>
+              )}
+            </p>
+          )}
         </>
       )}
     </div>

@@ -79,6 +79,21 @@ export function leerEntrega(taskId: string): Entrega | null {
   return leerEntregas()[taskId] ?? null;
 }
 
+/** El hash de un resultado que todavía no existe. */
+const HASH_CERO = `0x${'0'.repeat(64)}`;
+
+/**
+ * Si el agente llegó a entregar algo.
+ *
+ * Vive aquí y no en cada pantalla porque son DOS las que preguntan lo mismo
+ * —el archivo de la web y la tabla del dashboard— y tienen que contestar
+ * igual: si una considera que hay entrega y la otra no, en una sale el botón
+ * de ver el contenido y en la otra no, sin que falle nada.
+ */
+export function hayEntrega(resultHash: string): boolean {
+  return resultHash.toLowerCase() !== HASH_CERO;
+}
+
 /* ── el expediente ───────────────────────────────────────────────────────── */
 
 /** Un encargo tal y como lo necesita esta capa. Estructural, como `TareaCruda`. */

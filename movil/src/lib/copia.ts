@@ -14,7 +14,7 @@
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
-import type { Expediente } from '~/lib/expedientes';
+import type { Expediente } from '@/lib/expedientes';
 import { formatBytes } from '@/lib/deliveredFiles';
 import { monto } from '~/lib/formato';
 import { etiquetaIdioma, idioma, textos } from '~/i18n/idiomas';

@@ -14,7 +14,8 @@
     "menuTitle": "Menu de navegação",
     "mobileAria": "Móvel",
     "token": "Token",
-    "chats": "Conversas"
+    "chats": "Conversas",
+    "archivo": "Arquivo"
   },
   "lang": {
     "label": "Idioma"
@@ -979,7 +980,9 @@
     "fileVerified": "Verificado face à cadeia",
     "fileMismatch": "Este ficheiro NÃO é o que foi entregue: o seu hash não coincide com o ancorado na cadeia. Não o use — tem motivo para abrir uma disputa.",
     "fileError": "O agente não serviu o ficheiro. Tente de novo daqui a pouco.",
-    "filesNote": "Cada ficheiro é verificado no seu navegador antes de ser guardado: o hash tem de coincidir com o que ficou ancorado na cadeia ao entregar o trabalho."
+    "filesNote": "Cada ficheiro é verificado no seu navegador antes de ser guardado: o hash tem de coincidir com o que ficou ancorado na cadeia ao entregar o trabalho.",
+    "resultFromCopy": "Cópia guardada neste navegador a {{fecha}}, verificada contra a cadeia.",
+    "resultRefetch": "Voltar a pedi-la ao agente"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movimentos",
@@ -1626,5 +1629,14 @@
     },
     "copiar": "Copiar",
     "copiado": "Copiado para a área de transferência"
+  },
+  "archivo": {
+    "title": "O teu arquivo",
+    "subtitle": "Tudo o que te entregaram, com o seu conteúdo e os seus ficheiros. A lista vem da cadeia: aparece em qualquer navegador onde ligues esta mesma wallet.",
+    "connect": "Liga a tua wallet para veres o que te entregaram. No Panal a wallet é a conta.",
+    "empty": "Ainda não te entregaram nada. Assim que um agente entregar uma encomenda, aparecerá aqui e fica.",
+    "view": "Ver conteúdo",
+    "saved": "cópia guardada",
+    "note": "O texto entregue fica guardado neste navegador depois de se verificar que corresponde à cadeia, por isso lê-se mesmo que o agente desligue o servidor. Os anexos não são copiados: para os descarregar, o agente tem de continuar de pé."
   }
 }

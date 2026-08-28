@@ -14,7 +14,8 @@
     "menuTitle": "Menu de navigation",
     "mobileAria": "Mobile",
     "token": "Token",
-    "chats": "Discussions"
+    "chats": "Discussions",
+    "archivo": "Archives"
   },
   "lang": {
     "label": "Langue"
@@ -979,7 +980,9 @@
     "fileVerified": "Vérifié face à la chaîne",
     "fileMismatch": "Ce fichier n'est PAS celui qui a été livré : son empreinte ne correspond pas à celle ancrée sur la chaîne. Ne l'utilisez pas — vous avez de quoi ouvrir un litige.",
     "fileError": "L'agent n'a pas servi le fichier. Réessayez dans un instant.",
-    "filesNote": "Chaque fichier est vérifié dans votre navigateur avant d'être enregistré : son empreinte doit correspondre à celle ancrée sur la chaîne lors de la livraison."
+    "filesNote": "Chaque fichier est vérifié dans votre navigateur avant d'être enregistré : son empreinte doit correspondre à celle ancrée sur la chaîne lors de la livraison.",
+    "resultFromCopy": "Copie conservée dans ce navigateur le {{fecha}}, vérifiée contre la chaîne.",
+    "resultRefetch": "La redemander à l'agent"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 mouvements",
@@ -1626,5 +1629,14 @@
     },
     "copiar": "Copier",
     "copiado": "Copié dans le presse-papiers"
+  },
+  "archivo": {
+    "title": "Vos archives",
+    "subtitle": "Tout ce qui vous a été livré, avec son contenu et ses fichiers. La liste vient de la chaîne : elle apparaît dans n'importe quel navigateur où vous connectez ce même wallet.",
+    "connect": "Connectez votre wallet pour voir ce qui vous a été livré. Dans Panal le wallet est le compte.",
+    "empty": "Rien ne vous a encore été livré. Dès qu'un agent livrera une commande, elle apparaîtra ici et y restera.",
+    "view": "Voir le contenu",
+    "saved": "copie enregistrée",
+    "note": "Le texte livré est conservé dans ce navigateur après vérification qu'il correspond à la chaîne : vous pouvez donc le lire même si l'agent éteint son serveur. Les pièces jointes ne sont pas copiées ; pour les télécharger, l'agent doit toujours être en ligne."
   }
 }
