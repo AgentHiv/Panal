@@ -62,8 +62,17 @@ export default function Agente(): React.ReactElement {
         </button>
       </header>
 
+      {/* `shrink-0` en TODOS los hijos. En una columna flex encogen antes de que
+          el contenedor se decida a desplazarse, y `min-height: auto` solo los
+          protege mientras `overflow` sea `visible` — las dos tarjetas de aquí
+          llevan `overflow-hidden` para redondear las esquinas, así que no las
+          protege nada. Medido en 360x640 con enlaces: la tarjeta de precios se
+          quedaba en 16 px de los 128 que ocupa, o sea «Hablar» cortado por la
+          mitad y «Encargar» sin llegar a verse, y la pantalla no se movía
+          porque scrollHeight y clientHeight coincidían. Se notaba al añadir los
+          enlaces porque son 80 px más, pero el fallo estaba desde antes. */}
       <div className="flex min-h-0 grow flex-col gap-3.5 overflow-y-auto px-[18px] pb-4">
-        <div className="flex items-center gap-3.5">
+        <div className="flex shrink-0 items-center gap-3.5">
           <Hexagono
             semilla={direccion}
             inicial={(agente?.name ?? datos?.nombre ?? 'A').slice(0, 1)}
@@ -84,7 +93,7 @@ export default function Agente(): React.ReactElement {
         {agente && <OrigenDelNombre agente={agente} T={T} />}
 
         {agente && (
-          <div className="flex divide-x divide-line overflow-hidden rounded-[14px] border border-line">
+          <div className="flex shrink-0 divide-x divide-line overflow-hidden rounded-[14px] border border-line">
             <Dato valor={String(agente.tasksCompleted)} pie={T.agente.tareasCompletadas} />
             <Dato
               valor={agente.reviews > 0 ? agente.rating.toFixed(1) : '—'}
@@ -101,7 +110,9 @@ export default function Agente(): React.ReactElement {
         )}
 
         {agente?.tagline && (
-          <p className="seleccionable text-[14px] leading-[1.55] text-ink-2">{agente.tagline}</p>
+          <p className="seleccionable shrink-0 text-[14px] leading-[1.55] text-ink-2">
+            {agente.tagline}
+          </p>
         )}
 
         {/*
@@ -114,7 +125,7 @@ export default function Agente(): React.ReactElement {
           guarda un llavero, y no tiene por qué enseñar dentro páginas de nadie.
         */}
         {enlaces.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
             {enlaces.map(({ clave, url, rotulo }) => (
               <a
                 key={clave}
@@ -132,7 +143,7 @@ export default function Agente(): React.ReactElement {
           </div>
         )}
 
-        <div className="divide-y divide-line overflow-hidden rounded-[14px] border border-line">
+        <div className="shrink-0 divide-y divide-line overflow-hidden rounded-[14px] border border-line">
           <Precio
             titulo={T.agente.hablar}
             pie={T.agente.hablarPie}
@@ -158,7 +169,7 @@ export default function Agente(): React.ReactElement {
         </div>
 
         {loading && !agente && (
-          <p className="pt-4 text-center text-[13px] text-ink-3">{T.agente.buscando}</p>
+          <p className="shrink-0 pt-4 text-center text-[13px] text-ink-3">{T.agente.buscando}</p>
         )}
       </div>
 
@@ -211,7 +222,7 @@ function Verificacion({ agente, T }: { agente: OnchainAgent; T: Textos }): React
   }[agente.verification];
 
   return (
-    <div className={`rounded-[14px] border px-3.5 py-3 ${caso.borde} ${caso.fondo}`}>
+    <div className={`shrink-0 rounded-[14px] border px-3.5 py-3 ${caso.borde} ${caso.fondo}`}>
       <p className={`text-[13.5px] font-semibold ${caso.color}`}>{caso.titulo}</p>
       <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-2">{caso.texto}</p>
     </div>
@@ -247,7 +258,7 @@ function OrigenDelNombre({
     : T.agente.nombreOrigen(T.agente.origenes[n.origen], dias);
 
   return (
-    <div className="flex items-start gap-2.5">
+    <div className="flex shrink-0 items-start gap-2.5">
       <Icono
         nombre="hexagono"
         tamano={15}
