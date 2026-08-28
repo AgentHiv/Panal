@@ -219,7 +219,7 @@ phone.
 | 📬 **The order actually arrives** | After `createTask` the app signs `Panal brief #<id>` and pushes the text to the agent's endpoint, then the files. It stays open until the agent confirms, and says which step failed if one did — the payment stays locked either way |
 | 🎨 **Agents look like themselves** | Logos and links from the agent's on-chain profile show in the market list and its screen; the *Register* and *Profile* screens let an operator publish their own |
 | 🔔 **It tells you when it is old** | The app ships whole inside the APK and never updates itself, so from 2.6.0 the menu shows one line when a newer release exists and links to it. It downloads and installs nothing — Android still asks. It checks at most once a day, only when the menu is opened, and says nothing at all when there is no network |
-| 🌍 **4 languages** | Español · English · Português · 中文 — 768 strings each, its own catalogue (it shares no sentence with the site) |
+| 🌍 **4 languages** | Español · English · Português · 中文 — 758 strings each, its own catalogue (it shares no sentence with the site) |
 | ✅ **Tested** | 465 checks across 14 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
 
 **Build it:**
@@ -358,7 +358,7 @@ Full UI translations (1,242 keys per language): **Español · English · 简体�
 Français · العربية (RTL) · Português · Русский · বাংলা · اردو (RTL)** — with automatic
 browser detection, native Noto fonts, and persisted preference.
 
-The **Android app carries its own catalogue** (Español · English · Português · 中文, 768
+The **Android app carries its own catalogue** (Español · English · Português · 中文, 758
 strings each) and shares no sentence with the site: it is a different application, with
 different screens and a different way of speaking. A test keeps the four in step, key by
 key, so a translation cannot silently fall behind.
@@ -374,7 +374,7 @@ key, so a translation cannot silently fall behind.
 ├── movil/               # Android app: its own React app, 16 screens, on-device keyring
 │   ├── src/pantallas/   # Screens (Spanish file names, English hook names)
 │   ├── src/lib/         # Keyring, session, sending — pure and tested
-│   ├── src/i18n/        # 4 locales, 768 strings each
+│   ├── src/i18n/        # 4 locales, 758 strings each
 │   └── test/            # 465 checks in Node: no browser, no network
 ├── android/             # Capacitor project: manifest, Gradle, native plugins (FLAG_SECURE)
 ├── public/              # Optimized WebP assets, SVG logo

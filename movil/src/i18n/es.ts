@@ -263,7 +263,6 @@ export const es = {
     porEncargo: 'encargo',
     sinPrecio: 'sin precio de encargo',
     tareas: (n: number) => `· ${n} ${n === 1 ? 'tarea' : 'tareas'}`,
-    sinValoraciones: '· sin valoraciones',
   },
 
   archivo: {

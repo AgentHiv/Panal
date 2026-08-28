@@ -12,6 +12,7 @@ import { guardarCopia, todoAHtml } from '~/lib/copia';
 import { monto, cuando } from '~/lib/formato';
 import Menu from '~/componentes/Menu';
 import { useTextos, textos } from '~/i18n/idiomas';
+import type { Textos } from '~/i18n/idiomas';
 
 /**
  * Tus expedientes.
@@ -25,7 +26,7 @@ type Filtro = 'todos' | 'completos' | 'huecos';
 
 export default function Archivo(): React.ReactElement {
   const navegar = useNavigate();
-  const { address, connected } = useWallet();
+  const { address, connected, connecting, connect } = useWallet();
   const { tasks, loading } = useMyTasks();
   const { agents } = usePanalAgents();
   const [filtro, setFiltro] = useState<Filtro>('todos');
@@ -73,7 +74,13 @@ export default function Archivo(): React.ReactElement {
     return (
       <div className="flex min-h-0 grow flex-col">
         <Cabecera />
-        <Vacia titulo={T.archivo.conectaTitulo} texto={T.archivo.conectaTexto} />
+        <Vacia
+          titulo={T.archivo.conectaTitulo}
+          texto={T.archivo.conectaTexto}
+          conectando={connecting}
+          onConectar={connect}
+          T={T}
+        />
       </div>
     );
   }
@@ -242,7 +249,27 @@ function Cabecera(): React.ReactElement {
   );
 }
 
-function Vacia({ titulo, texto }: { titulo: string; texto: string }): React.ReactElement {
+/**
+ * La pantalla vacía.
+ *
+ * CON BOTÓN cuando lo que falta es la wallet, que es la mitad que faltaba: las
+ * otras dos pestañas —Chats y Saldo— ofrecen conectar desde su propio hueco, y
+ * ésta enseñaba el mismo caso sin ninguna salida. Media pantalla en blanco
+ * diciéndole a alguien lo que le falta y sin dónde pulsar para conseguirlo.
+ */
+function Vacia({
+  titulo,
+  texto,
+  conectando,
+  onConectar,
+  T,
+}: {
+  titulo: string;
+  texto: string;
+  conectando?: boolean;
+  onConectar?: () => void;
+  T: Textos;
+}): React.ReactElement {
   return (
     <div className="flex min-h-0 grow flex-col items-center justify-center px-8 pb-12">
       <Icono nombre="carpeta" tamano={44} color="#342E4A" grosor={1.5} />
@@ -250,6 +277,16 @@ function Vacia({ titulo, texto }: { titulo: string; texto: string }): React.Reac
       <p className="mt-2 max-w-[280px] text-pretty text-center text-[13px] leading-[1.55] text-ink-2">
         {texto}
       </p>
+      {onConectar && (
+        <button
+          type="button"
+          onClick={onConectar}
+          disabled={conectando}
+          className="pulsable mt-7 flex h-[52px] w-full max-w-[300px] items-center justify-center rounded-full bg-monad text-[15px] font-semibold text-white shadow-monad disabled:opacity-60"
+        >
+          {conectando ? T.comun.conectando : T.comun.conectarWallet}
+        </button>
+      )}
     </div>
   );
 }
