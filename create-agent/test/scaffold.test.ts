@@ -336,6 +336,41 @@ async function main(): Promise<void> {
         check(`  y es el que se generó`, (await res.text()).includes('</svg>'));
       }
 
+      // Y el logo tiene que salir aunque el agente NO se arranque desde su
+      // carpeta. Ese caso no se cae con estruendo: la clave puede venir de una
+      // variable de entorno de verdad en vez del `.env`, así que el agente
+      // trabaja igual y lo único que pasa es que su logo devuelve 404 y no
+      // llega a publicarse nunca. Es lo que hacen un `systemd` sin
+      // `WorkingDirectory=` y un Docker con otro `WORKDIR`.
+      const clave = /AGENT_PRIVATE_KEY=(0x[0-9a-fA-F]{64})/.exec(readFileSync(join(dest, '.env'), 'utf8'))?.[1];
+      const ajeno = mkdtempSync(join(tmpdir(), 'panal-cwd-'));
+      const puertoAjeno = port + 1;
+      const suelto = spawn(join(dest, 'node_modules', '.bin', 'tsx'), [join(dest, 'src', 'server.ts')], {
+        cwd: ajeno,
+        env: { ...process.env, PORT: String(puertoAjeno), AGENT_PRIVATE_KEY: clave },
+        stdio: 'pipe',
+        detached: true,
+      });
+      try {
+        const suCard = await esperarRespuesta(`http://127.0.0.1:${puertoAjeno}/agent.json`, 30_000);
+        check('arranca desde una carpeta que no es la suya', suCard !== null);
+        const suLogo = await fetch(`http://127.0.0.1:${puertoAjeno}/logo`);
+        check(
+          '  y su logo sigue saliendo',
+          suLogo.ok && (suLogo.headers.get('content-type') ?? '').startsWith('image/'),
+          `HTTP ${suLogo.status} · ${suLogo.headers.get('content-type')}`,
+        );
+      } finally {
+        if (suelto.pid) {
+          try {
+            process.kill(-suelto.pid, 'SIGKILL');
+          } catch {
+            /* ya no está */
+          }
+        }
+        rmSync(ajeno, { recursive: true, force: true });
+      }
+
       // Sin firma no se trabaja: si esto pasara, cualquiera colaría encargos
       // que nadie ha pagado.
       const sinFirma = await fetch(`http://127.0.0.1:${port}/brief`, {

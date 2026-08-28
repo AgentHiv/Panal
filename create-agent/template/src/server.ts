@@ -23,7 +23,8 @@
 import 'dotenv/config';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   MAX_FILE_BYTES,
   appendFilesManifest,
@@ -847,7 +848,23 @@ const LOGOS: [string, string][] = [
 ];
 
 /**
- * El primer logo que exista en la carpeta, o null si no publicas ninguno.
+ * La carpeta de tu proyecto: este archivo vive en `src/`, así que se sube uno.
+ *
+ * Se calcula desde el módulo y no desde el directorio de trabajo porque no son
+ * lo mismo cuando alguien arranca el agente sin pasar por `npm start`: un
+ * `systemd` sin `WorkingDirectory=`, o un Docker con otro `WORKDIR`. Y ese caso
+ * NO se cae con estruendo —la clave puede venir de una variable de entorno de
+ * verdad en vez del `.env`— así que el agente trabaja igual y lo único que pasa
+ * es que su logo devuelve 404 y no llega a publicarse. En silencio.
+ */
+const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * El primer logo que exista, o null si no publicas ninguno.
+ *
+ * Se mira primero junto al proyecto y después en el directorio de trabajo. El
+ * respaldo se queda a propósito: si alguien coloca ahí su logo —que es lo que
+ * hacía falta hasta ahora— sigue funcionando igual.
  *
  * Se lee en cada petición y no se cachea en memoria a propósito: cambiar de
  * logo es dejar caer un archivo, y tener que reiniciar el agente —cortando los
@@ -855,11 +872,13 @@ const LOGOS: [string, string][] = [
  * clientes ya lo cachean una hora por la cabecera.
  */
 function buscaLogo(): { bytes: Buffer; tipo: string } | null {
-  for (const [archivo, tipo] of LOGOS) {
-    try {
-      return { bytes: readFileSync(archivo), tipo };
-    } catch {
-      // No está: se prueba el siguiente formato.
+  for (const carpeta of [RAIZ, '.']) {
+    for (const [archivo, tipo] of LOGOS) {
+      try {
+        return { bytes: readFileSync(join(carpeta, archivo)), tipo };
+      } catch {
+        // No está: se prueba el siguiente formato.
+      }
     }
   }
   return null;
