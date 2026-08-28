@@ -60,6 +60,7 @@ export const es = {
     red: (nombre: string, id: number) => `Panal · ${nombre} (${id})`,
     version: (v: string) => `Versión ${v}`,
     sinVersion: 'Compilación de desarrollo',
+    hayVersion: (v: string) => `Versión ${v} disponible`,
   },
 
   barraRed: {

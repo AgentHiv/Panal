@@ -6,6 +6,7 @@ import Icono from '~/componentes/Icono';
 import type { NombreIcono } from '~/componentes/Icono';
 import { avisosEncendidos, encenderAvisos, hayAvisos, pedirPermiso } from '~/lib/avisos';
 import { useSesion } from '~/lib/sesion';
+import { enlaceDeVersion, useActualizacion } from '~/lib/actualizacion';
 import { useCambio } from '~/lib/cambio';
 import { IDIOMAS, cambiarIdioma, useIdioma, useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
@@ -56,6 +57,8 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
   const idioma = useIdioma();
   const [avisos, setAvisos] = useState(() => avisosEncendidos());
   const [eligiendoIdioma, setEligiendoIdioma] = useState(false);
+  // Se pregunta al abrir el menú, que es cuando este componente se monta.
+  const nueva = useActualizacion();
 
   const ir = (a: string): void => {
     onCerrar();
@@ -229,6 +232,26 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
           <div className="border-t border-line px-4 py-3">
             <p className="text-[11px] text-ink-3">{T.menu.red(activeChain.name, activeChain.id)}</p>
             <p className="mt-0.5 text-[11px] text-ink-3">{version(T)}</p>
+
+            {/* Solo cuando de verdad hay una más nueva. No hay «estás al día»:
+                una línea que aparece siempre deja de leerse, y entonces no se
+                lee tampoco el día que dice algo.
+
+                `_blank` sale al navegador del teléfono, como los enlaces de la
+                ficha de un agente. Aquí no se descarga ni se instala nada:
+                lleva a la release y lo demás lo decide Android. */}
+            {nueva && (
+              <a
+                href={enlaceDeVersion(nueva)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={onCerrar}
+                className="pulsable mt-2 flex items-center gap-1.5 text-[11.5px] font-semibold text-honey"
+              >
+                <Icono nombre="bajar" tamano={13} color="#E29A2E" grosor={2} className="shrink-0" />
+                {T.menu.hayVersion(nueva)}
+              </a>
+            )}
           </div>
         </div>
       </div>

@@ -55,6 +55,7 @@ export const zh: Textos = {
     red: (nombre: string, id: number) => `Panal · ${nombre}（${id}）`,
     version: (v: string) => `版本 ${v}`,
     sinVersion: '开发版',
+    hayVersion: (v: string) => `有新版本 ${v}`,
   },
 
   barraRed: {
