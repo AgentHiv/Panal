@@ -70,9 +70,9 @@ jobs:
           # traen los runners y la que usa Android Studio hoy.
           java-version: '21'
 
+      # Sin `version:` a propósito: la lee del campo `packageManager` de la
+      # raíz. Poner las dos hace fallar la acción si no coinciden al dígito.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:

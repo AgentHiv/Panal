@@ -61,9 +61,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Sin `version:` a propósito: la lee del campo `packageManager` de la
+      # raíz. Poner las dos hace fallar la acción si no coinciden al dígito.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
@@ -108,9 +108,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Sin `version:` a propósito: la lee del campo `packageManager` de la
+      # raíz. Poner las dos hace fallar la acción si no coinciden al dígito.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
@@ -150,9 +150,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Sin `version:` a propósito: la lee del campo `packageManager` de la
+      # raíz. Poner las dos hace fallar la acción si no coinciden al dígito.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
@@ -183,9 +183,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Sin `version:` a propósito: la lee del campo `packageManager` de la
+      # raíz. Poner las dos hace fallar la acción si no coinciden al dígito.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
@@ -231,9 +231,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Sin `version:` a propósito: la lee del campo `packageManager` de la
+      # raíz. Poner las dos hace fallar la acción si no coinciden al dígito.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
@@ -289,9 +289,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Sin `version:` a propósito: la lee del campo `packageManager` de la
+      # raíz. Poner las dos hace fallar la acción si no coinciden al dígito.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
