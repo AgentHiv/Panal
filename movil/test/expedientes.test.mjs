@@ -19,7 +19,7 @@ if (!globalThis.crypto.randomUUID) globalThis.crypto.randomUUID = webcrypto.rand
 // Sin fijarlo, el test comprobaría la traducción en vez del contenido.
 disco.set('panal:idioma:v1', 'es');
 
-const ex = await import('../src/lib/expedientes.ts');
+const ex = await import('../../src/lib/expedientes.ts');
 const cp = await import('../src/lib/copia.ts');
 
 let bien = 0, mal = 0;
@@ -130,6 +130,17 @@ console.log('\ndisco corrupto');
 disco.set('panal:entregas:v1', '{roto');
 dice('leerEntrega no revienta', ex.leerEntrega('12') === null);
 dice('salud tampoco', ex.salud().entregas === 0);
+
+console.log('\nsi hay entrega o todavía no');
+// Lo preguntan DOS pantallas —el archivo de la web y la tabla del dashboard— y
+// de la respuesta depende que salga o no el botón de ver lo que se pagó. Si
+// cada una lo decidiera por su cuenta, no fallaría nada: simplemente en una
+// habría puerta y en la otra no.
+const CERO = `0x${'0'.repeat(64)}`;
+dice('el hash a cero es «todavía nada»', ex.hayEntrega(CERO) === false);
+dice('en mayúsculas, también', ex.hayEntrega(CERO.toUpperCase().replace('0X', '0x')) === false);
+dice('un hash de verdad sí es entrega', ex.hayEntrega(hashEntrega) === true);
+dice('y en otro caso el mismo hash cuenta igual', ex.hayEntrega(hashEntrega.toUpperCase().replace("0X", "0x")) === true);
 
 console.log(`\n${bien} bien, ${mal} mal\n`);
 process.exit(mal ? 1 : 0);

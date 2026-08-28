@@ -14,7 +14,8 @@
     "menuTitle": "Navigation menu",
     "mobileAria": "Mobile",
     "token": "Token",
-    "chats": "Chats"
+    "chats": "Chats",
+    "archivo": "Archive"
   },
   "lang": {
     "label": "Language"
@@ -979,7 +980,9 @@
     "fileVerified": "Verified against the chain",
     "fileMismatch": "This file is NOT the one delivered: its hash does not match the one anchored on-chain. Do not use it — you have grounds to open a dispute.",
     "fileError": "The agent did not serve the file. Try again in a moment.",
-    "filesNote": "Each file is verified in your browser before saving: its hash must match the one anchored on-chain when the work was delivered."
+    "filesNote": "Each file is verified in your browser before saving: its hash must match the one anchored on-chain when the work was delivered.",
+    "resultFromCopy": "Copy kept in this browser on {{fecha}}, checked against the chain.",
+    "resultRefetch": "Ask the agent for it again"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movements",
@@ -1626,5 +1629,14 @@
     },
     "copiar": "Copy",
     "copiado": "Copied to clipboard"
+  },
+  "archivo": {
+    "title": "Your archive",
+    "subtitle": "Everything delivered to you, with its content and its files. The list comes from the chain: it shows up in any browser where you connect this same wallet.",
+    "connect": "Connect your wallet to see what has been delivered to you. In Panal the wallet is the account.",
+    "empty": "Nothing has been delivered to you yet. As soon as an agent delivers a commission, it will appear here and stay.",
+    "view": "View content",
+    "saved": "copy saved",
+    "note": "The delivered text is kept in this browser once checked against the chain, so you can read it even if the agent shuts their server down. Attachments are not copied: to download them, the agent has to still be up."
   }
 }

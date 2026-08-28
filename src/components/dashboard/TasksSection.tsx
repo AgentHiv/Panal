@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { useWallet } from '@/hooks/useWallet';
 import { useAhora } from '@/hooks/useAhora';
 import { getTaskBrief } from '@/lib/taskBriefs';
+import { hayEntrega } from '@/lib/expedientes';
 import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
@@ -42,7 +43,6 @@ import type { Perspective } from './data';
 import { formatMonEs } from './data';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-
 const STATUS_META: Record<number, { label: string; className: string; pulse?: boolean }> = {
   [TASK_STATUS.Open]: { label: 'tasks.status.open', className: 'bg-honey-soft text-honey-deep' },
   [TASK_STATUS.Delivered]: { label: 'tasks.status.entregada', className: 'bg-olive/10 text-olive', pulse: true },
@@ -231,8 +231,17 @@ export default function TasksSection({ perspective }: { perspective: Perspective
         out.push({ kind: 'deliver', label: t('tasks.deliver'), className: 'bg-honey text-[#1B1814] hover:bg-honey-deep' });
       }
     } else {
-      if (task.status === TASK_STATUS.Delivered) {
+      // «Ver resultado» EN CUANTO HAY ENTREGA, y ya para siempre.
+      //
+      // Antes solo salía mientras la tarea estuviera en Delivered, así que
+      // aprobar —o sea, pagar— era justo lo que te dejaba sin forma de volver a
+      // lo que acababas de comprar. El contenido no se iba a ninguna parte: el
+      // bot del agente no mira el estado, solo la firma del cliente. Era la web
+      // la que dejaba de ofrecerlo.
+      if (hayEntrega(task.resultHash)) {
         out.push({ kind: 'result', label: t('tasks.viewResult'), className: 'border border-honey text-honey-deep hover:bg-honey-soft' });
+      }
+      if (task.status === TASK_STATUS.Delivered) {
         out.push({ kind: 'approve', label: t('tasks.approve'), className: 'bg-olive text-paper hover:opacity-85' });
         out.push({ kind: 'dispute', label: t('tasks.openDispute'), className: 'border border-terra/30 text-terra hover:bg-terra/10' });
         const canAuto =
@@ -423,7 +432,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
               <Loader2 size={18} className="animate-spin" /> {t('tasks.loading')}
             </div>
           ) : completed.length > 0 ? (
-            renderTable(completed, false)
+            renderTable(completed, true)
           ) : (
             <EmptyTab title={t('tasks.noCompleted')} desc={t('tasks.noCompletedDesc')} />
           )}
@@ -435,7 +444,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
               <Loader2 size={18} className="animate-spin" /> {t('tasks.loading')}
             </div>
           ) : disputed.length > 0 ? (
-            renderTable(disputed, false)
+            renderTable(disputed, true)
           ) : (
             <EmptyTab title={t('tasks.noDisputes')} desc={t('tasks.noDisputesDesc')} />
           )}
@@ -453,7 +462,9 @@ export default function TasksSection({ perspective }: { perspective: Perspective
               </DialogHeader>
 
               {dialog.kind === 'result' ? (
-                <ResultDialog task={dialog.task} />
+                // `key`: el visor lee su copia guardada en el inicializador
+                // del estado, así que tiene que remontarse al cambiar de tarea.
+                <ResultDialog key={dialog.task.id.toString()} task={dialog.task} />
               ) : action.busy || action.txHash ? (
                 <TxProgress action={action} onClose={closeDialog} />
               ) : (

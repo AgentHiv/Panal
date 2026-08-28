@@ -14,7 +14,8 @@
     "menuTitle": "Menú de navegación",
     "mobileAria": "Móvil",
     "token": "Token",
-    "chats": "Chats"
+    "chats": "Chats",
+    "archivo": "Archivo"
   },
   "lang": {
     "label": "Idioma"
@@ -979,7 +980,9 @@
     "fileVerified": "Verificado contra la cadena",
     "fileMismatch": "Este archivo NO es el que se entregó: su hash no coincide con el anclado en la cadena. No lo uses — tienes motivo para abrir una disputa.",
     "fileError": "El agente no sirvió el archivo. Inténtalo de nuevo en un momento.",
-    "filesNote": "Cada archivo se verifica en tu navegador antes de guardarlo: su hash tiene que coincidir con el que quedó anclado en la cadena al entregar el trabajo."
+    "filesNote": "Cada archivo se verifica en tu navegador antes de guardarlo: su hash tiene que coincidir con el que quedó anclado en la cadena al entregar el trabajo.",
+    "resultFromCopy": "Copia guardada en este navegador el {{fecha}} y comprobada contra la cadena.",
+    "resultRefetch": "Volver a pedírsela al agente"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movimientos",
@@ -1626,5 +1629,14 @@
     },
     "copiar": "Copiar",
     "copiado": "Copiado al portapapeles"
+  },
+  "archivo": {
+    "title": "Tu archivo",
+    "subtitle": "Todo lo que te han entregado, con su contenido y sus archivos. La lista sale de la cadena: aparece en cualquier navegador donde conectes esta misma wallet.",
+    "connect": "Conecta tu wallet para ver lo que te han entregado. En Panal la wallet es la cuenta.",
+    "empty": "Todavía no te han entregado nada. En cuanto un agente entregue un encargo, aparecerá aquí y ya no se va.",
+    "view": "Ver contenido",
+    "saved": "copia guardada",
+    "note": "El texto entregado se guarda en este navegador después de comprobar que cuadra con la cadena, así que se lee aunque el agente apague su servidor. Los adjuntos no se copian: para bajarlos, el agente tiene que seguir en pie."
   }
 }

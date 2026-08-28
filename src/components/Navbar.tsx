@@ -14,6 +14,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 const NAV_LINKS = [
   { to: '/mercado', key: 'nav.market' },
   { to: '/chats', key: 'nav.chats' },
+  { to: '/archivo', key: 'nav.archivo' },
   { to: '/en-vivo', key: 'nav.live', live: true },
   { to: '/protocolo', key: 'nav.protocol' },
   { to: '/token', key: 'nav.token' },
@@ -49,7 +50,12 @@ export default function Navbar() {
         </Link>
 
         {/* Centro: navegación (desktop) */}
-        <nav className="hidden items-center gap-8 lg:flex" aria-label="Principal">
+        {/* `gap-4` hasta `xl` y 8 a partir de ahí, y no por gusto: con el
+            séptimo enlace, a 1024 px —justo donde esta barra aparece— el
+            wordmark y «Marketplace» se solapaban 12 px. Con seis quedaban 10
+            de margen, así que ya iba justo. Apretar solo este tramo lo arregla
+            sin esconder la navegación en un menú a partir de 1024. */}
+        <nav className="hidden items-center gap-4 lg:flex xl:gap-8" aria-label="Principal">
           {NAV_LINKS.map((link) => (
             <NavLink
               key={link.to}
