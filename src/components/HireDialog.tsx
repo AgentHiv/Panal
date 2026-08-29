@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ExternalLink, Loader2, Paperclip, Timer, TriangleAlert, X } from 'lucide-react';
 import { useSignMessage, useSwitchChain, useWriteContract } from 'wagmi';
 import { formatEther, keccak256, parseEventLogs, toBytes } from 'viem';
-import { leerNivelesDeMetadata, type Nivel } from '@panal/sdk';
+import { conTextoDeLaFicha, leerNivelesDeMetadata, type Nivel } from '@panal/sdk';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { saveTaskBrief } from '@/lib/taskBriefs';
 import {
@@ -215,7 +215,7 @@ function HireWizard({
         const botUrl = extractBotUrl(meta.metadataURI);
         if (vigente) botUrlRef.current = botUrl;
         /**
-         * Los niveles escritos en la CADENA mandan sobre los de la tarjeta.
+         * El precio de la CADENA, el texto de la tarjeta.
          *
          * No es un capricho de precedencia: son los únicos que siguen ahí con
          * el bot caído. Si mandara la tarjeta, un agente que no contesta se
@@ -233,7 +233,9 @@ function HireWizard({
         if (!vigente) return;
         setAceptaAdjuntos(caps.adjuntos ? 'si' : 'no');
         if (caps.maxAdjuntoBytes) setTopeAdjunto(Math.min(caps.maxAdjuntoBytes, MAX_ADJUNTO_BYTES));
-        const suyos = enCadena.length > 0 ? enCadena : caps.niveles;
+        // El precio de la cadena con el texto —traducido— de la ficha.
+        const suyos =
+          enCadena.length > 0 ? conTextoDeLaFicha(enCadena, caps.niveles) : caps.niveles;
         setNiveles(suyos);
         // Si se entró por el botón grande no hay nivel elegido, y el que toca
         // por defecto es el más barato: debería costar lo que el agente tiene

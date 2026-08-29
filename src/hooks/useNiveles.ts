@@ -10,16 +10,16 @@
  * un agente que no declare niveles sale con lo único que tiene: su precio por
  * encargo, y su precio por mensaje si además cobra por llamada.
  *
- * MANDAN LOS DE LA CADENA. Un agente puede publicar sus niveles en su ficha
- * on-chain o en la tarjeta que sirve su bot, y si están en los dos sitios se
- * enseñan los primeros: son los únicos que siguen ahí con el bot caído. Si
- * mandara la tarjeta, un agente que no contesta perdería sus niveles y esta
- * pestaña volvería a enseñar un precio suelto de quien vende tres tamaños.
+ * EL PRECIO DE LA CADENA, EL TEXTO DE LA FICHA. Son dos cosas con dueños
+ * distintos: el importe es lo que se bloquea y tiene que salir de donde nadie
+ * pueda cambiarlo —y donde siga estando con el bot caído—, mientras que el
+ * nombre es una etiqueta y la ficha es el único sitio donde puede estar
+ * traducida. El porqué entero está en `conTextoDeLaFicha`.
  */
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { leerNivelesDeMetadata, type Nivel } from '@panal/sdk';
+import { conTextoDeLaFicha, leerNivelesDeMetadata, type Nivel } from '@panal/sdk';
 import { PANAL_REGISTRY_V2_ADDRESS, publicClient } from '@/contracts/config';
 import { panalRegistryV2Abi } from '@/contracts/abis';
 import { extractBotUrl, leerCapacidades } from '@/lib/botEndpoint';
@@ -82,7 +82,12 @@ export function useNiveles(agent: Agent | null): ServiciosDelAgente {
           leerCapacidades(botUrl, 6_000, idioma),
           leerCobroPorLlamada(botUrl),
         ]);
-        const niveles = enCadena.length > 0 ? enCadena : caps.niveles;
+        // El precio de la cadena con el texto de la ficha: ver
+        // `conTextoDeLaFicha`. Sin esto el escaparate sale en francés y los
+        // tres niveles de cada agente en español, porque la cadena guarda una
+        // sola versión y la traducción solo puede vivir en la ficha.
+        const niveles =
+          enCadena.length > 0 ? conTextoDeLaFicha(enCadena, caps.niveles) : caps.niveles;
         if (vigente) setLeido({ de, datos: { niveles, cobro, cargando: false } });
       } catch {
         // Falla cerrado: no se anuncia nada que no esté ya en la cadena. Y lo
