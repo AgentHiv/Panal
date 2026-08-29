@@ -8,6 +8,7 @@ import { formatMon } from '@/data/agents';
 import { currencySymbol } from '@/contracts/config';
 import { isOnchainAgent } from '@/hooks/usePanalAgents';
 import { useNiveles } from '@/hooks/useNiveles';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export interface ServicesTabProps {
   agent: Agent;
@@ -27,6 +28,8 @@ interface Tarjeta {
   /** Contratar, o irse al chat. Una de las dos, nunca las dos. */
   contratar?: () => void;
   chat?: string;
+  /** El precio es el bueno, el texto aún no ha llegado. Ver `textoPendiente`. */
+  pendiente?: boolean;
 }
 
 /**
@@ -43,8 +46,43 @@ interface Tarjeta {
  */
 export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
   const { t } = useTranslation();
-  const { niveles, cobro } = useNiveles(agent);
+  const { niveles, cobro, cargando, textoPendiente } = useNiveles(agent);
   const simbolo = isOnchainAgent(agent) ? currencySymbol(agent.currency) : 'MON';
+
+  /**
+   * Mientras no se sabe nada, un hueco. NO el encargo suelto.
+   *
+   * Antes de la primera lectura no se sabe si este agente vende un tamaño o
+   * tres, y lo que se pintaba entretanto era el encargo suelto: su nombre, su
+   * precio del registro y un botón de contratar. Un segundo después eso
+   * desaparecía y en su sitio salían tres tarjetas distintas. Eso es lo que
+   * parpadeaba.
+   *
+   * Y no era solo un parpadeo: durante ese segundo había un botón para comprar
+   * a un precio que no es ninguno de los que el agente vende. Es el mismo fallo
+   * que esta pestaña tenía cuando se inventaba los precios, en pequeño. Un
+   * hueco dice «todavía no lo sé», que es la verdad.
+   *
+   * Dura lo que tarda la CADENA, no la tarjeta: quien tiene niveles escritos
+   * los enseña en cuanto se leen, con el texto en hueco. Ver `textoPendiente`.
+   */
+  if (cargando) {
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true">
+        <div
+          className="flex flex-col gap-4 rounded-2xl border border-line bg-paper p-5 sm:flex-row sm:items-center sm:justify-between"
+          aria-hidden
+        >
+          <div className="min-w-0 flex-1 space-y-2.5">
+            <Skeleton className="h-4 w-40 bg-sand" />
+            <Skeleton className="h-3 w-64 max-w-full bg-sand" />
+          </div>
+          <Skeleton className="h-9 w-28 shrink-0 rounded-full bg-sand" />
+        </div>
+        <p className="mt-2 text-[0.8125rem] text-ink-3">{t('detail.servicesNote')}</p>
+      </div>
+    );
+  }
 
   const tarjetas: Tarjeta[] =
     niveles.length > 0
@@ -59,6 +97,7 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
             ? { tope: t('detail.services.upTo', { n: n.maxBriefChars.toLocaleString() }) }
             : {}),
           contratar: () => onHire(n),
+          pendiente: textoPendiente,
         }))
       : // No los vende: queda lo que sí se le puede comprar hoy.
         [
@@ -99,10 +138,21 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
           whileHover={{ y: -2 }}
           className="flex flex-col gap-4 rounded-2xl border border-line bg-paper p-5 transition-[border-color,box-shadow] duration-200 hover:border-honey hover:shadow-card sm:flex-row sm:items-center sm:justify-between"
         >
-          <div className="min-w-0">
-            <h3 className="font-display text-[1.05rem] font-semibold tracking-[-0.01em] text-ink">{c.nombre}</h3>
-            <p className="mt-1.5 text-[0.875rem] leading-[1.5] text-ink-2">{c.descripcion}</p>
-            {c.tope && <p className="mt-1.5 font-mono text-[0.75rem] text-ink-3">{c.tope}</p>}
+          <div className="min-w-0 flex-1">
+            {c.pendiente ? (
+              // El hueco del texto mientras llega la tarjeta. El precio, que es
+              // lo que se bloquea, ya está puesto: no espera a nadie.
+              <div className="space-y-2.5 py-1" aria-hidden>
+                <Skeleton className="h-4 w-40 bg-sand" />
+                <Skeleton className="h-3 w-64 max-w-full bg-sand" />
+              </div>
+            ) : (
+              <>
+                <h3 className="font-display text-[1.05rem] font-semibold tracking-[-0.01em] text-ink">{c.nombre}</h3>
+                <p className="mt-1.5 text-[0.875rem] leading-[1.5] text-ink-2">{c.descripcion}</p>
+                {c.tope && <p className="mt-1.5 font-mono text-[0.75rem] text-ink-3">{c.tope}</p>}
+              </>
+            )}
           </div>
           <div className="flex shrink-0 items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center">
             <span className="font-mono text-[0.9375rem] font-semibold text-ink">
