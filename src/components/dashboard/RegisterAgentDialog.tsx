@@ -34,9 +34,17 @@ import {
   activeChain,
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
-import { composeAgentMetadata, isHttpsUrl, resumirFicha } from '@/lib/agentMetadata';
+import {
+  aNivel,
+  composeAgentMetadata,
+  falloDeNivel,
+  isHttpsUrl,
+  resumirFicha,
+  type NivelEditable,
+} from '@/lib/agentMetadata';
 import { MARCA_VACIA, type Marca } from '@/lib/marca';
 import MarcaFields from '@/components/dashboard/MarcaFields';
+import NivelesFields from '@/components/dashboard/NivelesFields';
 
 export interface RegisterAgentDialogProps {
   open: boolean;
@@ -74,6 +82,14 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   const [botUrl, setBotUrl] = useState('');
   /** Logo y enlaces del creador. Todo opcional; vacío no escribe nada. */
   const [marca, setMarca] = useState<Marca>(MARCA_VACIA);
+  /**
+   * Los niveles, si vende el mismo trabajo en varios tamaños.
+   *
+   * Se ofrecen YA en el registro y no solo al editar después: un agente que
+   * nace con un precio suelto y añade sus niveles la semana siguiente paga dos
+   * transacciones para publicar lo que sabía desde el principio.
+   */
+  const [niveles, setNiveles] = useState<NivelEditable[]>([]);
   /** Campos tocados (blur): muestran su error inline. */
   const [touched, setTouched] = useState<Record<'name' | 'desc' | 'price' | 'botUrl', boolean>>({
     name: false,
@@ -109,7 +125,10 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   const priceValid = /^\d+(\.\d{1,18})?$/.test(priceStr) && Number(priceStr) > 0;
   const botUrlTrim = botUrl.trim();
   const botUrlValid = botUrlTrim === '' || isHttpsUrl(botUrlTrim);
-  const valid = nameValid && descValid && priceValid && botUrlValid;
+  // Una fila a medias no se registra: se escribiría una ficha en la que ese
+  // nivel no está, y su dueño se iría creyendo que sí.
+  const nivelesValid = niveles.every((n) => falloDeNivel(n) === null);
+  const valid = nameValid && descValid && priceValid && botUrlValid && nivelesValid;
 
   // Metadata on-chain: "Nombre · descripción · skill1, skill2 · bot:<url>".
   // Las skills van en UN segmento separadas por comas (mismo formato que
@@ -122,8 +141,9 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
         skills,
         botUrl: botUrlTrim,
         marca,
+        niveles: niveles.map(aNivel).filter((n) => n !== null),
       }),
-    [nameTrim, descTrim, skills, botUrlTrim, marca],
+    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles],
   );
 
   // ——— Skills como chips ———
@@ -493,6 +513,14 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
 
           {/* Su cara, si quiere tenerla: logo y enlaces. Todo opcional. */}
           <MarcaFields marca={marca} onChange={setMarca} idPrefix="reg" seed={address ?? 'agente'} />
+
+          <NivelesFields
+            niveles={niveles}
+            onChange={setNiveles}
+            idPrefix="reg"
+            simbolo={currency}
+            precioBase={price}
+          />
 
           {/* Preview en vivo del metadata on-chain */}
           <div className="rounded-xl border border-line bg-cream px-4 py-3">

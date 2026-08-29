@@ -9,6 +9,7 @@
  */
 
 import type { Address, Hex } from 'viem';
+import { esTokenDeNivel } from './niveles.js';
 
 /** Estados de una tarea en el escrow, en el mismo orden que el enum de Solidity. */
 export enum TaskStatus {
@@ -281,6 +282,10 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadata {
       if (!links[link[0]]) links[link[0]] = link[1];
       continue;
     }
+    // Los niveles tampoco son texto de la ficha: sin apartarlos, los tres
+    // `nivel:…` de un agente saldrían anunciados como skills suyas. Los lee
+    // `leerNivelesDeMetadata`; aquí solo hace falta reconocerlos.
+    if (esTokenDeNivel(seg)) continue;
     rest.push(seg);
   }
 

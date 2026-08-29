@@ -279,6 +279,8 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
           open={profileDialogOpen}
           onOpenChange={setProfileDialogOpen}
           metadataURI={agent.metadataURI}
+          precioBase={formatEther(agent.pricePerTask)}
+          simbolo={currencySymbol(agent.currency ?? NATIVE_CURRENCY)}
           agentName={name}
           agentAddress={address ?? ''}
           onMined={() => profile.refetch()}

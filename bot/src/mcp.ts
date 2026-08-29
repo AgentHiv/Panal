@@ -67,6 +67,8 @@ import { fileURLToPath } from 'node:url';
 import { erc20Abi, escrowAbi, monad, registryAbi, TASK_STATUS_LABEL, TaskStatus } from './chain.js';
 import { briefSignMessage, resultSignMessage } from './http.js';
 import { assertPublicUrl, fetchJsonLimited } from './net.js';
+import { esTokenDeMarca } from './marca.js';
+import { esTokenDeNivel } from './niveles.js';
 
 // ---------------------------------------------------------------------------
 // Configuración — defaults de mainnet para que funcione sin .env.
@@ -135,6 +137,12 @@ function parseMetadata(metadataURI: string): AgentMeta {
       botUrl = candidate;
       continue;
     }
+    // Marca y niveles fuera antes de repartir posiciones. Hasta ahora esto se
+    // salvaba de milagro —esos tokens se escriben al final, así que caían en
+    // la cuarta posición y nadie la lee—, pero basta con un agente que no haya
+    // puesto descripción para que todo suba un puesto y sus skills pasen a ser
+    // un `nivel:0.03|Un archivo` a medio leer.
+    if (esTokenDeMarca(seg) || esTokenDeNivel(seg)) continue;
     rest.push(seg);
   }
 

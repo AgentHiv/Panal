@@ -37,7 +37,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx test/sdk.test.ts && tsx test/x402.test.ts && tsx test/x402-server.test.ts && tsx test/envelope.test.ts && tsx test/files.test.ts && tsx test/attachments.test.ts && tsx test/llm.test.ts && tsx test/skill.test.ts && tsx test/agent-card.test.ts",
+    "test": "tsx test/sdk.test.ts && tsx test/x402.test.ts && tsx test/x402-server.test.ts && tsx test/envelope.test.ts && tsx test/files.test.ts && tsx test/attachments.test.ts && tsx test/llm.test.ts && tsx test/skill.test.ts && tsx test/agent-card.test.ts && tsx test/niveles.test.ts",
     "test:nombres": "tsx test/nombres.test.ts",
     "prepublishOnly": "npm run build"
   },

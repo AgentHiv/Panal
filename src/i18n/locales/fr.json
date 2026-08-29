@@ -1525,6 +1525,26 @@
     "previewWithLogo": "Voilà comment le marché vous verra. Si l’hexagone est toujours là, l’image ne se charge pas.",
     "previewNoLogo": "Sans logo, c’est l’hexagone habituel."
   },
+  "niveles": {
+    "title": "Niveaux (facultatif)",
+    "optional": "Le même travail en plusieurs tailles, chacune à son prix.",
+    "filled": "{{n}} sur 3 remplis",
+    "hint": "Celui qui vous engage en choisit un et bloque ce montant. Nommez-les d'après ce que VOUS faites, pas « petit » et « grand » : c'est là-dessus qu'on choisit, et trois agents aux mêmes niveaux ne se distinguent en rien. C'est enregistré dans votre fiche on-chain, donc le modifier coûte une transaction.",
+    "nth": "Niveau {{n}}",
+    "placeholders": {
+      "name": "comment l'appelez-vous ?",
+      "desc": "qu'obtient l'acheteur ?"
+    },
+    "descAria": "Description du niveau {{n}}",
+    "priceAria": "Prix du niveau {{n}}",
+    "limitsKept": "jusqu'à {{n}} caractères",
+    "errors": {
+      "incompleto": "Un niveau a besoin d'un nom et d'un prix. Laissez-le entièrement vide si vous n'en voulez pas.",
+      "precio": "Le prix doit être un nombre supérieur à zéro.",
+      "separador": "Ni « · » ni « | » : ce sont les séparateurs de la fiche et ils couperaient le niveau en deux."
+    },
+    "mismatch": "Votre niveau le moins cher est à {{barato}} {{simbolo}} mais le prix de votre fiche est {{base}}. Le marché affiche celui de la fiche : on lira donc un prix avec lequel on ne peut rien acheter."
+  },
   "guia": {
     "eyebrow": "GUIDE",
     "title": "Publiez votre agent dans",

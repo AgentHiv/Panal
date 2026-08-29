@@ -32,6 +32,8 @@
 
 import { parseAbiItem, type Address } from 'viem';
 import { esTokenDeMarca } from './marca.js';
+import { esTokenDeNivel } from './niveles.js';
+import { fichaEnIdioma, IDIOMAS, type Idioma } from './idiomas.js';
 import type { BotConfig } from './config.js';
 import { escrowAbi, politePause, withRetry, type ChainClients } from './chain.js';
 import type { StopSignal } from './notifier.js';
@@ -548,6 +550,9 @@ function leerMetadata(metadataURI: string): {
     // en el catalogo, y de ahi en la tarjeta que ve todo el mundo. El formato
     // manda en `src/lib/marca.ts`; aqui solo hace falta reconocerlos.
     if (esTokenDeMarca(seg)) continue;
+    // Los niveles tampoco: son hasta ocho segmentos mas por agente, y sin
+    // apartarlos el catalogo anunciaria «nivel:0.03|Un archivo» de skill.
+    if (esTokenDeNivel(seg)) continue;
     resto.push(seg);
   }
   // Los campos que falten quedan vacios en vez de desplazar a los siguientes:
@@ -670,6 +675,77 @@ async function verificarDominios(store: IndexStore): Promise<void> {
   if (cambios === 0) console.log(`[index] dominios repasados: ${tanda.length}, sin cambios`);
 }
 
+/**
+ * Las descripciones de los agentes, en los diez idiomas del marketplace.
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ * QUE ARREGLA
+ *
+ * El catalogo es lo primero que ve cualquiera, y salia en el idioma en que su
+ * dueno escribio la ficha. Alguien que entra en arabe ve la interfaz entera en
+ * arabe y todos los agentes descritos en espanol; y como el nombre del agente
+ * y sus niveles los escriben sitios distintos, hoy en mainnet hay fichas que
+ * ensenan dos idiomas a la vez en la misma tarjeta.
+ *
+ * QUIEN TRADUCE
+ *
+ * Cada agente, con su propio modelo, pidiendole `?lang=`. Aqui solo se guarda.
+ * Un traductor central seria un servicio mas que pagar y del que el escaparate
+ * pasaria a depender; el agente ya es un modelo y traducir cuatro frases suyas
+ * es la llamada mas barata que va a hacer.
+ *
+ * CUANTO CUESTA
+ *
+ * Diez peticiones por agente, y SOLO cuando su ficha cambia: `idiomasDe`
+ * guarda de que `metadataURI` salieron. Sin esa comprobacion habria que elegir
+ * entre pedir diez traducciones a cada agente en cada vuelta —un ataque a sus
+ * propios bots— o no refrescarlas nunca.
+ *
+ * De dos en dos por vuelta, por lo mismo que la verificacion de dominios: son
+ * peticiones contra dominios ajenos.
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+async function traducirFichas(store: IndexStore): Promise<void> {
+  const tanda = store.pendientesDeTraducir(2);
+  if (tanda.length === 0) return;
+
+  for (const p of tanda) {
+    const idiomas: Record<string, string> = {};
+    // En serie y no en paralelo: son diez peticiones al MISMO bot, y la
+    // primera de cada idioma le cuesta una llamada a su modelo. Diez a la vez
+    // es tumbarle el proceso a alguien por traducirle la ficha.
+    for (const lang of IDIOMAS) {
+      const texto = await descripcionEnIdioma(p.botUrl!, lang);
+      if (texto) idiomas[lang] = texto;
+    }
+    store.guardarIdiomas(p.address, p.metadataURI, idiomas);
+    const n = Object.keys(idiomas).length;
+    console.log(
+      n > 0
+        ? `[index] ${p.name || p.address.slice(0, 10)}: ficha en ${n} idiomas`
+        : `[index] ${p.name || p.address.slice(0, 10)}: no sabe traducirse, se queda su texto original`,
+    );
+  }
+}
+
+/** La descripcion que sirve un agente en un idioma, o null si no puede. */
+async function descripcionEnIdioma(botUrl: string, lang: Idioma): Promise<string | null> {
+  try {
+    const res = await fetch(fichaEnIdioma(botUrl, lang), {
+      signal: AbortSignal.timeout(25_000),
+    });
+    if (!res.ok) return null;
+    const card = (await res.json()) as { description?: unknown };
+    if (typeof card.description !== 'string') return null;
+    const texto = card.description.replace(/\s+/g, ' ').trim().slice(0, 400);
+    return texto || null;
+  } catch {
+    // Agente caido, sin modelo, sin cuota o de una plantilla anterior que no
+    // conoce `?lang=`: se queda su texto original, que es lo que habia antes.
+    return null;
+  }
+}
+
 /** Bucle principal del modo indexer. */
 export async function runIndexer(
   cfg: BotConfig,
@@ -696,6 +772,7 @@ export async function runIndexer(
       await incremental(cfg, clients, store, newHead);
       await refrescarFichas(cfg, clients, store);
       await verificarDominios(store);
+      await traducirFichas(store);
       await sweepBackwards(cfg, clients, store);
       store.saveState();
     } catch (err) {

@@ -1525,6 +1525,26 @@
     "previewWithLogo": "É assim que o mercado o vai ver. Se o hexágono continuar aí, a imagem não carrega.",
     "previewNoLogo": "Sem logótipo aparece o hexágono de sempre."
   },
+  "niveles": {
+    "title": "Níveis (opcional)",
+    "optional": "O mesmo trabalho em vários tamanhos, cada um com o seu preço.",
+    "filled": "{{n}} de 3 preenchidos",
+    "hint": "Quem te contratar escolhe um e bloqueia esse valor. Dá-lhes o nome do que TU fazes, não «pequeno» e «grande»: é por aí que se escolhe, e três agentes com os mesmos níveis não se distinguem em nada. Fica guardado na tua ficha on-chain, por isso alterá-lo custa uma transação.",
+    "nth": "Nível {{n}}",
+    "placeholders": {
+      "name": "como lhe chamas?",
+      "desc": "o que leva quem compra?"
+    },
+    "descAria": "Descrição do nível {{n}}",
+    "priceAria": "Preço do nível {{n}}",
+    "limitsKept": "até {{n}} caracteres",
+    "errors": {
+      "incompleto": "Um nível precisa de nome e preço. Deixa-o totalmente vazio se não o quiseres.",
+      "precio": "O preço tem de ser um número maior do que zero.",
+      "separador": "Nem «·» nem «|»: são os separadores da ficha e partiriam o nível em dois."
+    },
+    "mismatch": "O teu nível mais barato são {{barato}} {{simbolo}} mas o preço da tua ficha é {{base}}. O mercado mostra o da ficha, por isso quem te vir vai ler um preço com o qual não pode comprar nada."
+  },
   "guia": {
     "eyebrow": "GUIA",
     "title": "Publique o seu agente",

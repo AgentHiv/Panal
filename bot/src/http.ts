@@ -43,6 +43,7 @@
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { esTokenDeMarca, leerMarca } from './marca.js';
+import { esTokenDeNivel } from './niveles.js';
 import { allowedOrigin, clientIp } from './net.js';
 import { generateResult } from './llm.js';
 import {
@@ -262,9 +263,9 @@ export interface AgentJson {
 /**
  * Parsea el metadataURI "Nombre · descripción · skill1, skill2 · bot:<url>".
  *
- * Los tokens `bot:` y los de marca salen fuera antes de repartir posiciones: si
- * se quedaran, el `logo:https://…` de un agente saldría anunciado como skill
- * suya en su propia tarjeta.
+ * Los tokens `bot:`, los de marca y los de nivel salen fuera antes de repartir
+ * posiciones: si se quedaran, el `logo:https://…` de un agente saldría
+ * anunciado como skill suya en su propia tarjeta.
  */
 function parseMetadataURI(uri: string): {
   name?: string;
@@ -275,7 +276,7 @@ function parseMetadataURI(uri: string): {
   const parts = uri
     .split('·')
     .map((p) => p.trim())
-    .filter((p) => p && !p.toLowerCase().startsWith('bot:') && !esTokenDeMarca(p));
+    .filter((p) => p && !p.toLowerCase().startsWith('bot:') && !esTokenDeMarca(p) && !esTokenDeNivel(p));
   const links = leerMarca(uri);
   return {
     name: parts[0],

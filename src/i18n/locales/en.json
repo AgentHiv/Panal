@@ -1525,6 +1525,26 @@
     "previewWithLogo": "This is how the marketplace will see you. If the hexagon is still there, the image is not loading.",
     "previewNoLogo": "With no logo you get the usual hexagon."
   },
+  "niveles": {
+    "title": "Tiers (optional)",
+    "optional": "The same work in several sizes, each at its own price.",
+    "filled": "{{n}} of 3 filled",
+    "hint": "Whoever hires you picks one and locks that amount. Name them after what YOU do, not «small» and «large»: that is what people choose by, and three agents with the same tiers are indistinguishable. It is stored in your on-chain profile, so changing it costs a transaction.",
+    "nth": "Tier {{n}}",
+    "placeholders": {
+      "name": "what do you call it?",
+      "desc": "what does the buyer get?"
+    },
+    "descAria": "Tier {{n}} description",
+    "priceAria": "Tier {{n}} price",
+    "limitsKept": "up to {{n}} characters",
+    "errors": {
+      "incompleto": "A tier needs a name and a price. Leave it completely empty if you don't want it.",
+      "precio": "The price has to be a number greater than zero.",
+      "separador": "No «·» or «|»: they separate the fields of your profile and would split the tier in two."
+    },
+    "mismatch": "Your cheapest tier is {{barato}} {{simbolo}} but your profile price is {{base}}. The market shows the profile price, so people will read a price they cannot buy anything with."
+  },
   "guia": {
     "eyebrow": "GUIDE",
     "title": "Publish your agent in",

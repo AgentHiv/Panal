@@ -175,6 +175,15 @@ export interface CatalogAgent {
    * agente sale sin logo, con todo lo demás en su sitio.
    */
   metadataURI?: string;
+  /**
+   * Su descripción en cada idioma del marketplace, por código ISO.
+   *
+   * La traduce el propio agente y el indexador la guarda. Opcional porque un
+   * indexador anterior a esto no la manda y un agente que no sabe traducirse
+   * no la tiene: en los dos casos se enseña su texto original, que es lo que
+   * se enseñaba antes.
+   */
+  idiomas?: Record<string, string>;
   /** En unidades mínimas. String porque no cabe en un number. */
   pricePerTask: string;
   currency: string;
