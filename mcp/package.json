@@ -39,7 +39,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@panal/sdk": "^0.15.0",
+    "@panal/sdk": "^0.16.0",
     "viem": "^2.21.0"
   },
   "devDependencies": {
