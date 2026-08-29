@@ -185,6 +185,8 @@ export interface AgentProfile {
 
   /** Cuándo se pidieron por última vez, para poder reintentar las que faltan. */
   idiomasTs?: number;
+  /** Con qué versión del lector se guardaron. Ver `IDIOMAS_V` en el indexador. */
+  idiomasV?: number;
   /** Cuándo se comprobó, para no repetirlo en cada vuelta. */
   verificadoTs?: number;
 }
@@ -790,12 +792,13 @@ export class IndexStore {
    * fallado— porque el que falte se sirve en el original y se reintentará
    * cuando el agente cambie su ficha.
    */
-  guardarIdiomas(address: string, de: string, idiomas: Record<string, string>): void {
+  guardarIdiomas(address: string, de: string, idiomas: Record<string, string>, version: number): void {
     const p = this.profiles.get(address.toLowerCase());
     if (!p) return;
     p.idiomas = idiomas;
     p.idiomasDe = de;
     p.idiomasTs = Math.floor(Date.now() / 1000);
+    p.idiomasV = version;
   }
 
   /**
@@ -833,16 +836,26 @@ export class IndexStore {
    *
    * Solo los que publican endpoint: sin bot no hay a quién pedírselas.
    */
-  pendientesDeTraducir(tope: number, completo: number, reintentoS: number): AgentProfile[] {
+  pendientesDeTraducir(
+    tope: number,
+    completo: number,
+    reintentoS: number,
+    version: number,
+  ): AgentProfile[] {
     const ahora = Math.floor(Date.now() / 1000);
-    return [...this.profiles.values()]
-      .filter((p) => {
-        if (!p.botUrl) return false;
-        if (p.idiomasDe !== p.metadataURI) return true;
-        const tiene = Object.keys(p.idiomas ?? {}).length;
-        return tiene < completo && ahora - (p.idiomasTs ?? 0) > reintentoS;
-      })
-      .slice(0, tope);
+    const toca = [...this.profiles.values()].filter((p) => {
+      if (!p.botUrl) return false;
+      // Lo guardado con un lector anterior no vale, aunque parezca completo.
+      if ((p.idiomasV ?? 0) !== version) return true;
+      if (p.idiomasDe !== p.metadataURI) return true;
+      const tiene = Object.keys(p.idiomas ?? {}).length;
+      return tiene < completo && ahora - (p.idiomasTs ?? 0) > reintentoS;
+    });
+    // El más olvidado primero. Sin ordenar, dos agentes que no sepan traducirse
+    // ocupan las dos plazas de cada vuelta para siempre y nadie más pasa: el
+    // mismo reparto que ya hace `pendientesDeVerificar`.
+    toca.sort((a, b) => (a.idiomasTs ?? 0) - (b.idiomasTs ?? 0));
+    return toca.slice(0, tope);
   }
 
   /** El nombre de un agente en PanalNames, o null si no tiene. */

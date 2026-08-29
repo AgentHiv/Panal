@@ -1273,6 +1273,18 @@ const server = createServer((req, res) => {
       const idioma = normalizarIdioma(url.searchParams.get('lang'));
       const nivelesFicha = NIVELES_OK.map(comoFicha);
       let descripcion = FICHA_TEXTO.description;
+      /**
+       * En qué idioma va lo que se sirve, y `null` si va en el original.
+       *
+       * Hay que DECIRLO, no dejarlo adivinar. Como la traducción va por detrás,
+       * pedir `?lang=fr` antes de que esté lista devuelve la ficha original con
+       * un 200 impecable: quien la guarde —el indexador lo hace— se queda con
+       * el texto en inglés creyendo que es el francés, y como le llegaron los
+       * diez idiomas da el trabajo por hecho y no vuelve nunca. Pasó en
+       * mainnet: nueve de cada diez «traducciones» del catálogo eran el
+       * original.
+       */
+      let servidoEn: string | null = null;
       if (idioma) {
         const frases = {
           description: descripcion,
@@ -1281,6 +1293,7 @@ const server = createServer((req, res) => {
         const traducido = frasesGuardadas(frases, idioma, DATA_DIR);
         if (!traducido) pedirTraduccion(frases, idioma, LLM_FICHA, DATA_DIR);
         if (traducido) {
+          servidoEn = idioma;
           descripcion = traducido.description;
           traducido.tiers.forEach((t, i) => {
             const destino = nivelesFicha[i];
@@ -1316,6 +1329,9 @@ const server = createServer((req, res) => {
         // francés y traducirlo sería inventarle otro nombre a este agente.
         ...(FICHA_TEXTO.name ? { name: FICHA_TEXTO.name } : {}),
         ...(descripcion ? { description: descripcion } : {}),
+        // Solo cuando se ha traducido de verdad. Ausente = esto va en el
+        // idioma en que su dueño lo escribió, aunque lo hayas pedido en otro.
+        ...(servidoEn ? { lang: servidoEn } : {}),
         endpoints: {
           base,
           postBrief: {
