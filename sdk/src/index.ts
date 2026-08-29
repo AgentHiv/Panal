@@ -143,6 +143,7 @@ export type { AgentCard, FichaGetResult, FichaNivel, FichaPostBrief, FichaX402, 
 // de la ficha; en niveles.ts está por qué viven en los dos sitios.
 export {
   componerNivel,
+  conTextoDeLaFicha,
   esTokenDeNivel,
   leerNivelDeSegmento,
   leerNivelesDeMetadata,

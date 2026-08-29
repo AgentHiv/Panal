@@ -27,7 +27,7 @@ import {
   tamanoLegible,
   type Adjunto,
 } from '@/lib/adjuntos';
-import type { Nivel } from '@panal/sdk';
+import { conTextoDeLaFicha, type Nivel } from '@panal/sdk';
 import { useWallet } from '@/hooks/useWallet';
 import type { DatosAgente } from '~/lib/agente';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
@@ -133,15 +133,17 @@ export default function HojaEncargar({
   const enPanal = datos ? currencySymbol(datos.moneda) === '$PANAL' : false;
   /** Los niveles que vende este agente. Vacío es lo normal. */
   /**
-   * Los niveles, con los de la CADENA por delante.
+   * El precio de la CADENA, el texto de la ficha.
    *
-   * Se derivan en vez de guardarse: son los únicos que siguen ahí con el bot
-   * caído, así que no pueden depender de que una respuesta llegue. Si mandara
-   * la tarjeta, un agente que no contesta se quedaría sin niveles y esta hoja
-   * ofrecería su precio suelto —el del más barato— para el tamaño grande.
-   * Los de la tarjeta son el respaldo de quien aún no los ha subido.
+   * Se derivan en vez de guardarse: el importe es lo único que se bloquea de
+   * verdad y no puede depender de que una respuesta llegue —con el bot caído
+   * se ofrecería el precio del nivel pequeño para el encargo grande—, pero el
+   * nombre sí sale de la ficha, que es donde puede estar traducido. El porqué
+   * entero está en `conTextoDeLaFicha` del SDK.
    */
-  const niveles = datos?.niveles?.length ? datos.niveles : (capacidades?.niveles ?? []);
+  const niveles = datos?.niveles?.length
+    ? conTextoDeLaFicha(datos.niveles, capacidades?.niveles ?? [])
+    : (capacidades?.niveles ?? []);
   /**
    * El elegido. Sin tocar nada es el más barato, que debería costar lo mismo
    * que su precio registrado: quien no elija bloquea lo de siempre.

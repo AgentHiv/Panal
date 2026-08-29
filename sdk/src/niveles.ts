@@ -219,3 +219,48 @@ export function componerNivel(nivel: {
 function entero(v: number | null | undefined): string {
   return typeof v === 'number' && Number.isInteger(v) && v > 0 ? String(v) : '';
 }
+
+/**
+ * Los niveles de la cadena, con el texto de la ficha del agente.
+ *
+ * ───────────────────────────────────────────────────────────────────────────
+ * POR QUÉ HACE FALTA JUNTARLOS, EN VEZ DE ELEGIR UNO
+ *
+ * Un nivel es dos cosas distintas con dueños distintos:
+ *
+ *   - El PRECIO y los topes. Es lo que se bloquea en el escrow, y tiene que
+ *     salir de la cadena: son los únicos que siguen ahí con el bot caído, y los
+ *     únicos que nadie puede cambiarte entre que miras y pagas.
+ *
+ *   - El NOMBRE y la descripción. Son una etiqueta, y la ficha del agente es el
+ *     único sitio donde pueden estar TRADUCIDAS: `?lang=fr` devuelve la ficha
+ *     en francés, la cadena guarda una sola versión y traducirla costaría una
+ *     transacción por idioma.
+ *
+ * Quedarse solo con los de la cadena —que es lo que se hizo primero— deja el
+ * escaparate entero en francés y los tres niveles de cada agente en español.
+ * Quedarse solo con los de la ficha devuelve el problema de antes: un agente
+ * caído se queda sin niveles y se le encarga el tamaño grande al precio del
+ * pequeño.
+ *
+ * SE EMPAREJAN POR PRECIO, que es la identidad de un nivel: el agente arma su
+ * ficha a partir de lo que tiene en la cadena, así que los importes coinciden
+ * exactos. Lo que no empareje se queda con su texto de la cadena, que es la
+ * respuesta correcta cuando la ficha dice otra cosa: enseñar el nombre de un
+ * nivel junto a un precio que no es el suyo sería peor que no traducirlo.
+ * ───────────────────────────────────────────────────────────────────────────
+ */
+export function conTextoDeLaFicha(enCadena: Nivel[], deLaFicha: Nivel[]): Nivel[] {
+  if (enCadena.length === 0 || deLaFicha.length === 0) return enCadena;
+  return enCadena.map((n) => {
+    const igual = deLaFicha.find((f) => f.wei === n.wei);
+    if (!igual) return n;
+    return {
+      ...n,
+      // Solo se pisa lo que la ficha REALMENTE trae: un nivel con nombre no
+      // puede perderlo porque la ficha venga a medias.
+      name: igual.name ?? n.name,
+      description: igual.description ?? n.description,
+    };
+  });
+}

@@ -29,6 +29,7 @@
  */
 import {
   componerNivel,
+  conTextoDeLaFicha,
   esTokenDeNivel,
   leerNivelDeSegmento,
   leerNivelesDeMetadata,
@@ -201,6 +202,60 @@ check(
   leerNivelesDeMetadata('A · b · nivel:0.03|Bueno · nivel:XX|Malo · nivel:0.3|Otro').length === 2,
 );
 check('componer y leer un segmento suelto', leerNivelDeSegmento(componerNivel({ name: 'X', precio: '1' })!)?.wei === 10n ** 18n);
+
+
+console.log('\n─── EL PRECIO DE LA CADENA, EL TEXTO DE LA FICHA ───');
+// Caso real de mainnet: i18n tiene sus niveles en la cadena en español y sirve
+// su ficha traducida al francés. Prefiriendo los de la cadena —que es lo que se
+// hizo primero— el escaparate salía entero en francés y los tres niveles en
+// español. Prefiriendo los de la ficha, un agente caído se queda sin niveles.
+const enCadena = leerNivelesDeMetadata(
+  'i18n · Traduce cadenas · i18n · bot:https://i18n.panal.lat · ' +
+    'nivel:0.01|Un texto|Un texto o un fichero de cadenas · ' +
+    'nivel:0.03|El lote|Varios ficheros · ' +
+    'nivel:0.1|El proyecto|Se traduce entero|120000',
+);
+const enFrances = leerNivelesDeMetadata(
+  'i18n · Traduit · i18n · nivel:0.01|Un texte|Un texte ou un fichier de chaînes · ' +
+    'nivel:0.03|Le lot|Plusieurs fichiers · ' +
+    'nivel:0.1|Le projet|Tout est traduit',
+);
+const juntos = conTextoDeLaFicha(enCadena, enFrances);
+check(
+  'el NOMBRE sale traducido',
+  juntos.map((n) => n.name).join(' / ') === 'Un texte / Le lot / Le projet',
+  juntos.map((n) => n.name).join(' / '),
+);
+check('y la descripción también', juntos[0]?.description === 'Un texte ou un fichier de chaînes');
+check(
+  'pero el PRECIO es el de la cadena, siempre',
+  juntos.map((n) => n.wei.toString()).join() === enCadena.map((n) => n.wei.toString()).join(),
+);
+check(
+  'y los topes también, que la ficha traducida no los trae',
+  juntos[2]?.maxBriefChars === 120000,
+  String(juntos[2]?.maxBriefChars),
+);
+
+console.log('\n─── y con la ficha caída no se pierde nada ───');
+check('sin ficha, quedan los de la cadena', conTextoDeLaFicha(enCadena, []).length === 3);
+check(
+  'con su texto original',
+  conTextoDeLaFicha(enCadena, []).map((n) => n.name).join(' / ') === 'Un texto / El lote / El proyecto',
+);
+check('sin niveles en la cadena, no se inventa ninguno', conTextoDeLaFicha([], enFrances).length === 0);
+
+console.log('\n─── un nivel que la ficha no reconoce se queda como está ───');
+// Si la ficha va atrasada —el dueño acaba de cambiar un precio y el bot aún no
+// lo ha releído— hay niveles que no emparejan. Enseñar el nombre de uno junto
+// al precio de otro sería peor que no traducirlo.
+const desfasada = leerNivelesDeMetadata('x · y · nivel:0.99|Le vieux niveau|Otro precio');
+const conDesfase = conTextoDeLaFicha(enCadena, desfasada);
+check(
+  'ninguno cambia de nombre por un precio que no es el suyo',
+  conDesfase.map((n) => n.name).join(' / ') === 'Un texto / El lote / El proyecto',
+  conDesfase.map((n) => n.name).join(' / '),
+);
 
 console.log(fallos === 0 ? '\nTodo bien.' : `\n${fallos} mal.`);
 process.exit(fallos === 0 ? 0 : 1);
