@@ -15,6 +15,12 @@
  * pueda cambiarlo —y donde siga estando con el bot caído—, mientras que el
  * nombre es una etiqueta y la ficha es el único sitio donde puede estar
  * traducida. El porqué entero está en `conTextoDeLaFicha`.
+ *
+ * Y POR ESO SE PINTA EN DOS TIEMPOS. La cadena contesta en un pestañeo y la
+ * ficha puede tardar seis segundos en no contestar, así que en cuanto se sabe
+ * el precio se enseña el precio, y el texto se deja en hueco hasta que llega
+ * el suyo. Escribir el de la cadena y cambiarlo después es ver los tres
+ * nombres cambiar solos un segundo más tarde, que es lo que se veía parpadear.
  */
 
 import { useEffect, useState } from 'react';
@@ -32,10 +38,25 @@ export interface ServiciosDelAgente {
   niveles: Nivel[];
   /** Su cobro por mensaje, si lo tiene. */
   cobro: CobroPorLlamada | null;
+  /** Todavía no se sabe NADA: ni si vende niveles ni cuántos. */
   cargando: boolean;
+  /**
+   * Los precios ya son los definitivos, el texto todavía no.
+   *
+   * Pasa en el hueco entre las dos lecturas: la cadena ya dijo cuántos niveles
+   * hay y a cuánto, y la ficha —que es donde el nombre puede venir traducido—
+   * aún no ha contestado. Quien pinta debe dejar el hueco del texto en vez de
+   * escribir el de la cadena y cambiarlo un segundo después.
+   */
+  textoPendiente: boolean;
 }
 
-const NADA: ServiciosDelAgente = { niveles: [], cobro: null, cargando: false };
+const NADA: ServiciosDelAgente = {
+  niveles: [],
+  cobro: null,
+  cargando: false,
+  textoPendiente: false,
+};
 
 /** Lo leído, junto a DE QUIÉN es. Sin el dueño no se puede saber si está viejo. */
 interface Leido {
@@ -74,8 +95,21 @@ export function useNiveles(agent: Agent | null): ServiciosDelAgente {
           if (vigente) setLeido({ de, datos: { ...NADA, niveles: enCadena } });
           return;
         }
+        /*
+         * Los precios YA, sin esperar a la tarjeta.
+         *
+         * La cadena acaba de decir cuántos niveles vende y a cuánto, y eso es
+         * lo que se bloquea: no tiene por qué esperar a un servidor que puede
+         * tardar seis segundos en no contestar. Lo único que falta es el texto,
+         * que puede venir traducido, y para eso está `textoPendiente`.
+         */
+        if (enCadena.length > 0 && vigente) {
+          setLeido({ de, datos: { ...NADA, niveles: enCadena, textoPendiente: true } });
+        }
         // Las dos leen la misma tarjeta y las dos fallan cerrado. Van juntas
-        // para que la pestaña no se pinte dos veces con medio contenido.
+        // para que el texto y el cobro por mensaje entren en el mismo pintado.
+        // El de arriba no cuenta como medio contenido: son los precios de la
+        // cadena, que ya son definitivos.
         const [caps, cobro] = await Promise.all([
           // En el idioma de quien mira: los niveles se llaman «Un archivo» o
           // «El repositorio», y en árabe eso no lo lee nadie.
@@ -88,7 +122,9 @@ export function useNiveles(agent: Agent | null): ServiciosDelAgente {
         // sola versión y la traducción solo puede vivir en la ficha.
         const niveles =
           enCadena.length > 0 ? conTextoDeLaFicha(enCadena, caps.niveles) : caps.niveles;
-        if (vigente) setLeido({ de, datos: { niveles, cobro, cargando: false } });
+        if (vigente) {
+          setLeido({ de, datos: { niveles, cobro, cargando: false, textoPendiente: false } });
+        }
       } catch {
         // Falla cerrado: no se anuncia nada que no esté ya en la cadena. Y lo
         // que SÍ está en la cadena no se pierde por esto, pero aquí ya no se

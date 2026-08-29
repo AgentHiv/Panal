@@ -150,6 +150,19 @@ export default function HojaEncargar({
    */
   const elegido = nivel ?? niveles[0] ?? null;
   /**
+   * ¿Se sabe ya cómo se llaman?
+   *
+   * El precio y el tamaño salen de la CADENA y están desde el primer pintado.
+   * El nombre no: puede venir traducido en la ficha, que tarda. Pintar el de la
+   * cadena y cambiarlo cuando llega la ficha hace que el nombre de cada nivel
+   * cambie solo, un segundo después de abrir la hoja y con el dedo encima.
+   *
+   * Así que mientras no se sepa se deja el hueco. Lo que NO espera a nadie es
+   * el precio: es lo que se bloquea, y el total de abajo no puede moverse
+   * porque una tarjeta tarde en contestar.
+   */
+  const textoPendiente = Boolean(datos?.botUrl) && capacidades === null;
+  /**
    * Lo que se bloquea: el nivel elegido, o el precio del registro.
    *
    * Es el único número que le dice al agente qué se compró, porque es el que
@@ -487,18 +500,27 @@ export default function HojaEncargar({
                         }`}
                       >
                         <span className="min-w-0 grow">
-                          <span className="block truncate text-[13.5px] font-semibold text-ink">
-                            {n.name ?? T.encargar.titulo}
-                          </span>
-                          {n.description !== null && (
-                            <span className="mt-0.5 block text-[11.5px] leading-[1.45] text-ink-2">
-                              {n.description}
+                          {textoPendiente ? (
+                            <span aria-hidden className="block py-0.5">
+                              <span className="block h-3 w-24 animate-pulse rounded bg-line" />
+                              <span className="mt-1.5 block h-2.5 w-40 max-w-full animate-pulse rounded bg-line" />
                             </span>
-                          )}
-                          {n.maxBriefChars !== null && (
-                            <span className="mt-0.5 block text-[11.5px] text-ink-3">
-                              {T.encargar.nivelTope(n.maxBriefChars)}
-                            </span>
+                          ) : (
+                            <>
+                              <span className="block truncate text-[13.5px] font-semibold text-ink">
+                                {n.name ?? T.encargar.titulo}
+                              </span>
+                              {n.description !== null && (
+                                <span className="mt-0.5 block text-[11.5px] leading-[1.45] text-ink-2">
+                                  {n.description}
+                                </span>
+                              )}
+                              {n.maxBriefChars !== null && (
+                                <span className="mt-0.5 block text-[11.5px] text-ink-3">
+                                  {T.encargar.nivelTope(n.maxBriefChars)}
+                                </span>
+                              )}
+                            </>
                           )}
                         </span>
                         <span className="shrink-0 font-mono text-[12.5px] text-ink">
