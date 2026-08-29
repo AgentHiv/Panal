@@ -185,6 +185,28 @@ jobs:
       - name: Sincronizar el proyecto Android
         run: pnpm exec cap sync android
 
+      # Que el icono de los avisos siga siendo el panal.
+      #
+      # `smallIcon` es un NOMBRE de recurso y el plugin lo resuelve a mano: si
+      # el drawable no existe, `getResourceID` devuelve 0 y vuelve al signo de
+      # admiracion del sistema SIN QUEJARSE
+      # (LocalNotificationManager.kt:498). O sea que renombrar el archivo,
+      # sacarlo del `res/` o escribir mal el nombre en la configuracion no
+      # rompe la compilacion: rompe el icono, y eso solo se ve ya en el
+      # telefono y con un aviso delante.
+      #
+      # Se lee del config YA SINCRONIZADO, no del `.ts`, para comprobar de paso
+      # que el ajuste llego al APK.
+      - name: Comprobar el icono de los avisos
+        run: |
+          CONF=android/app/src/main/assets/capacitor.config.json
+          ICONO=$(node -p "require('./$CONF').plugins?.LocalNotifications?.smallIcon || ''")
+          test -n "$ICONO" || {
+            echo "::error::el APK no lleva smallIcon: los avisos saldrian con el signo de admiracion del sistema"; exit 1; }
+          ls android/app/src/main/res/drawable*/"$ICONO".* >/dev/null 2>&1 || {
+            echo "::error::la configuracion pide el icono '$ICONO' y no hay ningun drawable con ese nombre"; exit 1; }
+          echo "avisos: @drawable/$ICONO"
+
       # El almacen de firma sale de un secreto y se escribe FUERA del arbol de
       # trabajo: dentro acabaria dentro del APK como recurso, y sobre todo
       # podria colarse en un commit. `RUNNER_TEMP` se borra al terminar.
