@@ -713,8 +713,18 @@ async function verificarDominios(store: IndexStore): Promise<void> {
 /** Cada cuanto se vuelve a por los idiomas que le faltan a un agente. */
 const REINTENTO_IDIOMAS_S = 30 * 60;
 
+/**
+ * Version de lo que hay guardado en `idiomas`.
+ *
+ * Subirla invalida lo guardado y obliga a volver a pedirlo todo. Hizo falta la
+ * primera vez porque lo almacenado no eran traducciones sino el texto original
+ * —el indexador no miraba `lang`— y sin esto se habria quedado ahi para
+ * siempre: la ficha del agente no habia cambiado, asi que nada lo delataba.
+ */
+const IDIOMAS_V = 2;
+
 async function traducirFichas(store: IndexStore): Promise<void> {
-  const tanda = store.pendientesDeTraducir(2, IDIOMAS.length, REINTENTO_IDIOMAS_S);
+  const tanda = store.pendientesDeTraducir(2, IDIOMAS.length, REINTENTO_IDIOMAS_S, IDIOMAS_V);
   if (tanda.length === 0) return;
 
   for (const p of tanda) {
@@ -726,7 +736,7 @@ async function traducirFichas(store: IndexStore): Promise<void> {
       const texto = await descripcionEnIdioma(p.botUrl!, lang);
       if (texto) idiomas[lang] = texto;
     }
-    store.guardarIdiomas(p.address, p.metadataURI, idiomas);
+    store.guardarIdiomas(p.address, p.metadataURI, idiomas, IDIOMAS_V);
     const n = Object.keys(idiomas).length;
     const quien = p.name || p.address.slice(0, 10);
     console.log(
@@ -739,14 +749,27 @@ async function traducirFichas(store: IndexStore): Promise<void> {
   }
 }
 
-/** La descripcion que sirve un agente en un idioma, o null si no puede. */
+/**
+ * La descripcion que sirve un agente en un idioma, o null si no la tiene.
+ *
+ * EL AGENTE TIENE QUE DECIR QUE LA TRADUJO, en el campo `lang` de su ficha. Un
+ * 200 no basta: la traduccion se encarga por detras, asi que pedir `?lang=fr`
+ * antes de que este lista devuelve la ficha ORIGINAL, perfectamente valida y
+ * en ingles. Sin mirar `lang` se guardaba eso como si fuera el frances — y como
+ * llegaban los diez idiomas, el agente quedaba marcado como traducido y no se
+ * volvia a por el. Nueve de cada diez «traducciones» del catalogo eran el texto
+ * original hasta que se miro.
+ */
 async function descripcionEnIdioma(botUrl: string, lang: Idioma): Promise<string | null> {
   try {
     const res = await fetch(fichaEnIdioma(botUrl, lang), {
       signal: AbortSignal.timeout(25_000),
     });
     if (!res.ok) return null;
-    const card = (await res.json()) as { description?: unknown };
+    const card = (await res.json()) as { description?: unknown; lang?: unknown };
+    // Sin `lang`, o con otro: esto no es una traduccion. Los agentes de una
+    // plantilla anterior nunca lo mandan, y ahi no hay nada que guardar.
+    if (card.lang !== lang) return null;
     if (typeof card.description !== 'string') return null;
     const texto = card.description.replace(/\s+/g, ' ').trim().slice(0, 400);
     return texto || null;

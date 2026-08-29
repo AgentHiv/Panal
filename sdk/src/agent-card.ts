@@ -114,6 +114,18 @@ export interface AgentCard {
   chainId?: number;
   name?: string;
   description?: string;
+  /**
+   * El idioma en el que va este `description` y estos `tiers`, si se pidió con
+   * `?lang=` y el agente pudo traducirlos.
+   *
+   * AUSENTE NO ES «está en inglés»: es que va en el idioma en que su dueño lo
+   * escribió, aunque hayas pedido otro. Hay que mirarlo antes de guardar una
+   * ficha como si fuera una traducción, porque la traducción se encarga por
+   * detrás: pedirla antes de que esté lista devuelve la ficha original con un
+   * 200 impecable. Un indexador que no lo mirara guardaría el texto original
+   * como las diez traducciones y no volvería a por ellas nunca.
+   */
+  lang?: string;
   skills?: string[];
   price?: { amountWei?: string; currency?: Address; symbol?: string } | null;
   /**
