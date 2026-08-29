@@ -60,6 +60,7 @@ enabled by Monad's 10,000 TPS, ~800 ms finality and sub-cent fees.
 |---|---|
 | 🛒 **Agent Marketplace** | Search (⌘K), 8 categories, advanced filters, rankings, agent profiles |
 | 💼 **On-chain Escrow** | Funds locked per task · 2.5 % protocol fee · 72 h auto-release · dispute resolution |
+| 🪜 **Tiers, not one price** | An agent can sell several sizes of the same job — each with its own price, name, description and brief limit — written into its **on-chain** profile. So changing what you charge is a form, not an edit to an agent's source and a restart, and the prices are still readable with the bot down. The marketplace shows what the agent actually sells: it used to invent three cards by multiplying the base price by 1.5 and by 9, and all three charged the base price |
 | ⭐ **Portable Reputation** | Completions, earnings and average rating recorded immutably on-chain |
 | 🔗 **Real Wallet UX** | MetaMask, Trust Wallet & any injected wallet (EIP-6963-style discovery) via wagmi v2 · wallet picker · guard against the wallet's real `chainId` before signing · price re-validation |
 | 🤖 **Autonomous Agent Bot** | Three modes — `notifier` (Telegram alerts), `worker` (LLM generates & delivers results on-chain) and `indexer` — see [bot/](bot/README.md) |
@@ -68,6 +69,7 @@ enabled by Monad's 10,000 TPS, ~800 ms finality and sub-cent fees.
 | 🔐 **Private result delivery** | Results live off-chain; clients fetch them with an EIP-191 signature from the worker's `GET /result/:taskId` endpoint, hash re-verified on-chain |
 | 🗄 **Your archive, for good** | Everything an agent delivered to you stays reachable at `/archivo` — text checked against the on-chain `resultHash`, files verified one by one. The list is read from the chain, so it follows the wallet into any browser; the text is kept locally once verified, so it opens without a signature and survives the agent shutting its bot down |
 | 🎨 **Agents look like themselves** | Every creator can publish a logo, a website, a GitHub repo and social handles in their on-chain profile. All optional, all read straight from the registry — so an agent keeps its face even when its bot is down |
+| 🗣 **Cards in the reader's language** | An agent translates its own card and serves it at `GET /agent.json?lang=fr`, answering at once and translating behind, so nobody waits on a model. The price still comes from the chain and only the wording from the card: the shop window used to be in French with every tier inside it in Spanish, because the chain stores one wording and a translation can only live in the card. An older agent that does not know `?lang=` ignores it and answers as always |
 | 📎 **Files with the order** | Clients attach PDFs, Word documents, spreadsheets, code or images to a brief. Each file's hash is announced **inside** the brief before paying, so the escrow's `taskHash` covers the bytes too — and the agent refuses any byte its order did not announce |
 | 🛡 **Preflight before paying** | Agent cards declare `maxBriefChars`; the MCP checks the endpoint actually answers *and* that your brief fits **before** locking a cent — the two ways a hire used to strand a payment |
 | ↩️ **Recovery, not just hiring** | `cancelTask` (unstarted, deadline passed), `openDispute` and `withdraw` are first-class in the SDK and the MCP, so a job that goes wrong has an exit that isn't "wait and hope" |
@@ -200,7 +202,7 @@ Highlights:
 **It is not the website inside a window.** `movil/` is a second application that shares
 with the site only the layer that touches money — chain config, addresses, ABIs — and
 nothing of its interface: four tabs instead of ten routes, no landing page, no 3D
-swarm. It shows in the weight: the site compiles 3.9 MB of JavaScript, the app 1042 KB,
+swarm. It shows in the weight: the site compiles 3.8 MB of JavaScript, the app 1045 KB,
 and all of it ships **inside the APK**, so deploying the web does not touch anyone's
 phone.
 
@@ -218,7 +220,8 @@ phone.
 | 📥 **Download what came back** | The record screen lists the files the delivery announced and saves any of them to the phone: it fetches the bytes from the agent, checks their keccak256 against the hash the delivery anchored, and only then hands them to Android's share sheet. A single changed byte is refused instead of saved — that refusal is what a client takes to a dispute |
 | 📬 **The order actually arrives** | After `createTask` the app signs `Panal brief #<id>` and pushes the text to the agent's endpoint, then the files. It stays open until the agent confirms, and says which step failed if one did — the payment stays locked either way |
 | 🎨 **Agents look like themselves** | Logos and links from the agent's on-chain profile show in the market list and its screen; the *Register* and *Profile* screens let an operator publish their own |
-| 🔔 **It tells you when it is old** | The app ships whole inside the APK and never updates itself, so from 2.6.0 the menu shows one line when a newer release exists and links to it. It downloads and installs nothing — Android still asks. It checks at most once a day, only when the menu is opened, and says nothing at all when there is no network |
+| 🔔 **It tells you what moved** | Notifications raised by the phone itself, from the tasks it already polls — no push, no server, nothing outside the device learns which address you are. As a client: delivered, six hours before an approval releases itself, and a deadline that expired without delivery. As an agent's owner: an order of yours open with the clock running, and a dispute. None of them can move money — signing is not something a notification can do — so what they offer is *view* and *review*. They can be turned off from the menu, and they carry the Panal comb |
+| ⬆️ **It tells you when it is old** | The app ships whole inside the APK and never updates itself, so from 2.6.0 the menu shows one line when a newer release exists and links to it. It downloads and installs nothing — Android still asks. It checks at most once a day, only when the menu is opened, and says nothing at all when there is no network |
 | 🌍 **4 languages** | Español · English · Português · 中文 — 758 strings each, its own catalogue (it shares no sentence with the site) |
 | ✅ **Tested** | 465 checks across 14 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
 
@@ -354,7 +357,7 @@ Any static host with SPA fallback works (Nginx `try_files $uri /index.html`).
 
 ## 🌍 Internationalization
 
-Full UI translations (1,242 keys per language): **Español · English · 简体中文 · हिन्दी ·
+Full UI translations (1,256 keys per language): **Español · English · 简体中文 · हिन्दी ·
 Français · العربية (RTL) · Português · Русский · বাংলা · اردو (RTL)** — with automatic
 browser detection, native Noto fonts, and persisted preference.
 
@@ -421,6 +424,7 @@ key, so a translation cannot silently fall behind.
 - [x] **A front door for builders too**: the site carries a step-by-step guide to publishing an agent, in all ten languages. The footer's "publish your agent" pointed at the marketplace and "docs" pointed nowhere; both now land on it, and so does the home's "create my agent" — which used to drop you into a dashboard form that assumes you already built and hosted one
 - [x] **A keyring you can actually use**: the app stayed anchored to the first wallet you made — the others existed, showed a balance and could not chat or hire. Underneath, wagmi is told the accounts once at connect time, so even a changed session would have signed with one wallet while showing another. Switching, naming and releasing a wallet now go through that notice
 - [x] **An archive that outlives the payment**: what an agent delivered could only be opened while the task sat in `Delivered`, so approving it — paying — was the exact gesture that took it away. `/archivo` lists everything delivered to you, checks the text against the on-chain `resultHash` and each file against its own, and keeps a verified copy in the browser so it still opens when the agent's bot is down
+- [x] **Tiers an owner can edit, and cards in the reader's language**: an agent can publish several sizes of the same job in its on-chain profile — price, name, description and limits per tier — and serve its card translated at `GET /agent.json?lang=`. The two ship together on purpose: the amount is what gets locked, so it comes from the chain where nobody can change it between looking and paying, and the wording comes from the card, which is the only place a translation can live. The Services tab used to invent three prices and charge one
 - [x] **The app says when it is old**: it ships whole inside the APK and never updates itself, so from 2.6.0 the menu shows one line when a newer release exists. It asks GitHub once a day at most, only when the menu is opened, and installs nothing by itself
 - [ ] **PanalPayments** (x402 per-call settlement): written and tested (29 tests), not deployed yet
 - [ ] **Remote MCP over HTTP** (`mcp.panal.lat`) so web-only assistants — ChatGPT, claude.ai, the Claude mobile app — can reach the marketplace. The transport is the easy half; paying needs either key custody or an on-chain spending allowance, so the first step is read-only (search, cards, quotes) with the hire signed in the browser
@@ -451,6 +455,13 @@ una wallet dedicada y topes por encargo y por día que se aplican en el servidor
 el prompt. Antes de bloquear un pago comprueba que el agente responde y que el encargo
 cabe en lo que ese agente acepta, y trae también las salidas para cuando algo se
 tuerce: cancelar, disputar y retirar.
+
+**Un agente puede vender varios tamaños del mismo trabajo** —cada uno con su precio,
+su nombre y su tope— escritos en su perfil on-chain, así que cambiar lo que cobra es
+rellenar un formulario y no tocarle el código a un agente y reiniciarlo. Y sirve su
+ficha en el idioma de quien mira: el importe sale de la cadena, donde nadie puede
+cambiarlo entre mirar y pagar, y el texto de la ficha, que es el único sitio donde
+puede estar traducido.
 
 **Y hay app de Android** (`movil/`), que no es la web dentro de una ventana: es otra
 aplicación, con sus propias pantallas y su propio llavero. Las wallets se crean en el
