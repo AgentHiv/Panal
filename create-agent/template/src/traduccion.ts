@@ -26,6 +26,22 @@
  * Diez idiomas son diez llamadas en toda la vida de una descripción. Traducir
  * cuatro frases es la llamada más barata que va a hacer tu agente.
  *
+ * NADIE ESPERA A QUE TRADUZCA
+ *
+ * La ficha se sirve SIEMPRE al momento. Si el idioma ya está guardado va
+ * traducida; si no, va original y la traducción se pide POR DETRÁS, para la
+ * próxima vez que alguien pregunte por ese idioma.
+ *
+ * Traducir dentro de la petición obliga a no reintentar, porque nadie va a
+ * esperar a un modelo con la tarjeta en blanco. Y sin reintentos un
+ * `429 Too Many Requests` —que en una cuenta compartida por cuatro agentes es
+ * lo normal, no la excepción— significa «esta ficha no se traduce»; como no se
+ * guarda nada, el siguiente que pregunte se come otro 429 y el idioma no llega
+ * a traducirse NUNCA. Comprobado contra los agentes de mainnet: la misma
+ * petición que falla con cero reintentos entra en cuanto se la deja insistir.
+ *
+ * Fuera de la petición sí se puede insistir, porque no hay nadie mirando.
+ *
  * CUANDO FALLA NO SE NOTA
  *
  * Si el modelo no contesta, se acabó la cuota o no hay `LLM_API_KEY`, se sirve
@@ -55,11 +71,24 @@ export interface Frases {
 const MAX_FRASE = 400;
 
 /**
- * Cuánto se espera. Corto a propósito: esto corre DENTRO de una petición de la
- * ficha, y una tarjeta que tarda medio minuto en pintar es una tarjeta rota.
- * Lo que no llegue a tiempo sale sin traducir y se traducirá en la siguiente.
+ * Cuánto se espera al modelo, y cuántas veces se insiste.
+ *
+ * Holgado porque esto ya NO corre dentro de la petición de la ficha: nadie está
+ * mirando. Los reintentos son lo que hace que la traducción llegue; sin ellos
+ * un 429 pasajero dejaba el idioma sin traducir para siempre.
  */
-const ESPERA_MS = 20_000;
+const ESPERA_MS = 60_000;
+const REINTENTOS = 4;
+
+/**
+ * Los idiomas que se están traduciendo ahora mismo.
+ *
+ * El indexador pide los diez seguidos, y sin esta lista tres peticiones en
+ * francés llegadas antes de que vuelva la primera lanzarían tres traducciones
+ * idénticas: tres veces el gasto contra una cuenta que ya va justa de
+ * peticiones por minuto, para escribir el mismo archivo.
+ */
+const enCurso = new Set<string>();
 
 /** La huella del texto original: si cambia, la traducción guardada ya no vale. */
 function huella(frases: Frases): string {
@@ -144,10 +173,42 @@ const SISTEMA =
   'stay short. Do not translate brand names, product names or code identifiers.';
 
 /**
- * Las frases de la ficha en otro idioma.
+ * Las frases ya traducidas, si están guardadas. NO llama a nadie.
  *
- * Devuelve `null` cuando no se ha podido traducir, y quien llama sirve el
- * original: no traducir NUNCA puede ser un error para el que pide la ficha.
+ * Esta es la que usa la ficha, y por eso es síncrona: contesta en microsegundos
+ * y no puede hacer esperar a quien pide `/agent.json`.
+ */
+export function frasesGuardadas(frases: Frases, idioma: Idioma, dir: string): Frases | null {
+  return leerGuardado(dir, idioma, huella(frases));
+}
+
+/**
+ * Pide la traducción POR DETRÁS, para la próxima vez.
+ *
+ * No devuelve nada y no se espera: quien la llama ya ha servido la ficha
+ * original. Si sale bien queda guardada y la siguiente petición en ese idioma
+ * la encuentra hecha; si sale mal no se entera nadie y se reintentará.
+ */
+export function pedirTraduccion(
+  frases: Frases,
+  idioma: Idioma,
+  llm: LlmConfig | null,
+  dir: string,
+): void {
+  if (!llm) return;
+  if (!frases.description.trim() && frases.tiers.length === 0) return;
+  const clave = `${idioma}-${huella(frases)}`;
+  if (enCurso.has(clave) || frasesGuardadas(frases, idioma, dir)) return;
+  enCurso.add(clave);
+  void traducirFrases(frases, idioma, llm, dir).finally(() => enCurso.delete(clave));
+}
+
+/**
+ * Las frases de la ficha en otro idioma, esperando al modelo.
+ *
+ * Devuelve `null` cuando no se ha podido traducir. La ficha NO la llama
+ * directamente —usa el par de arriba—; esta existe para las pruebas y para
+ * traducir a mano, donde sí se quiere el resultado.
  */
 export async function traducirFrases(
   frases: Frases,
@@ -165,7 +226,7 @@ export async function traducirFrases(
 
   try {
     const crudo = await llmChat(
-      { ...llm, timeoutMs: ESPERA_MS, maxRetries: 0 },
+      { ...llm, timeoutMs: ESPERA_MS, maxRetries: REINTENTOS },
       {
         system: SISTEMA,
         user:

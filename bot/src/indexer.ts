@@ -701,12 +701,20 @@ async function verificarDominios(store: IndexStore): Promise<void> {
  * entre pedir diez traducciones a cada agente en cada vuelta —un ataque a sus
  * propios bots— o no refrescarlas nunca.
  *
+ * Con una vuelta no basta. El agente no traduce dentro de la peticion: sirve el
+ * original y encarga la traduccion por detras, asi que la PRIMERA vez contesta
+ * los diez idiomas sin traducir. Por eso se vuelve a por los que falten, como
+ * mucho cada REINTENTO_IDIOMAS_S.
+ *
  * De dos en dos por vuelta, por lo mismo que la verificacion de dominios: son
  * peticiones contra dominios ajenos.
  * ─────────────────────────────────────────────────────────────────────────
  */
+/** Cada cuanto se vuelve a por los idiomas que le faltan a un agente. */
+const REINTENTO_IDIOMAS_S = 30 * 60;
+
 async function traducirFichas(store: IndexStore): Promise<void> {
-  const tanda = store.pendientesDeTraducir(2);
+  const tanda = store.pendientesDeTraducir(2, IDIOMAS.length, REINTENTO_IDIOMAS_S);
   if (tanda.length === 0) return;
 
   for (const p of tanda) {
@@ -720,10 +728,13 @@ async function traducirFichas(store: IndexStore): Promise<void> {
     }
     store.guardarIdiomas(p.address, p.metadataURI, idiomas);
     const n = Object.keys(idiomas).length;
+    const quien = p.name || p.address.slice(0, 10);
     console.log(
-      n > 0
-        ? `[index] ${p.name || p.address.slice(0, 10)}: ficha en ${n} idiomas`
-        : `[index] ${p.name || p.address.slice(0, 10)}: no sabe traducirse, se queda su texto original`,
+      n === IDIOMAS.length
+        ? `[index] ${quien}: ficha en los ${n} idiomas`
+        : n > 0
+          ? `[index] ${quien}: ficha en ${n} de ${IDIOMAS.length}; vuelvo a por el resto en ${REINTENTO_IDIOMAS_S / 60} min`
+          : `[index] ${quien}: aun no tiene traducciones listas, se queda su texto original`,
     );
   }
 }

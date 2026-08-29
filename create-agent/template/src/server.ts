@@ -61,7 +61,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { isAddress, keccak256, parseEther, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
 import { handleTask, NIVELES, SUBCONTRATA_SKILLS } from './agent.js';
-import { traducirFrases } from './traduccion.js';
+import { frasesGuardadas, pedirTraduccion } from './traduccion.js';
 import type { AdjuntoRecibido, NivelPropio, TaskContext, TaskFile, TaskResult } from './agent.js';
 import { arrancarVigilante } from './vigilante.js';
 import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
@@ -1264,24 +1264,22 @@ const server = createServer((req, res) => {
       /**
        * `?lang=fr`: la misma ficha con las frases en francés.
        *
-       * Traduce este agente con su propio modelo y guarda el resultado, así
-       * que la primera petición en cada idioma cuesta una llamada y las demás
-       * ninguna. Si falla —sin clave, sin cuota, sin red— se sirve el original:
-       * no traducir no puede ser un error para quien pide la ficha.
+       * SIN ESPERAR. Si el idioma ya está traducido se sirve traducido; si no,
+       * se sirve el original y la traducción se encarga por detrás para la
+       * próxima vez. Traducir aquí dentro obliga a no reintentar —nadie espera
+       * a un modelo con la tarjeta en blanco— y sin reintentos un 429 pasajero
+       * dejaba ese idioma sin traducir para siempre.
        */
       const idioma = normalizarIdioma(url.searchParams.get('lang'));
       const nivelesFicha = NIVELES_OK.map(comoFicha);
       let descripcion = FICHA_TEXTO.description;
       if (idioma) {
-        const traducido = await traducirFrases(
-          {
-            description: descripcion,
-            tiers: NIVELES_OK.map((n) => ({ name: n.name ?? '', description: n.description ?? '' })),
-          },
-          idioma,
-          LLM_FICHA,
-          DATA_DIR,
-        );
+        const frases = {
+          description: descripcion,
+          tiers: NIVELES_OK.map((n) => ({ name: n.name ?? '', description: n.description ?? '' })),
+        };
+        const traducido = frasesGuardadas(frases, idioma, DATA_DIR);
+        if (!traducido) pedirTraduccion(frases, idioma, LLM_FICHA, DATA_DIR);
         if (traducido) {
           descripcion = traducido.description;
           traducido.tiers.forEach((t, i) => {

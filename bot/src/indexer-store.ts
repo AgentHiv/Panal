@@ -182,6 +182,9 @@ export interface AgentProfile {
    * volver a pedirlas nunca y quedarse con la descripción de hace un año.
    */
   idiomasDe?: string;
+
+  /** Cuándo se pidieron por última vez, para poder reintentar las que faltan. */
+  idiomasTs?: number;
   /** Cuándo se comprobó, para no repetirlo en cada vuelta. */
   verificadoTs?: number;
 }
@@ -792,6 +795,7 @@ export class IndexStore {
     if (!p) return;
     p.idiomas = idiomas;
     p.idiomasDe = de;
+    p.idiomasTs = Math.floor(Date.now() / 1000);
   }
 
   /**
@@ -813,8 +817,14 @@ export class IndexStore {
   }
 
   /**
-   * Los que toca traducir: nunca traducidos, o con la ficha cambiada desde que
-   * se tradujeron.
+   * Los que toca traducir: nunca traducidos, con la ficha cambiada, o a los que
+   * les faltan idiomas y ya ha pasado un rato.
+   *
+   * HAY QUE VOLVER A POR LAS QUE FALTEN. Un agente no traduce dentro de la
+   * petición: sirve el original y encarga la traducción por detrás, así que la
+   * primera vez que se le preguntan los diez idiomas contesta los diez sin
+   * traducir. Dando eso por bueno, un agente se quedaría con su texto original
+   * para siempre por haber llegado el indexador antes que su modelo.
    *
    * `idiomasDe` guarda de qué `metadataURI` salieron las traducciones que hay.
    * Comparar con la de ahora es lo que permite refrescarlas cuando alguien
@@ -823,9 +833,15 @@ export class IndexStore {
    *
    * Solo los que publican endpoint: sin bot no hay a quién pedírselas.
    */
-  pendientesDeTraducir(tope: number): AgentProfile[] {
+  pendientesDeTraducir(tope: number, completo: number, reintentoS: number): AgentProfile[] {
+    const ahora = Math.floor(Date.now() / 1000);
     return [...this.profiles.values()]
-      .filter((p) => p.botUrl && p.idiomasDe !== p.metadataURI)
+      .filter((p) => {
+        if (!p.botUrl) return false;
+        if (p.idiomasDe !== p.metadataURI) return true;
+        const tiene = Object.keys(p.idiomas ?? {}).length;
+        return tiene < completo && ahora - (p.idiomasTs ?? 0) > reintentoS;
+      })
       .slice(0, tope);
   }
 
