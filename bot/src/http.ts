@@ -43,7 +43,8 @@
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { esTokenDeMarca, leerMarca } from './marca.js';
-import { esTokenDeNivel } from './niveles.js';
+import { esTokenDeNivel, leerNivelesDeMetadata } from './niveles.js';
+import { normalizarIdioma, traducirFrases, type Idioma } from './traduccion.js';
 import { allowedOrigin, clientIp } from './net.js';
 import { generateResult } from './llm.js';
 import {
@@ -191,6 +192,24 @@ export interface AgentJson {
   name: string;
   description: string;
   /**
+   * El idioma de `description` y `tiers`, si se pidió con `?lang=` y se pudo
+   * traducir. AUSENTE NO ES «está en inglés»: es que va en el idioma en que su
+   * dueño lo escribió, aunque hayas pedido otro.
+   */
+  lang?: string;
+  /**
+   * Los niveles que vende, de menor a mayor. Ausente = no vende niveles, y
+   * quien lea NO debe inventárselos a partir del precio.
+   */
+  tiers?: {
+    name?: string;
+    description?: string;
+    amountWei: string;
+    maxBriefChars?: number;
+    maxAttachChars?: number;
+    maxAttachCharsTotal?: number;
+  }[];
+  /**
    * La dirección del agente, con el nombre que usa todo el mundo menos este
    * bot. Los agentes de la plantilla publican `agent`, este publicaba solo
    * `agentAddress`, y el verificador de dominios lleva desde entonces un
@@ -321,6 +340,10 @@ export async function buildAgentJson(
   clients: ChainClients,
   /** Si el agente cobra por llamada, se anuncia en la tarjeta. */
   x402?: X402Endpoint,
+  /** El idioma pedido en `?lang=`, si se pidió alguno y se reconoce. */
+  idioma?: Idioma | null,
+  /** Dónde viven las traducciones ya hechas. */
+  dirDatos?: string,
 ): Promise<AgentJson> {
   let agent: RegistryAgent | null = null;
   try {
@@ -333,9 +356,64 @@ export async function buildAgentJson(
   const meta = parseMetadataURI(agent?.metadataURI ?? '');
   const base = cfg.httpPublicUrl?.replace(/\/+$/, '') ?? null;
   const basePath = base ?? '<BOT_URL>';
+
+  // Los niveles que este agente publica EN LA CADENA. Vacío es lo normal, y
+  // significa que no vende niveles: quien lea esto NO debe fabricarle uno a
+  // partir del precio. Se anuncian aquí para que su dueño pueda ponerlos desde
+  // el panel sin tocar este código.
+  const niveles = leerNivelesDeMetadata(agent?.metadataURI ?? '');
+
+  /**
+   * En qué idioma va lo que se sirve, y `null` si va en el original.
+   *
+   * Se DICE, no se deja adivinar: la traducción va por detrás, así que pedir
+   * `?lang=fr` antes de que esté lista devuelve la ficha original con un 200
+   * impecable, y quien la guarde se quedaría con el inglés creyendo que es el
+   * francés.
+   */
+  let servidoEn: Idioma | null = null;
+  let descripcion = meta.description ?? 'Agente autónomo del marketplace Panal (Monad).';
+  let nombresNiveles = niveles.map((n) => ({ name: n.name, description: n.description }));
+  if (idioma && dirDatos) {
+    const traducido = traducirFrases(
+      {
+        description: descripcion,
+        tiers: niveles.map((n) => ({ name: n.name, description: n.description ?? '' })),
+      },
+      idioma,
+      cfg,
+      dirDatos,
+    );
+    if (traducido) {
+      servidoEn = idioma;
+      descripcion = traducido.description;
+      nombresNiveles = traducido.tiers.map((t, i) => ({
+        // Solo se pisa lo que ya había: un nivel sin descripción no gana una
+        // por pasar por el traductor.
+        name: t.name || (niveles[i]?.name ?? ''),
+        description: t.description || (niveles[i]?.description ?? null),
+      }));
+    }
+  }
+
   return {
     name: meta.name ?? `Agente Panal ${cfg.agentAddress}`,
-    description: meta.description ?? 'Agente autónomo del marketplace Panal (Monad).',
+    description: descripcion,
+    ...(servidoEn ? { lang: servidoEn } : {}),
+    ...(niveles.length > 0
+      ? {
+          tiers: niveles.map((n, i) => ({
+            ...(nombresNiveles[i]?.name ? { name: nombresNiveles[i]!.name } : {}),
+            ...(nombresNiveles[i]?.description
+              ? { description: nombresNiveles[i]!.description! }
+              : {}),
+            amountWei: n.wei.toString(),
+            ...(n.maxBriefChars === null ? {} : { maxBriefChars: n.maxBriefChars }),
+            ...(n.maxAttachChars === null ? {} : { maxAttachChars: n.maxAttachChars }),
+            ...(n.maxAttachCharsTotal === null ? {} : { maxAttachCharsTotal: n.maxAttachCharsTotal }),
+          })),
+        }
+      : {}),
     agent: cfg.agentAddress,
     agentAddress: cfg.agentAddress,
     // `protocol` y `network` los servía solo la plantilla, y son lo que deja
@@ -441,7 +519,7 @@ export interface ResultServerDeps {
   /** Lectura de la task on-chain (inyectable en tests). */
   fetchTask: (taskId: bigint) => Promise<Task>;
   /** Descriptor de GET /agent.json (inyectable en tests; si falta → 404). */
-  fetchAgentJson?: () => Promise<AgentJson>;
+  fetchAgentJson?: (idioma?: Idioma | null) => Promise<AgentJson>;
   /** Permitir orígenes http://localhost:* (desarrollo). */
   allowLocalhostOrigin: boolean;
   /** Límite de tamaño de URL aceptado (defensa ante URLs gigantes). */
@@ -736,13 +814,13 @@ export function createResultServer(deps: ResultServerDeps): Server {
   };
 
   // ---- GET /agent.json -------------------------------------------------------
-  const handleAgentJson = async (res: ServerResponse): Promise<void> => {
+  const handleAgentJson = async (res: ServerResponse, idioma: Idioma | null): Promise<void> => {
     if (!deps.fetchAgentJson) {
       json(res, 404, { error: 'not found' });
       return;
     }
     try {
-      json(res, 200, await deps.fetchAgentJson());
+      json(res, 200, await deps.fetchAgentJson(idioma));
     } catch (err) {
       console.warn(`[http] agent.json falló: ${err instanceof Error ? err.message.split('\n')[0] : err}`);
       json(res, 502, { error: 'rpc error' });
@@ -796,7 +874,7 @@ export function createResultServer(deps: ResultServerDeps): Server {
       return;
     }
     if (url.pathname === '/agent.json' && req.method === 'GET') {
-      await handleAgentJson(res);
+      await handleAgentJson(res, normalizarIdioma(url.searchParams.get('lang')));
       return;
     }
     if (url.pathname === '/x402/ask' && req.method === 'POST') {
@@ -856,7 +934,7 @@ export function startResultServer(cfg: BotConfig, clients: ChainClients, store: 
     store,
     x402,
     fetchTask: (taskId) => getTask(clients, cfg, taskId),
-    fetchAgentJson: () => buildAgentJson(cfg, clients, x402),
+    fetchAgentJson: (idioma) => buildAgentJson(cfg, clients, x402, idioma, cfg.storeDir),
     // En producción (NODE_ENV=production) solo panal.lat; en dev también localhost.
     allowLocalhostOrigin: cfg.dryRun || process.env.NODE_ENV !== 'production',
   });
