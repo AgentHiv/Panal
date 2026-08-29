@@ -35,6 +35,8 @@ import {
 } from '@/contracts/config';
 import { panalNamesAbi, panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
 import type { Agent, AgentCategory } from '@/data/agents';
+import { esTokenDeNivel } from '@panal/sdk';
+import { useIdiomaDelDocumento } from '@/lib/idiomaActual';
 import { MARCA_VACIA, esTokenDeMarca, leerMarca, type Marca } from '@/lib/marca';
 import {
   fetchCatalogo,
@@ -157,8 +159,8 @@ function short(addr: string): string {
 /**
  * metadataURI de texto libre → campos de presentación.
  *
- * Los tokens con forma —`bot:`, `logo:`, `github:`…— se apartan antes de
- * repartir posiciones. Sin eso, el segundo segmento de un agente que solo
+ * Los tokens con forma —`bot:`, `logo:`, `github:`, `nivel:`…— se apartan
+ * antes de repartir posiciones. Sin eso, el segundo segmento de un agente que solo
  * publicara su bot saldría de descripción: la tarjeta anunciaría
  * «bot:https://…» donde debería decir qué hace.
  */
@@ -171,7 +173,7 @@ function parseMetadata(uri: string, addr: Address): { name: string; tagline: str
     .split('·')
     .map((p) => p.trim())
     .filter(Boolean)
-    .filter((p) => !esTokenDeMarca(p) && !/^bot:\s*https?:\/\//i.test(p));
+    .filter((p) => !esTokenDeMarca(p) && !esTokenDeNivel(p) && !/^bot:\s*https?:\/\//i.test(p));
   if (parts.length > 0) {
     return {
       name: parts[0] || fallback.name,
@@ -220,22 +222,41 @@ function volumenDe(
   };
 }
 
-function delCatalogo(fichas: CatalogAgent[]): OnchainAgent[] {
+/**
+ * La descripción de un agente en el idioma de quien mira.
+ *
+ * La traduce el propio agente y el indexador la guarda; aquí solo se elige. Si
+ * ese idioma no está —un agente de una plantilla anterior, una traducción que
+ * falló, un indexador viejo— se devuelve el texto original, que es exactamente
+ * lo que se enseñaba antes de que esto existiera.
+ */
+function descripcionEnIdioma(f: CatalogAgent, idioma: string): string {
+  // `es-419`, `zh-Hans`: el navegador dice la variante y el catálogo guarda la
+  // base. Sin recortar, un mexicano caería al texto sin traducir.
+  const base = idioma.toLowerCase().split(/[-_]/)[0] ?? '';
+  return f.idiomas?.[base]?.trim() || f.description;
+}
+
+function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
   return fichas
     .filter((f) => f.active)
     .map((f) => {
       const addr = f.address as Address;
       const priceWei = BigInt(f.pricePerTask);
+      const descripcion = descripcionEnIdioma(f, idioma);
       // El rating sale del indexador y no de getScore: es el mismo dato —los
       // dos salen de PanalReputation— y así no hay que preguntar por cada uno.
       const rating = f.stats?.avgRating ?? 0;
       return {
         id: `onchain-${f.address}`,
         name: f.name || `Agente ${short(addr)}`,
+        // La categoría sale de la descripción ORIGINAL, no de la traducida: las
+        // palabras que la delatan están escritas en unos pocos idiomas, y un
+        // agente cambiaría de categoría según quién lo esté mirando.
         category: categoriaDe(f.skills, f.description),
         type: 'ia',
-        tagline: f.description || 'Agente registrado on-chain en PanalRegistry.',
-        description: f.description || 'Agente registrado directamente en PanalRegistry (Monad mainnet).',
+        tagline: descripcion || 'Agente registrado on-chain en PanalRegistry.',
+        description: descripcion || 'Agente registrado directamente en PanalRegistry (Monad mainnet).',
         pricePerTask: Number(formatEther(priceWei)),
         rating: rating > 0 ? Math.min(5, rating) : 0,
         reviews: f.stats?.ratingCount ?? 0,
@@ -281,14 +302,14 @@ function delCatalogo(fichas: CatalogAgent[]): OnchainAgent[] {
     });
 }
 
-async function fetchAgents(): Promise<OnchainAgent[]> {
+async function fetchAgents(idioma: string): Promise<OnchainAgent[]> {
   // El catálogo primero: una petición HTTP en vez de 100 llamadas RPC, y sin
   // el techo de 50 agentes. Si el indexador no responde o va atrasado, se lee
   // el registro como siempre: peor —solo los 50 primeros— pero nunca un
   // mercado vacío.
   const cabeza = await publicClient.getBlockNumber().catch(() => undefined);
   const fichas = await fetchCatalogo(cabeza);
-  if (fichas !== null) return delCatalogo(fichas);
+  if (fichas !== null) return delCatalogo(fichas, idioma);
   return fetchOnchainAgents();
 }
 
@@ -439,9 +460,15 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
 }
 
 export function usePanalAgents() {
+  // Del `lang` del documento y no de i18next: este hook lo usa TAMBIÉN la app,
+  // que no monta i18next. Ver `idiomaActual.ts`.
+  const idioma = useIdiomaDelDocumento();
   const query = useQuery({
-    queryKey: ['panal-agents', V2_ENABLED],
-    queryFn: fetchAgents,
+    // El idioma va en la clave: el catálogo trae la descripción de cada agente
+    // traducida, así que cambiar de idioma tiene que rehacer la lista y no
+    // devolver la que había en el idioma anterior.
+    queryKey: ['panal-agents', V2_ENABLED, idioma],
+    queryFn: () => fetchAgents(idioma),
     staleTime: 30_000,
     retry: 3,
     retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 10_000),

@@ -138,3 +138,20 @@ export type { UrlGuardOptions } from './net.js';
 // antiguo. En agent-card.ts está por qué llegó a haber dos.
 export { leerDireccion, leerMaxBriefChars, leerNiveles, leerX402, nivelPara } from './agent-card.js';
 export type { AgentCard, FichaGetResult, FichaNivel, FichaPostBrief, FichaX402, Nivel } from './agent-card.js';
+
+// Los niveles escritos en el metadataURI on-chain. Mismo tipo `Nivel` que los
+// de la ficha; en niveles.ts está por qué viven en los dos sitios.
+export {
+  componerNivel,
+  esTokenDeNivel,
+  leerNivelDeSegmento,
+  leerNivelesDeMetadata,
+  NIVELES_EDITABLES,
+  precioAWei,
+  weiAPrecio,
+} from './niveles.js';
+
+// La ficha en el idioma de quien la lee. En idiomas.ts está por qué traduce el
+// propio agente y no un servicio de Panal.
+export { fichaEnIdioma, IDIOMAS, NOMBRE_IDIOMA, normalizarIdioma } from './idiomas.js';
+export type { Idioma } from './idiomas.js';

@@ -98,6 +98,15 @@ jobs:
       - name: La ficha se lee igual en las tres capas
         run: pnpm exec tsx scripts/test-marca.ts
 
+      # Los niveles son el segundo token que vive en esa misma cadena, y lo leen
+      # CUATRO capas: las tres de arriba mas la app. Ademas se ESCRIBEN desde el
+      # panel, asi que aqui un fallo no descuadra una tarjeta: firma una ficha en
+      # la que un nivel no esta, o en la que dice otro precio del que su dueno
+      # escribio. Y la app, que no tiene formulario para ellos, los arrastra al
+      # editar la descripcion: si deja de hacerlo los borra sin avisar.
+      - name: Los niveles se leen y se escriben igual en las cuatro capas
+        run: pnpm exec tsx scripts/test-niveles.ts
+
       - name: Build de produccion
         run: pnpm exec vite build
 

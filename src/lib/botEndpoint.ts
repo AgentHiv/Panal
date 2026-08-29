@@ -12,7 +12,7 @@
  * corresponde al cliente de la tarea.
  */
 
-import { leerNiveles } from '@panal/sdk';
+import { fichaEnIdioma, leerNiveles } from '@panal/sdk';
 import type { Nivel } from '@panal/sdk';
 
 /**
@@ -130,9 +130,21 @@ export interface CapacidadesAgente {
 /** Lo que se devuelve cuando la tarjeta no contesta: ni adjuntos ni niveles. */
 const SIN_NADA: CapacidadesAgente = { adjuntos: false, niveles: [] };
 
-export async function leerCapacidades(botUrl: string, timeoutMs = 6_000): Promise<CapacidadesAgente> {
+/**
+ * @param idioma El idioma de quien está mirando, para pedir la ficha traducida.
+ *
+ * El agente traduce SU PROPIA ficha y guarda el resultado (ver `traduccion.ts`
+ * de la plantilla), así que esto no cuesta nada salvo la primera vez de cada
+ * idioma. Un agente antiguo que no sepa de `?lang=` ignora el parámetro y
+ * contesta lo de siempre: el texto sin traducir, que es lo que hay hoy.
+ */
+export async function leerCapacidades(
+  botUrl: string,
+  timeoutMs = 6_000,
+  idioma?: string,
+): Promise<CapacidadesAgente> {
   try {
-    const res = await fetch(`${botUrl.replace(/\/+$/, '')}/agent.json`, {
+    const res = await fetch(fichaEnIdioma(botUrl, idioma), {
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) return SIN_NADA;

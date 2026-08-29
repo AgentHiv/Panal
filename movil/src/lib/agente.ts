@@ -6,6 +6,7 @@ import { panalRegistryV2Abi } from '@/contracts/abis';
 import { extractBotUrl } from '@/lib/botEndpoint';
 import { leerCobroPorLlamada } from '@/lib/chat';
 import type { CobroPorLlamada } from '@/lib/chat';
+import { leerNivelesDeMetadata, type Nivel } from '@panal/sdk';
 
 export interface DatosAgente {
   /** El endpoint que el agente tiene REGISTRADO en la cadena. */
@@ -15,6 +16,15 @@ export interface DatosAgente {
   precioTarea: bigint;
   moneda: Address;
   nombre: string;
+  /**
+   * Los niveles que publica EN LA CADENA. Vacío es lo normal.
+   *
+   * Se leen aquí y no de la tarjeta del bot porque son los únicos que siguen
+   * estando con el bot caído: si mandara la tarjeta, un agente que no contesta
+   * se quedaría sin niveles y se le encargaría el tamaño grande al precio del
+   * pequeño. Los de la tarjeta siguen valiendo de respaldo.
+   */
+  niveles: Nivel[];
 }
 
 /**
@@ -56,6 +66,7 @@ export function useAgente(direccion: string | undefined) {
         precioTarea: ficha.pricePerTask ?? 0n,
         moneda: (ficha.currency ?? '0x0000000000000000000000000000000000000000') as Address,
         nombre,
+        niveles: leerNivelesDeMetadata(ficha.metadataURI),
       };
     },
   });

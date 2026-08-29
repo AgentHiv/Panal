@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ExternalLink, Loader2, Paperclip, Timer, TriangleAlert, X } from 'lucide-react';
 import { useSignMessage, useSwitchChain, useWriteContract } from 'wagmi';
 import { formatEther, keccak256, parseEventLogs, toBytes } from 'viem';
-import type { Nivel } from '@panal/sdk';
+import { leerNivelesDeMetadata, type Nivel } from '@panal/sdk';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { saveTaskBrief } from '@/lib/taskBriefs';
 import {
@@ -104,7 +104,7 @@ function HireWizard({
   onOpenChange: (open: boolean) => void;
   nivel: Nivel | null;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [step, setStep] = useState(0);
   /** Los niveles que vende, leídos de su tarjeta. Vacío es lo normal. */
   const [niveles, setNiveles] = useState<Nivel[]>([]);
@@ -214,16 +214,31 @@ function HireWizard({
         })) as { metadataURI?: string };
         const botUrl = extractBotUrl(meta.metadataURI);
         if (vigente) botUrlRef.current = botUrl;
+        /**
+         * Los niveles escritos en la CADENA mandan sobre los de la tarjeta.
+         *
+         * No es un capricho de precedencia: son los únicos que siguen ahí con
+         * el bot caído. Si mandara la tarjeta, un agente que no contesta se
+         * quedaría sin niveles y esta pantalla ofrecería su precio suelto —el
+         * del nivel más barato— para un encargo del tamaño grande.
+         *
+         * Los de la tarjeta siguen valiendo para quien aún no los ha subido a
+         * la cadena, que hoy son todos.
+         */
+        const enCadena = leerNivelesDeMetadata(meta.metadataURI);
         // Sin endpoint publicado no hay a quién subirle nada.
-        const caps: CapacidadesAgente = botUrl ? await leerCapacidades(botUrl) : { adjuntos: false, niveles: [] };
+        const caps: CapacidadesAgente = botUrl
+          ? await leerCapacidades(botUrl, 6_000, i18n.language)
+          : { adjuntos: false, niveles: [] };
         if (!vigente) return;
         setAceptaAdjuntos(caps.adjuntos ? 'si' : 'no');
         if (caps.maxAdjuntoBytes) setTopeAdjunto(Math.min(caps.maxAdjuntoBytes, MAX_ADJUNTO_BYTES));
-        setNiveles(caps.niveles);
+        const suyos = enCadena.length > 0 ? enCadena : caps.niveles;
+        setNiveles(suyos);
         // Si se entró por el botón grande no hay nivel elegido, y el que toca
         // por defecto es el más barato: debería costar lo que el agente tiene
         // registrado, así que quien no toque nada bloquea lo de siempre.
-        setElegido((previo) => previo ?? caps.niveles[0] ?? null);
+        setElegido((previo) => previo ?? suyos[0] ?? null);
       } catch {
         // Falla cerrado, igual que `leerCapacidades`.
         if (vigente) setAceptaAdjuntos('no');
@@ -232,7 +247,7 @@ function HireWizard({
     return () => {
       vigente = false;
     };
-  }, [agent]);
+  }, [agent, i18n.language]);
 
   /**
    * El encargo, tal y como se va a hashear. Se compone AQUÍ y en ningún otro

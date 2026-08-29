@@ -23,13 +23,18 @@ import { useContractAction } from '@/hooks/useContractAction';
 import { PANAL_REGISTRY_V2_ADDRESS, EXPLORER_TX } from '@/contracts/config';
 import { panalRegistryV2Abi } from '@/contracts/abis';
 import {
+  aNivel,
+  aNivelEditable,
   composeAgentMetadata,
+  falloDeNivel,
   isHttpsUrl,
   parseAgentMetadata,
   resumirFicha,
+  type NivelEditable,
 } from '@/lib/agentMetadata';
 import type { Marca } from '@/lib/marca';
 import MarcaFields from '@/components/dashboard/MarcaFields';
+import NivelesFields from '@/components/dashboard/NivelesFields';
 
 /** Máximo de skills (chips) por agente (mismo límite que el registro). */
 const MAX_SKILLS = 6;
@@ -51,6 +56,13 @@ export interface EditProfileDialogProps {
    * que poner un logo le ha cambiado el avatar.
    */
   agentAddress: string;
+  /**
+   * El precio del registro, en unidades enteras. Solo para avisar si el nivel
+   * más barato no coincide: es ese el que enseña el mercado como EL precio.
+   */
+  precioBase: string;
+  /** MON o $PANAL: los niveles se cobran en la moneda del agente. */
+  simbolo: string;
   /** Tras minarse la tx (refetch del perfil on-chain). */
   onMined: () => void;
 }
@@ -61,6 +73,8 @@ export default function EditProfileDialog({
   metadataURI,
   agentName,
   agentAddress,
+  precioBase,
+  simbolo,
   onMined,
 }: EditProfileDialogProps) {
   return (
@@ -72,6 +86,8 @@ export default function EditProfileDialog({
           metadataURI={metadataURI}
           agentName={agentName}
           agentAddress={agentAddress}
+          precioBase={precioBase}
+          simbolo={simbolo}
           onMined={onMined}
           onOpenChange={onOpenChange}
         />
@@ -84,12 +100,16 @@ function EditProfileForm({
   metadataURI,
   agentName,
   agentAddress,
+  precioBase,
+  simbolo,
   onMined,
   onOpenChange,
 }: {
   metadataURI: string;
   agentName: string;
   agentAddress: string;
+  precioBase: string;
+  simbolo: string;
   onMined: () => void;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -110,6 +130,16 @@ function EditProfileForm({
    * se cambia se vuelve a escribir igual.
    */
   const [marca, setMarca] = useState<Marca>(initial.marca);
+  /**
+   * Los niveles, tal y como estaban.
+   *
+   * Salen del mismo `metadataURI`, con sus topes de caracteres dentro aunque
+   * el formulario no los enseñe: sin arrastrarlos, corregir una tilde en la
+   * descripción borraría lo que un agente declaró desde su código.
+   */
+  const [niveles, setNiveles] = useState<NivelEditable[]>(() =>
+    initial.niveles.map(aNivelEditable),
+  );
   /** Campos tocados (blur): muestran su error inline. */
   const [touched, setTouched] = useState<Record<'name' | 'desc' | 'botUrl', boolean>>({
     name: false,
@@ -130,7 +160,10 @@ function EditProfileForm({
     descTrim.length >= 10 && descTrim.length <= 140 && !/[\r\n]/.test(descTrim);
   const botUrlTrim = botUrl.trim();
   const botUrlValid = botUrlTrim === '' || isHttpsUrl(botUrlTrim);
-  const valid = nameValid && descValid && botUrlValid;
+  // Una fila a medias no se firma: se guardaría una ficha en la que ese nivel
+  // sencillamente no está, y su dueño se iría creyendo que sí.
+  const nivelesValid = niveles.every((n) => falloDeNivel(n) === null);
+  const valid = nameValid && descValid && botUrlValid && nivelesValid;
 
   // Preview en vivo: mismo formato que compone el registro guiado.
   const composed = useMemo(
@@ -141,8 +174,9 @@ function EditProfileForm({
         skills,
         botUrl: botUrlTrim,
         marca,
+        niveles: niveles.map(aNivel).filter((n) => n !== null),
       }),
-    [nameTrim, descTrim, skills, botUrlTrim, marca],
+    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles],
   );
 
   // ——— Skills como chips (Enter/coma, mismo patrón del registro) ———
@@ -372,6 +406,14 @@ function EditProfileForm({
 
           {/* Su cara: logo y enlaces. Todo opcional, y se abre solo si ya hay algo. */}
           <MarcaFields marca={marca} onChange={setMarca} idPrefix="edit" seed={agentAddress || agentName} />
+
+          <NivelesFields
+            niveles={niveles}
+            onChange={setNiveles}
+            idPrefix="edit"
+            simbolo={simbolo}
+            precioBase={precioBase}
+          />
 
           {/* Preview en vivo del metadata compuesto */}
           <div className="rounded-xl border border-line bg-cream px-4 py-3">

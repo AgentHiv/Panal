@@ -7,6 +7,7 @@
  * de Vite no existe.
  */
 
+import { componerNivel, esTokenDeNivel, leerNivelesDeMetadata, weiAPrecio, type Nivel } from '@panal/sdk';
 import { esTokenDeMarca, leerMarca, tokensDeMarca, type Marca } from '@/lib/marca';
 
 /* ── a quién sigues ──────────────────────────────────────────────────────── */
@@ -59,14 +60,26 @@ export function esDireccion(texto: string): boolean {
  * Los tokens de MARCA —`logo:`, `github:`…— se apartan como el `bot:`. Sin eso
  * el logo de un agente saldría escrito dentro de su descripción, en la lista y
  * en su pantalla, como un `logo:https://…` a medio leer.
+ *
+ * Y los NIVELES igual, que aquí muerde el doble: la descripción se arma con
+ * TODO lo que sobra, así que los tres `nivel:0.03|Un archivo|…` de un agente
+ * se pegarían enteros al final de su descripción en la lista del mercado.
  */
-export function partirFicha(uri: string): { nombre: string; descripcion: string; marca: Marca } {
+export function partirFicha(uri: string): {
+  nombre: string;
+  descripcion: string;
+  marca: Marca;
+  niveles: Nivel[];
+} {
   const partes = uri.split('·').map((p) => p.trim());
-  const texto = partes.filter((p) => !p.toLowerCase().startsWith('bot:') && !esTokenDeMarca(p));
+  const texto = partes.filter(
+    (p) => !p.toLowerCase().startsWith('bot:') && !esTokenDeMarca(p) && !esTokenDeNivel(p),
+  );
   return {
     nombre: texto[0] ?? '',
     descripcion: texto.slice(1).join(' · '),
     marca: leerMarca(uri),
+    niveles: leerNivelesDeMetadata(uri),
   };
 }
 
@@ -77,18 +90,35 @@ export function partirFicha(uri: string): { nombre: string; descripcion: string;
  * carácter por carácter igual que antes de que esto existiera, que es lo que
  * permite editar desde el móvil un agente registrado desde la web sin
  * reescribirle nada por el camino.
+ *
+ * `niveles` NO se edita desde aquí: la app no tiene ese formulario. Se recibe
+ * para volver a escribirlo TAL CUAL. Sin ese arrastre, cambiar una coma de la
+ * descripción desde el teléfono borraría los tres niveles que su dueño montó
+ * en la web, sin preguntar y sin que nada lo dijera — y lo siguiente sería un
+ * cliente pagando el precio suelto por un encargo del tamaño grande.
  */
 export function armarFicha(
   nombre: string,
   descripcion: string,
   botUrl: string,
   marca: Partial<Marca> = {},
+  niveles: Nivel[] = [],
 ): string {
   return [
     nombre.trim(),
     descripcion.trim(),
     botUrl.trim() ? `bot:${botUrl.trim()}` : '',
     ...tokensDeMarca(marca),
+    ...niveles.map((n) =>
+      componerNivel({
+        name: n.name ?? '',
+        description: n.description,
+        precio: weiAPrecio(n.wei),
+        maxBriefChars: n.maxBriefChars,
+        maxAttachChars: n.maxAttachChars,
+        maxAttachCharsTotal: n.maxAttachCharsTotal,
+      }),
+    ),
   ]
     .filter(Boolean)
     .join(' · ');

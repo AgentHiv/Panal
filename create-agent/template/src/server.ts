@@ -32,6 +32,9 @@ import {
   buildQuote,
   createPanalClient,
   leerNiveles,
+  leerNivelesDeMetadata,
+  normalizarIdioma,
+  resolverLlm,
   LoopDetected,
   MAINNET_ADDRESSES,
   monad,
@@ -49,6 +52,7 @@ import {
   type CallEnvelope,
   type DeliveredFile,
   type FichaNivel,
+  type LlmConfig,
   type Nivel,
   type PermitDomain,
 } from '@panal/sdk';
@@ -57,6 +61,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { isAddress, keccak256, parseEther, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
 import { handleTask, NIVELES, SUBCONTRATA_SKILLS } from './agent.js';
+import { traducirFrases } from './traduccion.js';
 import type { AdjuntoRecibido, NivelPropio, TaskContext, TaskFile, TaskResult } from './agent.js';
 import { arrancarVigilante } from './vigilante.js';
 import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
@@ -90,7 +95,7 @@ const MAX_BRIEF_CHARS = 32_000;
 // propios clientes van a descartar: si aquí no sobrevive, no se anuncia.
 // ---------------------------------------------------------------------------
 
-const NIVELES_OK = leerNiveles({
+let NIVELES_OK = leerNiveles({
   tiers: NIVELES.map((n) => ({ ...n, amountWei: n.wei.toString() })),
 });
 
@@ -102,7 +107,7 @@ if (NIVELES.length > 0 && NIVELES_OK.length !== NIVELES.length) {
 }
 
 /** El nivel más barato: por debajo de eso, un agente con niveles no trabaja. */
-const NIVEL_MINIMO = NIVELES_OK[0] ?? null;
+let NIVEL_MINIMO = NIVELES_OK[0] ?? null;
 
 // Se dicen al arrancar. Antes sólo salían dentro del bloque de subcontratación
 // —que no se imprime si no hay presupuesto—, así que un agente con niveles y
@@ -133,7 +138,7 @@ for (const n of NIVELES) {
 
 
 /** El tope de encargo del nivel mayor, o el de siempre si no hay niveles. */
-const TOPE_BRIEF_MAYOR = Math.max(MAX_BRIEF_CHARS, ...NIVELES_OK.map((n) => n.maxBriefChars ?? 0));
+let TOPE_BRIEF_MAYOR = Math.max(MAX_BRIEF_CHARS, ...NIVELES_OK.map((n) => n.maxBriefChars ?? 0));
 
 /**
  * Tope del cuerpo de una petición: sin esto, cualquiera te tumba el proceso.
@@ -144,7 +149,22 @@ const TOPE_BRIEF_MAYOR = Math.max(MAX_BRIEF_CHARS, ...NIVELES_OK.map((n) => n.ma
  * los 32 KB de propina cubren el resto del JSON: la firma, la dirección y el
  * manifiesto de adjuntos que viaja dentro del encargo.
  */
-const MAX_BODY = Math.max(256 * 1024, TOPE_BRIEF_MAYOR * 4 + 32 * 1024);
+let MAX_BODY = Math.max(256 * 1024, TOPE_BRIEF_MAYOR * 4 + 32 * 1024);
+
+/**
+ * Los tres números de arriba se recalculan cuando cambian los niveles.
+ *
+ * Cambian porque ahora se pueden editar desde la web sin tocar este código:
+ * viven en el `metadataURI` on-chain y el dueño del agente los mueve firmando
+ * una transacción. Si estos números se quedaran con lo que había al arrancar,
+ * un nivel nuevo de 320 000 caracteres se anunciaría y luego se rechazaría por
+ * pasarse del tope, que es la peor de las dos opciones: se cobra y no se hace.
+ */
+function recalcularTopes(): void {
+  NIVEL_MINIMO = NIVELES_OK[0] ?? null;
+  TOPE_BRIEF_MAYOR = Math.max(MAX_BRIEF_CHARS, ...NIVELES_OK.map((n) => n.maxBriefChars ?? 0));
+  MAX_BODY = Math.max(256 * 1024, TOPE_BRIEF_MAYOR * 4 + 32 * 1024);
+}
 
 /** Un nivel ya validado, en la forma con la que se anuncia y se devuelve. */
 function comoFicha(n: Nivel): FichaNivel {
@@ -163,9 +183,22 @@ function nivelDe(pagado: bigint): NivelPropio | null {
   if (NIVELES_OK.length === 0) return null;
   const leido = nivelPara(NIVELES_OK, pagado);
   if (!leido) return null;
-  // Se devuelve el declarado en `agent.ts`, no el normalizado: es el que tiene
-  // los tipos que el autor del agente espera encontrar en `ctx.nivel`.
-  return NIVELES.find((n) => n.wei === leido.wei) ?? null;
+  // Se prefiere el declarado en `agent.ts`: es el que tiene los tipos que el
+  // autor del agente espera en `ctx.nivel`, y el único que puede traer
+  // `subcontrata`, que no cabe en la ficha on-chain.
+  const propio = NIVELES.find((n) => n.wei === leido.wei);
+  if (propio) return propio;
+  // Y si viene de la CADENA, se arma uno. Devolver null aquí sería lo peor que
+  // podría pasar: el cliente pagó el nivel grande, lo vio anunciado y el
+  // agente trabajaría creyendo que no compró ninguno.
+  return {
+    name: leido.name ?? '',
+    ...(leido.description === null ? {} : { description: leido.description }),
+    wei: leido.wei,
+    ...(leido.maxBriefChars === null ? {} : { maxBriefChars: leido.maxBriefChars }),
+    ...(leido.maxAttachChars === null ? {} : { maxAttachChars: leido.maxAttachChars }),
+    ...(leido.maxAttachCharsTotal === null ? {} : { maxAttachCharsTotal: leido.maxAttachCharsTotal }),
+  };
 }
 
 const key = process.env.AGENT_PRIVATE_KEY?.trim();
@@ -177,6 +210,85 @@ const account = privateKeyToAccount(key as `0x${string}`);
 const panal = createPanalClient({ account, rpcUrl: process.env.RPC_URL });
 
 console.log(`Agente ${account.address} escuchando en :${PORT}`);
+
+// ---------------------------------------------------------------------------
+// Los niveles de la CADENA mandan sobre los de `agent.ts`.
+//
+// Se pueden editar desde el panel de la web sin tocar una línea de código: van
+// dentro del `metadataURI`, y cambiarlos es una transacción. Este bloque los
+// lee y los deja al mando, porque son LOS QUE VIO EL CLIENTE: es contra la
+// ficha on-chain contra lo que eligió tamaño y contra lo que bloqueó el dinero,
+// así que trabajar con otros sería cobrar por una cosa y hacer otra.
+//
+// Se relee cada rato, y no solo al arrancar, porque el sentido de haberlos
+// sacado del código es justamente no tener que reiniciar nada para cambiarlos.
+// Si la lectura falla, se queda lo que hubiera: un RPC lento no puede dejar sin
+// niveles a un agente que los tiene.
+// ---------------------------------------------------------------------------
+
+/** Cada cuánto se vuelve a mirar la ficha. */
+const REFRESCO_NIVELES = 5 * 60 * 1000;
+
+/**
+ * El modelo con el que este agente traduce SU PROPIA ficha para `?lang=`.
+ *
+ * Se resuelve una vez y falla a `null` en vez de tumbar el arranque: un agente
+ * sin `LLM_API_KEY` es un agente perfectamente válido —hay agentes que no usan
+ * modelo ninguno— y quedarse sin poder servir la ficha por no poder traducirla
+ * sería dejarlo fuera del mercado por un lujo. Sin modelo, ficha original.
+ */
+const LLM_FICHA: LlmConfig | null = (() => {
+  try {
+    return resolverLlm(process.env);
+  } catch {
+    return null;
+  }
+})();
+
+/** Los de `agent.ts`, para poder volver a ellos si la ficha se queda sin niveles. */
+const NIVELES_DEL_CODIGO = NIVELES_OK;
+
+/**
+ * El nombre y la descripción que este agente tiene EN LA CADENA.
+ *
+ * La plantilla no los tenía: su `/agent.json` publicaba endpoints y precios, y
+ * el texto salía solo del registro. Hacen falta aquí para poder servirlos
+ * TRADUCIDOS, que es lo que pide `?lang=`.
+ */
+let FICHA_TEXTO: { name: string; description: string } = { name: '', description: '' };
+
+async function refrescarNiveles(): Promise<void> {
+  try {
+    const ficha = await panal.getAgent(account.address);
+    FICHA_TEXTO = {
+      name: ficha.metadata.name,
+      description: ficha.metadata.description,
+    };
+    const enCadena = leerNivelesDeMetadata(ficha.metadataURI);
+    const antes = NIVELES_OK.map((n) => `${n.wei}:${n.name ?? ''}`).join('|');
+    NIVELES_OK = enCadena.length > 0 ? enCadena : NIVELES_DEL_CODIGO;
+    const ahora = NIVELES_OK.map((n) => `${n.wei}:${n.name ?? ''}`).join('|');
+    if (antes !== ahora) {
+      recalcularTopes();
+      console.log(
+        NIVELES_OK.length > 0
+          ? `[panal] niveles actualizados desde la cadena (${NIVELES_OK.length}): ` +
+              NIVELES_OK.map((n) => `${n.name ?? '?'} ${n.wei}`).join(', ')
+          : '[panal] este agente ya no publica niveles',
+      );
+    }
+  } catch {
+    // Sin RPC, con la ficha ilegible o con el agente aún sin registrar: se
+    // queda lo que hubiera. Callado, porque esto corre cada cinco minutos y un
+    // aviso por cada fallo llenaría el log de un agente que funciona.
+  }
+}
+
+// La primera va ANTES de escuchar: `MAX_BODY` sale del tope del nivel mayor, y
+// arrancar con el número viejo sería anunciar un encargo de 320 000 caracteres
+// y cortarlo al recibirlo.
+await refrescarNiveles();
+setInterval(() => void refrescarNiveles(), REFRESCO_NIVELES).unref();
 
 // ---------------------------------------------------------------------------
 // x402: cobrar por llamada, sin escrow.
@@ -1149,6 +1261,39 @@ const server = createServer((req, res) => {
     // salía en su tarjeta: un cobro que nadie puede descubrir no existe.
     if (url.pathname === '/agent.json' && req.method === 'GET') {
       const base = process.env.PUBLIC_URL?.trim().replace(/\/+$/, '') || null;
+      /**
+       * `?lang=fr`: la misma ficha con las frases en francés.
+       *
+       * Traduce este agente con su propio modelo y guarda el resultado, así
+       * que la primera petición en cada idioma cuesta una llamada y las demás
+       * ninguna. Si falla —sin clave, sin cuota, sin red— se sirve el original:
+       * no traducir no puede ser un error para quien pide la ficha.
+       */
+      const idioma = normalizarIdioma(url.searchParams.get('lang'));
+      const nivelesFicha = NIVELES_OK.map(comoFicha);
+      let descripcion = FICHA_TEXTO.description;
+      if (idioma) {
+        const traducido = await traducirFrases(
+          {
+            description: descripcion,
+            tiers: NIVELES_OK.map((n) => ({ name: n.name ?? '', description: n.description ?? '' })),
+          },
+          idioma,
+          LLM_FICHA,
+          DATA_DIR,
+        );
+        if (traducido) {
+          descripcion = traducido.description;
+          traducido.tiers.forEach((t, i) => {
+            const destino = nivelesFicha[i];
+            // Solo se pisa lo que ya había: un nivel sin nombre no gana uno
+            // por pasar por el traductor, y uno con nombre no lo pierde.
+            if (!destino) return;
+            if (destino.name && t.name) destino.name = t.name;
+            if (destino.description && t.description) destino.description = t.description;
+          });
+        }
+      }
       const x402 =
         X402_PRICE !== null
           ? {
@@ -1169,6 +1314,10 @@ const server = createServer((req, res) => {
         protocol: 'panal',
         network: 'monad-mainnet',
         chainId: monad.id,
+        // El nombre NO se traduce nunca: «LexPanal» no significa nada en
+        // francés y traducirlo sería inventarle otro nombre a este agente.
+        ...(FICHA_TEXTO.name ? { name: FICHA_TEXTO.name } : {}),
+        ...(descripcion ? { description: descripcion } : {}),
         endpoints: {
           base,
           postBrief: {
@@ -1203,7 +1352,7 @@ const server = createServer((req, res) => {
         },
         // Los niveles, sólo si este agente vende alguno. Ausente significa que
         // no los ofrece, y quien lee NO debe inventárselos a partir del precio.
-        ...(NIVELES_OK.length > 0 ? { tiers: NIVELES_OK.map(comoFicha) } : {}),
+        ...(nivelesFicha.length > 0 ? { tiers: nivelesFicha } : {}),
         // ALIAS ANTIGUO, en la raíz. Aquí es donde esta plantilla lo publicaba
         // antes, y hay clientes ahí fuera que solo miran este sitio. Se sirve
         // por compatibilidad y desaparecerá; lo que se lee es `endpoints`.

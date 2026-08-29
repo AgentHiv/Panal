@@ -158,6 +158,30 @@ export interface AgentProfile {
   verificado?: boolean;
   /** Por qué no está verificado, para poder enseñarlo. */
   verificadoMotivo?: string;
+
+  /**
+   * Su descripción en cada idioma del marketplace, indexada por código ISO.
+   *
+   * Existe porque el catálogo es lo primero que ve todo el mundo y hasta ahora
+   * salía en el idioma en que su dueño escribió la ficha: la interfaz entera en
+   * árabe y los siete agentes descritos en español. La traduce cada agente con
+   * su propio modelo (`?lang=` de su `/agent.json`) y aquí solo se guarda, para
+   * que el escaparate no tenga que pedirle nada a nadie al pintar una lista.
+   *
+   * Vacío o ausente significa que ese agente no sabe traducirse —los que corren
+   * una plantilla anterior— y entonces se enseña su texto original, que es
+   * exactamente lo que se enseñaba antes de que esto existiera.
+   */
+  idiomas?: Record<string, string>;
+
+  /**
+   * La ficha que se tradujo, para saber si lo guardado sigue valiendo.
+   *
+   * Sin esto habría que elegir entre volver a pedir diez traducciones en cada
+   * repaso —diez llamadas al modelo de cada agente, cada pocos minutos— o no
+   * volver a pedirlas nunca y quedarse con la descripción de hace un año.
+   */
+  idiomasDe?: string;
   /** Cuándo se comprobó, para no repetirlo en cada vuelta. */
   verificadoTs?: number;
 }
@@ -725,6 +749,16 @@ export class IndexStore {
       profile.verificadoMotivo = antes.verificadoMotivo;
       profile.verificadoTs = antes.verificadoTs;
     }
+    // Las traducciones, por lo mismo y con más motivo: son DIEZ peticiones a
+    // un bot ajeno, cada una con una llamada a su modelo detrás. Dejarlas
+    // pisar aquí sería rehacerlas —y hacérselas pagar— en cada relectura de la
+    // ficha. Se arrastran con la ficha DE LA QUE SALIERON: si el agente ha
+    // reescrito su descripción, `idiomasDe` deja de cuadrar con la de ahora y
+    // `pendientesDeTraducir` las vuelve a pedir sola.
+    if (antes && profile.idiomas === undefined) {
+      profile.idiomas = antes.idiomas;
+      profile.idiomasDe = antes.idiomasDe;
+    }
     // Salvo que haya cambiado de endpoint: entonces lo anterior ya no dice nada
     // de la URL nueva y hay que volver a mirarlo.
     if (antes && antes.botUrl !== profile.botUrl) {
@@ -746,6 +780,21 @@ export class IndexStore {
   }
 
   /**
+   * Guarda las descripciones traducidas de un agente.
+   *
+   * `de` es la ficha de la que salieron: mientras no cambie, no hay que volver
+   * a pedirlas. Se guardan aunque vengan a medias —un idioma puede haber
+   * fallado— porque el que falte se sirve en el original y se reintentará
+   * cuando el agente cambie su ficha.
+   */
+  guardarIdiomas(address: string, de: string, idiomas: Record<string, string>): void {
+    const p = this.profiles.get(address.toLowerCase());
+    if (!p) return;
+    p.idiomas = idiomas;
+    p.idiomasDe = de;
+  }
+
+  /**
    * Los que toca (re)verificar: sin mirar todavía, o mirados hace rato.
    *
    * Se rehace cada tanto y no una sola vez porque un dominio caduca, se vende o
@@ -761,6 +810,23 @@ export class IndexStore {
     // insignia se ve peor que uno cuya insignia es de ayer.
     toca.sort((a, b) => (a.verificadoTs ?? 0) - (b.verificadoTs ?? 0));
     return toca.slice(0, tope);
+  }
+
+  /**
+   * Los que toca traducir: nunca traducidos, o con la ficha cambiada desde que
+   * se tradujeron.
+   *
+   * `idiomasDe` guarda de qué `metadataURI` salieron las traducciones que hay.
+   * Comparar con la de ahora es lo que permite refrescarlas cuando alguien
+   * reescribe su descripción SIN pedirle diez traducciones a cada agente en
+   * cada vuelta del bucle, que sería un ataque contra sus propios bots.
+   *
+   * Solo los que publican endpoint: sin bot no hay a quién pedírselas.
+   */
+  pendientesDeTraducir(tope: number): AgentProfile[] {
+    return [...this.profiles.values()]
+      .filter((p) => p.botUrl && p.idiomasDe !== p.metadataURI)
+      .slice(0, tope);
   }
 
   /** El nombre de un agente en PanalNames, o null si no tiene. */

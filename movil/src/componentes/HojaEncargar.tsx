@@ -33,7 +33,7 @@ import type { DatosAgente } from '~/lib/agente';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
 import Icono from '~/componentes/Icono';
 import { monto } from '~/lib/formato';
-import { useTextos } from '~/i18n/idiomas';
+import { useIdioma, useTextos } from '~/i18n/idiomas';
 
 /** El número y su unidad van aparte: en chino «6 h» se escribe «6 小时». */
 const PLAZOS: { horas: number; unidad: 'horas' | 'dias'; cuantos: number }[] = [
@@ -132,7 +132,21 @@ export default function HojaEncargar({
 
   const enPanal = datos ? currencySymbol(datos.moneda) === '$PANAL' : false;
   /** Los niveles que vende este agente. Vacío es lo normal. */
-  const niveles = capacidades?.niveles ?? [];
+  /**
+   * Los niveles, con los de la CADENA por delante.
+   *
+   * Se derivan en vez de guardarse: son los únicos que siguen ahí con el bot
+   * caído, así que no pueden depender de que una respuesta llegue. Si mandara
+   * la tarjeta, un agente que no contesta se quedaría sin niveles y esta hoja
+   * ofrecería su precio suelto —el del más barato— para el tamaño grande.
+   * Los de la tarjeta son el respaldo de quien aún no los ha subido.
+   */
+  const niveles = datos?.niveles?.length ? datos.niveles : (capacidades?.niveles ?? []);
+  /**
+   * El elegido. Sin tocar nada es el más barato, que debería costar lo mismo
+   * que su precio registrado: quien no elija bloquea lo de siempre.
+   */
+  const elegido = nivel ?? niveles[0] ?? null;
   /**
    * Lo que se bloquea: el nivel elegido, o el precio del registro.
    *
@@ -140,32 +154,33 @@ export default function HojaEncargar({
    * queda en la cadena. Lo que ponga el encargo no cuenta: lo escribe el
    * cliente.
    */
-  const precio = nivel?.wei ?? datos?.precioTarea ?? 0n;
+  const precio = elegido?.wei ?? datos?.precioTarea ?? 0n;
   const simbolo = datos ? currencySymbol(datos.moneda) : 'MON';
   // El 2,5 % sale del precio, no se suma: bloqueas el precio y el agente cobra menos.
   const comision = (precio * 250n) / 10_000n;
 
   const T = useTextos();
+  const idioma = useIdioma();
 
   /* ── ¿acepta archivos? ¿vende niveles? ─────────────────────────────────── */
 
   useEffect(() => {
     const botUrl = datos?.botUrl;
+    // Sin endpoint no hay tarjeta que preguntar. Los niveles de la cadena se
+    // ven igual: se derivan arriba y no dependen de que nadie conteste, que es
+    // justo el motivo de haberlos subido ahí.
     if (!botUrl) return;
     let vigente = true;
     void (async () => {
-      const leidas = await leerCapacidades(botUrl);
-      if (!vigente) return;
-      setCapacidades(leidas);
-      // Se elige el más barato solo. Debería costar lo mismo que su precio
-      // registrado, así que quien no toque nada bloquea lo de siempre; y si un
-      // agente vende niveles, por debajo del primero no acepta encargos.
-      setNivel(leidas.niveles[0] ?? null);
+      // En el idioma de la app: los niveles se llaman «Un archivo» o «El
+      // repositorio», y quien tiene el teléfono en chino no lee eso.
+      const leidas = await leerCapacidades(botUrl, 6_000, idioma);
+      if (vigente) setCapacidades(leidas);
     })();
     return () => {
       vigente = false;
     };
-  }, [datos?.botUrl]);
+  }, [datos?.botUrl, idioma]);
 
   /**
    * ¿Este agente sabe recibir archivos?
@@ -458,7 +473,7 @@ export default function HojaEncargar({
               </p>
               <ul className="mt-2 flex flex-col gap-1.5">
                 {niveles.map((n) => {
-                  const elegido = nivel?.wei === n.wei;
+                  const activo = elegido?.wei === n.wei;
                   return (
                     <li key={n.wei.toString()}>
                       <button
@@ -466,7 +481,7 @@ export default function HojaEncargar({
                         onClick={() => setNivel(n)}
                         disabled={trabajando}
                         className={`pulsable flex w-full items-center gap-3 rounded-[13px] border px-3.5 py-2.5 text-left disabled:opacity-40 ${
-                          elegido ? 'border-honey bg-honey/10' : 'border-line bg-sand'
+                          activo ? 'border-honey bg-honey/10' : 'border-line bg-sand'
                         }`}
                       >
                         <span className="min-w-0 grow">
