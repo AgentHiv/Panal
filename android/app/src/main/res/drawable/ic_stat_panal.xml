@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  El panal de la barra de estado.
+
+  No había ninguno, así que cada aviso salía con el icono del sistema —el
+  signo de admiración, `android.R.drawable.ic_dialog_info`, que es a lo que
+  cae el plugin cuando nadie nombra un `smallIcon`
+  (LocalNotificationManager.kt:498)—. Un aviso que dice que te han entregado
+  un encargo o que se te acaba el plazo llegaba sin marca de quién es.
+
+  POR QUÉ ES UN DIBUJO APARTE Y NO EL DEL LANZADOR
+
+  Desde Android 5 el icono pequeño se usa como MÁSCARA: el sistema se queda
+  con la silueta —el canal alfa— y tira el color. El panal a color no cabe
+  aquí; lo único que se puede decidir es la forma. De ahí que el hexágono de
+  dentro, que en el logo va en `honey`, aquí vaya en blanco: no es un
+  descuido, es que el color no sobrevive de todas formas.
+
+  Y `ic_launcher_foreground` tampoco vale, aunque la forma sea la misma: está
+  dibujado al 62 % de su lienzo porque el recorte redondo del lanzador se come
+  los bordes. Con esa medida, en la barra de estado se vería un panal más
+  pequeño que los iconos de al lado. Aquí el dibujo ocupa 20,6 de los 24 dp,
+  que es la proporción de un icono de aviso.
+
+  Las proporciones salen de public/logo.svg tal cual, incluida la celda de
+  dentro, que va ligeramente abajo y a la derecha del centro: R exterior 9,6;
+  la celda a 0,375 de R; su centro desplazado (0,0893·R, 0,0536·R). El trazo
+  sí es algo más grueso que en el logo (0,146·R frente a 0,125) porque a 24 dp
+  un perfil fino se pierde.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M21.60,12.00L16.80,20.31L7.20,20.31L2.40,12.00L7.20,3.69L16.80,3.69Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.4"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M16.46,12.51L14.66,15.63L11.06,15.63L9.26,12.51L11.06,9.40L14.66,9.40Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

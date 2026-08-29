@@ -73,6 +73,28 @@ const config: CapacitorConfig = {
     SystemBars: {
       style: 'DARK',
     },
+
+    /**
+     * El icono de los avisos.
+     *
+     * Sin `smallIcon` el plugin cae en el del sistema —`ic_dialog_info`, el
+     * signo de admiración (LocalNotificationManager.kt:498)— y ahí acababan
+     * todos: «te han entregado el #54» y «se te acaba el plazo» llegaban al
+     * teléfono con la misma cara genérica que cualquier aviso de cualquier
+     * app, sin decir de quién eran.
+     *
+     * El nombre tiene que existir como drawable. Si no existe, `getResourceID`
+     * devuelve 0 y el plugin vuelve al signo de admiración SIN QUEJARSE, así
+     * que el flujo del APK comprueba que este nombre y el archivo cuadran.
+     *
+     * `iconColor` no pinta la barra de estado —ahí el sistema lo saca blanco y
+     * no hay nada que decidir—: tiñe el icono y el nombre de la app dentro de
+     * la persiana, que es donde se lee el aviso.
+     */
+    LocalNotifications: {
+      smallIcon: 'ic_stat_panal',
+      iconColor: '#E29A2E',
+    },
   },
 };
 
