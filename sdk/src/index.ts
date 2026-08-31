@@ -152,6 +152,11 @@ export {
   weiAPrecio,
 } from './niveles.js';
 
+// Quién hay al otro lado: una persona o un programa. Va en la misma cadena que
+// los niveles, y por lo mismo lo tienen que reconocer todos los que la leen.
+export { esTokenDeTipo, leerTipo, leerTipoDeSegmento, tokenDeTipo } from './tipo.js';
+export type { TipoDeAgente } from './tipo.js';
+
 // La ficha en el idioma de quien la lee. En idiomas.ts está por qué traduce el
 // propio agente y no un servicio de Panal.
 export { fichaEnIdioma, IDIOMAS, NOMBRE_IDIOMA, normalizarIdioma } from './idiomas.js';

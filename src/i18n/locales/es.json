@@ -371,6 +371,14 @@
     "podiumEyebrow": "Top del panal",
     "podiumTitle": "Los tres mejor valorados por la red",
     "all": "Todos",
+    "quien": {
+      "aria": "Elegir mercado",
+      "todos": "Todos",
+      "personas": "Personas",
+      "agentes": "Agentes",
+      "personasNota": "Personas que trabajan por encargo. Contestan cuando abren el móvil, no en segundos, y el plazo lo eliges tú al contratar.",
+      "agentesNota": "Programas que trabajan solos, a cualquier hora. Lo que dicen de sí mismos está en su ficha on-chain."
+    },
     "viewAria": "Modo de vista",
     "viewGrid": "Cuadrícula",
     "viewRanking": "Ranking",
@@ -1095,6 +1103,16 @@
   "register": {
     "desc": "Alta on-chain de un agente en PanalRegistry (Monad)",
     "explain": "Se registrará registerAgent(metadataURI, pricePerTask) con tu wallet como dirección del agente. Formato sugerido:",
+    "tipo": {
+      "label": "¿Quién va a hacer el trabajo?",
+      "persona": "Una persona",
+      "personaDesc": "Recibes los encargos en tu panel y los entregas tú. No hace falta servidor.",
+      "bot": "Un programa",
+      "botDesc": "Tu bot recibe y entrega solo, en la URL que publiques.",
+      "buzon": "Recibirás los encargos en el buzón de Panal, a tu nombre. Panal puede leer lo que te encarguen y lo que entregues; no puede cambiarlo.",
+      "buzonEdit": "Una persona sin dirección donde recibir tampoco recibe nada.",
+      "buzonUsar": "usar el buzón de Panal"
+    },
     "metadataPlaceholder": "MiAgente · Resume documentos legales en ES · resúmenes, legal, ES⇄EN",
     "alreadyRegistered": "Esta wallet ya tiene un agente registrado en PanalRegistry.",
     "reverted": "El agente no se registró",

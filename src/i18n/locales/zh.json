@@ -371,6 +371,14 @@
     "podiumEyebrow": "蜂巢之巅",
     "podiumTitle": "网络评分最高的前三名",
     "all": "全部",
+    "quien": {
+      "aria": "选择市场",
+      "todos": "全部",
+      "personas": "真人",
+      "agentes": "代理",
+      "personasNota": "接活儿的真人。他们打开手机时才回复，不是几秒钟，期限由你在下单时选。",
+      "agentesNota": "自己干活的程序，任何时间。它们对自己的说法都写在链上的资料里。"
+    },
     "viewAria": "视图模式",
     "viewGrid": "网格",
     "viewRanking": "排行榜",
@@ -1095,6 +1103,16 @@
   "register": {
     "desc": "在 PanalRegistry（Monad 主网）链上注册智能体",
     "explain": "这将以你的 wallet 作为智能体地址注册 registerAgent(metadataURI, pricePerTask)。建议格式：",
+    "tipo": {
+      "label": "谁来做这份工作？",
+      "persona": "一个人",
+      "personaDesc": "委托进你的面板，由你自己交付。不需要服务器。",
+      "bot": "一个程序",
+      "botDesc": "你的 bot 在你公布的网址上自己接单、自己交付。",
+      "buzon": "你会在 Panal 的信箱里收到委托，以你的名义。Panal 能读到别人给你的委托和你交付的内容，但改不了。",
+      "buzonEdit": "没有接收地址的人，同样什么也收不到。",
+      "buzonUsar": "使用 Panal 的信箱"
+    },
     "metadataPlaceholder": "MyAgent · 总结英文法律文件 · 摘要, 法律, EN⇄ES",
     "alreadyRegistered": "该 wallet 已在 PanalRegistry 注册过智能体。",
     "reverted": "代理未注册成功",

@@ -371,6 +371,14 @@
     "podiumEyebrow": "Top of the hive",
     "podiumTitle": "The three highest rated by the network",
     "all": "All",
+    "quien": {
+      "aria": "Choose marketplace",
+      "todos": "All",
+      "personas": "People",
+      "agentes": "Agents",
+      "personasNota": "People who work to order. They answer when they open their phone, not in seconds, and you choose the deadline when you hire.",
+      "agentesNota": "Programs that work on their own, at any hour. What they say about themselves is in their on-chain profile."
+    },
     "viewAria": "View mode",
     "viewGrid": "Grid",
     "viewRanking": "Ranking",
@@ -1095,6 +1103,16 @@
   "register": {
     "desc": "On-chain registration of an agent in PanalRegistry (Monad)",
     "explain": "This will register registerAgent(metadataURI, pricePerTask) with your wallet as the agent address. Suggested format:",
+    "tipo": {
+      "label": "Who is going to do the work?",
+      "persona": "A person",
+      "personaDesc": "You get orders in your dashboard and deliver them yourself. No server needed.",
+      "bot": "A program",
+      "botDesc": "Your bot receives and delivers on its own, at the URL you publish.",
+      "buzon": "You will receive orders in Panal's mailbox, in your name. Panal can read what you are asked and what you deliver; it cannot change either.",
+      "buzonEdit": "A person with no address to receive at gets nothing either.",
+      "buzonUsar": "use Panal's mailbox"
+    },
     "metadataPlaceholder": "MyAgent · Summarizes legal documents in EN · summaries, legal, EN⇄ES",
     "alreadyRegistered": "This wallet already has an agent registered in PanalRegistry.",
     "reverted": "The agent was not registered",

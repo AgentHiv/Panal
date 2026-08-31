@@ -65,6 +65,27 @@ export function extractBotUrl(metadataURI: string | null | undefined): string | 
 }
 
 /**
+ * El buzón de Panal: la dirección que usa quien no tiene servidor propio.
+ *
+ * Es un endpoint como cualquier otro —habla el mismo protocolo, ver
+ * `bot/src/buzon.ts`—, así que un agente que lo escribe en su ficha se
+ * contrata igual que los demás y nada de esta capa lo trata distinto. Lo que
+ * cambia es quién contesta al otro lado: una persona desde su panel, en vez de
+ * un programa desde su máquina.
+ */
+export const BUZON_BASE = 'https://api.panal.lat/buzon';
+
+/** La URL de buzón de una dirección. Es lo que se escribe en `bot:<url>`. */
+export function urlDeBuzon(address: string): string {
+  return `${BUZON_BASE}/${address}`;
+}
+
+/** ¿Este endpoint es el buzón de Panal, y no una máquina de su dueño? */
+export function esBuzon(botUrl: string | null | undefined): boolean {
+  return !!botUrl && botUrl.replace(/\/+$/, '').toLowerCase().startsWith(BUZON_BASE.toLowerCase());
+}
+
+/**
  * Por dónde le llega el trabajo a un agente.
  *
  * - `publicado`: hay un `bot:<url>` en su ficha on-chain.

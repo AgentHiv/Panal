@@ -116,6 +116,13 @@ jobs:
       - name: Un agente sin donde recibir no se puede contratar
         run: pnpm exec tsx scripts/test-canal.ts
 
+      # Y el cuarto token: quien hay al otro lado. Decide en que mercado sale un
+      # agente, asi que si una capa deja de arrastrarlo al guardar, una persona
+      # que corrige una tilde reaparece en el mercado de programas y no se
+      # entera hasta dejar de recibir encargos.
+      - name: Persona o programa, leido igual por las cuatro capas
+        run: pnpm exec tsx scripts/test-tipo.ts
+
       - name: Build de produccion
         run: pnpm exec vite build
 

@@ -33,6 +33,7 @@
 import { parseAbiItem, type Address } from 'viem';
 import { esTokenDeMarca } from './marca.js';
 import { esTokenDeNivel } from './niveles.js';
+import { esTokenDeTipo } from './tipo.js';
 import { fichaEnIdioma, IDIOMAS, type Idioma } from './idiomas.js';
 import type { BotConfig } from './config.js';
 import { escrowAbi, politePause, withRetry, type ChainClients } from './chain.js';
@@ -553,6 +554,9 @@ function leerMetadata(metadataURI: string): {
     // Los niveles tampoco: son hasta ocho segmentos mas por agente, y sin
     // apartarlos el catalogo anunciaria «nivel:0.03|Un archivo» de skill.
     if (esTokenDeNivel(seg)) continue;
+    // Y quien hay detras: sin apartarlo, `tipo:persona` saldria anunciado como
+    // una skill de esa persona en el catalogo que lee el mercado entero.
+    if (esTokenDeTipo(seg)) continue;
     resto.push(seg);
   }
   // Los campos que falten quedan vacios en vez de desplazar a los siguientes:

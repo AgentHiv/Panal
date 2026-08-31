@@ -611,9 +611,11 @@ function HojaFicha({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo.isSuccess]);
 
-  // Los niveles se arrastran tal cual: aquí no hay formulario para ellos, y sin
-  // volver a escribirlos editar la descripción desde el teléfono los borraría.
-  const nueva = armarFicha(nombre, descripcion, bot, marca, inicial.niveles);
+  // Los niveles y el tipo se arrastran tal cual: aquí no hay formulario para
+  // ninguno de los dos, y sin volver a escribirlos editar la descripción desde
+  // el teléfono los borraría — los niveles dejarían de cobrarse y quien se
+  // registró como persona aparecería de golpe en el mercado de programas.
+  const nueva = armarFicha(nombre, descripcion, bot, marca, inicial.niveles, inicial.tipo);
   const trabajando = isPending || recibo.isLoading;
   const T = useTextos();
 

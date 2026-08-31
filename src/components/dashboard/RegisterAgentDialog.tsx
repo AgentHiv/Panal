@@ -9,7 +9,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink, Loader2, TriangleAlert, X } from 'lucide-react';
+import { Bot, ExternalLink, Inbox, Loader2, TriangleAlert, User, X } from 'lucide-react';
 import { useSwitchChain, useWriteContract } from 'wagmi';
 import { parseEther } from 'viem';
 import { toast } from 'sonner';
@@ -34,6 +34,8 @@ import {
   activeChain,
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
+import type { TipoDeAgente } from '@panal/sdk';
+import { BUZON_BASE, urlDeBuzon } from '@/lib/botEndpoint';
 import {
   aNivel,
   composeAgentMetadata,
@@ -80,6 +82,16 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   /** Moneda del precio (solo con V2_ENABLED): 'MON' nativo o '$PANAL' token. */
   const [currency, setCurrency] = useState<'MON' | '$PANAL'>('MON');
   const [botUrl, setBotUrl] = useState('');
+  /**
+   * Quién va a hacer el trabajo: una persona, o un programa.
+   *
+   * Arranca SIN elegir, y sin elegir no se registra. No es fricción gratuita:
+   * de esto depende el resto del formulario —una persona no tiene URL que
+   * escribir— y el mercado en el que va a salir. Adivinarlo por el endpoint
+   * sería etiquetar a alguien de lo que no es: un bot puede usar el buzón y
+   * una persona puede montarse un servidor.
+   */
+  const [tipo, setTipo] = useState<TipoDeAgente | null>(null);
   /** Logo y enlaces del creador. Todo opcional; vacío no escribe nada. */
   const [marca, setMarca] = useState<Marca>(MARCA_VACIA);
   /**
@@ -123,7 +135,14 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   // científica o más de 18 decimales (crash del componente).
   const priceStr = price.replace(',', '.').trim();
   const priceValid = /^\d+(\.\d{1,18})?$/.test(priceStr) && Number(priceStr) > 0;
-  const botUrlTrim = botUrl.trim();
+  /**
+   * La dirección donde recibirá los encargos.
+   *
+   * Una persona no escribe ninguna: recibe en el buzón de Panal, que es un
+   * endpoint como cualquier otro y va a su nombre. Así su ficha queda igual
+   * de completa que la de un bot y el resto del mercado no la trata distinto.
+   */
+  const botUrlTrim = tipo === 'persona' ? (address ? urlDeBuzon(address) : '') : botUrl.trim();
   /**
    * Aquí la URL es OBLIGATORIA, y en `EditProfileDialog` no.
    *
@@ -138,7 +157,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   // Una fila a medias no se registra: se escribiría una ficha en la que ese
   // nivel no está, y su dueño se iría creyendo que sí.
   const nivelesValid = niveles.every((n) => falloDeNivel(n) === null);
-  const valid = nameValid && descValid && priceValid && botUrlValid && nivelesValid;
+  const valid = tipo !== null && nameValid && descValid && priceValid && botUrlValid && nivelesValid;
 
   // Metadata on-chain: "Nombre · descripción · skill1, skill2 · bot:<url>".
   // Las skills van en UN segmento separadas por comas (mismo formato que
@@ -152,8 +171,9 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
         botUrl: botUrlTrim,
         marca,
         niveles: niveles.map(aNivel).filter((n) => n !== null),
+        tipo: tipo ?? 'bot',
       }),
-    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles],
+    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles, tipo],
   );
 
   // ——— Skills como chips ———
@@ -255,6 +275,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
     setPrice('');
     setCurrency('MON');
     setBotUrl('');
+    setTipo(null);
     setTouched({ name: false, desc: false, price: false, botUrl: false });
     setMarca(MARCA_VACIA);
   };
@@ -335,6 +356,51 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
             {t('register.explain')}{' '}
             <span className="font-mono text-[12px]">{t('register.formatHint')}</span>
           </p>
+
+          {/*
+            Quién va a trabajar. Lo primero, porque cambia el resto: una
+            persona no tiene URL que escribir y sale en otro mercado.
+          */}
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">
+              {t('register.tipo.label')}
+            </legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {(['persona', 'bot'] as const).map((opcion) => {
+                const elegida = tipo === opcion;
+                const Icono = opcion === 'persona' ? User : Bot;
+                return (
+                  <button
+                    key={opcion}
+                    type="button"
+                    onClick={() => setTipo(opcion)}
+                    aria-pressed={elegida}
+                    className={cn(
+                      'flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors duration-200',
+                      elegida ? 'border-honey bg-honey-soft' : 'border-line bg-paper hover:border-honey',
+                    )}
+                  >
+                    <span className="flex items-center gap-2 text-[0.875rem] font-semibold text-ink">
+                      <Icono size={15} className={elegida ? 'text-honey-deep' : 'text-ink-3'} aria-hidden />
+                      {t(`register.tipo.${opcion}`)}
+                    </span>
+                    <span className="text-[0.75rem] leading-relaxed text-ink-2">
+                      {t(`register.tipo.${opcion}Desc`)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {tipo === 'persona' && (
+              <p className="mt-1 flex items-start gap-2 rounded-xl border border-line bg-cream px-3.5 py-2.5 text-[0.75rem] leading-relaxed text-ink-2">
+                <Inbox size={14} className="mt-0.5 shrink-0 text-honey-deep" aria-hidden />
+                <span>
+                  {t('register.tipo.buzon')}{' '}
+                  <span className="font-mono text-[11px] text-ink-3">{botUrlTrim || BUZON_BASE}</span>
+                </span>
+              </p>
+            )}
+          </fieldset>
 
           {/* Nombre del agente */}
           <div className="flex flex-col gap-1.5">
@@ -497,8 +563,12 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
             </div>
           )}
 
-          {/* URL del bot. Obligatoria: sin ella el agente no puede trabajar. */}
-          <div className="flex flex-col gap-1.5">
+          {/*
+            URL del bot. Obligatoria: sin ella el agente no puede trabajar.
+            Una persona no ve este campo — el suyo es el buzón, y ya está
+            puesto arriba con su dirección dentro.
+          */}
+          <div className={cn('flex flex-col gap-1.5', tipo === 'persona' && 'hidden')}>
             <label htmlFor="reg-bot-url" className="text-[0.8125rem] font-medium text-ink-2">
               {t('register.fields.botUrlLabel')}
             </label>

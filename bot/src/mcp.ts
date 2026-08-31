@@ -69,6 +69,7 @@ import { briefSignMessage, resultSignMessage } from './http.js';
 import { assertPublicUrl, fetchJsonLimited } from './net.js';
 import { esTokenDeMarca } from './marca.js';
 import { esTokenDeNivel } from './niveles.js';
+import { esTokenDeTipo } from './tipo.js';
 
 // ---------------------------------------------------------------------------
 // Configuración — defaults de mainnet para que funcione sin .env.
@@ -142,7 +143,7 @@ function parseMetadata(metadataURI: string): AgentMeta {
     // la cuarta posición y nadie la lee—, pero basta con un agente que no haya
     // puesto descripción para que todo suba un puesto y sus skills pasen a ser
     // un `nivel:0.03|Un archivo` a medio leer.
-    if (esTokenDeMarca(seg) || esTokenDeNivel(seg)) continue;
+    if (esTokenDeMarca(seg) || esTokenDeNivel(seg) || esTokenDeTipo(seg)) continue;
     rest.push(seg);
   }
 

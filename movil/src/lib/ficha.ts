@@ -7,7 +7,17 @@
  * de Vite no existe.
  */
 
-import { componerNivel, esTokenDeNivel, leerNivelesDeMetadata, weiAPrecio, type Nivel } from '@panal/sdk';
+import {
+  componerNivel,
+  esTokenDeNivel,
+  esTokenDeTipo,
+  leerNivelesDeMetadata,
+  leerTipo,
+  tokenDeTipo,
+  weiAPrecio,
+  type Nivel,
+  type TipoDeAgente,
+} from '@panal/sdk';
 import { esTokenDeMarca, leerMarca, tokensDeMarca, type Marca } from '@/lib/marca';
 
 /* ── a quién sigues ──────────────────────────────────────────────────────── */
@@ -70,16 +80,22 @@ export function partirFicha(uri: string): {
   descripcion: string;
   marca: Marca;
   niveles: Nivel[];
+  tipo: TipoDeAgente;
 } {
   const partes = uri.split('·').map((p) => p.trim());
   const texto = partes.filter(
-    (p) => !p.toLowerCase().startsWith('bot:') && !esTokenDeMarca(p) && !esTokenDeNivel(p),
+    (p) =>
+      !p.toLowerCase().startsWith('bot:') &&
+      !esTokenDeMarca(p) &&
+      !esTokenDeNivel(p) &&
+      !esTokenDeTipo(p),
   );
   return {
     nombre: texto[0] ?? '',
     descripcion: texto.slice(1).join(' · '),
     marca: leerMarca(uri),
     niveles: leerNivelesDeMetadata(uri),
+    tipo: leerTipo(uri),
   };
 }
 
@@ -96,6 +112,10 @@ export function partirFicha(uri: string): {
  * descripción desde el teléfono borraría los tres niveles que su dueño montó
  * en la web, sin preguntar y sin que nada lo dijera — y lo siguiente sería un
  * cliente pagando el precio suelto por un encargo del tamaño grande.
+ *
+ * `tipo` viaja por lo mismo y muerde igual: quien se registró como persona
+ * cambiaría de mercado por corregir una tilde desde el móvil, y se enteraría
+ * cuando dejara de aparecer donde estaba.
  */
 export function armarFicha(
   nombre: string,
@@ -103,11 +123,13 @@ export function armarFicha(
   botUrl: string,
   marca: Partial<Marca> = {},
   niveles: Nivel[] = [],
+  tipo: TipoDeAgente = 'bot',
 ): string {
   return [
     nombre.trim(),
     descripcion.trim(),
     botUrl.trim() ? `bot:${botUrl.trim()}` : '',
+    tokenDeTipo(tipo) ?? '',
     ...tokensDeMarca(marca),
     ...niveles.map((n) =>
       componerNivel({

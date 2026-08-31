@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ChevronDown, Hexagon, LayoutGrid, Search, SlidersHorizontal, Trophy } from 'lucide-react';
+import { Bot, ChevronDown, Hexagon, LayoutGrid, Search, SlidersHorizontal, Trophy, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import AgentCard from '@/components/AgentCard';
@@ -34,6 +34,8 @@ import { useTopAgents } from '@/hooks/useTopAgents';
  * ============================================================ */
 
 type ViewMode = 'grid' | 'ranking';
+/** En qué mercado se está mirando. `todos` es la portada de siempre. */
+type Quien = 'todos' | 'personas' | 'agentes';
 type SortKey = 'reputacion' | 'precio-asc' | 'precio-desc' | 'tareas' | 'ingresos' | 'respuesta';
 
 const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
@@ -139,6 +141,19 @@ export default function Marketplace() {
   const sortParam = searchParams.get('orden');
   const viewParam = searchParams.get('vista');
   const category: 'todos' | AgentCategory = isCategory(categoryParam) ? categoryParam : 'todos';
+  /**
+   * Los dos mercados: el de personas y el de programas.
+   *
+   * Va en la URL y no en un estado local para que se pueda enlazar: «mira el
+   * mercado de personas» es un enlace, no una instrucción de dónde pulsar. Sin
+   * parámetro salen los dos, que es lo que había: nadie desaparece del mercado
+   * porque esto se despliegue.
+   *
+   * Quién es cada uno lo dice su ficha on-chain (`tipo:persona`), no lo
+   * adivinamos: ver `tipo.ts` del SDK.
+   */
+  const quienParam = searchParams.get('quien');
+  const quien: Quien = quienParam === 'personas' || quienParam === 'agentes' ? quienParam : 'todos';
   const sort: SortKey = isSort(sortParam) ? sortParam : 'reputacion';
   const view: ViewMode = viewParam === 'ranking' ? 'ranking' : 'grid';
 
@@ -151,6 +166,7 @@ export default function Marketplace() {
     setSearchParams(next, { replace: true });
   };
   const setCategory = (c: 'todos' | AgentCategory) => setParams({ categoria: c === 'todos' ? null : c });
+  const setQuien = (q: Quien) => setParams({ quien: q === 'todos' ? null : q });
   const setSort = (s: SortKey) => setParams({ orden: s === 'reputacion' ? null : s });
   const setView = (v: ViewMode) => setParams({ vista: v === 'grid' ? null : v });
 
@@ -225,6 +241,11 @@ export default function Marketplace() {
       if (advanced.onlyOnline && a.status !== 'en-linea') return false;
       if (advanced.onlySubcontracting && !a.acceptsSubcontracting) return false;
       if (advanced.type !== 'todos' && a.type !== advanced.type) return false;
+      // El mercado elegido. Es el mismo dato que el filtro avanzado de arriba
+      // —`type`— y por eso no se contradicen: este está a la vista y aquel
+      // dentro del panel, y el más restrictivo manda, como con los demás.
+      if (quien === 'personas' && a.type !== 'humano') return false;
+      if (quien === 'agentes' && a.type !== 'ia') return false;
       if (debouncedQuery) {
         const hay = [
           a.name,
@@ -242,7 +263,7 @@ export default function Marketplace() {
       return true;
     });
     return sortAgents(list, sort);
-  }, [allAgents, category, advanced, debouncedQuery, sort, t]);
+  }, [allAgents, category, quien, advanced, debouncedQuery, sort, t]);
 
   /* carga simulada 400ms con skeletons al cambiar filtros (S5):
    * `loading` se deriva — mientras la clave aplicada no alcance a la visible */
@@ -277,6 +298,12 @@ export default function Marketplace() {
 
   const categoryCount = (c: 'todos' | AgentCategory) =>
     c === 'todos' ? allAgents.length : allAgents.filter((a) => a.category === c).length;
+
+  /** Cuántos hay en cada mercado. Se cuenta sobre TODO, no sobre lo filtrado. */
+  const quienCount = (q: Quien) =>
+    q === 'todos'
+      ? allAgents.length
+      : allAgents.filter((a) => (q === 'personas' ? a.type === 'humano' : a.type === 'ia')).length;
 
   const openHire = (a: Agent) => {
     setHireAgent(a);
@@ -333,6 +360,61 @@ export default function Marketplace() {
             {atajo('K')}
           </kbd>
         </motion.div>
+
+        {/*
+          Los dos mercados.
+          
+          Aquí arriba y no dentro del panel de filtros: no es un matiz de
+          búsqueda, es con quién estás tratando. Una persona contesta cuando
+          abre el móvil y un programa en segundos, y compararlos por su tiempo
+          de respuesta en la misma lista no le hace justicia a ninguno de los
+          dos.
+        */}
+        <FadeUp y={12} delay={0.25} className="mt-6">
+          <div
+            className="inline-flex items-center gap-1 rounded-full border border-line bg-cream p-1"
+            role="tablist"
+            aria-label={t('market.quien.aria')}
+          >
+            {(['todos', 'personas', 'agentes'] as const).map((q) => {
+              const activo = quien === q;
+              const Icono = q === 'personas' ? User : q === 'agentes' ? Bot : Hexagon;
+              return (
+                <button
+                  key={q}
+                  type="button"
+                  role="tab"
+                  aria-selected={activo}
+                  onClick={() => setQuien(q)}
+                  className={cn(
+                    'relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-[0.875rem] font-medium transition-colors duration-200',
+                    activo ? 'text-ink' : 'text-ink-2 hover:text-honey-deep',
+                  )}
+                >
+                  {activo && (
+                    <motion.span
+                      layoutId="chip-quien-activo"
+                      className="absolute inset-0 rounded-full border border-honey bg-paper"
+                      transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+                    />
+                  )}
+                  <span className="relative z-10 inline-flex items-center gap-2">
+                    <Icono size={14} className={activo ? 'text-honey-deep' : 'text-ink-3'} aria-hidden />
+                    {t(`market.quien.${q}`)}
+                    <span className={cn('font-mono text-[11px]', activo ? 'text-honey-deep/80' : 'text-ink-3')}>
+                      {quienCount(q)}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {quien !== 'todos' && (
+            <p className="mt-2.5 max-w-2xl text-[0.8125rem] leading-relaxed text-ink-2">
+              {t(quien === 'personas' ? 'market.quien.personasNota' : 'market.quien.agentesNota')}
+            </p>
+          )}
+        </FadeUp>
 
         {/* Meta */}
         <FadeUp y={12} delay={0.3} className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
