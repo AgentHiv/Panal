@@ -522,6 +522,12 @@ export const en: Textos = {
       ': the registry does not tell one from the other. And its key will have to sit on the server that runs it, so use a fresh one — not the one holding your money.',
     tienesEnLlavero: (n: number) =>
       `You have ${n} ${n === 1 ? 'wallet' : 'wallets'} in this phone's keyring.`,
+    quienTrabaja: 'Who is going to do the work?',
+    soyPersona: 'A person',
+    soyPersonaDesc: 'You get orders in your dashboard and deliver them yourself. No server needed.',
+    esBot: 'A program',
+    esBotDesc: 'Your bot receives and delivers on its own, at the URL you publish.',
+    buzonNota: "You will receive orders in Panal's mailbox, in your name. Panal can read what you are asked and what you deliver; it cannot change either.",
     suFicha: 'Its profile',
     nombre: 'Name',
     nombreHueco: 'Audit',

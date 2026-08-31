@@ -10,7 +10,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink, Loader2, X } from 'lucide-react';
+import { Bot, ExternalLink, Inbox, Loader2, User, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,8 @@ import {
   type NivelEditable,
 } from '@/lib/agentMetadata';
 import type { Marca } from '@/lib/marca';
+import type { TipoDeAgente } from '@panal/sdk';
+import { urlDeBuzon } from '@/lib/botEndpoint';
 import MarcaFields from '@/components/dashboard/MarcaFields';
 import NivelesFields from '@/components/dashboard/NivelesFields';
 
@@ -140,6 +142,16 @@ function EditProfileForm({
   const [niveles, setNiveles] = useState<NivelEditable[]>(() =>
     initial.niveles.map(aNivelEditable),
   );
+  /**
+   * Quién hay detrás, tal y como estaba, y editable.
+   *
+   * Editable porque este es el único sitio donde se corrige: quien se declaró
+   * mal, o quien empezó haciéndolo a mano y ha montado un bot, cambia de
+   * mercado desde aquí. Y arrastrado porque si no lo estuviera, corregir una
+   * tilde de la descripción devolvería a una persona al mercado de programas
+   * sin decírselo — el mismo daño que los niveles, en otra parte.
+   */
+  const [tipo, setTipo] = useState<TipoDeAgente>(initial.tipo);
   /** Campos tocados (blur): muestran su error inline. */
   const [touched, setTouched] = useState<Record<'name' | 'desc' | 'botUrl', boolean>>({
     name: false,
@@ -175,8 +187,9 @@ function EditProfileForm({
         botUrl: botUrlTrim,
         marca,
         niveles: niveles.map(aNivel).filter((n) => n !== null),
+        tipo,
       }),
-    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles],
+    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles, tipo],
   );
 
   // ——— Skills como chips (Enter/coma, mismo patrón del registro) ———
@@ -379,6 +392,49 @@ function EditProfileForm({
               </p>
             )}
           </div>
+
+          {/* Quién hay detrás. Cambia el mercado en el que sale. */}
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">
+              {t('register.tipo.label')}
+            </legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {(['persona', 'bot'] as const).map((opcion) => {
+                const elegida = tipo === opcion;
+                const Icono = opcion === 'persona' ? User : Bot;
+                return (
+                  <button
+                    key={opcion}
+                    type="button"
+                    onClick={() => setTipo(opcion)}
+                    aria-pressed={elegida}
+                    className={cn(
+                      'flex items-center gap-2 rounded-xl border px-4 py-2.5 text-left text-[0.875rem] font-medium transition-colors duration-200',
+                      elegida ? 'border-honey bg-honey-soft text-ink' : 'border-line bg-paper text-ink-2 hover:border-honey',
+                    )}
+                  >
+                    <Icono size={15} className={elegida ? 'text-honey-deep' : 'text-ink-3'} aria-hidden />
+                    {t(`register.tipo.${opcion}`)}
+                  </button>
+                );
+              })}
+            </div>
+            {tipo === 'persona' && botUrlTrim === '' && (
+              <p className="mt-1 flex items-start gap-2 rounded-xl border border-line bg-cream px-3.5 py-2.5 text-[0.75rem] leading-relaxed text-ink-2">
+                <Inbox size={14} className="mt-0.5 shrink-0 text-honey-deep" aria-hidden />
+                <span>
+                  {t('register.tipo.buzonEdit')}{' '}
+                  <button
+                    type="button"
+                    onClick={() => setBotUrl(urlDeBuzon(agentAddress))}
+                    className="font-medium text-honey-deep underline decoration-dotted underline-offset-4 transition-colors hover:text-honey"
+                  >
+                    {t('register.tipo.buzonUsar')}
+                  </button>
+                </span>
+              </p>
+            )}
+          </fieldset>
 
           {/*
             URL del bot. Aquí NO se exige, al revés que en el alta: este es el

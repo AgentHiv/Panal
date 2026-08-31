@@ -116,6 +116,13 @@ jobs:
       - name: Un agente sin donde recibir no se puede contratar
         run: pnpm exec tsx scripts/test-canal.ts
 
+      # Y el cuarto token: quien hay al otro lado. Decide en que mercado sale un
+      # agente, asi que si una capa deja de arrastrarlo al guardar, una persona
+      # que corrige una tilde reaparece en el mercado de programas y no se
+      # entera hasta dejar de recibir encargos.
+      - name: Persona o programa, leido igual por las cuatro capas
+        run: pnpm exec tsx scripts/test-tipo.ts
+
       - name: Build de produccion
         run: pnpm exec vite build
 
@@ -291,6 +298,16 @@ jobs:
       - name: Endpoints HTTP (/result y /brief, firmas EIP-191, CORS, rate limit)
         working-directory: bot
         run: pnpm exec tsx scripts/test-http.ts
+        env:
+          DRY_RUN: 'true'
+
+      # El buzon ve en claro los encargos y las entregas de quien lo use, asi
+      # que lo que hay que probar no es que guarde: es que no puede cambiar lo
+      # que guarda. Un brief solo entra si su keccak es el taskHash de la
+      # cadena, y una entrega anclada solo si sus bytes dan el resultHash.
+      - name: Buzon (quien deja que, quien lee que, y que nada se puede alterar)
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-buzon.ts
         env:
           DRY_RUN: 'true'
 

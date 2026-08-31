@@ -522,6 +522,12 @@ export const pt: Textos = {
       ': o registo não distingue uma coisa da outra. E a chave dela vai ter de estar no servidor que o põe a funcionar, por isso usa uma nova — não a que guarda o teu dinheiro.',
     tienesEnLlavero: (n: number) =>
       `Tens ${n} ${n === 1 ? 'wallet' : 'wallets'} no porta-chaves deste telemóvel.`,
+    quienTrabaja: 'Quem vai fazer o trabalho?',
+    soyPersona: 'Uma pessoa',
+    soyPersonaDesc: 'Recebe os encargos no seu painel e entrega-os. Não é preciso servidor.',
+    esBot: 'Um programa',
+    esBotDesc: 'O seu bot recebe e entrega sozinho, no URL que publicar.',
+    buzonNota: 'Vai receber os encargos no correio do Panal, em seu nome. O Panal pode ler o que lhe pedem e o que entrega; não o pode alterar.',
     suFicha: 'A ficha dele',
     nombre: 'Nome',
     nombreHueco: 'Audit',

@@ -44,6 +44,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { esTokenDeMarca, leerMarca } from './marca.js';
 import { esTokenDeNivel, leerNivelesDeMetadata } from './niveles.js';
+import { esTokenDeTipo } from './tipo.js';
 import { normalizarIdioma, traducirFrases, type Idioma } from './traduccion.js';
 import { allowedOrigin, clientIp } from './net.js';
 import { generateResult } from './llm.js';
@@ -286,7 +287,7 @@ export interface AgentJson {
  * posiciones: si se quedaran, el `logo:https://…` de un agente saldría
  * anunciado como skill suya en su propia tarjeta.
  */
-function parseMetadataURI(uri: string): {
+export function parseMetadataURI(uri: string): {
   name?: string;
   description?: string;
   skills: string[];
@@ -295,7 +296,14 @@ function parseMetadataURI(uri: string): {
   const parts = uri
     .split('·')
     .map((p) => p.trim())
-    .filter((p) => p && !p.toLowerCase().startsWith('bot:') && !esTokenDeMarca(p) && !esTokenDeNivel(p));
+    .filter(
+      (p) =>
+        p &&
+        !p.toLowerCase().startsWith('bot:') &&
+        !esTokenDeMarca(p) &&
+        !esTokenDeNivel(p) &&
+        !esTokenDeTipo(p),
+    );
   const links = leerMarca(uri);
   return {
     name: parts[0],

@@ -483,6 +483,12 @@ export const zh: Textos = {
     avisoClaveDespues:
       '：注册合约分不清两者。而且它的私钥必须放在运行它的服务器上，所以用一个新的 — 不要用装着你的钱的那个。',
     tienesEnLlavero: (n: number) => `这台手机的钥匙串里有 ${n} 个钱包。`,
+    quienTrabaja: '谁来做这份工作？',
+    soyPersona: '一个人',
+    soyPersonaDesc: '委托进你的面板，由你自己交付。不需要服务器。',
+    esBot: '一个程序',
+    esBotDesc: '你的 bot 在你公布的网址上自己接单、自己交付。',
+    buzonNota: '你会在 Panal 的信箱里收到委托，以你的名义。Panal 能读到别人给你的委托和你交付的内容，但改不了。',
     suFicha: '它的资料',
     nombre: '名称',
     nombreHueco: 'Audit',

@@ -371,6 +371,14 @@
     "podiumEyebrow": "Sommet de la ruche",
     "podiumTitle": "Les trois mieux notés par le réseau",
     "all": "Tous",
+    "quien": {
+      "aria": "Choisir la place de marché",
+      "todos": "Tous",
+      "personas": "Personnes",
+      "agentes": "Agents",
+      "personasNota": "Des personnes qui travaillent à la commande. Elles répondent quand elles ouvrent leur téléphone, pas en quelques secondes, et vous choisissez le délai en engageant.",
+      "agentesNota": "Des programmes qui travaillent seuls, à toute heure. Ce qu'ils disent d'eux-mêmes est dans leur fiche on-chain."
+    },
     "viewAria": "Mode d'affichage",
     "viewGrid": "Grille",
     "viewRanking": "Classement",
@@ -973,6 +981,15 @@
     "briefLabel": "Demande du client",
     "briefMissing": "sans brief",
     "briefMissingLong": "Pas de description en cache — si la commande a été créée dans un autre navigateur, demandez le brief au client.",
+    "buzon": {
+      "verEncargo": "Voir ce qu'on vous a demandé",
+      "bajando": "Récupération de la commande…",
+      "encargoNoLlego": "La commande n'est pas encore arrivée dans la boîte aux lettres. Votre client l'envoie après avoir payé ; si elle n'arrive pas, demandez-la-lui.",
+      "encargoError": "Impossible de lire la commande. Réessayez.",
+      "entregaNota": "Elle passe d'abord par votre boîte aux lettres, puis est ancrée sur la chaîne, dans cet ordre : ainsi votre client ne voit jamais une livraison qu'il ne peut pas télécharger.",
+      "entregaYendo": "Dépôt de la livraison dans la boîte aux lettres…",
+      "entregaError": "La livraison n'a pas pu être déposée dans la boîte aux lettres : rien n'a été signé. Réessayez."
+    },
     "viewResult": "Voir le résultat",
     "resultSign": "Signer et voir le résultat",
     "resultSigning": "Signature…",
@@ -1095,6 +1112,16 @@
   "register": {
     "desc": "Inscription on-chain d'un agent dans PanalRegistry (Monad)",
     "explain": "Cela enregistrera registerAgent(metadataURI, pricePerTask) avec votre wallet comme adresse de l'agent. Format suggéré :",
+    "tipo": {
+      "label": "Qui va faire le travail ?",
+      "persona": "Une personne",
+      "personaDesc": "Vous recevez les commandes dans votre tableau de bord et vous livrez vous-même. Aucun serveur.",
+      "bot": "Un programme",
+      "botDesc": "Votre bot reçoit et livre tout seul, à l'URL que vous publiez.",
+      "buzon": "Vous recevrez les commandes dans la boîte aux lettres de Panal, à votre nom. Panal peut lire ce qu'on vous demande et ce que vous livrez ; il ne peut pas le modifier.",
+      "buzonEdit": "Une personne sans adresse de réception ne reçoit rien non plus.",
+      "buzonUsar": "utiliser la boîte aux lettres de Panal"
+    },
     "metadataPlaceholder": "MonAgent · Résume des documents juridiques en FR · résumés, juridique, FR⇄EN",
     "alreadyRegistered": "Ce wallet a déjà un agent inscrit dans PanalRegistry.",
     "reverted": "L’agent n’a pas été enregistré",

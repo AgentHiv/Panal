@@ -17,15 +17,22 @@
  * Los NIVELES se apartan por lo mismo y el formato lo manda `niveles.ts` del
  * SDK. Un agente con tres niveles tiene tres segmentos más, y sin apartarlos
  * los tres saldrían escritos como skills suyas en su propia tarjeta.
+ *
+ * Y el TIPO —`tipo:persona`— igual, que además decide en qué mercado sale.
+ * El formato lo manda `tipo.ts` del SDK.
  */
 
 import {
   componerNivel,
   esTokenDeNivel,
+  esTokenDeTipo,
   leerNivelesDeMetadata,
+  leerTipo,
   precioAWei,
+  tokenDeTipo,
   weiAPrecio,
   type Nivel,
+  type TipoDeAgente,
 } from '@panal/sdk';
 import { bytesDeLogo, esTokenDeMarca, leerMarca, tokensDeMarca, type Marca } from './marca';
 
@@ -44,6 +51,13 @@ export interface AgentMetadataFields {
    * fabricarle un nivel a partir de él.
    */
   niveles: Nivel[];
+  /**
+   * Quién hay detrás: una persona o un programa.
+   *
+   * Sin token es `bot`, que es lo que han sido todos los agentes registrados
+   * hasta que esto existió. Ver `tipo.ts` del SDK.
+   */
+  tipo: TipoDeAgente;
 }
 
 /** metadataURI → campos editables (nombre, descripción, skills, botUrl). */
@@ -59,7 +73,7 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadataFields {
     const m = /^bot:\s*(\S.*)$/i.exec(seg);
     if (m && !botUrl) {
       botUrl = m[1].trim();
-    } else if (!esTokenDeMarca(seg) && !esTokenDeNivel(seg)) {
+    } else if (!esTokenDeMarca(seg) && !esTokenDeNivel(seg) && !esTokenDeTipo(seg)) {
       rest.push(seg);
     }
   }
@@ -79,14 +93,16 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadataFields {
     botUrl,
     marca: leerMarca(metadataURI),
     niveles: leerNivelesDeMetadata(metadataURI),
+    tipo: leerTipo(metadataURI),
   };
 }
 
 /** Campos → metadataURI (idéntico al compositor del registro guiado). */
 export function composeAgentMetadata(
-  fields: Omit<AgentMetadataFields, 'marca' | 'niveles'> & {
+  fields: Omit<AgentMetadataFields, 'marca' | 'niveles' | 'tipo'> & {
     marca?: Partial<Marca>;
     niveles?: Nivel[];
+    tipo?: TipoDeAgente;
   },
 ): string {
   const parts = [
@@ -97,6 +113,12 @@ export function composeAgentMetadata(
   let composed = parts.join(' · ');
   const bot = fields.botUrl.trim();
   if (bot) composed += ` · bot:${bot}`;
+  // Quién hay detrás, justo después del endpoint: los dos dicen cómo se
+  // trabaja con este agente. `bot` no escribe nada —es lo que se supone sin
+  // token— así que la ficha de un programa sale carácter por carácter igual
+  // que antes de que esto existiera.
+  const tipo = tokenDeTipo(fields.tipo ?? 'bot');
+  if (tipo) composed += ` · ${tipo}`;
   // La marca va después del bot: primero lo que el protocolo necesita, luego
   // lo que el creador quiere enseñar. Los vacíos no escriben nada, así que un
   // agente sin logo compone exactamente la misma ficha que antes.

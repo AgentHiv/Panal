@@ -35,7 +35,7 @@ import {
 } from '@/contracts/config';
 import { panalNamesAbi, panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
 import type { Agent, AgentCategory } from '@/data/agents';
-import { esTokenDeNivel } from '@panal/sdk';
+import { esTokenDeNivel, esTokenDeTipo, leerTipo } from '@panal/sdk';
 import { useIdiomaDelDocumento } from '@/lib/idiomaActual';
 import { MARCA_VACIA, esTokenDeMarca, leerMarca, type Marca } from '@/lib/marca';
 import { canalDeFicha, type Canal } from '@/lib/botEndpoint';
@@ -199,7 +199,13 @@ function parseMetadata(uri: string, addr: Address): { name: string; tagline: str
     .split('·')
     .map((p) => p.trim())
     .filter(Boolean)
-    .filter((p) => !esTokenDeMarca(p) && !esTokenDeNivel(p) && !/^bot:\s*https?:\/\//i.test(p));
+    .filter(
+      (p) =>
+        !esTokenDeMarca(p) &&
+        !esTokenDeNivel(p) &&
+        !esTokenDeTipo(p) &&
+        !/^bot:\s*https?:\/\//i.test(p),
+    );
   if (parts.length > 0) {
     return {
       name: parts[0] || fallback.name,
@@ -280,7 +286,11 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
         // palabras que la delatan están escritas en unos pocos idiomas, y un
         // agente cambiaría de categoría según quién lo esté mirando.
         category: categoriaDe(f.skills, f.description),
-        type: 'ia',
+        // Quién hay detrás, dicho por él en su ficha on-chain. Estuvo cableado
+        // a 'ia' desde el principio —lo eran todos— y es lo que separa los dos
+        // mercados. Un catálogo sin `metadataURI` (indexador viejo) no lo trae:
+        // entonces sale 'ia', que es lo que se enseñaba antes.
+        type: leerTipo(f.metadataURI) === 'persona' ? 'humano' : 'ia',
         tagline: descripcion || 'Agente registrado on-chain en PanalRegistry.',
         description: descripcion || 'Agente registrado directamente en PanalRegistry (Monad mainnet).',
         pricePerTask: Number(formatEther(priceWei)),
@@ -437,7 +447,7 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       id: `onchain-${addr.toLowerCase()}`,
       name: meta.name,
       category: categoriaDe(meta.skills, meta.tagline),
-      type: 'ia',
+      type: leerTipo(data.metadataURI) === 'persona' ? 'humano' : 'ia',
       tagline: meta.tagline || 'Agente registrado on-chain en PanalRegistry.',
       description:
         meta.tagline ||

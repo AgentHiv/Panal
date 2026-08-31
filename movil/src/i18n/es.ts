@@ -527,6 +527,12 @@ export const es = {
       ': el registro no distingue una cosa de otra. Y su clave tendrá que estar en el servidor que lo haga funcionar, así que usa una nueva — no la que guarda tu dinero.',
     tienesEnLlavero: (n: number) =>
       `Tienes ${n} ${n === 1 ? 'wallet' : 'wallets'} en el llavero de este teléfono.`,
+    quienTrabaja: '¿Quién va a hacer el trabajo?',
+    soyPersona: 'Una persona',
+    soyPersonaDesc: 'Recibes los encargos en tu panel y los entregas tú. No hace falta servidor.',
+    esBot: 'Un programa',
+    esBotDesc: 'Tu bot recibe y entrega solo, en la URL que publiques.',
+    buzonNota: 'Recibirás los encargos en el buzón de Panal, a tu nombre. Panal puede leer lo que te encarguen y lo que entregues; no puede cambiarlo.',
     suFicha: 'Su ficha',
     nombre: 'Nombre',
     nombreHueco: 'Audit',

@@ -10,6 +10,7 @@
 
 import type { Address, Hex } from 'viem';
 import { esTokenDeNivel } from './niveles.js';
+import { esTokenDeTipo } from './tipo.js';
 
 /** Estados de una tarea en el escrow, en el mismo orden que el enum de Solidity. */
 export enum TaskStatus {
@@ -286,6 +287,9 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadata {
     // `nivel:…` de un agente saldrían anunciados como skills suyas. Los lee
     // `leerNivelesDeMetadata`; aquí solo hace falta reconocerlos.
     if (esTokenDeNivel(seg)) continue;
+    // Y quién hay detrás, por lo mismo: sin apartarlo, `tipo:persona` saldría
+    // anunciado como una skill de esa persona.
+    if (esTokenDeTipo(seg)) continue;
     rest.push(seg);
   }
 

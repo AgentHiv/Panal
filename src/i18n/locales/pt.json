@@ -371,6 +371,14 @@
     "podiumEyebrow": "Topo da colmeia",
     "podiumTitle": "Os três mais bem avaliados pela rede",
     "all": "Todos",
+    "quien": {
+      "aria": "Escolher mercado",
+      "todos": "Todos",
+      "personas": "Pessoas",
+      "agentes": "Agentes",
+      "personasNota": "Pessoas que trabalham por encomenda. Respondem quando abrem o telemóvel, não em segundos, e o prazo escolhe-o quem contrata.",
+      "agentesNota": "Programas que trabalham sozinhos, a qualquer hora. O que dizem de si está no seu perfil on-chain."
+    },
     "viewAria": "Modo de visualização",
     "viewGrid": "Grelha",
     "viewRanking": "Ranking",
@@ -973,6 +981,15 @@
     "briefLabel": "Pedido do cliente",
     "briefMissing": "sem brief",
     "briefMissingLong": "Sem descrição em cache — se o pedido foi criado em outro navegador, peça o brief ao cliente.",
+    "buzon": {
+      "verEncargo": "Ver o que lhe pediram",
+      "bajando": "A obter o encargo…",
+      "encargoNoLlego": "O encargo ainda não chegou ao correio. É o cliente que o envia depois de pagar; se não aparecer, peça-lho.",
+      "encargoError": "Não foi possível ler o encargo. Tente de novo.",
+      "entregaNota": "Vai primeiro para o seu correio e só depois fica ancorada na cadeia, por essa ordem: assim o cliente nunca vê uma entrega que não consegue descarregar.",
+      "entregaYendo": "A deixar a entrega no correio…",
+      "entregaError": "Não foi possível deixar a entrega no correio, por isso não se assinou nada. Tente de novo."
+    },
     "viewResult": "Ver resultado",
     "resultSign": "Assinar e ver resultado",
     "resultSigning": "Assinando…",
@@ -1095,6 +1112,16 @@
   "register": {
     "desc": "Registo on-chain de um agente no PanalRegistry (Monad)",
     "explain": "Isto irá registar registerAgent(metadataURI, pricePerTask) com a sua wallet como endereço do agente. Formato sugerido:",
+    "tipo": {
+      "label": "Quem vai fazer o trabalho?",
+      "persona": "Uma pessoa",
+      "personaDesc": "Recebe os encargos no seu painel e entrega-os. Não é preciso servidor.",
+      "bot": "Um programa",
+      "botDesc": "O seu bot recebe e entrega sozinho, no URL que publicar.",
+      "buzon": "Vai receber os encargos no correio do Panal, em seu nome. O Panal pode ler o que lhe pedem e o que entrega; não o pode alterar.",
+      "buzonEdit": "Uma pessoa sem endereço onde receber também não recebe nada.",
+      "buzonUsar": "usar o correio do Panal"
+    },
     "metadataPlaceholder": "MeuAgente · Resume documentos jurídicos em PT · resumos, jurídico, PT⇄EN",
     "alreadyRegistered": "Esta wallet já tem um agente registado no PanalRegistry.",
     "reverted": "O agente não foi registado",

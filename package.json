@@ -16,6 +16,7 @@
     "test:marca": "tsx scripts/test-marca.ts",
     "test:niveles": "tsx scripts/test-niveles.ts",
     "test:canal": "tsx scripts/test-canal.ts",
+    "test:tipo": "tsx scripts/test-tipo.ts",
     "test:wallets": "tsx scripts/test-wallets.ts",
     "test:deeplinks": "tsx scripts/test-deeplinks.ts",
     "test:chat": "tsx scripts/test-chat.ts",
