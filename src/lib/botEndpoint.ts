@@ -48,6 +48,84 @@ export function briefSignMessage(taskId: bigint): string {
   return `Panal brief #${taskId.toString()}`;
 }
 
+/* ── el otro lado del buzón: el que trabaja ───────────────────────────────
+ *
+ * Las firmas de arriba las hace el CLIENTE. Estas las hace el TRABAJADOR, y
+ * solo existen en el buzón: un agente con servidor propio no las necesita
+ * porque él ES el servidor y ya tiene lo que le mandan.
+ *
+ * Deben coincidir carácter a carácter con las de `bot/src/buzon.ts`.
+ */
+
+/** Lo que firma el trabajador para leer lo que le han encargado. */
+export function encargoSignMessage(taskId: bigint, expira: number): string {
+  return `Panal encargo #${taskId.toString()} · ${expira}`;
+}
+
+/** Lo que firma el trabajador para dejar su entrega en el buzón. */
+export function entregaSignMessage(taskId: bigint, expira: number): string {
+  return `Panal entrega #${taskId.toString()} · ${expira}`;
+}
+
+/**
+ * Lee del buzón el encargo de una tarea. `null` si aún no está.
+ *
+ * Lo pide el trabajador, firmando. No hay caché: el texto es de su cliente y
+ * no tiene por qué quedarse en este navegador más de lo que dura la pantalla.
+ */
+export async function leerEncargoDelBuzon(
+  botUrl: string,
+  taskId: bigint,
+  address: string,
+  firmar: (mensaje: string) => Promise<string>,
+  timeoutMs = 10_000,
+): Promise<string | null> {
+  const expira = expiraEn();
+  const signature = await firmar(encargoSignMessage(taskId, expira));
+  const res = await fetch(`${botUrl.replace(/\/+$/, '')}/encargo/${taskId.toString()}`, {
+    headers: cabecerasFirma(address, signature, expira),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const body = (await res.json()) as { brief?: unknown };
+  return typeof body.brief === 'string' ? body.brief : null;
+}
+
+/**
+ * Deja la entrega en el buzón. ANTES de anclarla en la cadena, nunca después.
+ *
+ * Si se ancla primero y esto falla, el cliente ve una entrega que no puede
+ * descargar: paga —o espera a que el plazo se la devuelva— por un texto que
+ * existe solo en el navegador de quien lo escribió. Al revés no se pierde
+ * nada: un texto en el buzón sin anclar no se le sirve a nadie, porque el
+ * cliente solo lo pide cuando la cadena dice que hay entrega.
+ */
+export async function dejarEntregaEnBuzon(
+  botUrl: string,
+  taskId: bigint,
+  entrega: string,
+  address: string,
+  firmar: (mensaje: string) => Promise<string>,
+  timeoutMs = 20_000,
+): Promise<void> {
+  const expira = expiraEn();
+  const signature = await firmar(entregaSignMessage(taskId, expira));
+  const res = await fetch(`${botUrl.replace(/\/+$/, '')}/entrega/${taskId.toString()}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ entrega, address, signature, expira }),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!res.ok) {
+    const detalle = await res
+      .json()
+      .then((b: { error?: string }) => b.error ?? '')
+      .catch(() => '');
+    throw new Error(detalle || `HTTP ${res.status}`);
+  }
+}
+
 /**
  * Extrae la URL del bot del metadataURI. Devuelve null si no hay token
  * 'bot:' o si la URL no es http(s) absoluta.

@@ -16,7 +16,7 @@ import { AlertTriangle, ExternalLink, Hexagon, Loader2, RefreshCw, Star } from '
 import { useTranslation } from 'react-i18next';
 import { formatEther, keccak256, toBytes } from 'viem';
 import type { Address } from 'viem';
-import { useReadContract } from 'wagmi';
+import { useReadContract, useSignMessage } from 'wagmi';
 import HexAvatar from '@/components/HexAvatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -30,6 +30,8 @@ import { cn } from '@/lib/utils';
 import { useWallet } from '@/hooks/useWallet';
 import { useAhora } from '@/hooks/useAhora';
 import { getTaskBrief } from '@/lib/taskBriefs';
+import { useMyAgentProfile } from '@/hooks/useMyAgentProfile';
+import { dejarEntregaEnBuzon, esBuzon, extractBotUrl, leerEncargoDelBuzon } from '@/lib/botEndpoint';
 import { hayEntrega } from '@/lib/expedientes';
 import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import type { RealTask } from '@/hooks/useMyTasks';
@@ -159,6 +161,26 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   const [deliverText, setDeliverText] = useState('');
   const [rating, setRating] = useState(5);
 
+  /**
+   * Mi buzón, si es ahí donde recibo.
+   *
+   * Solo el buzón: un agente con servidor propio ya tiene el encargo —se lo
+   * mandan a él— y no expone estas rutas, así que pedírselas sería un 404 y
+   * mandarle la entrega, un texto que su servidor no conoce y no va a servir.
+   */
+  const perfil = useMyAgentProfile();
+  const miBuzon = useMemo(() => {
+    const url = extractBotUrl(perfil.agent?.metadataURI);
+    return esBuzon(url) ? url : null;
+  }, [perfil.agent?.metadataURI]);
+  const { signMessageAsync } = useSignMessage();
+  /** El encargo bajado del buzón para ESTA tarea, y en qué punto va. */
+  const [encargo, setEncargo] = useState<
+    { estado: 'pidiendo' | 'listo' | 'nada' | 'error'; texto?: string } | null
+  >(null);
+  /** Cómo va el envío de la entrega al buzón, que pasa ANTES de la firma. */
+  const [envio, setEnvio] = useState<{ estado: 'yendo' | 'error'; detalle?: string } | null>(null);
+
   const nameOf = useMemo(() => {
     const map = new Map<string, string>();
     for (const a of agents) map.set(a.workerAddress.toLowerCase(), a.name);
@@ -206,17 +228,68 @@ export default function TasksSection({ perspective }: { perspective: Perspective
     action.reset();
     setDeliverText('');
     setRating(5);
+    setEncargo(null);
+    setEnvio(null);
     setDialog({ kind, task });
   };
 
   const closeDialog = () => {
     setDialog(null);
+    setEncargo(null);
+    setEnvio(null);
     action.reset();
   };
 
+  /**
+   * Baja del buzón lo que le han pedido a este agente.
+   *
+   * Con un botón y no al abrir el diálogo: hay que firmar, y una ventana de la
+   * wallet que salta sola por mirar una tarea es lo que enseña a la gente a
+   * firmar sin leer. Es la misma decisión que en «ver resultado».
+   */
+  const pedirEncargo = async (task: RealTask) => {
+    if (!miBuzon || !address) return;
+    setEncargo({ estado: 'pidiendo' });
+    try {
+      const texto = await leerEncargoDelBuzon(miBuzon, task.id, address, (mensaje) =>
+        signMessageAsync({ message: mensaje }),
+      );
+      setEncargo(texto === null ? { estado: 'nada' } : { estado: 'listo', texto });
+    } catch {
+      setEncargo({ estado: 'error' });
+    }
+  };
+
+  /**
+   * Entregar: primero al buzón, después a la cadena.
+   *
+   * Ese orden no es preferencia. Al revés, un fallo de red deja al cliente con
+   * una entrega anclada que no puede descargar: el texto existiría solo en
+   * este navegador. Así, si el envío falla no se firma nada y se puede
+   * reintentar; y un texto en el buzón sin anclar no se le sirve a nadie.
+   */
   const submitDialog = () => {
     if (!dialog) return;
-    void action.run(requestFor(dialog.kind, dialog.task, { text: deliverText, rating }));
+    if (dialog.kind !== 'deliver' || !miBuzon || !address) {
+      void action.run(requestFor(dialog.kind, dialog.task, { text: deliverText, rating }));
+      return;
+    }
+    setEnvio({ estado: 'yendo' });
+    void (async () => {
+      try {
+        await dejarEntregaEnBuzon(miBuzon, dialog.task.id, deliverText, address, (mensaje) =>
+          signMessageAsync({ message: mensaje }),
+        );
+      } catch (err) {
+        setEnvio({
+          estado: 'error',
+          detalle: err instanceof Error ? err.message.split('\n')[0] : undefined,
+        });
+        return;
+      }
+      setEnvio(null);
+      void action.run(requestFor('deliver', dialog.task, { text: deliverText }));
+    })();
   };
 
   /** Botones de acción disponibles para una tarea (según rol y estado real). */
@@ -470,14 +543,46 @@ export default function TasksSection({ perspective }: { perspective: Perspective
               ) : (
                 <div className="flex flex-col gap-4">
                   {(() => {
-                    const brief = getTaskBrief(dialog.task.taskHash);
+                    // La copia de este navegador si la hay —quien encargó fue
+                    // quien la guardó—, y si no, la que se puede bajar del
+                    // buzón firmando. Un trabajador nunca tiene la primera:
+                    // el encargo se guardó en el navegador de su cliente.
+                    const brief = getTaskBrief(dialog.task.taskHash) ?? encargo?.texto ?? null;
+                    const puedeBajarlo =
+                      !brief && !!miBuzon && dialog.task.role === 'worker' && encargo?.estado !== 'nada';
                     return (
                       <div className="rounded-xl border border-monad/30 bg-monad/5 p-4">
                         <p className="eyebrow mb-1.5 text-monad-mist">{t('tasks.briefLabel')}</p>
                         {brief ? (
                           <p className="whitespace-pre-wrap text-[0.875rem] leading-relaxed text-ink">{brief}</p>
                         ) : (
-                          <p className="text-[0.8125rem] italic text-ink-3">{t('tasks.briefMissingLong')}</p>
+                          <>
+                            <p className="text-[0.8125rem] italic text-ink-3">
+                              {encargo?.estado === 'nada'
+                                ? t('tasks.buzon.encargoNoLlego')
+                                : t('tasks.briefMissingLong')}
+                            </p>
+                            {puedeBajarlo && (
+                              <button
+                                type="button"
+                                onClick={() => void pedirEncargo(dialog.task)}
+                                disabled={encargo?.estado === 'pidiendo'}
+                                className="mt-2.5 inline-flex items-center gap-2 rounded-full border border-line bg-paper px-3.5 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep disabled:opacity-50"
+                              >
+                                {encargo?.estado === 'pidiendo' && (
+                                  <Loader2 size={13} className="animate-spin" aria-hidden />
+                                )}
+                                {t(
+                                  encargo?.estado === 'pidiendo'
+                                    ? 'tasks.buzon.bajando'
+                                    : 'tasks.buzon.verEncargo',
+                                )}
+                              </button>
+                            )}
+                            {encargo?.estado === 'error' && (
+                              <p className="mt-2 text-[0.75rem] text-terra">{t('tasks.buzon.encargoError')}</p>
+                            )}
+                          </>
                         )}
                       </div>
                     );
@@ -487,13 +592,32 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                   </div>
 
                   {dialog.kind === 'deliver' && (
-                    <textarea
-                      value={deliverText}
-                      onChange={(e) => setDeliverText(e.target.value)}
-                      rows={4}
-                      placeholder={t('tasks.dialog.deliver.placeholder')}
-                      className="w-full resize-none rounded-xl border border-line bg-paper px-4 py-3 text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
-                    />
+                    <div className="flex flex-col gap-2">
+                      <textarea
+                        value={deliverText}
+                        onChange={(e) => setDeliverText(e.target.value)}
+                        rows={4}
+                        placeholder={t('tasks.dialog.deliver.placeholder')}
+                        className="w-full resize-none rounded-xl border border-line bg-paper px-4 py-3 text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
+                      />
+                      {miBuzon && (
+                        <p className="text-[0.75rem] leading-relaxed text-ink-3">
+                          {t('tasks.buzon.entregaNota')}
+                        </p>
+                      )}
+                      {envio?.estado === 'yendo' && (
+                        <p className="inline-flex items-center gap-2 text-[0.75rem] text-ink-2">
+                          <Loader2 size={13} className="animate-spin" aria-hidden />
+                          {t('tasks.buzon.entregaYendo')}
+                        </p>
+                      )}
+                      {envio?.estado === 'error' && (
+                        <p className="text-[0.75rem] leading-relaxed text-terra">
+                          {t('tasks.buzon.entregaError')}
+                          {envio.detalle ? ` (${envio.detalle})` : ''}
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   {dialog.kind === 'approve' && (
@@ -531,7 +655,10 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                     <button
                       type="button"
                       onClick={submitDialog}
-                      disabled={dialog.kind === 'deliver' && deliverText.trim().length === 0}
+                      disabled={
+                        (dialog.kind === 'deliver' && deliverText.trim().length === 0) ||
+                        envio?.estado === 'yendo'
+                      }
                       className={cn(
                         'inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-[0.875rem] font-semibold disabled:opacity-40',
                         dialog.kind === 'dispute' || dialog.kind === 'cancel'

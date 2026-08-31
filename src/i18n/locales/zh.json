@@ -981,6 +981,15 @@
     "briefLabel": "客户需求",
     "briefMissing": "无简介",
     "briefMissingLong": "缓存中无描述——如果订单是在其他浏览器中创建的，请向客户索要需求说明。",
+    "buzon": {
+      "verEncargo": "看看对方要什么",
+      "bajando": "正在取回委托…",
+      "encargoNoLlego": "委托还没到信箱。客户付款后才发；一直没来就跟他要。",
+      "encargoError": "读不到委托。再试一次。",
+      "entregaNota": "先进你的信箱，再上链，就是这个顺序：这样客户不会看到一份下载不了的交付。",
+      "entregaYendo": "正在把交付放进信箱…",
+      "entregaError": "交付没能放进信箱，所以什么都没签。再试一次。"
+    },
     "viewResult": "查看结果",
     "resultSign": "签名并查看结果",
     "resultSigning": "签名中…",

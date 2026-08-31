@@ -981,6 +981,15 @@
     "briefLabel": "Pedido del cliente",
     "briefMissing": "sin brief",
     "briefMissingLong": "Sin descripción en caché — si el pedido se creó en otro navegador, pídele el brief al cliente.",
+    "buzon": {
+      "verEncargo": "Ver lo que te han pedido",
+      "bajando": "Bajando el encargo…",
+      "encargoNoLlego": "El encargo aún no ha llegado al buzón. Lo manda tu cliente después de pagar; si no aparece, pídeselo.",
+      "encargoError": "No se ha podido leer el encargo. Vuelve a intentarlo.",
+      "entregaNota": "Se deja primero en tu buzón y después se ancla en la cadena, en ese orden: así tu cliente nunca ve una entrega que no pueda descargar.",
+      "entregaYendo": "Dejando la entrega en el buzón…",
+      "entregaError": "No se ha podido dejar la entrega en el buzón, así que no se ha firmado nada. Inténtalo otra vez."
+    },
     "viewResult": "Ver resultado",
     "resultSign": "Firmar y ver resultado",
     "resultSigning": "Firmando…",

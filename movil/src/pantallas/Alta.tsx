@@ -13,6 +13,8 @@ import Icono from '~/componentes/Icono';
 import CamposMarca from '~/componentes/CamposMarca';
 import { MARCA_VACIA, type Marca } from '@/lib/marca';
 import { resumirFicha } from '@/lib/agentMetadata';
+import { urlDeBuzon } from '@/lib/botEndpoint';
+import type { TipoDeAgente } from '@panal/sdk';
 import { armarFicha, useFicha } from '~/lib/agentes';
 import { listar } from '~/lib/llavero';
 import { useTextos } from '~/i18n/idiomas';
@@ -37,6 +39,14 @@ export default function Alta(): React.ReactElement {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [bot, setBot] = useState('');
+  /**
+   * Quién va a hacer el trabajo, dicho por quien se registra.
+   *
+   * Sin elegir no se firma. Decide el mercado en el que sale y si hace falta
+   * URL, y adivinarlo por el endpoint etiquetaría a alguien de lo que no es.
+   * El mismo formulario que en la web; el token lo escribe `armarFicha`.
+   */
+  const [tipo, setTipo] = useState<TipoDeAgente | null>(null);
   const [precio, setPrecio] = useState('');
   const [enPanal, setEnPanal] = useState(true);
   /** Logo y enlaces del creador. Todo opcional; lo vacío no escribe nada. */
@@ -57,10 +67,14 @@ export default function Alta(): React.ReactElement {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo.isSuccess]);
 
-  const ficha = armarFicha(nombre, descripcion, bot, marca);
+  // Una persona no escribe dirección: recibe en el buzón de Panal, a su nombre.
+  const donde = tipo === 'persona' ? (address ? urlDeBuzon(address) : '') : bot;
+  const ficha = armarFicha(nombre, descripcion, donde, marca, [], tipo ?? 'bot');
   const wei = parsear(precio);
   const trabajando = isPending || recibo.isLoading;
-  const listo = connected && !!nombre.trim() && wei !== null && !yaEs?.registrado;
+  // Sin decir quién trabaja no se firma: de eso dependen el mercado en el que
+  // sale y si hace falta URL, y no es algo que deba quedar por defecto.
+  const listo = connected && tipo !== null && !!nombre.trim() && wei !== null && !yaEs?.registrado;
 
   return (
     <div className="flex min-h-0 grow flex-col">
@@ -129,6 +143,40 @@ export default function Alta(): React.ReactElement {
           </button>
         )}
 
+        <Titulo>{T.alta.quienTrabaja}</Titulo>
+        <div className="flex shrink-0 gap-2">
+          {(['persona', 'bot'] as const).map((opcion) => {
+            const elegida = tipo === opcion;
+            return (
+              <button
+                key={opcion}
+                type="button"
+                onClick={() => setTipo(opcion)}
+                aria-pressed={elegida}
+                className={`flex-1 rounded-[14px] border p-3 text-left transition-colors ${
+                  elegida ? 'border-honey bg-honey/10' : 'border-line bg-paper'
+                }`}
+              >
+                {/* Sin icono a propósito: no hay uno de persona ni de robot en
+                    `Icono`, y dibujar dos a ojo para esto sería peor que el
+                    texto, que ya dice exactamente lo que hay. */}
+                <span className="text-[13px] font-semibold text-ink">
+                  {opcion === 'persona' ? T.alta.soyPersona : T.alta.esBot}
+                </span>
+                <span className="mt-1 block text-[11.5px] leading-[1.5] text-ink-2">
+                  {opcion === 'persona' ? T.alta.soyPersonaDesc : T.alta.esBotDesc}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {tipo === 'persona' && (
+          <div className="flex shrink-0 gap-2.5 rounded-[14px] border border-line bg-cream p-3.5">
+            <Icono nombre="info" tamano={16} color="#E29A2E" grosor={2} className="mt-px shrink-0" />
+            <p className="min-w-0 text-[12px] leading-[1.55] text-ink-2">{T.alta.buzonNota}</p>
+          </div>
+        )}
+
         <Titulo>{T.alta.suFicha}</Titulo>
         <Campo
           etiqueta={T.alta.nombre}
@@ -142,15 +190,17 @@ export default function Alta(): React.ReactElement {
           onCambio={setDescripcion}
           marcador={T.alta.queHaceHueco}
         />
-        <Campo
-          etiqueta={T.alta.dondeEscucha}
-          valor={bot}
-          onCambio={setBot}
-          marcador={T.alta.dondeEscuchaHueco}
-          mono
-        />
+        {tipo !== 'persona' && (
+          <Campo
+            etiqueta={T.alta.dondeEscucha}
+            valor={bot}
+            onCambio={setBot}
+            marcador={T.alta.dondeEscuchaHueco}
+            mono
+          />
+        )}
 
-        {!bot.trim() && (
+        {tipo !== 'persona' && !bot.trim() && (
           <div className="flex shrink-0 gap-2.5 rounded-[14px] border border-terra/40 bg-terra/10 p-3.5">
             <Icono nombre="info" tamano={16} color="#C9653B" grosor={2} className="mt-px shrink-0" />
             <div className="min-w-0">

@@ -981,6 +981,15 @@
     "briefLabel": "Demande du client",
     "briefMissing": "sans brief",
     "briefMissingLong": "Pas de description en cache — si la commande a été créée dans un autre navigateur, demandez le brief au client.",
+    "buzon": {
+      "verEncargo": "Voir ce qu'on vous a demandé",
+      "bajando": "Récupération de la commande…",
+      "encargoNoLlego": "La commande n'est pas encore arrivée dans la boîte aux lettres. Votre client l'envoie après avoir payé ; si elle n'arrive pas, demandez-la-lui.",
+      "encargoError": "Impossible de lire la commande. Réessayez.",
+      "entregaNota": "Elle passe d'abord par votre boîte aux lettres, puis est ancrée sur la chaîne, dans cet ordre : ainsi votre client ne voit jamais une livraison qu'il ne peut pas télécharger.",
+      "entregaYendo": "Dépôt de la livraison dans la boîte aux lettres…",
+      "entregaError": "La livraison n'a pas pu être déposée dans la boîte aux lettres : rien n'a été signé. Réessayez."
+    },
     "viewResult": "Voir le résultat",
     "resultSign": "Signer et voir le résultat",
     "resultSigning": "Signature…",

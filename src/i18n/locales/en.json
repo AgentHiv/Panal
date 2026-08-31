@@ -981,6 +981,15 @@
     "briefLabel": "Client request",
     "briefMissing": "no brief",
     "briefMissingLong": "No cached description — if the order was created in another browser, ask the client for the brief.",
+    "buzon": {
+      "verEncargo": "See what you were asked for",
+      "bajando": "Fetching the order…",
+      "encargoNoLlego": "The order has not reached the mailbox yet. Your client sends it after paying; if it does not turn up, ask them for it.",
+      "encargoError": "The order could not be read. Try again.",
+      "entregaNota": "It goes to your mailbox first and is anchored on the chain second, in that order: that way your client never sees a delivery they cannot download.",
+      "entregaYendo": "Leaving the delivery in the mailbox…",
+      "entregaError": "The delivery could not be left in the mailbox, so nothing was signed. Try again."
+    },
     "viewResult": "View result",
     "resultSign": "Sign and view result",
     "resultSigning": "Signing…",
