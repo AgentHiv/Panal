@@ -10,10 +10,11 @@
  * tras minarse la tx se hace refetch de las tareas.
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, ExternalLink, Hexagon, Loader2, RefreshCw, Star } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Hexagon, Loader2, Paperclip, RefreshCw, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { formatEther, keccak256, toBytes } from 'viem';
 import type { Address } from 'viem';
 import { useReadContract, useSignMessage } from 'wagmi';
@@ -31,7 +32,20 @@ import { useWallet } from '@/hooks/useWallet';
 import { useAhora } from '@/hooks/useAhora';
 import { getTaskBrief } from '@/lib/taskBriefs';
 import { useMyAgentProfile } from '@/hooks/useMyAgentProfile';
-import { dejarEntregaEnBuzon, esBuzon, extractBotUrl, leerEncargoDelBuzon } from '@/lib/botEndpoint';
+import {
+  credencialDeEncargo,
+  credencialDeEntrega,
+  dejarEntregaEnBuzon,
+  descargarArchivoDelBuzon,
+  esBuzon,
+  extractBotUrl,
+  leerEncargoDelBuzon,
+  subirArchivoDeEntrega,
+  type Credencial,
+} from '@/lib/botEndpoint';
+import { appendFilesManifest, type DeliveredFile } from '@/lib/deliveredFiles';
+import { describirArchivo, tamanoLegible, MAX_ADJUNTOS, type Adjunto } from '@/lib/adjuntos';
+import { parseAttachmentsManifest } from '@panal/sdk';
 import { hayEntrega } from '@/lib/expedientes';
 import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import type { RealTask } from '@/hooks/useMyTasks';
@@ -180,6 +194,18 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   >(null);
   /** Cómo va el envío de la entrega al buzón, que pasa ANTES de la firma. */
   const [envio, setEnvio] = useState<{ estado: 'yendo' | 'error'; detalle?: string } | null>(null);
+  /** Lo que se adjunta a la entrega, ya leído y hasheado. */
+  const [adjuntos, setAdjuntos] = useState<Adjunto[]>([]);
+  const inputArchivos = useRef<HTMLInputElement>(null);
+  /**
+   * La credencial de lectura del encargo: una firma abre el texto y sus
+   * archivos.
+   *
+   * En estado y no en una ref porque de ella depende lo que se pinta: sin
+   * firma no hay archivos que ofrecer, y sus botones salen apagados.
+   */
+  const [credEncargo, setCredEncargo] = useState<Credencial | null>(null);
+  const [bajando, setBajando] = useState<string | null>(null);
 
   const nameOf = useMemo(() => {
     const map = new Map<string, string>();
@@ -230,6 +256,8 @@ export default function TasksSection({ perspective }: { perspective: Perspective
     setRating(5);
     setEncargo(null);
     setEnvio(null);
+    setAdjuntos([]);
+    setCredEncargo(null);
     setDialog({ kind, task });
   };
 
@@ -237,6 +265,8 @@ export default function TasksSection({ perspective }: { perspective: Perspective
     setDialog(null);
     setEncargo(null);
     setEnvio(null);
+    setAdjuntos([]);
+    setCredEncargo(null);
     action.reset();
   };
 
@@ -251,13 +281,59 @@ export default function TasksSection({ perspective }: { perspective: Perspective
     if (!miBuzon || !address) return;
     setEncargo({ estado: 'pidiendo' });
     try {
-      const texto = await leerEncargoDelBuzon(miBuzon, task.id, address, (mensaje) =>
+      const cred = await credencialDeEncargo(task.id, (mensaje) =>
         signMessageAsync({ message: mensaje }),
       );
+      // Se guarda: la misma firma abre el texto y los archivos que traiga, y
+      // una ventana de wallet por archivo sería una ventana de más cada vez.
+      setCredEncargo(cred);
+      const texto = await leerEncargoDelBuzon(miBuzon, task.id, address, cred);
       setEncargo(texto === null ? { estado: 'nada' } : { estado: 'listo', texto });
     } catch {
       setEncargo({ estado: 'error' });
     }
+  };
+
+  /** Baja un archivo que el cliente adjuntó, comprobando sus bytes. */
+  const bajarAdjunto = async (task: RealTask, archivo: { name: string; size: number; hash: string; mime?: string }) => {
+    if (!miBuzon || !address || !credEncargo) return;
+    setBajando(archivo.name);
+    try {
+      const blob = await descargarArchivoDelBuzon(miBuzon, task.id, archivo, address, credEncargo);
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = href;
+      a.download = archivo.name;
+      a.click();
+      URL.revokeObjectURL(href);
+    } catch {
+      toast.error(t('tasks.buzon.archivoError', { name: archivo.name }));
+    } finally {
+      setBajando(null);
+    }
+  };
+
+  /** Añade archivos a la entrega: se leen y se hashean antes de nada. */
+  const anadirArchivos = async (lista: FileList | null) => {
+    if (!lista || lista.length === 0) return;
+    const nuevos: Adjunto[] = [];
+    for (const file of Array.from(lista)) {
+      try {
+        nuevos.push(await describirArchivo(file));
+      } catch {
+        toast.error(t('tasks.buzon.archivoNoVale', { name: file.name }));
+      }
+    }
+    setAdjuntos((previos) => {
+      const porHash = new Map(previos.map((a) => [a.hash, a]));
+      for (const a of nuevos) if (!porHash.has(a.hash)) porHash.set(a.hash, a);
+      const todos = [...porHash.values()];
+      if (todos.length > MAX_ADJUNTOS) {
+        toast.error(t('hire.attach.tooMany', { max: MAX_ADJUNTOS }));
+        return todos.slice(0, MAX_ADJUNTOS);
+      }
+      return todos;
+    });
   };
 
   /**
@@ -276,10 +352,35 @@ export default function TasksSection({ perspective }: { perspective: Perspective
     }
     setEnvio({ estado: 'yendo' });
     void (async () => {
+      let texto = deliverText;
       try {
-        await dejarEntregaEnBuzon(miBuzon, dialog.task.id, deliverText, address, (mensaje) =>
+        // UNA firma para toda la entrega: los archivos y el texto. Lleva la
+        // caducidad dentro, así que reusarla no la alarga.
+        const cred = await credencialDeEntrega(dialog.task.id, (mensaje) =>
           signMessageAsync({ message: mensaje }),
         );
+        const entregados: DeliveredFile[] = [];
+        for (const a of adjuntos) {
+          const path = await subirArchivoDeEntrega(
+            miBuzon,
+            dialog.task.id,
+            { name: a.name, bytes: a.bytes, mime: a.mime },
+            address,
+            cred,
+          );
+          entregados.push({
+            name: a.name,
+            size: a.size,
+            hash: a.hash,
+            ...(a.mime ? { mime: a.mime } : {}),
+            path,
+          });
+        }
+        // El manifiesto va DENTRO del texto que se ancla: por eso el hash de
+        // cada archivo queda respaldado por la cadena y el cliente puede
+        // comprobar los bytes que se baje.
+        texto = appendFilesManifest(deliverText, entregados);
+        await dejarEntregaEnBuzon(miBuzon, dialog.task.id, texto, address, cred);
       } catch (err) {
         setEnvio({
           estado: 'error',
@@ -288,7 +389,8 @@ export default function TasksSection({ perspective }: { perspective: Perspective
         return;
       }
       setEnvio(null);
-      void action.run(requestFor('deliver', dialog.task, { text: deliverText }));
+      // Se ancla el texto CON el manifiesto, que es lo que se ha guardado.
+      void action.run(requestFor('deliver', dialog.task, { text: texto }));
     })();
   };
 
@@ -584,6 +686,35 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                             )}
                           </>
                         )}
+                        {/*
+                          Lo que el cliente adjuntó. Sus hashes viajan DENTRO
+                          del encargo, y el encargo cuadra con el `taskHash`
+                          que se firmó al pagar: por eso al bajarlos se
+                          comprueban los bytes, y por eso un archivo que no
+                          cuadre no se guarda «avisando».
+                        */}
+                        {brief &&
+                          miBuzon &&
+                          dialog.task.role === 'worker' &&
+                          parseAttachmentsManifest(brief).map((a) => (
+                            <button
+                              key={a.hash}
+                              type="button"
+                              onClick={() => void bajarAdjunto(dialog.task, a)}
+                              disabled={bajando === a.name || !credEncargo}
+                              className="mt-2 flex w-full items-center gap-2 rounded-lg border border-line bg-paper px-3 py-2 text-left text-[0.8125rem] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep disabled:opacity-50"
+                            >
+                              {bajando === a.name ? (
+                                <Loader2 size={13} className="shrink-0 animate-spin" aria-hidden />
+                              ) : (
+                                <Paperclip size={13} className="shrink-0" aria-hidden />
+                              )}
+                              <span className="min-w-0 flex-1 truncate">{a.name}</span>
+                              <span className="shrink-0 font-mono text-[11px] text-ink-3">
+                                {tamanoLegible(a.size)}
+                              </span>
+                            </button>
+                          ))}
                       </div>
                     );
                   })()}
@@ -601,9 +732,53 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                         className="w-full resize-none rounded-xl border border-line bg-paper px-4 py-3 text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
                       />
                       {miBuzon && (
-                        <p className="text-[0.75rem] leading-relaxed text-ink-3">
-                          {t('tasks.buzon.entregaNota')}
-                        </p>
+                        <>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <input
+                              ref={inputArchivos}
+                              type="file"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => {
+                                void anadirArchivos(e.target.files);
+                                e.target.value = '';
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => inputArchivos.current?.click()}
+                              disabled={envio?.estado === 'yendo'}
+                              className="inline-flex items-center gap-2 rounded-full border border-line px-3.5 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep disabled:opacity-50"
+                            >
+                              <Paperclip size={13} aria-hidden />
+                              {t('tasks.buzon.adjuntar')}
+                            </button>
+                            {adjuntos.map((a) => (
+                              <span
+                                key={a.hash}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-cream px-3 py-1.5 text-[0.8125rem] text-ink-2"
+                              >
+                                <span className="max-w-[12rem] truncate">{a.name}</span>
+                                <span className="font-mono text-[11px] text-ink-3">
+                                  {tamanoLegible(a.size)}
+                                </span>
+                                <button
+                                  type="button"
+                                  aria-label={t('tasks.buzon.quitar', { name: a.name })}
+                                  onClick={() =>
+                                    setAdjuntos((previos) => previos.filter((x) => x.hash !== a.hash))
+                                  }
+                                  className="text-ink-3 transition-colors hover:text-terra"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-[0.75rem] leading-relaxed text-ink-3">
+                            {t('tasks.buzon.entregaNota')}
+                          </p>
+                        </>
                       )}
                       {envio?.estado === 'yendo' && (
                         <p className="inline-flex items-center gap-2 text-[0.75rem] text-ink-2">

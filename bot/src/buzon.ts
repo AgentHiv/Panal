@@ -18,11 +18,15 @@
  *
  *   Cliente (idéntico al bot):
  *     POST /buzon/:agente/brief/:taskId     deja el encargo
+ *     POST /buzon/:agente/upload/:taskId    deja un adjunto del encargo
  *     GET  /buzon/:agente/result/:taskId    se lleva la entrega
  *     GET  /buzon/:agente/agent.json        la ficha, leída de la cadena
  *   Dueño del agente (nuevas):
  *     GET  /buzon/:agente/encargo/:taskId   lee lo que le han pedido
  *     POST /buzon/:agente/entrega/:taskId   deja lo que ha hecho
+ *     POST /buzon/:agente/entrega-archivo/:taskId  deja un archivo entregado
+ *   Los dos:
+ *     GET  /buzon/:agente/archivo/:taskId/:nombre  se lleva un archivo
  *
  * QUÉ NO PUEDE HACER
  *
@@ -54,7 +58,7 @@ import { leerNivelesDeMetadata } from './niveles.js';
 import { currencySymbol, getRegistryAgent, getTask, monad, TaskStatus, type ChainClients, type RegistryAgent, type Task } from './chain.js';
 import { MAX_BRIEF_CHARS, parseMetadataURI, type AgentJson } from './http.js';
 import type { BotConfig } from './config.js';
-import type { BuzonStore } from './buzon-store.js';
+import { MAX_ARCHIVO_BYTES, type BuzonStore } from './buzon-store.js';
 
 /* ── lo que se firma ──────────────────────────────────────────────────────
  *
@@ -151,6 +155,42 @@ function readBody(req: IncomingMessage, maxBytes: number): Promise<string | null
       chunks.push(chunk);
     });
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    req.on('error', () => resolve(null));
+  });
+}
+
+/**
+ * El nombre de un archivo, reducido a lo que puede ser un nombre.
+ *
+ * Lo escribe quien sube, así que aquí no se «arregla»: se recorta a lo que
+ * vale y, si no queda nada, no vale. De este nombre NO sale ninguna ruta —los
+ * bytes se guardan por su hash— pero sí sale lo que se enseña y lo que se
+ * pide, y una barra dentro haría que la URL de descarga no fuera la que el
+ * manifiesto anunció.
+ */
+export function sanearNombre(nombre: string): string {
+  return nombre
+    .replace(/[\\/\r\n\t\u0000-\u001f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120);
+}
+
+/** Lee el cuerpo binario de un POST (null si pasa de maxBytes o falla). */
+function readBytes(req: IncomingMessage, maxBytes: number): Promise<Buffer | null> {
+  return new Promise((resolve) => {
+    const trozos: Buffer[] = [];
+    let size = 0;
+    req.on('data', (trozo: Buffer) => {
+      size += trozo.length;
+      if (size > maxBytes) {
+        resolve(null);
+        req.destroy();
+        return;
+      }
+      trozos.push(trozo);
+    });
+    req.on('end', () => resolve(Buffer.concat(trozos)));
     req.on('error', () => resolve(null));
   });
 }
@@ -514,6 +554,166 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     json(res, 200, { ok: true, resultHash: keccak256(toBytes(entrega)) });
   };
 
+  // ---- POST /upload/:taskId y /entrega-archivo/:taskId — los bytes ---------
+  //
+  // El cliente sube lo que adjunta a su encargo; el trabajador, lo que entrega.
+  // Los dos mandan los bytes en crudo con el nombre en una cabecera, que es lo
+  // que ya hace la web con los agentes que tienen servidor propio.
+  //
+  // El buzón NO comprueba que el archivo estuviera anunciado en ningún
+  // manifiesto, y no hace falta que lo haga: lo que sostiene una entrega es que
+  // su texto —con el hash de cada archivo dentro— es el que está anclado en la
+  // cadena, y quien lo descarga vuelve a comprobar los bytes contra ese hash.
+  // Un archivo que nadie anunció no se puede colar en una entrega; solo ocupa
+  // sitio, y para eso están los topes.
+  const recibirArchivo = async (
+    agente: Address,
+    taskId: bigint,
+    de: 'cliente' | 'trabajador',
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> => {
+    const url = new URL(req.url ?? '/', 'http://localhost');
+    const { address: addressParam, signature: signatureParam, expira } = credenciales(req, url);
+    const nombreCrudo = (req.headers['x-panal-filename'] as string | undefined) ?? '';
+    if (!isAddress(addressParam) || !isHex(signatureParam)) {
+      json(res, 400, { error: 'bad credentials' });
+      return;
+    }
+    let nombre = '';
+    try {
+      nombre = sanearNombre(decodeURIComponent(nombreCrudo));
+    } catch {
+      nombre = '';
+    }
+    if (!nombre) {
+      json(res, 400, { error: 'bad filename' });
+      return;
+    }
+    const address = getAddress(addressParam);
+
+    const task = await tareaDe(agente, taskId, res);
+    if (!task) return;
+
+    // El cliente firma lo mismo que para dejar el encargo —es la misma
+    // operación, en dos llamadas—; el trabajador, lo mismo que para entregar.
+    let firmaOk = false;
+    if (de === 'cliente') {
+      try {
+        firmaOk =
+          (await verifyMessage({
+            address,
+            message: briefSignMessage(taskId),
+            signature: signatureParam as Hex,
+          })) && address.toLowerCase() === task.client.toLowerCase();
+      } catch {
+        firmaOk = false;
+      }
+    } else {
+      firmaOk =
+        (await firmaVigente(address, signatureParam as Hex, expira, (e) =>
+          entregaSignMessage(taskId, e),
+        )) && address.toLowerCase() === task.worker.toLowerCase();
+    }
+    if (!firmaOk) {
+      json(res, 403, { error: de === 'cliente' ? 'not client' : 'not worker' });
+      return;
+    }
+    if (task.status === TaskStatus.Completed || task.status === TaskStatus.Cancelled) {
+      json(res, 409, { error: 'task closed' });
+      return;
+    }
+
+    const bytes = await readBytes(req, MAX_ARCHIVO_BYTES);
+    if (bytes === null) {
+      json(res, 413, { error: 'file too large' });
+      return;
+    }
+    if (bytes.byteLength === 0) {
+      json(res, 400, { error: 'empty file' });
+      return;
+    }
+
+    const mime = (req.headers['content-type'] as string | undefined) ?? undefined;
+    const guardado = deps.store.guardarArchivo(
+      agente,
+      taskId,
+      nombre,
+      bytes,
+      de,
+      mime && mime !== 'application/octet-stream' ? mime : undefined,
+    );
+    if ('error' in guardado) {
+      const codigo = guardado.error === 'grande' ? 413 : guardado.error === 'clave' ? 400 : 409;
+      json(res, codigo, { error: guardado.error });
+      return;
+    }
+    console.log(`[buzon] archivo «${nombre}» de ${de} en #${taskId} (${bytes.byteLength} B)`);
+    json(res, 200, { ok: true, hash: guardado.hash });
+  };
+
+  // ---- GET /archivo/:taskId/:nombre — los bytes, a quien sea de la tarea ----
+  const darArchivo = async (
+    agente: Address,
+    taskId: bigint,
+    nombre: string,
+    url: URL,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> => {
+    const { address: addressParam, signature: signatureParam, expira } = credenciales(req, url);
+    if (!isAddress(addressParam) || !isHex(signatureParam)) {
+      json(res, 400, { error: 'bad credentials' });
+      return;
+    }
+    const address = getAddress(addressParam);
+    const signature = signatureParam as Hex;
+
+    const task = await tareaDe(agente, taskId, res);
+    if (!task) return;
+
+    /**
+     * Las dos partes, cada una con la firma que ya usa.
+     *
+     * El cliente baja los archivos con la MISMA firma que la entrega —así lo
+     * hace ya `downloadDeliveredFile`, que abre el texto y los archivos con
+     * una sola—; el trabajador, con la de leer su encargo. Ninguna sirve para
+     * la puerta del otro, y las dos caducan.
+     */
+    const esCliente =
+      address.toLowerCase() === task.client.toLowerCase() &&
+      (expira !== null
+        ? await firmaVigente(address, signature, expira, (e) =>
+            resultSignMessageConCaducidad(taskId, e),
+          )
+        : await verifyMessage({ address, message: resultSignMessage(taskId), signature }).catch(
+            () => false,
+          ));
+    const esTrabajador =
+      !esCliente &&
+      address.toLowerCase() === task.worker.toLowerCase() &&
+      (await firmaVigente(address, signature, expira, (e) => encargoSignMessage(taskId, e)));
+    if (!esCliente && !esTrabajador) {
+      json(res, 403, { error: 'not a party' });
+      return;
+    }
+
+    const guardado = deps.store.leerArchivo(agente, taskId, nombre);
+    if (!guardado) {
+      json(res, 404, { error: 'file not here' });
+      return;
+    }
+    res.writeHead(200, {
+      'content-type': guardado.archivo.mime || 'application/octet-stream',
+      'content-length': String(guardado.bytes.byteLength),
+      // Se baja, no se pinta: el buzón sirve archivos de desconocidos y un HTML
+      // abierto en su propio origen podría leer lo que ese origen guarde.
+      'content-disposition': 'attachment',
+      'x-content-type-options': 'nosniff',
+    });
+    res.end(guardado.bytes);
+  };
+
   // ---- GET /agent.json — la ficha, leída de la cadena -----------------------
   //
   // Un agente de buzón no tiene código propio que la sirva, así que la sirve
@@ -582,6 +782,15 @@ export function createBuzonServer(deps: BuzonDeps): Server {
           path: '/result/:taskId?address&signature',
           signMessage: 'Panal resultado #<taskId> · <expira>  (EIP-191, firmado por el cliente)',
         },
+        // Se anuncia, y por eso al cliente le sale el clip. Un agente de buzón
+        // que no lo anunciara aceptaría el encargo igual y trabajaría sin la
+        // foto: el manifiesto va DENTRO del brief, así que el hash cuadra y
+        // nada falla — salvo el resultado.
+        postAttachment: {
+          method: 'POST',
+          path: '/upload/:taskId',
+          maxAttachmentBytes: MAX_ARCHIVO_BYTES,
+        },
         indexer: deps.indexer,
       },
       howToHire: [
@@ -630,7 +839,26 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       await darFicha(agente, res);
       return;
     }
-    const ruta = /^(brief|result|encargo|entrega)\/(\d{1,20})$/.exec(resto);
+    // Los bytes de un archivo: `archivo/<tarea>/<nombre>`. El nombre viaja
+    // percent-encoded —una cabecera HTTP no admite «recibo ñ.png»— y se saca de
+    // la URL sin tocar el disco: los bytes se guardan por su hash.
+    const deArchivo = /^archivo\/(\d{1,20})\/(.+)$/.exec(resto);
+    if (deArchivo && req.method === 'GET') {
+      let nombre = '';
+      try {
+        nombre = sanearNombre(decodeURIComponent(deArchivo[2]!));
+      } catch {
+        nombre = '';
+      }
+      if (!nombre) {
+        json(res, 400, { error: 'bad filename' });
+        return;
+      }
+      await darArchivo(agente, BigInt(deArchivo[1]!), nombre, url, req, res);
+      return;
+    }
+
+    const ruta = /^(brief|result|encargo|entrega|upload|entrega-archivo)\/(\d{1,20})$/.exec(resto);
     if (!ruta) {
       json(res, 404, { error: 'not found' });
       return;
@@ -648,6 +876,12 @@ export function createBuzonServer(deps: BuzonDeps): Server {
         return;
       case 'POST entrega':
         await recibirEntrega(agente, taskId, req, res);
+        return;
+      case 'POST upload':
+        await recibirArchivo(agente, taskId, 'cliente', req, res);
+        return;
+      case 'POST entrega-archivo':
+        await recibirArchivo(agente, taskId, 'trabajador', req, res);
         return;
       default:
         json(res, 405, { error: 'method not allowed' });

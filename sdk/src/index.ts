@@ -137,7 +137,15 @@ export type { UrlGuardOptions } from './net.js';
 // La ficha de GET /agent.json: un solo formato, y lectores que perdonan el
 // antiguo. En agent-card.ts está por qué llegó a haber dos.
 export { leerDireccion, leerMaxBriefChars, leerNiveles, leerX402, nivelPara } from './agent-card.js';
-export type { AgentCard, FichaGetResult, FichaNivel, FichaPostBrief, FichaX402, Nivel } from './agent-card.js';
+export type {
+  AgentCard,
+  FichaGetResult,
+  FichaNivel,
+  FichaPostAttachment,
+  FichaPostBrief,
+  FichaX402,
+  Nivel,
+} from './agent-card.js';
 
 // Los niveles escritos en el metadataURI on-chain. Mismo tipo `Nivel` que los
 // de la ficha; en niveles.ts está por qué viven en los dos sitios.

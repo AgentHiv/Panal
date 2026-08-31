@@ -21,7 +21,7 @@
  * Uso:  npx tsx scripts/test-buzon.ts   (exit 0 si todo pasa)
  */
 
-import { mkdtempSync, utimesSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Address, Hex } from 'viem';
@@ -262,7 +262,11 @@ async function main(): Promise<void> {
   check('nombre y skills de su metadata', ficha.name === 'Marta' && ficha.skills?.[0] === 'traducción');
   check('su nivel, con el precio en wei', ficha.tiers?.[0]?.name === 'Urgente' && ficha.tiers[0]?.amountWei === '5000000000000000000');
   check('sin cobro por llamada: no hay máquina despierta', ficha.endpoints?.x402Ask === undefined && ficha.x402Ask === undefined);
-  check('sin adjuntos: el buzón no los guarda todavía', ficha.endpoints?.postAttachment === undefined);
+  check(
+    'sí adjuntos, y con su tope: si no lo anunciara, el cliente pagaría y su archivo no llegaría',
+    (ficha.endpoints?.postAttachment as { path?: string; maxAttachmentBytes?: number } | undefined)
+      ?.path === '/upload/:taskId',
+  );
   check('y dice quién es', ficha.agent === AGENTE);
 
   /* ── lo que no es una ruta ────────────────────────────────────────────── */
@@ -284,6 +288,114 @@ async function main(): Promise<void> {
   const r18 = await fetch(`http://127.0.0.1:${dir_.port}/${AGENTE}/agent.json`);
   check('200 también sin el prefijo /buzon', r18.status === 200, `status=${r18.status}`);
 
+  /* ── los archivos ─────────────────────────────────────────────────────── */
+
+  console.log('\n── Los archivos van y vienen, y solo entre las dos partes ──\n');
+
+  const BYTES = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x37, 0x0a, 0x25]);
+  const HASH = keccak256(BYTES);
+
+  const subir = async (
+    ruta: 'upload' | 'entrega-archivo',
+    taskId: bigint,
+    nombre: string,
+    quien: typeof cliente,
+    bytes: Uint8Array = BYTES,
+  ) => {
+    const cabeceras: Record<string, string> = {
+      'content-type': 'application/octet-stream',
+      'x-panal-address': quien.address,
+      'x-panal-filename': encodeURIComponent(nombre),
+    };
+    if (ruta === 'upload') {
+      // El cliente firma lo mismo que para dejar el encargo: es la misma
+      // operación en dos llamadas.
+      cabeceras['x-panal-signature'] = await quien.signMessage({ message: briefSignMessage(taskId) });
+    } else {
+      const expira = enUnMinuto();
+      cabeceras['x-panal-signature'] = await quien.signMessage({
+        message: entregaSignMessage(taskId, expira),
+      });
+      cabeceras['x-panal-expira'] = String(expira);
+    }
+    return fetch(`${base}/${ruta}/${taskId}`, { method: 'POST', headers: cabeceras, body: bytes });
+  };
+
+  const r19 = await subir('upload', 1n, 'contrato ñ.pdf', cliente);
+  const b19 = (await r19.json()) as { hash?: string };
+  check('200 el cliente adjunta un archivo a su encargo', r19.status === 200, `status=${r19.status}`);
+  check('y el hash lo calcula el buzón, no la cabecera', b19.hash === HASH, `${b19.hash}`);
+
+  const r20 = await subir('upload', 1n, 'contrato ñ.pdf', intruso);
+  check('403 un tercero no adjunta nada', r20.status === 403, `status=${r20.status}`);
+
+  const r21 = await subir('entrega-archivo', 1n, 'traducción.pdf', persona);
+  check('200 el trabajador deja el archivo que entrega', r21.status === 200, `status=${r21.status}`);
+
+  const r22 = await subir('entrega-archivo', 1n, 'traducción.pdf', cliente);
+  check('403 y el cliente no entrega archivos por él', r22.status === 403, `status=${r22.status}`);
+
+  // Los bytes se guardan por su HASH, así que un nombre con barras no lleva a
+  // ninguna parte: la ruta no sale nunca de lo que escribe quien sube.
+  const r23 = await subir('upload', 1n, '../../../etc/passwd', cliente);
+  check(
+    'un nombre con travesía se queda en el nombre',
+    r23.status === 200 && !existsSync('/tmp/panal-no-deberia-existir'),
+    `status=${r23.status}`,
+  );
+  const guardados = readdirSync(join(dir, AGENTE.toLowerCase(), '1.files'));
+  check(
+    'y en disco todo son hashes',
+    guardados.every((f) => /^[0-9a-f]{64}\.bin$/.test(f)),
+    guardados.join(' '),
+  );
+
+  const bajarArchivo = async (nombre: string, quien: typeof cliente, comoCliente: boolean) => {
+    const expira = enUnMinuto();
+    const mensaje = comoCliente
+      ? resultSignMessageConCaducidad(1n, expira)
+      : encargoSignMessage(1n, expira);
+    const firma = await quien.signMessage({ message: mensaje });
+    return fetch(`${base}/archivo/1/${encodeURIComponent(nombre)}`, {
+      headers: {
+        'x-panal-address': quien.address,
+        'x-panal-signature': firma,
+        'x-panal-expira': String(expira),
+      },
+    });
+  };
+
+  const r24 = await bajarArchivo('traducción.pdf', cliente, true);
+  const bytes24 = new Uint8Array(await r24.arrayBuffer());
+  check(
+    '200 el cliente se baja lo entregado, con los mismos bytes',
+    r24.status === 200 && keccak256(bytes24) === HASH,
+    `status=${r24.status}`,
+  );
+  check('y se baja, no se pinta', r24.headers.get('content-disposition') === 'attachment');
+
+  const r25 = await bajarArchivo('contrato ñ.pdf', persona, false);
+  check('200 el trabajador se baja lo que le adjuntaron', r25.status === 200, `status=${r25.status}`);
+
+  const r26 = await bajarArchivo('traducción.pdf', intruso, true);
+  check('403 un tercero no se baja nada', r26.status === 403, `status=${r26.status}`);
+
+  const r27 = await bajarArchivo('no-existe.pdf', cliente, true);
+  check('404 lo que no está no se inventa', r27.status === 404, `status=${r27.status}`);
+
+  // La firma del cliente no abre la puerta del trabajador ni al revés.
+  const r28 = await bajarArchivo('contrato ñ.pdf', persona, true);
+  check('403 la firma del cliente no le vale al trabajador', r28.status === 403, `status=${r28.status}`);
+
+  const r29 = await subir('upload', 1n, '', cliente);
+  check('400 un archivo sin nombre no entra', r29.status === 400, `status=${r29.status}`);
+
+  const r30 = await subir('upload', 1n, 'vacio.txt', cliente, new Uint8Array(0));
+  check('400 ni uno vacío', r30.status === 400, `status=${r30.status}`);
+
+  const r31 = await subir('upload', 3n, 'tarde.pdf', cliente);
+  check('409 ni uno para una tarea cancelada', r31.status === 409, `status=${r31.status}`);
+
   /* ── la retención ─────────────────────────────────────────────────────── */
   console.log('\n── Es un relevo, no un archivo ──\n');
 
@@ -291,6 +403,10 @@ async function main(): Promise<void> {
   utimesSync(join(dir, AGENTE.toLowerCase(), '1.json'), viejo, viejo);
   const borrados = store.limpiar();
   check('lo de hace 31 días se borra', borrados === 1 && store.leer(AGENTE, 1n) === null, `borrados=${borrados}`);
+  check(
+    'y sus archivos con él, que si no se quedarían vivos meses',
+    !existsSync(join(dir, AGENTE.toLowerCase(), '1.files')),
+  );
   check('lo de hoy se queda', store.leer(AGENTE, 2n)?.entrega === ENTREGA);
 
   server.close();

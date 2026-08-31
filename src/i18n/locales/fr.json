@@ -988,7 +988,11 @@
       "encargoError": "Impossible de lire la commande. Réessayez.",
       "entregaNota": "Elle passe d'abord par votre boîte aux lettres, puis est ancrée sur la chaîne, dans cet ordre : ainsi votre client ne voit jamais une livraison qu'il ne peut pas télécharger.",
       "entregaYendo": "Dépôt de la livraison dans la boîte aux lettres…",
-      "entregaError": "La livraison n'a pas pu être déposée dans la boîte aux lettres : rien n'a été signé. Réessayez."
+      "entregaError": "La livraison n'a pas pu être déposée dans la boîte aux lettres : rien n'a été signé. Réessayez.",
+      "adjuntar": "Joindre des fichiers",
+      "quitar": "Retirer {{name}}",
+      "archivoError": "« {{name}} » n'a pas pu être téléchargé, ou ses octets ne correspondent pas à ce que la commande annonçait.",
+      "archivoNoVale": "« {{name}} » n'a pas pu être lu."
     },
     "viewResult": "Voir le résultat",
     "resultSign": "Signer et voir le résultat",

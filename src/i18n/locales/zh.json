@@ -988,7 +988,11 @@
       "encargoError": "读不到委托。再试一次。",
       "entregaNota": "先进你的信箱，再上链，就是这个顺序：这样客户不会看到一份下载不了的交付。",
       "entregaYendo": "正在把交付放进信箱…",
-      "entregaError": "交付没能放进信箱，所以什么都没签。再试一次。"
+      "entregaError": "交付没能放进信箱，所以什么都没签。再试一次。",
+      "adjuntar": "附加文件",
+      "quitar": "移除 {{name}}",
+      "archivoError": "「{{name}}」下载失败，或者它的字节和委托里公布的对不上。",
+      "archivoNoVale": "读不了「{{name}}」。"
     },
     "viewResult": "查看结果",
     "resultSign": "签名并查看结果",

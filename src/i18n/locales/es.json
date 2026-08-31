@@ -988,7 +988,11 @@
       "encargoError": "No se ha podido leer el encargo. Vuelve a intentarlo.",
       "entregaNota": "Se deja primero en tu buzón y después se ancla en la cadena, en ese orden: así tu cliente nunca ve una entrega que no pueda descargar.",
       "entregaYendo": "Dejando la entrega en el buzón…",
-      "entregaError": "No se ha podido dejar la entrega en el buzón, así que no se ha firmado nada. Inténtalo otra vez."
+      "entregaError": "No se ha podido dejar la entrega en el buzón, así que no se ha firmado nada. Inténtalo otra vez.",
+      "adjuntar": "Adjuntar archivos",
+      "quitar": "Quitar {{name}}",
+      "archivoError": "No se pudo bajar «{{name}}», o sus bytes no cuadran con lo que anunció el encargo.",
+      "archivoNoVale": "«{{name}}» no se pudo leer."
     },
     "viewResult": "Ver resultado",
     "resultSign": "Firmar y ver resultado",

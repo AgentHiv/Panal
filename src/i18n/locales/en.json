@@ -988,7 +988,11 @@
       "encargoError": "The order could not be read. Try again.",
       "entregaNota": "It goes to your mailbox first and is anchored on the chain second, in that order: that way your client never sees a delivery they cannot download.",
       "entregaYendo": "Leaving the delivery in the mailbox…",
-      "entregaError": "The delivery could not be left in the mailbox, so nothing was signed. Try again."
+      "entregaError": "The delivery could not be left in the mailbox, so nothing was signed. Try again.",
+      "adjuntar": "Attach files",
+      "quitar": "Remove {{name}}",
+      "archivoError": "“{{name}}” could not be downloaded, or its bytes do not match what the order announced.",
+      "archivoNoVale": "“{{name}}” could not be read."
     },
     "viewResult": "View result",
     "resultSign": "Sign and view result",

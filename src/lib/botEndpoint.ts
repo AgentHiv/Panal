@@ -12,7 +12,9 @@
  * corresponde al cliente de la tarea.
  */
 
+import { keccak256 } from 'viem';
 import { fichaEnIdioma, leerNiveles } from '@panal/sdk';
+import { FileVerificationError } from '@/lib/deliveredFiles';
 import type { Nivel } from '@panal/sdk';
 
 /**
@@ -68,6 +70,37 @@ export function entregaSignMessage(taskId: bigint, expira: number): string {
 }
 
 /**
+ * Una firma y su caducidad, para reusarla en toda una operación.
+ *
+ * Entregar son varias llamadas —un archivo, otro archivo, el texto— y con una
+ * firma por llamada la wallet abriría cuatro ventanas para una sola cosa. Eso
+ * no es más seguro: es lo que enseña a firmar sin leer. La firma lleva la
+ * caducidad dentro, así que reusarla no la alarga.
+ */
+export interface Credencial {
+  firma: string;
+  expira: number;
+}
+
+/** Firma «leer el encargo #id». Abre el texto y los archivos de esa tarea. */
+export async function credencialDeEncargo(
+  taskId: bigint,
+  firmar: (mensaje: string) => Promise<string>,
+): Promise<Credencial> {
+  const expira = expiraEn();
+  return { firma: await firmar(encargoSignMessage(taskId, expira)), expira };
+}
+
+/** Firma «entregar el #id». Vale para subir sus archivos y para el texto. */
+export async function credencialDeEntrega(
+  taskId: bigint,
+  firmar: (mensaje: string) => Promise<string>,
+): Promise<Credencial> {
+  const expira = expiraEn();
+  return { firma: await firmar(entregaSignMessage(taskId, expira)), expira };
+}
+
+/**
  * Lee del buzón el encargo de una tarea. `null` si aún no está.
  *
  * Lo pide el trabajador, firmando. No hay caché: el texto es de su cliente y
@@ -77,19 +110,82 @@ export async function leerEncargoDelBuzon(
   botUrl: string,
   taskId: bigint,
   address: string,
-  firmar: (mensaje: string) => Promise<string>,
+  credencial: Credencial,
   timeoutMs = 10_000,
 ): Promise<string | null> {
-  const expira = expiraEn();
-  const signature = await firmar(encargoSignMessage(taskId, expira));
   const res = await fetch(`${botUrl.replace(/\/+$/, '')}/encargo/${taskId.toString()}`, {
-    headers: cabecerasFirma(address, signature, expira),
+    headers: cabecerasFirma(address, credencial.firma, credencial.expira),
     signal: AbortSignal.timeout(timeoutMs),
   });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const body = (await res.json()) as { brief?: unknown };
   return typeof body.brief === 'string' ? body.brief : null;
+}
+
+/**
+ * Baja del buzón un archivo de la tarea y comprueba sus bytes.
+ *
+ * El hash con el que se compara viaja dentro del encargo, y el encargo cuadra
+ * con el `taskHash` que el cliente firmó al pagar: por eso vale comprobarlo, y
+ * por eso lanza en vez de devolver bytes que no cuadran.
+ */
+export async function descargarArchivoDelBuzon(
+  botUrl: string,
+  taskId: bigint,
+  archivo: { name: string; size: number; hash: string; mime?: string },
+  address: string,
+  credencial: Credencial,
+): Promise<Blob> {
+  const url = `${botUrl.replace(/\/+$/, '')}/archivo/${taskId.toString()}/${encodeURIComponent(archivo.name)}`;
+  const res = await fetch(url, {
+    redirect: 'error',
+    headers: cabecerasFirma(address, credencial.firma, credencial.expira),
+  });
+  if (!res.ok) throw new FileVerificationError(`HTTP ${res.status}`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (bytes.byteLength !== archivo.size) throw new FileVerificationError('size');
+  if (keccak256(bytes).toLowerCase() !== archivo.hash.toLowerCase()) {
+    throw new FileVerificationError('hash');
+  }
+  return new Blob([bytes as BlobPart], { type: archivo.mime || 'application/octet-stream' });
+}
+
+/**
+ * Sube al buzón un archivo de la entrega. Devuelve su ruta relativa.
+ *
+ * RELATIVA a propósito: los agentes de buzón cuelgan de `/buzon/0x…`, y una
+ * ruta absoluta se resolvería contra la raíz del dominio y no llevaría a
+ * ninguna parte. Ver `fileUrl` en `deliveredFiles.ts`.
+ */
+export async function subirArchivoDeEntrega(
+  botUrl: string,
+  taskId: bigint,
+  archivo: { name: string; bytes: Uint8Array; mime?: string },
+  address: string,
+  credencial: Credencial,
+): Promise<string> {
+  const res = await fetch(`${botUrl.replace(/\/+$/, '')}/entrega-archivo/${taskId.toString()}`, {
+    method: 'POST',
+    headers: {
+      'content-type': archivo.mime || 'application/octet-stream',
+      'x-panal-address': address,
+      'x-panal-signature': credencial.firma,
+      'x-panal-expira': String(credencial.expira),
+      // Percent-encoded: una cabecera HTTP no admite caracteres fuera de
+      // latin-1, y «traducción.pdf» es un nombre perfectamente normal.
+      'x-panal-filename': encodeURIComponent(archivo.name),
+    },
+    body: new Blob([archivo.bytes as BlobPart]),
+  });
+  if (!res.ok) {
+    const detalle = await res
+      .json()
+      .then((b: { error?: string }) => b.error ?? '')
+      .catch(() => '');
+    throw new Error(detalle || `HTTP ${res.status}`);
+  }
+  return `archivo/${taskId.toString()}/${archivo.name}`;
 }
 
 /**
@@ -106,15 +202,18 @@ export async function dejarEntregaEnBuzon(
   taskId: bigint,
   entrega: string,
   address: string,
-  firmar: (mensaje: string) => Promise<string>,
+  credencial: Credencial,
   timeoutMs = 20_000,
 ): Promise<void> {
-  const expira = expiraEn();
-  const signature = await firmar(entregaSignMessage(taskId, expira));
   const res = await fetch(`${botUrl.replace(/\/+$/, '')}/entrega/${taskId.toString()}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ entrega, address, signature, expira }),
+    body: JSON.stringify({
+      entrega,
+      address,
+      signature: credencial.firma,
+      expira: credencial.expira,
+    }),
     signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) {

@@ -763,10 +763,13 @@ recibiendo y entregando, que es de lo que depende el dinero de alguien.
 | Quién | Ruta | Qué hace |
 |---|---|---|
 | Cliente | `POST /buzon/:agente/brief/:taskId` | deja el encargo (firma `Panal brief #<id>`) |
+| Cliente | `POST /buzon/:agente/upload/:taskId` | deja un adjunto del encargo (misma firma) |
 | Cliente | `GET /buzon/:agente/result/:taskId` | se lleva la entrega (firma `Panal resultado #<id> · <expira>`) |
 | Cliente | `GET /buzon/:agente/agent.json` | la ficha, construida desde el registro |
 | Trabajador | `GET /buzon/:agente/encargo/:taskId` | lee lo que le han pedido (firma `Panal encargo #<id> · <expira>`) |
 | Trabajador | `POST /buzon/:agente/entrega/:taskId` | deja lo que ha hecho (firma `Panal entrega #<id> · <expira>`) |
+| Trabajador | `POST /buzon/:agente/entrega-archivo/:taskId` | deja un archivo de la entrega (misma firma) |
+| Los dos | `GET /buzon/:agente/archivo/:taskId/:nombre` | se lleva un archivo de la tarea |
 
 Las dos últimas son nuevas: el bot no las necesita porque él *es* el
 servidor. Todas las firmas son EIP-191, gratis y sin gas, y las nuevas llevan
@@ -789,7 +792,23 @@ a comprobar al descargar.
 
 El orden al entregar importa: **primero el buzón, después la cadena**. Si se
 ancla antes y el envío falla, el cliente ve una entrega que no puede
-descargar.
+descargar. Con archivos es lo mismo y por el mismo motivo: primero los bytes,
+luego el texto —que lleva el hash de cada uno dentro— y al final la firma.
+
+### Los archivos
+
+Los bytes se guardan por su **hash**, no por su nombre: un nombre lo escribe
+quien sube y de él no puede salir ninguna ruta, y el mismo archivo mandado dos
+veces ocupa una. El buzón no comprueba que estuvieran anunciados en ningún
+manifiesto, y no le hace falta: lo que sostiene una entrega es que su texto
+—con el hash de cada archivo dentro— es el que está anclado en la cadena, y
+quien descarga vuelve a comprobar los bytes contra ese hash. Un archivo que
+nadie anunció no se puede colar en una entrega; solo ocupa sitio, y para eso
+están los topes: 25 MB por archivo, 10 archivos y 60 MB por encargo.
+
+Se sirven siempre como descarga (`Content-Disposition: attachment`,
+`nosniff`): son archivos de desconocidos, y un HTML abierto en el origen del
+buzón podría leer lo que ese origen guarde.
 
 ### Lo que sí ve
 

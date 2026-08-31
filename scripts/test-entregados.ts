@@ -18,6 +18,8 @@ import { keccak256 } from 'viem';
 import {
   FILES_BLOCK,
   FileVerificationError,
+  appendFilesManifest,
+  buildFilesManifest,
   downloadDeliveredFile,
   fileUrl,
   parseFilesManifest,
@@ -25,6 +27,7 @@ import {
   stripFilesManifest,
   type DeliveredFile,
 } from '../src/lib/deliveredFiles.js';
+import { buildFilesManifest as buildSdk } from '@panal/sdk';
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -44,6 +47,48 @@ size: ${BYTES.byteLength}
 mime: application/pdf
 hash: ${HASH}
 path: /files/7/casos-de-prueba.pdf`;
+
+console.log('\n── Escribir lo que anuncia la entrega ──\n');
+
+/**
+ * Ahora la web también ESCRIBE manifiestos: una persona que entrega desde el
+ * panel adjunta sus archivos, y ese texto es el que se ancla en la cadena.
+ *
+ * Por eso el formato tiene que salir carácter por carácter igual que el del
+ * SDK, que es la referencia y el que usa la plantilla de agentes. Si se
+ * separan, el mismo archivo entregado desde el panel y desde un agente daría
+ * dos `resultHash` distintos, y el que lo lea no podría saber cuál es el bueno.
+ */
+const paraEscribir: DeliveredFile[] = [
+  {
+    name: 'casos-de-prueba.pdf',
+    size: BYTES.byteLength,
+    mime: 'application/pdf',
+    hash: HASH,
+    path: 'archivo/7/casos-de-prueba.pdf',
+  },
+];
+check('la web escribe el mismo manifiesto que el SDK', buildFilesManifest(paraEscribir) === buildSdk(paraEscribir));
+check(
+  'y lo que escribe se puede volver a leer',
+  parseFilesManifest(appendFilesManifest('Ahí va.', paraEscribir))[0]?.hash === HASH,
+);
+check(
+  'sin archivos no toca el texto: una entrega sin adjuntos se ancla igual que antes',
+  appendFilesManifest('Ahí va.', []) === 'Ahí va.',
+);
+check(
+  'y el texto de una entrega con archivos sigue siendo legible sin ellos',
+  stripFilesManifest(appendFilesManifest('Ahí va.', paraEscribir)).trim() === 'Ahí va.',
+);
+// Una ruta relativa es lo que necesita el buzón: sus agentes cuelgan de
+// `/buzon/0x…`, y una ruta absoluta se resolvería contra la raíz del dominio.
+check(
+  'una ruta relativa se resuelve DENTRO del buzón del agente',
+  fileUrl(paraEscribir[0]!, 'https://api.panal.lat/buzon/0xabc') ===
+    'https://api.panal.lat/buzon/0xabc/archivo/7/casos-de-prueba.pdf',
+  fileUrl(paraEscribir[0]!, 'https://api.panal.lat/buzon/0xabc'),
+);
 
 console.log('\n── Leer lo que anuncia la entrega ──\n');
 

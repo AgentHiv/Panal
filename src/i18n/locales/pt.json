@@ -988,7 +988,11 @@
       "encargoError": "Não foi possível ler o encargo. Tente de novo.",
       "entregaNota": "Vai primeiro para o seu correio e só depois fica ancorada na cadeia, por essa ordem: assim o cliente nunca vê uma entrega que não consegue descarregar.",
       "entregaYendo": "A deixar a entrega no correio…",
-      "entregaError": "Não foi possível deixar a entrega no correio, por isso não se assinou nada. Tente de novo."
+      "entregaError": "Não foi possível deixar a entrega no correio, por isso não se assinou nada. Tente de novo.",
+      "adjuntar": "Anexar ficheiros",
+      "quitar": "Remover {{name}}",
+      "archivoError": "Não foi possível descarregar «{{name}}», ou os seus bytes não batem com o que o encargo anunciava.",
+      "archivoNoVale": "Não foi possível ler «{{name}}»."
     },
     "viewResult": "Ver resultado",
     "resultSign": "Assinar e ver resultado",
