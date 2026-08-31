@@ -1,5 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useMyTasks } from '@/hooks/useMyTasks';
+import { useWallet } from '@/hooks/useWallet';
+import { esBuzon } from '@/lib/botEndpoint';
+import { leerTipo } from '@panal/sdk';
+import { useFicha } from '~/lib/agentes';
 import { ESTADO } from '@/lib/conversaciones';
 import { currencySymbol } from '@/contracts/config';
 import { getTaskBrief } from '@/lib/taskBriefs';
@@ -21,14 +25,24 @@ import { textos } from '~/i18n/idiomas';
  *     decidido, así que no hace falta volver a preguntar nada.
  *   · PLAZO — venció sin entrega y el pago se puede recuperar.
  *
- * Como DUEÑO de un agente, otros dos. Existen por un fallo de verdad: el
+ * Como DUEÑO de un agente, tres. El primero solo si el trabajo depende de que
+ * MIRES:
+ *   · ENCARGO NUEVO — te han encargado algo, ahora mismo. Solo se manda a quien
+ *     recibe en el buzón o se ha declarado persona, y ahí está el motivo: si
+ *     tienes servidor propio, el encargo ya le llegó a él y tu bot está en
+ *     ello; avisarte sería ruido. Si recibes en el buzón, el servidor eres tú,
+ *     y hasta ahora no se enteraba nadie hasta las 6 h — que con el plazo más
+ *     corto de la web es justo cuando el encargo ya ha vencido.
+ *
+ * Los otros dos existen por un fallo de verdad: el
  * vigilante que corre dentro de cada agente dio por resueltas tareas que habían
  * fallado, y dos se quedaron abiertas y sin entregar mientras el servidor creía
  * que iba todo bien. El dueño no tenía forma de enterarse, porque el único que
  * vigilaba era el proceso que había fallado.
  *   · SIN ENTREGAR — tu agente tiene un encargo abierto y el plazo corriendo.
  *     Salta a las 6 h de vida del encargo, no al vencer: avisar cuando ya no se
- *     puede hacer nada no es avisar.
+ *     puede hacer nada no es avisar. Los dos se reparten la línea del tiempo:
+ *     «te ha entrado» de 0 a 6 h, «llevas sin entregar» a partir de ahí.
  *   · DISPUTA — te han disputado una entrega y el dinero está congelado.
  *
  * La wallet conectada es la del agente cuando se administra uno, así que
@@ -40,8 +54,25 @@ import { textos } from '~/i18n/idiomas';
  */
 export function useAvisos(): void {
   const { tasks } = useMyTasks();
+  const { address } = useWallet();
   const permiso = useRef<boolean | null>(null);
   const yaAvisado = useRef(new Set<number>());
+
+  /**
+   * ¿Depende de que yo mire que este encargo se haga?
+   *
+   * Sí cuando recibo en el buzón —el servidor soy yo— o cuando me he declarado
+   * persona. No cuando tengo máquina propia: a ella le llegó el encargo y ella
+   * está trabajando, así que un aviso por cada tarea sería ruido en el
+   * teléfono de quien tiene un bot que entrega en segundos.
+   *
+   * Es la misma ficha que la pantalla ya lee, con su caché de 20 s: esto no
+   * añade ni una consulta.
+   */
+  const { data: miFicha } = useFicha(address ?? undefined);
+  const dependeDeMi =
+    !!miFicha?.registrado &&
+    (esBuzon(miFicha.botUrl) || leerTipo(miFicha.metadataURI) === 'persona');
 
   useEffect(() => {
     if (!hayAvisos() || !avisosEncendidos() || tasks.length === 0) return;
@@ -62,6 +93,29 @@ export function useAvisos(): void {
 
         if (t.role === 'worker') {
           const simbolo = currencySymbol(t.currency);
+
+          /**
+           * Acaba de entrar, y aquí eso SÍ es una señal.
+           *
+           * Solo las primeras seis horas, que es hasta donde llega este aviso
+           * antes de que lo releve el de «llevas sin entregar». Y no es un
+           * detalle: sin esa ventana, abrir la app un martes anunciaría como
+           * recién llegados los encargos del viernes.
+           */
+          const empezoHace = ahora - Number(t.createdAt) * 1000;
+          if (dependeDeMi && t.status === ESTADO.Abierto && empezoHace <= 6 * 3_600_000) {
+            const aviso = idDe(id, 'encargo-nuevo');
+            if (!yaAvisado.current.has(aviso)) {
+              yaAvisado.current.add(aviso);
+              const horas = Math.max(0, Math.floor((Number(t.deadline) * 1000 - ahora) / 3_600_000));
+              nuevos.push({
+                id: aviso,
+                titulo: T.avisos.encargoNuevoTitulo(id),
+                cuerpo: T.avisos.encargoNuevoCuerpo(monto(t.amountWei), simbolo, horas),
+                ruta: `/guardia/${t.worker.toLowerCase()}`,
+              });
+            }
+          }
 
           // Abierto, sin nada anclado y con seis horas ya corridas. Antes de
           // eso no es una señal: es un encargo que acaba de entrar.
@@ -149,5 +203,9 @@ export function useAvisos(): void {
     return () => {
       vigente = false;
     };
-  }, [tasks]);
+    // `dependeDeMi` va en la lista: la ficha se lee aparte y llega un momento
+    // después que las tareas. Sin él, el primer encargo de la sesión se
+    // quedaría sin aviso hasta el siguiente sondeo. Repasar de más no duplica
+    // nada: `yaAvisado` guarda lo ya mandado.
+  }, [tasks, dependeDeMi]);
 }

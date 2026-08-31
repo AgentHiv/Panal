@@ -119,8 +119,9 @@ export function idDe(taskId: string, motivo: Motivo): number {
  * Los motivos, y su hueco en el id.
  *
  * Los tres primeros son del CLIENTE —le entregaron, se le acaba el plazo para
- * revisar, venció sin entrega—; los tres siguientes son del DUEÑO de un agente:
- * su agente no ha entregado, le han disputado, tiene dinero sin cobrar.
+ * revisar, venció sin entrega—; los demás son del DUEÑO de un agente: le ha
+ * entrado un encargo, su agente no ha entregado, le han disputado, tiene dinero
+ * sin cobrar.
  *
  * Van en la misma tabla y no en dos porque el hueco tiene que ser único: si el
  * aviso de «te entregaron el #54» y el de «tu agente no ha entregado el #54»
@@ -132,6 +133,7 @@ export type Motivo =
   | 'entrega'
   | 'cuenta-atras'
   | 'plazo'
+  | 'encargo-nuevo'
   | 'sin-entregar'
   | 'disputa'
   | 'sin-cobrar';
@@ -143,4 +145,7 @@ const MOTIVOS: Record<Motivo, number> = {
   'sin-entregar': 3,
   disputa: 4,
   'sin-cobrar': 5,
+  // El hueco 6 y no el 3: los números ya emitidos no se pueden reordenar sin
+  // que un aviso viejo de la persiana pase a llamarse como otro.
+  'encargo-nuevo': 6,
 };

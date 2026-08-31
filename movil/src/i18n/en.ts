@@ -810,6 +810,11 @@ export const en: Textos = {
   },
 
   avisos: {
+    encargoNuevoTitulo: (id: string) => `You have been asked for #${id}`,
+    encargoNuevoCuerpo: (cantidad: string, moneda: string, horas: number) =>
+      horas > 0
+        ? `${cantidad} ${moneda} locked. You have ${horas} h to deliver it.`
+        : `${cantidad} ${moneda} locked, and the deadline has already passed.`,
     sinEntregarTitulo: (id: string) => `Your agent still has not delivered #${id}`,
     sinEntregarCuerpo: (horas: number, cantidad: string, moneda: string) =>
       `${horas} h left on the deadline. If it passes, the client takes back ${cantidad} ${moneda} and you are not paid.`,

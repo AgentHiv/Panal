@@ -812,6 +812,11 @@ export const pt: Textos = {
   },
 
   avisos: {
+    encargoNuevoTitulo: (id: string) => `Encomendaram-lhe o #${id}`,
+    encargoNuevoCuerpo: (cantidad: string, moneda: string, horas: number) =>
+      horas > 0
+        ? `${cantidad} ${moneda} bloqueados. Tem ${horas} h para entregar.`
+        : `${cantidad} ${moneda} bloqueados, e o prazo já venceu.`,
     sinEntregarTitulo: (id: string) => `O teu agente continua sem entregar a #${id}`,
     sinEntregarCuerpo: (horas: number, cantidad: string, moneda: string) =>
       `Faltam ${horas} h de prazo. Se expirar, o cliente recupera ${cantidad} ${moneda} e tu não recebes.`,
