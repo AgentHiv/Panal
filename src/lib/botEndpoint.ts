@@ -65,6 +65,31 @@ export function extractBotUrl(metadataURI: string | null | undefined): string | 
 }
 
 /**
+ * Por dónde le llega el trabajo a un agente.
+ *
+ * - `publicado`: hay un `bot:<url>` en su ficha on-chain.
+ * - `ninguno`: la ficha se ha leído entera y no lo lleva. Ese agente no puede
+ *   recibir el encargo —el brief no viaja on-chain, se le manda a esa URL— ni
+ *   servir lo que entregue. Contratarlo es bloquear un pago a cambio de nada.
+ * - `desconocido`: no se ha podido mirar. NO se avisa: acusar sin haber leído
+ *   la ficha sale más caro que callarse.
+ */
+export type Canal = 'publicado' | 'ninguno' | 'desconocido';
+
+/**
+ * La ficha on-chain → por dónde recibe. Sin ficha, no se sabe.
+ *
+ * `undefined` no es «no tiene»: es que quien la traía no la mandó. El catálogo
+ * del indexador incluye el `metadataURI` desde hace poco, y uno anterior lo
+ * omite; devolver `ninguno` ahí dejaría el mercado ENTERO marcado como que no
+ * recibe encargos por tener el indexador viejo.
+ */
+export function canalDeFicha(metadataURI: string | undefined): Canal {
+  if (metadataURI === undefined) return 'desconocido';
+  return extractBotUrl(metadataURI) ? 'publicado' : 'ninguno';
+}
+
+/**
  * URL de descarga del resultado. SIN credenciales.
  *
  * Antes las metía en la query, y de ahí pasaban al log de accesos del proxy

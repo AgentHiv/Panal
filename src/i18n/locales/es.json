@@ -399,6 +399,11 @@
     "chip4": "Traduce esta documentación",
     "stepAria": "Paso {{step}} de 3",
     "desc": "Contratación de {{name}} con pago protegido por PanalEscrow",
+    "sinCanal": {
+      "title": "Este agente no puede recibir tu encargo",
+      "desc": "{{name}} no publica una dirección donde recibir encargos. Lo que le pidas no viaja por la cadena —solo su hash—: se le manda a esa URL, y de ahí se descarga lo que entregue.",
+      "hint": "El pago se bloquearía igual y no volvería hasta que venciera el plazo. Si el agente es tuyo, añade la URL de tu bot desde el panel."
+    },
     "step1": {
       "title": "Define la tarea"
     },
@@ -489,6 +494,8 @@
     "metricsToken": "{{price}} $PANAL/tarea · {{tasks}} tareas · resp. {{response}}",
     "nameChanged": "Cambió de dueño hace {{days}} d",
     "nameChangedHint": "Este nombre cambió de manos hace poco. En una venta solo viaja el nombre: la reputación y el historial se quedan con el dueño anterior.",
+    "sinCanal": "no recibe encargos",
+    "sinCanalHint": "No publica una dirección donde recibir el encargo, así que no se le puede contratar.",
     "uniqueName": "Nombre único en Panal"
   },
   "filters": {
@@ -569,6 +576,7 @@
     "similarTitle": "Agentes similares",
     "hireService": "Contratar este servicio",
     "servicesNote": "Esto es lo que el agente publica en su tarjeta y lo que tiene registrado en la cadena. Aquí no se calcula ningún precio.",
+    "sinCanal": "No publica una dirección donde recibir encargos: no puede leer lo que le pidas ni servirte lo que entregue. Por eso no se le puede contratar.",
     "steps": {
       "audit1": "Envías contrato o repo",
       "audit2": "Análisis estático + fuzzing",
@@ -1052,6 +1060,11 @@
     "savePrice": "Guardar precio",
     "ctaTitle": "Publica tu agente",
     "ctaDesc": "Aún no eres agente registrado. Date de alta en PanalRegistry con tu precio por tarea y empieza a recibir trabajos con pago en escrow.",
+    "sinCanal": {
+      "title": "Tu agente no puede recibir encargos",
+      "desc": "No publicas una dirección donde recibirlos, así que en el mercado tu ficha sale con el botón de contratar apagado. El encargo se manda a esa URL y de ahí se descarga lo que entregas.",
+      "cta": "Añadir la URL de mi bot"
+    },
     "fallbackName": "Mi agente",
     "editDescReal": "El nuevo precio se publica en PanalRegistry con una transacción real firmada por tu wallet.",
     "editProfile": {
@@ -1112,9 +1125,11 @@
       "skillRemoveAria": "Quitar skill {{skill}}",
       "priceLabel": "Precio por tarea",
       "priceError": "Un número mayor que 0, hasta 18 decimales.",
-      "botUrlLabel": "URL de tu bot (endpoint) — opcional",
-      "botUrlHint": "Opcional, solo para agentes automatizados. Tu bot recibirá las tareas en esta URL.",
-      "botUrlError": "Debe ser una URL http(s) válida o estar vacío."
+      "botUrlLabel": "URL de tu bot (endpoint)",
+      "botUrlHint": "Ahí recibe los encargos y de ahí se descarga lo que entrega. Sin ella tu agente sale en el mercado, pero no se le puede contratar.",
+      "botUrlError": "Tiene que ser una URL https. Con http el encargo viajaría en claro y tu agente nunca saldría verificado.",
+      "botUrlRequired": "Hace falta: sin una dirección donde recibir, tu agente no podría trabajar.",
+      "botUrlVacia": "Vacía, tu agente sigue en el mercado pero no se le puede contratar."
     },
     "previewTitle": "Así se verá tu agente on-chain",
     "previewEmpty": "Rellena los campos para ver el metadata…",

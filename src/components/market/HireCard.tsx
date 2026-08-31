@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bookmark, Check, Share2, Shield, MessageCircle } from 'lucide-react';
+import { Bookmark, Check, PlugZap, Share2, Shield, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
 import { formatInt, formatMon } from '@/data/agents';
 import { useIndexAgents } from '@/lib/indexer';
-import { isOnchainAgent, priceKey } from '@/hooks/usePanalAgents';
+import { canalDe, isOnchainAgent, priceKey } from '@/hooks/usePanalAgents';
 import { currencySymbol } from '@/contracts/config';
 
 export interface HireCardProps {
@@ -29,6 +29,12 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
   // Tareas completadas REALES del indexador (null si no responde o no hay).
   const { byAddress } = useIndexAgents();
   const stats = byAddress.get(agent.wallet.toLowerCase()) ?? null;
+  /**
+   * Un agente sin `bot:<url>` no puede recibir el encargo ni servir la entrega.
+   * El botón se apaga aquí para que no se llegue ni al diálogo; el corte de
+   * verdad está en `HireDialog`, que lo relee de la cadena antes de firmar.
+   */
+  const sinCanal = canalDe(agent) === 'ninguno';
 
   const share = async () => {
     try {
@@ -62,21 +68,30 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
       <button
         type="button"
         onClick={onHire}
-        className="btn-monad mt-5 inline-flex w-full px-5 py-3.5 text-[0.9375rem] font-semibold"
+        disabled={sinCanal}
+        className="btn-monad mt-5 inline-flex w-full px-5 py-3.5 text-[0.9375rem] font-semibold disabled:cursor-not-allowed disabled:opacity-40"
       >
         {t(priceKey('detail.cta.hireNow', agent), { price: formatMon(agent.pricePerTask) })}
       </button>
 
-      {/* Preguntar antes de encargar. Cuesta céntimos y responde al momento;
-          encargar bloquea el pago y da entrega verificable. Lo normal es lo
-          primero y luego, si merece la pena, lo segundo. */}
-      <Link
-        to={`/chat/${agent.id}`}
-        className="mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
-      >
-        <MessageCircle size={15} aria-hidden />
-        {t('chat.talkTo', { name: agent.name })}
-      </Link>
+      {sinCanal ? (
+        <p className="mt-2.5 flex items-start gap-2 text-[0.8125rem] leading-[1.5] text-ink-2">
+          <PlugZap size={15} className="mt-0.5 shrink-0 text-terra" aria-hidden />
+          {t('detail.sinCanal')}
+        </p>
+      ) : (
+        /* Preguntar antes de encargar. Cuesta céntimos y responde al momento;
+           encargar bloquea el pago y da entrega verificable. Lo normal es lo
+           primero y luego, si merece la pena, lo segundo. Sin endpoint no hay
+           ninguna de las dos: el chat se le pide a esa misma URL. */
+        <Link
+          to={`/chat/${agent.id}`}
+          className="mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
+        >
+          <MessageCircle size={15} aria-hidden />
+          {t('chat.talkTo', { name: agent.name })}
+        </Link>
+      )}
 
       {/* estado de wallet */}
       <div className="mt-3 flex justify-center">
@@ -135,6 +150,7 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
 export function MobileHireBar({ agent, onHire }: HireCardProps) {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
+  const sinCanal = canalDe(agent) === 'ninguno';
 
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > 300);
@@ -160,17 +176,20 @@ export function MobileHireBar({ agent, onHire }: HireCardProps) {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              to={`/chat/${agent.id}`}
-              aria-label={t('chat.talkTo', { name: agent.name })}
-              className="flex size-10 items-center justify-center rounded-full border border-line text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
-            >
-              <MessageCircle size={16} aria-hidden />
-            </Link>
+            {!sinCanal && (
+              <Link
+                to={`/chat/${agent.id}`}
+                aria-label={t('chat.talkTo', { name: agent.name })}
+                className="flex size-10 items-center justify-center rounded-full border border-line text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
+              >
+                <MessageCircle size={16} aria-hidden />
+              </Link>
+            )}
             <button
               type="button"
               onClick={onHire}
-              className="btn-monad inline-flex px-6 py-2.5 text-[0.875rem] font-semibold"
+              disabled={sinCanal}
+              className="btn-monad inline-flex px-6 py-2.5 text-[0.875rem] font-semibold disabled:cursor-not-allowed disabled:opacity-40"
             >
               {t('common.hire')}
             </button>

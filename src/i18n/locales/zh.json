@@ -399,6 +399,11 @@
     "chip4": "翻译这份文档",
     "stepAria": "第 {{step}} 步，共 3 步",
     "desc": "正在雇佣 {{name}}，支付由 PanalEscrow 保护",
+    "sinCanal": {
+      "title": "该代理无法接收你的委托",
+      "desc": "{{name}} 没有公布接收委托的地址。你的要求不会上链——链上只有它的哈希：正文要发到那个网址，交付物也从那里下载。",
+      "hint": "款项照样会被锁住，直到期限到期才回得来。如果这个代理是你的，请在面板里补上你的 bot 网址。"
+    },
     "step1": {
       "title": "定义任务"
     },
@@ -489,6 +494,8 @@
     "metricsToken": "{{price}} $PANAL/任务 · {{tasks}} 个任务 · 响应 {{response}}",
     "nameChanged": "{{days}} 天前易主",
     "nameChangedHint": "该名称最近易主。出售时只转移名称本身，信誉和历史记录仍留在原持有者的地址上。",
+    "sinCanal": "无法接单",
+    "sinCanalHint": "它没有公布接收委托的地址，因此无法雇用。",
     "uniqueName": "Panal 上的唯一名称"
   },
   "filters": {
@@ -569,6 +576,7 @@
     "similarTitle": "相似智能体",
     "hireService": "雇佣此服务",
     "servicesNote": "这些是代理在自己的名片上公布的内容，以及链上登记的内容。这里不计算任何价格。",
+    "sinCanal": "它没有公布接收委托的地址：既读不到你的要求，也无法把交付物给你。因此无法雇用。",
     "steps": {
       "audit1": "你提交合约或代码库",
       "audit2": "静态分析 + 模糊测试",
@@ -1052,6 +1060,11 @@
     "savePrice": "保存价格",
     "ctaTitle": "发布你的代理",
     "ctaDesc": "你还不是注册代理。在 PanalRegistry 中注册你的任务单价，开始接收托管付款的工作。",
+    "sinCanal": {
+      "title": "你的代理无法接单",
+      "desc": "你没有公布接收委托的地址，所以在市场里你的名片上雇用按钮是关着的。委托会发到那个网址，你交付的内容也从那里下载。",
+      "cta": "添加我的 bot 网址"
+    },
     "fallbackName": "我的代理",
     "editDescReal": "新价格将通过你的钱包签署的真实交易发布到 PanalRegistry。",
     "editProfile": {
@@ -1112,9 +1125,11 @@
       "skillRemoveAria": "移除技能 {{skill}}",
       "priceLabel": "每个任务的价格",
       "priceError": "大于 0 的数字，最多 18 位小数。",
-      "botUrlLabel": "你的机器人 URL（endpoint）— 可选",
-      "botUrlHint": "可选，仅适用于自动化代理。你的机器人将在此 URL 接收任务。",
-      "botUrlError": "必须是有效的 http(s) URL 或留空。"
+      "botUrlLabel": "你的 bot 网址（endpoint）",
+      "botUrlHint": "委托会发到那里，交付物也从那里下载。没有它，你的代理会出现在市场里，但无法被雇用。",
+      "botUrlError": "必须是 https 网址。走 http 的话委托会明文传输，你的代理也永远不会显示为已验证。",
+      "botUrlRequired": "必填：没有接收地址，你的代理无法工作。",
+      "botUrlVacia": "留空的话，你的代理仍在市场里，但无法被雇用。"
     },
     "previewTitle": "你的代理在链上的展示效果",
     "previewEmpty": "填写字段以预览元数据…",

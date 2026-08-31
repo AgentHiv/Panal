@@ -8,7 +8,7 @@
 
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, ExternalLink, Loader2, Plus, TriangleAlert } from 'lucide-react';
+import { Bot, ExternalLink, Loader2, PlugZap, Plus, TriangleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatEther, parseEther } from 'viem';
 import HexAvatar from '@/components/HexAvatar';
@@ -198,6 +198,33 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
           />
         </label>
       </div>
+
+      {/*
+        Su agente está en el mercado y no puede recibir un solo encargo.
+        Aquí, porque es el único sitio donde el dueño lo va a ver: en el
+        mercado su ficha se le apaga el botón de contratar y él no se entera.
+        El arreglo es una transacción, no un alta nueva: `updateMetadata`.
+      */}
+      {agent && !botUrl && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-terra/30 bg-terra/5 px-4 py-3">
+          <PlugZap size={15} className="mt-0.5 shrink-0 text-terra" aria-hidden />
+          <div className="min-w-0">
+            <p className="text-[0.8125rem] font-semibold text-ink">{t('ownAgent.sinCanal.title')}</p>
+            <p className="mt-0.5 text-[0.8125rem] leading-relaxed text-ink-2">
+              {t('ownAgent.sinCanal.desc')}
+            </p>
+            {V2_ENABLED && (
+              <button
+                type="button"
+                onClick={() => setProfileDialogOpen(true)}
+                className="mt-1.5 text-[0.8125rem] font-medium text-honey-deep underline decoration-dotted underline-offset-4 transition-colors hover:text-honey"
+              >
+                {t('ownAgent.sinCanal.cta')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Métricas reales (PanalReputation) */}
       <div className="grid grid-cols-3 gap-3 border-y border-line py-3">

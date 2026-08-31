@@ -41,7 +41,7 @@ import { formatMon } from '@/data/agents';
 import { PROTOCOL_FEE, ESCROW_AUTO_RELEASE_H } from '@/data/protocol';
 import { useTxReceipt } from '@/hooks/useTxReceipt';
 import { useWallet } from '@/hooks/useWallet';
-import { isOnchainAgent } from '@/hooks/usePanalAgents';
+import { canalDe, isOnchainAgent, type Canal } from '@/hooks/usePanalAgents';
 import {
   EXPLORER_TX,
   NATIVE_CURRENCY,
@@ -145,6 +145,15 @@ function HireWizard({
    */
   const botUrlRef = useRef<string | null>(null);
   /**
+   * Si este agente tiene por dónde recibir el encargo, para poder CORTAR.
+   *
+   * Es el mismo dato que `botUrlRef`, en estado en vez de en ref, porque de
+   * esto depende lo que se pinta. Arranca con lo que ya sabía el mercado y se
+   * afina con la lectura de la cadena de aquí abajo; si esa lectura falla, se
+   * queda con lo que había en vez de acusar por un RPC caído.
+   */
+  const [canalDelAgente, setCanalDelAgente] = useState<Canal>(() => canalDe(agent));
+  /**
    * El encargo TAL Y COMO se hasheó al contratar.
    *
    * `componerBrief()` lo compone a partir del estado, y el estado puede haber
@@ -213,7 +222,12 @@ function HireWizard({
           args: [agent.workerAddress],
         })) as { metadataURI?: string };
         const botUrl = extractBotUrl(meta.metadataURI);
-        if (vigente) botUrlRef.current = botUrl;
+        if (vigente) {
+          botUrlRef.current = botUrl;
+          // La cadena manda sobre lo que trajera el catálogo: aquí la ficha
+          // viene entera, así que la respuesta ya no puede ser «no se sabe».
+          setCanalDelAgente(botUrl ? 'publicado' : 'ninguno');
+        }
         /**
          * El precio de la CADENA, el texto de la tarjeta.
          *
@@ -601,6 +615,45 @@ function HireWizard({
           >
             {t('hire.mainnetDemo.cta')}
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  /**
+   * Sin dirección donde recibir, no se contrata. Aquí, no en un toast después.
+   *
+   * El brief NO viaja on-chain: solo su hash. El texto se le manda al agente a
+   * `POST /brief/:id`, y lo que entregue se descarga de su `GET /result/:id`.
+   * Un agente que no publica esa URL no puede leer lo que le piden ni servir
+   * lo que entregue: contratarlo bloquea el pago a cambio de nada, y a las
+   * 72 h se libera solo.
+   *
+   * Esto se sabía desde que se abría el diálogo —lo lee el efecto de arriba—
+   * y se decía DESPUÉS de firmar, en un aviso que empieza por «no se pudo
+   * enviar el brief» con el dinero ya bloqueado.
+   *
+   * Solo con `ninguno`: `desconocido` es un indexador viejo o un RPC caído, y
+   * cerrarle la puerta al mercado entero por no haber podido mirar sería un
+   * fallo mucho más caro que el que esto arregla.
+   */
+  if (canalDelAgente === 'ninguno') {
+    return (
+      <div className="px-7 pb-7 pt-6">
+        <DialogTitle className="display-m text-ink">{t('hire.sinCanal.title')}</DialogTitle>
+        <DialogDescription className="sr-only">{t('hire.desc', { name: agent.name })}</DialogDescription>
+        <div className="mt-5 flex flex-col gap-4">
+          <p className="text-[0.875rem] leading-relaxed text-ink-2">
+            {t('hire.sinCanal.desc', { name: agent.name })}
+          </p>
+          <p className="text-[0.8125rem] leading-relaxed text-ink-3">{t('hire.sinCanal.hint')}</p>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
+          >
+            {t('common.close')}
+          </button>
         </div>
       </div>
     );

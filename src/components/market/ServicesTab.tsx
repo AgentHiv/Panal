@@ -6,7 +6,7 @@ import type { Nivel } from '@panal/sdk';
 import type { Agent } from '@/data/agents';
 import { formatMon } from '@/data/agents';
 import { currencySymbol } from '@/contracts/config';
-import { isOnchainAgent } from '@/hooks/usePanalAgents';
+import { canalDe, isOnchainAgent } from '@/hooks/usePanalAgents';
 import { useNiveles } from '@/hooks/useNiveles';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -48,6 +48,12 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
   const { t } = useTranslation();
   const { niveles, cobro, cargando, textoPendiente } = useNiveles(agent);
   const simbolo = isOnchainAgent(agent) ? currencySymbol(agent.currency) : 'MON';
+  /**
+   * Sin `bot:<url>` no hay a quién mandarle el encargo ni de dónde bajarse la
+   * entrega. Los precios se siguen enseñando —son verdad, están en la cadena—
+   * pero no se puede pulsar ninguno.
+   */
+  const sinCanal = canalDe(agent) === 'ninguno';
 
   /**
    * Mientras no se sabe nada, un hueco. NO el encargo suelto.
@@ -169,7 +175,8 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
               <button
                 type="button"
                 onClick={c.contratar}
-                className="rounded-full border border-line px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:bg-honey hover:text-ink"
+                disabled={sinCanal}
+                className="rounded-full border border-line px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:bg-honey hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-line disabled:hover:bg-transparent disabled:hover:text-ink-2"
               >
                 {t('detail.hireService')}
               </button>
@@ -177,7 +184,9 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
           </div>
         </motion.article>
       ))}
-      <p className="mt-2 text-[0.8125rem] text-ink-3">{t('detail.servicesNote')}</p>
+      <p className="mt-2 text-[0.8125rem] text-ink-3">
+        {sinCanal ? t('detail.sinCanal') : t('detail.servicesNote')}
+      </p>
     </div>
   );
 }

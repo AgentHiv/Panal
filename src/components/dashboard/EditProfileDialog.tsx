@@ -380,7 +380,12 @@ function EditProfileForm({
             )}
           </div>
 
-          {/* URL del bot (opcional) */}
+          {/*
+            URL del bot. Aquí NO se exige, al revés que en el alta: este es el
+            camino por el que un agente que ya está sin ella la añade, y
+            bloquear el guardado le impediría además corregir cualquier otra
+            cosa. Vacía se avisa de lo que implica, que es lo que no se decía.
+          */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="edit-bot-url" className="text-[0.8125rem] font-medium text-ink-2">
               {t('register.fields.botUrlLabel')}
@@ -397,6 +402,10 @@ function EditProfileForm({
             />
             {touched.botUrl && !botUrlValid ? (
               <p className="text-[0.75rem] text-terra">{t('register.fields.botUrlError')}</p>
+            ) : botUrlTrim === '' ? (
+              <p className="text-[0.75rem] leading-relaxed text-terra">
+                {t('register.fields.botUrlVacia')}
+              </p>
             ) : (
               <p className="text-[0.75rem] leading-relaxed text-ink-3">
                 {t('register.fields.botUrlHint')}
