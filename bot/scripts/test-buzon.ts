@@ -25,13 +25,14 @@ import { existsSync, mkdtempSync, readdirSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Address, Hex } from 'viem';
-import { getAddress, keccak256, toBytes } from 'viem';
+import { getAddress, keccak256, toBytes, verifyMessage } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import {
   briefSignMessage,
   createBuzonServer,
   encargoSignMessage,
   entregaSignMessage,
+  ofertaSignMessage,
   resultSignMessageConCaducidad,
 } from '../src/buzon.js';
 import { BuzonStore } from '../src/buzon-store.js';
@@ -49,11 +50,19 @@ const BRIEF = 'Tradúceme este contrato al francés, jurídico, para el martes.'
 const ENTREGA = '# Traducción\n\nContrat de prestation de services…\n';
 const OTRA_ENTREGA = '# Traducción\n\nOtra cosa que nadie firmó.\n';
 
-/** #1 abierta y sin entregar. #2 ya entregada y anclada. #3 cancelada. */
+const CERO = getAddress('0x0000000000000000000000000000000000000000');
+const OFERTA = 'Traducir al francés un contrato de 12 páginas. Jurídico, para el martes.';
+
+/**
+ * #1 abierta y sin entregar. #2 ya entregada y anclada. #3 cancelada.
+ * #4 en el tablón, sin dueño todavía. #5 en el tablón y ya cogida.
+ */
 const TAREAS: Record<string, Task> = {
   '1': tarea(TaskStatus.Open, ('0x' + '00'.repeat(32)) as Hex),
   '2': tarea(TaskStatus.Delivered, keccak256(toBytes(ENTREGA))),
   '3': tarea(TaskStatus.Cancelled, ('0x' + '00'.repeat(32)) as Hex),
+  '4': { ...tarea(TaskStatus.Open, ('0x' + '00'.repeat(32)) as Hex), worker: CERO },
+  '5': tarea(TaskStatus.Open, ('0x' + '00'.repeat(32)) as Hex),
 };
 
 function tarea(status: TaskStatus, resultHash: Hex): Task {
@@ -395,6 +404,100 @@ async function main(): Promise<void> {
 
   const r31 = await subir('upload', 3n, 'tarde.pdf', cliente);
   check('409 ni uno para una tarea cancelada', r31.status === 409, `status=${r31.status}`);
+
+  /* ── el tablón ────────────────────────────────────────────────────────── */
+
+  console.log('\n── El tablón: lo que se lee sin cogerlo, y lo que no ──\n');
+
+  const tablonBase = `http://127.0.0.1:${dir_.port}/buzon/${CERO}`;
+  const publicar = async (taskId: bigint, publico: string, quien: typeof cliente) => {
+    const firma = await quien.signMessage({ message: ofertaSignMessage(taskId, publico) });
+    return fetch(`${tablonBase}/oferta/${taskId}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ publico, address: quien.address, signature: firma }),
+    });
+  };
+
+  const r32 = await publicar(4n, OFERTA, cliente);
+  check('200 el cliente publica su encargo sin dueño', r32.status === 200, `status=${r32.status}`);
+
+  const r33 = await fetch(`${tablonBase}/lista`);
+  const b33 = (await r33.json()) as { ofertas?: { taskId: string; publico: string; firma: string }[] };
+  check(
+    '200 y el tablón se lee SIN firmar: si no, no sería un tablón',
+    r33.status === 200 && b33.ofertas?.[0]?.publico === OFERTA,
+    `status=${r33.status}`,
+  );
+  check(
+    'y viene con la firma de su cliente, para poder comprobarlo',
+    await verifyMessage({
+      address: cliente.address,
+      message: ofertaSignMessage(4n, OFERTA),
+      signature: b33.ofertas![0]!.firma as `0x${string}`,
+    }),
+  );
+
+  // Sin la firma del cliente, el buzón podría cambiar el texto de una oferta
+  // ajena y quien la cogiera se encontraría otro encargo. No llega a guardarse.
+  const firmaDeOtro = await intruso.signMessage({ message: ofertaSignMessage(4n, OFERTA) });
+  const r34 = await fetch(`${tablonBase}/oferta/4`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ publico: OFERTA, address: cliente.address, signature: firmaDeOtro }),
+  });
+  check('403 una oferta firmada por otro no entra', r34.status === 403, `status=${r34.status}`);
+
+  const firmaBuena = await cliente.signMessage({ message: ofertaSignMessage(4n, OFERTA) });
+  const r35 = await fetch(`${tablonBase}/oferta/4`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      publico: 'Traducir DOS contratos, mismo precio.',
+      address: cliente.address,
+      signature: firmaBuena,
+    }),
+  });
+  check('403 ni el mismo texto cambiado con la firma del anterior', r35.status === 403, `status=${r35.status}`);
+  const r36 = await fetch(`${tablonBase}/lista`);
+  const b36 = (await r36.json()) as { ofertas?: { publico: string }[] };
+  check('y el tablón sigue diciendo lo que su cliente escribió', b36.ofertas?.[0]?.publico === OFERTA);
+
+  const r37 = await publicar(5n, 'Ya la cogió alguien.', cliente);
+  check('409 un encargo que ya tiene dueño no se anuncia', r37.status === 409, `status=${r37.status}`);
+
+  const r38 = await publicar(3n, 'Cancelada.', cliente);
+  check('409 ni uno cancelado', r38.status === 409, `status=${r38.status}`);
+
+  // El encargo de verdad NO se lee sin cogerlo: lo que se publica es la oferta.
+  const firmaTablon = await cliente.signMessage({ message: briefSignMessage(4n) });
+  await fetch(`${tablonBase}/brief/4`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ brief: BRIEF, address: cliente.address, signature: firmaTablon }),
+  });
+  const expiraT = enUnMinuto();
+  const r39 = await fetch(`${tablonBase}/encargo/4`, {
+    headers: {
+      'x-panal-address': persona.address,
+      'x-panal-signature': await persona.signMessage({ message: encargoSignMessage(4n, expiraT) }),
+      'x-panal-expira': String(expiraT),
+    },
+  });
+  check(
+    '403 quien no lo ha cogido no lee el encargo, solo la oferta',
+    r39.status === 403,
+    `status=${r39.status}`,
+  );
+
+  const r40 = await fetch(`${tablonBase}/encargo/4`, {
+    headers: {
+      'x-panal-address': cliente.address,
+      'x-panal-signature': await cliente.signMessage({ message: encargoSignMessage(4n, expiraT) }),
+      'x-panal-expira': String(expiraT),
+    },
+  });
+  check('200 su cliente sí, que es quien lo escribió', r40.status === 200, `status=${r40.status}`);
 
   /* ── la retención ─────────────────────────────────────────────────────── */
   console.log('\n── Es un relevo, no un archivo ──\n');

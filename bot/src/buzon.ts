@@ -115,6 +115,42 @@ const MAX_ENTREGA_BODY_BYTES = MAX_ENTREGA_CHARS * 4 + 4_096;
 /** El hash de una tarea sin entregar. */
 const SIN_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
+/**
+ * El tablón: los encargos publicados SIN dueño.
+ *
+ * El escrow permite crear una tarea con `worker = address(0)` y que la coja
+ * quien quiera (`claimTask`), y eso lleva meses desplegado sin usarse. Le
+ * faltaba un sitio donde esperase el encargo mientras no hay agente a quien
+ * mandárselo: no existe todavía la dirección de nadie.
+ *
+ * Ese sitio es este, y usa la dirección cero como si fuera un agente más, así
+ * que no hace falta ni una ruta nueva para el brief ni una excepción en el
+ * almacén. Lo único distinto es quién puede leer: en un buzón normal el
+ * encargo es del trabajador y ya está; aquí, hasta que alguien lo coge, no hay
+ * trabajador.
+ */
+const TABLON = '0x0000000000000000000000000000000000000000' as Address;
+
+/**
+ * Lo que se ve de un encargo del tablón ANTES de cogerlo.
+ *
+ * Hace falta porque de la cadena solo se puede leer cuánto paga, cuándo vence
+ * y el hash de lo que pide: un tablón que dijera «tarea #82, 5 MON» no sirve
+ * para decidir nada.
+ *
+ * Y lo FIRMA su cliente. No es ceremonia: sin firma, el buzón podría cambiar
+ * el texto de una oferta ajena —o inventarse una— y quien la cogiera se
+ * encontraría con otro encargo. Se comprueba al guardarla, así que una oferta
+ * que no cuadre no llega a existir, y se sirve junto a la firma para que quien
+ * lea el tablón pueda comprobarlo por su cuenta.
+ */
+export function ofertaSignMessage(taskId: bigint, publico: string): string {
+  return `Panal tablón #${taskId.toString()} · ${keccak256(toBytes(publico))}`;
+}
+
+/** Lo que cabe en el anuncio de una oferta. Es un titular, no el encargo. */
+export const MAX_OFERTA_CHARS = 500;
+
 // ---------------------------------------------------------------------------
 // Rate limit por IP: mismo patrón que http.ts e indexer-http.ts.
 // ---------------------------------------------------------------------------
@@ -290,7 +326,9 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       json(res, 502, { error: 'rpc error' });
       return null;
     }
-    if (task.worker.toLowerCase() !== agente.toLowerCase()) {
+    // En el tablón no se compara: la tarea es de quien la coja, y mientras no
+    // la coja nadie su `worker` es justo la dirección cero de la ruta.
+    if (agente !== TABLON && task.worker.toLowerCase() !== agente.toLowerCase()) {
       json(res, 404, { error: 'not this agent' });
       return null;
     }
@@ -457,7 +495,22 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     const firmaOk = await firmaVigente(address, signatureParam as Hex, expira, (e) =>
       encargoSignMessage(taskId, e),
     );
-    if (!firmaOk || address.toLowerCase() !== task.worker.toLowerCase()) {
+    /**
+     * En un buzón normal lo lee su trabajador y nadie más.
+     *
+     * En el tablón lo lee quien la haya cogido —que ya es el `worker`— y
+     * también su cliente, que es quien lo escribió: sin eso, publicar un
+     * encargo y volver al día siguiente a ver qué puso sería imposible.
+     *
+     * Antes de que alguien la coja, `worker` es la dirección cero y no hay
+     * firma que valga por ella: el encargo no se le enseña a nadie más que a
+     * su cliente. Lo que se lee sin cogerlo es la oferta, que es otra cosa y
+     * la escribe el cliente para que se lea.
+     */
+    const esParte =
+      address.toLowerCase() === task.worker.toLowerCase() ||
+      (agente === TABLON && address.toLowerCase() === task.client.toLowerCase());
+    if (!firmaOk || !esParte) {
       json(res, 403, { error: 'not worker' });
       return;
     }
@@ -714,6 +767,101 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     res.end(guardado.bytes);
   };
 
+  // ---- POST /tablon/oferta/:taskId — publicar un encargo sin dueño ---------
+  const publicarOferta = async (
+    taskId: bigint,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> => {
+    const raw = await readBody(req, MAX_OFERTA_CHARS * 4 + 4_096);
+    if (raw === null) {
+      json(res, 413, { error: 'body too large' });
+      return;
+    }
+    let publico = '';
+    let addressParam = '';
+    let signatureParam = '';
+    try {
+      const body = JSON.parse(raw || '{}') as Record<string, unknown>;
+      if (typeof body.publico === 'string') publico = body.publico.trim();
+      if (typeof body.address === 'string') addressParam = body.address;
+      if (typeof body.signature === 'string') signatureParam = body.signature;
+    } catch {
+      json(res, 400, { error: 'bad json' });
+      return;
+    }
+    if (publico.length === 0 || publico.length > MAX_OFERTA_CHARS) {
+      json(res, 400, { error: `publico requerido, máx. ${MAX_OFERTA_CHARS} caracteres` });
+      return;
+    }
+    if (!isAddress(addressParam) || !isHex(signatureParam)) {
+      json(res, 400, { error: 'bad credentials' });
+      return;
+    }
+    const address = getAddress(addressParam);
+
+    const task = await tareaDe(TABLON, taskId, res);
+    if (!task) return;
+
+    let firmaOk = false;
+    try {
+      firmaOk = await verifyMessage({
+        address,
+        message: ofertaSignMessage(taskId, publico),
+        signature: signatureParam as Hex,
+      });
+    } catch {
+      firmaOk = false;
+    }
+    if (!firmaOk || address.toLowerCase() !== task.client.toLowerCase()) {
+      json(res, 403, { error: 'not client' });
+      return;
+    }
+    // Un encargo que ya tiene dueño no se anuncia: el tablón es para lo que
+    // está por coger, y dejar entrar los demás lo llenaría de ofertas muertas.
+    if (task.worker.toLowerCase() !== TABLON.toLowerCase()) {
+      json(res, 409, { error: 'already claimed' });
+      return;
+    }
+    if (task.status !== TaskStatus.Open) {
+      json(res, 409, { error: 'task closed' });
+      return;
+    }
+
+    if (!deps.store.guardarOferta(TABLON, taskId, {
+      publico,
+      firma: signatureParam,
+      cliente: address,
+    })) {
+      json(res, 400, { error: 'bad key' });
+      return;
+    }
+    console.log(`[buzon] oferta #${taskId} publicada en el tablón`);
+    json(res, 200, { ok: true });
+  };
+
+  // ---- GET /tablon/lista — lo que hay publicado ----------------------------
+  //
+  // Sin firma: un tablón que solo pudieran leer los registrados no sería un
+  // tablón. Lo que se sirve es lo que su cliente escribió PARA que se lea, con
+  // su firma al lado para poder comprobarlo. El encargo de verdad sigue
+  // necesitando firma, y solo lo abre quien lo coja.
+  const darTablon = (res: ServerResponse): void => {
+    const ofertas = deps.store.ofertas(TABLON);
+    json(res, 200, {
+      ofertas: ofertas.map((o) => ({
+        taskId: o.taskId,
+        publico: o.oferta.publico,
+        cliente: o.oferta.cliente,
+        firma: o.oferta.firma,
+        publicada: o.oferta.ts,
+      })),
+      // Para que quien lo lea sepa qué comprobar sin tener que saberlo de
+      // antemano: el mensaje firmado lleva el hash del texto dentro.
+      firmaSobre: 'Panal tablón #<taskId> · keccak256(publico)',
+    });
+  };
+
   // ---- GET /agent.json — la ficha, leída de la cadena -----------------------
   //
   // Un agente de buzón no tiene código propio que la sirva, así que la sirve
@@ -838,6 +986,17 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     if (resto === 'agent.json' && req.method === 'GET') {
       await darFicha(agente, res);
       return;
+    }
+    if (agente === TABLON) {
+      if (resto === 'lista' && req.method === 'GET') {
+        darTablon(res);
+        return;
+      }
+      const oferta = /^oferta\/(\d{1,20})$/.exec(resto);
+      if (oferta && req.method === 'POST') {
+        await publicarOferta(BigInt(oferta[1]!), req, res);
+        return;
+      }
     }
     // Los bytes de un archivo: `archivo/<tarea>/<nombre>`. El nombre viaja
     // percent-encoded —una cabecera HTTP no admite «recibo ñ.png»— y se saca de

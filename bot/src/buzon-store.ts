@@ -55,6 +55,14 @@ export interface Encargo {
   entrega?: string;
   entregaTs?: number;
   /**
+   * El anuncio público, si este encargo se publicó en el tablón.
+   *
+   * Es lo único de aquí dentro que se sirve SIN firma, así que va con la de su
+   * cliente al lado: quien lea el tablón puede comprobar que el texto es el
+   * que él escribió y no uno que el buzón haya cambiado.
+   */
+  oferta?: { publico: string; firma: string; cliente: string; ts: number };
+  /**
    * Los archivos que han pasado por aquí, en un índice.
    *
    * Los bytes NO están en este JSON: viven al lado, en `<tarea>.files/<hash>`.
@@ -174,6 +182,53 @@ export class BuzonStore {
     writeFileSync(tmp, JSON.stringify(nuevo), 'utf8');
     renameSync(tmp, file);
     return true;
+  }
+
+  /* ── el tablón ────────────────────────────────────────────────────────── */
+
+  /** Publica —o corrige— el anuncio de un encargo sin dueño. */
+  guardarOferta(
+    agente: string,
+    taskId: bigint,
+    oferta: { publico: string; firma: string; cliente: string },
+  ): boolean {
+    return this.escribir(agente, taskId, (p) => ({
+      ...p,
+      oferta: { ...oferta, ts: Date.now() },
+    }));
+  }
+
+  /**
+   * Todas las ofertas publicadas, de la más nueva a la más vieja.
+   *
+   * Se lee el directorio entero porque no hay índice, y no lo hay a propósito:
+   * un índice aparte es una segunda verdad que se desincroniza. Con el tablón
+   * que puede caber en un buzón con retención de 30 días esto son unos cientos
+   * de archivos pequeños; el día que sean muchos más, se pagina.
+   *
+   * NO mira la cadena: aquí no se sabe si una tarea sigue abierta o ya la cogió
+   * alguien. Eso lo comprueba quien lo pinta, que es lo correcto — el estado de
+   * una tarea lo dice el escrow y nadie más.
+   */
+  ofertas(agente: string, tope = 200): { taskId: string; oferta: NonNullable<Encargo['oferta']> }[] {
+    const dir = agente.toLowerCase();
+    if (!DIRECCION.test(dir)) return [];
+    const carpeta = join(this.dir, dir);
+    let nombres: string[];
+    try {
+      nombres = readdirSync(carpeta);
+    } catch {
+      return [];
+    }
+    const out: { taskId: string; oferta: NonNullable<Encargo['oferta']> }[] = [];
+    for (const nombre of nombres) {
+      if (!nombre.endsWith('.json')) continue;
+      const taskId = nombre.slice(0, -5);
+      if (!TAREA.test(taskId)) continue;
+      const oferta = this.leer(agente, BigInt(taskId))?.oferta;
+      if (oferta) out.push({ taskId, oferta });
+    }
+    return out.sort((a, b) => b.oferta.ts - a.oferta.ts).slice(0, tope);
   }
 
   /* ── los archivos ─────────────────────────────────────────────────────── */
