@@ -29,9 +29,23 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
+import { keccak256 } from 'viem';
 import { join, resolve } from 'node:path';
 
-/** Lo que el buzón guarda de un encargo. Las dos mitades son opcionales. */
+/** Un archivo que pasó por el buzón, apuntado en el índice del encargo. */
+export interface ArchivoGuardado {
+  /** El nombre con el que se enseña y con el que se pide. */
+  name: string;
+  /** `keccak256` de los bytes, en minúsculas. Es también su nombre en disco. */
+  hash: string;
+  size: number;
+  mime?: string;
+  /** Quién lo dejó: el cliente lo adjunta al encargo, el trabajador lo entrega. */
+  de: 'cliente' | 'trabajador';
+  ts: number;
+}
+
+/** Lo que el buzón guarda de un encargo. Todo es opcional. */
 export interface Encargo {
   /** El encargo TAL Y COMO lo firmó el cliente. Su keccak es el `taskHash`. */
   brief?: string;
@@ -40,6 +54,23 @@ export interface Encargo {
   /** La entrega, tal y como se ancló —o se anclará— en la cadena. */
   entrega?: string;
   entregaTs?: number;
+  /**
+   * El anuncio público, si este encargo se publicó en el tablón.
+   *
+   * Es lo único de aquí dentro que se sirve SIN firma, así que va con la de su
+   * cliente al lado: quien lea el tablón puede comprobar que el texto es el
+   * que él escribió y no uno que el buzón haya cambiado.
+   */
+  oferta?: { publico: string; firma: string; cliente: string; ts: number };
+  /**
+   * Los archivos que han pasado por aquí, en un índice.
+   *
+   * Los bytes NO están en este JSON: viven al lado, en `<tarea>.files/<hash>`.
+   * Se guardan por su hash y no por su nombre, y eso resuelve dos cosas a la
+   * vez: un nombre no puede escaparse a otra carpeta —un hash son 64 hex— y
+   * el mismo archivo mandado dos veces ocupa una.
+   */
+  archivos?: ArchivoGuardado[];
 }
 
 /**
@@ -52,10 +83,35 @@ export interface Encargo {
  */
 export const RETENCION_DIAS = 30;
 
+/**
+ * Lo que cabe por archivo, por encargo y cuántos.
+ *
+ * El de 25 MB es el mismo que ya usan la web, la plantilla y el SDK; cambiarlo
+ * aquí solo serviría para rechazar por un motivo distinto del que el cliente
+ * ve anunciado. Los otros dos son del buzón: es disco nuestro y de otros, así
+ * que hay un techo por encargo aunque cada archivo quepa.
+ */
+export const MAX_ARCHIVO_BYTES = 25 * 1024 * 1024;
+export const MAX_ARCHIVOS_POR_ENCARGO = 10;
+export const MAX_BYTES_POR_ENCARGO = 60 * 1024 * 1024;
+
 /** `0x` + 40 hex. Se valida ANTES de tocar el disco: es parte de una ruta. */
 const DIRECCION = /^0x[0-9a-fA-F]{40}$/;
 /** Solo dígitos, y con tope: un taskId de 400 cifras no es un taskId. */
 const TAREA = /^\d{1,20}$/;
+/** `0x` + 64 hex, como en los manifiestos y como en la cadena. */
+const HASH = /^0x[0-9a-f]{64}$/;
+
+/**
+ * El hash, sin el `0x`, que es como se llama su archivo.
+ *
+ * El prefijo se quita solo para el disco: en el índice y en los manifiestos el
+ * hash lleva `0x` porque es lo que viaja anclado en la cadena, y guardar dos
+ * formatos del mismo número acaba comparándolos.
+ */
+function nombreEnDisco(hash: string): string {
+  return hash.slice(2);
+}
 
 export class BuzonStore {
   private readonly dir: string;
@@ -128,6 +184,133 @@ export class BuzonStore {
     return true;
   }
 
+  /* ── el tablón ────────────────────────────────────────────────────────── */
+
+  /** Publica —o corrige— el anuncio de un encargo sin dueño. */
+  guardarOferta(
+    agente: string,
+    taskId: bigint,
+    oferta: { publico: string; firma: string; cliente: string },
+  ): boolean {
+    return this.escribir(agente, taskId, (p) => ({
+      ...p,
+      oferta: { ...oferta, ts: Date.now() },
+    }));
+  }
+
+  /**
+   * Todas las ofertas publicadas, de la más nueva a la más vieja.
+   *
+   * Se lee el directorio entero porque no hay índice, y no lo hay a propósito:
+   * un índice aparte es una segunda verdad que se desincroniza. Con el tablón
+   * que puede caber en un buzón con retención de 30 días esto son unos cientos
+   * de archivos pequeños; el día que sean muchos más, se pagina.
+   *
+   * NO mira la cadena: aquí no se sabe si una tarea sigue abierta o ya la cogió
+   * alguien. Eso lo comprueba quien lo pinta, que es lo correcto — el estado de
+   * una tarea lo dice el escrow y nadie más.
+   */
+  ofertas(agente: string, tope = 200): { taskId: string; oferta: NonNullable<Encargo['oferta']> }[] {
+    const dir = agente.toLowerCase();
+    if (!DIRECCION.test(dir)) return [];
+    const carpeta = join(this.dir, dir);
+    let nombres: string[];
+    try {
+      nombres = readdirSync(carpeta);
+    } catch {
+      return [];
+    }
+    const out: { taskId: string; oferta: NonNullable<Encargo['oferta']> }[] = [];
+    for (const nombre of nombres) {
+      if (!nombre.endsWith('.json')) continue;
+      const taskId = nombre.slice(0, -5);
+      if (!TAREA.test(taskId)) continue;
+      const oferta = this.leer(agente, BigInt(taskId))?.oferta;
+      if (oferta) out.push({ taskId, oferta });
+    }
+    return out.sort((a, b) => b.oferta.ts - a.oferta.ts).slice(0, tope);
+  }
+
+  /* ── los archivos ─────────────────────────────────────────────────────── */
+
+  /** La carpeta de los bytes de un encargo, o `null` si la clave no vale. */
+  private carpetaArchivos(agente: string, taskId: bigint): string | null {
+    const file = this.ruta(agente, taskId);
+    return file ? file.replace(/\.json$/, '.files') : null;
+  }
+
+  /**
+   * Guarda un archivo y lo apunta en el índice del encargo.
+   *
+   * Devuelve el hash, o el motivo por el que no cabe. El hash se calcula AQUÍ,
+   * sobre los bytes recibidos, y no se acepta el que venga escrito en ninguna
+   * cabecera: lo que se sirve luego tiene que ser lo que se guardó.
+   */
+  guardarArchivo(
+    agente: string,
+    taskId: bigint,
+    nombre: string,
+    bytes: Uint8Array,
+    de: 'cliente' | 'trabajador',
+    mime?: string,
+  ): { hash: string } | { error: 'clave' | 'grande' | 'demasiados' | 'lleno' } {
+    const carpeta = this.carpetaArchivos(agente, taskId);
+    if (!carpeta || !nombre) return { error: 'clave' };
+    if (bytes.byteLength > MAX_ARCHIVO_BYTES) return { error: 'grande' };
+
+    const previo = this.leer(agente, taskId) ?? {};
+    const archivos = previo.archivos ?? [];
+    // Con `0x` delante, como en los manifiestos y como en la cadena: este hash
+    // se compara con el que viaja dentro de la entrega, y dos formatos del
+    // mismo número serían dos números.
+    const hash = keccak256(bytes).toLowerCase();
+
+    // El mismo archivo otra vez no ocupa otra vez: se sobrescribe su entrada y
+    // los bytes ya están. Así un reintento a medias no llena el cupo.
+    const yaEsta = archivos.find((a) => a.hash === hash && a.name === nombre);
+    if (!yaEsta) {
+      if (archivos.length >= MAX_ARCHIVOS_POR_ENCARGO) return { error: 'demasiados' };
+      const ocupado = archivos.reduce((n, a) => n + a.size, 0);
+      if (ocupado + bytes.byteLength > MAX_BYTES_POR_ENCARGO) return { error: 'lleno' };
+    }
+
+    mkdirSync(carpeta, { recursive: true });
+    const destino = join(carpeta, `${nombreEnDisco(hash)}.bin`);
+    const tmp = `${destino}.tmp`;
+    writeFileSync(tmp, bytes);
+    renameSync(tmp, destino);
+
+    const entrada: ArchivoGuardado = {
+      name: nombre,
+      hash,
+      size: bytes.byteLength,
+      ...(mime ? { mime } : {}),
+      de,
+      ts: Date.now(),
+    };
+    this.escribir(agente, taskId, (p) => ({
+      ...p,
+      archivos: [...(p.archivos ?? []).filter((a) => !(a.hash === hash && a.name === nombre)), entrada],
+    }));
+    return { hash };
+  }
+
+  /** Los bytes de un archivo por su nombre, o `null` si aquí no está. */
+  leerArchivo(agente: string, taskId: bigint, nombre: string): { archivo: ArchivoGuardado; bytes: Buffer } | null {
+    const carpeta = this.carpetaArchivos(agente, taskId);
+    if (!carpeta) return null;
+    const archivo = (this.leer(agente, taskId)?.archivos ?? []).find((a) => a.name === nombre);
+    // Se busca por el ÍNDICE y nunca por lo que llegue en la URL: el nombre lo
+    // escribe quien sube, y de él no sale ninguna ruta. La ruta sale del hash,
+    // que son 64 hex escritos por nosotros.
+    if (!archivo || !HASH.test(archivo.hash)) return null;
+    try {
+      return { archivo, bytes: readFileSync(join(carpeta, `${nombreEnDisco(archivo.hash)}.bin`)) };
+    } catch {
+      return null;
+    }
+  }
+
   /**
    * Borra lo que ha pasado de la retención. Devuelve cuántos encargos cayeron.
    *
@@ -146,10 +329,15 @@ export class BuzonStore {
         continue;
       }
       for (const nombre of encargos) {
+        // Las carpetas `.files` se borran con su encargo, no por su cuenta:
+        // sus bytes se tocan al subirlos y no al leer el JSON, así que mirar su
+        // fecha por separado dejaría archivos huérfanos vivos meses.
+        if (nombre.endsWith('.files')) continue;
         const file = join(carpeta, nombre);
         try {
           if (ahora - statSync(file).mtimeMs > this.retencionMs) {
             rmSync(file);
+            rmSync(file.replace(/\.json$/, '.files'), { recursive: true, force: true });
             borrados++;
           }
         } catch {

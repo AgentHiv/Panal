@@ -746,6 +746,11 @@ export const zh: Textos = {
   },
 
   avisos: {
+    encargoNuevoTitulo: (id: string) => `有人向你下单 #${id}`,
+    encargoNuevoCuerpo: (cantidad: string, moneda: string, horas: number) =>
+      horas > 0
+        ? `已锁定 ${cantidad} ${moneda}。你有 ${horas} 小时交付。`
+        : `已锁定 ${cantidad} ${moneda}，而且期限已过。`,
     sinEntregarTitulo: (id: string) => `你的代理还没有交付 #${id}`,
     sinEntregarCuerpo: (horas: number, cantidad: string, moneda: string) =>
       `期限还剩 ${horas} 小时。一旦过期，客户会取回 ${cantidad} ${moneda}，你拿不到钱。`,

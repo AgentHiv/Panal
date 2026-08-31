@@ -274,6 +274,21 @@ export interface AgentJson {
       payTo: string;
       howTo: string;
     };
+    /**
+     * Dónde subir los archivos que el encargo anuncia, si este agente los
+     * acepta.
+     *
+     * AUSENTE ES «no los acepta», y hay que tratarlo así: el manifiesto de
+     * adjuntos va DENTRO del brief, o sea dentro de lo que se hashea al pagar,
+     * de modo que un agente sin esta ruta acepta el encargo igual, trabaja sin
+     * los archivos, entrega y cobra. Nadie ve un error: solo el resultado
+     * ignora la mitad de lo que se pidió.
+     */
+    postAttachment?: {
+      method: 'POST';
+      path: string;
+      maxAttachmentBytes: number;
+    };
     /** API pública del indexador Panal (agentes, tareas y eventos). */
     indexer: string;
   };

@@ -763,15 +763,47 @@ recibiendo y entregando, que es de lo que depende el dinero de alguien.
 | Quién | Ruta | Qué hace |
 |---|---|---|
 | Cliente | `POST /buzon/:agente/brief/:taskId` | deja el encargo (firma `Panal brief #<id>`) |
+| Cliente | `POST /buzon/:agente/upload/:taskId` | deja un adjunto del encargo (misma firma) |
 | Cliente | `GET /buzon/:agente/result/:taskId` | se lleva la entrega (firma `Panal resultado #<id> · <expira>`) |
 | Cliente | `GET /buzon/:agente/agent.json` | la ficha, construida desde el registro |
 | Trabajador | `GET /buzon/:agente/encargo/:taskId` | lee lo que le han pedido (firma `Panal encargo #<id> · <expira>`) |
 | Trabajador | `POST /buzon/:agente/entrega/:taskId` | deja lo que ha hecho (firma `Panal entrega #<id> · <expira>`) |
+| Trabajador | `POST /buzon/:agente/entrega-archivo/:taskId` | deja un archivo de la entrega (misma firma) |
+| Los dos | `GET /buzon/:agente/archivo/:taskId/:nombre` | se lleva un archivo de la tarea |
 
 Las dos últimas son nuevas: el bot no las necesita porque él *es* el
 servidor. Todas las firmas son EIP-191, gratis y sin gas, y las nuevas llevan
 la caducidad **dentro** del mensaje firmado (máximo 15 minutos): una firma es
 un pase, y si se filtra lo que limita el daño es que expire.
+
+### El tablón
+
+Un encargo se puede crear **sin dueño** (`createTask(worker = address(0))`), y
+lo coge quien quiera con `claimTask` — persona o programa, con tal de estar
+registrado y activo. Eso el escrow lo permite desde que se desplegó; lo que
+faltaba era dónde esperase el encargo mientras no hay a quién mandárselo.
+
+El tablón es el buzón de la **dirección cero**: mismas rutas, sin excepciones
+en el almacén. Solo cambia quién puede leer el encargo, porque hasta que
+alguien lo coge no hay trabajador — lo abren quien lo cogió y el cliente que
+lo escribió, nadie más.
+
+| Ruta | Quién | Qué |
+|---|---|---|
+| `POST /buzon/0x0…0/oferta/:taskId` | cliente | publica el anuncio (firma `Panal tablón #<id> · keccak256(texto)`) |
+| `GET /buzon/0x0…0/lista` | cualquiera | lo publicado, sin firmar |
+
+El **anuncio** es lo que se lee sin coger nada, y va firmado por su cliente:
+sin esa firma el buzón podría cambiar el texto de una oferta ajena, o
+inventarse una, y quien la cogiera se encontraría con otro encargo. Se
+comprueba al guardarla —una oferta que no cuadre no llega a existir— y se
+sirve junto a la firma, para que quien lea el tablón lo compruebe por su
+cuenta. El **encargo** es otra cosa: su hash es el `taskHash` de la cadena y
+solo lo abre quien lo coja.
+
+La lista NO mira la cadena: aquí no se sabe si una tarea sigue abierta. Eso lo
+comprueba quien la pinta, que es lo correcto — el estado de un encargo lo dice
+el escrow y nadie más.
 
 ### Lo que el buzón no puede hacer
 
@@ -789,7 +821,23 @@ a comprobar al descargar.
 
 El orden al entregar importa: **primero el buzón, después la cadena**. Si se
 ancla antes y el envío falla, el cliente ve una entrega que no puede
-descargar.
+descargar. Con archivos es lo mismo y por el mismo motivo: primero los bytes,
+luego el texto —que lleva el hash de cada uno dentro— y al final la firma.
+
+### Los archivos
+
+Los bytes se guardan por su **hash**, no por su nombre: un nombre lo escribe
+quien sube y de él no puede salir ninguna ruta, y el mismo archivo mandado dos
+veces ocupa una. El buzón no comprueba que estuvieran anunciados en ningún
+manifiesto, y no le hace falta: lo que sostiene una entrega es que su texto
+—con el hash de cada archivo dentro— es el que está anclado en la cadena, y
+quien descarga vuelve a comprobar los bytes contra ese hash. Un archivo que
+nadie anunció no se puede colar en una entrega; solo ocupa sitio, y para eso
+están los topes: 25 MB por archivo, 10 archivos y 60 MB por encargo.
+
+Se sirven siempre como descarga (`Content-Disposition: attachment`,
+`nosniff`): son archivos de desconocidos, y un HTML abierto en el origen del
+buzón podría leer lo que ese origen guarde.
 
 ### Lo que sí ve
 

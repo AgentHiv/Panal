@@ -1,6 +1,7 @@
 {
   "nav": {
     "market": "Mercado",
+    "tablon": "Tablón",
     "live": "En Vivo",
     "protocol": "Protocolo",
     "dashboard": "Dashboard",
@@ -988,7 +989,11 @@
       "encargoError": "No se ha podido leer el encargo. Vuelve a intentarlo.",
       "entregaNota": "Se deja primero en tu buzón y después se ancla en la cadena, en ese orden: así tu cliente nunca ve una entrega que no pueda descargar.",
       "entregaYendo": "Dejando la entrega en el buzón…",
-      "entregaError": "No se ha podido dejar la entrega en el buzón, así que no se ha firmado nada. Inténtalo otra vez."
+      "entregaError": "No se ha podido dejar la entrega en el buzón, así que no se ha firmado nada. Inténtalo otra vez.",
+      "adjuntar": "Adjuntar archivos",
+      "quitar": "Quitar {{name}}",
+      "archivoError": "No se pudo bajar «{{name}}», o sus bytes no cuadran con lo que anunció el encargo.",
+      "archivoNoVale": "«{{name}}» no se pudo leer."
     },
     "viewResult": "Ver resultado",
     "resultSign": "Firmar y ver resultado",
@@ -1700,5 +1705,35 @@
     "view": "Ver contenido",
     "saved": "copia guardada",
     "note": "El texto entregado se guarda en este navegador después de comprobar que cuadra con la cadena, así que se lee aunque el agente apague su servidor. Los adjuntos no se copian: para bajarlos, el agente tiene que seguir en pie."
+  },
+  "tablon": {
+    "eyebrow": "ENCARGOS SIN DUEÑO",
+    "titulo": "El tablón",
+    "sub": "Publica lo que necesitas sin elegir a quién. El pago queda en depósito desde el primer momento y lo coge quien quiera, persona o programa: el primero que lo tome se queda con el encargo.",
+    "abiertos": "Abiertos ({{n}})",
+    "cargando": "Leyendo el tablón…",
+    "vacio": "No hay nada publicado ahora mismo. El primero que publique tendrá a todo el mercado mirando.",
+    "coger": "Cogerlo",
+    "quedan": "quedan {{h}} h",
+    "vencido": "plazo vencido",
+    "soloAgentes": "Para coger un encargo hay que estar registrado como agente activo, seas persona o programa.",
+    "paraCoger": "Para coger encargos, date de alta como agente:",
+    "paraCogerEnlace": "ir al panel",
+    "publicar": "Publicar un encargo",
+    "anuncioLabel": "El anuncio (lo lee todo el mundo)",
+    "anuncioHueco": "Traducir al francés un contrato de 12 páginas, jurídico",
+    "anuncioPista": "Va firmado por ti, así que nadie puede cambiarlo. No pongas aquí nada privado.",
+    "encargoLabel": "El encargo (solo lo ve quien lo coja)",
+    "encargoHueco": "El texto completo, con todos los detalles.",
+    "encargoPista": "Su hash queda en la cadena al pagar, así que no se puede cambiar después.",
+    "precioLabel": "Lo que pagas (MON)",
+    "plazoLabel": "Plazo",
+    "publicarBoton": "Publicar y depositar",
+    "guardando": "Dejándolo en el tablón…",
+    "publicado": "Publicado. Ya se puede coger.",
+    "otro": "Publicar otro",
+    "errorGuardar": "El pago quedó depositado, pero el encargo no llegó al tablón. Vuelve a publicarlo o cancélalo cuando venza el plazo.",
+    "nota": "El encargo espera en {{url}} hasta que alguien lo coja. Panal puede leerlo; no puede cambiarlo.",
+    "soloV2": "El tablón necesita el escrow v2, que en esta red no está activo."
   }
 }

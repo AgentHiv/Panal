@@ -63,6 +63,33 @@ export function sanitizeFileName(name: string): string {
 }
 
 /**
+ * Escribe el bloque del manifiesto. El formato lo manda `sdk/src/files.ts`.
+ *
+ * El orden de las claves es fijo y las líneas van con `\n` porque este texto se
+ * ancla en la cadena: dos ejecuciones con los mismos archivos tienen que dar
+ * exactamente los mismos bytes, o el `keccak256` no cuadra y el cliente ve la
+ * entrega en rojo.
+ */
+export function buildFilesManifest(files: DeliveredFile[]): string {
+  return files
+    .map((f) => {
+      const lineas = [FILES_BLOCK, `name: ${sanitizeFileName(f.name)}`, `size: ${f.size}`];
+      if (f.mime) lineas.push(`mime: ${f.mime}`);
+      lineas.push(`hash: ${f.hash}`);
+      if (f.path) lineas.push(`path: ${f.path}`);
+      if (f.url) lineas.push(`url: ${f.url}`);
+      return lineas.join('\n');
+    })
+    .join('\n\n');
+}
+
+/** El texto de la entrega con el manifiesto pegado al final. */
+export function appendFilesManifest(text: string, files: DeliveredFile[]): string {
+  if (files.length === 0) return text;
+  return `${text.trimEnd()}\n\n${buildFilesManifest(files)}\n`;
+}
+
+/**
  * Lee los archivos que anuncia una entrega.
  *
  * Un bloque mal formado se descarta solo, sin llevarse la entrega por delante:

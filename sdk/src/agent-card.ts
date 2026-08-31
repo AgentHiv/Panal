@@ -104,6 +104,15 @@ export interface FichaNivel {
   maxAttachCharsTotal?: number;
 }
 
+/** Dónde deja el cliente los bytes de lo que su encargo anuncia. */
+export interface FichaPostAttachment {
+  method?: 'POST';
+  /** Ruta relativa, con `:taskId` dentro. */
+  path?: string;
+  /** Tope por archivo, en bytes. */
+  maxAttachmentBytes?: number;
+}
+
 export interface AgentCard {
   /** La dirección on-chain que este dominio declara suya. Es lo que verifica. */
   agent?: Address;
@@ -145,6 +154,16 @@ export interface AgentCard {
     postBrief?: FichaPostBrief;
     getResult?: FichaGetResult;
     x402Ask?: FichaX402;
+    /**
+     * Dónde subir los archivos que el encargo anuncia, si los acepta.
+     *
+     * AUSENTE ES «no los acepta». Importa porque el manifiesto de adjuntos
+     * viaja DENTRO del brief —dentro de lo que se hashea al pagar—, así que un
+     * agente sin esta ruta acepta el encargo, trabaja sin los archivos,
+     * entrega y cobra sin que nada dé error. Por eso el cliente pregunta antes
+     * de ofrecer el clip; ver `leerCapacidades` en la web.
+     */
+    postAttachment?: FichaPostAttachment;
     indexer?: string | null;
   };
   /** Alias ANTIGUO de `endpoints.x402Ask`. Se lee; no se escribe. */

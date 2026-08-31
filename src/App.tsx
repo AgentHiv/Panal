@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import Layout from '@/components/Layout';
 import Home from '@/pages/Home';
 import Marketplace from '@/pages/Marketplace';
+import Tablon from '@/pages/Tablon';
 import AgentDetail from '@/pages/AgentDetail';
 import Chat from '@/pages/Chat';
 import Chats from '@/pages/Chats';
@@ -31,6 +32,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="mercado" element={<Marketplace />} />
+        <Route path="tablon" element={<Tablon />} />
         <Route path="agente/:id" element={<AgentDetail />} />
         <Route path="chats" element={<Chats />} />
         <Route path="chat/:id" element={<Chat />} />

@@ -1,6 +1,7 @@
 {
   "nav": {
     "market": "Marketplace",
+    "tablon": "Quadro",
     "live": "Ao vivo",
     "protocol": "Protocolo",
     "dashboard": "Painel",
@@ -988,7 +989,11 @@
       "encargoError": "Não foi possível ler o encargo. Tente de novo.",
       "entregaNota": "Vai primeiro para o seu correio e só depois fica ancorada na cadeia, por essa ordem: assim o cliente nunca vê uma entrega que não consegue descarregar.",
       "entregaYendo": "A deixar a entrega no correio…",
-      "entregaError": "Não foi possível deixar a entrega no correio, por isso não se assinou nada. Tente de novo."
+      "entregaError": "Não foi possível deixar a entrega no correio, por isso não se assinou nada. Tente de novo.",
+      "adjuntar": "Anexar ficheiros",
+      "quitar": "Remover {{name}}",
+      "archivoError": "Não foi possível descarregar «{{name}}», ou os seus bytes não batem com o que o encargo anunciava.",
+      "archivoNoVale": "Não foi possível ler «{{name}}»."
     },
     "viewResult": "Ver resultado",
     "resultSign": "Assinar e ver resultado",
@@ -1700,5 +1705,35 @@
     "view": "Ver conteúdo",
     "saved": "cópia guardada",
     "note": "O texto entregue fica guardado neste navegador depois de se verificar que corresponde à cadeia, por isso lê-se mesmo que o agente desligue o servidor. Os anexos não são copiados: para os descarregar, o agente tem de continuar de pé."
+  },
+  "tablon": {
+    "eyebrow": "ENCARGOS SEM DONO",
+    "titulo": "O quadro",
+    "sub": "Publique o que precisa sem escolher ninguém. O pagamento fica em depósito desde o início e pega-o quem quiser, pessoa ou programa: o primeiro a reclamá-lo fica com o encargo.",
+    "abiertos": "Abertos ({{n}})",
+    "cargando": "A ler o quadro…",
+    "vacio": "Não há nada publicado agora. Quem publicar primeiro terá o mercado inteiro a olhar.",
+    "coger": "Aceitar",
+    "quedan": "faltam {{h}} h",
+    "vencido": "prazo vencido",
+    "soloAgentes": "Para aceitar um encargo é preciso estar registado como agente ativo, seja pessoa ou programa.",
+    "paraCoger": "Para aceitar encargos, registe-se como agente:",
+    "paraCogerEnlace": "ir ao painel",
+    "publicar": "Publicar um encargo",
+    "anuncioLabel": "O anúncio (toda a gente o lê)",
+    "anuncioHueco": "Traduzir para francês um contrato jurídico de 12 páginas",
+    "anuncioPista": "Vai assinado por si, por isso ninguém o pode alterar. Não ponha aqui nada privado.",
+    "encargoLabel": "O encargo (só o vê quem o aceitar)",
+    "encargoHueco": "O texto completo, com todos os detalhes.",
+    "encargoPista": "O seu hash fica na cadeia ao pagar, por isso não se pode alterar depois.",
+    "precioLabel": "O que paga (MON)",
+    "plazoLabel": "Prazo",
+    "publicarBoton": "Publicar e depositar",
+    "guardando": "A deixá-lo no quadro…",
+    "publicado": "Publicado. Já pode ser aceite.",
+    "otro": "Publicar outro",
+    "errorGuardar": "O pagamento ficou em depósito, mas o encargo não chegou ao quadro. Volte a publicá-lo ou cancele quando o prazo vencer.",
+    "nota": "O encargo espera em {{url}} até alguém o aceitar. O Panal pode lê-lo; não o pode alterar.",
+    "soloV2": "O quadro precisa do escrow v2, que não está ativo nesta rede."
   }
 }
