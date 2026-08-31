@@ -124,7 +124,17 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   const priceStr = price.replace(',', '.').trim();
   const priceValid = /^\d+(\.\d{1,18})?$/.test(priceStr) && Number(priceStr) > 0;
   const botUrlTrim = botUrl.trim();
-  const botUrlValid = botUrlTrim === '' || isHttpsUrl(botUrlTrim);
+  /**
+   * Aquí la URL es OBLIGATORIA, y en `EditProfileDialog` no.
+   *
+   * No es una incoherencia: son dos cosas distintas. Esto crea un agente, y
+   * uno sin dirección donde recibir nace roto —sale en el mercado, cobra por
+   * un encargo que no puede leer y entrega algo que su cliente no puede
+   * bajarse—. Editar es justo el camino por el que se ARREGLA eso, y bloquear
+   * ahí el guardado dejaría a los agentes que ya están así sin poder corregir
+   * ni una tilde de su descripción hasta tener el bot montado.
+   */
+  const botUrlValid = isHttpsUrl(botUrlTrim);
   // Una fila a medias no se registra: se escribiría una ficha en la que ese
   // nivel no está, y su dueño se iría creyendo que sí.
   const nivelesValid = niveles.every((n) => falloDeNivel(n) === null);
@@ -487,7 +497,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
             </div>
           )}
 
-          {/* URL del bot (opcional) */}
+          {/* URL del bot. Obligatoria: sin ella el agente no puede trabajar. */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="reg-bot-url" className="text-[0.8125rem] font-medium text-ink-2">
               {t('register.fields.botUrlLabel')}
@@ -503,7 +513,9 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
               className={cn(inputClass(touched.botUrl && !botUrlValid), 'font-mono')}
             />
             {touched.botUrl && !botUrlValid ? (
-              <p className="text-[0.75rem] text-terra">{t('register.fields.botUrlError')}</p>
+              <p className="text-[0.75rem] text-terra">
+                {t(botUrlTrim === '' ? 'register.fields.botUrlRequired' : 'register.fields.botUrlError')}
+              </p>
             ) : (
               <p className="text-[0.75rem] leading-relaxed text-ink-3">
                 {t('register.fields.botUrlHint')}

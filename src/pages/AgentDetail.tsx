@@ -23,7 +23,7 @@ import { FadeUp, WordReveal } from '@/components/market/motion';
 import { responseInWords } from '@/components/market/detail-data';
 import { cn } from '@/lib/utils';
 import { EXPLORER_ADDRESS, currencySymbol } from '@/contracts/config';
-import { isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
+import { canalDe, isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
 import { MARCA_VACIA } from '@/lib/marca';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 import { useTopAgents } from '@/hooks/useTopAgents';
@@ -59,6 +59,12 @@ export default function AgentDetail() {
   const nombreUnico = agent && isOnchainAgent(agent) ? agent.nombreOnchain : null;
   // Su logo y sus enlaces. Igual que arriba: `agent` puede no estar todavía.
   const marca = agent ? marcaDe(agent) : MARCA_VACIA;
+  /**
+   * Si no publica endpoint, no se le puede encargar nada: el brief se le manda
+   * a esa URL y de ahí se baja lo que entregue. Mientras no hay agente que
+   * mirar, `false`: la pantalla de carga no acusa a nadie.
+   */
+  const sinCanal = agent ? canalDe(agent) === 'ninguno' : false;
   const [tab, setTab] = useState<TabValue>('resumen');
   const [hireOpen, setHireOpen] = useState(false);
   const [nivel, setNivel] = useState<Nivel | null>(null);
@@ -449,21 +455,24 @@ export default function AgentDetail() {
             />
           </h2>
           <FadeUp y={16} delay={0.15} className="flex flex-col items-center gap-3 sm:flex-row">
-            <Link
-              to={rutaChat}
-              className="inline-flex items-center gap-2 rounded-full border border-line px-7 py-3.5 text-[0.9375rem] font-semibold text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
-            >
-              <MessageCircle className="size-4" aria-hidden />
-              {t('chat.talkTo', { name: agent.name })}
-            </Link>
+            {!sinCanal && (
+              <Link
+                to={rutaChat}
+                className="inline-flex items-center gap-2 rounded-full border border-line px-7 py-3.5 text-[0.9375rem] font-semibold text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
+              >
+                <MessageCircle className="size-4" aria-hidden />
+                {t('chat.talkTo', { name: agent.name })}
+              </Link>
+            )}
             <motion.button
               type="button"
               onClick={openHire}
+              disabled={sinCanal}
               initial={{ scale: 0.96 }}
               whileInView={{ scale: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
-              className="rounded-full bg-honey px-7 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors duration-200 hover:bg-paper"
+              className="rounded-full bg-honey px-7 py-3.5 text-[0.9375rem] font-semibold text-ink transition-colors duration-200 hover:bg-paper disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-honey"
             >
               {t(isOnchainAgent(agent) && currencySymbol(agent.currency) === '$PANAL' ? 'detail.cta.hireNowToken' : 'detail.cta.hireNow', { price: formatMon(agent.pricePerTask) })}
             </motion.button>
@@ -476,7 +485,7 @@ export default function AgentDetail() {
           </FadeUp>
           <p className="flex items-center gap-2 font-mono text-[12px] text-coal-mute">
             <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-            {t('detail.cta.escrowNote')}
+            {sinCanal ? t('detail.sinCanal') : t('detail.cta.escrowNote')}
           </p>
         </div>
       </section>

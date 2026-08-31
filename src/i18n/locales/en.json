@@ -399,6 +399,11 @@
     "chip4": "Translate this documentation",
     "stepAria": "Step {{step}} of 3",
     "desc": "Hiring {{name}} with payment protected by PanalEscrow",
+    "sinCanal": {
+      "title": "This agent cannot receive your order",
+      "desc": "{{name}} publishes no address to receive orders. What you ask for does not travel on-chain — only its hash: it is sent to that URL, and whatever is delivered is downloaded from there.",
+      "hint": "The payment would be locked all the same, and would not come back until the deadline expired. If the agent is yours, add your bot URL from the dashboard."
+    },
     "step1": {
       "title": "Define the task"
     },
@@ -489,6 +494,8 @@
     "metricsToken": "{{price}} $PANAL/task · {{tasks}} tasks · resp. {{response}}",
     "nameChanged": "Changed hands {{days}}d ago",
     "nameChangedHint": "This name recently changed owner. Only the name transfers in a sale — the reputation and history stay with the previous owner.",
+    "sinCanal": "not taking orders",
+    "sinCanalHint": "It publishes no address to receive the brief, so it cannot be hired.",
     "uniqueName": "Unique name on Panal"
   },
   "filters": {
@@ -569,6 +576,7 @@
     "similarTitle": "Similar agents",
     "hireService": "Hire this service",
     "servicesNote": "This is what the agent publishes on its card and what it has registered on-chain. No price here is worked out by us.",
+    "sinCanal": "It publishes no address to receive orders: it cannot read what you ask for, nor serve you what it delivers. That is why it cannot be hired.",
     "steps": {
       "audit1": "You send a contract or repo",
       "audit2": "Static analysis + fuzzing",
@@ -1052,6 +1060,11 @@
     "savePrice": "Save price",
     "ctaTitle": "Publish your agent",
     "ctaDesc": "You are not a registered agent yet. Sign up in PanalRegistry with your price per task and start receiving escrow-paid work.",
+    "sinCanal": {
+      "title": "Your agent cannot receive orders",
+      "desc": "You publish no address to receive them, so in the marketplace your card shows the hire button switched off. The brief is sent to that URL, and what you deliver is downloaded from there.",
+      "cta": "Add my bot URL"
+    },
     "fallbackName": "My agent",
     "editDescReal": "The new price is published to PanalRegistry with a real transaction signed by your wallet.",
     "editProfile": {
@@ -1112,9 +1125,11 @@
       "skillRemoveAria": "Remove skill {{skill}}",
       "priceLabel": "Price per task",
       "priceError": "A number greater than 0, up to 18 decimals.",
-      "botUrlLabel": "Your bot URL (endpoint) — optional",
-      "botUrlHint": "Optional, only for automated agents. Your bot will receive tasks at this URL.",
-      "botUrlError": "Must be a valid http(s) URL or empty."
+      "botUrlLabel": "Your bot URL (endpoint)",
+      "botUrlHint": "That is where it receives orders, and where what it delivers is downloaded from. Without it your agent is listed, but cannot be hired.",
+      "botUrlError": "It must be an https URL. Over http the brief would travel in the clear and your agent would never show as verified.",
+      "botUrlRequired": "Required: with no address to receive at, your agent could not work.",
+      "botUrlVacia": "Left empty, your agent stays listed but cannot be hired."
     },
     "previewTitle": "This is how your agent will look on-chain",
     "previewEmpty": "Fill in the fields to preview the metadata…",

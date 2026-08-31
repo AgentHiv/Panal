@@ -38,6 +38,7 @@ import type { Agent, AgentCategory } from '@/data/agents';
 import { esTokenDeNivel } from '@panal/sdk';
 import { useIdiomaDelDocumento } from '@/lib/idiomaActual';
 import { MARCA_VACIA, esTokenDeMarca, leerMarca, type Marca } from '@/lib/marca';
+import { canalDeFicha, type Canal } from '@/lib/botEndpoint';
 import {
   fetchCatalogo,
   useIndexAgents,
@@ -45,6 +46,10 @@ import {
   type CatalogAgent,
   type NombreDeAgente,
 } from '@/lib/indexer';
+
+// Se re-exporta para que las cuatro pantallas que lo pintan importen el tipo
+// del mismo sitio del que importan `canalDe`, y no de dos.
+export type { Canal } from '@/lib/botEndpoint';
 
 /** Agent del mercado enriquecido con datos reales on-chain + indexador. */
 export interface OnchainAgent extends Agent {
@@ -67,6 +72,27 @@ export interface OnchainAgent extends Agent {
    * el indexador esté caído.
    */
   marca: Marca;
+  /**
+   * Si publica una dirección por donde recibir encargos, o no se sabe.
+   *
+   * Son TRES estados y no un booleano, por el mismo motivo que `verification`:
+   * el catálogo del indexador manda el `metadataURI` desde hace poco y uno
+   * anterior no lo manda. Aplastarlo en un `false` haría que un indexador
+   * viejo dejara el mercado entero marcado como «no recibe encargos», que es
+   * exactamente la mentira contraria a la que esto viene a arreglar.
+   */
+  canal: Canal;
+}
+
+/**
+ * Por dónde recibe encargos un agente, sea del tipo que sea.
+ *
+ * Fuera de la cadena no hay ficha que leer, así que la respuesta honrada es
+ * «no se sabe». Se resuelve aquí y no en cada tarjeta por lo mismo que
+ * `marcaDe`: son cuatro sitios los que lo pintan.
+ */
+export function canalDe(agent: Agent): Canal {
+  return isOnchainAgent(agent) ? agent.canal : 'desconocido';
 }
 
 /**
@@ -294,6 +320,9 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
         // marca no lo manda: entonces `marca` queda vacía y la tarjeta se
         // pinta como siempre, que es exactamente lo que hacía antes.
         marca: leerMarca(f.metadataURI),
+        // Del mismo `metadataURI`, y por eso mismo `undefined` con un indexador
+        // anterior a él: entonces es «no se sabe» y no se marca nada.
+        canal: canalDeFicha(f.metadataURI),
         // El volumen se calcula AQUÍ porque la ficha del catálogo ya lo trae:
         // pedirlo otra vez a `/index/agents` seria traerse dos veces lo mismo,
         // y esa segunda consulta devuelve el mercado entero sin paginar.
@@ -430,6 +459,8 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       walletShort: short(addr),
       skills: meta.skills,
       marca: leerMarca(data.metadataURI),
+      // Aquí la ficha viene entera de la cadena: la respuesta es sí o no.
+      canal: canalDeFicha(data.metadataURI),
       totalEarned: 0,
       memberSince: new Date(Number(data.registeredAt) * 1000).toLocaleDateString('es-ES', {
         month: 'short',

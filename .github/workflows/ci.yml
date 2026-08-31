@@ -107,6 +107,15 @@ jobs:
       - name: Los niveles se leen y se escriben igual en las cuatro capas
         run: pnpm exec tsx scripts/test-niveles.ts
 
+      # El tercer token de esa misma cadena: la URL por la que el agente recibe
+      # el encargo. Sin ella no puede leer lo que le piden ni servir lo que
+      # entregue, y aun asi se le podia contratar: el aviso llegaba DESPUES de
+      # firmar el pago. Lo que se prueba aqui es sobre todo el tercer estado
+      # —«no se ha podido mirar»—, porque confundirlo con «no tiene» dejaria el
+      # mercado entero sin poder contratar a nadie por tener el indexador viejo.
+      - name: Un agente sin donde recibir no se puede contratar
+        run: pnpm exec tsx scripts/test-canal.ts
+
       - name: Build de produccion
         run: pnpm exec vite build
 

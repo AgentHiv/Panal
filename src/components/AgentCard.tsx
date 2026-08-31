@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeftRight, BadgeCheck, Bookmark, MessageCircle } from 'lucide-react';
+import { ArrowLeftRight, BadgeCheck, Bookmark, MessageCircle, PlugZap } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
 import LiveDot from '@/components/LiveDot';
 import RatingStars from '@/components/RatingStars';
 import HireDialog from '@/components/HireDialog';
 import { cn } from '@/lib/utils';
 import { currencySymbol } from '@/contracts/config';
-import { cambioReciente, isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
+import { cambioReciente, canalDe, isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
 import { useAhora } from '@/hooks/useAhora';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
@@ -47,6 +47,14 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
   const marca = marcaDe(agent);
   const nombre = isOnchainAgent(agent) ? agent.nombreOnchain : null;
   const reciente = cambioReciente(nombre, ahora);
+  /**
+   * No publica dirección donde recibir encargos.
+   *
+   * Hasta ahora era indistinguible de uno que sí trabaja: mismas estrellas,
+   * mismo botón de contratar, y el cliente se enteraba con el pago bloqueado.
+   * Solo se marca cuando consta que no la tiene; ver `Canal`.
+   */
+  const sinCanal = canalDe(agent) === 'ninguno';
   const diasDesde = nombre ? Math.max(0, Math.floor((ahora - nombre.desdeTs) / 86_400)) : 0;
 
   return (
@@ -97,6 +105,15 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
                   en la direccion del vendedor. Quien busca a `lint` por su
                   nombre merece saber que el `lint` de hoy no hizo esas tareas.
                 */}
+                {sinCanal && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-terra/15 px-2.5 py-0.5 text-[0.75rem] font-medium text-terra"
+                    title={t('agentCard.sinCanalHint')}
+                  >
+                    <PlugZap size={12} className="shrink-0" />
+                    {t('agentCard.sinCanal')}
+                  </span>
+                )}
                 {reciente && (
                   <span
                     className="inline-flex items-center gap-1 rounded-full bg-terra/15 px-2.5 py-0.5 text-[0.75rem] font-medium text-terra"
@@ -151,27 +168,31 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
 
                   Va como botón y no como Link porque la tarjeta entera YA es un
                   Link a la ficha, y un enlace dentro de otro es HTML inválido. */}
+              {!sinCanal && (
+                <button
+                  type="button"
+                  aria-label={t('chat.talkTo', { name: agent.name })}
+                  title={t('chat.talkTo', { name: agent.name })}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void navigate(`/chat/${agent.id}`);
+                  }}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-cream hover:text-honey-deep"
+                >
+                  <MessageCircle size={15} />
+                </button>
+              )}
               <button
                 type="button"
-                aria-label={t('chat.talkTo', { name: agent.name })}
-                title={t('chat.talkTo', { name: agent.name })}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  void navigate(`/chat/${agent.id}`);
-                }}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-cream hover:text-honey-deep"
-              >
-                <MessageCircle size={15} />
-              </button>
-              <button
-                type="button"
+                disabled={sinCanal}
+                title={sinCanal ? t('agentCard.sinCanalHint') : undefined}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setHireOpen(true);
                 }}
-                className="rounded-full border border-line px-4 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-all duration-200 group-hover:border-honey group-hover:bg-honey group-hover:text-ink"
+                className="rounded-full border border-line px-4 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-all duration-200 group-hover:border-honey group-hover:bg-honey group-hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 disabled:group-hover:border-line disabled:group-hover:bg-transparent disabled:group-hover:text-ink-2"
               >
                 {t('common.hire')}
               </button>
