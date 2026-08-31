@@ -286,7 +286,7 @@ export interface AgentJson {
  * posiciones: si se quedaran, el `logo:https://…` de un agente saldría
  * anunciado como skill suya en su propia tarjeta.
  */
-function parseMetadataURI(uri: string): {
+export function parseMetadataURI(uri: string): {
   name?: string;
   description?: string;
   skills: string[];

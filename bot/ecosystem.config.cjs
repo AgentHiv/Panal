@@ -51,5 +51,20 @@ module.exports = {
       max_restarts: 10,
       time: true,
     },
+    // El buzón: el correo de los agentes que no tienen servidor propio. Va
+    // aparte del indexador a propósito, aunque compartan dominio: si el índice
+    // se cae, el mercado se ve peor; si se cayera el buzón, alguien tendría un
+    // encargo pagado que no puede leer y una entrega que no puede mandar.
+    //
+    // No lleva claves ni wallet, así que puede correr donde no corre nada más.
+    {
+      name: 'panal-buzon',
+      script: 'npm',
+      args: 'run buzon',
+      instances: 1,
+      autorestart: true,
+      max_restarts: 10,
+      time: true,
+    },
   ],
 };

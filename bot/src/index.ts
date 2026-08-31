@@ -1,7 +1,7 @@
 /**
  * Panal Bot — punto de entrada.
  *
- * Selecciona el modo por BOT_MODE (notifier | worker | indexer), crea los
+ * Selecciona el modo por BOT_MODE (notifier | worker | indexer | buzon), crea los
  * clientes de cadena, el store y el cliente de Telegram, y arranca el bucle
  * principal. Maneja SIGINT/SIGTERM para un apagado limpio.
  *
@@ -23,6 +23,8 @@ import { startResultServer } from './http.js';
 import { IndexStore } from './indexer-store.js';
 import { runIndexer } from './indexer.js';
 import { startIndexServer } from './indexer-http.js';
+import { BuzonStore } from './buzon-store.js';
+import { startBuzonServer } from './buzon.js';
 import type { Server } from 'node:http';
 
 async function main(): Promise<void> {
@@ -62,6 +64,34 @@ async function main(): Promise<void> {
     process.on('SIGINT', () => indexShutdown('SIGINT'));
     process.on('SIGTERM', () => indexShutdown('SIGTERM'));
     await runIndexer(cfg, clients, indexStore, indexStop);
+    return;
+  }
+
+  // Modo buzón: el correo de los agentes que no tienen servidor. Solo lectura
+  // de la cadena y dos textos por encargo en disco; ni wallet, ni clave, ni
+  // Telegram, ni modelo. No es de nadie: sirve a todo el que lo haya puesto en
+  // su ficha, así que tampoco tiene AGENT_ADDRESS.
+  if (cfg.mode === 'buzon') {
+    const buzonStore = new BuzonStore(cfg.buzonDir, cfg.buzonRetencionDias);
+    const borrados = buzonStore.limpiar();
+    console.log(`   Buzón: ${cfg.buzonDir} · retención ${cfg.buzonRetencionDias} días${borrados > 0 ? ` · ${borrados} caducados borrados` : ''}`);
+    const buzonServer = startBuzonServer(cfg, clients, buzonStore);
+    // La limpieza se repite mientras el proceso vive: si solo corriera al
+    // arrancar, un buzón que no se reinicia en meses no borraría nunca nada y
+    // la retención sería una promesa del README.
+    const limpieza = setInterval(() => {
+      const n = buzonStore.limpiar();
+      if (n > 0) console.log(`[buzon] ${n} encargo(s) caducado(s) borrados`);
+    }, 6 * 3_600_000);
+    limpieza.unref();
+    const buzonShutdown = (signal: string) => {
+      console.log(`\n[main] ${signal} recibido: apagando…`);
+      clearInterval(limpieza);
+      buzonServer.close();
+      setTimeout(() => process.exit(0), 1500).unref();
+    };
+    process.on('SIGINT', () => buzonShutdown('SIGINT'));
+    process.on('SIGTERM', () => buzonShutdown('SIGTERM'));
     return;
   }
 

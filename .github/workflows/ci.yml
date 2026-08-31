@@ -294,6 +294,16 @@ jobs:
         env:
           DRY_RUN: 'true'
 
+      # El buzon ve en claro los encargos y las entregas de quien lo use, asi
+      # que lo que hay que probar no es que guarde: es que no puede cambiar lo
+      # que guarda. Un brief solo entra si su keccak es el taskHash de la
+      # cadena, y una entrega anclada solo si sus bytes dan el resultHash.
+      - name: Buzon (quien deja que, quien lee que, y que nada se puede alterar)
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-buzon.ts
+        env:
+          DRY_RUN: 'true'
+
       - name: A2A (subcontratación, rechazo por calidad, timeout, $PANAL, topes)
         working-directory: bot
         run: pnpm exec tsx scripts/test-a2a.ts

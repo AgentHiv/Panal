@@ -10,7 +10,7 @@ import 'dotenv/config';
 import { isAddress, getAddress, type Address } from 'viem';
 import { BOT_LANGS, DEFAULT_LANG, isBotLang, type BotLang } from './i18n.js';
 
-export type BotMode = 'notifier' | 'worker' | 'indexer';
+export type BotMode = 'notifier' | 'worker' | 'indexer' | 'buzon';
 
 /**
  * BOT_LANG -> idioma válido. Un valor desconocido avisa y cae al defecto en vez
@@ -81,6 +81,14 @@ export interface BotConfig {
   indexerPublicUrl: string;
   /** Puerto de la API pública del indexador (0 = desactivada). Solo modo indexer. */
   indexHttpPort: number;
+  /** Puerto del buzón (0 = no arrancarlo). Solo modo buzon. */
+  buzonHttpPort: number;
+  /** Dónde guarda el buzón los encargos y las entregas que traslada. */
+  buzonDir: string;
+  /** Cuántos días guarda cada uno antes de borrarlo. Es un relevo, no un archivo. */
+  buzonRetencionDias: number;
+  /** La URL pública del buzón, la que los agentes escriben en su ficha. */
+  buzonPublicUrl: string;
   /** Directorio del índice (events.jsonl + state.json). Solo modo indexer. */
   indexDir: string;
   /** Intervalo del poll incremental del indexador (ms). */
@@ -239,15 +247,18 @@ function envPrivateKey(name: string, required: boolean): `0x${string}` | undefin
 /** Carga y valida la configuración. Termina el proceso si hay errores. */
 export function loadConfig(): BotConfig {
   const modeRaw = (env('BOT_MODE') ?? 'notifier').toLowerCase();
-  if (modeRaw !== 'notifier' && modeRaw !== 'worker' && modeRaw !== 'indexer') {
-    errors.push(`BOT_MODE debe ser "notifier", "worker" o "indexer" (valor: "${modeRaw}")`);
+  if (modeRaw !== 'notifier' && modeRaw !== 'worker' && modeRaw !== 'indexer' && modeRaw !== 'buzon') {
+    errors.push(`BOT_MODE debe ser "notifier", "worker", "indexer" o "buzon" (valor: "${modeRaw}")`);
   }
   const mode = modeRaw as BotMode;
 
   const dryRun = envBool('DRY_RUN', false);
 
   // El indexador es solo lectura y agnóstico del agente: no exige AGENT_ADDRESS.
-  const agentAddress = envAddress('AGENT_ADDRESS', mode !== 'indexer');
+  // El buzón tampoco: sirve a TODOS los agentes que lo hayan puesto en su
+  // ficha, y no tiene ni wallet ni clave. Exigirle una dirección concreta
+  // sugeriría que es de alguien, y no lo es.
+  const agentAddress = envAddress('AGENT_ADDRESS', mode !== 'indexer' && mode !== 'buzon');
   const ownerAddress = envAddress('OWNER_ADDRESS', false);
 
   // Telegram: OBLIGATORIO en modo notifier (ese modo existe solo para avisar
@@ -318,6 +329,10 @@ export function loadConfig(): BotConfig {
     indexerPublicUrl: env('INDEXER_PUBLIC_URL') ?? 'https://api.panal.lat',
     // Indexador (modo indexer): API pública en 8788 por defecto; 0 la apaga.
     indexHttpPort: envInt('INDEX_HTTP_PORT', 8788, 0),
+    buzonHttpPort: envInt('BUZON_HTTP_PORT', 8789, 0),
+    buzonDir: env('BUZON_DIR') ?? './data/buzon',
+    buzonRetencionDias: envInt('BUZON_RETENCION_DIAS', 30, 1),
+    buzonPublicUrl: env('BUZON_PUBLIC_URL') ?? 'https://api.panal.lat/buzon',
     indexDir: env('INDEX_DIR') ?? './data/index',
     indexPollIntervalMs: envInt('INDEX_POLL_INTERVAL_MS', 15_000, 5_000),
     // Barrido hacia atrás: presupuesto diario de ventanas (cada ventana = 2

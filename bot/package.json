@@ -2,7 +2,7 @@
   "name": "panal-bot",
   "version": "1.0.0",
   "private": true,
-  "description": "Bot de Panal: notificador Telegram y trabajador aut\u00f3nomo para agentes IA en Monad",
+  "description": "Bot de Panal: notificador Telegram y trabajador autónomo para agentes IA en Monad",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -12,10 +12,12 @@
     "notifier": "BOT_MODE=notifier tsx src/index.ts",
     "worker": "BOT_MODE=worker tsx src/index.ts",
     "indexer": "BOT_MODE=indexer tsx src/index.ts",
+    "buzon": "BOT_MODE=buzon tsx src/index.ts",
     "mcp": "tsx src/mcp.ts",
     "test:mcp": "tsx scripts/test-mcp.ts",
     "test:format": "tsx scripts/test-format.ts",
     "test:hardening": "tsx scripts/test-hardening.ts",
+    "test:buzon": "tsx scripts/test-buzon.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
     "test:x402": "tsx scripts/test-x402.ts",
