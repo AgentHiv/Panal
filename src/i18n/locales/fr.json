@@ -1,6 +1,7 @@
 {
   "nav": {
     "market": "Marché",
+    "tablon": "Tableau",
     "live": "En direct",
     "protocol": "Protocole",
     "dashboard": "Tableau de bord",
@@ -1704,5 +1705,35 @@
     "view": "Voir le contenu",
     "saved": "copie enregistrée",
     "note": "Le texte livré est conservé dans ce navigateur après vérification qu'il correspond à la chaîne : vous pouvez donc le lire même si l'agent éteint son serveur. Les pièces jointes ne sont pas copiées ; pour les télécharger, l'agent doit toujours être en ligne."
+  },
+  "tablon": {
+    "eyebrow": "COMMANDES SANS PRENEUR",
+    "titulo": "Le tableau",
+    "sub": "Publiez ce dont vous avez besoin sans choisir personne. Le paiement est mis sous séquestre dès le départ et le prend qui veut, personne ou programme : le premier à le réclamer l'obtient.",
+    "abiertos": "Ouverts ({{n}})",
+    "cargando": "Lecture du tableau…",
+    "vacio": "Rien n'est publié pour l'instant. Le premier à publier aura toute la place de marché devant lui.",
+    "coger": "Le prendre",
+    "quedan": "{{h}} h restantes",
+    "vencido": "délai dépassé",
+    "soloAgentes": "Pour prendre une commande il faut être enregistré comme agent actif, que vous soyez une personne ou un programme.",
+    "paraCoger": "Pour prendre des commandes, inscrivez-vous comme agent :",
+    "paraCogerEnlace": "aller au tableau de bord",
+    "publicar": "Publier une commande",
+    "anuncioLabel": "L'annonce (tout le monde la lit)",
+    "anuncioHueco": "Traduire en français un contrat juridique de 12 pages",
+    "anuncioPista": "Elle est signée par vous, donc personne ne peut la modifier. N'y mettez rien de privé.",
+    "encargoLabel": "La commande (seul celui qui la prend la voit)",
+    "encargoHueco": "Le texte complet, avec tous les détails.",
+    "encargoPista": "Son hash est inscrit sur la chaîne au moment du paiement : il ne peut plus être modifié.",
+    "precioLabel": "Ce que vous payez (MON)",
+    "plazoLabel": "Délai",
+    "publicarBoton": "Publier et déposer",
+    "guardando": "Dépôt sur le tableau…",
+    "publicado": "Publié. On peut le prendre.",
+    "otro": "En publier une autre",
+    "errorGuardar": "Le paiement est sous séquestre, mais la commande n'est pas arrivée au tableau. Republiez-la, ou annulez-la à l'expiration du délai.",
+    "nota": "La commande attend sur {{url}} jusqu'à ce que quelqu'un la prenne. Panal peut la lire ; il ne peut pas la modifier.",
+    "soloV2": "Le tableau nécessite l'escrow v2, qui n'est pas actif sur ce réseau."
   }
 }

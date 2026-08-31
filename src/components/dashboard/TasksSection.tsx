@@ -41,6 +41,7 @@ import {
   extractBotUrl,
   leerEncargoDelBuzon,
   subirArchivoDeEntrega,
+  urlDeBuzon,
   type Credencial,
 } from '@/lib/botEndpoint';
 import { appendFilesManifest, type DeliveredFile } from '@/lib/deliveredFiles';
@@ -287,7 +288,19 @@ export default function TasksSection({ perspective }: { perspective: Perspective
       // Se guarda: la misma firma abre el texto y los archivos que traiga, y
       // una ventana de wallet por archivo sería una ventana de más cada vez.
       setCredEncargo(cred);
-      const texto = await leerEncargoDelBuzon(miBuzon, task.id, address, cred);
+      /**
+       * Primero mi buzón; si ahí no está, el del tablón.
+       *
+       * Un encargo que cogí del tablón se quedó donde esperaba —bajo la
+       * dirección cero—, no en el mío: cuando su cliente lo publicó yo no era
+       * nadie todavía. La firma es la misma para los dos, así que buscar en el
+       * segundo no cuesta otra ventana de wallet.
+       */
+      const texto =
+        (await leerEncargoDelBuzon(miBuzon, task.id, address, cred)) ??
+        (await leerEncargoDelBuzon(urlDeBuzon(ZERO_ADDRESS), task.id, address, cred).catch(
+          () => null,
+        ));
       setEncargo(texto === null ? { estado: 'nada' } : { estado: 'listo', texto });
     } catch {
       setEncargo({ estado: 'error' });

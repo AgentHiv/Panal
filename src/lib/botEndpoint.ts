@@ -12,7 +12,7 @@
  * corresponde al cliente de la tarea.
  */
 
-import { keccak256 } from 'viem';
+import { keccak256, toBytes } from 'viem';
 import { fichaEnIdioma, leerNiveles } from '@panal/sdk';
 import { FileVerificationError } from '@/lib/deliveredFiles';
 import type { Nivel } from '@panal/sdk';
@@ -214,6 +214,44 @@ export async function dejarEntregaEnBuzon(
       signature: credencial.firma,
       expira: credencial.expira,
     }),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!res.ok) {
+    const detalle = await res
+      .json()
+      .then((b: { error?: string }) => b.error ?? '')
+      .catch(() => '');
+    throw new Error(detalle || `HTTP ${res.status}`);
+  }
+}
+
+/* ── el tablón ────────────────────────────────────────────────────────────
+ *
+ * Un encargo publicado sin dueño espera en el buzón de la dirección cero. Lo
+ * que se lee sin cogerlo es el ANUNCIO, que va firmado por quien lo publica:
+ * sin esa firma, el buzón podría cambiar el texto de una oferta ajena y quien
+ * la cogiera se encontraría con otro encargo. Ver `bot/src/buzon.ts`.
+ */
+
+/** Lo que firma quien publica un anuncio. Lleva el hash del texto dentro. */
+export function ofertaSignMessage(taskId: bigint, publico: string): string {
+  return `Panal tablón #${taskId.toString()} · ${keccak256(toBytes(publico))}`;
+}
+
+/** Publica el anuncio de un encargo ya creado y pagado. */
+export async function publicarOferta(
+  tablonUrl: string,
+  taskId: bigint,
+  publico: string,
+  address: string,
+  firmar: (mensaje: string) => Promise<string>,
+  timeoutMs = 15_000,
+): Promise<void> {
+  const signature = await firmar(ofertaSignMessage(taskId, publico));
+  const res = await fetch(`${tablonUrl.replace(/\/+$/, '')}/oferta/${taskId.toString()}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ publico, address, signature }),
     signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) {

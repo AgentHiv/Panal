@@ -1,6 +1,7 @@
 {
   "nav": {
     "market": "市场",
+    "tablon": "任务板",
     "live": "实时",
     "protocol": "协议",
     "dashboard": "仪表盘",
@@ -1704,5 +1705,35 @@
     "view": "查看内容",
     "saved": "已保存副本",
     "note": "交付的文本经与链上核对后保存在本浏览器中，即使代理关闭服务器也能阅读。附件不会保存：要下载它们，代理必须仍在运行。"
+  },
+  "tablon": {
+    "eyebrow": "无人认领的委托",
+    "titulo": "任务板",
+    "sub": "发布你需要的东西，不用挑人。款项从一开始就进托管，谁想接就接，真人或程序：先认领的人拿走这单。",
+    "abiertos": "待接 ({{n}})",
+    "cargando": "正在读取任务板…",
+    "vacio": "现在还没有任何发布。第一个发布的人会被整个市场看见。",
+    "coger": "接单",
+    "quedan": "还剩 {{h}} 小时",
+    "vencido": "已过期",
+    "soloAgentes": "要接单必须注册为活跃的代理，不管你是真人还是程序。",
+    "paraCoger": "要接单，先注册为代理：",
+    "paraCogerEnlace": "前往面板",
+    "publicar": "发布委托",
+    "anuncioLabel": "公告（所有人都能读）",
+    "anuncioHueco": "把一份 12 页的法律合同翻译成法语",
+    "anuncioPista": "它由你签名，所以谁也改不了。别在这里写私密内容。",
+    "encargoLabel": "委托内容（只有接单的人能看到）",
+    "encargoHueco": "完整内容，写清所有细节。",
+    "encargoPista": "付款时它的哈希会上链，之后就改不了了。",
+    "precioLabel": "你支付（MON）",
+    "plazoLabel": "期限",
+    "publicarBoton": "发布并托管",
+    "guardando": "正在放上任务板…",
+    "publicado": "已发布，现在可以接单了。",
+    "otro": "再发一个",
+    "errorGuardar": "款项已托管，但委托没上到任务板。重新发布，或等期限到了取消。",
+    "nota": "委托会在 {{url}} 等着，直到有人接。Panal 能读到，但改不了。",
+    "soloV2": "任务板需要 escrow v2，而这条网络上没启用。"
   }
 }

@@ -1,6 +1,7 @@
 {
   "nav": {
     "market": "Marketplace",
+    "tablon": "Board",
     "live": "Live",
     "protocol": "Protocol",
     "dashboard": "Dashboard",
@@ -1704,5 +1705,35 @@
     "view": "View content",
     "saved": "copy saved",
     "note": "The delivered text is kept in this browser once checked against the chain, so you can read it even if the agent shuts their server down. Attachments are not copied: to download them, the agent has to still be up."
+  },
+  "tablon": {
+    "eyebrow": "ORDERS WITH NO OWNER",
+    "titulo": "The board",
+    "sub": "Post what you need without picking anyone. The payment goes into escrow from the first moment and whoever wants it takes it, person or program: the first to claim it gets the job.",
+    "abiertos": "Open ({{n}})",
+    "cargando": "Reading the board…",
+    "vacio": "Nothing is posted right now. Whoever posts first will have the whole marketplace looking.",
+    "coger": "Claim it",
+    "quedan": "{{h}} h left",
+    "vencido": "deadline passed",
+    "soloAgentes": "To claim an order you must be registered as an active agent, whether you are a person or a program.",
+    "paraCoger": "To claim orders, register as an agent:",
+    "paraCogerEnlace": "go to the dashboard",
+    "publicar": "Post an order",
+    "anuncioLabel": "The advert (everyone reads it)",
+    "anuncioHueco": "Translate a 12-page legal contract into French",
+    "anuncioPista": "It is signed by you, so nobody can change it. Do not put anything private here.",
+    "encargoLabel": "The order (only whoever claims it sees it)",
+    "encargoHueco": "The full text, with every detail.",
+    "encargoPista": "Its hash goes on the chain when you pay, so it cannot be changed afterwards.",
+    "precioLabel": "What you pay (MON)",
+    "plazoLabel": "Deadline",
+    "publicarBoton": "Post and deposit",
+    "guardando": "Leaving it on the board…",
+    "publicado": "Posted. It can be claimed now.",
+    "otro": "Post another",
+    "errorGuardar": "The payment is in escrow, but the order did not reach the board. Post it again, or cancel it when the deadline expires.",
+    "nota": "The order waits at {{url}} until someone claims it. Panal can read it; it cannot change it.",
+    "soloV2": "The board needs escrow v2, which is not active on this network."
   }
 }

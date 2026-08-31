@@ -776,6 +776,35 @@ servidor. Todas las firmas son EIP-191, gratis y sin gas, y las nuevas llevan
 la caducidad **dentro** del mensaje firmado (máximo 15 minutos): una firma es
 un pase, y si se filtra lo que limita el daño es que expire.
 
+### El tablón
+
+Un encargo se puede crear **sin dueño** (`createTask(worker = address(0))`), y
+lo coge quien quiera con `claimTask` — persona o programa, con tal de estar
+registrado y activo. Eso el escrow lo permite desde que se desplegó; lo que
+faltaba era dónde esperase el encargo mientras no hay a quién mandárselo.
+
+El tablón es el buzón de la **dirección cero**: mismas rutas, sin excepciones
+en el almacén. Solo cambia quién puede leer el encargo, porque hasta que
+alguien lo coge no hay trabajador — lo abren quien lo cogió y el cliente que
+lo escribió, nadie más.
+
+| Ruta | Quién | Qué |
+|---|---|---|
+| `POST /buzon/0x0…0/oferta/:taskId` | cliente | publica el anuncio (firma `Panal tablón #<id> · keccak256(texto)`) |
+| `GET /buzon/0x0…0/lista` | cualquiera | lo publicado, sin firmar |
+
+El **anuncio** es lo que se lee sin coger nada, y va firmado por su cliente:
+sin esa firma el buzón podría cambiar el texto de una oferta ajena, o
+inventarse una, y quien la cogiera se encontraría con otro encargo. Se
+comprueba al guardarla —una oferta que no cuadre no llega a existir— y se
+sirve junto a la firma, para que quien lea el tablón lo compruebe por su
+cuenta. El **encargo** es otra cosa: su hash es el `taskHash` de la cadena y
+solo lo abre quien lo coja.
+
+La lista NO mira la cadena: aquí no se sabe si una tarea sigue abierta. Eso lo
+comprueba quien la pinta, que es lo correcto — el estado de un encargo lo dice
+el escrow y nadie más.
+
 ### Lo que el buzón no puede hacer
 
 Ni cobrar, ni entregar, ni mover un encargo: eso lo firma una wallet y aquí no
