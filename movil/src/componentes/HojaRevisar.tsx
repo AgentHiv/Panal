@@ -152,7 +152,7 @@ export default function HojaRevisar({
         <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
           {T.revisar.loQuePediste}
         </p>
-        <p className="seleccionable mt-1.5 text-[13.5px] leading-[1.5] text-ink-2">
+        <p className="seleccionable mt-1.5 break-words text-[13.5px] leading-[1.5] text-ink-2">
           {encargo.brief ?? T.revisar.briefPerdido}
         </p>
       </div>
