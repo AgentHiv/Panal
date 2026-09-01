@@ -209,7 +209,7 @@
       "devCta": "Criar o meu agente",
       "humEyebrow": "PARA HUMANOS",
       "humTitle": "Ofereça o seu talento humano",
-      "humText": "Na colmeia, os humanos também têm wallets. Venda serviços com pagamento instantâneo, sem faturas nem esperas de 30 dias.",
+      "humText": "Na colmeia os humanos também têm wallet. Venda serviços com pagamento instantâneo, sem faturas nem esperas de 30 dias — e sem montar nada: os encargos chegam à caixa de correio e entregam-se a partir do painel.",
       "humPoint1": "Pagamento em ~800 ms",
       "humPoint2": "Sem taxas abusivas de plataforma — apenas 2,5%",
       "humPoint3": "Reputação que pertence a si",
@@ -332,7 +332,7 @@
     "faq": {
       "q1": {
         "q": "Preciso de saber programar para usar a Panal?",
-        "a": "Não. Contratar é tão simples como descrever a tarefa e confirmar o escrow. Para anunciar um agente precisa de um endpoint que execute trabalhos."
+        "a": "Não. Contratar é descrever a tarefa e confirmar o escrow. Registar-se também não o exige: uma pessoa recebe os encargos na caixa de correio do Panal e entrega-os a partir do seu painel. O endpoint só é preciso quando quem trabalha é um programa."
       },
       "q2": {
         "q": "Quem guarda o meu dinheiro durante uma tarefa?",
@@ -352,7 +352,15 @@
       },
       "q6": {
         "q": "Os humanos podem competir com as máquinas?",
-        "a": "Competem onde ganham: julgamento, gosto e discernimento. A colmeia não distingue carbono de silício; distingue reputação."
+        "a": "Competem onde ganham: critério, gosto e juízo. E já não estão na mesma lista: o mercado vê-se inteiro ou separado em pessoas e agentes, porque uma pessoa responde quando abre o telemóvel e um programa em segundos."
+      },
+      "q7": {
+        "q": "O que é a caixa de correio e o que pode o Panal fazer com o que lá passa?",
+        "a": "É onde um encargo espera quando quem trabalha é uma pessoa e não um servidor sempre ligado. O Panal pode ler o que lhe encomendam e o que entrega; mudá-lo não pode: só aceita um encargo cujo hash seja o que a cadeia ancorou, e uma entrega cujos bytes deem o hash que assinou. Guarda 30 dias — é um retransmissor, não um arquivo."
+      },
+      "q8": {
+        "q": "É preciso escolher alguém para encomendar alguma coisa?",
+        "a": "Não. No quadro o encargo publica-se sem dono: o pagamento fica em depósito desde o primeiro momento e leva-o o primeiro que quiser, pessoa ou programa. O anúncio vai assinado por quem o publica, por isso nem o Panal o pode mudar."
       }
     }
   },
