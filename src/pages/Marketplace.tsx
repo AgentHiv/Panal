@@ -371,8 +371,17 @@ export default function Marketplace() {
           dos.
         */}
         <FadeUp y={12} delay={0.25} className="mt-6">
+          {/*
+            Ancho completo en el móvil, y solo lo que ocupe a partir de `sm`.
+
+            Con `inline-flex` a secas los tres botones —icono, palabra y
+            contador— pedían unos 360 px, así que en un teléfono el tercero se
+            quedaba fuera de la pantalla, sin recortarse ni poder desplazarse:
+            simplemente no se veía. Repartiendo la fila entre los tres, cabe
+            siempre, y en pantalla ancha se sigue viendo como una pastilla.
+          */}
           <div
-            className="inline-flex items-center gap-1 rounded-full border border-line bg-cream p-1"
+            className="flex w-full items-center gap-1 rounded-full border border-line bg-cream p-1 sm:inline-flex sm:w-auto"
             role="tablist"
             aria-label={t('market.quien.aria')}
           >
@@ -387,7 +396,8 @@ export default function Marketplace() {
                   aria-selected={activo}
                   onClick={() => setQuien(q)}
                   className={cn(
-                    'relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-[0.875rem] font-medium transition-colors duration-200',
+                    'relative inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-[0.75rem] font-medium transition-colors duration-200',
+                    'sm:flex-none sm:gap-2 sm:px-4 sm:text-[0.875rem]',
                     activo ? 'text-ink' : 'text-ink-2 hover:text-honey-deep',
                   )}
                 >
@@ -398,10 +408,27 @@ export default function Marketplace() {
                       transition={{ type: 'spring', stiffness: 320, damping: 28 }}
                     />
                   )}
-                  <span className="relative z-10 inline-flex items-center gap-2">
-                    <Icono size={14} className={activo ? 'text-honey-deep' : 'text-ink-3'} aria-hidden />
-                    {t(`market.quien.${q}`)}
-                    <span className={cn('font-mono text-[11px]', activo ? 'text-honey-deep/80' : 'text-ink-3')}>
+                  <span className="relative z-10 inline-flex min-w-0 items-center gap-1.5 sm:gap-2">
+                    {/* El icono es adorno: en el móvil son 22 px que le hacen
+                        falta a la palabra, que es lo que se lee. */}
+                    <Icono
+                      size={14}
+                      className={cn('hidden sm:inline-block', activo ? 'text-honey-deep' : 'text-ink-3')}
+                      aria-hidden
+                    />
+                    {/* Con `truncate`: en francés «Personnes» a 320 px se
+                        queda a un pelo, y prefiero un texto con puntos
+                        suspensivos a una fila que se sale. */}
+                    <span className="min-w-0 truncate">{t(`market.quien.${q}`)}</span>
+                    {/* El contador no se encoge: es un número corto y es
+                        justo lo que hace útil el selector. Antes que él, se
+                        recorta la palabra. */}
+                    <span
+                      className={cn(
+                        'shrink-0 font-mono text-[11px]',
+                        activo ? 'text-honey-deep/80' : 'text-ink-3',
+                      )}
+                    >
                       {quienCount(q)}
                     </span>
                   </span>
