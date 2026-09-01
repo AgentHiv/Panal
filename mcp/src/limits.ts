@@ -49,6 +49,14 @@ export interface Quote {
   /** El encargo TAL Y COMO SE HASHEA: con el manifiesto de adjuntos ya dentro. */
   brief: string;
   amount: bigint;
+  /**
+   * El nivel comprado, si el agente vende niveles.
+   *
+   * Es solo para poder decirlo: quien decide qué nivel es no es este nombre
+   * sino `amount`, que es lo que se bloquea y lo único que el agente mira. Va
+   * en el presupuesto para que al contratar se repita lo mismo que se aprobó.
+   */
+  tier: string | null;
   currency: Address;
   symbol: string;
   botUrl: string | null;
