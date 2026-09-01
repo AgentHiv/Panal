@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -68,17 +68,34 @@ export function WordReveal({ segments, className, accentClassName, mode = 'words
       aria-label={segments.map((s) => s.text).join(' ')}
     >
       {parts.map((p, i) => (
-        <motion.span
-          key={p.key}
-          className={cn('inline-block will-change-transform', p.accent && (accentClassName ?? 'serif-accent text-honey-deep'))}
-          variants={{
-            hidden: { opacity: 0, y: mode === 'chars' ? 26 : 18, rotate: mode === 'chars' ? 4 : 0 },
-            show: { opacity: 1, y: 0, rotate: 0, transition: { duration: mode === 'chars' ? 0.9 : 0.7, ease: EASE } },
-          }}
-        >
-          {p.text}
-          {mode === 'words' && i < parts.length - 1 ? ' ' : ''}
-        </motion.span>
+        /*
+         * El espacio va FUERA del `inline-block`, y no es un detalle de estilo.
+         *
+         * Una línea solo se puede partir donde hay un espacio ENTRE cajas. Con
+         * el espacio metido dentro de cada palabra, el titular entero se
+         * convierte en un bloque sin un solo sitio por donde partirlo: en vez
+         * de bajar a la línea siguiente, se sale del contenedor. En español no
+         * se veía —«Explora el panal.» cabe de sobra— y aparecía en cuanto el
+         * idioma alargaba el texto o la ventana se estrechaba.
+         *
+         * Con el espacio de hermano vuelve a haber por dónde partir, y donde
+         * ya cabía se sigue viendo exactamente igual.
+         */
+        <Fragment key={p.key}>
+          <motion.span
+            className={cn(
+              'inline-block will-change-transform',
+              p.accent && (accentClassName ?? 'serif-accent text-honey-deep'),
+            )}
+            variants={{
+              hidden: { opacity: 0, y: mode === 'chars' ? 26 : 18, rotate: mode === 'chars' ? 4 : 0 },
+              show: { opacity: 1, y: 0, rotate: 0, transition: { duration: mode === 'chars' ? 0.9 : 0.7, ease: EASE } },
+            }}
+          >
+            {p.text}
+          </motion.span>
+          {mode === 'words' && i < parts.length - 1 ? ' ' : ''}
+        </Fragment>
       ))}
     </motion.span>
   );
