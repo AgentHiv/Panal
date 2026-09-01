@@ -288,9 +288,16 @@ export default function Tablon() {
         </p>
       </header>
 
+      {/*
+        El `min-w-0` de las dos columnas no es adorno. Una columna de rejilla
+        mide al menos su contenido mínimo, y aquí abajo hay una url del buzón
+        de 62 caracteres sin un solo sitio por donde partir: sin esto la
+        columna se estiraba hasta caber ella, el documento se hacía más ancho
+        que el teléfono y TODA la página salía cortada por la derecha.
+      */}
       <div className="container-hive grid gap-8 pb-20 lg:grid-cols-[minmax(0,1fr)_22rem]">
         {/* ── lo publicado ── */}
-        <section>
+        <section className="min-w-0">
           <h2 className="display-s text-ink">{t('tablon.abiertos', { n: lista.length })}</h2>
           {isLoading ? (
             <p className="mt-6 inline-flex items-center gap-2 text-[0.875rem] text-ink-3">
@@ -308,10 +315,16 @@ export default function Tablon() {
                   key={f.taskId}
                   className="rounded-2xl border border-line bg-paper p-5 shadow-card transition-[border-color] hover:border-honey"
                 >
-                  <div className="flex items-start gap-3">
+                  {/*
+                    En un teléfono el precio y el botón bajan a su propia línea
+                    (`w-full`, que no cabe con nadie). Compartiendo línea le
+                    dejaban al anuncio unos 105 px: se leía en columna de cinco
+                    letras, que es tan ilegible como salirse.
+                  */}
+                  <div className="flex flex-wrap items-start gap-3">
                     <HexAvatar seed={f.cliente} size={40} />
                     <div className="min-w-0 flex-1">
-                      <p className="whitespace-pre-wrap text-[0.9375rem] leading-[1.55] text-ink">
+                      <p className="whitespace-pre-wrap break-words text-[0.9375rem] leading-[1.55] text-ink">
                         {f.publico}
                       </p>
                       <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[12px] text-ink-3">
@@ -320,7 +333,7 @@ export default function Tablon() {
                         <span>{restante(f.deadline)}</span>
                       </p>
                     </div>
-                    <div className="flex shrink-0 flex-col items-end gap-2">
+                    <div className="flex w-full shrink-0 items-center justify-between gap-3 sm:w-auto sm:flex-col sm:items-end sm:gap-2">
                       <span className="font-mono text-[0.9375rem] font-semibold text-ink">
                         {formatMon(Number(f.amountWei) / 1e18)} MON
                       </span>
@@ -358,7 +371,7 @@ export default function Tablon() {
         </section>
 
         {/* ── publicar ── */}
-        <aside className="h-fit rounded-2xl border border-line bg-paper p-6 shadow-card lg:sticky lg:top-24">
+        <aside className="h-fit min-w-0 rounded-2xl border border-line bg-paper p-6 shadow-card lg:sticky lg:top-24">
           <h2 className="display-s text-ink">{t('tablon.publicar')}</h2>
 
           {publicando === 'hecho' && txHash ? (
@@ -479,7 +492,9 @@ export default function Tablon() {
 
               <p className="flex items-start gap-2 border-t border-line pt-4 text-[0.75rem] leading-relaxed text-ink-3">
                 <Hexagon size={12} className="mt-0.5 shrink-0 fill-honey text-honey" aria-hidden />
-                {t('tablon.nota', { url: urlDeBuzon(TABLON).replace('https://', '') })}
+                <span className="min-w-0 break-words">
+                  {t('tablon.nota', { url: urlDeBuzon(TABLON).replace('https://', '') })}
+                </span>
               </p>
             </div>
           )}
