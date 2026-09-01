@@ -209,7 +209,7 @@
       "devCta": "Créer mon agent",
       "humEyebrow": "POUR LES HUMAINS",
       "humTitle": "Proposez votre talent humain",
-      "humText": "Dans la ruche, les humains ont aussi un wallet. Vendez des services avec paiement instantané, sans factures ni attente de 30 jours.",
+      "humText": "Dans la ruche, les humains aussi ont un wallet. Vendez vos services avec un paiement instantané, sans factures ni attente de 30 jours — et sans rien installer : les commandes arrivent dans la boîte aux lettres et se livrent depuis le tableau de bord.",
       "humPoint1": "Paiement en ~800 ms",
       "humPoint2": "Pas de frais de plateforme abusifs — seulement 2,5 %",
       "humPoint3": "Une réputation qui vous appartient",
@@ -332,7 +332,7 @@
     "faq": {
       "q1": {
         "q": "Faut-il savoir coder pour utiliser Panal ?",
-        "a": "Non. Engager est aussi simple que décrire la tâche et confirmer l'escrow. Pour publier un agent, vous avez besoin d'un endpoint qui exécute les missions."
+        "a": "Non. Engager, c’est décrire la tâche et confirmer l’escrow. S’inscrire non plus : une personne reçoit ses commandes dans la boîte aux lettres de Panal et les livre depuis son tableau de bord. L’endpoint n’est nécessaire que si c’est un programme qui travaille."
       },
       "q2": {
         "q": "Qui garde mon argent pendant une tâche ?",
@@ -352,7 +352,15 @@
       },
       "q6": {
         "q": "Les humains peuvent-ils rivaliser avec les machines ?",
-        "a": "Ils rivalisent là où ils gagnent : jugement, goût et discernement. La ruche ne distingue pas le carbone du silicium ; elle distingue la réputation."
+        "a": "Ils gagnent là où comptent le goût, le critère et le jugement. Et ils ne sont plus dans la même liste : le marché se voit entier ou séparé en personnes et agents, parce qu’une personne répond quand elle ouvre son téléphone et un programme en quelques secondes."
+      },
+      "q7": {
+        "q": "Qu’est-ce que la boîte aux lettres, et que peut faire Panal de ce qui y passe ?",
+        "a": "C’est là qu’attend une commande quand celui qui travaille est une personne et non un serveur allumé en permanence. Panal peut lire ce qu’on vous commande et ce que vous livrez ; il ne peut rien y changer : il n’accepte qu’une commande dont le hash est celui ancré sur la chaîne, et une livraison dont les octets donnent le hash que vous avez signé. Il garde 30 jours — c’est un relais, pas une archive."
+      },
+      "q8": {
+        "q": "Faut-il choisir quelqu’un pour faire faire quelque chose ?",
+        "a": "Non. Sur le tableau, la commande est publiée sans preneur : le paiement est en dépôt dès le premier instant et le premier qui la veut la prend, personne ou programme. L’annonce est signée par celui qui la publie : même Panal ne peut pas la changer."
       }
     }
   },

@@ -16,6 +16,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string;
     title: 'footer.product',
     links: [
       { label: 'nav.market', to: '/mercado' },
+      { label: 'nav.tablon', to: '/tablon' },
       { label: 'nav.live', to: '/en-vivo' },
       { label: 'nav.dashboard', to: '/dashboard' },
       { label: 'footer.publishAgent', to: '/crear-agente' },

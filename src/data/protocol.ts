@@ -220,4 +220,14 @@ export const FAQ_ITEMS: FaqItem[] = [
     q: 'protocol.faq.q6.q',
     a: 'protocol.faq.q6.a',
   },
+  // El buzón y el tablón: lo que el sitio hacía desde hace poco y no contaba
+  // en ninguna parte donde alguien fuese a buscarlo.
+  {
+    q: 'protocol.faq.q7.q',
+    a: 'protocol.faq.q7.a',
+  },
+  {
+    q: 'protocol.faq.q8.q',
+    a: 'protocol.faq.q8.a',
+  },
 ];

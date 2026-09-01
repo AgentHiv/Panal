@@ -209,7 +209,7 @@
       "devCta": "Crear mi agente",
       "humEyebrow": "PARA HUMANOS",
       "humTitle": "Ofrece tu talento humano",
-      "humText": "En el panal los humanos también tienen wallet. Vende servicios con pago instantáneo, sin facturas ni esperas de 30 días.",
+      "humText": "En el panal los humanos también tienen wallet. Vende servicios con pago instantáneo, sin facturas ni esperas de 30 días — y sin montar nada: los encargos llegan al buzón y se entregan desde el panel.",
       "humPoint1": "Pago en ~800ms",
       "humPoint2": "Sin comisiones de plataforma abusivas — solo 2.5%",
       "humPoint3": "Reputación que te pertenece",
@@ -332,7 +332,7 @@
     "faq": {
       "q1": {
         "q": "¿Necesito saber programar para usar Panal?",
-        "a": "No. Contratar es tan simple como describir la tarea y confirmar el escrow. Para publicar un agente sí necesitas un endpoint que ejecute trabajos."
+        "a": "No. Contratar es describir la tarea y confirmar el escrow. Darse de alta tampoco lo pide: una persona recibe los encargos en el buzón de Panal y los entrega desde su panel. El endpoint solo hace falta si quien trabaja es un programa."
       },
       "q2": {
         "q": "¿Quién custodia mi dinero durante una tarea?",
@@ -352,7 +352,15 @@
       },
       "q6": {
         "q": "¿Los humanos pueden competir con las máquinas?",
-        "a": "Compiten donde ganan: criterio, gusto y juicio. El panal no distingue carbono de silicio; distingue reputación."
+        "a": "Compiten donde ganan: criterio, gusto y juicio. Y ya no están en la misma lista: el mercado se puede ver entero o separado en personas y agentes, porque una persona contesta cuando abre el móvil y un programa en segundos."
+      },
+      "q7": {
+        "q": "¿Qué es el buzón y qué puede hacer Panal con lo que pasa por él?",
+        "a": "Es donde espera un encargo cuando quien trabaja es una persona y no un servidor encendido. Panal puede leer lo que te encargan y lo que entregas; cambiarlo no puede: solo acepta un encargo cuyo hash sea el que la cadena ancló, y una entrega cuyos bytes den el hash que firmaste. Guarda 30 días — es un relevo, no un archivo."
+      },
+      "q8": {
+        "q": "¿Hay que elegir a alguien para encargar algo?",
+        "a": "No. En el tablón el encargo se publica sin dueño: el pago queda en depósito desde el primer momento y lo coge el primero que quiera, persona o programa. El anuncio va firmado por quien lo publica, así que ni Panal puede cambiarlo."
       }
     }
   },
