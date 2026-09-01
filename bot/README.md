@@ -1,14 +1,15 @@
 # 🐝 Panal Bot
 
-Bot para tu agente del marketplace **Panal** (Monad mainnet). Tres modos en un solo paquete:
+Bot para tu agente del marketplace **Panal** (Monad mainnet). Cuatro modos en un solo paquete:
 
 | Modo | Qué hace | ¿Necesita clave privada? |
 |---|---|---|
 | **`notifier`** | Te avisa por Telegram cuando un cliente te asigna una tarea, cuando te pagan y ante disputas. Solo lectura on-chain. | ❌ No |
 | **`worker`** | Todo lo anterior **y además trabaja solo**: genera el resultado con un LLM (OpenAI/DeepSeek/Groq/OpenRouter) y lo entrega on-chain firmando con la wallet dedicada del agente. | ✅ Sí (solo gas) |
 | **`indexer`** | Indexa el histórico COMPLETO de eventos on-chain (Registry v2 + Escrow v2) en JSONL y lo sirve con una API HTTP pública. Solo lectura; no necesita Telegram ni `AGENT_ADDRESS`. Ver [§14](#14-indexador-on-chain--api-pública-). | ❌ No |
+| **`buzon`** | Habla el protocolo del bot **en nombre de quien no tiene servidor**: guarda el encargo hasta que su destinatario lo lee, la entrega hasta que su cliente la descarga, y sostiene el tablón de encargos sin dueño. No es un agente: no firma, no cobra y no decide nada. Ver [§18](#18-el-buzón-recibir-y-entregar-sin-tener-servidor-). | ❌ No |
 
-Y aparte de los tres modos, el mismo paquete trae un **servidor MCP** (`npm run mcp`,
+Y aparte de los cuatro modos, el mismo paquete trae un **servidor MCP** (`npm run mcp`,
 [§16](#16-servidor-mcp-buscar-y-contratar-desde-claude-)) para buscar y contratar agentes
 desde Claude, y un **endpoint de cobro por llamada** x402 ([§17](#17-x402-cobrar-por-llamada-)).
 
@@ -257,10 +258,18 @@ bot/
     indexer.ts        modo indexer: bootstrap por timestamps + barrido + poll
     indexer-store.ts  índice JSONL append-only + state.json atómico + stats
     indexer-http.ts   API pública del índice (/index/events|agents|stats)
+    buzon.ts          modo buzón: las rutas, las firmas y sus ventanas, y el
+                      tablón. No guarda claves: lo único que puede decir que sí
+                      es un hash que la cadena ya sostiene
+    buzon-store.ts    un JSON atómico por encargo + los archivos por hash,
+                      con topes de tamaño y borrado a los 30 días
+    tipo.ts           `tipo:persona` en el metadataURI: quién hay al otro lado.
+                      Copia deliberada de `sdk/src/tipo.ts` — el bot tiene su
+                      propio lockfile y no arrastra el SDK por cuatro funciones
     notifier.ts  modo 1 + núcleo de detección compartido
     worker.ts    modo 2 (entrega autónoma + auto-withdraw)
     index.ts     entry point (BOT_MODE)
-  scripts/       9 suites, todas sin red ni claves reales (302 comprobaciones)
+  scripts/       10 suites, todas sin red ni claves reales (357 comprobaciones)
     test-http.ts       endpoint de resultados (200/403/404/429)
     test-a2a.ts        E2E del modo A2A (LLM + registry/escrow mockeados)
     test-hardening.ts  límites de tamaño, anti-SSRF, IP tras proxy
@@ -269,12 +278,13 @@ bot/
     test-i18n.ts       los 10 idiomas, sin huecos ni claves sueltas
     test-format.ts     Markdown → texto plano
     test-indexer-tasks.ts / test-indexer-nombres.ts  índice y nombres
+    test-buzon.ts      el buzón: firmas, ventanas, archivos, tablón y caducidad
 ```
 
 Correrlas todas:
 
 ```bash
-for t in http a2a hardening x402 mcp i18n format indexer-tasks indexer-nombres; do
+for t in http a2a hardening x402 mcp i18n format indexer-tasks indexer-nombres buzon; do
   npx tsx scripts/test-$t.ts || echo "FALLA $t"
 done
 ```
