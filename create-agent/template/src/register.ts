@@ -12,7 +12,7 @@
  */
 
 import 'dotenv/config';
-import { createPanalClient, formatAgentMetadata, NATIVE_CURRENCY } from '@panal/sdk';
+import { createPanalClient, formatAgentMetadata, NATIVE_CURRENCY, rutaDeAgente } from '@panal/sdk';
 import { privateKeyToAccount } from 'viem/accounts';
 import { createPublicClient, createWalletClient, formatEther, http, parseEther } from 'viem';
 
@@ -138,7 +138,7 @@ export function loQueFaltaDelPerfil(perfil: typeof PERFIL): string | null {
 async function compruebaEndpoint(botUrl: string, yo: string): Promise<string | null> {
   let url: string;
   try {
-    url = new URL('/agent.json', botUrl).toString();
+    url = rutaDeAgente(botUrl, 'agent.json');
   } catch {
     return `PERFIL.botUrl no es una URL válida: ${botUrl}`;
   }
@@ -192,7 +192,7 @@ async function compruebaEndpoint(botUrl: string, yo: string): Promise<string | n
 async function logoQueSirves(botUrl: string): Promise<string> {
   let url: string;
   try {
-    url = new URL('/logo', botUrl).toString();
+    url = rutaDeAgente(botUrl, 'logo');
   } catch {
     return '';
   }

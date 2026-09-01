@@ -167,5 +167,8 @@ export type { TipoDeAgente } from './tipo.js';
 
 // La ficha en el idioma de quien la lee. En idiomas.ts está por qué traduce el
 // propio agente y no un servicio de Panal.
+// Unir una ruta con la URL de un agente. Ver por qué en `net.ts`: un agente
+// puede vivir en un subcamino, y `new URL('/x', base)` se lo come.
+export { rutaDeAgente } from './net.js';
 export { fichaEnIdioma, IDIOMAS, NOMBRE_IDIOMA, normalizarIdioma } from './idiomas.js';
 export type { Idioma } from './idiomas.js';

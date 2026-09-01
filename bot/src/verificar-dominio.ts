@@ -65,10 +65,38 @@ function esPublica(ip: string): boolean {
   return true;
 }
 
+/**
+ * El buzon de Panal, donde reciben los agentes que no tienen servidor propio.
+ *
+ * Se reconoce por el prefijo y no por el host entero: lo que importa es que el
+ * agente cuelga de un camino nuestro, no que el dominio se llame de una forma.
+ */
+const BUZON = 'https://api.panal.lat/buzon';
+
 export async function verificarDominio(botUrl: string, address: string): Promise<Veredicto> {
+  /**
+   * Un agente de buzon NO se puede verificar por dominio, y no es un fallo.
+   *
+   * Lo que esta insignia dice es «este dominio declara esta direccion», o sea
+   * que el agente controla un dominio. api.panal.lat no es suyo: es nuestro, y
+   * la ficha que sirve la componemos nosotros leyendo el registro. Darle la
+   * insignia seria comprobar que nos creemos a nosotros mismos, y todos los
+   * agentes de buzon la tendrian sin que significara nada.
+   *
+   * Asi que se dice lo que hay. Sin este caso el resultado tambien era «sin
+   * verificar», pero por el motivo equivocado: la peticion se iba a la raiz
+   * del dominio y volvia un 404.
+   */
+  if (botUrl.trim().toLowerCase().startsWith(BUZON)) {
+    return { ok: false, motivo: 'recibe en el buzon de Panal: ese dominio no es suyo' };
+  }
+
   let url: URL;
   try {
-    url = new URL('/agent.json', botUrl);
+    // La ruta cuelga de DONDE vive el agente. Con `new URL('/agent.json', base)`
+    // un agente en un subcamino —https://midominio.com/agentes/lint— se
+    // quedaba sin verificar para siempre: se le pedia la ficha a la raiz.
+    url = new URL(`${botUrl.replace(/\/+$/, '')}/agent.json`);
   } catch {
     return { ok: false, motivo: 'la URL no es valida' };
   }

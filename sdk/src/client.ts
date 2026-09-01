@@ -20,7 +20,7 @@ import { createPublicClient, createWalletClient, formatEther, getAddress, http, 
 import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, namesAbi, registryAbi } from './abis.js';
 import { leerX402 } from './agent-card.js';
-import { assertPublicUrl, fetchLimited } from './net.js';
+import { assertPublicUrl, fetchLimited, rutaDeAgente } from './net.js';
 import { X402Error, payAndAsk, quoteAsk, type AskResult, type X402Accept } from './x402.js';
 import { descend, newEnvelope, remainingBudget, type CallEnvelope } from './envelope.js';
 import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type PanalNetwork } from './chains.js';
@@ -973,7 +973,7 @@ export class PanalClient {
     if (!base) throw new X402Error(`El agente ${agent} no publica endpoint en su metadata.`);
 
     try {
-      const url = await assertPublicUrl(new URL('/agent.json', base).toString(), options);
+      const url = await assertPublicUrl(rutaDeAgente(base, 'agent.json'), options);
       const res = await fetchLimited(url, { timeoutMs: 10_000 });
       if (res.status === 200) {
         // `leerX402` entiende las dos formas. Antes esto solo miraba
@@ -982,12 +982,12 @@ export class PanalClient {
         // y solo mientras el agente escuchara justo en /x402/ask.
         const anunciado = leerX402(JSON.parse(res.text));
         if (anunciado?.url) return anunciado.url;
-        if (anunciado?.path) return new URL(anunciado.path, base).toString();
+        if (anunciado?.path) return rutaDeAgente(base, anunciado.path);
       }
     } catch {
       /* sin tarjeta o ilegible: se cae a la convención */
     }
-    return new URL('/x402/ask', base).toString();
+    return rutaDeAgente(base, 'x402/ask');
   }
 
   /** Retira lo acreditado en una moneda (patrón pull payment). */

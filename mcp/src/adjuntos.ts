@@ -29,6 +29,7 @@ import {
   MAX_FILE_BYTES,
   assertPublicUrl,
   attachmentFrom,
+  rutaDeAgente,
   sanitizeFileName,
   type AttachedFile,
 } from '@panal/sdk';
@@ -207,7 +208,7 @@ export interface CapacidadesAgente {
 export async function capacidadesDeAgente(botUrl: string): Promise<CapacidadesAgente> {
   try {
     const base = await assertPublicUrl(botUrl);
-    const url = new URL('/agent.json', base);
+    const url = new URL(rutaDeAgente(base.toString(), 'agent.json'));
     const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_TARJETA_MS), redirect: 'error' });
     if (!res.ok) return { adjuntos: false, maxAdjuntoBytes: null };
     const card = (await res.json()) as {
@@ -244,7 +245,7 @@ export async function subirAdjunto(
   let url: URL;
   try {
     const base = await assertPublicUrl(botUrl);
-    url = new URL(`/upload/${taskId}`, base);
+    url = new URL(rutaDeAgente(base.toString(), `upload/${taskId}`));
   } catch (err) {
     return err instanceof Error ? err.message : String(err);
   }
