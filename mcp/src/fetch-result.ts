@@ -15,7 +15,7 @@
 // implementaciones equivalentes de lo mismo —la del SDK y una aquí—, y dos
 // copias de un control de seguridad son una que se queda atrás sin que nadie
 // se entere el día que la otra mejora.
-import { assertPublicUrl, leerMaxBriefChars } from '@panal/sdk';
+import { assertPublicUrl, leerMaxBriefChars, rutaDeAgente } from '@panal/sdk';
 
 /** Tope de la respuesta. Sin esto, un endpoint hostil tumba el proceso. */
 const MAX_BYTES = 512 * 1024;
@@ -67,7 +67,7 @@ export async function pushBrief(
   let url: URL;
   try {
     const base = await assertPublicUrl(botUrl);
-    url = new URL(`/brief/${taskId}`, base);
+    url = new URL(rutaDeAgente(base.toString(), `brief/${taskId}`));
   } catch (err) {
     return err instanceof Error ? err.message : String(err);
   }
@@ -140,7 +140,7 @@ export async function fetchAgentLimits(botUrl: string): Promise<LimitesDelAgente
   let url: URL;
   try {
     const base = await assertPublicUrl(botUrl);
-    url = new URL('/agent.json', base);
+    url = new URL(rutaDeAgente(base.toString(), 'agent.json'));
   } catch {
     // El guard rechaza la URL: a esa dirección no se le puede entregar nada, ni
     // ahora ni al contratar. Es inalcanzable, no «no lo sé».
@@ -177,7 +177,7 @@ export async function fetchResultText(
   expira: number,
 ): Promise<string> {
   const base = await assertPublicUrl(botUrl);
-  const url = new URL(`/result/${taskId}`, base);
+  const url = new URL(rutaDeAgente(base.toString(), `result/${taskId}`));
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);

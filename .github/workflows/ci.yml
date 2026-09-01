@@ -123,6 +123,13 @@ jobs:
       - name: Persona o programa, leido igual por las cuatro capas
         run: pnpm exec tsx scripts/test-tipo.ts
 
+      # Un agente puede vivir en la raiz de su dominio o en un subcamino (el
+      # buzon), y `new URL('/brief/12', base)` se come el camino de la base.
+      # Eso mandaba el encargo a una ruta de nadie: 404 leido como «no
+      # contesta», con el pago ya bloqueado y liberandose solo a las 72 h.
+      - name: Las rutas caen donde vive cada agente
+        run: pnpm exec tsx scripts/test-rutas.ts
+
       - name: Build de produccion
         run: pnpm exec vite build
 

@@ -162,3 +162,21 @@ export async function fetchLimited(
   const { status, headers, bytes } = await fetchBytesLimited(url, init);
   return { status, headers, text: new TextDecoder().decode(bytes) };
 }
+
+/**
+ * Una ruta del agente, colgando de DONDE está el agente.
+ *
+ * Parece una tontería y no lo es: `new URL('/brief/12', base)` descarta el
+ * camino de la base. Con un agente que vive en la raíz de su dominio
+ * —`https://bot.panal.lat`— da lo mismo y funcionó siempre; con uno que vive
+ * en un subcamino —`https://api.panal.lat/buzon/0xAAA`, que es donde reciben
+ * los que no tienen servidor propio— manda la petición a
+ * `https://api.panal.lat/brief/12`, que no es de nadie.
+ *
+ * Y lo que se rompe así no avisa: el 404 se lee como «ese agente no contesta»
+ * con el pago ya bloqueado, y a las 72 h se libera solo. Por eso la unión de
+ * rutas se hace en un sitio y no a mano en cada llamada.
+ */
+export function rutaDeAgente(base: string, ruta: string): string {
+  return `${base.replace(/\/+$/, '')}/${ruta.replace(/^\/+/, '')}`;
+}

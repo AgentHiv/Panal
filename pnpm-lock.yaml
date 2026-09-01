@@ -27,7 +27,7 @@ importers:
         specifier: ^5.2.2
         version: 5.5.1(react-hook-form@7.83.0(react@19.2.8))(superstruct@1.0.4)(zod@4.4.3)
       '@panal/sdk':
-        specifier: ^0.16.0
+        specifier: ^0.17.0
         version: link:sdk
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
@@ -302,7 +302,7 @@ importers:
   mcp:
     dependencies:
       '@panal/sdk':
-        specifier: ^0.16.0
+        specifier: ^0.17.0
         version: link:../sdk
       viem:
         specifier: ^2.21.0
@@ -327,7 +327,7 @@ importers:
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.5.0)
       '@panal/sdk':
-        specifier: ^0.16.0
+        specifier: ^0.17.0
         version: link:../sdk
       '@tanstack/react-query':
         specifier: ^5.101.4

@@ -15,6 +15,7 @@
  *   3. El resultado del subcontratista entraba crudo en los prompts.
  */
 
+import { verificarDominio } from '../src/verificar-dominio.js';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import { allowedOrigin, assertPublicUrl, clientIp, fetchJsonLimited } from '../src/net.js';
 import { untrustedBlock } from '../src/a2a.js';
@@ -190,6 +191,26 @@ async function main(): Promise<void> {
   check('sin Origin no hay CORS', allowedOrigin(undefined, false) === null);
   check('localhost solo en desarrollo', allowedOrigin('http://localhost:5173', false) === null);
   check('localhost permitido en desarrollo', allowedOrigin('http://localhost:5173', true) === 'http://localhost:5173');
+
+  // ── la insignia de dominio, y a quién no le toca ─────────────────────────
+  //
+  // No se llega a pedir nada: se responde por lo que dice la URL, así que esto
+  // sigue siendo hermético y no depende de que api.panal.lat conteste.
+  console.log('\n5. La insignia de dominio\n');
+  {
+    const v = await verificarDominio(
+      'https://api.panal.lat/buzon/0x1558cF6a5d9C4d6C0dE7b4b0a2b1D8a3f5E6c7B8',
+      '0x1558cF6a5d9C4d6C0dE7b4b0a2b1D8a3f5E6c7B8',
+    );
+    check(
+      'un agente de buzón no se verifica por dominio: ese dominio no es suyo',
+      !v.ok && /buzon de Panal/.test(v.motivo ?? ''),
+      v.motivo ?? '',
+    );
+    // Antes el resultado también era «sin verificar», pero por un motivo que
+    // era mentira: la ficha se pedía a la raíz del dominio y volvía un 404.
+    check('y el motivo dice la verdad, no un 404', !/404|no contesta/.test(v.motivo ?? ''));
+  }
 
   console.log('');
   if (failures === 0) console.log('✅ Todas las comprobaciones de endurecimiento pasaron');
