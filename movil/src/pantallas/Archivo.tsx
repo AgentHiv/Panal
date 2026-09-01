@@ -178,7 +178,7 @@ export default function Archivo(): React.ReactElement {
               className="pulsable shrink-0 rounded-[14px] border border-line bg-cream p-3.5 text-left"
             >
               <div className="flex items-start gap-2.5">
-                <p className="min-w-0 grow text-[14px] font-medium leading-[1.4]">
+                <p className="min-w-0 grow break-words text-[14px] font-medium leading-[1.4]">
                   {e.local.brief ? primeraLinea(e.local.brief) : T.archivo.sinBrief}
                 </p>
                 <span className="shrink-0 font-mono text-[12px] text-ink-3">#{e.id}</span>

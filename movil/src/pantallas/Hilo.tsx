@@ -348,7 +348,7 @@ function Esperando({ texto, T }: { texto: string; T: Textos }): React.ReactEleme
     <>
       <div className="flex shrink-0 flex-col items-end gap-0.5">
         <div className="seleccionable max-w-[82%] shrink-0 self-end rounded-2xl rounded-br-[5px] border border-[#4A3E75] bg-[#2A2340] px-3.5 py-2.5 opacity-70">
-          <p className="whitespace-pre-wrap text-[14px] leading-[1.5]">{texto}</p>
+          <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.5]">{texto}</p>
         </div>
         <span className="px-1 text-[10.5px] text-ink-3">{T.hilo.enviado}</span>
       </div>
@@ -391,7 +391,9 @@ function EntradaHilo({
             : 'self-start rounded-bl-[5px] border-line bg-cream'
         }`}
       >
-        <p className="whitespace-pre-wrap text-[14px] leading-[1.5]">{entrada.mensaje.texto}</p>
+        <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.5]">
+          {entrada.mensaje.texto}
+        </p>
       </div>
         {/* La hora, fuera de la burbuja y en pequeño: se consulta, no se lee. */}
         <span className="px-1 font-mono text-[10.5px] text-ink-3">
@@ -453,7 +455,7 @@ function EntradaHilo({
         </span>
       </div>
       <div className="px-3.5 py-3">
-        <p className="seleccionable text-[14px] font-medium leading-[1.5]">
+        <p className="seleccionable break-words text-[14px] font-medium leading-[1.5]">
           {e.brief ?? T.hilo.encargoNumero(String(e.id))}
         </p>
         <div className="mt-3 flex gap-5">

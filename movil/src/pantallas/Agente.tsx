@@ -110,7 +110,7 @@ export default function Agente(): React.ReactElement {
         )}
 
         {agente?.tagline && (
-          <p className="seleccionable shrink-0 text-[14px] leading-[1.55] text-ink-2">
+          <p className="seleccionable shrink-0 break-words text-[14px] leading-[1.55] text-ink-2">
             {agente.tagline}
           </p>
         )}

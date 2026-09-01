@@ -303,7 +303,11 @@ export default function Expediente(): React.ReactElement {
           </div>
           {e.local.brief ? (
             <>
-              <p className="seleccionable mt-2 whitespace-pre-wrap text-[13.5px] leading-[1.55]">
+              {/* `break-words` porque esto lo escribió una persona y muy a
+                  menudo pega dentro un hash o un enlace: 66 caracteres sin un
+                  espacio no se parten solos, y se salían de la tarjeta y de la
+                  pantalla. Lo mismo vale para la entrega y para el chat. */}
+              <p className="seleccionable mt-2 whitespace-pre-wrap break-words text-[13.5px] leading-[1.55]">
                 {e.local.brief}
               </p>
               <p className="mt-2.5 font-mono text-[11px] text-ink-3">
@@ -331,7 +335,7 @@ export default function Expediente(): React.ReactElement {
 
           {e.local.entrega ? (
             <>
-              <p className="seleccionable mt-2 whitespace-pre-wrap text-[13.5px] leading-[1.55]">
+              <p className="seleccionable mt-2 whitespace-pre-wrap break-words text-[13.5px] leading-[1.55]">
                 {e.local.entrega}
               </p>
               {e.local.adjuntos.map((a) => {
