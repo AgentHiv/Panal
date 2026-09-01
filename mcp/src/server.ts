@@ -57,6 +57,7 @@ import {
   stripFilesManifest,
   type Agent,
   type DeliveredFile,
+  type Nivel,
   type PanalClient,
 } from '@panal/sdk';
 import {
@@ -69,11 +70,19 @@ import {
   subirAdjunto,
   type AdjuntoLocal,
 } from './adjuntos.js';
+import {
+  buscarNivel,
+  lineaDeNiveles,
+  nivelesDeAgente,
+  precioDeNivel,
+  renderNiveles,
+} from './niveles.js';
 import { QuoteBook, SpendLedger, limitFor, limitsFromEnv } from './limits.js';
 import {
   briefSignMessage,
   expiraEn,
   fetchAgentLimits,
+  type LimitesDelAgente,
   fetchResultText,
   pushBrief,
   resultSignMessage,
@@ -278,7 +287,7 @@ function trustLine(agent: Agent): string | null {
   return `  Trust: ${partes.join('; ')}`;
 }
 
-function renderAgent(agent: Agent): string {
+function renderAgent(agent: Agent, niveles: Nivel[] = [], detallado = false): string {
   const price = `${formatEther(agent.pricePerTask)} ${symbolOf(agent.currency)}`;
   const skills = agent.metadata.skills.length ? agent.metadata.skills.join(', ') : '(no skills declared)';
   return [
@@ -289,6 +298,10 @@ function renderAgent(agent: Agent): string {
     // consulta por x402) y llamar "el precio" a uno de ellos fue justo lo que
     // hizo invisible al otro.
     `  Per task: ${price} (escrow, with deadline and dispute window)`,
+    // Los niveles van DEBAJO del precio de tarea y no en su lugar: ese precio
+    // sigue siendo el que se bloquea si nadie elige tamaño, y el que cobran
+    // los agentes —casi todos— que no venden ninguno.
+    ...(detallado ? renderNiveles(niveles, symbolOf(agent.currency)) : [lineaDeNiveles(niveles, symbolOf(agent.currency))]),
     `  Skills: ${skills}`,
     agent.metadata.description ? `  Description: ${agent.metadata.description}` : null,
     agent.metadata.botUrl ? `  Endpoint: ${agent.metadata.botUrl}` : null,
@@ -414,12 +427,17 @@ const READ_TOOLS: Tool[] = [
           ? `No active agent matches "${str(args.query)}". Try a broader term, or list them all with no query.`
           : 'There are no active agents on the marketplace right now.';
       }
-      return `${found.length} agent(s):\n\n${found.map(renderAgent).join('\n\n')}`;
+      // Los de la CADENA y sin pedir ninguna ficha: aquí una lectura por agente
+      // serían N peticiones a servidores ajenos por búsqueda.
+      return `${found.length} agent(s):\n\n${found
+        .map((a) => renderAgent(a, nivelesDeAgente(a.metadataURI, [])))
+        .join('\n\n')}`;
     },
   },
   {
     name: 'panal_get_agent',
-    description: 'Full profile of a Panal agent, by address.',
+    description:
+      'Full profile of a Panal agent, by address: price, the sizes it sells if it sells several, skills, status and its on-chain name.',
     inputSchema: {
       type: 'object',
       properties: { address: { type: 'string', description: 'The agent 0x… address.' } },
@@ -434,14 +452,21 @@ const READ_TOOLS: Tool[] = [
       // razón de que el precio por consulta fuese invisible desde aquí. En
       // `panal_search_agents` no se hace, porque serían N llamadas HTTP a
       // servidores ajenos por cada búsqueda.
-      let porLlamada: string;
-      try {
-        const q = await panal.quoteAgent(address, 'Price check.');
-        porLlamada = `  Per question: ${formatEther(BigInt(q.amount))} ${q.assetSymbol ?? symbolOf(q.asset)} (x402, answered on the spot)`;
-      } catch {
-        porLlamada = '  Per question: not offered (this agent only takes jobs through escrow)';
-      }
-      return `${renderAgent(agent)}\n${porLlamada}`;
+      // La ficha se lee a la vez que el precio por consulta: son dos peticiones
+      // al MISMO servidor y encadenarlas dobla la espera para nada. De aquí
+      // salen los nombres de los niveles —traducidos, si el agente traduce—;
+      // los importes siguen viniendo de la cadena.
+      const [q, ficha] = await Promise.all([
+        panal.quoteAgent(address, 'Price check.').catch(() => null),
+        agent.metadata.botUrl
+          ? fetchAgentLimits(agent.metadata.botUrl).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      const porLlamada = q
+        ? `  Per question: ${formatEther(BigInt(q.amount))} ${q.assetSymbol ?? symbolOf(q.asset)} (x402, answered on the spot)`
+        : '  Per question: not offered (this agent only takes jobs through escrow)';
+      const niveles = nivelesDeAgente(agent.metadataURI, ficha?.niveles ?? []);
+      return `${renderAgent(agent, niveles, true)}\n${porLlamada}`;
     },
   },
   {
@@ -505,6 +530,9 @@ const READ_TOOLS: Tool[] = [
         agentName: name,
         brief: prompt,
         amount,
+        // Una consulta no compra tamaño: los niveles son del escrow, donde hay
+        // un importe bloqueado del que deducirlos.
+        tier: null,
         currency: quote.asset,
         symbol,
         botUrl: agent.metadata.botUrl,
@@ -545,7 +573,11 @@ const READ_TOOLS: Tool[] = [
         `Escrow: ${panal.addresses.escrow}`,
         `Registry: ${panal.addresses.registry}`,
         '',
-        active.length ? `Active now:\n${active.map(renderAgent).join('\n\n')}` : 'No active agents.',
+        active.length
+          ? `Active now:\n${active
+              .map((a) => renderAgent(a, nivelesDeAgente(a.metadataURI, [])))
+              .join('\n\n')}`
+          : 'No active agents.',
       ].join('\n');
     },
   },
@@ -625,6 +657,14 @@ const WRITE_TOOLS: Tool[] = [
       properties: {
         agent: { type: 'string', description: 'The agent 0x… address.' },
         brief: { type: 'string', description: 'The job, written with all the detail the agent will need.' },
+        tier: {
+          type: 'string',
+          description:
+            'Optional. Which SIZE of the job to buy, for agents that sell several: the tier name as ' +
+            'panal_get_agent listed it (its price or its position in the list also work). Each tier is a ' +
+            'different price and a different limit on how long the brief can be. Show the person the list ' +
+            'and let them pick; without this the cheapest one is quoted.',
+        },
         files: {
           type: 'array',
           items: { type: 'string' },
@@ -690,8 +730,64 @@ const WRITE_TOOLS: Tool[] = [
         adjuntos.map((a) => a.file),
       );
 
-      const amount = agent.pricePerTask;
       const symbol = symbolOf(agent.currency);
+
+      // ---- La ficha, una sola vez -----------------------------------------
+      //
+      // De aquí salen tres cosas del mismo JSON: si contesta alguien, cuánto
+      // texto acepta y cómo se llaman sus niveles. Se lee ANTES de mirar el
+      // presupuesto porque el importe ya no es siempre el precio del registro:
+      // con niveles, lo que se bloquea es el del nivel elegido, y comprobar el
+      // tope contra un número que todavía no se sabe no comprueba nada.
+      let limites: LimitesDelAgente = { alcanzable: null, maxBriefChars: null, niveles: [] };
+      if (agent.metadata.botUrl) {
+        limites = await fetchAgentLimits(agent.metadata.botUrl);
+        // Que el endpoint no conteste descalifica el encargo entero: el brief se
+        // entrega DESPUÉS de crear la tarea, así que contratar ahora dejaría el
+        // pago bloqueado en una tarea que nadie puede empezar. Aquí no cuesta
+        // nada y basta con reintentar cuando el agente vuelva.
+        if (limites.alcanzable === false) {
+          return (
+            `${agent.metadata.name || address} publishes ${agent.metadata.botUrl} but nothing answers there, ` +
+            `so the job could not be delivered even after paying. Nothing was quoted and nothing was spent. ` +
+            `Try again when the agent is back up.`
+          );
+        }
+      }
+
+      // ---- Qué tamaño se compra -------------------------------------------
+      const niveles = nivelesDeAgente(agent.metadataURI, limites.niveles);
+      const pedido = str(args.tier);
+      let elegido: Nivel | null = null;
+      if (niveles.length > 0) {
+        if (pedido) {
+          elegido = buscarNivel(niveles, pedido);
+          if (!elegido) {
+            return [
+              `${agent.metadata.name || address} does not sell a "${pedido}" size. Nothing was quoted.`,
+              ...renderNiveles(niveles, symbol),
+            ].join('\n');
+          }
+        } else {
+          // El más barato, que es lo que compra quien contrata sin elegir: su
+          // precio DEBERÍA ser el del registro, pero es el nivel quien manda —
+          // si el agente puso el suyo más caro, pagar el del registro sería
+          // pagar por debajo del mínimo que acepta y que rechazara el encargo
+          // con el dinero ya bloqueado.
+          elegido = niveles[0]!;
+        }
+      } else if (pedido) {
+        // Pedir un nivel a quien no vende ninguno casi siempre es haberse
+        // equivocado de agente. Cobrar el precio suelto y callarlo sería
+        // contratar una cosa distinta de la que se pidió.
+        return (
+          `${agent.metadata.name || address} does not sell sizes: it has one price for any job, ` +
+          `${formatEther(agent.pricePerTask)} ${symbol}. Nothing was quoted. Ask again without \`tier\` ` +
+          `if that is what you want.`
+        );
+      }
+
+      const amount = elegido?.wei ?? agent.pricePerTask;
       const negativa = revisarPresupuesto(agent.currency, amount, symbol);
       if (negativa) return negativa;
 
@@ -700,26 +796,26 @@ const WRITE_TOOLS: Tool[] = [
       // el pago bloqueado, porque el encargo se entrega después de crear la
       // tarea. Aquí no cuesta nada y evita dejar dinero atrapado hasta que
       // vence el plazo.
-      if (agent.metadata.botUrl) {
-        const { alcanzable, maxBriefChars } = await fetchAgentLimits(agent.metadata.botUrl);
-        // Que el endpoint no conteste descalifica el encargo entero: el brief se
-        // entrega DESPUÉS de crear la tarea, así que contratar ahora dejaría el
-        // pago bloqueado en una tarea que nadie puede empezar. Aquí no cuesta
-        // nada y basta con reintentar cuando el agente vuelva.
-        if (alcanzable === false) {
-          return (
-            `${agent.metadata.name || address} publishes ${agent.metadata.botUrl} but nothing answers there, ` +
-            `so the job could not be delivered even after paying. Nothing was quoted and nothing was spent. ` +
-            `Try again when the agent is back up.`
-          );
-        }
-        if (maxBriefChars !== null && brief.length > maxBriefChars) {
-          return (
-            `That job does not fit: ${agent.metadata.name || address} accepts ${maxBriefChars} characters ` +
-            `and this brief is ${brief.length}. Nothing was quoted and nothing was spent. ` +
-            `Shorten it by ${brief.length - maxBriefChars} characters and ask again.`
-          );
-        }
+      // El tope del nivel elegido manda sobre el general de la ficha: un agente
+      // que vende tamaños declara en cada uno cuánto texto acepta, y comprobar
+      // contra el grande dejaría pasar un encargo que el pequeño rechaza.
+      const tope = elegido?.maxBriefChars ?? limites.maxBriefChars;
+      if (tope !== null && brief.length > tope) {
+        // Si hay un tamaño mayor donde SÍ cabe, se dice cuál. La alternativa
+        // es mandar a acortar un texto cuando lo que faltaba era pagar el nivel
+        // que ese texto necesita, que es justo lo que el agente vende.
+        const cabe = niveles.find((n) => (n.maxBriefChars ?? 0) >= brief.length);
+        const dondeSiCabe =
+          cabe && cabe !== elegido
+            ? ` Its "${cabe.name}" size takes ${cabe.maxBriefChars} for ${precioDeNivel(cabe, symbol)}: ` +
+              `ask the person if they want that one.`
+            : '';
+        return (
+          `That job does not fit: ${agent.metadata.name || address}` +
+          `${elegido ? ` at the "${elegido.name}" size` : ''} accepts ${tope} characters ` +
+          `and this brief is ${brief.length}. Nothing was quoted and nothing was spent. ` +
+          `Shorten it by ${brief.length - tope} characters and ask again.${dondeSiCabe}`
+        );
       }
 
       const quote = quotes.issue({
@@ -728,6 +824,7 @@ const WRITE_TOOLS: Tool[] = [
         agentName: agent.metadata.name || agent.address,
         brief,
         amount,
+        tier: elegido?.name ?? null,
         currency: agent.currency,
         symbol,
         botUrl: agent.metadata.botUrl,
@@ -736,7 +833,18 @@ const WRITE_TOOLS: Tool[] = [
 
       return [
         `Quote for ${quote.agentName}:`,
-        `  Price: ${formatEther(amount)} ${symbol}`,
+        `  Price: ${formatEther(amount)} ${symbol}${elegido ? ` — size "${elegido.name}"` : ''}`,
+        // Los otros tamaños se enseñan SIEMPRE que existan, también cuando ya
+        // se eligió uno: quien está leyendo esto es quien paga, y enterarse de
+        // que había uno más grande después de contratar no sirve de nada.
+        ...(niveles.length > 1
+          ? [
+              `  Other sizes: ${niveles
+                .filter((n) => n !== elegido)
+                .map((n) => `${n.name} (${precioDeNivel(n, symbol)})`)
+                .join(', ')}`,
+            ]
+          : []),
         `  Deadline: ${limits.deadlineHours} h from the moment it is hired`,
         `  Job: ${briefPedido.length > 200 ? `${briefPedido.slice(0, 200)}…` : briefPedido}`,
         // Se listan uno a uno, con su ruta real. Lo que se adjunta sale de esta
@@ -875,7 +983,19 @@ const WRITE_TOOLS: Tool[] = [
 
       const deadline = BigInt(Math.floor(Date.now() / 1000) + limits.deadlineHours * 3600);
       try {
-        const result = await panal.hire({ agent: quote.worker, brief: quote.brief, deadline });
+        // El importe va explícito, y es el del presupuesto. Sin él el SDK
+        // vuelve a leer el `pricePerTask` del registro al contratar, que es
+        // otro número en cuanto el agente vende niveles —se bloquearía el
+        // precio de entrada habiendo aprobado el grande— y que además puede
+        // haber cambiado en los cinco minutos que vive un presupuesto: se
+        // gastaría de más sin que nadie lo hubiera aprobado y por encima del
+        // tope, que se comprobó contra el importe viejo.
+        const result = await panal.hire({
+          agent: quote.worker,
+          brief: quote.brief,
+          amount: quote.amount,
+          deadline,
+        });
         ledger.record(quote.currency, result.amount);
         log(`contratada #${result.taskId} a ${quote.worker} por ${formatEther(result.amount)} ${quote.symbol}`);
 
@@ -941,7 +1061,7 @@ const WRITE_TOOLS: Tool[] = [
         return [
           `Hired. Task #${result.taskId} created and payment locked in escrow.`,
           `  Agent: ${quote.agentName}`,
-          `  Amount: ${formatEther(result.amount)} ${quote.symbol}`,
+          `  Amount: ${formatEther(result.amount)} ${quote.symbol}${quote.tier ? ` — size "${quote.tier}"` : ''}`,
           `  tx: ${EXPLORER}/tx/${result.txHash}`,
           '',
           entregaBrief,
