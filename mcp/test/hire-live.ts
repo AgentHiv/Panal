@@ -27,14 +27,33 @@ const ENCARGO =
   'Convierte esto en JSON con las claves agente, puerto y moneda:\n' +
   'lint escucha en 8789 y cobra en MON, parse en 8790 en MON, spec en 8791 en PANAL';
 
+/**
+ * Lo que resuelve `request`: el `result` de la respuesta, o su `error`.
+ *
+ * Se escribe a mano en vez de `any` porque `any` apaga la comprobación entera
+ * de quien lo lee: un `res.contenido[0]` mal escrito compilaba y fallaba en
+ * ejecución. El índice al final deja pasar los campos que esta prueba no mira
+ * sin tener que enumerar el protocolo entero.
+ */
+interface RespuestaMcp {
+  content?: { text?: string }[];
+  protocolVersion?: string;
+  serverInfo?: { name?: string; version?: string };
+  capabilities?: { tools?: unknown };
+  tools?: { name: string; description?: string; inputSchema?: unknown }[];
+  isError?: boolean;
+  message?: string;
+  [campo: string]: unknown;
+}
+
 class Mcp {
-  private readonly pending = new Map<number, (v: unknown) => void>();
+  private readonly pending = new Map<number, (v: RespuestaMcp) => void>();
   private nextId = 1;
   constructor(private readonly child: ChildProcessWithoutNullStreams) {
     createInterface({ input: child.stdout }).on('line', (line) => {
       try {
-        const m = JSON.parse(line.trim()) as { id?: number; result?: unknown; error?: unknown };
-        if (typeof m.id === 'number') this.pending.get(m.id)?.(m.result ?? m.error);
+        const m = JSON.parse(line.trim()) as { id?: number; result?: RespuestaMcp; error?: RespuestaMcp };
+        if (typeof m.id === 'number') this.pending.get(m.id)?.(m.result ?? m.error ?? {});
       } catch {
         /* stdout es del protocolo */
       }
@@ -46,7 +65,7 @@ class Mcp {
       spawn('npx', ['tsx', SERVER], { env: { ...process.env, ...env }, stdio: ['pipe', 'pipe', 'pipe'] }) as ChildProcessWithoutNullStreams,
     );
   }
-  request(method: string, params?: Record<string, unknown>): Promise<any> {
+  request(method: string, params?: Record<string, unknown>): Promise<RespuestaMcp> {
     const id = this.nextId++;
     return new Promise((res, rej) => {
       const t = setTimeout(() => rej(new Error(`${method} no respondió en 90 s`)), 90_000);

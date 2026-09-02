@@ -33,9 +33,28 @@ function check(label: string, ok: boolean, detail = ''): void {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SERVER = resolve(HERE, '..', 'src', 'server.ts');
 
+/**
+ * Lo que resuelve `request`: el `result` de la respuesta, o su `error`.
+ *
+ * Se escribe a mano en vez de `any` porque `any` apaga la comprobación entera
+ * de quien lo lee: un `res.contenido[0]` mal escrito compilaba y fallaba en
+ * ejecución. El índice al final deja pasar los campos que esta prueba no mira
+ * sin tener que enumerar el protocolo entero.
+ */
+interface RespuestaMcp {
+  content?: { text?: string }[];
+  protocolVersion?: string;
+  serverInfo?: { name?: string; version?: string };
+  capabilities?: { tools?: unknown };
+  tools?: { name: string; description?: string; inputSchema?: unknown }[];
+  isError?: boolean;
+  message?: string;
+  [campo: string]: unknown;
+}
+
 /** Cliente MCP mínimo: escribe una petición por línea y espera su respuesta. */
 class McpHarness {
-  private readonly pending = new Map<number, (value: unknown) => void>();
+  private readonly pending = new Map<number, (value: RespuestaMcp) => void>();
   private nextId = 1;
   /** Todo lo que el servidor escribió en stdout y NO era JSON: debe estar vacío. */
   readonly stdoutGarbage: string[] = [];
@@ -46,8 +65,10 @@ class McpHarness {
       const trimmed = line.trim();
       if (!trimmed) return;
       try {
-        const msg = JSON.parse(trimmed) as { id?: number; result?: unknown; error?: unknown };
-        if (typeof msg.id === 'number') this.pending.get(msg.id)?.(msg.result ?? msg.error);
+        const msg = JSON.parse(trimmed) as { id?: number; result?: RespuestaMcp; error?: RespuestaMcp };
+        // `?? {}` para el caso imposible de una respuesta sin `result` ni `error`:
+        // quien la lee ya trata cada campo como opcional.
+        if (typeof msg.id === 'number') this.pending.get(msg.id)?.(msg.result ?? msg.error ?? {});
       } catch {
         // stdout es del protocolo: cualquier otra cosa corrompe la sesión.
         this.stdoutGarbage.push(trimmed.slice(0, 120));
@@ -64,7 +85,7 @@ class McpHarness {
     return new McpHarness(child);
   }
 
-  request(method: string, params?: Record<string, unknown>): Promise<any> {
+  request(method: string, params?: Record<string, unknown>): Promise<RespuestaMcp> {
     const id = this.nextId++;
     return new Promise((resolveReq, rejectReq) => {
       const timer = setTimeout(() => rejectReq(new Error(`${method} no respondió en 45 s`)), 45_000);

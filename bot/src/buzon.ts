@@ -206,6 +206,7 @@ function readBody(req: IncomingMessage, maxBytes: number): Promise<string | null
  */
 export function sanearNombre(nombre: string): string {
   return nombre
+    // eslint-disable-next-line no-control-regex -- son justo los que hay que quitar
     .replace(/[\\/\r\n\t\u0000-\u001f]/g, '')
     .replace(/\s+/g, ' ')
     .trim()

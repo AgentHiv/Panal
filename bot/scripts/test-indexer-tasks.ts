@@ -60,7 +60,7 @@ console.log('── El ciclo normal: se crea, se entrega, se aprueba ──');
 store.append([
   ev('TaskCreated', { taskId: '1', client: CLIENTE, worker: AGENTE, amount: '10000000000000000', currency: NATIVO }),
 ]);
-let t = store.task('1')!;
+const t = store.task('1')!;
 check('nace abierta', t.status === 'open', t.status);
 check('con su cliente y su trabajador', t.client === CLIENTE.toLowerCase() && t.worker === AGENTE.toLowerCase());
 check('la moneda se traduce', t.coin === 'MON', t.coin);
