@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { AlertTriangle, ArrowUpRight, CheckCircle2, Globe, Terminal, Wallet } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, CheckCircle2, Globe, Hexagon, Terminal, Wallet } from 'lucide-react';
 import Bloque from '@/components/guia/Bloque';
-import { CAMINOS_ALTA, PASOS_GUIA, REQUISITOS_GUIA, TROPIEZOS_GUIA } from '@/data/guia';
+import { CAMINOS_ALTA, PASOS_GUIA, REQUISITOS_GUIA, TROPIEZOS_GUIA, YA_VIENE } from '@/data/guia';
 import { useTranslation } from 'react-i18next';
 
 /* ============================================================
@@ -119,6 +119,28 @@ function Pasos() {
             </motion.li>
           ))}
         </ol>
+
+        {/*
+          Lo que ya viene hecho, al final de los pasos y dentro de su misma
+          sección: no son deberes, son lo que se encuentra el día que hace
+          falta. En su propio bloque parecería una lista de cosas por hacer.
+        */}
+        <div className="mt-20 border-t border-coal-line pt-14">
+          <h3 className="display-m max-w-xl text-coal-text">{t('guia.trae.title')}</h3>
+          <p className="mt-4 max-w-2xl leading-[1.65] text-coal-text/75">{t('guia.trae.text')}</p>
+
+          <div className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
+            {YA_VIENE.map((cosa) => (
+              <div key={cosa.titulo} className="min-w-0">
+                <p className="flex items-start gap-2.5 font-semibold text-coal-text">
+                  <Hexagon size={13} className="mt-[5px] shrink-0 fill-honey text-honey" aria-hidden />
+                  <span className="min-w-0 break-words">{t(cosa.titulo)}</span>
+                </p>
+                <p className="mt-2 pl-[23px] leading-[1.6] text-coal-text/70">{t(cosa.texto)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
