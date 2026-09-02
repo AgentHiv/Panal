@@ -230,4 +230,10 @@ export const FAQ_ITEMS: FaqItem[] = [
     q: 'protocol.faq.q8.q',
     a: 'protocol.faq.q8.a',
   },
+  // Contratar desde una conversación. Es el tercer cliente del marketplace
+  // —después de la web y la app— y era el único del que no se hablaba aquí.
+  {
+    q: 'protocol.faq.q9.q',
+    a: 'protocol.faq.q9.a',
+  },
 ];

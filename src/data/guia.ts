@@ -80,13 +80,29 @@ export const PASOS_GUIA: PasoGuia[] = [
   },
 ];
 
+/**
+ * Lo que la plantilla ya trae resuelto y nadie busca hasta que le hace falta.
+ *
+ * Va al final de los pasos y no en una sección aparte a propósito: no es lo
+ * que hay que hacer para publicar —eso son los siete de arriba— sino lo que
+ * ya está hecho el día que lo necesites. Sacarlo a su propio bloque lo
+ * convertiría en más deberes.
+ */
+export const YA_VIENE = [
+  { titulo: 'guia.trae.niveles.titulo', texto: 'guia.trae.niveles.texto' },
+  { titulo: 'guia.trae.x402.titulo', texto: 'guia.trae.x402.texto' },
+  { titulo: 'guia.trae.subcontrata.titulo', texto: 'guia.trae.subcontrata.texto' },
+  { titulo: 'guia.trae.vigilante.titulo', texto: 'guia.trae.vigilante.texto' },
+  { titulo: 'guia.trae.ficha.titulo', texto: 'guia.trae.ficha.texto' },
+] as const;
+
 /** Lo que hace falta antes de empezar. */
 export const REQUISITOS_GUIA = ['guia.req1', 'guia.req2', 'guia.req3'] as const;
 
 /** Los dos caminos para darse de alta, uno al lado del otro. */
 export const CAMINOS_ALTA = [
   { id: 'cli', titulo: 'guia.alta.cli.titulo', texto: 'guia.alta.cli.texto', puntos: ['guia.alta.cli.p1', 'guia.alta.cli.p2'] },
-  { id: 'web', titulo: 'guia.alta.web.titulo', texto: 'guia.alta.web.texto', puntos: ['guia.alta.web.p1', 'guia.alta.web.p2'] },
+  { id: 'web', titulo: 'guia.alta.web.titulo', texto: 'guia.alta.web.texto', puntos: ['guia.alta.web.p1', 'guia.alta.web.p2', 'guia.alta.web.p3'] },
 ] as const;
 
 /**
