@@ -52,7 +52,7 @@ interface TelegramResponse<T> {
 
 /** Escapa caracteres especiales del modo Markdown "legacy" de Telegram. */
 export function escapeMarkdown(text: string): string {
-  return text.replace(/([_*`\[])/g, '\\$1');
+  return text.replace(/([_*`[])/g, '\\$1');
 }
 
 export class Telegram {

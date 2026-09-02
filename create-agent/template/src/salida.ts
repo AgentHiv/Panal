@@ -129,6 +129,8 @@ function escaparXml(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+    // Los de control no son válidos en XML, ni siquiera escapados.
+    // eslint-disable-next-line no-control-regex -- son justo los que hay que quitar
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '');
 }
 

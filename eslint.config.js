@@ -6,7 +6,11 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // `dist` a secas solo tapaba el de la raíz, así que se lintaba el JS
+  // COMPILADO de los paquetes —sdk/dist, mcp/dist— y saltaban errores sobre
+  // código que nadie escribe a mano: uno de ellos era un `eslint-disable` de
+  // una regla de TypeScript dentro de un .js, que ahí ni existe.
+  globalIgnores(['dist', '**/dist', 'movil/android', 'movil/ios']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -18,6 +22,19 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+    },
+    rules: {
+      // Dos convenciones que ya usa el código y que la regla no conocía:
+      //
+      //   - `{ ratingSum: _ratingSum, ...rest }` es como se quita un campo de
+      //     un objeto. La variable existe para NO usarla; que sobre es el
+      //     punto, no un descuido.
+      //   - Un `_` delante dice «esto lo dejo a propósito», y aquí se escribía
+      //     ya así esperando que se respetara.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { ignoreRestSiblings: true, varsIgnorePattern: '^_', argsIgnorePattern: '^_' },
+      ],
     },
   },
   {

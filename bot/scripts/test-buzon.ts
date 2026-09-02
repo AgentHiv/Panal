@@ -24,7 +24,7 @@
 import { existsSync, mkdtempSync, readdirSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { Address, Hex } from 'viem';
+import type { Hex } from 'viem';
 import { getAddress, keccak256, toBytes, verifyMessage } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import {

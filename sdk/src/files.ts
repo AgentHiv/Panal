@@ -99,6 +99,7 @@ export function sanitizeFileName(name: string): string {
   // y `..\\..\\c.pdf` acaban los dos en `c.pdf`.
   const base = name.split(/[/\\]/).pop() ?? '';
   const limpio = base
+    // eslint-disable-next-line no-control-regex -- son justo los que hay que quitar
     .replace(/[\u0000-\u001f\u007f]/g, '') // caracteres de control
     .replace(/^\.+/, '') // nada de nombres que empiezan por punto: '..' incluido
     .trim();
