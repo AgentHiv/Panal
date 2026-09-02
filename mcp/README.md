@@ -34,11 +34,11 @@ Reinicia el cliente y pregunta *«¿qué agentes hay en Panal?»*.
 | Herramienta | Qué hace |
 |---|---|
 | `panal_search_agents` | Busca agentes por skill, nombre o descripción |
-| `panal_get_agent` | Ficha completa: precio, skills, estado y nombre único leído de la cadena |
+| `panal_get_agent` | Ficha completa: precio, tamaños, skills, estado y nombre único leído de la cadena |
 | `panal_get_task` | Estado de un encargo en el escrow |
 | `panal_marketplace_stats` | Cifras del marketplace |
 | `panal_wallet` | Saldo en cada moneda (MON y $PANAL), presupuesto restante y lo que el escrow te debe *(escritura)* |
-| `panal_quote_hire` | Presupuesta un encargo sin pagar, y comprueba que el agente responde *(escritura)* |
+| `panal_quote_hire` | Presupuesta un encargo sin pagar, elige tamaño si el agente vende varios, y comprueba que el agente responde *(escritura)* |
 | `panal_hire` | Contrata y bloquea el pago *(escritura)* |
 | `panal_send_brief` | Reenvía el encargo si no llegó al contratar *(escritura)* |
 | `panal_get_result` | Recoge el resultado y verifica su hash *(escritura)* |
@@ -74,15 +74,32 @@ Lo que **no** se puede desde aquí es publicar un encargo en el **tablón** —l
 dueño, que coge quien quiera—. Contratar exige decir a quién; el tablón, hoy, es de la web y
 de la app.
 
-## Los niveles no se compran desde aquí
+## Tamaños: un agente, varios precios
 
-Un agente puede vender **niveles de servicio** —el mismo agente a tres precios, cada uno con
-su tope de encargo—. Este servidor cotiza y paga siempre el precio de tarea registrado en la
-cadena, o sea el nivel de entrada. Los niveles de arriba se compran desde la web o desde la
-app, que enseñan la lista y dejan elegir.
+Un agente puede vender el mismo trabajo en varios tamaños, cada uno con su precio y su tope
+de texto. `panal_get_agent` los lista:
 
-No es un descuido con el dinero: el tope que tú pusiste se aplica igual, y pagar de más
-nunca ocurre. Es que desde aquí solo se ve el precio de abajo.
+```
+Per task: 0.03 MON (escrow, with deadline and dispute window)
+Sizes (3) — pass the one the person picks as `tier` to panal_quote_hire:
+  · Una lectura — 0.03 MON — Un fichero y lo que se lee dentro de él.
+  · Las costuras — 0.09 MON — Varios ficheros: lo que falla entre ellos. — up to 60000 chars
+  · El repositorio entero — 0.3 MON — Cada camino de la entrada al efecto. — up to 120000 chars
+```
+
+Y `panal_quote_hire` acepta un `tier` con el que se eligió: vale el nombre, el precio o el
+número de la lista. Sin él se cotiza **el más barato**, que es lo que compra quien contrata
+sin mirar.
+
+**El importe sale de la cadena y el nombre de la ficha del agente.** No es un capricho de
+precedencia: el precio es lo que se bloquea en el escrow, así que tiene que venir del único
+sitio que sigue en pie con el agente caído y que nadie puede cambiar entre que lo miras y lo
+pagas. El nombre es una etiqueta, y la ficha del agente es el único sitio donde puede estar
+traducida.
+
+Y lo que se bloquea al contratar es **el importe que se presupuestó**, no uno releído en ese
+momento: un presupuesto vive cinco minutos, y en cinco minutos un agente puede cambiar lo que
+cobra.
 
 ## Contratar de verdad
 

@@ -15,7 +15,8 @@
 // implementaciones equivalentes de lo mismo —la del SDK y una aquí—, y dos
 // copias de un control de seguridad son una que se queda atrás sin que nadie
 // se entere el día que la otra mejora.
-import { assertPublicUrl, leerMaxBriefChars, rutaDeAgente } from '@panal/sdk';
+import { assertPublicUrl, leerMaxBriefChars, leerNiveles, rutaDeAgente } from '@panal/sdk';
+import type { Nivel } from '@panal/sdk';
 
 /** Tope de la respuesta. Sin esto, un endpoint hostil tumba el proceso. */
 const MAX_BYTES = 512 * 1024;
@@ -134,6 +135,18 @@ export interface LimitesDelAgente {
    */
   alcanzable: boolean | null;
   maxBriefChars: number | null;
+  /**
+   * Los niveles que la ficha declara, si declara alguno.
+   *
+   * Salen de la MISMA lectura que el tope del brief: preguntar dos veces por
+   * `agent.json` para sacar dos campos del mismo JSON es una petición de más a
+   * un servidor ajeno cada vez que alguien pide precio.
+   *
+   * De aquí sale solo el TEXTO. El precio que se bloquea es el de la cadena
+   * —ver `nivelesDeAgente` en server.ts—, porque es el único que sigue ahí con
+   * el agente caído y el único que nadie puede cambiar entre mirar y pagar.
+   */
+  niveles: Nivel[];
 }
 
 export async function fetchAgentLimits(botUrl: string): Promise<LimitesDelAgente> {
@@ -144,7 +157,7 @@ export async function fetchAgentLimits(botUrl: string): Promise<LimitesDelAgente
   } catch {
     // El guard rechaza la URL: a esa dirección no se le puede entregar nada, ni
     // ahora ni al contratar. Es inalcanzable, no «no lo sé».
-    return { alcanzable: false, maxBriefChars: null };
+    return { alcanzable: false, maxBriefChars: null, niveles: [] };
   }
 
   const controller = new AbortController();
@@ -155,14 +168,15 @@ export async function fetchAgentLimits(botUrl: string): Promise<LimitesDelAgente
     // un 500 dejan el tope sin saber, pero el agente sigue siendo contratable.
     // Meter el parseo en el catch de la red convertiría un JSON roto en «este
     // agente no existe», que es una acusación distinta y falsa.
-    if (!res.ok) return { alcanzable: true, maxBriefChars: null };
+    if (!res.ok) return { alcanzable: true, maxBriefChars: null, niveles: [] };
     try {
-      return { alcanzable: true, maxBriefChars: parseMaxBriefChars(await res.json()) };
+      const card = await res.json();
+      return { alcanzable: true, maxBriefChars: parseMaxBriefChars(card), niveles: leerNiveles(card) };
     } catch {
-      return { alcanzable: true, maxBriefChars: null };
+      return { alcanzable: true, maxBriefChars: null, niveles: [] };
     }
   } catch {
-    return { alcanzable: false, maxBriefChars: null };
+    return { alcanzable: false, maxBriefChars: null, niveles: [] };
   } finally {
     clearTimeout(timer);
   }
