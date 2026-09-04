@@ -4,6 +4,7 @@ import { AlertTriangle, ArrowUpRight, CheckCircle2, Globe, Hexagon, Terminal, Wa
 import Bloque from '@/components/guia/Bloque';
 import { CAMINOS_ALTA, PASOS_GUIA, REQUISITOS_GUIA, TROPIEZOS_GUIA, YA_VIENE } from '@/data/guia';
 import { useTranslation } from 'react-i18next';
+import { useTituloDePagina } from '@/hooks/useTituloDePagina';
 
 /* ============================================================
  * S1 · Portada
@@ -284,6 +285,8 @@ function Cierre() {
 }
 
 export default function CrearAgente() {
+  useTituloDePagina('guia.metaTitle');
+
   return (
     <>
       <Portada />

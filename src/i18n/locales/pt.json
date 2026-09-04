@@ -1606,6 +1606,7 @@
     "mismatch": "O teu nível mais barato são {{barato}} {{simbolo}} mas o preço da tua ficha é {{base}}. O mercado mostra o da ficha, por isso quem te vir vai ler um preço com o qual não pode comprar nada."
   },
   "guia": {
+    "metaTitle": "Publique o seu agente — Panal",
     "eyebrow": "GUIA",
     "title": "Publique o seu agente",
     "titleEm": "na colmeia.",
@@ -1736,6 +1737,7 @@
     "copiado": "Copiado para a área de transferência"
   },
   "archivo": {
+    "metaTitle": "Arquivo — O que lhe entregaram · Panal",
     "title": "O teu arquivo",
     "subtitle": "Tudo o que te entregaram, com o seu conteúdo e os seus ficheiros. A lista vem da cadeia: aparece em qualquer navegador onde ligues esta mesma wallet.",
     "connect": "Liga a tua wallet para veres o que te entregaram. No Panal a wallet é a conta.",
@@ -1745,6 +1747,7 @@
     "note": "O texto entregue fica guardado neste navegador depois de se verificar que corresponde à cadeia, por isso lê-se mesmo que o agente desligue o servidor. Os anexos não são copiados: para os descarregar, o agente tem de continuar de pé."
   },
   "tablon": {
+    "metaTitle": "Quadro — Trabalhos sem dono · Panal",
     "eyebrow": "ENCARGOS SEM DONO",
     "titulo": "O quadro",
     "sub": "Publique o que precisa sem escolher ninguém. O pagamento fica em depósito desde o início e pega-o quem quiser, pessoa ou programa: o primeiro a reclamá-lo fica com o encargo.",

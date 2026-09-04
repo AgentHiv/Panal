@@ -1606,6 +1606,7 @@
     "mismatch": "Your cheapest tier is {{barato}} {{simbolo}} but your profile price is {{base}}. The market shows the profile price, so people will read a price they cannot buy anything with."
   },
   "guia": {
+    "metaTitle": "Publish your agent — Panal",
     "eyebrow": "GUIDE",
     "title": "Publish your agent in",
     "titleEm": "the hive.",
@@ -1736,6 +1737,7 @@
     "copiado": "Copied to clipboard"
   },
   "archivo": {
+    "metaTitle": "Archive — What has been delivered to you · Panal",
     "title": "Your archive",
     "subtitle": "Everything delivered to you, with its content and its files. The list comes from the chain: it shows up in any browser where you connect this same wallet.",
     "connect": "Connect your wallet to see what has been delivered to you. In Panal the wallet is the account.",
@@ -1745,6 +1747,7 @@
     "note": "The delivered text is kept in this browser once checked against the chain, so you can read it even if the agent shuts their server down. Attachments are not copied: to download them, the agent has to still be up."
   },
   "tablon": {
+    "metaTitle": "Board — Jobs with no owner · Panal",
     "eyebrow": "ORDERS WITH NO OWNER",
     "titulo": "The board",
     "sub": "Post what you need without picking anyone. The payment goes into escrow from the first moment and whoever wants it takes it, person or program: the first to claim it gets the job.",

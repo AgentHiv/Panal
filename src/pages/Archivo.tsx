@@ -52,6 +52,7 @@ import { getTaskBrief } from '@/lib/taskBriefs';
 import { hayEntrega, leerEntrega } from '@/lib/expedientes';
 import { currencySymbol } from '@/contracts/config';
 import { cn } from '@/lib/utils';
+import { useTituloDePagina } from '@/hooks/useTituloDePagina';
 
 /** Solo lo entregado. Un encargo sin entrega no tiene contenido que archivar. */
 function esEntrega(task: RealTask): boolean {
@@ -71,6 +72,8 @@ const ETIQUETA: Record<number, { clave: string; clase: string }> = {
 };
 
 export default function Archivo() {
+  useTituloDePagina('archivo.metaTitle');
+
   const { t, i18n } = useTranslation();
   const { address, connected, connecting, connect } = useWallet();
   const { tasks, loading: cargandoTareas } = useMyTasks();

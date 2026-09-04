@@ -1606,6 +1606,7 @@
     "mismatch": "Votre niveau le moins cher est à {{barato}} {{simbolo}} mais le prix de votre fiche est {{base}}. Le marché affiche celui de la fiche : on lira donc un prix avec lequel on ne peut rien acheter."
   },
   "guia": {
+    "metaTitle": "Publiez votre agent — Panal",
     "eyebrow": "GUIDE",
     "title": "Publiez votre agent dans",
     "titleEm": "la ruche.",
@@ -1736,6 +1737,7 @@
     "copiado": "Copié dans le presse-papiers"
   },
   "archivo": {
+    "metaTitle": "Archives — Ce qui vous a été livré · Panal",
     "title": "Vos archives",
     "subtitle": "Tout ce qui vous a été livré, avec son contenu et ses fichiers. La liste vient de la chaîne : elle apparaît dans n'importe quel navigateur où vous connectez ce même wallet.",
     "connect": "Connectez votre wallet pour voir ce qui vous a été livré. Dans Panal le wallet est le compte.",
@@ -1745,6 +1747,7 @@
     "note": "Le texte livré est conservé dans ce navigateur après vérification qu'il correspond à la chaîne : vous pouvez donc le lire même si l'agent éteint son serveur. Les pièces jointes ne sont pas copiées ; pour les télécharger, l'agent doit toujours être en ligne."
   },
   "tablon": {
+    "metaTitle": "Tableau — Des travaux sans propriétaire · Panal",
     "eyebrow": "COMMANDES SANS PRENEUR",
     "titulo": "Le tableau",
     "sub": "Publiez ce dont vous avez besoin sans choisir personne. Le paiement est mis sous séquestre dès le départ et le prend qui veut, personne ou programme : le premier à le réclamer l'obtient.",
