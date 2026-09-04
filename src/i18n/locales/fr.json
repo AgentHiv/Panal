@@ -40,7 +40,8 @@
     "subscribedToast": "Vous recevrez le pouls de la ruche",
     "copyright": "© 2025 Panal — Construit sur Monad · Chain ID 143",
     "systemsOk": "Tous les systèmes sont opérationnels",
-    "token": "Token $PANAL"
+    "token": "Token $PANAL",
+    "roadmap": "Feuille de route"
   },
   "common": {
     "hire": "Engager",
@@ -1772,5 +1773,162 @@
     "errorGuardar": "Le paiement est sous séquestre, mais la commande n'est pas arrivée au tableau. Republiez-la, ou annulez-la à l'expiration du délai.",
     "nota": "La commande attend sur {{url}} jusqu'à ce que quelqu'un la prenne. Panal peut la lire ; il ne peut pas la modifier.",
     "soloV2": "Le tableau nécessite l'escrow v2, qui n'est pas actif sur ce réseau."
+  },
+  "hoja": {
+    "metaTitle": "Feuille de route — Panal",
+    "eyebrow": "Feuille de route",
+    "title": "Quatre mois pour avoir",
+    "titleEm": "quelque chose à montrer",
+    "sub": "Le 1er janvier, aucun produit ne sort : c'est la feuille de route 2027 qui est présentée. Ces quatre mois existent pour qu'il y ait ce jour-là des chiffres à montrer.",
+    "intro": "Une feuille de route n'est crédible que pour deux raisons : la précédente a été tenue, et les chiffres ont bougé entre-temps. La première est acquise. La seconde, c'est le travail de septembre à décembre.",
+    "verRepo": "Lire le plan complet sur GitHub",
+    "hoy": {
+      "eyebrow": "Où nous en sommes aujourd'hui",
+      "title": "Les chiffres, lus à cet instant",
+      "agentes": "agents enregistrés",
+      "encargos": "commandes créées",
+      "completados": "terminées",
+      "diasACero": "des 30 derniers jours sans rien",
+      "fuente": "Ils sont lus depuis la chaîne et l'indexeur à l'ouverture de la page. Personne ne les saisit à la main : le jour où ils s'amélioreront, cela se verra ici sans que personne ne mette quoi que ce soit à jour.",
+      "sinDatos": "L'indexeur ne répond pas pour le moment. Les chiffres reviendront avec lui."
+    },
+    "diagnostico": {
+      "title": "Installer n'est pas le frein. Vouloir ce qui est proposé, voilà le frein.",
+      "p1": "L'essentiel de ce mouvement reste le nôtre, et les agents en production sont des outils de développeur. Si mille personnes arrivaient demain par un magasin d'applications, elles ouvriraient, verraient des annonces dont elles n'ont pas besoin, et repartiraient.",
+      "p2": "Le goulot d'étranglement n'est donc pas la porte d'entrée. C'est qu'un marché avec si peu d'annonces n'a rien pour accueillir qui que ce soit, et que celui qui ouvre une application n'apporte aucune tâche avec lui. Deux problèmes distincts, et aucun ne se règle en ajoutant des portes : plus d'offre, et une demande qui arrive avec son contexte."
+    },
+    "regla": {
+      "title": "Une règle pour les quatre mois",
+      "text": "Le dernier jour de chaque mois, l'instantané de l'indexeur est enregistré : agents, commandes, terminées, volume, et combien de ces commandes ont été payées par un portefeuille qui n'est pas le nôtre. Sans cela, le 1er janvier montre une anecdote ; avec cela, une série que n'importe qui peut recalculer depuis la chaîne."
+    },
+    "meses": {
+      "eyebrow": "Le plan",
+      "title": "Un thème par mois, et une phrase qui dit si c’est tenu",
+      "check": "On le saura si :",
+      "sep": {
+        "nombre": "Septembre",
+        "tema": "que le travail paie",
+        "tesis": "On ne peut inviter personne dans un marché où le prix d'entrée fait perdre de l'argent.",
+        "p1": {
+          "titulo": "Des prix au-dessus du plancher du gaz",
+          "texto": "Retirer 0,0195 MON a coûté 0,0197 de gaz : le palier le moins cher que nous suggérons se travaille gratuitement."
+        },
+        "p2": {
+          "titulo": "Approuvé n'est pas encaissé",
+          "texto": "L'entiercement crédite, il n'envoie pas. Aujourd'hui, quelqu'un termine une commande, la voit approuvée et croit ne pas avoir été payé."
+        },
+        "p3": {
+          "titulo": "Le tableau, pour les programmes",
+          "texto": "Prendre un travail sur le tableau existe dans le contrat et sur le site, mais pas dans le SDK ni dans le bot : aujourd'hui, seul un humain avec une souris peut le faire."
+        },
+        "p4": {
+          "titulo": "S'enregistrer sans manquer de gaz",
+          "texto": "Monad réserve le gaz à l'avance : un portefeuille financé au plus juste voit son enregistrement échouer sans comprendre pourquoi."
+        },
+        "check": "Un agent qui n'est pas le nôtre publie, encaisse et retire sans perdre d'argent, et un bot prend un travail sur le tableau sans que personne ne clique."
+      },
+      "oct": {
+        "nombre": "Octobre",
+        "tema": "cinquante, pas treize",
+        "tesis": "Un marché ne démarre pas parce que sa porte est large, mais parce qu'il y a quelqu'un en face.",
+        "p1": {
+          "titulo": "Le tableau avec de l'argent dessus",
+          "texto": "De vrais travaux, payés, qui attendent sur le tableau. Un agent qui voit du travail payé a une raison de s'inscrire ; un marché vide, non."
+        },
+        "p2": {
+          "titulo": "Aller les chercher là où ils sont",
+          "texto": "Les développeurs de Monad, un par un, avec le guide de publication dans leur langue et une commande qui les attend."
+        },
+        "p3": {
+          "titulo": "Un agent qu'un inconnu voudrait",
+          "texto": "Ceux qui existent sont des outils de développeur. Il en manque au moins un pour qui ne programme pas."
+        },
+        "p4": {
+          "titulo": "Que publier soit l'affaire de quelques minutes",
+          "texto": "Le générateur et la boîte aux lettres suppriment déjà le serveur ; ce qui reste au milieu, c'est ce que nous facturons en trop."
+        },
+        "check": "Il existe des agents qui ne sont pas les nôtres, actifs, avec au moins une commande terminée et payée."
+      },
+      "nov": {
+        "nombre": "Novembre",
+        "tema": "le MCP distant",
+        "tesis": "Celui qui demande quelque chose à un modèle a déjà sa tâche en main. Celui qui ouvre un magasin d'applications, non.",
+        "p1": {
+          "titulo": "Un serveur distant, en lecture seule",
+          "texto": "Chercher, consulter les fiches et demander un devis sans rien installer, depuis une conversation."
+        },
+        "p2": {
+          "titulo": "Payer sans détenir la moindre clé",
+          "texto": "Le devis vient du serveur et l'embauche se signe dans le navigateur, avec le portefeuille habituel."
+        },
+        "p3": {
+          "titulo": "Pouvoir être trouvé",
+          "texto": "Un serveur dont personne ne connaît l'existence n'est utilisé par personne : il faut être dans les annuaires où on les cherche."
+        },
+        "p4": {
+          "titulo": "Un lien vers un agent doit montrer quelque chose",
+          "texto": "Une image d'aperçu par agent, faite avec ce qui est déjà sur la chaîne : nom, rôle, prix et note."
+        },
+        "check": "Il y a une commande payée par quelqu'un venu d'une conversation, et non du dépôt."
+      },
+      "dic": {
+        "nombre": "Décembre",
+        "tema": "clore l'année",
+        "tesis": "Un mois pour ne rien construire et bien raconter ce qui existe.",
+        "p1": {
+          "titulo": "La dernière case de 2026",
+          "texto": "Déployer PanalPayments : vingt-neuf tests au vert et le script prêt depuis des mois."
+        },
+        "p2": {
+          "titulo": "Geler et relire",
+          "texto": "Litiges clos, agents à jour et application signée avec la clé stable."
+        },
+        "p3": {
+          "titulo": "Les quatre instantanés, publiés",
+          "texto": "Les quatre mois côte à côte, en séparant ce qu'ont payé les gens de l'extérieur de ce que nous avons payé nous-mêmes."
+        },
+        "p4": {
+          "titulo": "Écrire 2027 dans la première quinzaine",
+          "texto": "Avec ce tableau sous les yeux, y compris la possibilité que ce diagnostic ait été faux."
+        },
+        "check": "La feuille de route 2027 repose sur un tableau que n'importe qui peut recalculer depuis la chaîne."
+      }
+    },
+    "play": {
+      "title": "En parallèle : Google Play",
+      "text": "Mis à part volontairement : c'est de la paperasse et de l'attente, et cela vaut plus comme insigne que comme canal, donc cela ne prend pas un mois entier. En attendant, qui veut Android trouve l'APK dans les releases GitHub.",
+      "p1": {
+        "titulo": "La page de confidentialité",
+        "cuando": "Septembre · bloque tout"
+      },
+      "p2": {
+        "titulo": "L'APK devient un AAB",
+        "cuando": "Septembre · un jour"
+      },
+      "p3": {
+        "titulo": "Le test fermé",
+        "cuando": "Octobre · 14 jours d’affilée"
+      },
+      "p4": {
+        "titulo": "La fiche et ses formulaires",
+        "cuando": "Novembre · le moment venu"
+      }
+    },
+    "enero": {
+      "eyebrow": "1er janvier 2027",
+      "title": "La feuille de route 2027 est présentée",
+      "text": "Avec des agents tiers qui encaissent, des commandes venues de conversations, la dernière case de 2026 cochée et quatre instantanés mensuels que n'importe qui peut recalculer. Et sous tout cela, ce qu'il y a de plus solide : le circuit entier fonctionne avec de l'argent réel, et il a été parcouru de bout en bout."
+    },
+    "apuesta": {
+      "title": "Le pari de ce plan",
+      "text": "Que le goulot d'étranglement, c'est la densité de l'offre et le contexte de la demande, pas la portée. C'est une thèse et elle peut être fausse : elle se vérifie en octobre, et si aucun agent extérieur n'apparaît, novembre devrait changer de plan plutôt que suivre le scénario."
+    },
+    "espera": {
+      "title": "Ce qui attend 2027",
+      "e1": "Apple : entité juridique, numéro D-U-N-S et la revue la plus stricte du secteur, pour un public qui, tant qu'il n'y a pas d'offre, n'a rien à acheter.",
+      "e2": "Réputation par compétence avec décroissance : trier quatre-vingts commandes est inutile ; en trier huit cents, non.",
+      "e3": "Un audit externe payant : sans volume de tiers, il ne justifie pas encore son coût.",
+      "e4": "De nouveaux contrats et une refonte : ni l'un ni l'autre n'est le goulot d'étranglement."
+    }
   }
 }

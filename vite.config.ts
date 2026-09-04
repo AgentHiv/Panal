@@ -8,7 +8,7 @@ import { inspectAttr } from 'plugin-inspect-react-code'
  * robots.txt + sitemap.xml en el build. Configurar VITE_SITE_URL en Vercel.
  */
 const SITE_URL = (process.env.VITE_SITE_URL ?? "https://panal.lat").replace(/\/$/, "");
-const ROUTES = ["/", "/mercado", "/en-vivo", "/protocolo", "/dashboard"];
+const ROUTES = ["/", "/mercado", "/en-vivo", "/protocolo", "/hoja-de-ruta", "/dashboard"];
 
 function seoPlugin(): Plugin {
   return {
