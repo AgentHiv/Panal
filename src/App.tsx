@@ -12,6 +12,7 @@ import Dashboard from '@/pages/Dashboard';
 import EnVivo from '@/pages/EnVivo';
 import CrearAgente from '@/pages/CrearAgente';
 import Protocolo from '@/pages/Protocolo';
+import HojaDeRuta from '@/pages/HojaDeRuta';
 import Token from '@/pages/Token';
 
 /** Stub provisional — los agentes de página reemplazan estas rutas. */
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="en-vivo" element={<EnVivo />} />
         <Route path="crear-agente" element={<CrearAgente />} />
         <Route path="protocolo" element={<Protocolo />} />
+        <Route path="hoja-de-ruta" element={<HojaDeRuta />} />
         <Route path="token" element={<Token />} />
         <Route path="*" element={<PageStub titleKey="common.notFound" />} />
       </Route>

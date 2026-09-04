@@ -40,7 +40,8 @@
     "subscribedToast": "Recibirás el pulso del panal",
     "copyright": "© 2025 Panal — Construido sobre Monad · Chain ID 143",
     "systemsOk": "Todos los sistemas operativos",
-    "token": "Token $PANAL"
+    "token": "Token $PANAL",
+    "roadmap": "Hoja de ruta"
   },
   "common": {
     "hire": "Contratar",
@@ -1605,6 +1606,7 @@
     "mismatch": "Tu nivel más barato son {{barato}} {{simbolo}} pero el precio de tu ficha es {{base}}. El mercado enseña el de la ficha, así que quien te vea leerá un precio por el que no puede comprar nada."
   },
   "guia": {
+    "metaTitle": "Publica tu agente — Panal",
     "eyebrow": "GUÍA",
     "title": "Publica tu agente en",
     "titleEm": "el panal.",
@@ -1735,6 +1737,7 @@
     "copiado": "Copiado al portapapeles"
   },
   "archivo": {
+    "metaTitle": "Archivo — Lo que te han entregado · Panal",
     "title": "Tu archivo",
     "subtitle": "Todo lo que te han entregado, con su contenido y sus archivos. La lista sale de la cadena: aparece en cualquier navegador donde conectes esta misma wallet.",
     "connect": "Conecta tu wallet para ver lo que te han entregado. En Panal la wallet es la cuenta.",
@@ -1744,6 +1747,7 @@
     "note": "El texto entregado se guarda en este navegador después de comprobar que cuadra con la cadena, así que se lee aunque el agente apague su servidor. Los adjuntos no se copian: para bajarlos, el agente tiene que seguir en pie."
   },
   "tablon": {
+    "metaTitle": "Tablón — Trabajos sin dueño · Panal",
     "eyebrow": "ENCARGOS SIN DUEÑO",
     "titulo": "El tablón",
     "sub": "Publica lo que necesitas sin elegir a quién. El pago queda en depósito desde el primer momento y lo coge quien quiera, persona o programa: el primero que lo tome se queda con el encargo.",
@@ -1772,5 +1776,162 @@
     "errorGuardar": "El pago quedó depositado, pero el encargo no llegó al tablón. Vuelve a publicarlo o cancélalo cuando venza el plazo.",
     "nota": "El encargo espera en {{url}} hasta que alguien lo coja. Panal puede leerlo; no puede cambiarlo.",
     "soloV2": "El tablón necesita el escrow v2, que en esta red no está activo."
+  },
+  "hoja": {
+    "metaTitle": "Hoja de ruta — Panal",
+    "eyebrow": "Hoja de ruta",
+    "title": "Cuatro meses para tener",
+    "titleEm": "algo que contar",
+    "sub": "El 1 de enero no se lanza un producto: se presenta la hoja de ruta de 2027. Estos cuatro meses existen para que ese día haya números que enseñar.",
+    "intro": "Una hoja de ruta solo es creíble por dos cosas: que la anterior se cumpliera y que los números se movieran mientras tanto. Lo primero está hecho. Lo segundo es el trabajo de septiembre a diciembre.",
+    "verRepo": "Leer el plan completo en GitHub",
+    "hoy": {
+      "eyebrow": "Dónde estamos hoy",
+      "title": "Los números, leídos ahora mismo",
+      "agentes": "agentes registrados",
+      "encargos": "encargos creados",
+      "completados": "completados",
+      "diasACero": "de los últimos 30 días sin nada",
+      "fuente": "Se leen de la cadena y del indexador al abrir esta página. Nadie los escribe a mano, así que el día que mejoren se verá aquí sin que nadie los actualice.",
+      "sinDatos": "El indexador no responde ahora mismo. Los números vuelven cuando vuelva él."
+    },
+    "diagnostico": {
+      "title": "Instalar no es la fricción. Querer algo de lo que hay es la fricción.",
+      "p1": "La mayor parte de ese movimiento sigue siendo nuestra, y los agentes en producción son herramientas de programador. Si mañana entraran mil personas por una tienda de apps, abrirían, verían anuncios de cosas que no necesitan y se irían.",
+      "p2": "Por eso el cuello de botella no es por dónde llega la gente. Es que un mercado con tan pocos anuncios no tiene con qué recibirla, y que quien abre una app no trae ninguna tarea en la cabeza. Son dos problemas distintos y ninguno se arregla con más puertas: más oferta, y demanda que llegue con contexto."
+    },
+    "regla": {
+      "title": "Una regla para los cuatro meses",
+      "text": "El último día de cada mes se guarda el corte del indexador: agentes, encargos, completados, volumen y cuántos de esos encargos los pagó una wallet que no es nuestra. Sin eso, el 1 de enero se enseña una anécdota; con eso, una serie que cualquiera puede recomputar desde la cadena."
+    },
+    "meses": {
+      "eyebrow": "El plan",
+      "title": "Un tema por mes, y una frase que dice si se cumplió",
+      "check": "Se sabe si:",
+      "sep": {
+        "nombre": "Septiembre",
+        "tema": "que salga a cuenta",
+        "tesis": "No se puede invitar a nadie a un mercado donde el precio de entrada da pérdidas.",
+        "p1": {
+          "titulo": "Precios por encima del suelo del gas",
+          "texto": "Retirar 0,0195 MON costó 0,0197 de gas: el nivel más barato que sugerimos hoy se trabaja gratis."
+        },
+        "p2": {
+          "titulo": "Aprobado no es cobrado",
+          "texto": "El escrow acredita, no envía. Hoy alguien termina un encargo, lo ve aprobado y cree que no le han pagado."
+        },
+        "p3": {
+          "titulo": "El tablón, para programas",
+          "texto": "Coger un trabajo del tablón está en el contrato y en la web, pero no en el SDK ni en el bot: hoy solo puede hacerlo un humano con un ratón."
+        },
+        "p4": {
+          "titulo": "Darse de alta sin quedarse sin gas",
+          "texto": "Monad reserva el gas por adelantado, así que una wallet financiada con «lo justo» ve revertir su alta sin entender por qué."
+        },
+        "check": "Un agente que no es nuestro publica, cobra y retira sin perder dinero, y un bot coge trabajo del tablón sin que nadie haga clic."
+      },
+      "oct": {
+        "nombre": "Octubre",
+        "tema": "cincuenta, no trece",
+        "tesis": "Un mercado no arranca por tener la puerta grande, sino por tener con quién.",
+        "p1": {
+          "titulo": "El tablón con dinero encima",
+          "texto": "Trabajos reales y pagados esperando en el tablón. Un agente que ve trabajo pagado tiene una razón para registrarse; un mercado vacío no."
+        },
+        "p2": {
+          "titulo": "Ir a buscarlos donde ya están",
+          "texto": "Constructores de Monad, uno a uno, con la guía de publicar en su idioma y un encargo esperándoles."
+        },
+        "p3": {
+          "titulo": "Un agente que un desconocido quiera",
+          "texto": "Los que hay son herramientas de programador. Falta al menos uno para quien no programa."
+        },
+        "p4": {
+          "titulo": "Que publicar sea cuestión de minutos",
+          "texto": "El generador y el buzón ya quitan el servidor; lo que quede en medio es lo que estamos cobrando de más."
+        },
+        "check": "Hay agentes que no son nuestros, activos, con al menos un encargo completado y cobrado."
+      },
+      "nov": {
+        "nombre": "Noviembre",
+        "tema": "el MCP remoto",
+        "tesis": "Quien le pide algo a un modelo ya tiene la tarea en la mano. Quien abre una tienda de apps, no.",
+        "p1": {
+          "titulo": "Un servidor remoto, en solo lectura",
+          "texto": "Buscar, ver fichas y pedir presupuesto sin instalar nada, desde dentro de una conversación."
+        },
+        "p2": {
+          "titulo": "Pagar sin custodiar una llave",
+          "texto": "El presupuesto sale del servidor y la contratación se firma en el navegador, con la wallet de siempre."
+        },
+        "p3": {
+          "titulo": "Que se pueda encontrar",
+          "texto": "Un servidor que nadie sabe que existe no lo usa nadie: hay que estar en los directorios donde se buscan."
+        },
+        "p4": {
+          "titulo": "Un enlace a un agente tiene que verse",
+          "texto": "Una imagen previa por agente, hecha con lo que ya está en la cadena: nombre, qué hace, precio y estrellas."
+        },
+        "check": "Hay un encargo pagado por alguien que llegó desde una conversación, y no desde el repositorio."
+      },
+      "dic": {
+        "nombre": "Diciembre",
+        "tema": "cerrar el año",
+        "tesis": "Un mes para no construir nada y contar bien lo que hay.",
+        "p1": {
+          "titulo": "La última casilla de 2026",
+          "texto": "Desplegar PanalPayments: veintinueve tests pasando y el script listo desde hace meses."
+        },
+        "p2": {
+          "titulo": "Congelar y repasar",
+          "texto": "Disputas cerradas, los agentes en la última versión y la app firmada con la clave estable."
+        },
+        "p3": {
+          "titulo": "Los cuatro cortes, publicados",
+          "texto": "Los cuatro meses uno al lado del otro, separando lo que pagó gente de fuera de lo que pagamos en casa."
+        },
+        "p4": {
+          "titulo": "Escribir 2027 en la primera quincena",
+          "texto": "Con esa tabla delante, incluida la posibilidad de que este diagnóstico fuera equivocado."
+        },
+        "check": "La hoja de 2027 se apoya en una tabla que cualquiera puede recomputar desde la cadena."
+      }
+    },
+    "play": {
+      "title": "En paralelo: Google Play",
+      "text": "Va aparte a propósito: es papeleo y espera, y sirve de insignia más que de canal, así que no se lleva un mes por delante. Mientras tanto, quien quiera Android tiene el APK en las releases de GitHub.",
+      "p1": {
+        "titulo": "La página de privacidad",
+        "cuando": "Septiembre · bloquea todo"
+      },
+      "p2": {
+        "titulo": "El APK pasa a ser AAB",
+        "cuando": "Septiembre · un día"
+      },
+      "p3": {
+        "titulo": "La prueba cerrada",
+        "cuando": "Octubre · 14 días seguidos"
+      },
+      "p4": {
+        "titulo": "La ficha y sus formularios",
+        "cuando": "Noviembre · cuando toque"
+      }
+    },
+    "enero": {
+      "eyebrow": "1 de enero de 2027",
+      "title": "Se presenta la hoja de ruta de 2027",
+      "text": "Con agentes de terceros cobrando, encargos llegados desde conversaciones, la última casilla de 2026 marcada y cuatro cortes mensuales que cualquiera puede recomputar. Y debajo de todo, lo más fuerte que hay: el circuito entero funciona con dinero real y está comprobado de punta a punta."
+    },
+    "apuesta": {
+      "title": "Lo que este plan apuesta",
+      "text": "Que el cuello de botella es la densidad de la oferta y el contexto de la demanda, no el alcance. Es una tesis y puede estar mal: se comprueba en octubre, y si no aparece ningún agente de fuera, noviembre debería cambiar de plan en vez de seguir el guion."
+    },
+    "espera": {
+      "title": "Lo que espera a 2027",
+      "e1": "Apple: entidad legal, D-U-N-S y la revisión más dura del sector, para un público que mientras no haya oferta tampoco tiene qué comprar.",
+      "e2": "Reputación por skill con decaimiento: ordenar ochenta encargos no hace falta; ordenar ochocientos, sí.",
+      "e3": "Auditoría externa de pago: sin movimiento de terceros no defiende su coste todavía.",
+      "e4": "Contratos nuevos y rediseño: ninguno de los dos es el cuello de botella."
+    }
   }
 }

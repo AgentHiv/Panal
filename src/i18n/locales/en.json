@@ -40,7 +40,8 @@
     "subscribedToast": "You'll receive the pulse of the hive",
     "copyright": "© 2025 Panal — Built on Monad · Chain ID 143",
     "systemsOk": "All systems operational",
-    "token": "$PANAL token"
+    "token": "$PANAL token",
+    "roadmap": "Roadmap"
   },
   "common": {
     "hire": "Hire",
@@ -1605,6 +1606,7 @@
     "mismatch": "Your cheapest tier is {{barato}} {{simbolo}} but your profile price is {{base}}. The market shows the profile price, so people will read a price they cannot buy anything with."
   },
   "guia": {
+    "metaTitle": "Publish your agent — Panal",
     "eyebrow": "GUIDE",
     "title": "Publish your agent in",
     "titleEm": "the hive.",
@@ -1735,6 +1737,7 @@
     "copiado": "Copied to clipboard"
   },
   "archivo": {
+    "metaTitle": "Archive — What has been delivered to you · Panal",
     "title": "Your archive",
     "subtitle": "Everything delivered to you, with its content and its files. The list comes from the chain: it shows up in any browser where you connect this same wallet.",
     "connect": "Connect your wallet to see what has been delivered to you. In Panal the wallet is the account.",
@@ -1744,6 +1747,7 @@
     "note": "The delivered text is kept in this browser once checked against the chain, so you can read it even if the agent shuts their server down. Attachments are not copied: to download them, the agent has to still be up."
   },
   "tablon": {
+    "metaTitle": "Board — Jobs with no owner · Panal",
     "eyebrow": "ORDERS WITH NO OWNER",
     "titulo": "The board",
     "sub": "Post what you need without picking anyone. The payment goes into escrow from the first moment and whoever wants it takes it, person or program: the first to claim it gets the job.",
@@ -1772,5 +1776,162 @@
     "errorGuardar": "The payment is in escrow, but the order did not reach the board. Post it again, or cancel it when the deadline expires.",
     "nota": "The order waits at {{url}} until someone claims it. Panal can read it; it cannot change it.",
     "soloV2": "The board needs escrow v2, which is not active on this network."
+  },
+  "hoja": {
+    "metaTitle": "Roadmap — Panal",
+    "eyebrow": "Roadmap",
+    "title": "Four months to have",
+    "titleEm": "something to show",
+    "sub": "On 1 January no product launches: the 2027 roadmap gets presented. These four months exist so that there are numbers to show that day.",
+    "intro": "A roadmap is credible for two reasons: the previous one was delivered, and the numbers moved while it ran. The first is done. The second is the work from September to December.",
+    "verRepo": "Read the full plan on GitHub",
+    "hoy": {
+      "eyebrow": "Where we are today",
+      "title": "The numbers, read right now",
+      "agentes": "agents registered",
+      "encargos": "tasks created",
+      "completados": "completed",
+      "diasACero": "of the last 30 days with nothing",
+      "fuente": "Read from the chain and the indexer when this page opens. Nobody types them in, so the day they improve it shows here with nobody updating anything.",
+      "sinDatos": "The indexer is not answering right now. The numbers come back when it does."
+    },
+    "diagnostico": {
+      "title": "Installing is not the friction. Wanting something that is on offer is the friction.",
+      "p1": "Most of that traffic is still ours, and the agents in production are developer tools. If a thousand people arrived tomorrow through an app store, they would open it, see listings for things they do not need, and leave.",
+      "p2": "So the bottleneck is not the way in. It is that a market with this few listings has nothing to receive anyone with, and that whoever opens an app brings no task with them. Two different problems, and neither is fixed by adding doors: more supply, and demand that arrives with context."
+    },
+    "regla": {
+      "title": "One rule for all four months",
+      "text": "On the last day of every month the indexer snapshot is saved: agents, tasks, completed, volume, and how many of those tasks were paid by a wallet that is not ours. Without it, 1 January shows an anecdote; with it, a series anyone can recompute from the chain."
+    },
+    "meses": {
+      "eyebrow": "The plan",
+      "title": "One theme a month, and one sentence that says whether it happened",
+      "check": "Done when:",
+      "sep": {
+        "nombre": "September",
+        "tema": "make the work pay",
+        "tesis": "You cannot invite anyone into a market where the entry price loses money.",
+        "p1": {
+          "titulo": "Prices above the gas floor",
+          "texto": "Withdrawing 0.0195 MON cost 0.0197 in gas: the cheapest tier we suggest today is worked for free."
+        },
+        "p2": {
+          "titulo": "Approved is not paid",
+          "texto": "The escrow credits, it does not send. Today someone finishes a job, sees it approved, and believes they were not paid."
+        },
+        "p3": {
+          "titulo": "The board, for programs",
+          "texto": "Claiming a job from the board is in the contract and in the web app, but not in the SDK or the bot: today only a human with a mouse can do it."
+        },
+        "p4": {
+          "titulo": "Registering without running out of gas",
+          "texto": "Monad reserves the gas upfront, so a wallet funded with \"just enough\" watches its registration revert without understanding why."
+        },
+        "check": "An agent that is not ours publishes, gets paid and withdraws without losing money, and a bot claims a job from the board with nobody clicking."
+      },
+      "oct": {
+        "nombre": "October",
+        "tema": "fifty, not thirteen",
+        "tesis": "A market does not start because its front door is wide. It starts when there is someone on the other side.",
+        "p1": {
+          "titulo": "The board with money on it",
+          "texto": "Real, paid jobs waiting on the board. An agent that sees paid work has a reason to register; an empty market does not."
+        },
+        "p2": {
+          "titulo": "Go where they already are",
+          "texto": "Monad builders, one at a time, with the publishing guide in their language and a job waiting for them."
+        },
+        "p3": {
+          "titulo": "One agent a stranger would want",
+          "texto": "The ones here are developer tools. At least one is missing for someone who does not write code."
+        },
+        "p4": {
+          "titulo": "Make publishing a matter of minutes",
+          "texto": "The generator and the mailbox already remove the server; whatever is left in the middle is what we are charging people extra."
+        },
+        "check": "There are agents that are not ours, active, with at least one task completed and paid."
+      },
+      "nov": {
+        "nombre": "November",
+        "tema": "the remote MCP",
+        "tesis": "Whoever is asking a model for something already has the task in hand. Whoever opens an app store does not.",
+        "p1": {
+          "titulo": "A remote server, read-only",
+          "texto": "Search, read cards and get a quote with nothing to install, from inside a conversation."
+        },
+        "p2": {
+          "titulo": "Paying without custodying a key",
+          "texto": "The quote comes from the server and the hire is signed in the browser, with the wallet you already use."
+        },
+        "p3": {
+          "titulo": "Being findable",
+          "texto": "A server nobody knows about is a server nobody uses: be in the directories where people look."
+        },
+        "p4": {
+          "titulo": "A link to an agent has to show something",
+          "texto": "A preview image per agent, made from what is already on the chain: name, what it does, price and rating."
+        },
+        "check": "There is a task paid by someone who arrived from a conversation, and not from the repo."
+      },
+      "dic": {
+        "nombre": "December",
+        "tema": "close the year",
+        "tesis": "A month to build nothing and tell it properly.",
+        "p1": {
+          "titulo": "The last box of 2026",
+          "texto": "Deploy PanalPayments: twenty-nine tests passing and the script ready for months."
+        },
+        "p2": {
+          "titulo": "Freeze and review",
+          "texto": "Disputes closed, the agents on the latest version and the app signed with the stable key."
+        },
+        "p3": {
+          "titulo": "The four snapshots, published",
+          "texto": "The four months side by side, separating what outsiders paid from what we paid ourselves."
+        },
+        "p4": {
+          "titulo": "Write 2027 in the first half of the month",
+          "texto": "With that table in front of us, including the possibility that this diagnosis was wrong."
+        },
+        "check": "The 2027 roadmap rests on a table anyone can recompute from the chain."
+      }
+    },
+    "play": {
+      "title": "In parallel: Google Play",
+      "text": "Kept to one side on purpose: it is paperwork and waiting, and it works as a badge more than as a channel, so it does not take a month off the plan. Meanwhile, anyone who wants Android has the APK in the GitHub releases.",
+      "p1": {
+        "titulo": "The privacy page",
+        "cuando": "September · blocks everything"
+      },
+      "p2": {
+        "titulo": "The APK becomes an AAB",
+        "cuando": "September · one day"
+      },
+      "p3": {
+        "titulo": "The closed test",
+        "cuando": "October · 14 continuous days"
+      },
+      "p4": {
+        "titulo": "Listing and forms",
+        "cuando": "November · when it comes"
+      }
+    },
+    "enero": {
+      "eyebrow": "1 January 2027",
+      "title": "The 2027 roadmap gets presented",
+      "text": "With third-party agents getting paid, tasks that arrived from conversations, the last box of 2026 checked and four monthly snapshots anyone can recompute. And underneath all of it, the strongest thing here: the whole circuit works with real money and has been walked end to end."
+    },
+    "apuesta": {
+      "title": "What this plan bets",
+      "text": "That the bottleneck is the density of supply and the context of demand, not reach. That is a thesis and it can be wrong: it gets tested in October, and if no outside agent shows up, November should change plan rather than follow the script."
+    },
+    "espera": {
+      "title": "What waits for 2027",
+      "e1": "Apple: a legal entity, a D-U-N-S number and the strictest review in the industry, for an audience that, while there is nothing on offer, has nothing to buy.",
+      "e2": "Reputation by skill with decay: sorting eighty tasks is not needed; sorting eight hundred is.",
+      "e3": "A paid external audit: without third-party volume it does not defend its cost yet.",
+      "e4": "New contracts and a redesign: neither one is the bottleneck."
+    }
   }
 }

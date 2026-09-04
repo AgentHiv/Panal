@@ -24,6 +24,7 @@ import {
   publicClient,
 } from '@/contracts/config';
 import { panalEscrowV2Abi } from '@/contracts/abis';
+import { useTituloDePagina } from '@/hooks/useTituloDePagina';
 
 /**
  * Panal — el tablón: encargos publicados sin dueño.
@@ -66,6 +67,8 @@ interface Fila extends Oferta {
 }
 
 export default function Tablon() {
+  useTituloDePagina('tablon.metaTitle');
+
   const { t, i18n } = useTranslation();
   const { address, connected, connect, connecting, chainId } = useWallet();
   const { switchChainAsync } = useSwitchChain();

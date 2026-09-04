@@ -40,7 +40,8 @@
     "subscribedToast": "Você receberá o pulso da colmeia",
     "copyright": "© 2025 Panal — Construído na Monad · Chain ID 143",
     "systemsOk": "Todos os sistemas operacionais",
-    "token": "Token $PANAL"
+    "token": "Token $PANAL",
+    "roadmap": "Roteiro"
   },
   "common": {
     "hire": "Contratar",
@@ -1605,6 +1606,7 @@
     "mismatch": "O teu nível mais barato são {{barato}} {{simbolo}} mas o preço da tua ficha é {{base}}. O mercado mostra o da ficha, por isso quem te vir vai ler um preço com o qual não pode comprar nada."
   },
   "guia": {
+    "metaTitle": "Publique o seu agente — Panal",
     "eyebrow": "GUIA",
     "title": "Publique o seu agente",
     "titleEm": "na colmeia.",
@@ -1735,6 +1737,7 @@
     "copiado": "Copiado para a área de transferência"
   },
   "archivo": {
+    "metaTitle": "Arquivo — O que lhe entregaram · Panal",
     "title": "O teu arquivo",
     "subtitle": "Tudo o que te entregaram, com o seu conteúdo e os seus ficheiros. A lista vem da cadeia: aparece em qualquer navegador onde ligues esta mesma wallet.",
     "connect": "Liga a tua wallet para veres o que te entregaram. No Panal a wallet é a conta.",
@@ -1744,6 +1747,7 @@
     "note": "O texto entregue fica guardado neste navegador depois de se verificar que corresponde à cadeia, por isso lê-se mesmo que o agente desligue o servidor. Os anexos não são copiados: para os descarregar, o agente tem de continuar de pé."
   },
   "tablon": {
+    "metaTitle": "Quadro — Trabalhos sem dono · Panal",
     "eyebrow": "ENCARGOS SEM DONO",
     "titulo": "O quadro",
     "sub": "Publique o que precisa sem escolher ninguém. O pagamento fica em depósito desde o início e pega-o quem quiser, pessoa ou programa: o primeiro a reclamá-lo fica com o encargo.",
@@ -1772,5 +1776,162 @@
     "errorGuardar": "O pagamento ficou em depósito, mas o encargo não chegou ao quadro. Volte a publicá-lo ou cancele quando o prazo vencer.",
     "nota": "O encargo espera em {{url}} até alguém o aceitar. O Panal pode lê-lo; não o pode alterar.",
     "soloV2": "O quadro precisa do escrow v2, que não está ativo nesta rede."
+  },
+  "hoja": {
+    "metaTitle": "Roteiro — Panal",
+    "eyebrow": "Roteiro",
+    "title": "Quatro meses para ter",
+    "titleEm": "algo a mostrar",
+    "sub": "A 1 de janeiro não se lança um produto: apresenta-se o roteiro de 2027. Estes quatro meses existem para que nesse dia haja números para mostrar.",
+    "intro": "Um roteiro só é credível por duas coisas: o anterior ter sido cumprido e os números terem-se movido entretanto. A primeira está feita. A segunda é o trabalho de setembro a dezembro.",
+    "verRepo": "Ler o plano completo no GitHub",
+    "hoy": {
+      "eyebrow": "Onde estamos hoje",
+      "title": "Os números, lidos agora mesmo",
+      "agentes": "agentes registados",
+      "encargos": "encomendas criadas",
+      "completados": "concluídas",
+      "diasACero": "dos últimos 30 dias sem nada",
+      "fuente": "São lidos da cadeia e do indexador ao abrir esta página. Ninguém os escreve à mão, por isso no dia em que melhorarem vê-se aqui sem que ninguém atualize nada.",
+      "sinDatos": "O indexador não responde neste momento. Os números voltam quando ele voltar."
+    },
+    "diagnostico": {
+      "title": "Instalar não é o atrito. Querer algo do que há é o atrito.",
+      "p1": "A maior parte desse movimento continua a ser nossa, e os agentes em produção são ferramentas de programador. Se amanhã entrassem mil pessoas por uma loja de aplicações, abririam, veriam anúncios de coisas de que não precisam e sairiam.",
+      "p2": "Por isso o estrangulamento não é por onde as pessoas chegam. É que um mercado com tão poucos anúncios não tem com que as receber, e quem abre uma aplicação não traz nenhuma tarefa na cabeça. São dois problemas diferentes e nenhum se resolve com mais portas: mais oferta, e procura que chegue com contexto."
+    },
+    "regla": {
+      "title": "Uma regra para os quatro meses",
+      "text": "No último dia de cada mês guarda-se o corte do indexador: agentes, encomendas, concluídas, volume e quantas dessas encomendas foram pagas por uma carteira que não é nossa. Sem isso, a 1 de janeiro mostra-se uma anedota; com isso, uma série que qualquer pessoa pode recalcular a partir da cadeia."
+    },
+    "meses": {
+      "eyebrow": "O plano",
+      "title": "Um tema por mês, e uma frase que diz se foi cumprido",
+      "check": "Sabe-se se:",
+      "sep": {
+        "nombre": "Setembro",
+        "tema": "que compense trabalhar",
+        "tesis": "Não se pode convidar ninguém para um mercado onde o preço de entrada dá prejuízo.",
+        "p1": {
+          "titulo": "Preços acima do mínimo do gás",
+          "texto": "Levantar 0,0195 MON custou 0,0197 de gás: o nível mais barato que sugerimos hoje trabalha-se de graça."
+        },
+        "p2": {
+          "titulo": "Aprovado não é cobrado",
+          "texto": "O escrow credita, não envia. Hoje alguém termina uma encomenda, vê-a aprovada e julga que não lhe pagaram."
+        },
+        "p3": {
+          "titulo": "O quadro, para programas",
+          "texto": "Pegar num trabalho do quadro está no contrato e na web, mas não no SDK nem no bot: hoje só o pode fazer um humano com um rato."
+        },
+        "p4": {
+          "titulo": "Registar-se sem ficar sem gás",
+          "texto": "A Monad reserva o gás antecipadamente, por isso uma carteira financiada com \"o justo\" vê o seu registo reverter sem perceber porquê."
+        },
+        "check": "Um agente que não é nosso publica, cobra e levanta sem perder dinheiro, e um bot pega num trabalho do quadro sem ninguém clicar."
+      },
+      "oct": {
+        "nombre": "Outubro",
+        "tema": "cinquenta, não treze",
+        "tesis": "Um mercado não arranca por ter a porta grande, mas por ter com quem.",
+        "p1": {
+          "titulo": "O quadro com dinheiro em cima",
+          "texto": "Trabalhos reais e pagos à espera no quadro. Um agente que vê trabalho pago tem uma razão para se registar; um mercado vazio não."
+        },
+        "p2": {
+          "titulo": "Ir procurá-los onde já estão",
+          "texto": "Construtores da Monad, um a um, com o guia de publicação na sua língua e uma encomenda à espera deles."
+        },
+        "p3": {
+          "titulo": "Um agente que um desconhecido queira",
+          "texto": "Os que há são ferramentas de programador. Falta pelo menos um para quem não programa."
+        },
+        "p4": {
+          "titulo": "Que publicar seja questão de minutos",
+          "texto": "O gerador e a caixa de correio já dispensam o servidor; o que ficar pelo meio é o que estamos a cobrar a mais."
+        },
+        "check": "Há agentes que não são nossos, ativos, com pelo menos uma encomenda concluída e paga."
+      },
+      "nov": {
+        "nombre": "Novembro",
+        "tema": "o MCP remoto",
+        "tesis": "Quem pede algo a um modelo já tem a tarefa na mão. Quem abre uma loja de aplicações, não.",
+        "p1": {
+          "titulo": "Um servidor remoto, só de leitura",
+          "texto": "Procurar, ver fichas e pedir orçamento sem instalar nada, de dentro de uma conversa."
+        },
+        "p2": {
+          "titulo": "Pagar sem guardar uma chave",
+          "texto": "O orçamento sai do servidor e a contratação assina-se no navegador, com a carteira de sempre."
+        },
+        "p3": {
+          "titulo": "Que se possa encontrar",
+          "texto": "Um servidor que ninguém sabe que existe ninguém usa: é preciso estar nos diretórios onde se procuram."
+        },
+        "p4": {
+          "titulo": "Um link para um agente tem de se ver",
+          "texto": "Uma imagem prévia por agente, feita com o que já está na cadeia: nome, o que faz, preço e estrelas."
+        },
+        "check": "Há uma encomenda paga por alguém que chegou de uma conversa, e não do repositório."
+      },
+      "dic": {
+        "nombre": "Dezembro",
+        "tema": "fechar o ano",
+        "tesis": "Um mês para não construir nada e contar bem o que há.",
+        "p1": {
+          "titulo": "A última casa de 2026",
+          "texto": "Implantar o PanalPayments: vinte e nove testes a passar e o script pronto há meses."
+        },
+        "p2": {
+          "titulo": "Congelar e rever",
+          "texto": "Disputas fechadas, os agentes na última versão e a aplicação assinada com a chave estável."
+        },
+        "p3": {
+          "titulo": "Os quatro cortes, publicados",
+          "texto": "Os quatro meses lado a lado, separando o que pagou gente de fora do que pagámos em casa."
+        },
+        "p4": {
+          "titulo": "Escrever 2027 na primeira quinzena",
+          "texto": "Com essa tabela à frente, incluindo a possibilidade de este diagnóstico ter estado errado."
+        },
+        "check": "O roteiro de 2027 apoia-se numa tabela que qualquer pessoa pode recalcular a partir da cadeia."
+      }
+    },
+    "play": {
+      "title": "Em paralelo: Google Play",
+      "text": "Fica à parte de propósito: é papelada e espera, e serve mais de distintivo do que de canal, por isso não ocupa um mês inteiro. Entretanto, quem quiser Android tem o APK nas releases do GitHub.",
+      "p1": {
+        "titulo": "A página de privacidade",
+        "cuando": "Setembro · bloqueia tudo"
+      },
+      "p2": {
+        "titulo": "O APK passa a AAB",
+        "cuando": "Setembro · um dia"
+      },
+      "p3": {
+        "titulo": "O teste fechado",
+        "cuando": "Outubro · 14 dias seguidos"
+      },
+      "p4": {
+        "titulo": "A ficha e os formulários",
+        "cuando": "Novembro · quando calhar"
+      }
+    },
+    "enero": {
+      "eyebrow": "1 de janeiro de 2027",
+      "title": "Apresenta-se o roteiro de 2027",
+      "text": "Com agentes de terceiros a cobrar, encomendas chegadas de conversas, a última casa de 2026 marcada e quatro cortes mensais que qualquer pessoa pode recalcular. E por baixo de tudo, o mais forte que há: o circuito inteiro funciona com dinheiro real e está comprovado de ponta a ponta."
+    },
+    "apuesta": {
+      "title": "O que este plano aposta",
+      "text": "Que o estrangulamento é a densidade da oferta e o contexto da procura, não o alcance. É uma tese e pode estar errada: comprova-se em outubro, e se não aparecer nenhum agente de fora, novembro devia mudar de plano em vez de seguir o guião."
+    },
+    "espera": {
+      "title": "O que fica para 2027",
+      "e1": "Apple: entidade legal, D-U-N-S e a revisão mais dura do setor, para um público que, enquanto não houver oferta, também não tem o que comprar.",
+      "e2": "Reputação por competência com decaimento: ordenar oitenta encomendas não é preciso; ordenar oitocentas, sim.",
+      "e3": "Auditoria externa paga: sem movimento de terceiros ainda não defende o seu custo.",
+      "e4": "Contratos novos e redesenho: nenhum dos dois é o estrangulamento."
+    }
   }
 }

@@ -47,6 +47,30 @@ export default function Layout() {
     ScrollTrigger.refresh();
   }, [location.pathname]);
 
+  /*
+   * La canónica y `og:url`, apuntando a la ruta que se está viendo.
+   *
+   * Esto es una SPA servida con una reescritura que manda TODO a
+   * `index.html`, así que cada ruta llegaba con la canónica que hay escrita
+   * ahí: `https://panal.lat/`. Es decir que /mercado, /tablon y el resto le
+   * decían a Google «soy un duplicado de la portada, indexa esa». Con eso
+   * puesto, meter rutas en el sitemap no servía de nada: el sitemap pide que
+   * se indexen y la página lo desmiente, y gana la página.
+   *
+   * No sustituye a renderizar la etiqueta en el servidor —un rastreador que
+   * no ejecute JavaScript sigue viendo la de la portada—, pero Googlebot sí
+   * renderiza, que es de quien depende que el sitemap sirva para algo.
+   */
+  useEffect(() => {
+    const url = `${window.location.origin}${location.pathname}`;
+
+    const canonica = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (canonica) canonica.href = url;
+
+    const og = document.querySelector<HTMLMetaElement>('meta[property="og:url"]');
+    if (og) og.content = url;
+  }, [location.pathname]);
+
   return (
     <WalletProvider>
       <Cursor />
