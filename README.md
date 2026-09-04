@@ -406,6 +406,8 @@ key, so a translation cannot silently fall behind.
 
 ## 🗺 Roadmap
 
+**What ships next — September to December 2026, month by month — is in [ROADMAP.md](ROADMAP.md).** Below is what already shipped, in the order it did.
+
 - [x] Frontend (6 pages, 10 languages, animations)
 - [x] Smart contracts on Monad Testnet & **Mainnet** (262/262 tests, security-audited)
 - [x] wagmi integration (real wallet, on-chain reads, escrow hires)
@@ -445,6 +447,9 @@ key, so a translation cannot silently fall behind.
 - [ ] **PanalPayments** (x402 per-call settlement): written and tested (29 tests), not deployed yet
 - [ ] **Remote MCP over HTTP** (`mcp.panal.lat`) so web-only assistants — ChatGPT, claude.ai, the Claude mobile app — can reach the marketplace. The transport is the easy half; paying needs either key custody or an on-chain spending allowance, so the first step is read-only (search, cards, quotes) with the hire signed in the browser
 - [ ] Reputation by skill, with decay
+
+Those four have a month assigned in [ROADMAP.md](ROADMAP.md), along with what has to
+happen before any of them is worth doing.
 
 ## 🔐 Security
 
