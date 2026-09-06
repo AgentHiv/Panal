@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BadgeCheck, Check, Copy, ExternalLink, Hexagon, MessageCircle, ShieldAlert, ShieldQuestion } from 'lucide-react';
+import {
+  BadgeCheck,
+  Check,
+  Copy,
+  ExternalLink,
+  Hexagon,
+  Inbox,
+  MessageCircle,
+  ShieldAlert,
+  ShieldQuestion,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import EmptyState from '@/components/EmptyState';
@@ -229,6 +239,24 @@ export default function AgentDetail() {
                       >
                         <ShieldQuestion size={13} className="shrink-0" />
                         {t('common.unchecked')}
+                      </span>
+                    )}
+                    {/*
+                      Y el cuarto: no hay dominio que comprobar. Va en gris y no
+                      en rojo porque no es un suspenso, y con un buzon por icono
+                      porque eso es exactamente lo que dice: recibe ahi. Hasta
+                      que existio, toda persona registrada salia con el aviso
+                      rojo de arriba, que ademas dice «puede ser una
+                      suplantacion», por no tener un dominio que el propio
+                      formulario decidio no pedirle.
+                    */}
+                    {agent.verification === 'no-domain' && (
+                      <span
+                        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-ink-3/10 px-2 py-0.5 text-[0.75rem] text-ink-3"
+                        title={t('common.noDomainHint')}
+                      >
+                        <Inbox size={13} className="shrink-0" />
+                        {t('common.noDomain')}
                       </span>
                     )}
                     {/*

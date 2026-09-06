@@ -38,7 +38,7 @@ import { fichaEnIdioma, IDIOMAS, type Idioma } from './idiomas.js';
 import type { BotConfig } from './config.js';
 import { escrowAbi, politePause, withRetry, type ChainClients } from './chain.js';
 import type { StopSignal } from './notifier.js';
-import { IndexStore, type IndexedEvent } from './indexer-store.js';
+import { IndexStore, type EstadoDominio, type IndexedEvent } from './indexer-store.js';
 import { verificarDominio } from './verificar-dominio.js';
 
 // ---------------------------------------------------------------------------
@@ -665,13 +665,21 @@ async function verificarDominios(store: IndexStore): Promise<void> {
   await Promise.all(
     tanda.map(async (p) => {
       const antes = p.verificado;
-      const { ok, motivo } = await verificarDominio(p.botUrl!, p.address);
-      store.marcarVerificacion(p.address, ok, motivo);
-      if (antes !== ok) {
+      const { ok, motivo, sinDominio } = await verificarDominio(p.botUrl!, p.address);
+      // Quien recibe en el buzón no tiene dominio propio, y eso no es un
+      // suspenso: es que no hay examen. Aplastarlo en `false` es lo que dejaba
+      // a toda persona registrada marcada en rojo para siempre.
+      const estado: EstadoDominio = sinDominio ? 'sin-dominio' : ok;
+      store.marcarVerificacion(p.address, estado, motivo);
+      if (antes !== estado) {
         cambios += 1;
-        console.log(
-          `[index] ${p.name || p.address.slice(0, 10)}: ${ok ? 'dominio verificado' : `sin verificar (${motivo})`}`,
-        );
+        const dice =
+          estado === 'sin-dominio'
+            ? `sin dominio propio (${motivo})`
+            : ok
+              ? 'dominio verificado'
+              : `sin verificar (${motivo})`;
+        console.log(`[index] ${p.name || p.address.slice(0, 10)}: ${dice}`);
       }
     }),
   );

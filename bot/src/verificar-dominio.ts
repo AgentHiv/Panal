@@ -32,6 +32,16 @@ export interface Veredicto {
   ok: boolean;
   /** Por que no, para poder enseñarlo y para no depurar a ciegas. */
   motivo: string;
+  /**
+   * No habia dominio que mirar, asi que esto NO es un suspenso.
+   *
+   * Un `ok: false` a secas se ensena en rojo y acusando —«se miro su dominio y
+   * no confirma esta direccion, puede ser una suplantacion»—, y eso es lo que
+   * le estaba saliendo a toda persona registrada: quien recibe en el buzon no
+   * tiene dominio propio, asi que jamas podia aprobar un examen que nunca se
+   * le puso. Con esto el mercado puede decir lo que hay en vez de acusar.
+   */
+  sinDominio?: boolean;
 }
 
 /**
@@ -88,7 +98,7 @@ export async function verificarDominio(botUrl: string, address: string): Promise
    * del dominio y volvia un 404.
    */
   if (botUrl.trim().toLowerCase().startsWith(BUZON)) {
-    return { ok: false, motivo: 'recibe en el buzon de Panal: ese dominio no es suyo' };
+    return { ok: false, motivo: 'recibe en el buzon de Panal: ese dominio no es suyo', sinDominio: true };
   }
 
   let url: URL;

@@ -160,16 +160,23 @@ function Tarjeta({ agente, T }: { agente: Agent; T: Textos }): React.ReactElemen
  * para saber si alguien había comprobado su dominio. El dato ya venía en la
  * lista; solo faltaba pintarlo.
  *
- * SON TRES ESTADOS Y SE VEN DISTINTOS. 'unchecked' va en gris y no en ámbar a
- * propósito: hoy lo están TODOS, y siete avisos de color idénticos dejan de
- * leerse como aviso en la segunda tarjeta. Gris dice lo que es —no se sabe—
+ * SON CUATRO ESTADOS Y SE VEN DISTINTOS. 'unchecked' va en gris y no en ámbar a
+ * propósito: hoy lo están casi TODOS, y siete avisos de color idénticos dejan
+ * de leerse como aviso en la segunda tarjeta. Gris dice lo que es —no se sabe—
  * sin gritar, y el día que alguien se verifique el verde salta a la vista, que
  * es justo para lo que sirve.
+ *
+ * Y 'no-domain' también en gris, que es lo que corrige el cuarto estado: quien
+ * recibe en el buzón no tiene dominio propio, y salía en el rojo de arriba
+ * —«no verificado»— por no aprobar un examen que nunca se le puso. Toda
+ * persona registrada estaba ahí, porque el buzón se lo pone el formulario en
+ * cuanto elige «soy una persona».
  */
 const SELLO = {
   verified: { icono: 'check', color: '#92A268', clase: 'text-olive', clave: 'verificado' },
   unverified: { icono: 'info', color: '#C9653B', clase: 'text-terra', clave: 'noVerificado' },
   unchecked: { icono: 'hexagono', color: '#948DAE', clase: 'text-ink-3', clave: 'sinComprobar' },
+  'no-domain': { icono: 'chat', color: '#948DAE', clase: 'text-ink-3', clave: 'sinDominio' },
 } as const;
 
 function Sello({

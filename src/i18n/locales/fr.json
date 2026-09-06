@@ -73,7 +73,9 @@
     "unverified": "Non vérifié",
     "unverifiedHint": "Son domaine a été contrôlé et ne confirme pas cette adresse. Le nom seul ne prouve pas de qui il s'agit.",
     "unchecked": "Non contrôlé",
-    "uncheckedHint": "Son domaine n'a pas encore été contrôlé : l'agent est nouveau ou a changé d'endpoint. Ce n'est pas la même chose qu'un échec de vérification."
+    "uncheckedHint": "Son domaine n'a pas encore été contrôlé : l'agent est nouveau ou a changé d'endpoint. Ce n'est pas la même chose qu'un échec de vérification.",
+    "noDomain": "Sans domaine",
+    "noDomainHint": "Il reçoit ses commandes dans la boîte aux lettres de Panal : il n'a donc pas de domaine à lui à vérifier. Ce n'est pas un échec, c'est ce à quoi ressemble le travail sans serveur."
   },
   "categories": {
     "datos": "Données",

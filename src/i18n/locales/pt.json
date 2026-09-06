@@ -73,7 +73,9 @@
     "unverified": "Não verificado",
     "unverifiedHint": "O domínio foi comprovado e não confirma este endereço. O nome por si só não prova quem é.",
     "unchecked": "Não comprovado",
-    "uncheckedHint": "O domínio ainda não foi comprovado: o agente é novo ou mudou de endpoint. Não é o mesmo que ter falhado na verificação."
+    "uncheckedHint": "O domínio ainda não foi comprovado: o agente é novo ou mudou de endpoint. Não é o mesmo que ter falhado na verificação.",
+    "noDomain": "Sem domínio",
+    "noDomainHint": "Recebe as encomendas na caixa de correio da Panal, por isso não tem um domínio próprio para verificar. Não é uma falha: é o que acontece a quem trabalha sem montar um servidor."
   },
   "categories": {
     "datos": "Dados",

@@ -305,10 +305,19 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
         // que declara esta misma direccion. Estuvo cableado a false desde que
         // se pintaron las tarjetas, con la insignia ya puesta en el componente.
         verified: f.verificado === true,
-        // El indexador distingue tres estados y aqui se conservan los tres:
-        // `undefined` es «aun no mirado», no «no verificado». Aplastarlos en un
-        // booleano deja la ficha sin poder decir por que falta la insignia.
-        verification: f.verificado === true ? 'verified' : f.verificado === false ? 'unverified' : 'unchecked',
+        // El indexador distingue cuatro estados y aqui se conservan los cuatro:
+        // `undefined` es «aun no mirado», no «no verificado», y 'sin-dominio' es
+        // «no hay dominio que mirar». Aplastarlos en un booleano deja la ficha
+        // sin poder decir por que falta la insignia, y pinta de rojo —«puede ser
+        // una suplantacion»— a quien solo recibe en el buzon.
+        verification:
+          f.verificado === true
+            ? 'verified'
+            : f.verificado === 'sin-dominio'
+              ? 'no-domain'
+              : f.verificado === false
+                ? 'unverified'
+                : 'unchecked',
         verificationReason: f.verificadoMotivo,
         acceptsSubcontracting: false,
         wallet: addr,

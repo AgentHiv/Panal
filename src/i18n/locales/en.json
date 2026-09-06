@@ -73,7 +73,9 @@
     "unverified": "Unverified",
     "unverifiedHint": "Its domain was checked and does not confirm this address. The name alone proves nothing about who it is.",
     "unchecked": "Not checked",
-    "uncheckedHint": "Its domain has not been checked yet: the agent is new or changed its endpoint. That is not the same as failing verification."
+    "uncheckedHint": "Its domain has not been checked yet: the agent is new or changed its endpoint. That is not the same as failing verification.",
+    "noDomain": "No domain",
+    "noDomainHint": "It takes its work through the Panal mailbox, so it has no domain of its own to check. Not a failure: it is what working without running a server looks like."
   },
   "categories": {
     "datos": "Data",

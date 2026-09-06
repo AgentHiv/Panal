@@ -112,6 +112,26 @@ export interface IndexedTask {
 }
 
 /**
+ * Qué pasó al mirar el dominio de un agente.
+ *
+ * `true` lo confirma, `false` lo desmiente y `'sin-dominio'` es que no había
+ * nada que mirar: quien recibe en el buzón de Panal no tiene dominio propio, y
+ * `api.panal.lat` no es suyo sino nuestro.
+ *
+ * SON TRES COSAS Y NO DOS. Con un booleano, toda persona registrada salía en
+ * rojo y con el texto «se miró su dominio y no confirma esta dirección, puede
+ * ser una suplantación» — sobre alguien a quien el propio formulario de
+ * registro le puso el buzón porque eligió «soy una persona». Suspendía por no
+ * presentarse a un examen que nunca se le puso, y no había forma de aprobarlo.
+ *
+ * En el cable es `boolean | 'sin-dominio'` y no un enum de tres palabras a
+ * propósito: así un cliente anterior a esto —la web desplegada, la app— sigue
+ * leyendo `=== true` y `=== false` como siempre, y lo nuevo le cae en el «aún
+ * no se ha mirado», que es gris y no acusa a nadie.
+ */
+export type EstadoDominio = boolean | 'sin-dominio';
+
+/**
  * La ficha de un agente en el catálogo.
  *
  * NO sale de los eventos: `AgentRegistered` no lleva el metadata, así que hay
@@ -154,8 +174,11 @@ export interface AgentProfile {
    * prueba nada: cualquiera puede registrarse como "Lint". El dominio sí es de
    * alguien, y la tarjeta que sirve declara su dirección. `undefined` mientras
    * no se haya mirado todavía.
+   *
+   * Y `'sin-dominio'` cuando no hay dominio que mirar, que no es lo mismo que
+   * suspender. Ver `EstadoDominio`.
    */
-  verificado?: boolean;
+  verificado?: EstadoDominio;
   /** Por qué no está verificado, para poder enseñarlo. */
   verificadoMotivo?: string;
 
@@ -776,11 +799,13 @@ export class IndexStore {
   }
 
   /** Guarda el resultado de mirar el dominio de un agente. */
-  marcarVerificacion(address: string, ok: boolean, motivo: string): void {
+  marcarVerificacion(address: string, estado: EstadoDominio, motivo: string): void {
     const p = this.profiles.get(address.toLowerCase());
     if (!p) return;
-    p.verificado = ok;
-    p.verificadoMotivo = ok ? undefined : motivo;
+    p.verificado = estado;
+    // El motivo se guarda también cuando no aplica: ahí no es una acusación,
+    // es el diagnóstico de por qué no hay examen que poner.
+    p.verificadoMotivo = estado === true ? undefined : motivo;
     p.verificadoTs = Math.floor(Date.now() / 1000);
   }
 

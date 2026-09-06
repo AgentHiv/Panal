@@ -199,8 +199,12 @@ export interface CatalogAgent {
    * registrarse como "Lint". El dominio sí es de alguien, y su tarjeta declara
    * la dirección, así que el indexador va a buscarla y la compara.
    * `undefined` mientras no se haya mirado.
+   *
+   * Y `'sin-dominio'` cuando NO HAY dominio que mirar: quien recibe en el
+   * buzón de Panal no tiene uno propio, y `api.panal.lat` es nuestro. No es un
+   * suspenso, así que no se pinta como tal.
    */
-  verificado?: boolean;
+  verificado?: boolean | 'sin-dominio';
   /** Por qué no está verificado. */
   verificadoMotivo?: string;
 

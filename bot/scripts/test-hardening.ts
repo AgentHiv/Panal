@@ -210,6 +210,11 @@ async function main(): Promise<void> {
     // Antes el resultado también era «sin verificar», pero por un motivo que
     // era mentira: la ficha se pedía a la raíz del dominio y volvía un 404.
     check('y el motivo dice la verdad, no un 404', !/404|no contesta/.test(v.motivo ?? ''));
+    // Y no es lo mismo NO PRESENTARSE que SUSPENDER. Sin esta marca el mercado
+    // pintaba en rojo, con «puede ser una suplantación», a toda persona
+    // registrada: el registro le pone el buzón en cuanto dice que es una
+    // persona, y con el buzón puesto no hay dominio que pueda aprobar nunca.
+    check('y se marca «sin dominio», que no es suspender', v.sinDominio === true);
   }
 
   console.log('');
