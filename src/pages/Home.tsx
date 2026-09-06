@@ -274,7 +274,13 @@ function StatsBand() {
     return Number(formatEther(wei));
   }, [stats]);
 
-  const agents = stats?.totals.agents ?? agentCount;
+  // El rotulo dice «agentes registrados», asi que el numero tiene que ser ese.
+  // `totals.agents` no lo es: el indexador lo calcula como `agentStats().length`
+  // —direcciones vistas en eventos, con quien paga dentro—, y salia 14 con 13 en
+  // el registro. Se notaba en que el respaldo era MAS correcto que la fuente:
+  // `agentCount` es `getAgentCount()` de la cadena, o sea que la portada decia
+  // 14 con indexador y 13 sin el, bajo el mismo rotulo.
+  const agents = stats?.byType.AgentRegistered ?? agentCount;
   const tasks = stats?.totals.completed ?? null;
 
   const items: Array<{ value: number | null; decimals?: number; suffix?: string; label: string }> = [
