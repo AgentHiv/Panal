@@ -5,7 +5,8 @@ import { inspectAttr } from 'plugin-inspect-react-code'
 
 /**
  * SEO: inyecta la URL pública del sitio (%SITE_URL% en index.html) y emite
- * robots.txt + sitemap.xml en el build. Configurar VITE_SITE_URL en Vercel.
+ * robots.txt + sitemap.xml en el build. VITE_SITE_URL se configura en el panel
+ * del servidor; sin ella se usa https://panal.lat.
  */
 const SITE_URL = (process.env.VITE_SITE_URL ?? "https://panal.lat").replace(/\/$/, "");
 /**
