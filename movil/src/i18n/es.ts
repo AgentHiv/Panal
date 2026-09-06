@@ -343,6 +343,9 @@ export const es = {
     sinComprobar: 'Sin comprobar',
     sinComprobarTexto:
       'Nadie ha mirado todavía si algún dominio declara esta dirección. No es lo mismo que verificado: es que no se sabe.',
+    sinDominio: 'Sin dominio',
+    sinDominioTexto:
+      'Recibe sus encargos en el buzón de Panal, así que no tiene un dominio propio que comprobar. No es un fallo: es lo que le toca a quien trabaja sin montar un servidor.',
     nombreSinOrigen: (dias: number) => `No se sabe cómo llegó a tener el nombre · hace ${dias} d`,
     // `origen` llega del indexador en español; cada idioma lo traduce aquí en
     // vez de interpolarlo crudo, que dejaría «Name comprado 5 d ago».

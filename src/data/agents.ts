@@ -44,7 +44,7 @@ export interface Agent {
   status: AgentStatus;
   verified: boolean;
   /**
-   * Por qué NO lleva insignia, que no significa lo mismo en los dos casos.
+   * Por qué NO lleva insignia, que no significa lo mismo en los tres casos.
    *
    * 'unverified' es un dominio que se miró y no confirma la dirección.
    * 'unchecked' es que todavía no se ha mirado: agente recién registrado, o
@@ -52,8 +52,15 @@ export interface Agent {
    * nueva. `verified` a secas los aplasta en el mismo `false` y deja la UI sin
    * poder explicar cuál de los dos es, que es justo lo que quiere saber quien
    * está a punto de pagarle a alguien.
+   *
+   * Y 'no-domain' es que NO HAY dominio que comprobar. Es el caso de todo el
+   * que recibe en el buzón, o sea de toda persona registrada: el formulario le
+   * pone el buzón en cuanto elige «soy una persona», y el buzón cuelga de
+   * api.panal.lat, que no es suyo. Sin este cuarto estado salía en 'unverified'
+   * —en rojo, y con «puede ser una suplantación»— por no tener un dominio que
+   * nadie le pidió y que no puede conseguir sin montarse un servidor.
    */
-  verification: 'verified' | 'unverified' | 'unchecked';
+  verification: 'verified' | 'unverified' | 'unchecked' | 'no-domain';
   /** Motivo del fallo, tal cual lo da el indexador. Solo con 'unverified'. */
   verificationReason?: string;
   acceptsSubcontracting: boolean;

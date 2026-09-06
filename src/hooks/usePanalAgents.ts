@@ -39,6 +39,7 @@ import { esTokenDeNivel, esTokenDeTipo, leerTipo } from '@panal/sdk';
 import { useIdiomaDelDocumento } from '@/lib/idiomaActual';
 import { MARCA_VACIA, esTokenDeMarca, leerMarca, type Marca } from '@/lib/marca';
 import { canalDeFicha, type Canal } from '@/lib/botEndpoint';
+import type { CuentaDeAgente } from '@/lib/cuenta';
 import {
   fetchCatalogo,
   useIndexAgents,
@@ -82,6 +83,14 @@ export interface OnchainAgent extends Agent {
    * exactamente la mentira contraria a la que esto viene a arreglar.
    */
   canal: Canal;
+  /**
+   * Si la cuenta pública que declara ha demostrado ser suya.
+   *
+   * `null` cuando no declara ninguna, cuando el indexador aún no la ha mirado,
+   * o cuando la ficha se leyó de la cadena: la cadena guarda lo que el agente
+   * DICE, y quién lo ha comprobado no cabe ahí. Ver `src/lib/cuenta.ts`.
+   */
+  cuenta: CuentaDeAgente | null;
 }
 
 /**
@@ -93,6 +102,18 @@ export interface OnchainAgent extends Agent {
  */
 export function canalDe(agent: Agent): Canal {
   return isOnchainAgent(agent) ? agent.canal : 'desconocido';
+}
+
+/**
+ * La cuenta demostrada de un agente, o `null`.
+ *
+ * Solo devuelve algo cuando la prueba CUADRA. Un `ok: false` casi siempre
+ * significa «todavía no ha publicado el gist», y pintar eso sería repetir el
+ * error de la insignia de dominio: convertir «no lo ha hecho» en «falló».
+ */
+export function cuentaDe(agent: Agent): CuentaDeAgente | null {
+  const c = isOnchainAgent(agent) ? agent.cuenta : null;
+  return c && c.ok ? c : null;
 }
 
 /**
@@ -305,10 +326,19 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
         // que declara esta misma direccion. Estuvo cableado a false desde que
         // se pintaron las tarjetas, con la insignia ya puesta en el componente.
         verified: f.verificado === true,
-        // El indexador distingue tres estados y aqui se conservan los tres:
-        // `undefined` es «aun no mirado», no «no verificado». Aplastarlos en un
-        // booleano deja la ficha sin poder decir por que falta la insignia.
-        verification: f.verificado === true ? 'verified' : f.verificado === false ? 'unverified' : 'unchecked',
+        // El indexador distingue cuatro estados y aqui se conservan los cuatro:
+        // `undefined` es «aun no mirado», no «no verificado», y 'sin-dominio' es
+        // «no hay dominio que mirar». Aplastarlos en un booleano deja la ficha
+        // sin poder decir por que falta la insignia, y pinta de rojo —«puede ser
+        // una suplantacion»— a quien solo recibe en el buzon.
+        verification:
+          f.verificado === true
+            ? 'verified'
+            : f.verificado === 'sin-dominio'
+              ? 'no-domain'
+              : f.verificado === false
+                ? 'unverified'
+                : 'unchecked',
         verificationReason: f.verificadoMotivo,
         acceptsSubcontracting: false,
         wallet: addr,
@@ -333,6 +363,9 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
         // Del mismo `metadataURI`, y por eso mismo `undefined` con un indexador
         // anterior a él: entonces es «no se sabe» y no se marca nada.
         canal: canalDeFicha(f.metadataURI),
+        // Lo comprueba el indexador yendo a por el gist de esa cuenta. Un
+        // indexador anterior a esto no lo manda, y entonces es «no se sabe».
+        cuenta: f.cuenta ?? null,
         // El volumen se calcula AQUÍ porque la ficha del catálogo ya lo trae:
         // pedirlo otra vez a `/index/agents` seria traerse dos veces lo mismo,
         // y esa segunda consulta devuelve el mercado entero sin paginar.
@@ -464,6 +497,9 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       // de dominio: la verdad aqui es «no se ha mirado», no «no verificado».
       verified: false,
       verification: 'unchecked',
+      // Y por lo mismo tampoco hay cuenta comprobada: la cadena guarda el
+      // `github:` que el agente escribió, no si alguien fue a mirarlo.
+      cuenta: null,
       acceptsSubcontracting: false,
       wallet: addr,
       walletShort: short(addr),

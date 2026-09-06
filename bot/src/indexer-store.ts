@@ -21,6 +21,7 @@
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { leerMarca } from './marca.js';
 
 /** Evento indexado (args serializados: bigint -> string decimal). */
 export interface IndexedEvent {
@@ -112,6 +113,55 @@ export interface IndexedTask {
 }
 
 /**
+ * Qué pasó al mirar el dominio de un agente.
+ *
+ * `true` lo confirma, `false` lo desmiente y `'sin-dominio'` es que no había
+ * nada que mirar: quien recibe en el buzón de Panal no tiene dominio propio, y
+ * `api.panal.lat` no es suyo sino nuestro.
+ *
+ * SON TRES COSAS Y NO DOS. Con un booleano, toda persona registrada salía en
+ * rojo y con el texto «se miró su dominio y no confirma esta dirección, puede
+ * ser una suplantación» — sobre alguien a quien el propio formulario de
+ * registro le puso el buzón porque eligió «soy una persona». Suspendía por no
+ * presentarse a un examen que nunca se le puso, y no había forma de aprobarlo.
+ *
+ * En el cable es `boolean | 'sin-dominio'` y no un enum de tres palabras a
+ * propósito: así un cliente anterior a esto —la web desplegada, la app— sigue
+ * leyendo `=== true` y `=== false` como siempre, y lo nuevo le cae en el «aún
+ * no se ha mirado», que es gris y no acusa a nadie.
+ */
+export type EstadoDominio = boolean | 'sin-dominio';
+
+/**
+ * Lo que se sabe de la cuenta pública que declara un agente.
+ *
+ * La insignia del dominio solo la puede ganar quien tiene servidor propio, y
+ * quien recibe en el buzón no lo tiene. Esta es la que sí puede ganar: la ficha
+ * ya declara `github:usuario`, y esto guarda si esa cuenta ha demostrado ser
+ * suya publicando una firma de su dirección. Ver `verificar-cuenta.ts`.
+ */
+export interface CuentaVerificada {
+  /** Dónde vive la cuenta. Hoy solo GitHub. */
+  red: 'github';
+  /** El usuario, normalizado: en minúsculas y sin el `/repo` de la ficha. */
+  usuario: string;
+  /**
+   * Lo que decía la ficha cuando se comprobó.
+   *
+   * Igual que `idiomasDe`: si el agente cambia la cuenta que declara, lo
+   * guardado deja de decir nada de la nueva y hay que volver a mirarlo. Sin
+   * esto, cambiar `github:` por el de otro heredaría su insignia.
+   */
+  declarado: string;
+  /** Si esa cuenta publica una firma de esta misma dirección. */
+  ok: boolean;
+  /** Por qué no, para poder enseñarlo. */
+  motivo?: string;
+  /** Cuándo se comprobó, para no repetirlo en cada vuelta. */
+  ts: number;
+}
+
+/**
  * La ficha de un agente en el catálogo.
  *
  * NO sale de los eventos: `AgentRegistered` no lleva el metadata, así que hay
@@ -154,8 +204,11 @@ export interface AgentProfile {
    * prueba nada: cualquiera puede registrarse como "Lint". El dominio sí es de
    * alguien, y la tarjeta que sirve declara su dirección. `undefined` mientras
    * no se haya mirado todavía.
+   *
+   * Y `'sin-dominio'` cuando no hay dominio que mirar, que no es lo mismo que
+   * suspender. Ver `EstadoDominio`.
    */
-  verificado?: boolean;
+  verificado?: EstadoDominio;
   /** Por qué no está verificado, para poder enseñarlo. */
   verificadoMotivo?: string;
 
@@ -189,6 +242,12 @@ export interface AgentProfile {
   idiomasV?: number;
   /** Cuándo se comprobó, para no repetirlo en cada vuelta. */
   verificadoTs?: number;
+
+  /**
+   * Si la cuenta pública que declara es suya. `undefined` si no declara
+   * ninguna, o si todavía no se ha mirado.
+   */
+  cuenta?: CuentaVerificada;
 }
 
 /**
@@ -771,17 +830,53 @@ export class IndexStore {
       profile.verificadoMotivo = undefined;
       profile.verificadoTs = undefined;
     }
+    // La cuenta, por lo mismo que el dominio: no viene del registry, cuesta dos
+    // peticiones a GitHub y se borraría en cada relectura de la ficha.
+    if (antes && profile.cuenta === undefined) profile.cuenta = antes.cuenta;
+    // Y caduca sola si la ficha ya no declara la misma cuenta. Sin esto, cambiar
+    // el `github:` por el de otro heredaría la insignia que se ganó el anterior.
+    if (profile.cuenta && profile.cuenta.declarado !== (leerMarca(profile.metadataURI).github ?? '')) {
+      profile.cuenta = undefined;
+    }
     this.profiles.set(clave, profile);
     this.sucios.delete(clave);
   }
 
   /** Guarda el resultado de mirar el dominio de un agente. */
-  marcarVerificacion(address: string, ok: boolean, motivo: string): void {
+  marcarVerificacion(address: string, estado: EstadoDominio, motivo: string): void {
     const p = this.profiles.get(address.toLowerCase());
     if (!p) return;
-    p.verificado = ok;
-    p.verificadoMotivo = ok ? undefined : motivo;
+    p.verificado = estado;
+    // El motivo se guarda también cuando no aplica: ahí no es una acusación,
+    // es el diagnóstico de por qué no hay examen que poner.
+    p.verificadoMotivo = estado === true ? undefined : motivo;
     p.verificadoTs = Math.floor(Date.now() / 1000);
+  }
+
+  /** Guarda el resultado de mirar la cuenta pública de un agente. */
+  marcarCuenta(address: string, cuenta: CuentaVerificada): void {
+    const p = this.profiles.get(address.toLowerCase());
+    if (!p) return;
+    p.cuenta = cuenta;
+  }
+
+  /**
+   * Los que toca (re)mirar la cuenta: los que declaran una y no se ha mirado, o
+   * se miró hace rato.
+   *
+   * Se repasa por lo mismo que el dominio, y con más motivo: un gist se borra
+   * en dos clics, y una insignia que se ganó en marzo no dice nada de hoy si la
+   * prueba ya no está publicada.
+   */
+  pendientesDeVerificarCuenta(maxEdadS: number, tope: number): AgentProfile[] {
+    const ahora = Math.floor(Date.now() / 1000);
+    const toca = [...this.profiles.values()].filter((p) => {
+      if (!leerMarca(p.metadataURI).github) return false;
+      return p.cuenta === undefined || ahora - p.cuenta.ts > maxEdadS;
+    });
+    // Primero los que nunca se han mirado, igual que con el dominio.
+    toca.sort((a, b) => (a.cuenta?.ts ?? 0) - (b.cuenta?.ts ?? 0));
+    return toca.slice(0, tope);
   }
 
   /**

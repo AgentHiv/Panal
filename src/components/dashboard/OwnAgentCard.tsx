@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { formatEther, parseEther } from 'viem';
 import HexAvatar from '@/components/HexAvatar';
 import EditProfileDialog from '@/components/dashboard/EditProfileDialog';
+import VerificarCuentaDialog from '@/components/dashboard/VerificarCuentaDialog';
 import ClaimNameCard from '@/components/dashboard/ClaimNameCard';
 import { parseAgentMetadata } from '@/lib/agentMetadata';
 import { MARCA_VACIA } from '@/lib/marca';
@@ -55,6 +56,7 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [cuentaDialogOpen, setCuentaDialogOpen] = useState(false);
   const [priceInput, setPriceInput] = useState('');
   /** Moneda elegida en el diálogo de edición (v2: updatePrice la lleva). */
   const [editCurrency, setEditCurrency] = useState<'MON' | '$PANAL'>('MON');
@@ -272,6 +274,18 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
             {t('ownAgent.editProfile.v2Only')}
           </span>
         )}
+        {/* La insignia que sí está al alcance de una persona. La del dominio
+            solo la gana quien tiene servidor propio, y quien se registró como
+            persona recibe en el buzón, que es nuestro: sin esto no tenía nada
+            que enseñar. No es una transacción, es una firma. */}
+        <button
+          type="button"
+          onClick={() => setCuentaDialogOpen(true)}
+          disabled={!agent}
+          className="rounded-full border border-line bg-transparent px-3.5 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep disabled:opacity-40"
+        >
+          {t('cuentaGh.boton')}
+        </button>
         {action.busy && (
           <span className="inline-flex items-center gap-1.5 font-mono text-[0.75rem] text-ink-3">
             <Loader2 size={13} className="animate-spin" aria-hidden />
@@ -311,6 +325,17 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
           agentName={name}
           agentAddress={address ?? ''}
           onMined={() => profile.refetch()}
+        />
+      )}
+
+      {/* Dialog de la insignia de cuenta (una firma, ninguna transacción) */}
+      {agent && (
+        <VerificarCuentaDialog
+          open={cuentaDialogOpen}
+          onOpenChange={setCuentaDialogOpen}
+          metadataURI={agent.metadataURI}
+          address={address ?? ''}
+          onEditarPerfil={() => setProfileDialogOpen(true)}
         />
       )}
 

@@ -340,6 +340,9 @@ export const pt: Textos = {
     sinComprobar: 'Por verificar',
     sinComprobarTexto:
       'Ainda ninguém verificou se algum domínio declara este endereço. Não é o mesmo que verificado: é que não se sabe.',
+    sinDominio: 'Sem domínio',
+    sinDominioTexto:
+      'Recebe as encomendas na caixa de correio da Panal, por isso não tem um domínio próprio para verificar. Não é uma falha: é o que acontece a quem trabalha sem montar um servidor.',
     nombreSinOrigen: (dias: number) => `Não se sabe como ficou com o nome · há ${dias} d`,
     origenes: { reclamado: 'reclamado', comprado: 'comprado', recibido: 'recebido' },
     nombreOrigen: (origen: string, dias: number) => `Nome ${origen} há ${dias} d`,

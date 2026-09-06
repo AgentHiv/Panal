@@ -36,10 +36,12 @@ import { esTokenDeNivel } from './niveles.js';
 import { esTokenDeTipo } from './tipo.js';
 import { fichaEnIdioma, IDIOMAS, type Idioma } from './idiomas.js';
 import type { BotConfig } from './config.js';
-import { escrowAbi, politePause, withRetry, type ChainClients } from './chain.js';
+import { escrowAbi, monad, politePause, withRetry, type ChainClients } from './chain.js';
 import type { StopSignal } from './notifier.js';
-import { IndexStore, type IndexedEvent } from './indexer-store.js';
+import { IndexStore, type EstadoDominio, type IndexedEvent } from './indexer-store.js';
+import { leerMarca } from './marca.js';
 import { verificarDominio } from './verificar-dominio.js';
+import { normalizarUsuario, verificarCuenta } from './verificar-cuenta.js';
 
 // ---------------------------------------------------------------------------
 // ABIs y eventos (firmas exactas de contracts/src/v2/).
@@ -150,6 +152,17 @@ const SWEEP_BATCH_PER_TICK = 20;
  * tick serían miles de peticiones diarias contra servidores ajenos.
  */
 const VERIFICAR_CADA_S = 6 * 60 * 60;
+/**
+ * Cada cuánto se vuelve a mirar la cuenta pública de un agente.
+ *
+ * Un día, y no seis horas como el dominio, porque cuesta el triple: la API de
+ * GitHub sin credenciales da 60 peticiones por hora y por IP, y cada
+ * comprobación gasta dos. Un gist tampoco desaparece tan rápido como caduca un
+ * dominio. Ver el encabezado de `verificar-cuenta.ts`.
+ */
+const VERIFICAR_CUENTA_CADA_S = 24 * 60 * 60;
+/** Cuántas cuentas por vuelta. Tres × dos peticiones cabe de sobra en el techo. */
+const CUENTAS_POR_VUELTA = 3;
 /** Reintentos por ventana de getLogs ante errores NO relacionados con el rango. */
 const WINDOW_ATTEMPTS = 3;
 
@@ -665,18 +678,72 @@ async function verificarDominios(store: IndexStore): Promise<void> {
   await Promise.all(
     tanda.map(async (p) => {
       const antes = p.verificado;
-      const { ok, motivo } = await verificarDominio(p.botUrl!, p.address);
-      store.marcarVerificacion(p.address, ok, motivo);
-      if (antes !== ok) {
+      const { ok, motivo, sinDominio } = await verificarDominio(p.botUrl!, p.address);
+      // Quien recibe en el buzón no tiene dominio propio, y eso no es un
+      // suspenso: es que no hay examen. Aplastarlo en `false` es lo que dejaba
+      // a toda persona registrada marcada en rojo para siempre.
+      const estado: EstadoDominio = sinDominio ? 'sin-dominio' : ok;
+      store.marcarVerificacion(p.address, estado, motivo);
+      if (antes !== estado) {
         cambios += 1;
-        console.log(
-          `[index] ${p.name || p.address.slice(0, 10)}: ${ok ? 'dominio verificado' : `sin verificar (${motivo})`}`,
-        );
+        const dice =
+          estado === 'sin-dominio'
+            ? `sin dominio propio (${motivo})`
+            : ok
+              ? 'dominio verificado'
+              : `sin verificar (${motivo})`;
+        console.log(`[index] ${p.name || p.address.slice(0, 10)}: ${dice}`);
       }
     }),
   );
 
   if (cambios === 0) console.log(`[index] dominios repasados: ${tanda.length}, sin cambios`);
+}
+
+/**
+ * Comprueba que la cuenta pública que declara cada agente sea suya.
+ *
+ * La insignia que SÍ puede ganar quien no tiene dominio, que es todo el que
+ * recibe en el buzón, o sea toda persona registrada. La ficha ya declara
+ * `github:usuario`; esto va a ver si esa cuenta publica un gist con una firma
+ * de esta misma dirección. Ver `verificar-cuenta.ts`.
+ *
+ * Va aparte de `verificarDominios` por lo mismo que aquella va aparte de
+ * `refrescarFichas`, y además tiene su propio ritmo: pide a GitHub, que cuenta
+ * las peticiones y las corta.
+ */
+async function verificarCuentas(store: IndexStore): Promise<void> {
+  const tanda = store.pendientesDeVerificarCuenta(VERIFICAR_CUENTA_CADA_S, CUENTAS_POR_VUELTA);
+  if (tanda.length === 0) return;
+
+  let cambios = 0;
+  await Promise.all(
+    tanda.map(async (p) => {
+      const declarado = leerMarca(p.metadataURI).github ?? '';
+      const antes = p.cuenta?.ok;
+      const { ok, motivo } = await verificarCuenta({
+        direccion: p.address,
+        usuario: declarado,
+        chainId: monad.id,
+      });
+      store.marcarCuenta(p.address, {
+        red: 'github',
+        usuario: normalizarUsuario(declarado),
+        declarado,
+        ok,
+        motivo: ok ? undefined : motivo,
+        ts: Math.floor(Date.now() / 1000),
+      });
+      if (antes !== ok) {
+        cambios += 1;
+        console.log(
+          `[index] ${p.name || p.address.slice(0, 10)}: ${ok ? `github verificado (@${normalizarUsuario(declarado)})` : `github sin verificar (${motivo})`}`,
+        );
+      }
+    }),
+  );
+
+  if (cambios === 0) console.log(`[index] cuentas repasadas: ${tanda.length}, sin cambios`);
 }
 
 /**
@@ -810,6 +877,7 @@ export async function runIndexer(
       await incremental(cfg, clients, store, newHead);
       await refrescarFichas(cfg, clients, store);
       await verificarDominios(store);
+      await verificarCuentas(store);
       await traducirFichas(store);
       await sweepBackwards(cfg, clients, store);
       store.saveState();

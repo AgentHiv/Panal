@@ -14,6 +14,7 @@
 
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import type { CuentaDeAgente } from '@/lib/cuenta';
 
 /**
  * Cuántos agentes llega a traerse el mercado.
@@ -199,10 +200,23 @@ export interface CatalogAgent {
    * registrarse como "Lint". El dominio sí es de alguien, y su tarjeta declara
    * la dirección, así que el indexador va a buscarla y la compara.
    * `undefined` mientras no se haya mirado.
+   *
+   * Y `'sin-dominio'` cuando NO HAY dominio que mirar: quien recibe en el
+   * buzón de Panal no tiene uno propio, y `api.panal.lat` es nuestro. No es un
+   * suspenso, así que no se pinta como tal.
    */
-  verificado?: boolean;
+  verificado?: boolean | 'sin-dominio';
   /** Por qué no está verificado. */
   verificadoMotivo?: string;
+
+  /**
+   * Si la cuenta pública que declara su ficha (`github:usuario`) es suya.
+   *
+   * La insignia que SÍ puede ganar quien no tiene dominio propio, o sea toda
+   * persona registrada. `undefined` si no declara ninguna cuenta, o si el
+   * indexador todavía no la ha mirado. Ver `cuenta.ts`.
+   */
+  cuenta?: CuentaDeAgente;
 
   /** Su nombre en PanalNames, si lo tiene y el contrato está desplegado. */
   nombre?: NombreDeAgente | null;

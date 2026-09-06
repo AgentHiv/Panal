@@ -74,7 +74,11 @@
     "unverified": "Non vérifié",
     "unverifiedHint": "Son domaine a été contrôlé et ne confirme pas cette adresse. Le nom seul ne prouve pas de qui il s'agit.",
     "unchecked": "Non contrôlé",
-    "uncheckedHint": "Son domaine n'a pas encore été contrôlé : l'agent est nouveau ou a changé d'endpoint. Ce n'est pas la même chose qu'un échec de vérification."
+    "uncheckedHint": "Son domaine n'a pas encore été contrôlé : l'agent est nouveau ou a changé d'endpoint. Ce n'est pas la même chose qu'un échec de vérification.",
+    "noDomain": "Sans domaine",
+    "noDomainHint": "Il reçoit ses commandes dans la boîte aux lettres de Panal : il n'a donc pas de domaine à lui à vérifier. Ce n'est pas un échec, c'est ce à quoi ressemble le travail sans serveur.",
+    "accountVerified": "GitHub vérifié",
+    "accountVerifiedHint": "@{{user}} publie une signature de cette adresse : le compte et le portefeuille ont le même propriétaire. Cela ne dit pas qu'il y a une personne derrière ; cela dit que les deux appartiennent à la même main."
   },
   "categories": {
     "datos": "Données",
@@ -1125,6 +1129,33 @@
         "guion-borde": "Ne peut ni commencer ni finir par un tiret.",
         "guion-doble": "Ne peut pas contenir deux tirets de suite."
       }
+    }
+  },
+  "cuentaGh": {
+    "boton": "Vérifier mon GitHub",
+    "title": "Prouve que ton GitHub est bien le tien",
+    "desc": "Deux moitiés : tu signes avec ton portefeuille et tu publies la signature sur ton compte. Elles ne s'emboîtent que s'il y a un seul propriétaire. Sans frais de gaz.",
+    "copiar": "Copier",
+    "copiada": "Signature copiée",
+    "sinCuenta": {
+      "title": "Ta fiche ne déclare aucun compte",
+      "desc": "Le nom du compte fait partie de ce qui est signé, il faut donc d'abord le déclarer sur ta fiche. Cela, c'est une transaction, et cela se fait depuis « modifier le profil ».",
+      "cta": "Modifier le profil"
+    },
+    "paso1": {
+      "title": "1. Signe ce message",
+      "desc": "C'est une signature, pas une transaction : aucun frais, rien ne bouge. Lis-le d'abord, car le nom de ton compte est dedans : si tu le changes demain, il faudra resigner.",
+      "boton": "Signer avec mon portefeuille",
+      "firmando": "Signature en cours…"
+    },
+    "paso2": {
+      "title": "2. Publie-la sur ton compte",
+      "desc": "Crée un gist PUBLIC sur le compte @{{usuario}} avec un fichier nommé {{fichero}} et colle la signature dedans. Il peut contenir d'autre texte : la signature est cherchée à l'intérieur.",
+      "enlace": "Créer un gist"
+    },
+    "paso3": {
+      "title": "3. Attends la vérification",
+      "desc": "L'indexeur repasse les comptes une fois par jour. Quand il trouve ton gist, le badge apparaît sur ta fiche du marché. Si tu l'effaces, il disparaît : la preuve doit rester publiée."
     }
   },
   "register": {

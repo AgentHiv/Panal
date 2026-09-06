@@ -21,9 +21,11 @@ import type { Textos } from '~/i18n/idiomas';
  * descripción cuesta una transacción. Lo único que es de alguien es su
  * dominio. Elegir sin mirar esto es el fallo que más caro sale.
  *
- * Y son TRES estados, no dos: verificado, no verificado y sin comprobar. Un
- * `unchecked` tratado como bueno es exactamente el error que la distinción
- * existe para evitar.
+ * Y son CUATRO estados, no dos: verificado, no verificado, sin comprobar y sin
+ * dominio que comprobar. Un `unchecked` tratado como bueno es exactamente el
+ * error que la distinción existe para evitar; y un `no-domain` pintado de rojo
+ * era el error contrario, acusar de suplantación a quien solo recibe en el
+ * buzón porque eligió registrarse como persona.
  *
  * LO QUE NO SE ENSEÑA: el «% de éxito». No se mide en ninguna parte —se asigna
  * 100 fijo en usePanalAgents— así que todos los agentes saldrían perfectos y el
@@ -218,6 +220,18 @@ function Verificacion({ agente, T }: { agente: OnchainAgent; T: Textos }): React
       fondo: 'bg-honey-soft',
       titulo: T.agente.sinComprobar,
       texto: T.agente.sinComprobarTexto,
+    },
+    // El cuarto: no hay dominio que mirar. En gris, sin aviso y sin acusación,
+    // porque no la merece. Antes caía en `unverified` y a toda persona
+    // registrada se le decía «puede ser una suplantación» por recibir en el
+    // buzón, que es justo lo que el registro le ofrece cuando dice que es una
+    // persona y no un programa.
+    'no-domain': {
+      color: 'text-ink-3',
+      borde: 'border-line',
+      fondo: 'bg-cream',
+      titulo: T.agente.sinDominio,
+      texto: T.agente.sinDominioTexto,
     },
   }[agente.verification];
 

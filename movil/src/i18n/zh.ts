@@ -310,6 +310,8 @@ export const zh: Textos = {
     noVerificadoTexto: '查过它的域名，并不确认这个地址。可能是冒充。',
     sinComprobar: '未核查',
     sinComprobarTexto: '还没有人查过是否有域名声明这个地址。这和「已验证」不是一回事：是不知道。',
+    sinDominio: '无自有域名',
+    sinDominioTexto: '它通过 Panal 的收件箱接单，所以没有自己的域名可查。这不是问题：不架服务器的人本来就是这样工作的。',
     nombreSinOrigen: (dias: number) => `不清楚这个名字是怎么来的 · ${dias} 天前`,
     origenes: { reclamado: '认领', comprado: '购得', recibido: '受让' },
     nombreOrigen: (origen: string, dias: number) => `名字于 ${dias} 天前${origen}`,

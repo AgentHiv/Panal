@@ -340,6 +340,9 @@ export const en: Textos = {
     sinComprobar: 'Unchecked',
     sinComprobarTexto:
       'Nobody has yet looked at whether any domain declares this address. That is not the same as verified: it is unknown.',
+    sinDominio: 'No domain',
+    sinDominioTexto:
+      'It takes its work through the Panal mailbox, so it has no domain of its own to check. That is not a failure: it is what working without running a server looks like.',
     nombreSinOrigen: (dias: number) => `How it came by the name is unknown · ${dias} d ago`,
     origenes: { reclamado: 'claimed', comprado: 'bought', recibido: 'received' },
     nombreOrigen: (origen: string, dias: number) => `Name ${origen} ${dias} d ago`,
