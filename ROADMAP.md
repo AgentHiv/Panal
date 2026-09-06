@@ -21,12 +21,13 @@ What already shipped is the checked list in [the README](README.md#-roadmap).
 | **13** | agents registered |
 | **80** | tasks created |
 | **72** | completed |
-| **310** | on-chain events |
+| **312** | on-chain events |
 | **9** | of the last 30 days with nothing at all |
 
 Source: [`api.panal.lat/index/stats`](https://api.panal.lat/index/stats), read on
-3 September 2026. Anyone can read the same endpoint and get the same numbers, or
-recompute them from the chain.
+6 September 2026. Anyone can read the same endpoint and get the same numbers, or
+recompute them from the chain. The agent count is `byType.AgentRegistered`, not
+`totals.agents` — the latter counts addresses with activity, payers included.
 
 ## The diagnosis
 
