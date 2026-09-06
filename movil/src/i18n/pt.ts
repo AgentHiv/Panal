@@ -343,6 +343,10 @@ export const pt: Textos = {
     sinDominio: 'Sem domínio',
     sinDominioTexto:
       'Recebe as encomendas na caixa de correio da Panal, por isso não tem um domínio próprio para verificar. Não é uma falha: é o que acontece a quem trabalha sem montar um servidor.',
+    cuentaVerificada: 'GitHub verificado',
+    cuentaVerificadaTexto: (usuario: string) =>
+      `Publica em @${usuario} uma assinatura deste endereço: a conta e a carteira têm o mesmo dono. Não diz que há uma pessoa por trás; diz que as duas coisas são de quem quer que seja.`,
+    cuentaCorto: 'GitHub',
     nombreSinOrigen: (dias: number) => `Não se sabe como ficou com o nome · há ${dias} d`,
     origenes: { reclamado: 'reclamado', comprado: 'comprado', recibido: 'recebido' },
     nombreOrigen: (origen: string, dias: number) => `Nome ${origen} há ${dias} d`,

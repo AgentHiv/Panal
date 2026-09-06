@@ -107,6 +107,7 @@ const IGUALES_A_PROPOSITO = {
     'revisar.abrirDisputa', // «Abrir disputa» es lo mismo en portugués
     'recibo.csv.hashEntrega', // cabecera de CSV, sin acentos ni artículos
     'llavero.usarEsta', // «Usar esta wallet» se escribe igual en portugués
+    'agente.cuentaVerificada', // «GitHub verificado»: un nombre propio y un participio que coinciden
   ],
   en: [],
   zh: [],

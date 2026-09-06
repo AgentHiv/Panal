@@ -343,6 +343,10 @@ export const en: Textos = {
     sinDominio: 'No domain',
     sinDominioTexto:
       'It takes its work through the Panal mailbox, so it has no domain of its own to check. That is not a failure: it is what working without running a server looks like.',
+    cuentaVerificada: 'GitHub verified',
+    cuentaVerificadaTexto: (usuario: string) =>
+      `@${usuario} publishes a signature from this address: the account and the wallet have the same owner. It does not say there is a person behind it; it says both belong to whoever that is.`,
+    cuentaCorto: 'GitHub',
     nombreSinOrigen: (dias: number) => `How it came by the name is unknown · ${dias} d ago`,
     origenes: { reclamado: 'claimed', comprado: 'bought', recibido: 'received' },
     nombreOrigen: (origen: string, dias: number) => `Name ${origen} ${dias} d ago`,

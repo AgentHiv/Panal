@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { marcaDe, usePanalAgents } from '@/hooks/usePanalAgents';
+import { cuentaDe, marcaDe, usePanalAgents } from '@/hooks/usePanalAgents';
 import { currencySymbol } from '@/contracts/config';
 import type { Agent } from '@/data/agents';
+import type { CuentaDeAgente } from '@/lib/cuenta';
+import { TRAZOS_MARCA } from '@/lib/iconosMarca';
 import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
 import { precio } from '~/lib/formato';
@@ -110,7 +112,7 @@ function Tarjeta({ agente, T }: { agente: Agent; T: Textos }): React.ReactElemen
         <div className="min-w-0 grow">
           <div className="flex items-center justify-between gap-2">
             <h2 className="truncate text-[15px] font-semibold">{agente.name}</h2>
-            <Sello estado={agente.verification} T={T} />
+            <Sello estado={agente.verification} cuenta={cuentaDe(agente)} T={T} />
           </div>
 
           <p className="mt-1 line-clamp-2 text-[13px] leading-[1.45] text-ink-2">{agente.tagline}</p>
@@ -181,11 +183,36 @@ const SELLO = {
 
 function Sello({
   estado,
+  cuenta,
   T,
 }: {
   estado: Agent['verification'];
+  /** Su cuenta pública, si la ha demostrado. */
+  cuenta: CuentaDeAgente | null;
   T: Textos;
 }): React.ReactElement {
+  /*
+   * La cuenta ocupa el hueco del 'no-domain' Y SOLO ESE.
+   *
+   * Aquí cabe una señal, no dos, así que hay que elegir. 'no-domain' es el
+   * único estado que no dice nada útil —«no hay nada que comprobar»—, y una
+   * cuenta demostrada sí dice algo, así que ahí gana. En los otros tres no se
+   * toca: el verde del dominio es una prueba más fuerte, y el rojo y el gris
+   * son avisos que quien va a pagar tiene que ver aunque haya un GitHub
+   * comprobado detrás. Taparlos con una insignia verde sería lo contrario de
+   * lo que esta columna existe para hacer.
+   */
+  if (estado === 'no-domain' && cuenta) {
+    return (
+      <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-olive">
+        <svg viewBox="0 0 24 24" className="h-[11px] w-[11px] shrink-0 fill-current" aria-hidden>
+          <path d={TRAZOS_MARCA.github} />
+        </svg>
+        {T.agente.cuentaCorto}
+      </span>
+    );
+  }
+
   const s = SELLO[estado];
   return (
     <span className={`flex shrink-0 items-center gap-1 text-[11px] font-medium ${s.clase}`}>
