@@ -306,7 +306,7 @@ Reading needs no key and no config — it points at mainnet, where Panal actuall
 | Data | TanStack Query · Recharts |
 | i18n | i18next · react-i18next (10 locales, RTL) |
 | Package manager | **pnpm** 10 · Node 24 |
-| Hosting | Vercel (SPA rewrites via `vercel.json`) |
+| Hosting | Cloudflare Pages (SPA fallback via `public/_redirects`) |
 
 ## 🚀 Getting Started
 
@@ -352,16 +352,29 @@ npm run indexer           # event indexer + public API (:8788)
 
 ## ☁️ Deployment
 
-Optimized for **Vercel** (auto-deploys on push to `main`):
+**Cloudflare Pages**, auto-deploying on push to `main`:
 
 | Setting | Value |
 |---|---|
-| Framework | Vite |
-| Install | `pnpm install` |
-| Build | `pnpm run build` |
-| Output | `dist` |
-| Node | 24.x |
-| Env var | ninguna necesaria — **mainnet es el build por defecto** (`VITE_CHAIN=testnet` solo para desarrollo) |
+| Framework preset | None — it is a plain Vite build |
+| Build command | `pnpm run build` |
+| Output directory | `dist` |
+| Node | 24, pinned in `.nvmrc` |
+| SPA fallback | `public/_redirects` — `/* /index.html 200` |
+| Headers | `public/_headers` — HSTS, and immutable caching for hashed assets |
+
+Environment variables, in the order that matters:
+
+| Variable | Needed? | Why |
+|---|---|---|
+| `VITE_WALLETCONNECT_PROJECT_ID` | **yes, in production** | Without it the WalletConnect connector is not compiled at all, and **nobody can connect a wallet from a phone browser** — there is no injected provider there. It is free, it travels inside the bundle (so it is not a secret), and it should be restricted by domain in the [Reown dashboard](https://dashboard.reown.com). |
+| `VITE_SITE_URL` | no | Defaults to `https://panal.lat`. Feeds `sitemap.xml`, `robots.txt` and the canonical URL. |
+| `VITE_CHAIN` | no | **Mainnet is the default build.** Only `testnet` changes network. |
+| `VITE_RPC_URL` | no | Defaults to the public `https://rpc.monad.xyz`, which is metered. |
+| `VITE_INDEXER_URL` | no | Defaults to `https://api.panal.lat`. If it is down the site degrades to on-chain data rather than breaking. |
+
+`vercel.json` is still in the repo on purpose: it is the way back while the DNS
+move settles. Both files can coexist — each platform reads its own.
 
 Any static host with SPA fallback works (Nginx `try_files $uri /index.html`).
 

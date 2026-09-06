@@ -1,0 +1,27 @@
+# Cabeceras que Vercel ponia por su cuenta y Cloudflare no pone.
+#
+# Estan aqui para que cambiar de servidor no cambie NADA de lo que ve un
+# navegador. Ajustar cualquiera de ellas es una decision con su propia
+# comprobacion, no parte de la mudanza.
+#
+# HSTS con el mismo max-age que mandaba Vercel (dos años). Quitarlo al mudarse
+# seria bajar la seguridad sin que nadie lo haya pedido, y ademas a medias: los
+# navegadores que ya lo tienen cacheado seguirian forzando https durante dos
+# años y los nuevos no, que es el peor de los dos mundos.
+#
+# El CORS abierto tambien venia de Vercel. Nada conocido depende de el —la app
+# llama a api.panal.lat y a api.github.com, nunca a panal.lat—, pero se
+# conserva para que la mudanza sea un no-op de verdad.
+/*
+  Strict-Transport-Security: max-age=63072000
+  Access-Control-Allow-Origin: *
+
+# Vite le pone un hash en el nombre a cada asset, asi que lo que hay detras de
+# una URL de aqui no cambia nunca: si cambia el fichero, cambia el nombre. Se
+# puede cachear para siempre sin riesgo de servir algo viejo.
+#
+# index.html NO entra aqui a proposito: ese si cambia en cada despliegue y es
+# quien apunta a los assets nuevos. Cachearlo seria dejar a la gente clavada en
+# la version anterior.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
