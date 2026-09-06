@@ -75,7 +75,9 @@
     "unchecked": "Não comprovado",
     "uncheckedHint": "O domínio ainda não foi comprovado: o agente é novo ou mudou de endpoint. Não é o mesmo que ter falhado na verificação.",
     "noDomain": "Sem domínio",
-    "noDomainHint": "Recebe as encomendas na caixa de correio da Panal, por isso não tem um domínio próprio para verificar. Não é uma falha: é o que acontece a quem trabalha sem montar um servidor."
+    "noDomainHint": "Recebe as encomendas na caixa de correio da Panal, por isso não tem um domínio próprio para verificar. Não é uma falha: é o que acontece a quem trabalha sem montar um servidor.",
+    "accountVerified": "GitHub verificado",
+    "accountVerifiedHint": "@{{user}} publica uma assinatura deste endereço: a conta e a carteira têm o mesmo dono. Não diz que há uma pessoa por trás; diz que as duas coisas são de quem quer que seja."
   },
   "categories": {
     "datos": "Dados",
@@ -1126,6 +1128,33 @@
         "guion-borde": "Não pode começar nem acabar em hífen.",
         "guion-doble": "Não pode ter dois hífenes seguidos."
       }
+    }
+  },
+  "cuentaGh": {
+    "boton": "Verificar o meu GitHub",
+    "title": "Prova que o teu GitHub é teu",
+    "desc": "Duas metades: assinas com a tua carteira e publicas a assinatura na tua conta. Só encaixam se houver um mesmo dono. Não custa gás.",
+    "copiar": "Copiar",
+    "copiada": "Assinatura copiada",
+    "sinCuenta": {
+      "title": "A tua ficha não declara nenhuma conta",
+      "desc": "O nome da conta vai dentro do que se assina, por isso primeiro há que declará-lo na tua ficha. Isso sim é uma transação, e faz-se em «editar perfil».",
+      "cta": "Editar perfil"
+    },
+    "paso1": {
+      "title": "1. Assina esta mensagem",
+      "desc": "É uma assinatura, não uma transação: não custa gás e não move nada. Lê-a antes, porque o nome da tua conta vai lá dentro: se o mudares amanhã, terás de assinar outra vez.",
+      "boton": "Assinar com a minha carteira",
+      "firmando": "A assinar…"
+    },
+    "paso2": {
+      "title": "2. Publica-a na tua conta",
+      "desc": "Cria um gist PÚBLICO na conta @{{usuario}} com um ficheiro chamado {{fichero}} e cola lá a assinatura. Pode ter mais texto à volta: a assinatura procura-se lá dentro.",
+      "enlace": "Criar um gist"
+    },
+    "paso3": {
+      "title": "3. Espera que se verifique",
+      "desc": "O indexador repassa as contas uma vez por dia. Quando encontrar o teu gist, o selo aparece na tua ficha do mercado. Se o apagares, desaparece: a prova tem de continuar publicada."
     }
   },
   "register": {

@@ -14,6 +14,7 @@
 
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import type { CuentaDeAgente } from '@/lib/cuenta';
 
 /**
  * Cuántos agentes llega a traerse el mercado.
@@ -207,6 +208,15 @@ export interface CatalogAgent {
   verificado?: boolean | 'sin-dominio';
   /** Por qué no está verificado. */
   verificadoMotivo?: string;
+
+  /**
+   * Si la cuenta pública que declara su ficha (`github:usuario`) es suya.
+   *
+   * La insignia que SÍ puede ganar quien no tiene dominio propio, o sea toda
+   * persona registrada. `undefined` si no declara ninguna cuenta, o si el
+   * indexador todavía no la ha mirado. Ver `cuenta.ts`.
+   */
+  cuenta?: CuentaDeAgente;
 
   /** Su nombre en PanalNames, si lo tiene y el contrato está desplegado. */
   nombre?: NombreDeAgente | null;

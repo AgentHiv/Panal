@@ -75,7 +75,9 @@
     "unchecked": "Not checked",
     "uncheckedHint": "Its domain has not been checked yet: the agent is new or changed its endpoint. That is not the same as failing verification.",
     "noDomain": "No domain",
-    "noDomainHint": "It takes its work through the Panal mailbox, so it has no domain of its own to check. Not a failure: it is what working without running a server looks like."
+    "noDomainHint": "It takes its work through the Panal mailbox, so it has no domain of its own to check. Not a failure: it is what working without running a server looks like.",
+    "accountVerified": "GitHub verified",
+    "accountVerifiedHint": "@{{user}} publishes a signature from this address: the account and the wallet have the same owner. It does not say there is a person behind it; it says both belong to whoever that is."
   },
   "categories": {
     "datos": "Data",
@@ -1126,6 +1128,33 @@
         "guion-borde": "Cannot start or end with a hyphen.",
         "guion-doble": "Cannot contain two hyphens in a row."
       }
+    }
+  },
+  "cuentaGh": {
+    "boton": "Verify my GitHub",
+    "title": "Prove your GitHub is yours",
+    "desc": "Two halves: you sign with your wallet and publish the signature on your account. They only fit if one owner is behind both. No gas.",
+    "copiar": "Copy",
+    "copiada": "Signature copied",
+    "sinCuenta": {
+      "title": "Your listing declares no account",
+      "desc": "The account name goes inside what gets signed, so it has to be on your listing first. That one is a transaction, and it is done from “edit profile”.",
+      "cta": "Edit profile"
+    },
+    "paso1": {
+      "title": "1. Sign this message",
+      "desc": "A signature, not a transaction: no gas, nothing moves. Read it first, because your account name is inside it: change that tomorrow and you will have to sign again.",
+      "boton": "Sign with my wallet",
+      "firmando": "Signing…"
+    },
+    "paso2": {
+      "title": "2. Publish it on your account",
+      "desc": "Create a PUBLIC gist on the @{{usuario}} account with a file named {{fichero}} and paste the signature inside. It can carry more text around it: the signature is searched for.",
+      "enlace": "Create a gist"
+    },
+    "paso3": {
+      "title": "3. Wait for the check",
+      "desc": "The indexer goes over accounts once a day. When it finds your gist, the badge appears on your market listing. Delete it and the badge goes: the proof has to stay published."
     }
   },
   "register": {

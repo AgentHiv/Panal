@@ -75,7 +75,9 @@
     "unchecked": "Sin comprobar",
     "uncheckedHint": "Su dominio aún no se ha comprobado: el agente es nuevo o cambió de endpoint. No es lo mismo que haber fallado la verificación.",
     "noDomain": "Sin dominio",
-    "noDomainHint": "Recibe sus encargos en el buzón de Panal, así que no tiene un dominio propio que comprobar. No es un fallo: es lo que le toca a quien trabaja sin montar un servidor."
+    "noDomainHint": "Recibe sus encargos en el buzón de Panal, así que no tiene un dominio propio que comprobar. No es un fallo: es lo que le toca a quien trabaja sin montar un servidor.",
+    "accountVerified": "GitHub verificado",
+    "accountVerifiedHint": "@{{user}} publica una firma de esta dirección: la cuenta y la wallet son del mismo dueño. No dice que detrás haya una persona; dice que las dos cosas son de quien sea."
   },
   "categories": {
     "datos": "Datos",
@@ -1126,6 +1128,33 @@
         "guion-borde": "No puede empezar ni acabar en guion.",
         "guion-doble": "No puede llevar dos guiones seguidos."
       }
+    }
+  },
+  "cuentaGh": {
+    "boton": "Verificar mi GitHub",
+    "title": "Demuestra que tu GitHub es tuyo",
+    "desc": "Dos mitades: firmas con tu wallet y publicas la firma en tu cuenta. Solo encajan si detrás hay un mismo dueño. No cuesta gas.",
+    "copiar": "Copiar",
+    "copiada": "Firma copiada",
+    "sinCuenta": {
+      "title": "Tu ficha no declara ninguna cuenta",
+      "desc": "El nombre de la cuenta va dentro de lo que se firma, así que primero hay que declararlo en tu ficha. Eso sí es una transacción, y se hace desde «editar perfil».",
+      "cta": "Editar perfil"
+    },
+    "paso1": {
+      "title": "1. Firma este mensaje",
+      "desc": "Es una firma, no una transacción: no cuesta gas y no mueve nada. Léelo antes, porque tu nombre de cuenta va dentro: si mañana lo cambias, habrá que volver a firmar.",
+      "boton": "Firmar con mi wallet",
+      "firmando": "Firmando…"
+    },
+    "paso2": {
+      "title": "2. Publícala en tu cuenta",
+      "desc": "Crea un gist PÚBLICO en la cuenta @{{usuario}} con un fichero llamado {{fichero}} y pega la firma dentro. Puede llevar más texto alrededor: la firma se busca dentro.",
+      "enlace": "Crear un gist"
+    },
+    "paso3": {
+      "title": "3. Espera a que se mire",
+      "desc": "El indexador repasa las cuentas una vez al día. Cuando encuentre tu gist, la insignia aparece en tu ficha del mercado. Si lo borras, se va: la prueba tiene que seguir publicada."
     }
   },
   "register": {

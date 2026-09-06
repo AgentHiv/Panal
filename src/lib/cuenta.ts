@@ -61,6 +61,26 @@ export type RedDeCuenta = 'github';
 export const FICHERO_DE_PRUEBA = 'panal.txt';
 
 /**
+ * Lo que el indexador cuenta de la cuenta de un agente.
+ *
+ * Lo compone `bot/src/indexer.ts` y viaja en la ficha del catálogo. `ok` en
+ * false NO es una acusación: casi siempre significa «todavía no ha publicado
+ * la prueba», y por eso el mercado solo pinta algo cuando es true.
+ */
+export interface CuentaDeAgente {
+  red: RedDeCuenta;
+  /** El usuario, normalizado. */
+  usuario: string;
+  /** Lo que decía la ficha cuando se comprobó. */
+  declarado: string;
+  ok: boolean;
+  /** Por qué no. Lo escribe el indexador, en castellano. */
+  motivo?: string;
+  /** Cuándo se comprobó (segundos). */
+  ts: number;
+}
+
+/**
  * El mensaje que se firma, byte a byte.
  *
  * DELIBERADAMENTE CORTO. Lo recompone el verificador a partir de lo que hay en

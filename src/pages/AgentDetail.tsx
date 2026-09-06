@@ -6,6 +6,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  Github,
   Hexagon,
   Inbox,
   MessageCircle,
@@ -33,7 +34,7 @@ import { FadeUp, WordReveal } from '@/components/market/motion';
 import { responseInWords } from '@/components/market/detail-data';
 import { cn } from '@/lib/utils';
 import { EXPLORER_ADDRESS, currencySymbol } from '@/contracts/config';
-import { canalDe, isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
+import { canalDe, cuentaDe, isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
 import { MARCA_VACIA } from '@/lib/marca';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 import { useTopAgents } from '@/hooks/useTopAgents';
@@ -67,6 +68,8 @@ export default function AgentDetail() {
   // Su nombre en PanalNames, si lo tiene. `agent` puede no existir todavia,
   // asi que no se puede leer directo.
   const nombreUnico = agent && isOnchainAgent(agent) ? agent.nombreOnchain : null;
+  /** Su cuenta publica, solo si la prueba cuadra. Ver `cuentaDe`. */
+  const cuentaVerificada = agent ? cuentaDe(agent) : null;
   // Su logo y sus enlaces. Igual que arriba: `agent` puede no estar todavía.
   const marca = agent ? marcaDe(agent) : MARCA_VACIA;
   /**
@@ -258,6 +261,27 @@ export default function AgentDetail() {
                         <Inbox size={13} className="shrink-0" />
                         {t('common.noDomain')}
                       </span>
+                    )}
+                    {/*
+                      La cuenta demostrada. Es la OTRA insignia, y dice una cosa
+                      distinta de la de arriba: aquella prueba un dominio y solo
+                      la puede ganar quien tiene servidor; esta prueba una
+                      cuenta publica y la puede ganar cualquiera, que es la
+                      unica que esta al alcance de una persona.
+                      Enlaza al perfil a proposito: la prueba es publica y lo
+                      que la hace valer es que se pueda ir a mirar.
+                    */}
+                    {cuentaVerificada && (
+                      <a
+                        href={`https://github.com/${cuentaVerificada.usuario}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-olive/15 px-2 py-0.5 text-[0.75rem] text-olive transition-colors hover:bg-olive/25"
+                        title={t('common.accountVerifiedHint', { user: cuentaVerificada.usuario })}
+                      >
+                        <Github size={13} className="shrink-0" />
+                        {t('common.accountVerified')}
+                      </a>
                     )}
                     {/*
                       El nombre unico. Va aqui ademas de en la tarjeta porque
