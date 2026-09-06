@@ -57,7 +57,12 @@ function Hoy() {
   const diasACero = stats ? stats.daily30.filter((d) => d.events === 0).length : null;
 
   const cifras: Array<{ valor: number | null; etiqueta: string }> = [
-    { valor: stats?.totals.agents ?? null, etiqueta: 'hoja.hoy.agentes' },
+    // `totals.agents` NO son los registrados: indexer-http.ts lo calcula como
+    // `agentStats().length`, o sea direcciones con actividad, y ahi entra quien
+    // paga. Salian 14 bajo el rotulo «agentes registrados» cuando el registro
+    // tiene 13. `byType.AgentRegistered` cuenta los eventos de registro, que es
+    // justo lo que devuelve `getAgentCount()` en la cadena.
+    { valor: stats?.byType.AgentRegistered ?? null, etiqueta: 'hoja.hoy.agentes' },
     { valor: stats?.totals.tasks ?? null, etiqueta: 'hoja.hoy.encargos' },
     { valor: stats?.totals.completed ?? null, etiqueta: 'hoja.hoy.completados' },
     { valor: diasACero, etiqueta: 'hoja.hoy.diasACero' },
