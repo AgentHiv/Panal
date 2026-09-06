@@ -8,6 +8,15 @@ import { inspectAttr } from 'plugin-inspect-react-code'
  * robots.txt + sitemap.xml en el build. Configurar VITE_SITE_URL en Vercel.
  */
 const SITE_URL = (process.env.VITE_SITE_URL ?? "https://panal.lat").replace(/\/$/, "");
+/**
+ * Solo las rutas que un desconocido puede leer enteras.
+ *
+ * `/archivo` y `/dashboard` NO estan aqui a proposito: las dos vuelven
+ * temprano si no hay wallet conectada, asi que lo que ve un rastreador —que
+ * nunca la tiene— es una pagina vacia. Pedir que la indexen es pedir que
+ * indexen el vacio, y esas dos paginas compiten contra las que si tienen algo
+ * que decir. Se siguen visitando por su enlace; no aparecen en el mapa.
+ */
 const ROUTES = [
   "/",
   "/mercado",
@@ -17,8 +26,6 @@ const ROUTES = [
   "/protocolo",
   "/token",
   "/hoja-de-ruta",
-  "/archivo",
-  "/dashboard",
 ];
 
 function seoPlugin(): Plugin {
