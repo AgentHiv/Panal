@@ -346,6 +346,10 @@ export const es = {
     sinDominio: 'Sin dominio',
     sinDominioTexto:
       'Recibe sus encargos en el buzón de Panal, así que no tiene un dominio propio que comprobar. No es un fallo: es lo que le toca a quien trabaja sin montar un servidor.',
+    cuentaVerificada: 'GitHub verificado',
+    cuentaVerificadaTexto: (usuario: string) =>
+      `Publica en @${usuario} una firma de esta dirección: la cuenta y la wallet son del mismo dueño. No dice que detrás haya una persona; dice que las dos cosas son de quien sea.`,
+    cuentaCorto: 'GitHub',
     nombreSinOrigen: (dias: number) => `No se sabe cómo llegó a tener el nombre · hace ${dias} d`,
     // `origen` llega del indexador en español; cada idioma lo traduce aquí en
     // vez de interpolarlo crudo, que dejaría «Name comprado 5 d ago».

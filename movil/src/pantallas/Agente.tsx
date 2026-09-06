@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { usePanalAgents } from '@/hooks/usePanalAgents';
+import { cuentaDe, usePanalAgents } from '@/hooks/usePanalAgents';
 import { MARCA_VACIA, enlacesDe } from '@/lib/marca';
 import { TRAZOS_MARCA } from '@/lib/iconosMarca';
 import type { OnchainAgent } from '@/hooks/usePanalAgents';
+import type { CuentaDeAgente } from '@/lib/cuenta';
 import { currencySymbol } from '@/contracts/config';
 import { useAhora } from '@/hooks/useAhora';
 import { useAgente } from '~/lib/agente';
@@ -50,6 +51,8 @@ export default function Agente(): React.ReactElement {
   // Lo que el creador publicó en su ficha. Vacío es lo normal.
   const marca = agente ? agente.marca : MARCA_VACIA;
   const enlaces = enlacesDe(marca);
+  // Su cuenta pública, y solo si la prueba cuadra. Ver `cuentaDe`.
+  const cuenta = agente ? cuentaDe(agente) : null;
 
   return (
     <div className="flex min-h-0 grow flex-col">
@@ -92,6 +95,7 @@ export default function Agente(): React.ReactElement {
         </div>
 
         {agente && <Verificacion agente={agente} T={T} />}
+        {cuenta && <CuentaVerificada cuenta={cuenta} T={T} />}
         {agente && <OrigenDelNombre agente={agente} T={T} />}
 
         {agente && (
@@ -250,6 +254,42 @@ function Verificacion({ agente, T }: { agente: OnchainAgent; T: Textos }): React
  * mismo como identificador y NO valen lo mismo como señal: en una venta lo
  * único que viaja es el nombre, y la reputación se queda con quien lo vendió.
  */
+/**
+ * La OTRA insignia: su cuenta pública, demostrada.
+ *
+ * Va debajo de la del dominio y dice algo distinto. Aquella prueba un dominio y
+ * solo la gana quien se ha montado un servidor; esta prueba una cuenta y la
+ * puede ganar cualquiera, que es la única que está al alcance de una persona.
+ * Juntas se leen como lo que son: «sin dominio propio, y la cuenta comprobada».
+ *
+ * Solo se pinta cuando la prueba CUADRA. Un fallo casi siempre significa
+ * «todavía no ha publicado el gist», y enseñar eso sería repetir el error que
+ * pintaba de rojo a toda persona por no tener un dominio que nadie le pidió.
+ *
+ * Y enlaza al perfil a propósito: la prueba es pública, y lo que la hace valer
+ * es que se pueda ir a mirar.
+ */
+function CuentaVerificada({ cuenta, T }: { cuenta: CuentaDeAgente; T: Textos }): React.ReactElement {
+  return (
+    <a
+      href={`https://github.com/${cuenta.usuario}`}
+      target="_blank"
+      rel="noopener noreferrer nofollow"
+      className="pulsable block shrink-0 rounded-[14px] border border-olive/35 bg-olive/10 px-3.5 py-3"
+    >
+      <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-olive">
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 fill-current" aria-hidden>
+          <path d={TRAZOS_MARCA.github} />
+        </svg>
+        {T.agente.cuentaVerificada}
+      </p>
+      <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-2">
+        {T.agente.cuentaVerificadaTexto(cuenta.usuario)}
+      </p>
+    </a>
+  );
+}
+
 function OrigenDelNombre({
   agente,
   T,
