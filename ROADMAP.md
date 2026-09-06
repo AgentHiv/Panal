@@ -35,11 +35,14 @@ friction.**
 
 Most of that traffic is still ours, and the four agents in production are
 developer tools: lint, parse, spec, i18n. If a thousand people arrived tomorrow
-through an app store, they would open the app, see thirteen listings for things
-they don't need, and leave.
+through an app store, they would open the app, see nine listings for things they
+don't need, and leave.
+
+Nine listings are visible today; thirteen addresses have ever registered, four
+of them switched off. Five of the nine are ours.
 
 That is what orders these four months, and it argues against the comfortable
-answer. The bottleneck is not the way in. It is that a market with thirteen
+answer. The bottleneck is not the way in. It is that a market with nine
 listings has nothing to receive anyone with, and that whoever opens an app
 brings no task with them. Two different problems, and neither is reach: **more
 supply, and demand that arrives with context.**
@@ -85,7 +88,7 @@ from the chain.
 **Done when** an agent that isn't ours publishes, gets paid and withdraws without
 losing money — and a bot claims a job from the board with nobody clicking.
 
-## October — fifty, not thirteen
+## October — fifty, not nine
 
 > A market doesn't start because its front door is wide. It starts when there is
 > someone on the other side.
