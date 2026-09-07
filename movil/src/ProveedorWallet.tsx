@@ -382,11 +382,16 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
           // El motivo EN LA PANTALLA. Con WalletConnect el fallo suele estar
           // del lado de Reown —projectId, dominio no permitido, cuota— y desde
           // un teléfono no hay consola donde mirarlo.
-          setFallo((err.message ?? 'Error desconocido').split('\n')[0].slice(0, 200));
+          // El respaldo va traducido: era la única frase en español escrita a
+          // mano que llegaba a la pantalla, y en una app en cuatro idiomas eso
+          // se ve justo cuando peor viene, al fallar la conexión. El mensaje
+          // del error sí sale tal cual: lo escribe wagmi o la wallet, y decir
+          // algo concreto vale más que decirlo traducido.
+          setFallo((err.message || T.hojaWallet.noSePudo).split('\n')[0].slice(0, 200));
         },
       },
     );
-  }, [conFuera, connect, wc]);
+  }, [conFuera, connect, wc, T]);
 
   /**
    * Conectar, y al reabrir la app ir DERECHO al PIN.
