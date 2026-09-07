@@ -51,10 +51,17 @@ function salir(mensaje: string): never {
  * quien lo ejecuta se queda sin saber qué pasó.
  */
 function mensajeDe(err: unknown): string {
-  if (typeof err === 'object' && err !== null && 'shortMessage' in err) {
-    const corto = (err as { shortMessage?: unknown }).shortMessage;
-    if (typeof corto === 'string' && corto) return corto;
+  const partes: string[] = [];
+  if (typeof err === 'object' && err !== null) {
+    const e = err as { shortMessage?: unknown; details?: unknown; cause?: unknown };
+    if (typeof e.shortMessage === 'string' && e.shortMessage) partes.push(e.shortMessage);
+    // `details` es donde va lo que dijo el NODO. Sin esto, un rechazo de
+    // `eth_sendRawTransaction` sale como «RPC Request failed.» y punto, que no
+    // distingue un saldo corto de un nonce repetido de un método capado.
+    if (typeof e.details === 'string' && e.details && !partes.includes(e.details)) partes.push(e.details);
+    if (!partes.length && e.cause) return mensajeDe(e.cause);
   }
+  if (partes.length) return partes.join(' — ');
   return err instanceof Error ? err.message.split('\n')[0] : String(err);
 }
 
@@ -139,10 +146,38 @@ if (!VA) {
   process.exit(0);
 }
 
-const wallet = createWalletClient({ account, chain: monad, transport: http(RPC_URL) });
-const hash = await wallet
-  .writeContract(request)
-  .catch((err: unknown) => salir(`\nNo se pudo enviar: ${mensajeDe(err)}`));
+const wallet = createWalletClient({ account, chain: monad, transport: http(RPC_URL, { timeout: 20_000 }) });
+
+/**
+ * Manda la transacción, y si el nodo la rechaza lo reintenta UNA vez pagando
+ * un pelín más de propina.
+ *
+ * No es un reintento por si acaso: Monad devuelve el rechazo CACHEADO cuando le
+ * llega dos veces el mismo payload. Firmar lo mismo con el mismo nonce y las
+ * mismas fees da bytes idénticos —ECDSA es determinista—, así que el nodo
+ * repite su respuesta anterior sin volver a mirar nada. Eso convierte un fallo
+ * puntual en un fallo permanente que no se arregla reintentando a mano, que es
+ * exactamente como se ve desde fuera: falla siempre igual.
+ *
+ * Subir la propina cambia los bytes sin tocar el nonce, y con eso el nodo lo
+ * vuelve a evaluar de verdad.
+ */
+async function enviar(): Promise<`0x${string}`> {
+  try {
+    return await wallet.writeContract(request);
+  } catch (err) {
+    console.error(`\nEl primer envío falló: ${mensajeDe(err)}`);
+    const fees = await publicClient.estimateFeesPerGas();
+    const propina = ((fees.maxPriorityFeePerGas ?? 1_000_000_000n) * 125n) / 100n;
+    const tope = (fees.maxFeePerGas ?? 150_000_000_000n) + propina;
+    console.error(`Reintento una vez con más propina (${propina} wei) para que no sea el mismo payload.`);
+    return wallet
+      .writeContract({ ...request, maxPriorityFeePerGas: propina, maxFeePerGas: tope })
+      .catch((err2: unknown) => salir(`\nTampoco con más propina: ${mensajeDe(err2)}`));
+  }
+}
+
+const hash = await enviar();
 const recibo = await publicClient.waitForTransactionReceipt({ hash });
 if (recibo.status !== 'success') salir(`\nLa transacción entró pero revirtió: ${hash}`);
 
