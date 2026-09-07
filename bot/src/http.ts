@@ -859,7 +859,18 @@ export function createResultServer(deps: ResultServerDeps): Server {
     }
     if (req.method === 'OPTIONS') {
       res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
-      res.setHeader('access-control-allow-headers', 'content-type');
+      // Las tres `x-panal-*` van aquí porque son las que manda el cliente para
+      // descargar el resultado, y sin declararlas el navegador NI SIQUIERA
+      // ENVÍA la petición: el preflight no las autoriza y el `fetch` revienta
+      // antes de salir. Este servidor las lee desde que se aceptó la firma con
+      // caducidad —el formato que usan el MCP, la web y la app—, pero esta
+      // lista se quedó en `content-type`, y como el MCP no es un navegador y no
+      // pasa por CORS, nadie lo vio: la app enseñaba «no se pudo hablar con el
+      // agente» y en el servidor no aparecía ni la petición.
+      res.setHeader(
+        'access-control-allow-headers',
+        'content-type, x-panal-address, x-panal-signature, x-panal-expira',
+      );
       res.setHeader('access-control-max-age', '600');
       res.writeHead(204);
       res.end();
