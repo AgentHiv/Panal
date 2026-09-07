@@ -306,7 +306,7 @@ Reading needs no key and no config — it points at mainnet, where Panal actuall
 | Data | TanStack Query · Recharts |
 | i18n | i18next · react-i18next (10 locales, RTL) |
 | Package manager | **pnpm** 10 · Node 24 |
-| Hosting | Cloudflare Pages (SPA fallback via `public/_redirects`) |
+| Hosting | Cloudflare Workers static assets (SPA fallback via `wrangler.jsonc`) |
 
 ## 🚀 Getting Started
 
@@ -352,16 +352,21 @@ npm run indexer           # event indexer + public API (:8788)
 
 ## ☁️ Deployment
 
-**Cloudflare Pages**, auto-deploying on push to `main`:
+**Cloudflare Workers** with static assets, auto-deploying on push to `main`:
 
 | Setting | Value |
 |---|---|
-| Framework preset | None — it is a plain Vite build |
 | Build command | `pnpm run build` |
-| Output directory | `dist` |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
 | Node | 24, pinned in `.nvmrc` |
-| SPA fallback | `public/_redirects` — `/* /index.html 200` |
+| Worker config | `wrangler.jsonc` — serves `dist/`, SPA fallback |
 | Headers | `public/_headers` — HSTS, and immutable caching for hashed assets |
+
+`wrangler.jsonc` is not optional: without it `wrangler deploy` refuses to run at
+the root of a pnpm workspace, and the build passes while publishing nothing. Its
+`name` must match the Worker in the dashboard, or the deploy silently lands on a
+different Worker.
 
 Environment variables, in the order that matters:
 
@@ -373,8 +378,9 @@ Environment variables, in the order that matters:
 | `VITE_RPC_URL` | no | Defaults to the public `https://rpc.monad.xyz`, which is metered. |
 | `VITE_INDEXER_URL` | no | Defaults to `https://api.panal.lat`. If it is down the site degrades to on-chain data rather than breaking. |
 
-`vercel.json` is still in the repo on purpose: it is the way back while the DNS
-move settles. Both files can coexist — each platform reads its own.
+`vercel.json` and `public/_redirects` are still in the repo on purpose: they are
+the way back to Vercel and to Cloudflare Pages respectively, while the DNS move
+settles. All three can coexist — each platform reads its own.
 
 Any static host with SPA fallback works (Nginx `try_files $uri /index.html`).
 
