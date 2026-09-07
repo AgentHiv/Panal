@@ -42,6 +42,27 @@ function salir(mensaje: string): never {
   process.exit(1);
 }
 
+/**
+ * La frase corta de un error de viem, no su volcado.
+ *
+ * `shortMessage` es lo único que dice algo —«execution reverted», «HTTP request
+ * failed»—; el resto es la petición JSON-RPC entera repetida dos veces. Sin
+ * esto, cualquier fallo aquí sale como un muro que termina en «Node.js v24» y
+ * quien lo ejecuta se queda sin saber qué pasó.
+ */
+function mensajeDe(err: unknown): string {
+  if (typeof err === 'object' && err !== null && 'shortMessage' in err) {
+    const corto = (err as { shortMessage?: unknown }).shortMessage;
+    if (typeof corto === 'string' && corto) return corto;
+  }
+  return err instanceof Error ? err.message.split('\n')[0] : String(err);
+}
+
+// Nada de volcados en crudo: lo que no se haya previsto sale como una línea
+// legible y con el código de salida que toca.
+process.on('unhandledRejection', (err) => salir(`\nFalló: ${mensajeDe(err)}`));
+process.on('uncaughtException', (err) => salir(`\nFalló: ${mensajeDe(err)}`));
+
 const args = process.argv.slice(2);
 const VA = args.includes('--va');
 const importe = args.find((a) => !a.startsWith('--'));
@@ -59,14 +80,28 @@ const account = privateKeyToAccount(clave as `0x${string}`);
 
 const publicClient = createPublicClient({ chain: monad, transport: http(RPC_URL) });
 
-const ficha = await publicClient.readContract({
-  address: REGISTRY,
-  abi: registryAbi,
-  functionName: 'getAgent',
-  args: [account.address],
-});
+// Lo primero que se imprime, antes de cualquier cosa que pueda fallar: con qué
+// dirección se va a firmar y contra qué. Sin esto, un fallo más abajo deja al
+// que lo ejecuta sin saber siquiera si la clave era la que creía.
+console.log(`agente   ${account.address}`);
+console.log(`registro ${REGISTRY}`);
+console.log(`rpc      ${RPC_URL}`);
+
+const ficha = await publicClient
+  .readContract({ address: REGISTRY, abi: registryAbi, functionName: 'getAgent', args: [account.address] })
+  .catch((err: unknown) => salir(`\nNo he podido leer el registro: ${mensajeDe(err)}\nSi es cosa del RPC, prueba con RPC_URL=https://rpc.monad.xyz por delante del comando.`));
 
 if (ficha.registeredAt === 0n) salir(`${account.address} no está registrado en ${REGISTRY}. No hay precio que cambiar.`);
+
+// El contrato exige que el agente sea su propio dueño. Se avisa aquí, con la
+// dirección delante, en vez de dejar que reviente la simulación con un
+// «execution reverted» que no dice de quién es la culpa.
+if (ficha.owner.toLowerCase() !== account.address.toLowerCase()) {
+  salir(
+    `\nEsta clave no puede cambiar ese precio: el dueño de ${account.address} es ${ficha.owner}.\n` +
+      '`updatePrice` está restringida a la propia dirección del agente, así que tiene que firmar ella.',
+  );
+}
 
 // Si la ficha lleva niveles, el más barato manda: cambiar solo el registro los
 // dejaría descuadrados y el agente rechazaría a quien pague el precio nuevo.
@@ -79,29 +114,43 @@ if (niveles.length > 0) {
   );
 }
 
+const saldo = await publicClient.getBalance({ address: account.address });
 const moneda = ficha.currency.toLowerCase() === NATIVE_CURRENCY.toLowerCase() ? 'MON' : ficha.currency;
-console.log(`agente   ${account.address}`);
-console.log(`saldo    ${formatEther(await publicClient.getBalance({ address: account.address }))} MON`);
+console.log(`saldo    ${formatEther(saldo)} MON`);
 console.log(`antes    ${formatEther(ficha.pricePerTask)} ${moneda}`);
 console.log(`después  ${formatEther(NUEVO)} MON`);
+if (saldo === 0n) salir('\nSin MON no se paga el gas. Manda un poco a esa dirección.');
 
-// Contra el estado real antes de firmar: si fuera a revertir —por la clave
-// equivocada, sobre todo— se ve aquí y no después de haber pagado el gas.
-const { request } = await publicClient.simulateContract({
-  address: REGISTRY,
-  abi: registryAbi,
-  functionName: 'updatePrice',
-  args: [NUEVO, NATIVE_CURRENCY as Address],
-  account: account.address,
-});
+// Contra el estado real antes de firmar: si fuera a revertir se ve aquí y no
+// después de haber pagado el gas.
+const { request } = await publicClient
+  .simulateContract({
+    address: REGISTRY,
+    abi: registryAbi,
+    functionName: 'updatePrice',
+    args: [NUEVO, NATIVE_CURRENCY as Address],
+    account: account.address,
+  })
+  .catch((err: unknown) => salir(`\nLa simulación falla, así que no firmo nada: ${mensajeDe(err)}`));
 
 if (!VA) {
-  console.log('\nSimulada y correcta. Repite con --va para firmarla.');
+  console.log('\nSimulada y correcta, pero EL PRECIO NO HA CAMBIADO: esto solo era el ensayo.');
+  console.log('Para cambiarlo de verdad, el mismo comando con --va al final.');
   process.exit(0);
 }
 
 const wallet = createWalletClient({ account, chain: monad, transport: http(RPC_URL) });
-const hash = await wallet.writeContract(request);
-await publicClient.waitForTransactionReceipt({ hash });
+const hash = await wallet
+  .writeContract(request)
+  .catch((err: unknown) => salir(`\nNo se pudo enviar: ${mensajeDe(err)}`));
+const recibo = await publicClient.waitForTransactionReceipt({ hash });
+if (recibo.status !== 'success') salir(`\nLa transacción entró pero revirtió: ${hash}`);
+
+// Se relee de la cadena en vez de dar por bueno el recibo: es la única prueba
+// de que lo que quedó publicado es lo que se quería publicar.
+const despues = await publicClient.readContract({
+  address: REGISTRY, abi: registryAbi, functionName: 'getAgent', args: [account.address],
+});
 console.log(`\nhecho    ${hash}`);
+console.log(`ahora    ${formatEther(despues.pricePerTask)} MON  (releído de la cadena)`);
 console.log('El bot no hace falta reiniciarlo: el precio lo lee del registro, no de su código.');
