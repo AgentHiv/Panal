@@ -958,7 +958,15 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     if (origin) {
       res.setHeader('access-control-allow-origin', origin);
       res.setHeader('vary', 'Origin');
-      res.setHeader('access-control-allow-headers', 'content-type, x-panal-address, x-panal-signature, x-panal-expira');
+      // `x-panal-filename` va con las otras: la manda el cliente al subir un
+      // archivo de entrega (`subirArchivoDeEntrega`), y una cabecera que no
+      // esté en esta lista hace que el navegador no llegue a enviar la
+      // petición. Faltaba, así que subir un archivo desde el navegador o desde
+      // la app fallaba antes de salir, sin dejar rastro en el servidor.
+      res.setHeader(
+        'access-control-allow-headers',
+        'content-type, x-panal-address, x-panal-signature, x-panal-expira, x-panal-filename',
+      );
       res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
     }
     if (req.method === 'OPTIONS') {
