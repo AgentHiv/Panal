@@ -1964,5 +1964,33 @@
       "e3": "Auditoría externa de pago: sin movimiento de terceros no defiende su coste todavía.",
       "e4": "Contratos nuevos y rediseño: ninguno de los dos es el cuello de botella."
     }
+  },
+  "descargar": {
+    "metaTitle": "Panal para Android — descargar",
+    "eyebrow": "La app",
+    "title": "Tu cartera y el mercado,",
+    "titleEm": "en el bolsillo",
+    "sub": "La misma red de agentes, con la wallet dentro del teléfono. No es la web metida en una ventana: son tres pestañas y una interfaz propia.",
+    "boton": "Descargar el APK",
+    "version": "versión {{version}}",
+    "leyendo": "leyendo la versión…",
+    "sinDatos": "no se pudo leer",
+    "soloAndroid": "Solo Android. Todavía no hay versión para iPhone.",
+    "comoTitulo": "Cómo se instala",
+    "paso1": "Abre el archivo descargado",
+    "paso1Pie": "Desde la barra de notificaciones o desde tu carpeta de descargas.",
+    "paso2": "Permite instalar de orígenes desconocidos",
+    "paso2Pie": "Android lo pregunta una vez, porque esto no viene de Play Store. Es el mismo permiso para cualquier app que no venga de ahí.",
+    "paso3": "Se instala encima de la anterior",
+    "paso3Pie": "Sin desinstalar nada y sin perder el llavero, porque todas las versiones desde la 2.2.0 llevan la misma firma.",
+    "noSeActualiza": "La app va entera dentro del archivo, así que no se actualiza sola: cada versión nueva se descarga de aquí.",
+    "comprobarTitulo": "Comprobar que es el nuestro",
+    "comprobarTexto": "Esto no viene de Play Store, y guarda claves que mueven dinero. Así que aquí tienes con qué comprobarlo tú, sin fiarte de nosotros ni de dónde lo bajaste.",
+    "checksum": "SHA-256 del archivo",
+    "checksumComo": "Comprueba que llegó entero y sin tocar. En un ordenador: sha256sum panal.apk",
+    "firma": "Huella de la firma",
+    "firmaComo": "Dice quién lo firmó, que es lo que de verdad protege: Android solo deja actualizar con la misma clave. Se ve con keytool -printcert -jarfile panal.apk",
+    "enGithub": "Bajarlo de GitHub",
+    "enGithubPie": "El original, publicado por la máquina que lo compiló y lo firmó. Lo de aquí es una copia servida desde este dominio; el archivo es el mismo y su checksum también."
   }
 }

@@ -41,7 +41,7 @@ import { useNetworkStats } from '@/hooks/useNetworkStats';
 import { useTopAgents } from '@/hooks/useTopAgents';
 import { useIndexStats } from '@/lib/indexer';
 import { formatEther } from 'viem';
-import { APK_RELEASES_URL, CONTRACTS, NETWORK_COMPARISON, ROADMAP_PHASES } from '@/data/protocol';
+import { CONTRACTS, NETWORK_COMPARISON, ROADMAP_PHASES } from '@/data/protocol';
 
 const HeroSwarm = lazy(() => import('@/components/home/HeroSwarm'));
 
@@ -820,15 +820,16 @@ function AndroidSection() {
           </ul>
 
           <div className="mt-9">
-            <a
-              href={APK_RELEASES_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            {/* A /app y no a GitHub: ahí está la versión, cómo se instala y
+                con qué comprobarla. Un botón que saca del sitio a una lista de
+                releases pierde por el camino a quien solo quería la app. */}
+            <Link
+              to="/app"
               className="btn-monad group inline-flex items-center gap-2 px-6 py-3 text-[0.9375rem] font-semibold"
             >
               <Download size={17} className="transition-transform duration-200 group-hover:translate-y-[2px]" />
               {t('home.android.cta')}
-            </a>
+            </Link>
           </div>
           <p className="mt-4 max-w-md text-[0.8125rem] leading-[1.5] text-coal-mute">
             {t('home.android.note')}

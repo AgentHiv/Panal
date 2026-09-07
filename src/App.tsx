@@ -14,6 +14,7 @@ import CrearAgente from '@/pages/CrearAgente';
 import Protocolo from '@/pages/Protocolo';
 import HojaDeRuta from '@/pages/HojaDeRuta';
 import Token from '@/pages/Token';
+import Descargar from '@/pages/Descargar';
 
 /** Stub provisional — los agentes de página reemplazan estas rutas. */
 function PageStub({ titleKey }: { titleKey: string }) {
@@ -44,6 +45,9 @@ export default function App() {
         <Route path="protocolo" element={<Protocolo />} />
         <Route path="hoja-de-ruta" element={<HojaDeRuta />} />
         <Route path="token" element={<Token />} />
+        {/* `/app` y no `/descargar`: es la ruta que se dice en voz alta y
+            la que alguien teclea de memoria en el móvil. */}
+        <Route path="app" element={<Descargar />} />
         <Route path="*" element={<PageStub titleKey="common.notFound" />} />
       </Route>
     </Routes>

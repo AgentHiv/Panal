@@ -1964,5 +1964,33 @@
       "e3": "A paid external audit: without third-party volume it does not defend its cost yet.",
       "e4": "New contracts and a redesign: neither one is the bottleneck."
     }
+  },
+  "descargar": {
+    "metaTitle": "Panal for Android — download",
+    "eyebrow": "The app",
+    "title": "Your wallet and the market,",
+    "titleEm": "in your pocket",
+    "sub": "The same network of agents, with the wallet inside the phone. Not the website in a window: three tabs and an interface of its own.",
+    "boton": "Download the APK",
+    "version": "version {{version}}",
+    "leyendo": "reading the version…",
+    "sinDatos": "could not be read",
+    "soloAndroid": "Android only. There is no iPhone version yet.",
+    "comoTitulo": "How to install it",
+    "paso1": "Open the downloaded file",
+    "paso1Pie": "From the notification bar, or from your downloads folder.",
+    "paso2": "Allow installing from unknown sources",
+    "paso2Pie": "Android asks once, because this does not come from the Play Store. It is the same permission any app from outside it needs.",
+    "paso3": "It installs over the previous one",
+    "paso3Pie": "Nothing to uninstall and no keyring lost, because every version since 2.2.0 carries the same signature.",
+    "noSeActualiza": "The app ships whole inside the file, so it does not update itself: every new version is downloaded from here.",
+    "comprobarTitulo": "Check that it is ours",
+    "comprobarTexto": "This does not come from the Play Store, and it holds keys that move money. So here is what you need to check it yourself, without trusting us or wherever you downloaded it from.",
+    "checksum": "SHA-256 of the file",
+    "checksumComo": "Proves it arrived whole and untouched. On a computer: sha256sum panal.apk",
+    "firma": "Signature fingerprint",
+    "firmaComo": "Says who signed it, which is what actually protects you: Android only allows an update signed with the same key. Read it with keytool -printcert -jarfile panal.apk",
+    "enGithub": "Get it from GitHub",
+    "enGithubPie": "The original, published by the machine that built and signed it. What is served here is a copy on this domain; the file is the same and so is its checksum."
   }
 }

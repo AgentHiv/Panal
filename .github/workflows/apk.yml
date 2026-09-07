@@ -356,6 +356,70 @@ jobs:
               --title "Panal Android $GITHUB_REF_NAME" --notes "$NOTAS"
           fi
 
+      # ---- Y una copia en R2, que es de donde tira panal.lat ----------------
+      #
+      # La release de GitHub sigue siendo el original y no se toca. Esto es una
+      # COPIA servida desde el dominio propio: sin la marca de GitHub delante,
+      # sin sus limites de descarga, y con una URL que se puede decir en voz
+      # alta.
+      #
+      # Se sube con la clave FIJA `panal.apk`, no con el nombre que lleva la
+      # version dentro. Asi el enlace de la web no hay que tocarlo nunca —era
+      # justo el motivo por el que antes apuntaba a `releases/latest`—. Al lado
+      # va `ultima.json`, que es lo que la pagina lee para decir que version es,
+      # cuanto pesa y con que comprobarla.
+      #
+      # El SHA-256 se calcula AQUI, sobre el archivo que se acaba de subir, y no
+      # se copia a mano a ninguna parte: un checksum escrito en el repositorio
+      # se queda viejo en la primera version que alguien publique con prisa, y
+      # un checksum que no cuadra le dice a quien lo comprueba que le han dado
+      # un APK manipulado. Mejor no dar ninguno que dar uno equivocado.
+      #
+      # Si faltan los secretos, se salta con un aviso: el APK ya esta publicado
+      # en la release y no se pierde nada. Se necesitan cuatro, del panel de
+      # Cloudflare (R2 -> Manage API tokens):
+      #   R2_ACCOUNT_ID  R2_ACCESS_KEY_ID  R2_SECRET_ACCESS_KEY  R2_BUCKET
+      - name: Copiar el APK a R2
+        if: startsWith(github.ref, 'refs/tags/apk-v')
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          CUENTA: ${{ secrets.R2_ACCOUNT_ID }}
+          BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$CUENTA" ] || [ -z "$BUCKET" ]; then
+            echo "::warning::Sin secretos de R2: el APK queda solo en la release de GitHub."
+            exit 0
+          fi
+          APK="panal-${GITHUB_REF_NAME}.apk"
+          VERSION="${GITHUB_REF_NAME#apk-v}"
+          # R2 habla el protocolo de S3, asi que vale la CLI que el runner ya
+          # trae. Una dependencia menos que instalar.
+          ENDPOINT="https://${CUENTA}.r2.cloudflarestorage.com"
+          export AWS_DEFAULT_REGION=auto
+
+          BYTES=$(stat -c%s "$APK")
+          SHA=$(sha256sum "$APK" | cut -d' ' -f1)
+          cat > ultima.json <<FIN
+          {"version":"${VERSION}","bytes":${BYTES},"sha256":"${SHA}","publicado":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
+          FIN
+
+          # El archivo con su nombre completo TAMBIEN, no solo la clave fija:
+          # sobrescribir `panal.apk` deja sin forma de bajar una version
+          # anterior, y hace falta el dia que una salga mal.
+          aws s3 cp "$APK" "s3://${BUCKET}/${APK}" --endpoint-url "$ENDPOINT" \
+            --content-type application/vnd.android.package-archive
+          aws s3 cp "$APK" "s3://${BUCKET}/panal.apk" --endpoint-url "$ENDPOINT" \
+            --content-type application/vnd.android.package-archive \
+            --cache-control 'public, max-age=300'
+          # El manifiesto con caducidad corta: es lo que hace que la pagina
+          # cuente la version nueva sin esperar a que caduque una cache larga.
+          aws s3 cp ultima.json "s3://${BUCKET}/ultima.json" --endpoint-url "$ENDPOINT" \
+            --content-type application/json --cache-control 'public, max-age=60'
+
+          echo "Subido a R2: panal.apk y ${APK}"
+          echo "  version ${VERSION} · ${BYTES} bytes · sha256 ${SHA}"
+
       # LA CLAVE NO SE REGENERA NUNCA. Si se pierde, ningun telefono que tenga
       # Panal instalado podra actualizarlo: habria que desinstalar y volver a
       # empezar, con el llavero cifrado del telefono por medio. Y si algun dia
