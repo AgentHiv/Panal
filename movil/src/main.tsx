@@ -1,3 +1,7 @@
+// EL PRIMERO, y tiene que seguir siéndolo: parchea lo que le falta al WebView
+// de un móvil viejo antes de que se cargue nada que lo use. Ver `compat.ts`.
+import '~/compat';
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { WagmiProvider } from 'wagmi';
