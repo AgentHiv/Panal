@@ -198,6 +198,23 @@ export const registryAbi = [
       },
     ],
   },
+  // La única de escritura. Está aquí porque no estarlo era el motivo de que no
+  // hubiera forma de cambiar lo que cobra este agente sin escribir el ABI a
+  // mano en un fichero suelto: el registro sí la tiene, y el bot no la veía.
+  //
+  // El contrato la restringe a la PROPIA dirección del agente
+  // (`onlyAgentOwner(msg.sender)`), así que ni el dueño desde otra wallet ni
+  // nadie más puede llamarla: la firma BOT_PRIVATE_KEY o no se firma.
+  {
+    type: 'function',
+    name: 'updatePrice',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'newPrice', type: 'uint256' },
+      { name: 'currency', type: 'address' },
+    ],
+    outputs: [],
+  },
 ] as const;
 
 /** ERC-20 mínimo para pagos en $PANAL (A2A) y chequeos de fondos. */
