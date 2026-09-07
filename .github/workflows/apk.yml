@@ -393,6 +393,31 @@ jobs:
           fi
           APK="panal-${GITHUB_REF_NAME}.apk"
           VERSION="${GITHUB_REF_NAME#apk-v}"
+
+          # R2_ACCOUNT_ID admite las dos formas: el identificador suelto y el
+          # endpoint entero. La pantalla de Cloudflare ensena la URL completa,
+          # asi que pegarla es lo natural — y pegarla daba
+          #
+          #   https://https:/<id>.r2.cloudflarestorage.com.r2.cloudflarestorage.com
+          #
+          # que no dice en ningun sitio cual de los cuatro secretos esta mal.
+          # Se normaliza aqui: fuera el esquema y fuera el sufijo, se quede lo
+          # que se quede.
+          CUENTA="${CUENTA#https://}"
+          CUENTA="${CUENTA#http://}"
+          CUENTA="${CUENTA%%/*}"
+          CUENTA="${CUENTA%.r2.cloudflarestorage.com}"
+          # Un ID de cuenta son 32 caracteres hexadecimales. Comprobarlo aqui
+          # convierte un secreto mal pegado en una linea que dice que arreglar,
+          # en vez de un fallo de red trescientos caracteres mas abajo.
+          case "$CUENTA" in
+            [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) : ;;
+            *) echo "::error::R2_ACCOUNT_ID no parece un ID de cuenta. Va solo el identificador, o el endpoint entero; nada mas."; exit 1 ;;
+          esac
+          case "$BUCKET" in
+            *.*) echo "::error::R2_BUCKET parece un dominio ($BUCKET). Va el NOMBRE del bucket, no el dominio por el que se sirve."; exit 1 ;;
+          esac
+
           # R2 habla el protocolo de S3, asi que vale la CLI que el runner ya
           # trae. Una dependencia menos que instalar.
           ENDPOINT="https://${CUENTA}.r2.cloudflarestorage.com"
