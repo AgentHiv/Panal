@@ -5,7 +5,6 @@ import { activeChain } from '@/contracts/config';
 import Hoja, { Nota } from '~/componentes/Hoja';
 import Icono from '~/componentes/Icono';
 import { copiar } from '~/lib/wallets';
-import { troceada } from '~/lib/formato';
 import type { Textos } from '~/i18n/idiomas';
 import type { WalletGuardada } from '~/lib/llavero';
 
@@ -14,8 +13,8 @@ import type { WalletGuardada } from '~/lib/llavero';
  *
  * No hay nada que firmar aquí: recibir es que otro mande. Lo único que hace
  * falta es la dirección, y lo único que puede salir mal es que se copie a
- * medias — por eso va entera, en monoespaciada y partida en trozos de cuatro,
- * que es como se comprueba una dirección a ojo.
+ * medias — por eso va entera y en monoespaciada, y el botón copia siempre la
+ * cadena completa y no lo que se ve.
  *
  * Sin código QR, y conviene decir por qué: la única librería de QR del
  * repositorio es una dependencia de la web, y el APK no la declara. Meterla
@@ -64,8 +63,17 @@ export default function HojaRecibir({
 
       <div className="mt-4 rounded-[14px] border border-line bg-cream p-4">
         <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">{T.comun.suDireccion}</p>
-        <p className="seleccionable mt-2.5 font-mono text-[14px] leading-[1.7] tracking-[0.02em]">
-          {troceada(wallet.direccion)}
+        {/* Entera y de corrido, no en grupos de cuatro. Aquí la dirección es
+            TUYA y lo normal es copiarla o compartirla, no cantarla dígito a
+            dígito: los espacios solo la hacían parecer rota. En `HojaEnviar`
+            sigue troceada, y ahí sí importa — es una dirección ajena que estás
+            comprobando antes de mandarle dinero.
+
+            `break-all` porque una dirección no tiene espacios donde partir: sin
+            él, el navegador la trata como una palabra de 42 letras y la deja
+            desbordar la tarjeta. */}
+        <p className="seleccionable mt-2.5 break-all font-mono text-[14px] leading-[1.7] tracking-[0.02em]">
+          {wallet.direccion}
         </p>
       </div>
 

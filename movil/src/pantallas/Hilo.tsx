@@ -254,6 +254,9 @@ export default function Hilo(): React.ReactElement {
             <EntradaHilo
               entrada={e}
               onRevisar={() => setEncargoRevisando(e.clase === 'encargo' ? e.encargo.id : null)}
+              onVerExpediente={() => {
+                if (e.clase === 'encargo') navegar(`/expediente/${e.encargo.id}`);
+              }}
               T={T}
             />
           </Fragment>
@@ -372,10 +375,13 @@ function Esperando({ texto, T }: { texto: string; T: Textos }): React.ReactEleme
 function EntradaHilo({
   entrada,
   onRevisar,
+  onVerExpediente,
   T,
 }: {
   entrada: Entrada;
   onRevisar: () => void;
+  /** Abrir el expediente del encargo: lo pedido, el estado y lo entregado. */
+  onVerExpediente: () => void;
   T: Textos;
 }): React.ReactElement {
   if (entrada.clase === 'mensaje') {
@@ -447,7 +453,22 @@ function EntradaHilo({
        2 px de alto contra los 174 que ocupa de verdad. Por eso el historial de
        encargos salía como rayas y los mensajes no: los mensajes no llevan
        `overflow-hidden`. */
-    <article className="shrink-0 self-stretch overflow-hidden rounded-2xl border border-honey bg-cream">
+    /* Tocar el encargo abre su expediente, que es donde vive lo que se entregó:
+       desde el hilo no había forma de llegar, y el encargo es justo el sitio
+       desde el que se busca.
+
+       `onClick` en la tarjeta y no un `<Link>` envolviendo todo, para no perder
+       el poder seleccionar el brief: en un móvil, seleccionar es mantener
+       pulsado y eso no dispara el click, pero dentro de un enlace el navegador
+       arrastra el enlace en vez de dejarte marcar el texto.
+
+       Y a todos los estados, no solo a los entregados: el expediente de uno
+       abierto enseña lo que pediste, lo que bloqueaste y cuánto queda de plazo,
+       que es lo que se quiere mirar mientras esperas. */
+    <article
+      onClick={onVerExpediente}
+      className="pulsable shrink-0 self-stretch overflow-hidden rounded-2xl border border-honey bg-cream"
+    >
       <div className="flex items-center gap-2 bg-honey-soft px-3.5 py-2.5">
         <Icono nombre="candado" tamano={15} color="#E29A2E" grosor={2} />
         <span className="text-[12px] font-semibold uppercase tracking-[0.04em] text-honey">
@@ -470,9 +491,20 @@ function EntradaHilo({
             <p className="mt-0.5 font-mono text-[15px]">#{e.id}</p>
           </div>
         </div>
+        {/* `stopPropagation` para que revisar no acabe abriendo el expediente:
+            está DENTRO de la tarjeta, que ahora también es pulsable, y sin esto
+            un toque en «revisar» dispararía las dos cosas. Revisar es firmar la
+            nota o disputar, y no puede ser el mismo gesto que mirar. */}
         <button
           type="button"
-          onClick={st.accion ? onRevisar : undefined}
+          onClick={
+            st.accion
+              ? (ev) => {
+                  ev.stopPropagation();
+                  onRevisar();
+                }
+              : undefined
+          }
           disabled={!st.accion}
           className={`pulsable mt-3 flex w-full items-center gap-2 rounded-[10px] px-3 py-2.5 ${st.fondo}`}
         >

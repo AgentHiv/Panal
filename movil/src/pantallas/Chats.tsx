@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@/hooks/useWallet';
 import { useMyTasks } from '@/hooks/useMyTasks';
+import { usePanalAgents } from '@/hooks/usePanalAgents';
 import { listarHilos } from '@/lib/historial';
 import { encargosDelCliente, fusionarBandeja, ESTADO } from '@/lib/conversaciones';
 import type { ResumenConversacion } from '@/lib/conversaciones';
@@ -32,6 +33,25 @@ export default function Chats(): React.ReactElement {
   const T = useTextos();
   const { tasks } = useMyTasks();
 
+  /**
+   * Dirección → nombre, para poner en la bandeja a quién le hablas.
+   *
+   * Sale del MISMO `usePanalAgents` que el mercado, y eso importa: es una sola
+   * petición al catálogo del indexador, compartida por react-query entre las
+   * dos pantallas. Una lectura por fila habría sido una llamada al RPC por cada
+   * conversación, y en la pantalla de inicio de la app.
+   *
+   * Un agente que no esté en el catálogo —recién dado de alta, o dado de baja—
+   * se queda con su dirección acortada, que es lo que había antes. Es una
+   * bandeja: preferible una fila con la dirección que una fila vacía.
+   */
+  const { agents } = usePanalAgents();
+  const nombres = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const a of agents) m.set(a.workerAddress.toLowerCase(), a.name);
+    return m;
+  }, [agents]);
+
   const conversaciones = useMemo<ResumenConversacion[]>(() => {
     if (!address) return [];
     const encargos = encargosDelCliente(tasks, currencySymbol, getTaskBrief);
@@ -61,7 +81,7 @@ export default function Chats(): React.ReactElement {
       <ul className="min-h-0 grow overflow-y-auto px-3 pb-3">
         {conversaciones.map((c) => (
           <li key={c.agente}>
-            <Fila conversacion={c} T={T} />
+            <Fila conversacion={c} nombre={nombres.get(c.agente.toLowerCase()) ?? null} T={T} />
           </li>
         ))}
       </ul>
@@ -71,12 +91,16 @@ export default function Chats(): React.ReactElement {
 
 function Fila({
   conversacion,
+  nombre,
   T,
 }: {
   conversacion: ResumenConversacion;
+  /** El del catálogo, o `null` si ese agente no está: entonces, la dirección. */
+  nombre: string | null;
   T: Textos;
 }): React.ReactElement {
   const { adelanto, agente, abiertos } = conversacion;
+  const comoSeLlama = nombre ?? `${agente.slice(0, 6)}…${agente.slice(-4)}`;
 
   const texto =
     adelanto.clase === 'mensaje'
@@ -93,10 +117,13 @@ function Fila({
 
   return (
     <Link to={`/chat/${agente}`} className="pulsable flex gap-3 rounded-[14px] p-2.5">
-      <Hexagono semilla={agente} inicial={agente.slice(2, 3)} tamano={42} />
+      {/* La semilla sigue siendo la DIRECCIÓN y no el nombre: es lo que fija el
+          color del hexágono, y atarlo al nombre haría que un agente cambiara de
+          color al renombrarse, o que dos con el mismo nombre salieran iguales. */}
+      <Hexagono semilla={agente} inicial={comoSeLlama.slice(0, 1)} tamano={42} />
       <div className="min-w-0 grow">
         <div className="flex items-baseline justify-between gap-2">
-          <p className="truncate text-[15px] font-semibold">{`${agente.slice(0, 6)}…${agente.slice(-4)}`}</p>
+          <p className="truncate text-[15px] font-semibold">{comoSeLlama}</p>
           <span className="shrink-0 font-mono text-[11px] text-ink-3">
             {formatoCuando(conversacion.cuando)}
           </span>
