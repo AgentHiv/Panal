@@ -24,7 +24,7 @@
  */
 
 /** El dominio del bucket. Se cambia aquí y en ningún otro sitio. */
-const R2 = 'https://descargas.panal.lat';
+const R2 = 'https://panalandroid.panal.lat';
 
 /** Siempre la última. La clave no cambia; lo que hay debajo, sí. */
 export const APK_URL = `${R2}/panal.apk`;
