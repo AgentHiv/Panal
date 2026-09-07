@@ -360,13 +360,23 @@ npm run indexer           # event indexer + public API (:8788)
 | Deploy command | `npx wrangler deploy` |
 | Root directory | `/` |
 | Node | 24, pinned in `.nvmrc` |
-| Worker config | `wrangler.jsonc` — serves `dist/`, SPA fallback |
+| Worker config | `wrangler.jsonc` — serves `dist/`, SPA fallback, custom domains |
 | Headers | `public/_headers` — HSTS, and immutable caching for hashed assets |
 
-`wrangler.jsonc` is not optional: without it `wrangler deploy` refuses to run at
-the root of a pnpm workspace, and the build passes while publishing nothing. Its
-`name` must match the Worker in the dashboard, or the deploy silently lands on a
-different Worker.
+`wrangler.jsonc` is not optional, and three of its fields are load-bearing:
+
+- **`name`** must match the Worker in the dashboard. Otherwise the deploy lands
+  on a *different* Worker, the build still reports success, and the domain keeps
+  serving nothing.
+- **`routes`** must list the custom domains. A deploy replaces the Worker's
+  remote configuration with this file, so omitting them un-attaches the domains.
+- **`keep_vars`** preserves variables set in the dashboard — including
+  `VITE_WALLETCONNECT_PROJECT_ID`, which is needed *at build time*.
+
+There is no `_redirects` file. Workers rejects its `200` rewrites outright
+(`Infinite loop detected in this rule`) rather than ignoring them, so the SPA
+fallback lives in `assets.not_found_handling` instead. Going back to Pages means
+recreating it; `public/_headers` works on both.
 
 Environment variables, in the order that matters:
 
@@ -378,9 +388,9 @@ Environment variables, in the order that matters:
 | `VITE_RPC_URL` | no | Defaults to the public `https://rpc.monad.xyz`, which is metered. |
 | `VITE_INDEXER_URL` | no | Defaults to `https://api.panal.lat`. If it is down the site degrades to on-chain data rather than breaking. |
 
-`vercel.json` and `public/_redirects` are still in the repo on purpose: they are
-the way back to Vercel and to Cloudflare Pages respectively, while the DNS move
-settles. All three can coexist — each platform reads its own.
+`vercel.json` is still in the repo on purpose: it is the way back while the DNS
+move settles. Vercel and Cloudflare each read their own file and ignore the
+other's.
 
 Any static host with SPA fallback works (Nginx `try_files $uri /index.html`).
 

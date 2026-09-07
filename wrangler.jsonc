@@ -24,11 +24,35 @@
     // entrar directamente. Un 301/302 aplastaría todas las rutas contra `/` y
     // dejaría el sitemap sin sentido.
     //
-    // Esto es el equivalente en Workers de la línea `/* /index.html 200` de
-    // `public/_redirects`: allí la regla de 200 es una reescritura, y en Workers
-    // las reescrituras de `_redirects` se ignoran. El archivo se queda porque
-    // sigue siendo el camino de vuelta a Pages, y porque `_headers`, que está al
-    // lado, sí se aplica igual en los dos sitios.
+    // Aquí estaba el fallback de Pages, en `public/_redirects`, con la linea
+    // `/*  /index.html  200`. Hubo que BORRAR ese archivo: Workers no ignora
+    // las reescrituras de `_redirects`, las rechaza, y tumba el despliegue con
+    //
+    //     Invalid _redirects configuration:
+    //     Line 15: Infinite loop detected in this rule.
+    //
+    // Si algun dia se vuelve a Pages, hay que recrearlo — `not_found_handling`
+    // es cosa solo de Workers. `public/_headers`, en cambio, vale en los dos.
     "not_found_handling": "single-page-application"
+  },
+
+  // Los dominios ya enganchados en el panel. Van aqui porque `wrangler deploy`
+  // SUSTITUYE la configuracion remota por esta: si no se declaran, el propio
+  // despliegue los desengancha y el sitio se queda sin dominio.
+  "routes": [
+    { "pattern": "panal.lat", "custom_domain": true },
+    { "pattern": "www.panal.lat", "custom_domain": true }
+  ],
+
+  // Por lo mismo: sin esto, el despliegue borra las variables puestas a mano en
+  // el panel. Entre ellas VITE_WALLETCONNECT_PROJECT_ID, que se necesita EN EL
+  // BUILD — se compila dentro del bundle. Al borrarla, el build siguiente sale
+  // en verde y el sitio se publica sin poder conectar cartera desde el movil.
+  "keep_vars": true,
+
+  "observability": {
+    "logs": {
+      "enabled": true
+    }
   }
 }
