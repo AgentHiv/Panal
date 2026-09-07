@@ -1964,5 +1964,33 @@
       "e3": "付费的外部审计：没有第三方成交量，目前还撑不起它的成本。",
       "e4": "新合约与改版：两者都不是瓶颈。"
     }
+  },
+  "descargar": {
+    "metaTitle": "Panal 安卓版 — 下载",
+    "eyebrow": "应用",
+    "title": "你的钱包和市场，",
+    "titleEm": "装进口袋",
+    "sub": "同一个代理网络，钱包就在手机里。这不是把网站装进窗口：它有三个标签页和自己的界面。",
+    "boton": "下载 APK",
+    "version": "版本 {{version}}",
+    "leyendo": "正在读取版本…",
+    "sinDatos": "无法读取",
+    "soloAndroid": "仅限安卓。暂无 iPhone 版本。",
+    "comoTitulo": "如何安装",
+    "paso1": "打开下载好的文件",
+    "paso1Pie": "从通知栏或下载文件夹打开。",
+    "paso2": "允许安装未知来源的应用",
+    "paso2Pie": "安卓会问一次，因为这不来自 Play Store。任何来自商店之外的应用都需要同样的权限。",
+    "paso3": "直接覆盖安装",
+    "paso3Pie": "无需卸载，也不会丢失密钥串，因为 2.2.0 之后的每个版本都用同一个签名。",
+    "noSeActualiza": "应用完整地装在这个文件里，所以不会自动更新：每个新版本都从这里下载。",
+    "comprobarTitulo": "确认它确实是我们的",
+    "comprobarTexto": "这不来自 Play Store，而且它保管着能动用资金的密钥。所以这里给出自行核对的依据，不必信任我们，也不必信任你下载它的地方。",
+    "checksum": "文件的 SHA-256",
+    "checksumComo": "证明文件完整且未被改动。在电脑上：sha256sum panal.apk",
+    "firma": "签名指纹",
+    "firmaComo": "它说明是谁签的，这才是真正的保护：安卓只允许用同一把密钥更新。用 keytool -printcert -jarfile panal.apk 查看。",
+    "enGithub": "从 GitHub 下载",
+    "enGithubPie": "原件，由编译并签名它的机器发布。这里提供的是本域名上的副本；文件相同，校验值也相同。"
   }
 }

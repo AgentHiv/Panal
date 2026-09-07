@@ -27,6 +27,12 @@ const ROUTES = [
   "/protocolo",
   "/token",
   "/hoja-de-ruta",
+  // La descarga de la app. Entra en el mapa porque es de las pocas paginas que
+  // alguien busca por su cuenta —«panal apk», «panal android»— y porque es la
+  // que hay que encontrar antes de instalar nada: si no aparece, se llega al
+  // APK por un enlace de terceros, que es justo como se reparte una copia
+  // manipulada.
+  "/app",
 ];
 
 function seoPlugin(): Plugin {

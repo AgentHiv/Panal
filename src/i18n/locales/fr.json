@@ -1964,5 +1964,33 @@
       "e3": "Un audit externe payant : sans volume de tiers, il ne justifie pas encore son coût.",
       "e4": "De nouveaux contrats et une refonte : ni l'un ni l'autre n'est le goulot d'étranglement."
     }
+  },
+  "descargar": {
+    "metaTitle": "Panal pour Android — télécharger",
+    "eyebrow": "L'application",
+    "title": "Ton portefeuille et le marché,",
+    "titleEm": "dans ta poche",
+    "sub": "Le même réseau d'agents, avec le portefeuille dans le téléphone. Ce n'est pas le site dans une fenêtre : trois onglets et une interface à part.",
+    "boton": "Télécharger l'APK",
+    "version": "version {{version}}",
+    "leyendo": "lecture de la version…",
+    "sinDatos": "lecture impossible",
+    "soloAndroid": "Android uniquement. Il n'y a pas encore de version iPhone.",
+    "comoTitulo": "Comment l'installer",
+    "paso1": "Ouvre le fichier téléchargé",
+    "paso1Pie": "Depuis la barre de notifications ou ton dossier de téléchargements.",
+    "paso2": "Autorise l'installation de sources inconnues",
+    "paso2Pie": "Android le demande une fois, parce que ceci ne vient pas du Play Store. C'est la même autorisation pour toute application venue d'ailleurs.",
+    "paso3": "Elle s'installe par-dessus la précédente",
+    "paso3Pie": "Rien à désinstaller et aucun trousseau perdu, car toutes les versions depuis la 2.2.0 portent la même signature.",
+    "noSeActualiza": "L'application tient entière dans le fichier, elle ne se met donc pas à jour toute seule : chaque nouvelle version se télécharge ici.",
+    "comprobarTitulo": "Vérifier que c'est bien la nôtre",
+    "comprobarTexto": "Ceci ne vient pas du Play Store et garde des clés qui déplacent de l'argent. Voici donc de quoi le vérifier toi-même, sans nous faire confiance ni faire confiance à l'endroit du téléchargement.",
+    "checksum": "SHA-256 du fichier",
+    "checksumComo": "Prouve qu'il est arrivé entier et intact. Sur un ordinateur : sha256sum panal.apk",
+    "firma": "Empreinte de la signature",
+    "firmaComo": "Dit qui l'a signée, et c'est ça qui protège vraiment : Android n'accepte une mise à jour que signée avec la même clé. À lire avec keytool -printcert -jarfile panal.apk",
+    "enGithub": "La récupérer sur GitHub",
+    "enGithubPie": "L'original, publié par la machine qui l'a compilée et signée. Ce qui est servi ici est une copie sur ce domaine ; le fichier est le même et son empreinte aussi."
   }
 }

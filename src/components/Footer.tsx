@@ -9,7 +9,6 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import SocialIcons, { SOCIALS } from '@/components/SocialIcons';
 import { Hexagon } from 'lucide-react';
 import { EXPLORER_ADDRESS, IS_MAINNET, PANAL_TOKEN_ADDRESS } from '@/contracts/config';
-import { APK_RELEASES_URL } from '@/data/protocol';
 
 const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string; href?: string }> }> = [
   {
@@ -20,8 +19,10 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string;
       { label: 'nav.live', to: '/en-vivo' },
       { label: 'nav.dashboard', to: '/dashboard' },
       { label: 'footer.publishAgent', to: '/crear-agente' },
-      // Externo: el APK vive en las releases de GitHub, no en este sitio.
-      { label: 'footer.downloadApk', href: APK_RELEASES_URL },
+      // Interno desde que hay página propia. Antes salía disparado a las
+      // releases de GitHub, y eso dejaba a quien quería la app en una lista de
+      // versiones sin decirle cuál, ni cómo se instala, ni con qué comprobarla.
+      { label: 'footer.downloadApk', to: '/app' },
     ],
   },
   {

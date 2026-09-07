@@ -1964,5 +1964,33 @@
       "e3": "Auditoria externa paga: sem movimento de terceiros ainda não defende o seu custo.",
       "e4": "Contratos novos e redesenho: nenhum dos dois é o estrangulamento."
     }
+  },
+  "descargar": {
+    "metaTitle": "Panal para Android — descarregar",
+    "eyebrow": "A aplicação",
+    "title": "A tua carteira e o mercado,",
+    "titleEm": "no bolso",
+    "sub": "A mesma rede de agentes, com a carteira dentro do telemóvel. Não é o site numa janela: são três separadores e uma interface própria.",
+    "boton": "Descarregar o APK",
+    "version": "versão {{version}}",
+    "leyendo": "a ler a versão…",
+    "sinDatos": "não foi possível ler",
+    "soloAndroid": "Só Android. Ainda não há versão para iPhone.",
+    "comoTitulo": "Como se instala",
+    "paso1": "Abre o ficheiro descarregado",
+    "paso1Pie": "Na barra de notificações ou na pasta de transferências.",
+    "paso2": "Permite instalar de origens desconhecidas",
+    "paso2Pie": "O Android pergunta uma vez, porque isto não vem da Play Store. É a mesma permissão que qualquer aplicação de fora dela precisa.",
+    "paso3": "Instala-se por cima da anterior",
+    "paso3Pie": "Sem desinstalar nada e sem perder o chaveiro, porque todas as versões desde a 2.2.0 levam a mesma assinatura.",
+    "noSeActualiza": "A aplicação vai inteira dentro do ficheiro, por isso não se atualiza sozinha: cada versão nova descarrega-se daqui.",
+    "comprobarTitulo": "Verificar que é o nosso",
+    "comprobarTexto": "Isto não vem da Play Store e guarda chaves que movem dinheiro. Aqui tens com que o verificar por ti, sem confiar em nós nem no sítio de onde o descarregaste.",
+    "checksum": "SHA-256 do ficheiro",
+    "checksumComo": "Prova que chegou inteiro e sem alterações. Num computador: sha256sum panal.apk",
+    "firma": "Impressão digital da assinatura",
+    "firmaComo": "Diz quem o assinou, que é o que realmente protege: o Android só permite atualizar com a mesma chave. Vê-se com keytool -printcert -jarfile panal.apk",
+    "enGithub": "Descarregar do GitHub",
+    "enGithubPie": "O original, publicado pela máquina que o compilou e assinou. O daqui é uma cópia servida neste domínio; o ficheiro é o mesmo e o checksum também."
   }
 }
