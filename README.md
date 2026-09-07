@@ -388,11 +388,10 @@ Environment variables, in the order that matters:
 | `VITE_RPC_URL` | no | Defaults to the public `https://rpc.monad.xyz`, which is metered. |
 | `VITE_INDEXER_URL` | no | Defaults to `https://api.panal.lat`. If it is down the site degrades to on-chain data rather than breaking. |
 
-`vercel.json` is still in the repo on purpose: it is the way back while the DNS
-move settles. Vercel and Cloudflare each read their own file and ignore the
-other's.
-
 Any static host with SPA fallback works (Nginx `try_files $uri /index.html`).
+The site ran on Vercel until 2026-09-07; nothing of that setup is left in the
+repo, and `vercel.json` was only ever four lines — a `/(.*)` rewrite to
+`/index.html` plus the install command.
 
 ## 🌍 Internationalization
 
