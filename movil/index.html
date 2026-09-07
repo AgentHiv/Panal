@@ -12,7 +12,36 @@
          siempre que no hubiera cobertura. -->
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      Lo que se ve si la app NO llega a arrancar, y por qué está escrito aquí
+      dentro y no en un componente.
+
+      React sustituye el contenido de #root al montar, así que este aviso
+      desaparece solo en cuanto la app funciona. Si no funciona, se queda — y
+      ese es justo el caso que hay que cubrir: un WebView viejo que no sabe leer
+      el paquete no ejecuta NADA nuestro, ni un try/catch, ni un componente de
+      error. Con `type="module"`, además, un WebView sin módulos se salta el
+      script entero sin dar un solo aviso.
+
+      Antes eso era una pantalla en blanco, que no se puede ni reportar: quien
+      la ve no sabe si la app está rota, si no hay cobertura o si el móvil no
+      vale. El texto va con estilos en línea porque el CSS viaja en el paquete
+      que precisamente no ha cargado, y en dos idiomas porque el que elige el
+      idioma es ese mismo paquete.
+    -->
+    <div id="root">
+      <div style="max-width:22rem;margin:15vh auto;padding:0 1.5rem;font-family:system-ui,sans-serif;color:#2b2733;line-height:1.55">
+        <p style="font-size:1.05rem;font-weight:600;margin:0 0 .75rem">Panal no puede abrirse en este móvil</p>
+        <p style="font-size:.9rem;margin:0 0 .5rem">
+          Le falta actualizar <b>Android System WebView</b> o <b>Chrome</b>. Búscalos en Play Store,
+          dale a actualizar y vuelve a abrir la app.
+        </p>
+        <p style="font-size:.9rem;margin:0;color:#6b6577">
+          Panal can’t open on this phone. Update <b>Android System WebView</b> or <b>Chrome</b> from
+          the Play Store and open the app again.
+        </p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
