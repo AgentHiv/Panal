@@ -1,10 +1,25 @@
 /**
  * Cambia lo que este agente cobra por encargo, en el registro de Panal.
  *
- *   npx tsx scripts/precio.ts 1          enseña lo que haría, no firma nada
- *   npx tsx scripts/precio.ts 1 --va     lo hace
+ *   npx tsx scripts/precio.ts 1              enseña lo que haría, no firma nada
+ *   npx tsx scripts/precio.ts 1 --va         lo hace
+ *   npx tsx scripts/precio.ts 1 --firmar     firma y NO envía: imprime la transacción
+ *   npx tsx scripts/precio.ts --emitir 0x…   envía una transacción ya firmada
  *
  * El importe va en unidades enteras de MON («1», «0.5»), no en wei.
+ *
+ * PARA QUÉ SIRVE FIRMAR SIN ENVIAR
+ *
+ * Porque una máquina puede poder firmar y no poder enviar. Le pasa a la del bot
+ * con `rpc.monad.xyz`: las lecturas le funcionan —y son todo lo que hace falta
+ * para el nonce, las fees y el gas— pero el `eth_sendRawTransaction` le vuelve
+ * con «this request method is not supported», mientras que desde otra IP el
+ * mismo endpoint lo acepta sin rechistar.
+ *
+ * Con `--firmar` la clave se queda donde está y solo sale la transacción ya
+ * firmada, que se emite desde donde sí se pueda con `--emitir`. Ese texto no
+ * revela nada de la clave y solo puede hacer una cosa: esa, una vez, con ese
+ * nonce. Si alguien lo copia, lo único que consigue es pagarte el gas.
  *
  * POR QUÉ UN SCRIPT Y NO EL PANEL DE LA WEB
  *
@@ -30,7 +45,17 @@
  */
 
 import 'dotenv/config';
-import { createPublicClient, createWalletClient, formatEther, getAddress, http, parseEther, type Address } from 'viem';
+import {
+  createPublicClient,
+  createWalletClient,
+  encodeFunctionData,
+  formatEther,
+  getAddress,
+  http,
+  parseEther,
+  type Address,
+  type Hex,
+} from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { monad, NATIVE_CURRENCY, registryAbi } from '../src/chain.js';
 
@@ -72,8 +97,33 @@ process.on('uncaughtException', (err) => salir(`\nFalló: ${mensajeDe(err)}`));
 
 const args = process.argv.slice(2);
 const VA = args.includes('--va');
+const FIRMAR = args.includes('--firmar');
+
+/** Emite una transacción ya firmada y espera el recibo. No necesita la clave. */
+async function emitir(crudo: Hex): Promise<never> {
+  const publicClient = createPublicClient({ chain: monad, transport: http(RPC_URL, { timeout: 20_000 }) });
+  console.log(`rpc      ${RPC_URL}`);
+  const hash = await publicClient
+    .sendRawTransaction({ serializedTransaction: crudo })
+    .catch((err: unknown) => salir(`\nNo se pudo emitir: ${mensajeDe(err)}`));
+  console.log(`enviada  ${hash}`);
+  const recibo = await publicClient.waitForTransactionReceipt({ hash });
+  if (recibo.status !== 'success') salir(`\nEntró pero revirtió: ${hash}`);
+  console.log(`hecho    ${hash}`);
+  process.exit(0);
+}
+
+// Va antes que todo lo demás: emitir no necesita ni clave ni importe, solo el
+// texto de la transacción y un RPC que acepte enviarla.
+const iEmitir = args.indexOf('--emitir');
+if (iEmitir !== -1) {
+  const crudo = args[iEmitir + 1];
+  if (!crudo || !/^0x[0-9a-fA-F]+$/.test(crudo)) salir('Tras --emitir va la transacción firmada (0x…), la que imprime --firmar.');
+  await emitir(crudo as Hex);
+}
+
 const importe = args.find((a) => !a.startsWith('--'));
-if (!importe) salir('Falta el precio.  Uso: npx tsx scripts/precio.ts 1 [--va]');
+if (!importe) salir('Falta el precio.  Uso: npx tsx scripts/precio.ts 1 [--va | --firmar]');
 // Se valida el texto y no el número que sale de él: `parseEther('abc')` no
 // lanza en todas las versiones, y publicar un precio de 0 por un dedazo es
 // regalar el trabajo a quien pase.
@@ -140,9 +190,39 @@ const { request } = await publicClient
   })
   .catch((err: unknown) => salir(`\nLa simulación falla, así que no firmo nada: ${mensajeDe(err)}`));
 
+if (FIRMAR) {
+  // Se firma con lo que ya se sabe, sin pedirle al nodo que la mande. El nonce,
+  // las fees y el gas salen de lecturas, que es justo lo que esta máquina sí
+  // puede hacer.
+  const data = encodeFunctionData({
+    abi: registryAbi,
+    functionName: 'updatePrice',
+    args: [NUEVO, NATIVE_CURRENCY as Address],
+  });
+  const preparada = await publicClient
+    .prepareTransactionRequest({ account, to: REGISTRY, data, chain: monad })
+    .catch((err: unknown) => salir(`\nNo he podido preparar la transacción: ${mensajeDe(err)}`));
+  const crudo = await account.signTransaction({
+    ...preparada,
+    chainId: monad.id,
+    to: REGISTRY,
+    data,
+  } as Parameters<typeof account.signTransaction>[0]);
+
+  console.log(`\nnonce    ${preparada.nonce}`);
+  console.log('\nFirmada y SIN ENVIAR. El precio no ha cambiado todavía.');
+  console.log('Emítela desde una máquina cuyo RPC acepte enviar:\n');
+  console.log(crudo);
+  console.log(`\n  npx tsx scripts/precio.ts --emitir ${crudo.slice(0, 12)}…`);
+  console.log('\nEse texto no dice nada de tu clave y solo sirve para esto una vez:');
+  console.log(`va atada al nonce ${preparada.nonce} de ${account.address}.`);
+  process.exit(0);
+}
+
 if (!VA) {
   console.log('\nSimulada y correcta, pero EL PRECIO NO HA CAMBIADO: esto solo era el ensayo.');
   console.log('Para cambiarlo de verdad, el mismo comando con --va al final.');
+  console.log('Y si esta máquina no puede enviar, --firmar en vez de --va.');
   process.exit(0);
 }
 
