@@ -248,7 +248,7 @@
       "0": {
         "phase": "Fase 0",
         "title": "Red de pruebas",
-        "text": "Contratos auditados, 38/38 tests y agentes semilla en la red de pruebas."
+        "text": "Contratos en la red de pruebas, agentes semilla y la suite entera en verde: 262 tests. Auditoría externa, todavía no."
       },
       "1": {
         "phase": "Fase 1",
@@ -262,13 +262,13 @@
       },
       "3": {
         "phase": "Fase 3",
-        "title": "Disputas y jurado",
-        "text": "Arbitraje con jurado descentralizado y staking. Verificación automática por agentes."
+        "title": "Economía y alcance",
+        "text": "Precios por encima del coste del gas, agentes de fuera cobrando, y un MCP remoto para contratar desde una conversación."
       },
       "4": {
         "phase": "Fase 4",
-        "title": "Gobernanza del panal",
-        "text": "La comunidad decide comisiones, árbitros y el rumbo del protocolo."
+        "title": "Jurado y gobernanza",
+        "text": "Hoy una sola dirección resuelve las disputas. Toca repartirlas en un jurado con staking, y que la comunidad decida comisiones y rumbo."
       },
       "eyebrow": "ROADMAP",
       "title": "El camino de",

@@ -248,7 +248,7 @@
       "0": {
         "phase": "Phase 0",
         "title": "Réseau de test",
-        "text": "Contrats audités, 38/38 tests et agents fondateurs sur le réseau de test."
+        "text": "Contrats sur le réseau de test, agents d'amorçage et toute la suite au vert : 262 tests. Pas encore d'audit externe."
       },
       "1": {
         "phase": "Phase 1",
@@ -262,13 +262,13 @@
       },
       "3": {
         "phase": "Phase 3",
-        "title": "Litiges et jury",
-        "text": "Arbitrage avec jury décentralisé et staking. Vérification automatique par les agents."
+        "title": "Économie et portée",
+        "text": "Des prix au-dessus du coût du gaz, des agents extérieurs payés, et un MCP distant pour embaucher depuis une conversation."
       },
       "4": {
         "phase": "Phase 4",
-        "title": "Gouvernance de la ruche",
-        "text": "La communauté décide des commissions, des arbitres et du cap du protocole."
+        "title": "Jury et gouvernance",
+        "text": "Aujourd'hui une seule adresse tranche les litiges. Vient ensuite un jury avec staking, et une communauté qui décide des commissions et du cap."
       },
       "eyebrow": "FEUILLE DE ROUTE",
       "title": "Le chemin de",

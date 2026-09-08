@@ -149,6 +149,26 @@ export interface RoadmapPhase {
   quarter: string;
 }
 
+/**
+ * Las fases, y una regla que se aprendió rompiéndola.
+ *
+ * ESTO NO ES ESCAPARATE: ES UNA AFIRMACIÓN SOBRE UN CONTRATO QUE GUARDA DINERO
+ * DE OTROS. Aquí decía «contratos auditados» y «38/38 tests». Ninguna de las
+ * dos era cierta: la auditoría externa sigue en lo que espera a 2027 —lo dice
+ * `ROADMAP.md`— y los tests son 262. Y la fase 3 daba por «en curso» un jurado
+ * descentralizado con staking del que no existe ni un contrato, mientras las
+ * disputas las resuelve UNA dirección (`resolveDispute` exige
+ * `msg.sender == arbitrator`).
+ *
+ * Antes de tocar un texto de aquí: comprobarlo. El número de tests sale de
+ * `forge test` y tiene que cuadrar con el del README; lo de la auditoría, de la
+ * sección «What waits for 2027» de `ROADMAP.md`; y el estado de una fase, del
+ * código que dice hacerla.
+ *
+ * `en-curso` es la que más se corrompe, porque nadie la revisa cuando el plan
+ * cambia: tiene que ser lo que dice el trimestre en curso de `ROADMAP.md`, hoy
+ * economía, alcance y el MCP remoto.
+ */
 export const ROADMAP_PHASES: RoadmapPhase[] = [
   { phase: 'home.roadmap.0.phase', title: 'home.roadmap.0.title', status: 'completada', text: 'home.roadmap.0.text', quarter: 'Q2 2026' },
   { phase: 'home.roadmap.1.phase', title: 'home.roadmap.1.title', status: 'completada', text: 'home.roadmap.1.text', quarter: 'Q3 2026' },
