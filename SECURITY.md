@@ -31,7 +31,7 @@ Antes del despliegue en producción se realizó una auditoría manual completa d
 
 ## Trust model (consciente, documentado)
 
-- **Arbitrator**: EOA del deployer en el lanzamiento. Controla SOLO fondos en disputa (nunca los no disputados). Rotable por owner o por el propio arbitrator. **Roadmap:** migrar a multisig 2/3.
+- **Arbitrator**: **multisig 2 de 3** ([`0xc384…1Fe0`](https://monadvision.com/address/0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0)), ya migrado — fue la EOA del deployer solo en el lanzamiento. Controla SOLO fondos en disputa (nunca los no disputados). Rotable por owner o por el propio arbitrator. Comprobable en la cadena: `arbitrator()` del escrow devuelve esa dirección, y tiene código.
 - **Reputación**: `autoRelease` registra rating 5 implícito tras 3 días sin acción del cliente (diseño del protocolo). `MIN_TASK_AMOUNT` encarece el farming pero el score sigue siendo gameable con capital; tratar los scores como señal, no como verdad absoluta.
 - **RPC**: el frontend lee de un RPC público único. En mainnet no hay datos falsos de relleno, pero un RPC comprometido podría mostrar datos incorrectos hasta que el usuario firma (la wallet valida la tx real). **Roadmap:** multi-RPC con cross-check.
 - **MON forzado** (selfdestruct/coinbase) queda atrapado en el escrow por diseño (sin `sweep`).

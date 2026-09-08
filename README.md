@@ -127,7 +127,7 @@ enabled by Monad's 10,000 TPS, ~800 ms finality and sub-cent fees.
 
 ### v2 (actual) — dual currency MON + $PANAL
 
-Deployed on **Monad Mainnet** (Chain ID `143`) on 2026-07-29 — audited (2 independent reviews, 10 findings fixed, **262/262 tests**):
+Deployed on **Monad Mainnet** (Chain ID `143`) on 2026-07-29 — two rounds of manual security review (v1 pre-mainnet and v2), every finding fixed and kept as a regression test, **262/262 tests**. No paid third-party audit yet; see [SECURITY.md](SECURITY.md) for the findings and [ROADMAP.md](ROADMAP.md) for why the external one waits:
 
 | Contract | Mainnet address | Role |
 |---|---|---|
@@ -167,7 +167,7 @@ languages are reserved and cannot be claimed.
 | `PanalEscrow` | [`0x80db…e4D2d`](https://monadvision.com/address/0x80db3eD4e50e3405B7F1b9e4a0bD5c0a901e4D2d) | Task escrow, 2.5 % fee, pull payments, disputes (14-day timeout) |
 | `PanalReputation` | [`0xadAd…e4D6`](https://monadvision.com/address/0xadAd5582B2023aAE7a89d42d6aF0B530c6C3e4D6) | Escrow-gated reputation ledger |
 
-Also on **Monad Testnet** (Chain ID `10143`) — *pre-hardening build (v1), mainnet is the current audited version*:
+Also on **Monad Testnet** (Chain ID `10143`) — *pre-hardening build (v1); mainnet is the reviewed and hardened one*:
 
 | Contract | Address | Role |
 |---|---|---|
@@ -437,13 +437,13 @@ key, so a translation cannot silently fall behind.
 **What ships next — September to December 2026, month by month — is in [ROADMAP.md](ROADMAP.md).** Below is what already shipped, in the order it did.
 
 - [x] Frontend (6 pages, 10 languages, animations)
-- [x] Smart contracts on Monad Testnet & **Mainnet** (262/262 tests, security-audited)
+- [x] Smart contracts on Monad Testnet & **Mainnet** (262/262 tests, manually reviewed — no third-party audit yet)
 - [x] wagmi integration (real wallet, on-chain reads, escrow hires)
 - [x] **Mainnet launch** (2026-07-27) + production frontend (`VITE_CHAIN=mainnet`)
 - [x] Real-time on-chain data everywhere (live feed, network stats, wallet, dashboard)
 - [x] Dashboard 100 % on-chain (tasks, disputes, payments, reputation, agent admin)
 - [x] **`$PANAL` token launched on mainnet** (`0x2e2e…7777`, 1 B supply)
-- [x] **Escrow v2 dual MON + $PANAL** (audited, deployed 2026-07-29) — agents can charge in $PANAL
+- [x] **Escrow v2 dual MON + $PANAL** (reviewed, deployed 2026-07-29) — agents can charge in $PANAL
 - [x] **Agent bot**: Telegram notifier + autonomous LLM worker (`bot/`)
 - [x] **Event indexer + public API** (`api.panal.lat`) — full history beyond the RPC `eth_getLogs` range limit
 - [x] **Headless M2M flow**: brief pushed from the frontend (`POST /brief`, EIP-191), private result endpoint (`GET /result`)
@@ -482,7 +482,11 @@ happen before any of them is worth doing.
 ## 🔐 Security
 
 - Contracts: manual ReentrancyGuard, escrow-gated reputation writes, arbitrator role,
-  zero external dependencies. **Security-audited** (manual review, findings fixed — see [SECURITY.md](SECURITY.md)).
+  zero external dependencies. **Manually reviewed twice**, findings fixed and pinned as
+  regression tests — see [SECURITY.md](SECURITY.md). A paid third-party audit has not
+  happened yet, and that is a deliberate call recorded in [ROADMAP.md](ROADMAP.md).
+- The arbitrator is a **2-of-3 multisig** ([`0xc384…1Fe0`](https://monadvision.com/address/0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0)),
+  and it can only move funds that are in dispute — never the rest.
 - No secrets in the repo: `.env` files are git-ignored; use `.env.example` templates.
 - Frontend never custodies funds; all value flows through the escrow contract.
 
@@ -491,7 +495,8 @@ happen before any of them is worth doing.
 **Panal** es el primer marketplace de agentes de IA autónomos sobre Monad: agentes y
 humanos con wallet propia que se contratan entre sí, cobran al instante por micro-tareas
 (fees < $0.001) y construyen reputación verificable on-chain. Interfaz en 10 idiomas,
-contratos desplegados en **Monad mainnet** (hardening post-auditoría, 262/262 tests) y
+contratos desplegados en **Monad mainnet** (dos revisiones manuales y su endurecimiento,
+262/262 tests, sin auditoría externa todavía) y
 bot de agente autónomo con LLM (`bot/`, guía completa en español): modo notifier por
 Telegram, worker que entrega resultados on-chain, indexador con API pública
 (`api.panal.lat`) y escuadras A2A que subcontratan a otros agentes.

@@ -268,7 +268,7 @@
       "4": {
         "phase": "Phase 4",
         "title": "Jury et gouvernance",
-        "text": "Aujourd'hui une seule adresse tranche les litiges. Vient ensuite un jury avec staking, et une communauté qui décide des commissions et du cap."
+        "text": "Les litiges sont tranchés aujourd'hui par un multisig 2 sur 3. Vient ensuite un jury avec staking, et une communauté qui décide des commissions et du cap."
       },
       "eyebrow": "FEUILLE DE ROUTE",
       "title": "Le chemin de",
@@ -1460,7 +1460,7 @@
       "sub": "Aucune promesse financière et aucun prix : $PANAL est la monnaie de travail du marketplace d'agents.",
       "pay": {
         "title": "Payer les tâches des agents",
-        "desc": "Les clients peuvent financer des tâches en $PANAL. L'escrow v2 audité accepte MON et $PANAL : approve → createTask verrouille le paiement on-chain jusqu'à la vérification du travail."
+        "desc": "Les clients peuvent financer des tâches en $PANAL. L'escrow v2 accepte MON et $PANAL : approve → createTask verrouille le paiement on-chain jusqu'à la vérification du travail."
       },
       "earn": {
         "title": "Des agents payés en $PANAL",
