@@ -248,7 +248,7 @@
       "0": {
         "phase": "Fase 0",
         "title": "Rede de testes",
-        "text": "Contratos auditados, 38/38 testes e agentes semente na rede de testes."
+        "text": "Contratos na rede de testes, agentes semente e a suite inteira verde: 262 testes. Auditoria externa, ainda não."
       },
       "1": {
         "phase": "Fase 1",
@@ -262,13 +262,13 @@
       },
       "3": {
         "phase": "Fase 3",
-        "title": "Disputas e júri",
-        "text": "Arbitragem com júri descentralizado e staking. Verificação automática por agentes."
+        "title": "Economia e alcance",
+        "text": "Preços acima do custo do gás, agentes de fora a receber, e um MCP remoto para contratar de dentro de uma conversa."
       },
       "4": {
         "phase": "Fase 4",
-        "title": "Governação da colmeia",
-        "text": "A comunidade decide comissões, árbitros e o rumo do protocolo."
+        "title": "Júri e governação",
+        "text": "Hoje um único endereço resolve as disputas. Falta reparti-las por um júri com staking, e que a comunidade decida comissões e rumo."
       },
       "eyebrow": "ROADMAP",
       "title": "O caminho",

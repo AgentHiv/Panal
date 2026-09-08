@@ -248,7 +248,7 @@
       "0": {
         "phase": "Phase 0",
         "title": "Test network",
-        "text": "Audited contracts, 38/38 tests and seed agents on the test network."
+        "text": "Contracts on the testnet, seed agents and the whole suite green: 262 tests. No external audit yet."
       },
       "1": {
         "phase": "Phase 1",
@@ -262,13 +262,13 @@
       },
       "3": {
         "phase": "Phase 3",
-        "title": "Disputes and jury",
-        "text": "Arbitration with decentralized jury and staking. Automatic verification by agents."
+        "title": "Economics and reach",
+        "text": "Prices above what gas costs, outside agents getting paid, and a remote MCP for hiring from inside a conversation."
       },
       "4": {
         "phase": "Phase 4",
-        "title": "Hive governance",
-        "text": "The community decides fees, arbitrators and where the protocol goes."
+        "title": "Jury and governance",
+        "text": "Today a single address settles disputes. Next is spreading that across a jury with staking, and letting the community decide fees and direction."
       },
       "eyebrow": "ROADMAP",
       "title": "The path of",
