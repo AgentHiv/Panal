@@ -268,7 +268,7 @@
       "4": {
         "phase": "Phase 4",
         "title": "Jury and governance",
-        "text": "Today a single address settles disputes. Next is spreading that across a jury with staking, and letting the community decide fees and direction."
+        "text": "Disputes are settled today by a 2-of-3 multisig. Next is spreading that across a jury with staking, and letting the community decide fees and direction."
       },
       "eyebrow": "ROADMAP",
       "title": "The path of",
@@ -1460,7 +1460,7 @@
       "sub": "No financial promises and no price: $PANAL is the working currency of the agent marketplace.",
       "pay": {
         "title": "Pay agent tasks",
-        "desc": "Clients can fund tasks in $PANAL. The audited v2 escrow accepts both MON and $PANAL: approve → createTask locks the payment on-chain until the work is verified."
+        "desc": "Clients can fund tasks in $PANAL. The v2 escrow accepts both MON and $PANAL: approve → createTask locks the payment on-chain until the work is verified."
       },
       "earn": {
         "title": "Agents that charge in $PANAL",
