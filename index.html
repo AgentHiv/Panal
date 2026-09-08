@@ -70,43 +70,67 @@
     -->
     <script>
       (function () {
+        /**
+         * Los textos, en los diez idiomas del sitio.
+         *
+         * Van AQUÍ DENTRO y no en `src/i18n` porque esto corre antes de que
+         * exista el paquete: si el mensaje dependiera de i18next, el único
+         * momento en que hace falta sería justo el momento en que no está.
+         *
+         * El orden de cada lista es fijo: 0-1 el aviso de lento, 2-4 el de red,
+         * 5-7 el de fallo real. Se paga en bytes —unos 3 kB— y se cobra en que
+         * alguien con mala cobertura lea lo que pasa en su idioma en vez de en
+         * el mío.
+         */
+        var T = {"es":["Cargando Panal…","La conexión va lenta y el paquete sigue llegando.","Sin conexión.","No es el sitio: es la red.","No se ha podido descargar la aplicación.\nVuelve a cargar la página cuando tengas señal.","Panal no ha podido arrancar aquí.","Esto es lo que ha fallado. Si lo compartes, se puede arreglar:","La página cargó pero no llegó a arrancar, y no dio ningún error."],"en":["Loading Panal…","The connection is slow and the bundle is still arriving.","No connection.","Not the site — the network.","The app could not be downloaded.\nReload the page once you have signal.","Panal could not start here.","This is what failed. Share it and it can be fixed:","The page loaded but never started, and gave no error."],"pt":["A carregar o Panal…","A ligação está lenta e o pacote ainda está a chegar.","Sem ligação.","Não é o site: é a rede.","Não foi possível descarregar a aplicação.\nVolta a carregar a página quando tiveres sinal.","O Panal não conseguiu arrancar aqui.","Foi isto que falhou. Se o partilhares, pode ser corrigido:","A página carregou mas nunca arrancou, e não deu nenhum erro."],"fr":["Chargement de Panal…","La connexion est lente et le paquet arrive encore.","Pas de connexion.","Ce n'est pas le site : c'est le réseau.","L'application n'a pas pu être téléchargée.\nRecharge la page quand tu auras du signal.","Panal n'a pas pu démarrer ici.","Voici ce qui a échoué. Partage-le et ça pourra être corrigé :","La page s'est chargée mais n'a jamais démarré, sans aucune erreur."],"zh":["正在加载 Panal…","网络较慢，程序包仍在下载。","没有网络连接。","不是网站的问题，是网络。","应用无法下载。\n有信号后请重新加载页面。","Panal 无法在此启动。","这是失败的原因。分享它就能修复：","页面已加载但始终没有启动，也没有报错。"],"ru":["Загружаем Panal…","Соединение медленное, пакет ещё идёт.","Нет соединения.","Дело не в сайте, а в сети.","Не удалось загрузить приложение.\nОбновите страницу, когда появится сигнал.","Panal не смог здесь запуститься.","Вот что не сработало. Поделитесь — это можно починить:","Страница загрузилась, но так и не запустилась, и не выдала ошибку."],"ar":["جارٍ تحميل بَنَال…","الاتصال بطيء وحزمة التطبيق ما زالت تصل.","لا يوجد اتصال.","ليست المشكلة في الموقع بل في الشبكة.","تعذّر تنزيل التطبيق.\nأعد تحميل الصفحة عندما تتوفّر إشارة.","لم يتمكّن بَنَال من البدء هنا.","هذا ما فشل. شاركه ويمكن إصلاحه:","حُمِّلت الصفحة لكنها لم تبدأ قط، ولم تُظهر أي خطأ."],"hi":["Panal लोड हो रहा है…","कनेक्शन धीमा है और पैकेज अभी आ रहा है।","कोई कनेक्शन नहीं।","साइट नहीं, नेटवर्क है।","ऐप डाउनलोड नहीं हो सका।\nसिग्नल आने पर पेज फिर से लोड करें।","Panal यहाँ शुरू नहीं हो सका।","यह विफल हुआ। इसे साझा करें तो ठीक किया जा सकता है:","पेज लोड हुआ पर कभी शुरू नहीं हुआ, और कोई त्रुटि नहीं दी।"],"bn":["Panal লোড হচ্ছে…","সংযোগ ধীর, প্যাকেজ এখনও আসছে।","সংযোগ নেই।","সাইট নয়, নেটওয়ার্ক।","অ্যাপটি ডাউনলোড করা যায়নি।\nসিগন্যাল পেলে পাতাটি আবার লোড করুন।","Panal এখানে চালু হতে পারেনি।","এটিই ব্যর্থ হয়েছে। শেয়ার করলে ঠিক করা যাবে:","পাতা লোড হয়েছে কিন্তু চালু হয়নি, আর কোনো ত্রুটিও দেয়নি।"],"ur":["Panal لوڈ ہو رہا ہے…","کنکشن سست ہے اور پیکج ابھی آ رہا ہے۔","کوئی کنکشن نہیں۔","سائٹ نہیں، نیٹ ورک ہے۔","ایپ ڈاؤن لوڈ نہیں ہو سکی۔\nسگنل آنے پر صفحہ دوبارہ لوڈ کریں۔","Panal یہاں شروع نہیں ہو سکا۔","یہی ناکام ہوا۔ اسے شیئر کریں تو ٹھیک کیا جا سکتا ہے:","صفحہ لوڈ ہوا مگر کبھی شروع نہ ہوا، اور کوئی خرابی بھی نہ دی۔"]};
+        // El respaldo es `es`, el mismo `fallbackLng` que `src/i18n/index.ts`.
+        var idioma = (navigator.language || 'es').slice(0, 2).toLowerCase();
+        var L = T[idioma] || T.es;
+        var rtl = idioma === 'ar' || idioma === 'ur';
+
         var pintado = false;
-        function mostrar(motivo, esRed) {
-          var root = document.getElementById('root');
-          // Si React ya montó algo, el error es de otra cosa y no toca la
-          // pantalla: tapar una app que funciona sería peor que el error.
-          if (pintado || !root || root.childNodes.length > 0) return;
-          pintado = true;
-          root.innerHTML =
-            '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;' +
-            'padding:24px;font:14px/1.6 system-ui,-apple-system,sans-serif;background:#0C0A12;color:#e8e8ea">' +
-            '<div style="max-width:34rem">' +
-            // El titular cambia según de quién sea el problema. Pedirle a
-            // alguien que «comparta el fallo» cuando lo que pasa es que se le
-            // fue la cobertura es mandarle a reportar un error que no existe.
-            (esRed
-              ? '<p style="font-size:1.15rem;margin:0 0 .5rem">Sin conexión.</p>' +
-                '<p style="color:#9a9aa2;margin:0 0 1rem">No es el sitio: es la red.</p>'
-              : '<p style="font-size:1.15rem;margin:0 0 .5rem">Panal no ha podido arrancar aquí.</p>' +
-                '<p style="color:#9a9aa2;margin:0 0 1rem">Esto es lo que ha fallado. Si lo compartes, se puede arreglar:</p>') +
-            '<pre style="white-space:pre-wrap;word-break:break-word;background:#17141f;border:1px solid #2a2536;' +
-            'border-radius:10px;padding:12px;margin:0;font-size:12px">' +
-            String(motivo).replace(/[<>&]/g, function (c) {
-              return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c];
-            }) +
-            '</pre></div></div>';
+        function escapar(s) {
+          return String(s).replace(/[<>&]/g, function (c) {
+            return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c];
+          });
         }
+        function vacio() {
+          var root = document.getElementById('root');
+          return !pintado && root && root.childNodes.length === 0 ? root : null;
+        }
+        function caja(dentro) {
+          return (
+            '<div dir="' + (rtl ? 'rtl' : 'ltr') + '" style="min-height:100vh;display:flex;align-items:center;' +
+            'justify-content:center;padding:24px;font:14px/1.6 system-ui,-apple-system,sans-serif;' +
+            'background:#0C0A12;color:#e8e8ea"><div style="max-width:34rem">' + dentro + '</div></div>'
+          );
+        }
+
+        // Si React ya montó algo, el error es de otra cosa y no toca la
+        // pantalla: tapar una app que funciona sería peor que el error.
+        function mostrar(motivo, esRed) {
+          var root = vacio();
+          if (!root) return;
+          pintado = true;
+          root.innerHTML = caja(
+            '<p style="font-size:1.15rem;margin:0 0 .5rem">' + escapar(esRed ? L[2] : L[5]) + '</p>' +
+              '<p style="color:#9a9aa2;margin:0 0 1rem">' + escapar(esRed ? L[3] : L[6]) + '</p>' +
+              '<pre style="white-space:pre-wrap;word-break:break-word;background:#17141f;border:1px solid #2a2536;' +
+              'border-radius:10px;padding:12px;margin:0;font-size:12px;text-align:start">' +
+              escapar(motivo) +
+              '</pre>',
+          );
+        }
+
         // Un aviso suave, sin cara de avería y sin User-Agent: esto NO es un
         // fallo, es una espera. Se sustituye solo en cuanto React monta.
         function esperando() {
-          var root = document.getElementById('root');
-          if (pintado || !root || root.childNodes.length > 0) return;
-          root.innerHTML =
-            '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;' +
-            'padding:24px;text-align:center;font:14px/1.6 system-ui,-apple-system,sans-serif;background:#0C0A12;color:#9a9aa2">' +
-            '<div><p style="color:#e8e8ea;font-size:1.05rem;margin:0 0 .4rem">Cargando Panal…</p>' +
-            '<p style="margin:0">La conexión va lenta. Son unos 950 kB y siguen llegando.</p>' +
-            '<p style="margin:.5rem 0 0">Slow connection — still downloading.</p></div></div>';
+          var root = vacio();
+          if (!root) return;
+          root.innerHTML = caja(
+            '<div style="text-align:center"><p style="font-size:1.05rem;margin:0 0 .4rem">' + escapar(L[0]) +
+              '</p><p style="color:#9a9aa2;margin:0">' + escapar(L[1]) + '</p></div>',
+          );
         }
 
         /**
@@ -141,12 +165,7 @@
          * largo, cuando el paquete sigue sin aparecer.
          */
         function sinRed() {
-          mostrar(
-            'No se ha podido descargar la aplicación.\n\n' +
-              'Vuelve a cargar la página cuando tengas señal.\n' +
-              'Reload the page once you have signal.',
-            true,
-          );
+          mostrar(L[4], true);
         }
         window.__panalNoLlego = sinRed;
 
@@ -164,10 +183,7 @@
         // reintentar.
         setTimeout(function () {
           if (paqueteDescargado() === false || navigator.onLine === false) return sinRed();
-          mostrar(
-            'La página cargó pero no llegó a arrancar, y no dio ningún error.\n\nNavegador: ' +
-              navigator.userAgent,
-          );
+          mostrar(L[7] + '\n\n' + navigator.userAgent);
         }, 45000);
       })();
     </script>
