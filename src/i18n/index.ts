@@ -29,16 +29,57 @@ const netfixPostProcessor = {
   },
 };
 
+/**
+ * SOLO EL ESPAÑOL VIENE EN EL PAQUETE. Los otros nueve se piden a demanda.
+ *
+ * Los diez juntos eran 787 kB del paquete inicial —el trozo más gordo de todo
+ * el sitio, por delante de viem y de react-dom— para usar uno. Cada visita se
+ * descargaba las traducciones de nueve idiomas que no iba a leer.
+ *
+ * Este se queda estático porque es el `fallbackLng`: una clave que falte en
+ * cualquier otro se resuelve contra él, así que tiene que estar siempre y
+ * antes que nada.
+ */
 import es from './locales/es.json';
-import en from './locales/en.json';
-import zh from './locales/zh.json';
-import hi from './locales/hi.json';
-import fr from './locales/fr.json';
-import ar from './locales/ar.json';
-import pt from './locales/pt.json';
-import ru from './locales/ru.json';
-import bn from './locales/bn.json';
-import ur from './locales/ur.json';
+
+/**
+ * Los demás, cada uno en su propio trozo.
+ *
+ * El objeto literal con las funciones es lo que hace que Vite los separe: si
+ * fuera `import('./locales/' + lng + '.json')` no sabría cuáles existen y los
+ * metería todos en un trozo común, que es exactamente lo que se quiere evitar.
+ */
+const CARGADORES: Record<string, () => Promise<{ default: object }>> = {
+  en: () => import('./locales/en.json'),
+  zh: () => import('./locales/zh.json'),
+  hi: () => import('./locales/hi.json'),
+  fr: () => import('./locales/fr.json'),
+  ar: () => import('./locales/ar.json'),
+  pt: () => import('./locales/pt.json'),
+  ru: () => import('./locales/ru.json'),
+  bn: () => import('./locales/bn.json'),
+  ur: () => import('./locales/ur.json'),
+};
+
+/**
+ * Trae un idioma si no está ya. Nunca lanza.
+ *
+ * Que falle la descarga de un idioma no puede dejar el sitio en blanco: se
+ * queda en español, que es peor que leerlo en el suyo y muchísimo mejor que no
+ * leer nada. Pasa de verdad, con mala cobertura.
+ */
+export async function cargarIdioma(lng: string): Promise<void> {
+  const base = (lng || 'es').split('-')[0];
+  if (base === 'es' || i18n.hasResourceBundle(base, 'translation')) return;
+  const cargar = CARGADORES[base];
+  if (!cargar) return;
+  try {
+    const mod = await cargar();
+    i18n.addResourceBundle(base, 'translation', mod.default, true, true);
+  } catch {
+    /* sin ese idioma se sigue en español */
+  }
+}
 
 export const SUPPORTED_LANGS = ['es', 'en', 'zh', 'hi', 'fr', 'ar', 'pt', 'ru', 'bn', 'ur'] as const;
 export type SupportedLang = (typeof SUPPORTED_LANGS)[number];
@@ -51,18 +92,7 @@ i18n
   .use(initReactI18next)
   .init({
     postProcess: ['netfix'],
-    resources: {
-      es: { translation: es },
-      en: { translation: en },
-      zh: { translation: zh },
-      hi: { translation: hi },
-      fr: { translation: fr },
-      ar: { translation: ar },
-      pt: { translation: pt },
-      ru: { translation: ru },
-      bn: { translation: bn },
-      ur: { translation: ur },
-    },
+    resources: { es: { translation: es } },
     fallbackLng: 'es',
     supportedLngs: SUPPORTED_LANGS as unknown as string[],
     nonExplicitSupportedLngs: true,
@@ -83,5 +113,30 @@ export function applyDocumentDir(lng: string) {
 
 applyDocumentDir(i18n.language || 'es');
 i18n.on('languageChanged', applyDocumentDir);
+
+/**
+ * Cambiar de idioma: primero traerlo, luego cambiar.
+ *
+ * Al revés se ve un parpadeo en español mientras llega el trozo, en una acción
+ * —pulsar tu idioma— cuyo único punto es no leer el mío.
+ */
+export async function cambiarIdioma(lng: string): Promise<void> {
+  await cargarIdioma(lng);
+  await i18n.changeLanguage(lng);
+}
+
+/**
+ * El idioma detectado, ya cargado. `main.tsx` lo espera antes de pintar.
+ *
+ * Sin esperarlo, quien tiene el sitio en árabe ve la primera pantalla en
+ * español y luego salta. Es una espera de un trozo pequeño —los idiomas rondan
+ * los 80 kB— contra los 950 kB del paquete que ya se descargó para llegar
+ * hasta aquí.
+ */
+export const idiomaListo: Promise<void> = (async () => {
+  const lng = i18n.language || 'es';
+  await cargarIdioma(lng);
+  if (i18n.hasResourceBundle(lng.split('-')[0], 'translation')) await i18n.changeLanguage(lng);
+})();
 
 export default i18n;

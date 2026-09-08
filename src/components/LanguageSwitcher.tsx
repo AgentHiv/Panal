@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { cambiarIdioma } from '@/i18n';
 import { Check, Languages } from 'lucide-react';
 import {
   DropdownMenu,
@@ -55,7 +56,7 @@ export default function LanguageSwitcher({ className }: { className?: string }) 
         {SUPPORTED_LANGS.map((lng) => (
           <DropdownMenuItem
             key={lng}
-            onClick={() => i18n.changeLanguage(lng)}
+            onClick={() => void cambiarIdioma(lng)}
             className="flex items-center gap-2"
           >
             <span aria-hidden>{LANG_META[lng].flag}</span>
