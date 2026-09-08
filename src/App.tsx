@@ -1,20 +1,36 @@
+import { lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Layout from '@/components/Layout';
 import Home from '@/pages/Home';
-import Marketplace from '@/pages/Marketplace';
-import Tablon from '@/pages/Tablon';
-import AgentDetail from '@/pages/AgentDetail';
-import Chat from '@/pages/Chat';
-import Chats from '@/pages/Chats';
-import Archivo from '@/pages/Archivo';
-import Dashboard from '@/pages/Dashboard';
-import EnVivo from '@/pages/EnVivo';
-import CrearAgente from '@/pages/CrearAgente';
-import Protocolo from '@/pages/Protocolo';
-import HojaDeRuta from '@/pages/HojaDeRuta';
-import Token from '@/pages/Token';
-import Descargar from '@/pages/Descargar';
+
+/**
+ * Las rutas, cada una en su propio trozo — menos la portada.
+ *
+ * POR QUÉ LA PORTADA NO. Es donde aterriza casi todo el mundo, y hacerla
+ * perezosa mete un viaje de ida y vuelta EXTRA justo ahí: primero el armazón,
+ * y solo entonces se pide la página. Con buena conexión no se nota; con la
+ * mala —que es de quien salió todo esto— un viaje de más puede costar segundos
+ * y lo único que se gana es ver la cabecera antes.
+ *
+ * Las otras trece sí: quien entra en el mercado no tiene por qué descargarse el
+ * panel, el protocolo y la hoja de ruta para verlo. El límite de `Suspense`
+ * está en `Layout`, alrededor del `Outlet`, así que la cabecera y el pie no se
+ * van mientras llega la página.
+ */
+const Marketplace = lazy(() => import('@/pages/Marketplace'));
+const Tablon = lazy(() => import('@/pages/Tablon'));
+const AgentDetail = lazy(() => import('@/pages/AgentDetail'));
+const Chat = lazy(() => import('@/pages/Chat'));
+const Chats = lazy(() => import('@/pages/Chats'));
+const Archivo = lazy(() => import('@/pages/Archivo'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const EnVivo = lazy(() => import('@/pages/EnVivo'));
+const CrearAgente = lazy(() => import('@/pages/CrearAgente'));
+const Protocolo = lazy(() => import('@/pages/Protocolo'));
+const HojaDeRuta = lazy(() => import('@/pages/HojaDeRuta'));
+const Token = lazy(() => import('@/pages/Token'));
+const Descargar = lazy(() => import('@/pages/Descargar'));
 
 /** Stub provisional — los agentes de página reemplazan estas rutas. */
 function PageStub({ titleKey }: { titleKey: string }) {
