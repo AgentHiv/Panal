@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Lenis from 'lenis';
 import gsap from 'gsap';
@@ -17,6 +17,35 @@ gsap.registerPlugin(ScrollTrigger);
  * scroll-to-top instantáneo por ruta, transición fade+y12 (0.35s), grain overlay,
  * cursor personalizado y Toaster en esquina inferior derecha.
  */
+/**
+ * El hueco mientras llega el trozo de una página.
+ *
+ * Callado los primeros 400 ms: casi todos los trozos pesan menos de 80 kB y
+ * llegan antes de eso, y enseñar un «cargando» que parpadea es peor que no
+ * enseñar nada. Pasado ese rato, con mala señal, hay que decir algo — dejar la
+ * zona en blanco sin explicación es exactamente lo que hacía la pantalla de
+ * arranque antes de arreglarla.
+ *
+ * Alto de pantalla desde el principio para que el pie no suba y vuelva a bajar.
+ */
+function CargandoPagina() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setVisible(true), 400);
+    return () => window.clearTimeout(t);
+  }, []);
+  return (
+    <div className="flex min-h-screen items-start justify-center pt-32" aria-hidden={!visible}>
+      {visible && (
+        <span className="flex items-center gap-2.5 text-[0.875rem] text-ink-3">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-honey" />
+          Panal
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function Layout() {
   const location = useLocation();
 
@@ -85,7 +114,17 @@ export default function Layout() {
           transition={{ duration: 0.35, ease: 'easeOut' }}
           className="flex-1"
         >
-          <Outlet />
+          {/* Las páginas llegan en su propio trozo (ver `App.tsx`), así que
+              aquí hace falta un límite. Va DENTRO del `main` y no envolviendo
+              el layout entero: mientras la página viaja, la cabecera, el pie y
+              el menú siguen ahí y se puede navegar a otro sitio. Envolviendo
+              todo, cada cambio de ruta parpadearía el sitio entero.
+
+              El hueco tiene alto de pantalla para que el pie no suba y vuelva
+              a bajar: ese salto es lo único que se nota de partir por rutas. */}
+          <Suspense fallback={<CargandoPagina />}>
+            <Outlet />
+          </Suspense>
         </motion.main>
         <Footer />
       </div>
