@@ -71,7 +71,7 @@
     <script>
       (function () {
         var pintado = false;
-        function mostrar(motivo) {
+        function mostrar(motivo, esRed) {
           var root = document.getElementById('root');
           // Si React ya montó algo, el error es de otra cosa y no toca la
           // pantalla: tapar una app que funciona sería peor que el error.
@@ -81,8 +81,14 @@
             '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;' +
             'padding:24px;font:14px/1.6 system-ui,-apple-system,sans-serif;background:#0C0A12;color:#e8e8ea">' +
             '<div style="max-width:34rem">' +
-            '<p style="font-size:1.15rem;margin:0 0 .5rem">Panal no ha podido arrancar aquí.</p>' +
-            '<p style="color:#9a9aa2;margin:0 0 1rem">Esto es lo que ha fallado. Si lo compartes, se puede arreglar:</p>' +
+            // El titular cambia según de quién sea el problema. Pedirle a
+            // alguien que «comparta el fallo» cuando lo que pasa es que se le
+            // fue la cobertura es mandarle a reportar un error que no existe.
+            (esRed
+              ? '<p style="font-size:1.15rem;margin:0 0 .5rem">Sin conexión.</p>' +
+                '<p style="color:#9a9aa2;margin:0 0 1rem">No es el sitio: es la red.</p>'
+              : '<p style="font-size:1.15rem;margin:0 0 .5rem">Panal no ha podido arrancar aquí.</p>' +
+                '<p style="color:#9a9aa2;margin:0 0 1rem">Esto es lo que ha fallado. Si lo compartes, se puede arreglar:</p>') +
             '<pre style="white-space:pre-wrap;word-break:break-word;background:#17141f;border:1px solid #2a2536;' +
             'border-radius:10px;padding:12px;margin:0;font-size:12px">' +
             String(motivo).replace(/[<>&]/g, function (c) {
@@ -90,20 +96,90 @@
             }) +
             '</pre></div></div>';
         }
+        // Un aviso suave, sin cara de avería y sin User-Agent: esto NO es un
+        // fallo, es una espera. Se sustituye solo en cuanto React monta.
+        function esperando() {
+          var root = document.getElementById('root');
+          if (pintado || !root || root.childNodes.length > 0) return;
+          root.innerHTML =
+            '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;' +
+            'padding:24px;text-align:center;font:14px/1.6 system-ui,-apple-system,sans-serif;background:#0C0A12;color:#9a9aa2">' +
+            '<div><p style="color:#e8e8ea;font-size:1.05rem;margin:0 0 .4rem">Cargando Panal…</p>' +
+            '<p style="margin:0">La conexión va lenta. Son unos 950 kB y siguen llegando.</p>' +
+            '<p style="margin:.5rem 0 0">Slow connection — still downloading.</p></div></div>';
+        }
+
+        /**
+         * ¿Llegó a descargarse el paquete de la aplicación?
+         *
+         * Es lo que separa «no hay red» de «hay un fallo en el código», y sin
+         * mirarlo las dos se cuentan igual. `getEntriesByType('resource')` solo
+         * lista lo que TERMINÓ de descargarse, así que si el módulo no está,
+         * sigue en vuelo o no llegó nunca.
+         */
+        function paqueteDescargado() {
+          if (!window.performance || !performance.getEntriesByType) return null; // no se sabe
+          var r = performance.getEntriesByType('resource');
+          for (var i = 0; i < r.length; i++) {
+            if (/\/assets\/index-[^/]+\.js$/.test(r[i].name)) return true;
+          }
+          return false;
+        }
+
         window.addEventListener('error', function (e) {
           mostrar((e.message || 'error') + (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
         });
         window.addEventListener('unhandledrejection', function (e) {
           mostrar((e.reason && e.reason.message) || e.reason || 'promesa rechazada');
         });
-        // Y el caso mudo: ningún error, pero nada montado. Pasa cuando un
-        // módulo no llega a evaluarse siquiera.
+
+        /**
+         * «No llegó», que es cosa de la red y no del sitio.
+         *
+         * La llama el `onerror` del <script type="module"> de abajo —al momento,
+         * en cuanto el navegador sabe que la descarga falló— y también el plazo
+         * largo, cuando el paquete sigue sin aparecer.
+         */
+        function sinRed() {
+          mostrar(
+            'No se ha podido descargar la aplicación.\n\n' +
+              'Vuelve a cargar la página cuando tengas señal.\n' +
+              'Reload the page once you have signal.',
+            true,
+          );
+        }
+        window.__panalNoLlego = sinRed;
+
+        // A los diez segundos NO se acusa a nadie: se dice que va lento, que es
+        // lo único que se sabe. Antes aquí saltaba el mensaje de avería a los
+        // doce, con el User-Agent y un «no dio ningún error» — y saltaba con
+        // mala cobertura, que es cuando la app funciona perfectamente y solo
+        // tarda. 950 kB a la velocidad de una barra de señal pasan de doce
+        // segundos sin despeinarse.
+        setTimeout(esperando, 10000);
+
+        // Y a los cuarenta y cinco, ya sí, pero diciendo cuál de las dos cosas
+        // pasó. Si el paquete no llegó a descargarse no hay nada que reportar
+        // ni nada que arreglar en el código: es la red, y lo que toca es
+        // reintentar.
         setTimeout(function () {
-          mostrar('La página cargó pero no llegó a arrancar, y no dio ningún error.\n\nNavegador: ' + navigator.userAgent);
-        }, 12000);
+          if (paqueteDescargado() === false || navigator.onLine === false) return sinRed();
+          mostrar(
+            'La página cargó pero no llegó a arrancar, y no dio ningún error.\n\nNavegador: ' +
+              navigator.userAgent,
+          );
+        }, 45000);
       })();
     </script>
 
-    <script type="module" src="/src/main.tsx"></script>
+    <!-- `onerror` para no esperar cuarenta y cinco segundos a saber algo que el
+         navegador ya sabe: si la descarga del módulo falla, lo dice al momento.
+         Va en el atributo y no con addEventListener porque el error puede
+         ocurrir antes de que corra cualquier otro script. -->
+    <script
+      type="module"
+      src="/src/main.tsx"
+      onerror="window.__panalNoLlego && window.__panalNoLlego()"
+    ></script>
   </body>
 </html>
