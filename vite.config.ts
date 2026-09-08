@@ -62,9 +62,33 @@ function seoPlugin(): Plugin {
 }
 
 // https://vite.dev/config/
+function pesar(): Plugin {
+  return {
+    name: 'pesar',
+    generateBundle(_o, bundle) {
+      const agrupa = (id: string) => {
+        const m = id.match(/node_modules\/(\.pnpm\/)?((@[^/]+\/)?[^/]+)/);
+        return m ? m[2] : (id.match(/src\/[^/]+/) || ['(app)'])[0];
+      };
+      for (const [nombre, c] of Object.entries(bundle)) {
+        if (c.type !== 'chunk') continue;
+        const por: Record<string, number> = {};
+        for (const [id, mod] of Object.entries(c.modules)) {
+          const k = agrupa(id);
+          por[k] = (por[k] || 0) + (mod as { renderedLength: number }).renderedLength;
+        }
+        const total = Object.values(por).reduce((a, b) => a + b, 0);
+        console.log(`\n### ${nombre}  ${(total / 1024).toFixed(0)} kB`);
+        Object.entries(por).sort((a, b) => b[1] - a[1]).slice(0, 18)
+          .forEach(([k, v]) => { if (v > 8000) console.log(`   ${(v / 1024).toFixed(0).padStart(6)} kB  ${k}`); });
+      }
+    },
+  };
+}
+
 export default defineConfig({
   base: '/',  // rutas absolutas: enlaces profundos (/agente/:id) en frío no rompen los assets
-  plugins: [inspectAttr(), react(), seoPlugin()],
+  plugins: [inspectAttr(), react(), seoPlugin(), pesar()],
   server: {
     port: 3000,
   },
