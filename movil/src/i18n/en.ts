@@ -186,6 +186,7 @@ export const en: Textos = {
   },
 
   enviar: {
+    nadaQuePegar: 'Nothing to paste. Copy the address and come back.',
     titulo: (nombre: string) => `Send from ${nombre}`,
     tienes: (cantidad: string, moneda: string) => `You have ${cantidad} ${moneda} in this wallet.`,
     aQuien: 'To whom',

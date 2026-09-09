@@ -186,6 +186,7 @@ export const pt: Textos = {
   },
 
   enviar: {
+    nadaQuePegar: 'Não há nada para colar. Copia a morada e volta.',
     titulo: (nombre: string) => `Enviar de ${nombre}`,
     tienes: (cantidad: string, moneda: string) => `Tens ${cantidad} ${moneda} nesta wallet.`,
     aQuien: 'Para quem',
