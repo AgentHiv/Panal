@@ -6,24 +6,27 @@
  *
  * La app viaja ENTERA dentro del APK: no se actualiza sola, y desplegar la web
  * no toca los teléfonos. O sea que quien instaló la 2.5.0 se queda en la 2.5.0
- * para siempre salvo que alguien se lo cuente. La web ya enlaza a la release
- * más nueva, pero eso solo lo ve quien vuelve a panal.lat, que es justo lo que
- * no hace quien ya tiene la app instalada.
+ * para siempre salvo que alguien se lo cuente. La web ya lo enseña en
+ * `panal.lat/app`, pero eso solo lo ve quien vuelve al sitio, que es justo lo
+ * que no hace quien ya tiene la app instalada.
  *
  * QUÉ NO HACE, Y A PROPÓSITO
  *
- * No descarga nada, no instala nada y no interrumpe. Enseña una línea en el
- * menú y lleva a la release; instalar sigue siendo una decisión que se toma
- * fuera de la app, con Android pidiendo permiso. Una app que maneja un llavero
- * cifrado no es el sitio para inventarse un actualizador automático.
+ * No instala nada y no interrumpe. Enseña una línea en el menú y, al tocarla,
+ * descarga el APK — instalar sigue siendo una decisión que se toma fuera, con
+ * Android pidiendo permiso. Una app que maneja un llavero cifrado no es el
+ * sitio para inventarse un actualizador que se instala solo.
+ *
+ * Lo que sí cambió: antes llevaba a la PÁGINA de la release y desde ahí había
+ * que encontrar el `.apk` entre los adjuntos, con la lista plegada en un móvil.
+ * Ahora el enlace es el archivo. Un gesto en vez de tres.
  *
  * CUÁNTO SE ASOMA A LA RED
  *
- * Preguntarle a GitHub es decirle a GitHub que esta app está abierta. Así que
- * se pregunta lo mínimo: SOLO al abrir el menú —no al arrancar, no de fondo— y
+ * Se pregunta lo mínimo: SOLO al abrir el menú —no al arrancar, no de fondo— y
  * como mucho una vez al día; el resto del tiempo se contesta con lo guardado.
- * Sin red, con GitHub caído o pasado el límite de peticiones no se dice nada:
- * el fallo de esto nunca puede ser un error en la cara de nadie.
+ * Sin red o con el bucket caído no se dice nada: el fallo de esto nunca puede
+ * ser un error en la cara de nadie.
  *
  * Y solo en una versión de verdad. Una compilación de desarrollo no tiene
  * número contra el que comparar, así que ni pregunta.
@@ -32,8 +35,17 @@
 
 import { useEffect, useState } from 'react';
 
-/** La release más nueva que no sea borrador ni prelanzamiento. */
-const ULTIMA = 'https://api.github.com/repos/AgentHiv/Panal/releases/latest';
+/**
+ * De dónde se pregunta: NUESTRO dominio, no la API de GitHub.
+ *
+ * Es el mismo `ultima.json` que escribe el flujo del APK al publicar y que lee
+ * `panal.lat/app`, así que las dos cuentan lo mismo por construcción. Antes se
+ * preguntaba a `api.github.com/.../releases/latest`, con tres pegas: le decía a
+ * GitHub que esta app está abierta, tiene un límite de peticiones por IP que se
+ * comparte con todo el que salga por esa red, y devuelve una release entera
+ * para leer un número.
+ */
+const ULTIMA = 'https://panalandroid.panal.lat/ultima.json';
 
 const CLAVE = 'panal:ultima-version:v1';
 const UN_DIA = 24 * 60 * 60 * 1000;
@@ -60,19 +72,6 @@ function trozos(v: string): number[] | null {
 }
 
 /**
- * `apk-v2.5.1` → `2.5.1`.
- *
- * Se exige el prefijo en vez de aceptar cualquier etiqueta: el día que este
- * repositorio publique una release que no sea un APK, lo correcto es callarse,
- * no ofrecer la versión de otra cosa.
- */
-function versionDeEtiqueta(etiqueta: unknown): string | null {
-  if (typeof etiqueta !== 'string') return null;
-  const m = /^apk-v(\d+\.\d+\.\d+)$/.exec(etiqueta.trim());
-  return m ? m[1] : null;
-}
-
-/**
  * Si `candidata` es posterior a `actual`.
  *
  * Número a número y no como texto, que es donde esto se rompe siempre: como
@@ -89,9 +88,25 @@ export function esMasNueva(candidata: string, actual: string): boolean {
   return false;
 }
 
-/** A dónde lleva. Se arma con el número ya validado, nunca con una URL que venga de la red. */
+/**
+ * A dónde lleva: AL ARCHIVO, no a una página.
+ *
+ * Antes abría la release de GitHub, y desde ahí había que encontrar el `.apk`
+ * entre los adjuntos y pulsarlo — en un móvil, con la lista de assets plegada.
+ * Ahora el enlace ES el APK, servido desde nuestro dominio con el
+ * `content-type` de Android, así que al tocarlo se descarga y el sistema ofrece
+ * instalarlo. Un gesto en vez de tres.
+ *
+ * A la copia CON NÚMERO y no a `panal.apk`: se descarga exactamente la versión
+ * que se acaba de anunciar. Con la clave fija habría una ventana —entre que se
+ * anuncia y se pulsa— en la que podría publicarse otra y bajarse una distinta
+ * de la que se dijo.
+ *
+ * Se arma con el número ya validado por `trozos`, nunca con una URL que venga
+ * de la red.
+ */
 export function enlaceDeVersion(version: string): string {
-  return `https://github.com/AgentHiv/Panal/releases/tag/apk-v${version}`;
+  return `https://panalandroid.panal.lat/panal-apk-v${version}.apk`;
 }
 
 interface Guardado {
@@ -121,21 +136,21 @@ function guardar(version: string): void {
   }
 }
 
-/** Le pregunta a GitHub. Devuelve la versión publicada, o null si algo falla. */
+/** Lee el manifiesto. Devuelve la versión publicada, o null si algo falla. */
 async function preguntar(): Promise<string | null> {
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), ESPERA);
   try {
-    const res = await fetch(ULTIMA, {
-      headers: { accept: 'application/vnd.github+json' },
-      signal: corte.signal,
-    });
+    const res = await fetch(ULTIMA, { signal: corte.signal, cache: 'no-cache' });
     if (!res.ok) return null;
     const cuerpo: unknown = await res.json();
-    return versionDeEtiqueta((cuerpo as { tag_name?: unknown } | null)?.tag_name);
+    const v = (cuerpo as { version?: unknown } | null)?.version;
+    // Se valida la forma antes de creérselo: viene de la red, y con ella se
+    // arma una URL. `trozos` exige exactamente `n.n.n`.
+    return typeof v === 'string' && trozos(v.trim()) ? v.trim() : null;
   } catch {
-    // Sin red, con GitHub caído, pasado el límite de peticiones o con una
-    // respuesta que no es JSON: lo mismo en todos los casos, no decir nada.
+    // Sin red, con el bucket caído o con una respuesta que no es JSON: lo mismo
+    // en todos los casos, no decir nada.
     return null;
   } finally {
     clearTimeout(reloj);

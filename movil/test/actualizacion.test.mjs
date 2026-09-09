@@ -25,7 +25,7 @@ const dice = (que, cond) => {
 };
 
 /** Un `fetch` de mentira que cuenta las llamadas. */
-function fingeGitHub(respuesta) {
+function fingeManifiesto(respuesta) {
   const espia = { llamadas: 0 };
   globalThis.fetch = async () => {
     espia.llamadas++;
@@ -56,9 +56,12 @@ dice('ni con una versión de dos trozos', !a.esMasNueva('2.6', '2.5.0'));
 
 console.log('\nel enlace se arma con el número, no con lo que diga la red');
 dice(
-  'lleva a la etiqueta de esa versión',
-  a.enlaceDeVersion('2.5.1') === 'https://github.com/AgentHiv/Panal/releases/tag/apk-v2.5.1',
+  'lleva AL ARCHIVO de esa versión, en nuestro dominio',
+  a.enlaceDeVersion('2.5.1') === 'https://panalandroid.panal.lat/panal-apk-v2.5.1.apk',
 );
+// No a `panal.apk`: entre que se anuncia una versión y se pulsa el enlace
+// podría publicarse otra, y se bajaría una distinta de la que se dijo.
+dice('y no a la clave fija', !a.enlaceDeVersion('2.5.1').endsWith('/panal.apk'));
 
 console.log('\nqué versión se cree que tiene instalada');
 dice('la que le pasa el flujo del APK', a.versionInstalada() === '2.5.0');
@@ -71,10 +74,10 @@ globalThis.__VITE_ENV__ = {};
 dice('sin VITE_VERSION tampoco', a.versionInstalada() === null);
 globalThis.__VITE_ENV__ = { VITE_VERSION: '2.5.0' };
 
-console.log('\npreguntarle a GitHub');
+console.log('\npreguntarle al manifiesto de R2');
 olvida();
-let espia = fingeGitHub({ cuerpo: { tag_name: 'apk-v2.6.0' } });
-dice('lee la versión de la etiqueta', (await a.ultimaPublicada()) === '2.6.0');
+let espia = fingeManifiesto({ cuerpo: { version: '2.6.0' } });
+dice('lee la versión del manifiesto', (await a.ultimaPublicada()) === '2.6.0');
 dice('y preguntó una vez', espia.llamadas === 1);
 
 dice('la segunda vez contesta sin preguntar', (await a.ultimaPublicada()) === '2.6.0');
@@ -86,30 +89,32 @@ globalThis.localStorage.setItem(
   'panal:ultima-version:v1',
   JSON.stringify({ ...g, visto: Date.now() - 25 * 60 * 60 * 1000 }),
 );
-espia = fingeGitHub({ cuerpo: { tag_name: 'apk-v2.7.0' } });
+espia = fingeManifiesto({ cuerpo: { version: '2.7.0' } });
 dice('con lo caducado sí pregunta', (await a.ultimaPublicada()) === '2.7.0');
 dice('una llamada nueva', espia.llamadas === 1);
 
 console.log('\nlo que llega de la red no se cree sin mirarlo');
 olvida();
-fingeGitHub({ cuerpo: { tag_name: 'sdk-v0.15.1' } });
-dice('una release que no es un APK no cuenta', (await a.ultimaPublicada()) === null);
+fingeManifiesto({ cuerpo: { version: '2.5' } });
+dice('una versión a medias no cuenta', (await a.ultimaPublicada()) === null);
 olvida();
-fingeGitHub({ cuerpo: { tag_name: 'apk-v2.5' } });
-dice('una etiqueta a medias tampoco', (await a.ultimaPublicada()) === null);
-olvida();
-fingeGitHub({ cuerpo: { tag_name: 'apk-v../../otra-cosa' } });
+// Esta importa más que ninguna: con el número se ARMA la URL del APK que se
+// va a descargar, así que colar una ruta ahí sería mandar a bajar otro archivo.
+fingeManifiesto({ cuerpo: { version: '../../otra-cosa' } });
 dice('ni una que intente colar una ruta', (await a.ultimaPublicada()) === null);
 olvida();
-fingeGitHub({ cuerpo: {} });
-dice('sin etiqueta, nada', (await a.ultimaPublicada()) === null);
+fingeManifiesto({ cuerpo: { version: 2.6 } });
+dice('ni un número en vez de una cadena', (await a.ultimaPublicada()) === null);
+olvida();
+fingeManifiesto({ cuerpo: {} });
+dice('sin versión, nada', (await a.ultimaPublicada()) === null);
 
 console.log('\ncuando falla no se dice nada, y menos un error');
 olvida();
-fingeGitHub({ ok: false, cuerpo: {} });
+fingeManifiesto({ ok: false, cuerpo: {} });
 dice('un 403 por límite de peticiones se traga', (await a.ultimaPublicada()) === null);
 olvida();
-fingeGitHub(new Error('sin red'));
+fingeManifiesto(new Error('sin red'));
 dice('sin red también', (await a.ultimaPublicada()) === null);
 
 console.log('\ny lo de ayer vale más que nada');
@@ -118,7 +123,7 @@ globalThis.localStorage.setItem(
   'panal:ultima-version:v1',
   JSON.stringify({ visto: Date.now() - 25 * 60 * 60 * 1000, version: '2.6.0' }),
 );
-fingeGitHub(new Error('sin red'));
+fingeManifiesto(new Error('sin red'));
 dice(
   'si la pregunta falla se usa lo guardado, aunque esté caducado',
   (await a.ultimaPublicada()) === '2.6.0',
@@ -127,14 +132,14 @@ dice(
 console.log('\nlo guardado tampoco se cree sin mirarlo');
 olvida();
 globalThis.localStorage.setItem('panal:ultima-version:v1', 'esto no es json');
-espia = fingeGitHub({ cuerpo: { tag_name: 'apk-v2.6.0' } });
+espia = fingeManifiesto({ cuerpo: { version: '2.6.0' } });
 dice('un guardado roto se ignora y se pregunta', (await a.ultimaPublicada()) === '2.6.0');
 olvida();
 globalThis.localStorage.setItem(
   'panal:ultima-version:v1',
   JSON.stringify({ visto: Date.now(), version: 'lo que sea' }),
 );
-espia = fingeGitHub({ cuerpo: { tag_name: 'apk-v2.6.0' } });
+espia = fingeManifiesto({ cuerpo: { version: '2.6.0' } });
 dice('y un guardado con una versión imposible, igual', (await a.ultimaPublicada()) === '2.6.0');
 
 console.log(`\n${bien} bien · ${mal} mal`);
