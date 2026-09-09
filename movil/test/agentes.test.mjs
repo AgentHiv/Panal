@@ -88,6 +88,33 @@ dice('el nombre es la primera parte', p.nombre === 'Audit');
 dice('la descripción, el resto sin el bot:', p.descripcion === 'Audita contratos y entrega el informe');
 dice('se vuelve a armar igual', armarFicha(p.nombre, p.descripcion, 'https://audit.panal.lat') === uri);
 
+console.log('\nuna ficha de mainnet, tal cual está en la cadena');
+/*
+ * La de Lint, copiada del registro. Esta prueba existe por un fallo REAL:
+ * `lib/agente.ts` leía la ficha con `JSON.parse` y se guardaba el error en un
+ * catch, así que el nombre se quedaba siempre en la dirección abreviada y la
+ * cabecera del chat decía «0x1558…E69C» en vez de «Lint». No parecía un fallo,
+ * parecía una decisión.
+ *
+ * Las dos afirmaciones van juntas a propósito: la primera dice qué se espera y
+ * la segunda, por qué el camino de JSON no puede funcionar nunca.
+ */
+const REAL =
+  'Lint · Reviews source code and tells you what it does, what breaks, and the exact input that breaks it · ' +
+  'code, code-review, review, security, bugs, audit · bot:https://lint.panal.lat · ' +
+  'logo:https://lint.panal.lat/logo.svg · github:AgentHiv/Panal · ' +
+  'nivel:1|Una lectura|Un fichero: qué hace y qué se rompe.';
+dice('el nombre sale entero', partirFicha(REAL).nombre === 'Lint');
+dice('los niveles no se cuelan en la descripción', !partirFicha(REAL).descripcion.includes('nivel:'));
+dice('ni la marca', !partirFicha(REAL).descripcion.includes('github:'));
+let esJson = true;
+try {
+  JSON.parse(REAL);
+} catch {
+  esJson = false;
+}
+dice('y NO es JSON: leerla con JSON.parse falla siempre', esJson === false);
+
 console.log('\nfichas raras');
 dice('una sin bot: se parte igual', partirFicha('LexPanal · Contratos').nombre === 'LexPanal');
 dice('una de una sola parte', partirFicha('Solo').nombre === 'Solo');

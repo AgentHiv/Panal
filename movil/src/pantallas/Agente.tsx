@@ -37,7 +37,8 @@ export default function Agente(): React.ReactElement {
   const direccion = (id ?? '').toLowerCase();
   const navegar = useNavigate();
   const { agents, loading } = usePanalAgents();
-  const { data: datos } = useAgente(direccion);
+  // Igual que en el chat: mientras no se sabe, no se afirma. Ver `Hilo.tsx`.
+  const { data: datos, isPending: cargandoFicha } = useAgente(direccion);
   const T = useTextos();
 
   const agente = useMemo(
@@ -154,9 +155,11 @@ export default function Agente(): React.ReactElement {
             titulo={T.agente.hablar}
             pie={T.agente.hablarPie}
             valor={
-              datos?.cobro
-                ? `${monto(datos.cobro.amount)} ${datos.cobro.simbolo}`
-                : T.agente.noDisponible
+              cargandoFicha
+                ? '…'
+                : datos?.cobro
+                  ? `${monto(datos.cobro.amount)} ${datos.cobro.simbolo}`
+                  : T.agente.noDisponible
             }
             color={datos?.cobro ? 'text-honey' : 'text-ink-3'}
           />
@@ -180,14 +183,29 @@ export default function Agente(): React.ReactElement {
       </div>
 
       <div className="con-barra-abajo flex shrink-0 gap-2.5 border-t border-line bg-noche px-[18px] pt-3">
-        <button
-          type="button"
-          onClick={() => navegar(`/chat/${direccion}`)}
-          disabled={!datos?.cobro}
-          className="pulsable h-[52px] grow rounded-full border border-honey text-[15px] font-semibold text-honey disabled:opacity-40"
-        >
-          {T.agente.botonHablar}
-        </button>
+        {/* «Hablar» solo si de verdad se puede: un agente sin cobro por llamada
+            no atiende mensajes sueltos. Antes salía apagado al 40 %, que es un
+            control muerto ocupando media barra — no dice qué le pasa, no se
+            puede pulsar, y deja «Encargar» arrinconado en la otra mitad
+            pareciendo la opción secundaria cuando es la única.
+
+            Sin él, «Encargar» ocupa la barra entera y la ficha de arriba sigue
+            explicando por qué: su fila de «Hablar» ya dice «no disponible».
+
+            Mientras la ficha carga se enseña igualmente, apagado: casi todos
+            los agentes del mercado cobran por llamada, así que esconderlo y
+            sacarlo después encogería «Encargar» a mitad de gesto en el caso
+            normal. Se prefiere el salto en el caso raro. */}
+        {(cargandoFicha || datos?.cobro) && (
+          <button
+            type="button"
+            onClick={() => navegar(`/chat/${direccion}`)}
+            disabled={cargandoFicha}
+            className="pulsable h-[52px] grow rounded-full border border-honey text-[15px] font-semibold text-honey disabled:opacity-40"
+          >
+            {T.agente.botonHablar}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => navegar(`/chat/${direccion}?encargar=1`)}

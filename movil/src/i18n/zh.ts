@@ -98,6 +98,8 @@ export const zh: Textos = {
   },
 
   saldo: {
+    enviar: '转出',
+    recibir: '收款',
     titulo: '余额',
     conectaTitulo: '连接你的钱包',
     conectaTexto: '它既是你的账户也是你的余额。不用注册，不用邮箱，也没有密码要记。',

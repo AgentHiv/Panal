@@ -106,6 +106,8 @@ export const en: Textos = {
   },
 
   saldo: {
+    enviar: 'Send',
+    recibir: 'Receive',
     titulo: 'Balance',
     conectaTitulo: 'Connect your wallet',
     conectaTexto: 'It is your account and your balance at once. No sign-up, no email, no password to remember.',

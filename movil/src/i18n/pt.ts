@@ -106,6 +106,8 @@ export const pt: Textos = {
   },
 
   saldo: {
+    enviar: 'Enviar',
+    recibir: 'Receber',
     titulo: 'Saldo',
     conectaTitulo: 'Liga a tua wallet',
     conectaTexto: 'É a tua conta e o teu saldo ao mesmo tempo. Não há registo, nem email, nem palavra-passe para decorar.',

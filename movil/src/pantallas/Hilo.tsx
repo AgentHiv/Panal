@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useWalletClient } from 'wagmi';
 import { useWallet } from '@/hooks/useWallet';
 import { useMyTasks } from '@/hooks/useMyTasks';
@@ -38,7 +38,16 @@ export default function Hilo(): React.ReactElement {
   const navegar = useNavigate();
   const { address, connected, connect } = useWallet();
   const { tasks, refetch } = useMyTasks();
-  const { data: datos } = useAgente(agente);
+  /*
+   * `cargando` importa tanto como `datos`. Mientras la ficha viaja, `datos` es
+   * `undefined` y todo lo que preguntara por `datos?.cobro` caía al caso «no
+   * cobra por mensaje» — o sea que la app AFIRMABA «este agente no cobra por
+   * mensaje» y «solo acepta encargos» antes de saberlo. Con un RPC lento eso
+   * dura lo suficiente para leerlo, y quien lo lee se va.
+   *
+   * No saber no es lo mismo que saber que no. Mientras no se sabe, se calla.
+   */
+  const { data: datos, isPending: cargandoFicha } = useAgente(agente);
   const { data: walletClient } = useWalletClient();
 
   const [mensajes, setMensajes] = useState(() => (address ? leerHilo(address, agente) : []));
@@ -85,6 +94,26 @@ export default function Hilo(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
   const T = useTextos();
   const [encargoRevisando, setEncargoRevisando] = useState<string | null>(null);
+
+  /**
+   * Se entró pulsando «Encargar» en la ficha del agente: se abre la hoja sola.
+   *
+   * La ficha navega a `/chat/:dir?encargar=1` desde siempre, y aquí NADIE leía
+   * ese parámetro: pulsar «Encargar» te dejaba en el chat sin que pasara nada,
+   * y había que volver a buscar el mismo botón en la cabecera. Dos veces el
+   * mismo gesto para una sola intención.
+   *
+   * Se limpia de la URL en cuanto se usa. Si no, volver atrás desde el chat y
+   * entrar otra vez reabriría la hoja sin que nadie la haya pedido, y un
+   * recargar la dejaría puesta para siempre.
+   */
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    if (params.get('encargar') !== '1') return;
+    setParams({}, { replace: true });
+    if (connected) setHoja('encargar');
+    else void connect();
+  }, [params, setParams, connected, connect]);
 
   const encargos = useMemo(
     () =>
@@ -213,7 +242,9 @@ export default function Hilo(): React.ReactElement {
             {/* Igual que en el mercado: la cifra en mono, la explicación no.
                 «solo acepta encargos» en monoespaciada parecía un dato. */}
             <p className="text-[11.5px] text-ink-3">
-              {datos?.cobro ? (
+              {cargandoFicha ? (
+                '…'
+              ) : datos?.cobro ? (
                 <>
                   <span className="font-mono text-ink-2">
                     {monto(datos.cobro.amount)} {datos.cobro.simbolo}
@@ -279,7 +310,7 @@ export default function Hilo(): React.ReactElement {
           <input
             value={borrador}
             onChange={(ev) => setBorrador(ev.target.value)}
-            placeholder={datos?.cobro ? T.hilo.escribeHueco : T.hilo.sinCobroHueco}
+            placeholder={cargandoFicha ? '…' : datos?.cobro ? T.hilo.escribeHueco : T.hilo.sinCobroHueco}
             disabled={!datos?.cobro || ocupado || enVuelo !== null}
             className="seleccionable h-11 grow rounded-full border border-line bg-sand px-4 text-[14px] text-ink outline-none placeholder:text-ink-3 disabled:opacity-60"
           />
@@ -294,9 +325,11 @@ export default function Hilo(): React.ReactElement {
           </button>
         </div>
         <p className="mt-2 pl-1.5 text-[11.5px] text-ink-3">
-          {datos?.cobro
-            ? T.hilo.piePrecio(monto(datos.cobro.amount), datos.cobro.simbolo)
-            : T.hilo.sinCobroPie}
+          {cargandoFicha
+            ? '…'
+            : datos?.cobro
+              ? T.hilo.piePrecio(monto(datos.cobro.amount), datos.cobro.simbolo)
+              : T.hilo.sinCobroPie}
         </p>
       </div>
 

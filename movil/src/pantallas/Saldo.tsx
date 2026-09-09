@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useWallet } from '@/hooks/useWallet';
 import { activeChain } from '@/contracts/config';
 import { useSaldos } from '~/lib/usarSaldos';
@@ -7,6 +7,7 @@ import { useSesion } from '~/lib/sesion';
 import { useCambio } from '~/lib/cambio';
 import { copiar } from '~/lib/wallets';
 import Icono from '~/componentes/Icono';
+import HojaRecibir from '~/componentes/HojaRecibir';
 import Menu from '~/componentes/Menu';
 import { useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
@@ -31,6 +32,8 @@ export default function Saldo(): React.ReactElement {
   const { cambiar } = useCambio();
   const T = useTextos();
   const [copiado, setCopiado] = useState(false);
+  const [recibiendo, setRecibiendo] = useState(false);
+  const navegar = useNavigate();
 
   const alCopiar = async (): Promise<void> => {
     if (!address) return;
@@ -89,6 +92,40 @@ export default function Saldo(): React.ReactElement {
             paraQue={T.saldo.monParaQue}
             pie={T.saldo.monPie}
           />
+
+          {/* Mandar y recibir, que es lo primero que se busca en una cartera.
+              Estaban SOLO dentro del llavero, una pantalla más adentro, así que
+              desde aquí —donde se mira el saldo— no había forma de mover nada.
+
+              Recibir se abre aquí mismo: no firma nada, solo enseña la
+              dirección, y eso vale igual para una wallet del llavero que para
+              una conectada por fuera.
+
+              Enviar manda al llavero con `?hacer=enviar`. Firmar exige la llave
+              descifrada y esa solo existe allí, tras el PIN; duplicar el
+              desbloqueo en esta pantalla sería duplicar la parte delicada. Con
+              una wallet de fuera no sale: mandar desde ella se hace en su app,
+              que es la que tiene su clave. */}
+          <div className="flex shrink-0 gap-2.5">
+            {sesion.wallet && (
+              <button
+                type="button"
+                onClick={() => navegar('/llavero?hacer=enviar')}
+                className="pulsable tocable flex grow items-center justify-center gap-2 rounded-full bg-monad py-3 text-[14px] font-semibold text-white shadow-monad"
+              >
+                <Icono nombre="fuera" tamano={16} color="#fff" />
+                {T.saldo.enviar}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setRecibiendo(true)}
+              className="pulsable tocable flex grow items-center justify-center gap-2 rounded-full border border-honey py-3 text-[14px] font-semibold text-honey"
+            >
+              <Icono nombre="mas" tamano={16} color="#E29A2E" />
+              {T.saldo.recibir}
+            </button>
+          </div>
 
           {/* La dirección va abajo y entera: es para recibir, no para mirarla. */}
           <div className="shrink-0 rounded-[14px] border border-line p-3.5">
@@ -183,6 +220,19 @@ export default function Saldo(): React.ReactElement {
             {T.saldo.desconectar(addressShort ?? '')}
           </button>
         </div>
+      )}
+
+      {recibiendo && address && (
+        <HojaRecibir
+          wallet={{
+            direccion: address,
+            // El nombre que se le puso si es del llavero; si viene de fuera, la
+            // dirección corta, que es como la llama su propia app.
+            nombre: sesion.wallet?.nombre ?? `${address.slice(0, 6)}…${address.slice(-4)}`,
+          }}
+          onCerrar={() => setRecibiendo(false)}
+          T={T}
+        />
       )}
     </div>
   );
