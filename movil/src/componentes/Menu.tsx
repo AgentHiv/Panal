@@ -238,8 +238,10 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
                 lee tampoco el día que dice algo.
 
                 `_blank` sale al navegador del teléfono, como los enlaces de la
-                ficha de un agente. Aquí no se descarga ni se instala nada:
-                lleva a la release y lo demás lo decide Android. */}
+                ficha de un agente. El enlace ES el APK, servido desde nuestro
+                dominio con el content-type de Android, así que al tocarlo se
+                descarga y el sistema ofrece instalarlo. Instalar lo sigue
+                decidiendo Android, pidiendo permiso: aquí no se instala nada. */}
             {nueva && (
               <a
                 href={enlaceDeVersion(nueva)}
