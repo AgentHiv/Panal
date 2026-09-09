@@ -23,7 +23,7 @@ import {
   verSecreto,
 } from '~/lib/llavero';
 import type { Llave, Secreto, WalletGuardada } from '~/lib/llavero';
-import { abrirSesion, renombrarEnSesion, useSesion } from '~/lib/sesion';
+import { abrirSesion, idRecordado, renombrarEnSesion, useSesion } from '~/lib/sesion';
 import { useCambio } from '~/lib/cambio';
 import { useSinCapturas } from '~/lib/pantalla';
 import { useTextos } from '~/i18n/idiomas';
@@ -61,6 +61,11 @@ import type { Textos } from '~/i18n/idiomas';
  * del teléfono.
  *
  * DE DÓNDE SE LLEGA AQUÍ LA PRIMERA VEZ
+ *
+ * Y del saldo, con `?hacer=enviar`: mandar dinero exige la llave descifrada, y
+ * esa solo existe aquí, tras el PIN. En vez de duplicar el desbloqueo en otra
+ * pantalla, el botón manda aquí y se abre la hoja sola en cuanto se abre el
+ * llavero — con la wallet que esté en uso, que es de la que se quiere mandar.
  *
  * De la bienvenida, con `?hacer=crear` o `?hacer=traer`. Esta pantalla ya sabía
  * hacer las dos cosas —poner el PIN, crear, importar—, así que la bienvenida no
@@ -133,6 +138,7 @@ export default function Llavero(): React.ReactElement {
       // en vez de dejar a la persona delante de un llavero vacío.
       if (hacer === 'crear') await alCrearWallet(k);
       else if (hacer === 'traer') setImportando(true);
+      else if (hacer === 'enviar') abrirEnvio();
     } catch {
       setError(T.llavero.noSePudoCrear);
       setPaso({ que: 'estrenar', primero: null });
@@ -160,6 +166,20 @@ export default function Llavero(): React.ReactElement {
     // se venía de la bienvenida, el camino sigue igual.
     if (hacer === 'crear' && listar().length === 0) await alCrearWallet(k);
     else if (hacer === 'traer') setImportando(true);
+    else if (hacer === 'enviar') abrirEnvio();
+  };
+
+  /**
+   * Abre «enviar» con la wallet en uso, que es de la que se venía a mandar.
+   *
+   * Si no hubiera ninguna en uso —se entró con el llavero recién estrenado— no
+   * se abre nada y se queda la lista, que es donde se elige. Inventar una
+   * wallet aquí sería peor: mandar dinero desde la que no era.
+   */
+  const abrirEnvio = (): void => {
+    const id = idRecordado();
+    const w = listar().find((x) => x.id === id) ?? null;
+    if (w) setEnviando(w);
   };
 
   /**

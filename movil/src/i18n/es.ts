@@ -109,6 +109,8 @@ export const es = {
   },
 
   saldo: {
+    enviar: 'Enviar',
+    recibir: 'Recibir',
     titulo: 'Saldo',
     conectaTitulo: 'Conecta tu wallet',
     conectaTexto: 'Es tu cuenta y tu saldo a la vez. No hay registro, ni correo, ni contraseña que recordar.',

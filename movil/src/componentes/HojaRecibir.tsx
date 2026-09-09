@@ -6,7 +6,6 @@ import Hoja, { Nota } from '~/componentes/Hoja';
 import Icono from '~/componentes/Icono';
 import { copiar } from '~/lib/wallets';
 import type { Textos } from '~/i18n/idiomas';
-import type { WalletGuardada } from '~/lib/llavero';
 
 /**
  * Meterle dinero a una wallet del llavero.
@@ -28,7 +27,14 @@ export default function HojaRecibir({
   onCerrar,
   T,
 }: {
-  wallet: WalletGuardada;
+  /**
+   * Lo mínimo para recibir: una dirección y cómo llamarla.
+   *
+   * Era `WalletGuardada`, la del llavero, y eso dejaba fuera a la wallet
+   * conectada por WalletConnect — que también recibe, porque recibir no exige
+   * firmar nada. `WalletGuardada` encaja aquí sin tocar quien ya la pasaba.
+   */
+  wallet: { direccion: string; nombre: string };
   onCerrar: () => void;
   T: Textos;
 }): React.ReactElement {
