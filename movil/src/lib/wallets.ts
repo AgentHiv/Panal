@@ -122,3 +122,43 @@ export async function copiar(texto: string): Promise<boolean> {
     return false;
   }
 }
+
+/** El plugin nativo de portapapeles, si el puente lo trae. */
+interface PluginPortapapeles {
+  read(): Promise<{ value?: string }>;
+}
+
+/**
+ * Leer del portapapeles. `null` si no se pudo.
+ *
+ * NO ES SIMÉTRICO CON `copiar`, y ahí estaba el fallo. En el WebView de Android
+ * `navigator.clipboard.writeText` funciona, pero **`readText` no existe**: la
+ * lectura asíncrona del portapapeles no está implementada, así que lanzaba
+ * siempre. El botón «Pegar» de enviar la llamaba dentro de un `catch` vacío —
+ * o sea que no hacía nada, sin decir por qué, en la pantalla donde si no hay
+ * que teclear a mano una dirección de 42 caracteres.
+ *
+ * EL PLUGIN SE BUSCA EN EL PUENTE, NO SE IMPORTA. Es lo que hace `avisos.ts`
+ * con los avisos, y por un motivo medido: declarar `@capacitor/clipboard` en
+ * `movil/package.json` hizo que pnpm resolviera una SEGUNDA copia de viem —una
+ * por cada zod— y el paquete de la app creció 230 kB de golpe. Los plugins
+ * nativos se declaran solo en el `package.json` de la raíz, que es donde
+ * Capacitor los busca para el `cap sync`, y aquí se leen del puente.
+ *
+ * Se cae al API del navegador cuando no hay nativo, que es como se prueba la
+ * app con `pnpm dev` en un ordenador — ahí `readText` sí existe.
+ */
+export async function pegar(): Promise<string | null> {
+  try {
+    const cap = (globalThis as { Capacitor?: { Plugins?: Record<string, unknown> } }).Capacitor;
+    const nativo = cap?.Plugins?.Clipboard as PluginPortapapeles | undefined;
+    if (nativo) {
+      const { value } = await nativo.read();
+      return value?.trim() || null;
+    }
+    const texto = await navigator.clipboard.readText();
+    return texto.trim() || null;
+  } catch {
+    return null;
+  }
+}

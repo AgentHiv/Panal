@@ -3,6 +3,7 @@ import { formatUnits } from 'viem';
 import { EXPLORER_TX, activeChain } from '@/contracts/config';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
 import Icono from '~/componentes/Icono';
+import { pegar } from '~/lib/wallets';
 import { cuentaDe } from '~/lib/llavero';
 import type { Llave, WalletGuardada } from '~/lib/llavero';
 import { maximo, revisar } from '@/lib/envio';
@@ -60,12 +61,16 @@ export default function HojaEnviar({
   const saldo = moneda === '$PANAL' ? saldos.panal : saldos.mon;
 
   const alPegar = async (): Promise<void> => {
-    try {
-      const texto = await navigator.clipboard.readText();
-      if (texto.trim()) setDestino(texto.trim());
-    } catch {
-      /* sin permiso de portapapeles: se escribe a mano y ya está */
+    const texto = await pegar();
+    if (texto) {
+      setDestino(texto);
+      setPega(null);
+      return;
     }
+    // Antes esto era un `catch` vacío: el botón no hacía NADA y no decía por
+    // qué, justo donde se teclea a mano una dirección de 42 caracteres. Si el
+    // portapapeles está vacío o el sistema no lo suelta, se dice.
+    setPega(T.enviar.nadaQuePegar);
   };
 
   const alTodo = (): void => {

@@ -189,6 +189,7 @@ export const es = {
   },
 
   enviar: {
+    nadaQuePegar: 'No hay nada que pegar. Copia la dirección y vuelve.',
     titulo: (nombre: string) => `Mandar desde ${nombre}`,
     tienes: (cantidad: string, moneda: string) => `Tienes ${cantidad} ${moneda} en esta wallet.`,
     aQuien: 'A quién',

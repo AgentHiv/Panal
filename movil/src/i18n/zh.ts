@@ -170,6 +170,7 @@ export const zh: Textos = {
   },
 
   enviar: {
+    nadaQuePegar: '剪贴板里没有内容。先复制地址再回来。',
     titulo: (nombre: string) => `从 ${nombre} 转出`,
     tienes: (cantidad: string, moneda: string) => `这个钱包里有 ${cantidad} ${moneda}。`,
     aQuien: '转给谁',
