@@ -19,9 +19,22 @@
       React sustituye el contenido de #root al montar, así que este aviso
       desaparece solo en cuanto la app funciona. Si no funciona, se queda — y
       ese es justo el caso que hay que cubrir: un WebView viejo que no sabe leer
-      el paquete no ejecuta NADA nuestro, ni un try/catch, ni un componente de
+      el paquete no ejecuta NADA de la app, ni un try/catch, ni un componente de
       error. Con `type="module"`, además, un WebView sin módulos se salta el
       script entero sin dar un solo aviso.
+
+      NACE OCULTO, Y ESO ES UN ARREGLO. Estaba visible desde el primer píxel, y
+      como React tarda unas décimas en montar, en CADA arranque sano se veía
+      «Panal no puede abrirse en este móvil» un instante antes del PIN. Un aviso
+      de avería parpadeando en el arranque normal es peor que la pantalla en
+      blanco que vino a resolver.
+
+      Lo destapa el script de abajo pasados cuatro segundos, y ese script es
+      CLÁSICO a propósito: un WebView viejo se salta los módulos, pero ejecuta
+      los de siempre. `setTimeout`, `getElementById` y `style.display` existen
+      desde hace veinte años, así que el aviso sigue llegando justo al aparato
+      para el que se escribió. Si React montó antes, el nodo ya no está en el
+      documento y no hay nada que destapar.
 
       Antes eso era una pantalla en blanco, que no se puede ni reportar: quien
       la ve no sabe si la app está rota, si no hay cobertura o si el móvil no
@@ -35,7 +48,10 @@
       teléfono, si es que se ve.
     -->
     <div id="root">
-      <div style="max-width:23rem;margin:12vh auto;padding:0 1.5rem;font-family:system-ui,sans-serif;color:#2b2733;line-height:1.5">
+      <div
+        id="panal-sin-webview"
+        style="display:none;max-width:23rem;margin:12vh auto;padding:0 1.5rem;font-family:system-ui,sans-serif;color:#2b2733;line-height:1.5"
+      >
         <p style="font-size:1.05rem;font-weight:600;margin:0 0 .9rem">Panal no puede abrirse en este móvil</p>
         <p style="font-size:.9rem;margin:0 0 .7rem">
           Le falta actualizar <b>Android System WebView</b> o <b>Chrome</b>. Búscalos en Play Store,
@@ -54,6 +70,14 @@
         </p>
       </div>
     </div>
+    <script>
+      // Clásico, no módulo: es el único que corre en el WebView al que va
+      // dirigido el aviso. Sin `const` ni funciones flecha por lo mismo.
+      setTimeout(function () {
+        var aviso = document.getElementById('panal-sin-webview');
+        if (aviso) aviso.style.display = '';
+      }, 4000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
