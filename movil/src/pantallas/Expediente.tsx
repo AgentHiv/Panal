@@ -5,7 +5,16 @@ import { useWallet } from '@/hooks/useWallet';
 import { useMyTasks } from '@/hooks/useMyTasks';
 import { currencySymbol } from '@/contracts/config';
 import { ESTADO } from '@/lib/conversaciones';
-import { buildResultUrl, cabecerasFirma, expiraEn, resultSignMessage } from '@/lib/botEndpoint';
+import {
+  briefSignMessage,
+  buildBriefUrl,
+  buildResultUrl,
+  cabecerasFirma,
+  enviarBriefConReintento,
+  expiraEn,
+  resultSignMessage,
+} from '@/lib/botEndpoint';
+import { getTaskBrief } from '@/lib/taskBriefs';
 import {
   FileVerificationError,
   downloadDeliveredFile,
@@ -55,6 +64,8 @@ export default function Expediente(): React.ReactElement {
   const { signMessageAsync } = useSignMessage();
 
   const [trayendo, setTrayendo] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+  const [reenvio, setReenvio] = useState<'nada' | 'hecho' | 'fallo'>('nada');
   const [fallo, setFallo] = useState<string | null>(null);
   /**
    * La firma se guarda porque la MISMA abre el texto y todos los archivos.
@@ -161,6 +172,54 @@ export default function Expediente(): React.ReactElement {
         return;
       }
       setDescargas((d) => ({ ...d, [archivo.hash]: roto ? 'nocuadra' : 'fallo' }));
+    }
+  };
+
+  /**
+   * Vuelve a mandarle el encargo al agente.
+   *
+   * EXISTE PORQUE EL PRIMER ENVÍO SE PIERDE A VECES. El texto se manda justo
+   * después de minar el pago, y ahí pueden fallar dos cosas que no dependen de
+   * nadie: el nodo del agente todavía no ve la tarea, o el navegador de la
+   * wallet ignora la firma porque no nació de un toque. El pago queda
+   * bloqueado y el agente no tiene qué hacer.
+   *
+   * Antes, si la hoja del encargo se había cerrado, no había forma de
+   * arreglarlo: el texto vivía en la memoria de esa pantalla y se iba con
+   * ella. Ahora se guarda al crear la tarea y se reenvía desde aquí.
+   *
+   * No hace falta comprobar que el texto cuadre: el agente compara su
+   * `keccak256` con el que se ancló en la cadena y rechaza lo que no sea
+   * exactamente eso.
+   */
+  const alReenviar = async (): Promise<void> => {
+    const botUrl = datosAgente?.botUrl;
+    const guardado = getTaskBrief(e.cadena.taskHash);
+    if (!botUrl || !address || !tarea || !guardado) {
+      setFallo(T.expediente.sinEndpoint);
+      return;
+    }
+    setReenviando(true);
+    setFallo(null);
+    try {
+      const firma = await signMessageAsync({ message: briefSignMessage(tarea.id) });
+      const res = await enviarBriefConReintento(buildBriefUrl(botUrl, tarea.id), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ brief: guardado, address, signature: firma }),
+      });
+      if (!res.ok) {
+        setReenvio('fallo');
+        setFallo(`El agente respondió ${res.status}.`);
+        return;
+      }
+      setReenvio('hecho');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setReenvio('fallo');
+      setFallo(/reject|denied|user/i.test(msg) ? null : T.expediente.noSePudoHablar);
+    } finally {
+      setReenviando(false);
     }
   };
 
@@ -408,9 +467,43 @@ export default function Expediente(): React.ReactElement {
               {fallo && <p className="mt-2 text-[12px] text-terra">{fallo}</p>}
             </>
           ) : (
-            <p className="mt-2 text-[12.5px] leading-[1.55] text-ink-3">
-              {T.expediente.sinEntregar}
-            </p>
+            <>
+              <p className="mt-2 text-[12.5px] leading-[1.55] text-ink-3">
+                {T.expediente.sinEntregar}
+              </p>
+              {/* El reenvío solo aparece si hay algo que reenviar: el encargo
+                  sigue abierto y el texto está guardado en ESTE teléfono. Si se
+                  pagó desde otro, no hay copia y ofrecer el botón sería
+                  prometer algo que no se puede cumplir. */}
+              {e.cadena.estado === ESTADO.Abierto && getTaskBrief(e.cadena.taskHash) !== null && (
+                <>
+                  {reenvio === 'hecho' ? (
+                    <p className="mt-3 text-[12.5px] leading-[1.55] text-oliva">
+                      {T.expediente.encargoReenviado}
+                    </p>
+                  ) : (
+                    <>
+                      <p className="mt-3 text-[12.5px] leading-[1.55] text-ink-2">
+                        {T.expediente.quizaNoLeLlego}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void alReenviar()}
+                        disabled={reenviando}
+                        className="pulsable tocable mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-line py-2.5 text-[13.5px] font-medium text-ink-2 disabled:opacity-50"
+                      >
+                        <Icono nombre="recargar" tamano={15} color="#948DAE" />
+                        {reenviando ? T.expediente.reenviando : T.expediente.reenviarEncargo}
+                      </button>
+                      <p className="mt-2 text-[11.5px] leading-[1.5] text-ink-3">
+                        {T.expediente.firmarasPie}
+                      </p>
+                    </>
+                  )}
+                  {fallo && <p className="mt-2 text-[12px] text-terra">{fallo}</p>}
+                </>
+              )}
+            </>
           )}
         </div>
 
