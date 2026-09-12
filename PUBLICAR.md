@@ -2,48 +2,31 @@
 
 ## Pendiente ahora
 
-Dos, y **en este orden**:
+Uno solo:
 
 ```bash
-cd sdk             && npm publish --access public   # @panal/sdk 0.16.0
-cd ../create-agent && npm publish --access public   # create-panal-agent 0.16.0
+cd mcp && npm publish --access public   # panal-mcp 0.11.1
 ```
 
-`panal-mcp` NO hace falta esta vez: su codigo no usa nada nuevo del sdk. Su
-`package.json` ya declara `^0.16.0` para cuando toque publicarlo por otra cosa.
+El sdk NO cambia: `panal-mcp` sigue declarando `^0.17.0`, que es lo que ya
+está publicado. Aquí no hay orden que respetar porque no se publica nada más.
 
-### Por que el orden importa MAS que otras veces
+### Qué lleva
 
-La plantilla que genera `create-panal-agent` importa `leerNivelesDeMetadata`,
-`normalizarIdioma` y `NOMBRE_IDIOMA`, que no existen en el sdk 0.15.0. Si el
-generador se publica primero, cada proyecto nuevo declara `@panal/sdk ^0.16.0`
-y **npm ni siquiera puede instalarlo**, porque esa version todavia no esta.
+**`panal-mcp` 0.11.1** — no presupuesta un encargo a un agente que no publica
+`bot:` en su ficha. El brief se entrega DESPUÉS de crear la tarea, así que sin
+canal el pago se quedaba bloqueado en una tarea que nadie podía empezar, y el
+cliente lo descubría pagando. Antes solo se comprobaba cuando el encargo
+llevaba archivos adjuntos.
 
-Dentro de este repo no se nota nada de esto: pnpm enlaza el sdk local, asi que
-la web, la app y el typecheck funcionan igual con lo publicado sin actualizar.
-Se rompe solo fuera, en el proyecto de alguien que acaba de empezar.
-
-### Que llevan
-
-**`@panal/sdk` 0.16.0** — los niveles de un agente dentro del `metadataURI`
-(`niveles.ts`: leerlos, escribirlos y reconocerlos para que ningun lector los
-sirva como skills) y la lista de los diez idiomas del marketplace con la URL
-de la ficha en cada uno (`idiomas.ts`). Todo aditivo: un agente que siga en
-0.15.0 no se entera de nada.
-
-**`create-panal-agent` 0.16.0** — la plantilla lee sus niveles de la CADENA y
-los relee cada cinco minutos, para que cambiar lo que cobras no exija
-reiniciar el bot; y `GET /agent.json?lang=fr` devuelve la ficha traducida por
-el propio agente, guardada en disco con la huella del texto original dentro
-del nombre.
+Quien vende como persona no se ve afectado: al darse de alta recibe su buzón
+—`bot:https://api.panal.lat/buzon/0x…`— y eso ya es un canal publicado.
 
 ### Comprobado
 
-Los dos empaquetan. El tarball del sdk se instalo en un proyecto limpio: los
-diez exports nuevos estan, leen un `nivel:` de verdad y una descripcion que
-diga «el nivel: depende del encargo» sigue sin convertirse en un nivel
-fantasma. El del generador lleva `traduccion.ts` dentro y su plantilla declara
-`^0.16.0`.
+Empaqueta (44,5 kB), se instaló desde el tarball en un proyecto limpio y el
+servidor respondió a `initialize` anunciándose como 0.11.1. La guarda está
+dentro de `dist/server.js`.
 
 ## LA REGLA, para no repetirlo
 
