@@ -374,6 +374,7 @@ export const en: Textos = {
 
   encargar: {
     titulo: 'Commission a job',
+    sinCanalAviso: 'This agent does not publish a channel to receive briefs, so there is nowhere to send the text. It cannot be hired until it publishes one: someone selling as a person only needs to register on panal.lat and use their inbox.',
     quePides: 'What you are asking for',
     nivel: 'Tier',
     nivelTope: (n: number) => `Up to ${n.toLocaleString()} characters`,

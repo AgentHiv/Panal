@@ -730,6 +730,25 @@ const WRITE_TOOLS: Tool[] = [
         adjuntos.map((a) => a.file),
       );
 
+      // ---- Sin canal no se presupuesta ------------------------------------
+      //
+      // El brief se entrega DESPUÉS de crear la tarea. Si la ficha no publica
+      // `bot:`, no hay dónde entregarlo: contratar dejaría el pago bloqueado en
+      // una tarea que nadie puede empezar, y el cliente lo descubriría pagando.
+      // Aquí no cuesta nada decirlo.
+      //
+      // Esto NO le exige a nadie montar un servidor: quien vende como persona
+      // recibe su buzón al darse de alta —`bot:https://api.panal.lat/buzon/0x…`—
+      // y eso ya es un canal publicado. Lo que queda fuera es una ficha
+      // registrada y dejada a medias.
+      if (!agent.metadata.botUrl) {
+        return (
+          `${agent.metadata.name || address} publishes no endpoint —no "bot:" in its on-chain card— so ` +
+          `there is nowhere to send the job after paying, and the payment would sit locked until the ` +
+          `deadline. Nothing was quoted and nothing was spent.`
+        );
+      }
+
       const symbol = symbolOf(agent.currency);
 
       // ---- La ficha, una sola vez -----------------------------------------
@@ -739,8 +758,9 @@ const WRITE_TOOLS: Tool[] = [
       // presupuesto porque el importe ya no es siempre el precio del registro:
       // con niveles, lo que se bloquea es el del nivel elegido, y comprobar el
       // tope contra un número que todavía no se sabe no comprueba nada.
+      // Ya no puede faltar: sin `bot:` se ha vuelto arriba.
       let limites: LimitesDelAgente = { alcanzable: null, maxBriefChars: null, niveles: [] };
-      if (agent.metadata.botUrl) {
+      {
         limites = await fetchAgentLimits(agent.metadata.botUrl);
         // Que el endpoint no conteste descalifica el encargo entero: el brief se
         // entrega DESPUÉS de crear la tarea, así que contratar ahora dejaría el

@@ -477,6 +477,35 @@ export default function HojaEncargar({
 
   if (!datos) return null;
 
+  /**
+   * Sin canal no se cobra. La guarda va AQUÍ, antes del formulario.
+   *
+   * Antes se miraba después de minar el pago: el cliente pagaba, y entonces la
+   * pantalla le decía que el agente no publica por dónde recibir. El dinero se
+   * quedaba bloqueado hasta el plazo por algo que se sabía antes de tocar la
+   * cadena. La web ya lo comprobaba así; la app no.
+   *
+   * No le exige a nadie montar un servidor: quien vende como persona recibe su
+   * buzón al darse de alta —`bot:https://api.panal.lat/buzon/0x…`— y eso ya es
+   * un canal publicado. Sin `bot:` de ninguna clase no hay dónde entregar el
+   * encargo, y es el caso de una ficha registrada y dejada a medias.
+   *
+   * `datos` no nulo significa que la ficha se leyó de la cadena, así que aquí
+   * `botUrl` vacío es «no tiene», no «no se ha podido mirar».
+   */
+  if (!datos.botUrl) {
+    return (
+      <Hoja abierta={abierta} titulo={T.encargar.titulo} onCerrar={onCerrar}>
+        <Nota tono="miel">{T.encargar.sinCanalAviso}</Nota>
+        <div className="mt-4 pb-2">
+          <Boton variante="secundario" onClick={onCerrar}>
+            {T.comun.cerrar}
+          </Boton>
+        </div>
+      </Hoja>
+    );
+  }
+
   // La fase se DEDUCE de las transacciones, no se guarda aparte: dos copias del
   // mismo estado es como se quedan desincronizadas.
   const aprobando = !!hashApprove && !reciboApprove.isSuccess;

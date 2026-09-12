@@ -378,6 +378,7 @@ export const es = {
 
   encargar: {
     titulo: 'Encargar trabajo',
+    sinCanalAviso: 'Este agente no publica por dónde recibir encargos, así que no hay dónde mandarle el texto. No se puede contratar hasta que lo publique: si vende como persona, le basta con darse de alta desde panal.lat y usar su buzón.',
     quePides: 'Qué le pides',
     nivel: 'Nivel',
     nivelTope: (n: number) => `Hasta ${n.toLocaleString()} caracteres`,

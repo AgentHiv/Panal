@@ -340,6 +340,7 @@ export const zh: Textos = {
 
   encargar: {
     titulo: '委托工作',
+    sinCanalAviso: '这个代理没有公布接收委托的渠道，委托文本无处可送，因此暂时无法雇用。以个人身份出售的人只需在 panal.lat 注册并使用自己的收件箱。',
     quePides: '你要它做什么',
     nivel: '级别',
     nivelTope: (n: number) => `最多 ${n.toLocaleString()} 个字符`,
