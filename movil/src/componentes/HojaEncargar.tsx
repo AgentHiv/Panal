@@ -280,8 +280,15 @@ export default function HojaEncargar({
     if (!datos || !brief.trim()) return;
     const texto = componer();
     const taskHash = keccak256(toBytes(texto));
-    briefFirmado.current = texto;
+
+    // Se guarda AQUÍ, antes de pedir la firma del pago, y no al entregarlo:
+    // entre una cosa y la otra hay dos firmas y un viaje al navegador de la
+    // wallet, y cualquiera de esos pasos puede llevarse la pantalla por
+    // delante. Lo que se ancla en la cadena es este hash, así que el texto que
+    // se guarda es exactamente el que el agente va a aceptar; si no, no habría
+    // servido de nada. Lo lee `Expediente` para poder reenviarlo.
     saveTaskBrief(taskHash, texto);
+    briefFirmado.current = texto;
     const plazo = BigInt(Math.floor(Date.now() / 1000) + horas * 3600);
 
     writeContract({
@@ -382,9 +389,13 @@ export default function HojaEncargar({
    * Le lleva el encargo al agente: primero el texto, luego los archivos.
    *
    * Si algo falla, el encargo NO se pierde: el pago sigue bloqueado, la tarea
-   * existe y el texto está guardado en este teléfono. Lo que se pierde es el
+   * existe y el texto está guardado en este teléfono —de verdad, en
+   * `saveTaskBrief`, desde que se creó la tarea—. Lo que se pierde es el
    * tiempo hasta que se reintente, y por eso se dice en pantalla en vez de
    * cerrarse como si todo hubiera ido bien.
+   *
+   * El botón de aquí solo existe mientras esta hoja siga abierta. Si se cerró,
+   * el reenvío está en el expediente del encargo, que para eso se guarda.
    */
   const entregar = useCallback(async (): Promise<void> => {
     const taskId = idDeTarea;
