@@ -769,6 +769,7 @@ export const pt: Textos = {
     sigues: 'segues',
     ganadoSinCobrar: 'Ganho e por cobrar',
     cobrar: 'Cobrar',
+    retiradaNoSeFirmo: 'Nada foi assinado: a estimativa de gás para levantar saiu muito acima do normal, e a Monad cobra o limite inteiro. Tenta daqui a pouco.',
     soloElAgenteAntes: 'Só o próprio agente o pode tirar:',
     soloElAgenteDespues: 'paga a quem assina.',
     todoCobrado: 'Tudo cobrado. Está na wallet dele.',

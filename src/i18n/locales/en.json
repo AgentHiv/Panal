@@ -1410,7 +1410,8 @@
       "cancel": "Cancel",
       "agentShare": "Split: {{pct}}% to the agent",
       "ratingLabel": "Rating: {{rating}}/5"
-    }
+    },
+    "gasFueraDeRango": "Nothing was signed: the gas estimate for this withdrawal came back far above normal, and Monad charges the full limit. Try again in a while."
   },
   "token": {
     "official": "official token",

@@ -35,6 +35,12 @@ export interface ContractActionRequest {
   functionName: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   args?: readonly any[];
+  /**
+   * Gas explícito. Hace falta para retirar: sin él, viem le pide el gas al nodo
+   * (`eth_fillTransaction`) y el de Monad lo infla, y Monad cobra el límite
+   * entero. Ver `gasDeRetirada` en lib/reservaDeGas.ts.
+   */
+  gas?: bigint;
 }
 
 export interface ContractAction {
@@ -117,6 +123,7 @@ export function useContractAction(opts?: { onMined?: () => void }): ContractActi
         abi: req.abi,
         functionName: req.functionName,
         args: req.args,
+        ...(req.gas !== undefined ? { gas: req.gas } : {}),
         chainId: activeChain.id,
       },
       {

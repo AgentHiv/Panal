@@ -78,6 +78,12 @@ export interface PanalClientOptions {
   buzonUrl?: string;
 }
 
+/**
+ * Por encima de esto una retirada no se firma: retirar MON son 55.157 de gas y
+ * $PANAL 103.511. Ver `withdraw()` para lo que pasó sin este tope.
+ */
+const TOPE_GAS_RETIRADA = 300_000n;
+
 /** Cuántos agentes se leen por llamada al registry. */
 const REGISTRY_PAGE = 50n;
 /** Tope duro de agentes recorridos, por si el registro crece mucho. */
@@ -1274,18 +1280,41 @@ export class PanalClient {
     return rutaDeAgente(base, 'x402/ask');
   }
 
-  /** Retira lo acreditado en una moneda (patrón pull payment). */
+  /**
+   * Retira lo acreditado en una moneda (patrón pull payment).
+   *
+   * EL GAS VA FIJADO A MANO, y no es un detalle. viem no estima: le pide al nodo
+   * que rellene la transacción (`eth_fillTransaction`), y el de Monad devuelve
+   * un gas disparatado para retirar MON —1,05 M para una wallet, 10,7 M para
+   * otra— cuando lo necesario son 55.157. Monad cobra el LÍMITE entero, no lo
+   * usado: una retirada de 1,092 MON pagó 1,096 MON de gas (2026-09-14, tx
+   * 0xa960cb7e…). El gas sale de `eth_estimateGas`, que da el número bueno, con
+   * un 10 % de margen; y si la estimación vuelve por encima de `TOPE_GAS_RETIRADA`
+   * no se firma nada.
+   */
   async withdraw(currency: Address = NATIVE_CURRENCY): Promise<Hex> {
     const wallet = this.wallet();
-    const hash = await wallet.writeContract({
+    const llamada = {
       address: this.addresses.escrow,
       abi: escrowAbi,
       functionName: 'withdraw',
       args: [currency],
+    } as const;
+    const estimado = await this.publicClient.estimateContractGas({ ...llamada, account: this.account! });
+    const gas = (estimado * 11n + 9n) / 10n;
+    if (gas > TOPE_GAS_RETIRADA) {
+      throw new Error(
+        `La estimación de gas para retirar salió en ${estimado}, muy por encima de lo normal (~55.000 en MON, ` +
+          `~104.000 en $PANAL). Monad cobra el límite entero: no se ha enviado nada.`,
+      );
+    }
+    const hash = await wallet.writeContract({
+      ...llamada,
+      gas,
       chain: chainFor(this.network),
       account: this.account!,
     });
-    await this.publicClient.waitForTransactionReceipt({ hash });
+    await this.esperarExito(hash, 'La retirada');
     return hash;
   }
 

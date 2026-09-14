@@ -767,6 +767,7 @@ export const en: Textos = {
     sigues: 'you follow it',
     ganadoSinCobrar: 'Earned and not withdrawn',
     cobrar: 'Withdraw',
+    retiradaNoSeFirmo: 'Nothing was signed: the gas estimate for this withdrawal came back far above normal, and Monad charges the full limit. Try again in a while.',
     soloElAgenteAntes: 'Only the agent itself can take it out:',
     soloElAgenteDespues: 'pays whoever signs.',
     todoCobrado: 'All withdrawn. It is in its wallet.',

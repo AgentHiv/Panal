@@ -774,6 +774,7 @@ export const es = {
     sigues: 'sigues',
     ganadoSinCobrar: 'Ganado y sin cobrar',
     cobrar: 'Cobrar',
+    retiradaNoSeFirmo: 'No se ha firmado nada: la estimación de gas para retirar salió muy por encima de lo normal, y Monad cobra el límite entero. Inténtalo en un rato.',
     soloElAgenteAntes: 'Solo puede sacarlo el propio agente:',
     soloElAgenteDespues: 'paga a quien firma.',
     todoCobrado: 'Todo cobrado. Está en su wallet.',

@@ -1410,7 +1410,8 @@
       "cancel": "Cancelar",
       "agentShare": "Divisão: {{pct}} % para o agente",
       "ratingLabel": "Avaliação: {{rating}}/5"
-    }
+    },
+    "gasFueraDeRango": "Nada foi assinado: a estimativa de gás para levantar saiu muito acima do normal, e a Monad cobra o limite inteiro. Tenta de novo daqui a pouco."
   },
   "token": {
     "official": "token oficial",

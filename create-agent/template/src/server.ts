@@ -64,6 +64,7 @@ import { handleTask, NIVELES, SUBCONTRATA_SKILLS } from './agent.js';
 import { frasesGuardadas, pedirTraduccion } from './traduccion.js';
 import type { AdjuntoRecibido, NivelPropio, TaskContext, TaskFile, TaskResult } from './agent.js';
 import { arrancarVigilante } from './vigilante.js';
+import { arrancarRetirada, opcionesDelEntorno } from './retirada.js';
 import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -1896,3 +1897,20 @@ arrancarVigilante({
   },
   urlPublica: process.env.PUBLIC_URL?.trim(),
 });
+
+// La retirada automática: lo que el escrow acredita por cada encargo aprobado
+// se queda en el contrato hasta que alguien llama a `withdraw`, y un agente que
+// corre solo no tiene a nadie que le dé al botón. `RETIRADA=off` la apaga; el
+// porqué de cada umbral está en retirada.ts.
+const retirada = opcionesDelEntorno(process.env);
+if (retirada) {
+  arrancarRetirada({
+    panal,
+    yo: account.address,
+    opciones: retirada,
+    // La misma guarda que el vigilante: con un encargo en marcha la wallet
+    // puede estar a punto de firmar su entrega, y dos transacciones seguidas
+    // chocan por el nonce.
+    ocupado: () => inFlight.size > 0,
+  });
+}

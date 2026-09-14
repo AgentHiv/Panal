@@ -80,3 +80,44 @@ export function monHaciaArriba(wei: bigint, decimales = 4): string {
   const fraccion = (redondeado % 10n ** BigInt(decimales)).toString().padStart(decimales, '0').replace(/0+$/, '');
   return fraccion ? `${entero}.${fraccion}` : entero.toString();
 }
+
+/**
+ * Por encima de esto una retirada no se firma. Retirar MON son 55.157 de gas y
+ * $PANAL 103.511 (medido el 2026-09-14): 300.000 sobra para cualquier retirada
+ * honrada y corta una estimación disparatada antes de que se cobre.
+ */
+export const TOPE_GAS_RETIRADA = 300_000n;
+
+/** Se lanza cuando la estimación sale por encima del tope: no se firma nada. */
+export class GasFueraDeRango extends Error {
+  readonly estimado: bigint;
+  constructor(estimado: bigint) {
+    super(`gas estimado ${estimado} por encima de ${TOPE_GAS_RETIRADA}`);
+    this.name = 'GasFueraDeRango';
+    this.estimado = estimado;
+  }
+}
+
+/**
+ * El gas con el que se firma una retirada: `eth_estimateGas` + 10 %.
+ *
+ * POR QUÉ HACE FALTA, Y LO QUE COSTÓ. viem no estima el gas: le pide al nodo
+ * que rellene la transacción (`eth_fillTransaction`), y el de Monad devuelve un
+ * gas disparatado para retirar MON —1,05 M para una wallet, 10,7 M para otra—
+ * cuando lo necesario son 55.157. Monad cobra el LÍMITE entero, no lo usado:
+ * una retirada de 1,092 MON pagó 1,096 MON de gas (tx 0xa960cb7e…). Con el gas
+ * explícito, viem lo respeta.
+ *
+ * Afecta sobre todo a la wallet integrada de la app, que firma con una cuenta
+ * local de viem. Una wallet de navegador suele estimar por su cuenta, pero
+ * pasarle el gas no le hace daño y la cubre si no lo hace.
+ */
+export async function gasDeRetirada(
+  cliente: PublicClient,
+  llamada: { account: Address; address: Address; abi: Abi; functionName: string; args?: readonly unknown[] },
+): Promise<bigint> {
+  const estimado = await cliente.estimateContractGas(llamada as never);
+  const gas = (estimado * 11n + 9n) / 10n;
+  if (gas > TOPE_GAS_RETIRADA) throw new GasFueraDeRango(estimado);
+  return gas;
+}

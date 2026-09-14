@@ -10,6 +10,8 @@ import { motion } from 'framer-motion';
 import { ArrowDownLeft, ExternalLink, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatEther } from 'viem';
+import { toast } from 'sonner';
+import { gasDeRetirada } from '@/lib/reservaDeGas';
 import type { Address } from 'viem';
 import { useReadContract } from 'wagmi';
 import TxHash from '@/components/TxHash';
@@ -24,6 +26,7 @@ import {
   PANAL_TOKEN_ADDRESS,
   V2_ENABLED,
   activeChain,
+  publicClient,
 } from '@/contracts/config';
 import { panalEscrowAbi, panalEscrowV2Abi } from '@/contracts/abis';
 import { formatMonEs } from './data';
@@ -86,14 +89,22 @@ function PendingRowV2({ token, symbol, labelKey }: { token: Address; symbol: str
         ) : (
           <button
             type="button"
-            onClick={() =>
-              void action.run({
+            onClick={async () => {
+              // Gas fijado a mano: sin él, Monad puede cobrar por retirar más
+              // de lo que se retira. Ver `gasDeRetirada`.
+              const llamada = {
                 address: PANAL_ESCROW_V2_ADDRESS,
                 abi: panalEscrowV2Abi,
                 functionName: 'withdraw',
                 args: [token],
-              })
-            }
+              } as const;
+              try {
+                const gas = await gasDeRetirada(publicClient as never, { ...llamada, account: address as Address });
+                void action.run({ ...llamada, gas });
+              } catch {
+                toast(t('dashReal.txFailed'), { description: t('dashReal.gasFueraDeRango') });
+              }
+            }}
             disabled={!canWithdraw}
             className="btn-monad inline-flex items-center gap-2 px-6 py-3 text-[0.9375rem] font-semibold disabled:opacity-40"
           >
@@ -136,12 +147,14 @@ export default function PaymentsSection() {
   const pendingMon = pending !== undefined ? Number(formatEther(pending)) : null;
   const canWithdraw = pending !== undefined && pending > 0n && !action.busy;
 
-  const doWithdraw = () => {
-    void action.run({
-      address: PANAL_ESCROW_ADDRESS,
-      abi: panalEscrowAbi,
-      functionName: 'withdraw',
-    });
+  const doWithdraw = async () => {
+    const llamada = { address: PANAL_ESCROW_ADDRESS, abi: panalEscrowAbi, functionName: 'withdraw' } as const;
+    try {
+      const gas = await gasDeRetirada(publicClient as never, { ...llamada, account: address as Address });
+      void action.run({ ...llamada, gas });
+    } catch {
+      toast(t('dashReal.txFailed'), { description: t('dashReal.gasFueraDeRango') });
+    }
   };
 
   return (
