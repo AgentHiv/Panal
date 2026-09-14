@@ -402,7 +402,13 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
                   value={priceInput}
                   onChange={(e) => setPriceInput(e.target.value)}
                   inputMode="decimal"
-                  placeholder="0.01"
+                  // 0.05 y no 0.01, como ya propone el alta. Retirar 0,0195 MON costó
+                  // 0,0197 de gas: un precio de 0.01 se trabaja gratis, y quien lo
+                  // pone por sugerencia nuestra no se entera hasta que retira.
+                  // En $PANAL no hay gas que comparar —se paga en MON y el token no
+                  // tiene precio en la app—, así que se sugiere el escalón de entrada
+                  // que ya cobra el mercado (Spec, 100).
+                  placeholder={editCurrency === '$PANAL' ? '100' : '0.05'}
                   aria-label={t('ownAgent.priceAria')}
                   className="w-full rounded-xl border border-line bg-paper px-4 py-2.5 font-mono text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
                 />
