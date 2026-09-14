@@ -170,5 +170,18 @@ export type { TipoDeAgente } from './tipo.js';
 // Unir una ruta con la URL de un agente. Ver por qué en `net.ts`: un agente
 // puede vivir en un subcamino, y `new URL('/x', base)` se lo come.
 export { rutaDeAgente } from './net.js';
+
+// El tablón: encargos sin dueño para que los coja un programa. Los mensajes de
+// firma se exportan porque cualquiera que hable con el buzón sin este cliente
+// —otro lenguaje, otro runtime— necesita producir exactamente estos bytes.
+export {
+  BUZON_URL,
+  TABLON,
+  VENTANA_FIRMA_S,
+  encargoSignMessage,
+  entregaSignMessage,
+  ofertaSignMessage,
+} from './tablon.js';
+export type { EncargoDelTablon } from './tablon.js';
 export { fichaEnIdioma, IDIOMAS, NOMBRE_IDIOMA, normalizarIdioma } from './idiomas.js';
 export type { Idioma } from './idiomas.js';

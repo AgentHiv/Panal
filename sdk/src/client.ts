@@ -16,7 +16,7 @@
  * y en uso: el caso de "quiero probar esto ahora" no debería exigir un .env.
  */
 
-import { createPublicClient, createWalletClient, formatEther, getAddress, http, keccak256, toBytes } from 'viem';
+import { createPublicClient, createWalletClient, formatEther, getAddress, http, keccak256, toBytes, verifyMessage } from 'viem';
 import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, namesAbi, registryAbi } from './abis.js';
 import { leerX402 } from './agent-card.js';
@@ -24,6 +24,16 @@ import { assertPublicUrl, fetchLimited, rutaDeAgente } from './net.js';
 import { X402Error, payAndAsk, quoteAsk, type AskResult, type X402Accept } from './x402.js';
 import { descend, newEnvelope, remainingBudget, type CallEnvelope } from './envelope.js';
 import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type PanalNetwork } from './chains.js';
+import {
+  BUZON_URL,
+  TABLON,
+  VENTANA_FIRMA_S,
+  encargoSignMessage,
+  entregaSignMessage,
+  ofertaSignMessage,
+  type EncargoDelTablon,
+  type OfertaCruda,
+} from './tablon.js';
 import {
   TaskStatus,
   formatAgentMetadata,
@@ -57,6 +67,15 @@ export interface PanalClientOptions {
    * `null` lo desactiva y lee siempre de la cadena.
    */
   indexerUrl?: string | null;
+  /**
+   * El buzón que guarda los textos del tablón. `https://api.panal.lat/buzon`
+   * por defecto.
+   *
+   * Va aparte del indexador a propósito: desactivar el indexador (`null`)
+   * obliga a leer agentes de la cadena, pero no puede dejar a un programa sin
+   * tablón, porque el texto de un encargo sin dueño no está en la cadena.
+   */
+  buzonUrl?: string;
 }
 
 /** Cuántos agentes se leen por llamada al registry. */
@@ -164,6 +183,7 @@ export class PanalClient {
   readonly walletClient?: WalletClient;
   /** Indexador para buscar agentes, o null si se lee siempre de la cadena. */
   readonly indexerUrl: string | null;
+  readonly buzonUrl: string;
 
   constructor(options: PanalClientOptions = {}) {
     this.network = options.network ?? 'mainnet';
@@ -178,6 +198,7 @@ export class PanalClient {
     }
 
     this.indexerUrl = options.indexerUrl === undefined ? 'https://api.panal.lat' : options.indexerUrl;
+    this.buzonUrl = (options.buzonUrl ?? BUZON_URL).replace(/\/+$/, '');
 
     const transport = http(options.rpcUrl ?? chain.rpcUrls.default.http[0]);
     this.publicClient = createPublicClient({ chain, transport });
@@ -750,6 +771,208 @@ export class PanalClient {
       if (id === 0n) break;
     }
     return found;
+  }
+
+  // -------------------------------------------------------------------------
+  // El tablón: encargos sin dueño que coge el primer agente que los quiera.
+  //
+  // El orden de uso es el de estos cuatro métodos: mirar, coger, leer y
+  // entregar. Entre coger y leer no hay atajo posible: el encargo solo se le
+  // enseña a quien ya figura en la cadena como su trabajador.
+  // -------------------------------------------------------------------------
+
+  /**
+   * Los encargos del tablón que se pueden coger AHORA.
+   *
+   * Lo que sirve el buzón no se da por bueno: cada anuncio se comprueba contra
+   * la firma de su cliente —si no cuadra, el buzón lo ha cambiado o se lo ha
+   * inventado— y cada tarea contra la cadena, porque el buzón no se entera de
+   * que alguien la cogió, la canceló o se le pasó el plazo. Sin esto, un
+   * programa gastaría gas intentando coger encargos que ya no existen.
+   *
+   * `limit` acota cuántos anuncios se cruzan con la cadena, empezando por los
+   * más recientes: cada uno es una lectura al RPC.
+   */
+  async listBoard(options: { limit?: number } = {}): Promise<EncargoDelTablon[]> {
+    const limit = options.limit ?? 50;
+    const { status, text } = await fetchLimited(`${this.buzonUrl}/${TABLON}/lista`, {
+      timeoutMs: 10_000,
+      maxBytes: 2_000_000,
+    });
+    if (status !== 200) throw new Error(`El buzón respondió ${status} al pedir el tablón.`);
+
+    const ofertas = ((JSON.parse(text) as { ofertas?: OfertaCruda[] }).ofertas ?? [])
+      .slice()
+      .sort((a, b) => b.publicada - a.publicada)
+      .slice(0, limit);
+
+    const ahora = BigInt(Math.floor(Date.now() / 1000));
+    const libres: EncargoDelTablon[] = [];
+    for (const o of ofertas) {
+      let taskId: bigint;
+      try {
+        taskId = BigInt(o.taskId);
+      } catch {
+        continue;
+      }
+      const firmada = await verifyMessage({
+        address: getAddress(o.cliente),
+        message: ofertaSignMessage(taskId, o.publico),
+        signature: o.firma as Hex,
+      }).catch(() => false);
+      if (!firmada) continue;
+
+      const task = await this.getTask(taskId).catch(() => null);
+      if (!task) continue;
+      if (task.status !== TaskStatus.Open) continue;
+      if (task.worker.toLowerCase() !== TABLON) continue;
+      if (task.deadline <= ahora) continue;
+      // El anuncio lo firmó alguien, pero la tarea es de quien la pagó: si no
+      // coinciden, el anuncio no es de esta tarea.
+      if (task.client.toLowerCase() !== o.cliente.toLowerCase()) continue;
+
+      libres.push({
+        taskId,
+        anuncio: o.publico,
+        cliente: task.client,
+        amount: task.amount,
+        currency: task.currency,
+        deadline: task.deadline,
+        taskHash: task.taskHash,
+        publicada: o.publicada,
+      });
+    }
+    return libres;
+  }
+
+  /**
+   * Coge un encargo del tablón: desde aquí eres su trabajador en la cadena.
+   *
+   * Lo que el contrato rechazaría se comprueba antes, gratis, para decir POR QUÉ
+   * en vez de devolver un revert que no explica nada: que ya la cogió otro, que
+   * es tuya, que venció, o que no eres un agente activo. Esto último es lo que
+   * pide `claimTask` y lo que más fácil se olvida: coger trabajo exige estar
+   * registrado y dado de alta.
+   */
+  async claimTask(taskId: bigint): Promise<{ txHash: Hex }> {
+    const wallet = this.wallet();
+    const yo = this.account!.address;
+    const task = await this.getTask(taskId);
+    if (task.status !== TaskStatus.Open) {
+      throw new Error(`La tarea #${taskId} está "${TaskStatus[task.status]}": solo se coge lo que sigue abierto.`);
+    }
+    if (task.worker.toLowerCase() !== TABLON) {
+      throw new Error(`La tarea #${taskId} ya la cogió ${task.worker}.`);
+    }
+    if (task.client.toLowerCase() === yo.toLowerCase()) {
+      throw new Error(`La tarea #${taskId} la publicaste tú: el contrato no deja coger un encargo propio.`);
+    }
+    if (task.deadline <= BigInt(Math.floor(Date.now() / 1000))) {
+      throw new Error(`La tarea #${taskId} ya venció: no daría tiempo a entregarla.`);
+    }
+    const ficha = await this.leerAgente(yo);
+    if (!ficha.active) {
+      throw new Error(
+        `${yo} no es un agente activo en el registro, y claimTask solo acepta agentes activos. ` +
+          'Regístrate (o reactívate) antes de coger trabajo.',
+      );
+    }
+
+    const txHash = await wallet.writeContract({
+      address: this.addresses.escrow,
+      abi: escrowAbi,
+      functionName: 'claimTask',
+      args: [taskId],
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    return { txHash };
+  }
+
+  /**
+   * Lee el encargo de una tarea del tablón que ya has cogido.
+   *
+   * Se comprueba su keccak256 contra el `taskHash` de la cadena. Ese hash es lo
+   * que se pagó y lo que un árbitro miraría en una disputa, así que un texto que
+   * no cuadre no se devuelve: trabajar sobre él sería cumplir algo que nadie
+   * encargó.
+   */
+  async readBoardBrief(taskId: bigint): Promise<string> {
+    const wallet = this.wallet();
+    const yo = this.account!.address;
+    const task = await this.getTask(taskId);
+    if (task.worker.toLowerCase() !== yo.toLowerCase()) {
+      throw new Error(
+        task.worker.toLowerCase() === TABLON
+          ? `La tarea #${taskId} todavía no la has cogido: llama antes a claimTask.`
+          : `La tarea #${taskId} la cogió ${task.worker}, no tú.`,
+      );
+    }
+
+    const expira = Math.floor(Date.now() / 1000) + VENTANA_FIRMA_S;
+    const firma = await wallet.signMessage({ account: this.account!, message: encargoSignMessage(taskId, expira) });
+    const { status, text } = await fetchLimited(`${this.buzonUrl}/${TABLON}/encargo/${taskId}`, {
+      headers: { 'x-panal-address': yo, 'x-panal-signature': firma, 'x-panal-expira': String(expira) },
+      timeoutMs: 15_000,
+      maxBytes: 1_000_000,
+    });
+    if (status === 404) {
+      throw new Error(
+        `El buzón no tiene el encargo de la tarea #${taskId} (hash ${task.taskHash}): ` +
+          'su cliente pagó pero no llegó a dejar el texto.',
+      );
+    }
+    if (status !== 200) throw new Error(`El buzón respondió ${status} al pedir el encargo #${taskId}.`);
+
+    const { brief } = JSON.parse(text) as { brief?: string };
+    if (typeof brief !== 'string') throw new Error(`El buzón devolvió el encargo #${taskId} sin texto.`);
+    if (keccak256(toBytes(brief)).toLowerCase() !== task.taskHash.toLowerCase()) {
+      throw new Error(
+        `El encargo #${taskId} que sirve el buzón no cuadra con el taskHash de la cadena: no se trabaja sobre él.`,
+      );
+    }
+    return brief;
+  }
+
+  /**
+   * Entrega una tarea del tablón: deja el texto en el buzón y ancla su hash.
+   *
+   * EN ESE ORDEN, y no al revés. El cliente recoge la entrega del buzón, porque
+   * cuando publicó el encargo no sabía quién lo iba a coger ni dónde vive su
+   * servidor. Si se anclara primero y el buzón fallara después, el cliente
+   * vería una entrega en la cadena que no puede descargar. Dejándola primero,
+   * un fallo del buzón no ancla nada y se puede reintentar; y el buzón acepta
+   * repetir la misma entrega, porque da el mismo hash.
+   */
+  async deliverBoardResult(taskId: bigint, resultText: string): Promise<{ txHash: Hex; resultHash: Hex }> {
+    const wallet = this.wallet();
+    const yo = this.account!.address;
+    const task = await this.getTask(taskId);
+    if (task.worker.toLowerCase() !== yo.toLowerCase()) {
+      throw new Error(`La tarea #${taskId} está asignada a ${task.worker}, no a ti.`);
+    }
+    if (task.status !== TaskStatus.Open) {
+      throw new Error(`La tarea #${taskId} está "${TaskStatus[task.status]}": solo se entrega lo que sigue abierto.`);
+    }
+
+    const expira = Math.floor(Date.now() / 1000) + VENTANA_FIRMA_S;
+    const firma = await wallet.signMessage({ account: this.account!, message: entregaSignMessage(taskId, expira) });
+    const { status, text } = await fetchLimited(`${this.buzonUrl}/${TABLON}/entrega/${taskId}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ entrega: resultText, address: yo, signature: firma, expira }),
+      timeoutMs: 30_000,
+      maxBytes: 100_000,
+    });
+    if (status !== 200) {
+      throw new Error(
+        `El buzón no aceptó la entrega #${taskId} (${status}: ${text.slice(0, 160)}). ` +
+          'No se ha anclado nada en la cadena: se puede reintentar.',
+      );
+    }
+
+    return this.deliverResult(taskId, resultText);
   }
 
   // -------------------------------------------------------------------------

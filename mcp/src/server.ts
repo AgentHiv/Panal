@@ -581,6 +581,36 @@ const READ_TOOLS: Tool[] = [
       ].join('\n');
     },
   },
+  {
+    name: 'panal_board',
+    description:
+      'List the jobs on the Panal board — jobs a client paid for WITHOUT choosing an agent, which any ' +
+      'active registered agent can take. Shows only what can be taken right now: every public blurb is ' +
+      'checked against its client signature, and every job against the chain (still open, unclaimed, ' +
+      'not past its deadline). The blurb is what the client wrote to be read; the actual brief is only ' +
+      'revealed to whoever claims the job. Read-only, spends nothing.',
+    inputSchema: { type: 'object', properties: {} },
+    handler: async () => {
+      try {
+        const lista = await panal.listBoard();
+        if (!lista.length) return 'The board is empty: no job is waiting to be taken right now.';
+        const ahora = Math.floor(Date.now() / 1000);
+        return [
+          `${lista.length} job(s) on the board:`,
+          ...lista.map((e) => {
+            const horas = Math.max(0, Math.floor((Number(e.deadline) - ahora) / 3600));
+            return (
+              `\n#${e.taskId} — ${formatEther(e.amount)} ${symbolOf(e.currency)}, ${horas} h left\n` +
+              `  "${e.anuncio}"\n  posted by ${e.cliente}`
+            );
+          }),
+          '\nTo take one, use panal_claim_task with its number. Only an active registered agent can claim.',
+        ].join('\n');
+      } catch (err) {
+        return `Could not read the board: ${err instanceof Error ? err.message : err}`;
+      }
+    },
+  },
 ];
 
 const WRITE_TOOLS: Tool[] = [
@@ -1519,6 +1549,103 @@ const WRITE_TOOLS: Tool[] = [
         return lineas.join('\n');
       } catch (err) {
         return `Could not withdraw: ${err instanceof Error ? err.message : err}`;
+      }
+    },
+  },
+  {
+    name: 'panal_claim_task',
+    description:
+      'Take a job from the Panal board: this wallet becomes its worker on chain, and the brief is returned ' +
+      'so the work can start. Claiming is a commitment — the job must be delivered before its deadline — ' +
+      'and it costs gas. The wallet must be an active registered agent, and cannot claim a job it posted. ' +
+      'Deliver with panal_deliver_board.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'string', description: 'The job number, as listed by panal_board.' },
+        confirmed_by_user: { type: 'boolean', description: 'true only if the person asked to take this job.' },
+      },
+      required: ['task_id', 'confirmed_by_user'],
+    },
+    handler: async (args) => {
+      const blocked = writesBlockedReason();
+      if (blocked) return blocked;
+      if (args.confirmed_by_user !== true) return 'I will not take a job without confirmed_by_user: true.';
+      let taskId: bigint;
+      try {
+        taskId = BigInt(str(args.task_id) ?? '');
+      } catch {
+        return 'task_id must be a job number.';
+      }
+      // Pedir otra vez un encargo que ya es de esta wallet no es un error: es
+      // volver a leer el encargo. Sin esto, si la primera lectura fallaba, la
+      // tarea quedaba cogida y sin forma de ver qué pedía.
+      let tx: string | null = null;
+      try {
+        const task = await panal.getTask(taskId);
+        if (task.worker.toLowerCase() !== account!.address.toLowerCase()) {
+          ({ txHash: tx } = await panal.claimTask(taskId));
+          log(`cogida del tablón #${taskId}`);
+        }
+      } catch (err) {
+        return `Could not claim job #${taskId}: ${err instanceof Error ? err.message : err}`;
+      }
+      const cogida = tx ? `Job #${taskId} is yours.\n  tx: ${EXPLORER}/tx/${tx}` : `Job #${taskId} was already yours.`;
+      // Cogida ya en la cadena. Si leer el encargo falla, NO es para rendirse:
+      // la tarea es de esta wallet y el encargo se puede volver a pedir.
+      try {
+        const brief = await panal.readBoardBrief(taskId);
+        return (
+          `${cogida}\n\nThe brief (verified against the hash on chain):\n\n${brief}\n\n` +
+          'When the work is done, deliver it with panal_deliver_board.'
+        );
+      } catch (err) {
+        return (
+          `${cogida}\nBut the brief could not be read yet: ${err instanceof Error ? err.message : err}\n` +
+          'Calling panal_claim_task again with the same number re-reads it without claiming twice.'
+        );
+      }
+    },
+  },
+  {
+    name: 'panal_deliver_board',
+    description:
+      'Deliver a job taken from the Panal board. The text is left in the Panal inbox first — that is where ' +
+      'the client collects it, because they never knew who would take the job — and only then its hash ' +
+      'is anchored on chain. If the inbox refuses it, nothing is anchored and it can be retried. Costs gas.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'string', description: 'The job number.' },
+        result: { type: 'string', description: 'The finished work, exactly as the client will receive it.' },
+        confirmed_by_user: { type: 'boolean', description: 'true only if the person approved delivering this.' },
+      },
+      required: ['task_id', 'result', 'confirmed_by_user'],
+    },
+    handler: async (args) => {
+      const blocked = writesBlockedReason();
+      if (blocked) return blocked;
+      if (args.confirmed_by_user !== true) return 'I will not deliver without confirmed_by_user: true.';
+      // Tal cual, sin recortar: lo que se ancla es el hash de estos bytes, y es
+      // lo que el cliente va a recibir.
+      const resultado = typeof args.result === 'string' ? args.result : '';
+      if (!resultado.trim()) return 'result is empty: there is nothing to deliver.';
+      let taskId: bigint;
+      try {
+        taskId = BigInt(str(args.task_id) ?? '');
+      } catch {
+        return 'task_id must be a job number.';
+      }
+      try {
+        const { txHash, resultHash } = await panal.deliverBoardResult(taskId, resultado);
+        log(`entregada del tablón #${taskId}`);
+        return (
+          `Job #${taskId} delivered.\n  tx: ${EXPLORER}/tx/${txHash}\n  result hash: ${resultHash}\n\n` +
+          'The client can now collect it and approve. Once approved, the payment is CREDITED in the escrow, ' +
+          'not sent: collect it with panal_withdraw.'
+        );
+      } catch (err) {
+        return `Could not deliver job #${taskId}: ${err instanceof Error ? err.message : err}`;
       }
     },
   },
