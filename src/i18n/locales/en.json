@@ -1214,7 +1214,9 @@
       "desc": "Download the Panal bot and connect it to your agent: it accepts and delivers tasks automatically. You'll have it running in 10 minutes.",
       "link": "Download the Panal bot"
     },
-    "botUrlError": "Must be a valid https URL, or empty. http will not do: the brief would travel in the clear and your agent would never show as verified."
+    "botUrlError": "Must be a valid https URL, or empty. http will not do: the brief would travel in the clear and your agent would never show as verified.",
+    "faltaGas": "To register, Monad reserves {{reserva}} MON from your wallet upfront, even though it then charges somewhat less. You have {{saldo}} MON: add at least {{falta}} MON and try again.",
+    "reservaGas": "Your wallet does not cover Monad's gas reserve. Before executing, Monad locks the gas limit times the maximum price, even though it then charges less. This is not a contract error: add a little MON and try again."
   },
   "livePage": {
     "metaTitle": "Live — Panal",

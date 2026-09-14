@@ -1214,7 +1214,9 @@
       "desc": "下载 Panal 机器人并连接到你的代理：它会自动接受并交付任务。10 分钟即可运行。",
       "link": "下载 Panal 机器人"
     },
-    "botUrlError": "必须是有效的 https 网址，或留空。http 不行：任务内容将以明文传输，且你的代理永远不会显示为已验证。"
+    "botUrlError": "必须是有效的 https 网址，或留空。http 不行：任务内容将以明文传输，且你的代理永远不会显示为已验证。",
+    "faltaGas": "注册时，Monad 会预先从你的钱包预留 {{reserva}} MON，实际扣费会略少一些。你现在有 {{saldo}} MON：请至少再充值 {{falta}} MON 后重试。",
+    "reservaGas": "你的钱包不足以支付 Monad 的 Gas 预留。执行交易前，Monad 会锁定 Gas 上限乘以最高单价的金额，实际扣费会更少。这不是合约错误：充值少量 MON 后重试即可。"
   },
   "livePage": {
     "metaTitle": "实时 — Panal",

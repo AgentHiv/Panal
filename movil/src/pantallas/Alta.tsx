@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { parseEther } from 'viem';
+import { formatEther, parseEther } from 'viem';
 import { useWallet } from '@/hooks/useWallet';
 import { panalRegistryV2Abi } from '@/contracts/abis';
 import {
   NATIVE_CURRENCY,
   PANAL_REGISTRY_V2_ADDRESS,
   PANAL_TOKEN_ADDRESS,
+  publicClient,
 } from '@/contracts/config';
+import { esFaltaDeReserva, monHaciaArriba, reservaParaContrato, type Reserva } from '@/lib/reservaDeGas';
 import Icono from '~/componentes/Icono';
 import CamposMarca from '~/componentes/CamposMarca';
 import { MARCA_VACIA, type Marca } from '@/lib/marca';
@@ -71,7 +73,13 @@ export default function Alta(): React.ReactElement {
   const donde = tipo === 'persona' ? (address ? urlDeBuzon(address) : '') : bot;
   const ficha = armarFicha(nombre, descripcion, donde, marca, [], tipo ?? 'bot');
   const wei = parsear(precio);
-  const trabajando = isPending || recibo.isLoading;
+  /**
+   * Lo que falta para la reserva de gas de Monad, mirado antes de firmar.
+   * El porqué entero está en `lib/reservaDeGas.ts`, que comparte con la web.
+   */
+  const [faltaGas, setFaltaGas] = useState<Reserva | null>(null);
+  const [mirandoGas, setMirandoGas] = useState(false);
+  const trabajando = isPending || recibo.isLoading || mirandoGas;
   // Sin decir quién trabaja no se firma: de eso dependen el mercado en el que
   // sale y si hace falta URL, y no es algo que deba quedar por defecto.
   const listo = connected && tipo !== null && !!nombre.trim() && wei !== null && !yaEs?.registrado;
@@ -249,24 +257,55 @@ export default function Alta(): React.ReactElement {
           {resumirFicha(ficha) || '—'}
         </p>
 
+        {faltaGas && (
+          <p className="shrink-0 px-1 text-[12px] leading-[1.5] text-terra">
+            {T.alta.faltaGas(
+              monHaciaArriba(faltaGas.reserva),
+              Number(formatEther(faltaGas.saldo)).toFixed(4).replace(/\.?0+$/, ''),
+              monHaciaArriba(faltaGas.falta),
+            )}
+          </p>
+        )}
+
         {error && (
           <p className="shrink-0 px-1 text-[12px] text-terra">
-            {/rejected|denied|user/i.test(error.message)
-              ? T.alta.firmaCancelada
-              : T.alta.noSePudoFirmar}
+            {esFaltaDeReserva(error)
+              ? T.alta.reservaGas
+              : /rejected|denied|user/i.test(error.message)
+                ? T.alta.firmaCancelada
+                : T.alta.noSePudoFirmar}
           </p>
         )}
 
         <button
           type="button"
-          onClick={() =>
+          onClick={async () => {
+            const args = [ficha, wei!, enPanal ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY] as const;
+            // Antes de firmar: una wallet recién cargada con «lo justo» no
+            // cubre lo que Monad reserva, y el rechazo no dice cuánto falta.
+            if (address) {
+              setMirandoGas(true);
+              const reserva = await reservaParaContrato(publicClient as never, {
+                account: address as `0x${string}`,
+                address: PANAL_REGISTRY_V2_ADDRESS,
+                abi: panalRegistryV2Abi as never,
+                functionName: 'registerAgent',
+                args,
+              });
+              setMirandoGas(false);
+              if (reserva && reserva.falta > 0n) {
+                setFaltaGas(reserva);
+                return;
+              }
+            }
+            setFaltaGas(null);
             writeContract({
               address: PANAL_REGISTRY_V2_ADDRESS,
               abi: panalRegistryV2Abi,
               functionName: 'registerAgent',
-              args: [ficha, wei!, enPanal ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY],
-            })
-          }
+              args,
+            });
+          }}
           disabled={!listo || trabajando}
           className="pulsable tocable mt-1 shrink-0 rounded-full bg-monad py-3.5 text-[15px] font-semibold text-white shadow-monad disabled:opacity-40 disabled:shadow-none"
         >

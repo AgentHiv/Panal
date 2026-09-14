@@ -17,7 +17,7 @@
  */
 
 import { createPublicClient, createWalletClient, formatEther, getAddress, http, keccak256, toBytes, verifyMessage } from 'viem';
-import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem';
+import type { Abi, Account, Address, Hex, PublicClient, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, namesAbi, registryAbi } from './abis.js';
 import { leerX402 } from './agent-card.js';
 import { assertPublicUrl, fetchLimited, rutaDeAgente } from './net.js';
@@ -214,6 +214,61 @@ export class PanalClient {
       throw new Error('Esta operación firma una transacción: crea el cliente con `account`.');
     }
     return this.walletClient;
+  }
+
+  /**
+   * Comprueba ANTES de firmar que la wallet cubre lo que Monad va a reservar.
+   *
+   * Monad bloquea `gas_limit × maxFeePerGas` antes de ejecutar, aunque luego
+   * cobre bastante menos: darse de alta estima ~264.000 de gas, que a 122 gwei
+   * son 0,032 MON de reserva (medido el 2026-09-14). Con menos, el nodo
+   * rechaza la transacción con «Signer had insufficient balance» y viem lo
+   * presenta como un revert del contrato, que no llegó a ejecutarse. Y hay una
+   * segunda trampa: reintentar tras recargar con el mismo nonce y las mismas
+   * comisiones firma una transacción idéntica, y el nodo repite el rechazo sin
+   * volver a mirar el saldo.
+   *
+   * Si no se puede estimar —RPC caído, o una llamada que el contrato rechazaría
+   * por otro motivo— no se bloquea nada: que hable el error de verdad.
+   */
+  private async comprobarReserva(
+    que: string,
+    llamada: { address: Address; abi: Abi; functionName: string; args: readonly unknown[]; value?: bigint },
+  ): Promise<void> {
+    let gas: bigint;
+    let maxFeePerGas: bigint;
+    let saldo: bigint;
+    try {
+      [gas, { maxFeePerGas }, saldo] = await Promise.all([
+        this.publicClient.estimateContractGas({ ...llamada, account: this.account! } as never),
+        this.publicClient.estimateFeesPerGas(),
+        this.publicClient.getBalance({ address: this.account!.address }),
+      ]);
+    } catch {
+      return;
+    }
+    const reserva = gas * maxFeePerGas + (llamada.value ?? 0n);
+    if (saldo < reserva) {
+      throw new Error(
+        `${que}: Monad reserva ${formatEther(reserva)} MON por adelantado (límite de gas × precio máximo), ` +
+          `aunque luego cobre menos. ${this.account!.address} tiene ${formatEther(saldo)} MON: ` +
+          `faltan ${formatEther(reserva - saldo)} MON. No se ha enviado nada.`,
+      );
+    }
+  }
+
+  /**
+   * Espera el recibo y comprueba que la transacción SALIÓ BIEN.
+   *
+   * Esperar el recibo no basta: un revert también llega con recibo. Sin mirar
+   * `status`, una transacción que gastó gas y no cambió nada volvía como si
+   * todo hubiera ido bien.
+   */
+  private async esperarExito(hash: Hex, que: string): Promise<void> {
+    const recibo = await this.publicClient.waitForTransactionReceipt({ hash });
+    if (recibo.status !== 'success') {
+      throw new Error(`${que} revirtió (tx ${hash}): se cobró el gas y no cambió nada.`);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -659,15 +714,21 @@ export class PanalClient {
     currency?: Address;
   }): Promise<Hex> {
     const wallet = this.wallet();
-    const hash = await wallet.writeContract({
+    const llamada = {
       address: this.addresses.registry,
+      abi: registryAbi as Abi,
+      functionName: 'registerAgent',
+      args: [formatAgentMetadata(params.metadata), params.pricePerTask, params.currency ?? NATIVE_CURRENCY] as const,
+    };
+    await this.comprobarReserva('No se puede dar de alta', llamada);
+    const hash = await wallet.writeContract({
+      ...llamada,
       abi: registryAbi,
       functionName: 'registerAgent',
-      args: [formatAgentMetadata(params.metadata), params.pricePerTask, params.currency ?? NATIVE_CURRENCY],
       chain: chainFor(this.network),
       account: this.account!,
     });
-    await this.publicClient.waitForTransactionReceipt({ hash });
+    await this.esperarExito(hash, 'El alta');
     return hash;
   }
 
@@ -746,7 +807,7 @@ export class PanalClient {
       chain: chainFor(this.network),
       account: this.account!,
     });
-    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    await this.esperarExito(txHash, `La entrega de #${taskId}`);
     return { txHash, resultHash };
   }
 
@@ -886,7 +947,7 @@ export class PanalClient {
       chain: chainFor(this.network),
       account: this.account!,
     });
-    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    await this.esperarExito(txHash, `Coger la tarea #${taskId}`);
     return { txHash };
   }
 

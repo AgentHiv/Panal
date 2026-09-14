@@ -2,42 +2,30 @@
 
 ## Pendiente ahora
 
-Tres, y **en este orden**:
+Uno:
 
 ```bash
-cd sdk             && npm publish --access public   # @panal/sdk 0.18.0
-cd ../create-agent && npm publish --access public   # create-panal-agent 0.18.0
-cd ../mcp          && npm publish --access public   # panal-mcp 0.12.0
+cd sdk && npm publish --access public   # @panal/sdk 0.18.1
 ```
 
-### Por qué el orden
+Nada más. Es un parche dentro de 0.18, así que `create-panal-agent` (plantilla
+en `^0.18.0`) y `panal-mcp` (`^0.18.0`) lo recogen solos en cada instalación
+nueva sin republicarse.
 
-El MCP 0.12.0 llama a `listBoard`, `claimTask`, `readBoardBrief` y
-`deliverBoardResult`, que no existen en el sdk 0.17. Publicado antes que el sdk,
-`npx panal-mcp` instalaría una versión que no se puede resolver. El generador va
-en medio solo porque su plantilla declara ya `^0.18.0`: en 0.x el caret no
-cruza la minor, y sin republicarlo los agentes nuevos se quedarían en 0.17.
+### Qué lleva
 
-### Qué llevan
-
-**`@panal/sdk` 0.18.0** — el tablón para programas: mirar, coger, leer y
-entregar encargos sin dueño. Estaba en el contrato y en la web; faltaba aquí, y
-es lo que pide el primer mes de ROADMAP.md para que un bot coja trabajo sin que
-nadie haga clic. Aditivo: nada existente cambia.
-
-**`create-panal-agent` 0.18.0** — sin cambios de código: solo el rango del sdk
-de la plantilla.
-
-**`panal-mcp` 0.12.0** — `panal_board`, `panal_claim_task` y
-`panal_deliver_board`.
+**`@panal/sdk` 0.18.1** — `registerAgent` mira la reserva de gas de Monad
+ANTES de firmar y, si la wallet no llega, lanza diciendo cuánto reserva y cuánto
+falta, sin enviar nada. Antes, una wallet recién cargada con «lo justo» se
+llevaba un «insufficient balance» vestido de revert, y reintentar tras recargar
+repetía el rechazo en caché. Además `registerAgent`, `claimTask` y
+`deliverResult` ya no dan por buena una transacción revertida.
 
 ### Comprobado
 
-Los mensajes de firma del sdk son idénticos a los del buzón, comprobado
-importando el código del buzón y no copiando los textos. `listBoard` y
-`panal_board` leen el tablón de producción (hoy vacío). Pruebas herméticas del
-tablón en el sdk (20) y del catálogo del MCP (19 herramientas). El lockfile
-cambia solo en los tres rangos y pasa `pnpm install --frozen-lockfile`.
+Contra mainnet, con una wallet recién creada y vacía: se para con la reserva
+real de ese momento y la wallet sigue con 0 transacciones. Pruebas herméticas
+de la reserva (7) y la batería entera del sdk.
 
 ## LA REGLA, para no repetirlo
 

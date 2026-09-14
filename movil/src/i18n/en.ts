@@ -554,6 +554,9 @@ export const en: Textos = {
     loQueSeEscribe: 'What will be written on the chain',
     firmaCancelada: 'The signature was cancelled.',
     noSePudoFirmar: "Couldn't sign the registration.",
+    faltaGas: (reserva: string, saldo: string, falta: string) =>
+      `To register, Monad reserves ${reserva} MON from your wallet upfront, even though it then charges somewhat less. You have ${saldo} MON: add at least ${falta} MON and try again.`,
+    reservaGas: 'Your wallet does not cover Monad\'s gas reserve: before executing, it locks the gas limit times the maximum price, even though it then charges less. This is not a contract error: add a little MON and try again.',
     firmando: 'Signing the registration…',
     firmarAlta: 'Sign the registration',
     pieGas:

@@ -11,7 +11,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bot, ExternalLink, Inbox, Loader2, TriangleAlert, User, X } from 'lucide-react';
 import { useSwitchChain, useWriteContract } from 'wagmi';
-import { parseEther } from 'viem';
+import { formatEther, parseEther } from 'viem';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -32,6 +32,7 @@ import {
   PANAL_TOKEN_ADDRESS,
   V2_ENABLED,
   activeChain,
+  publicClient,
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
 import type { TipoDeAgente } from '@panal/sdk';
@@ -45,6 +46,8 @@ import {
   type NivelEditable,
 } from '@/lib/agentMetadata';
 import { MARCA_VACIA, type Marca } from '@/lib/marca';
+import { esFaltaDeReserva, monHaciaArriba, reservaParaContrato, type Reserva } from '@/lib/reservaDeGas';
+import { formatMon } from '@/data/agents';
 import MarcaFields from '@/components/dashboard/MarcaFields';
 import NivelesFields from '@/components/dashboard/NivelesFields';
 
@@ -102,6 +105,12 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
    * transacciones para publicar lo que sabía desde el principio.
    */
   const [niveles, setNiveles] = useState<NivelEditable[]>([]);
+  /**
+   * Lo que falta para cubrir la reserva de gas de Monad, si falta algo.
+   * Se mira antes de firmar: ver `lib/reservaDeGas.ts` para el porqué entero.
+   */
+  const [faltaGas, setFaltaGas] = useState<Reserva | null>(null);
+  const [mirandoGas, setMirandoGas] = useState(false);
   /** Campos tocados (blur): muestran su error inline. */
   const [touched, setTouched] = useState<Record<'name' | 'desc' | 'price' | 'botUrl', boolean>>({
     name: false,
@@ -239,30 +248,44 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
           description: t('register.txSentDesc'),
         }),
     };
-    if (V2_ENABLED) {
-      const currencyAddr = currency === '$PANAL' ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY;
-      writeContract(
-        {
+    // La llamada se arma UNA vez: con ella se mira la reserva y con ella se
+    // firma. Dos copias de los mismos argumentos acaban siendo dos llamadas.
+    const currencyAddr = currency === '$PANAL' ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY;
+    const llamada = V2_ENABLED
+      ? {
           address: PANAL_REGISTRY_V2_ADDRESS,
           abi: panalRegistryV2Abi,
-          functionName: 'registerAgent',
-          args: [metadataURI, parseEther(priceStr), currencyAddr],
-          chainId: activeChain.id,
-        },
-        onSent,
-      );
-    } else {
-      writeContract(
-        {
+          functionName: 'registerAgent' as const,
+          args: [metadataURI, parseEther(priceStr), currencyAddr] as const,
+        }
+      : {
           address: PANAL_REGISTRY_ADDRESS,
           abi: panalRegistryAbi,
-          functionName: 'registerAgent',
-          args: [metadataURI, parseEther(priceStr)],
-          chainId: activeChain.id,
-        },
-        onSent,
-      );
+          functionName: 'registerAgent' as const,
+          args: [metadataURI, parseEther(priceStr)] as const,
+        };
+
+    // Antes de firmar: ¿llega la wallet a lo que Monad va a reservar? Sin
+    // esto, una wallet recién cargada con «lo justo» se llevaba un rechazo que
+    // parece un fallo del contrato y no dice cuánto falta.
+    if (address) {
+      setMirandoGas(true);
+      const reserva = await reservaParaContrato(publicClient as never, {
+        account: address as `0x${string}`,
+        address: llamada.address,
+        abi: llamada.abi as never,
+        functionName: llamada.functionName,
+        args: llamada.args,
+      });
+      setMirandoGas(false);
+      if (reserva && reserva.falta > 0n) {
+        setFaltaGas(reserva);
+        return;
+      }
     }
+    setFaltaGas(null);
+
+    writeContract({ ...llamada, chainId: activeChain.id } as never, onSent);
   };
 
   const reset = () => {
@@ -614,10 +637,23 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
             </p>
           </div>
 
+          {faltaGas && (
+            <p className="flex items-start gap-2 rounded-xl border border-terra/40 bg-terra/10 px-4 py-3 text-[0.8125rem] text-terra">
+              <TriangleAlert size={15} className="mt-0.5 shrink-0" />
+              {t('register.faltaGas', {
+                reserva: monHaciaArriba(faltaGas.reserva),
+                saldo: formatMon(Number(formatEther(faltaGas.saldo)), 4),
+                falta: monHaciaArriba(faltaGas.falta),
+              })}
+            </p>
+          )}
+
           {writeError && (
             <p className="flex items-start gap-2 rounded-xl border border-terra/40 bg-terra/10 px-4 py-3 text-[0.8125rem] text-terra">
               <TriangleAlert size={15} className="mt-0.5 shrink-0" />
-              {writeError.message.includes('User rejected')
+              {esFaltaDeReserva(writeError)
+                ? t('register.reservaGas')
+                : writeError.message.includes('User rejected')
                 ? t('hire.step3.rejected')
                 : writeError.message.includes('already registered')
                   ? t('register.alreadyRegistered')
@@ -685,10 +721,12 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                 <button
                   type="button"
                   onClick={submit}
-                  disabled={!valid || signing}
+                  // Mientras se mira la reserva tampoco: dos clics seguidos
+                  // lanzaban dos comprobaciones y, con saldo, dos firmas.
+                  disabled={!valid || signing || mirandoGas}
                   className="btn-monad inline-flex flex-1 items-center justify-center gap-2 px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40"
                 >
-                  {signing && <Loader2 size={15} className="animate-spin" aria-hidden />}
+                  {(signing || mirandoGas) && <Loader2 size={15} className="animate-spin" aria-hidden />}
                   {signing ? t('hire.step3.signing') : t('register.submit')}
                 </button>
               )}
