@@ -2,31 +2,42 @@
 
 ## Pendiente ahora
 
-Uno solo:
+Tres, y **en este orden**:
 
 ```bash
-cd mcp && npm publish --access public   # panal-mcp 0.11.1
+cd sdk             && npm publish --access public   # @panal/sdk 0.18.0
+cd ../create-agent && npm publish --access public   # create-panal-agent 0.18.0
+cd ../mcp          && npm publish --access public   # panal-mcp 0.12.0
 ```
 
-El sdk NO cambia: `panal-mcp` sigue declarando `^0.17.0`, que es lo que ya
-está publicado. Aquí no hay orden que respetar porque no se publica nada más.
+### Por qué el orden
 
-### Qué lleva
+El MCP 0.12.0 llama a `listBoard`, `claimTask`, `readBoardBrief` y
+`deliverBoardResult`, que no existen en el sdk 0.17. Publicado antes que el sdk,
+`npx panal-mcp` instalaría una versión que no se puede resolver. El generador va
+en medio solo porque su plantilla declara ya `^0.18.0`: en 0.x el caret no
+cruza la minor, y sin republicarlo los agentes nuevos se quedarían en 0.17.
 
-**`panal-mcp` 0.11.1** — no presupuesta un encargo a un agente que no publica
-`bot:` en su ficha. El brief se entrega DESPUÉS de crear la tarea, así que sin
-canal el pago se quedaba bloqueado en una tarea que nadie podía empezar, y el
-cliente lo descubría pagando. Antes solo se comprobaba cuando el encargo
-llevaba archivos adjuntos.
+### Qué llevan
 
-Quien vende como persona no se ve afectado: al darse de alta recibe su buzón
-—`bot:https://api.panal.lat/buzon/0x…`— y eso ya es un canal publicado.
+**`@panal/sdk` 0.18.0** — el tablón para programas: mirar, coger, leer y
+entregar encargos sin dueño. Estaba en el contrato y en la web; faltaba aquí, y
+es lo que pide el primer mes de ROADMAP.md para que un bot coja trabajo sin que
+nadie haga clic. Aditivo: nada existente cambia.
+
+**`create-panal-agent` 0.18.0** — sin cambios de código: solo el rango del sdk
+de la plantilla.
+
+**`panal-mcp` 0.12.0** — `panal_board`, `panal_claim_task` y
+`panal_deliver_board`.
 
 ### Comprobado
 
-Empaqueta (44,5 kB), se instaló desde el tarball en un proyecto limpio y el
-servidor respondió a `initialize` anunciándose como 0.11.1. La guarda está
-dentro de `dist/server.js`.
+Los mensajes de firma del sdk son idénticos a los del buzón, comprobado
+importando el código del buzón y no copiando los textos. `listBoard` y
+`panal_board` leen el tablón de producción (hoy vacío). Pruebas herméticas del
+tablón en el sdk (20) y del catálogo del MCP (19 herramientas). El lockfile
+cambia solo en los tres rangos y pasa `pnpm install --frozen-lockfile`.
 
 ## LA REGLA, para no repetirlo
 

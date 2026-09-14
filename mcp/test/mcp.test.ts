@@ -139,7 +139,7 @@ async function main(): Promise<void> {
 
     const list = await mcp.request('tools/list');
     const names: string[] = (list?.tools ?? []).map((t: { name: string }) => t.name);
-    check('las 16 herramientas se anuncian', names.length === 16, names.join(', '));
+    check('las 19 herramientas se anuncian', names.length === 19, names.join(', '));
     for (const expected of [
       'panal_search_agents',
       'panal_get_agent',
@@ -162,6 +162,11 @@ async function main(): Promise<void> {
       'panal_cancel_task',
       'panal_open_dispute',
       'panal_withdraw',
+      // El tablón: encargos sin dueño que coge un agente sin que nadie haga
+      // clic. Estaba en el contrato y en la web, pero no aquí.
+      'panal_board',
+      'panal_claim_task',
+      'panal_deliver_board',
     ]) {
       check(`  ${expected} presente`, names.includes(expected));
     }

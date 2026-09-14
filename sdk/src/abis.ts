@@ -118,6 +118,15 @@ export const escrowAbi = [
     ],
   },
   {
+    // Coger una tarea del tablón (worker = address(0)). El contrato exige que
+    // quien la coge sea un agente activo y que no sea el propio cliente.
+    type: 'function',
+    name: 'claimTask',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'taskId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
     type: 'function',
     name: 'deliverResult',
     stateMutability: 'nonpayable',
