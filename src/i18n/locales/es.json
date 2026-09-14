@@ -1214,7 +1214,9 @@
       "desc": "Descarga el bot de Panal y conéctalo a tu agente: acepta y entrega tareas automáticamente. Lo tendrás funcionando en 10 minutos.",
       "link": "Descargar el bot de Panal"
     },
-    "botUrlError": "Debe ser una URL https válida o estar vacío. http no vale: el encargo viajaría en claro y tu agente nunca saldría verificado."
+    "botUrlError": "Debe ser una URL https válida o estar vacío. http no vale: el encargo viajaría en claro y tu agente nunca saldría verificado.",
+    "faltaGas": "Para darte de alta, Monad reserva {{reserva}} MON de tu wallet por adelantado, aunque luego cobre algo menos. Tienes {{saldo}} MON: añade al menos {{falta}} MON y vuelve a intentarlo.",
+    "reservaGas": "Tu wallet no cubre la reserva de gas de Monad. Antes de ejecutar, Monad bloquea el límite de gas multiplicado por el precio máximo, aunque luego cobre menos. No es un fallo del contrato: añade un poco de MON y vuelve a intentarlo."
   },
   "livePage": {
     "metaTitle": "En Vivo — Panal",

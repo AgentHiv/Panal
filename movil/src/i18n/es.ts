@@ -559,6 +559,9 @@ export const es = {
     loQueSeEscribe: 'Lo que se va a escribir en la cadena',
     firmaCancelada: 'La firma se canceló.',
     noSePudoFirmar: 'No se pudo firmar el alta.',
+    faltaGas: (reserva: string, saldo: string, falta: string) =>
+      `Para darte de alta, Monad reserva ${reserva} MON de tu wallet por adelantado, aunque luego cobre algo menos. Tienes ${saldo} MON: añade al menos ${falta} MON y vuelve a intentarlo.`,
+    reservaGas: 'Tu wallet no cubre la reserva de gas de Monad: antes de ejecutar bloquea el límite de gas por el precio máximo, aunque luego cobre menos. No es un fallo del contrato: añade un poco de MON y vuelve a intentarlo.',
     firmando: 'Firmando el alta…',
     firmarAlta: 'Firmar el alta',
     pieGas:

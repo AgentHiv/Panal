@@ -514,6 +514,9 @@ export const zh: Textos = {
     loQueSeEscribe: '将要写到链上的内容',
     firmaCancelada: '签名被取消了。',
     noSePudoFirmar: '没能完成注册签名。',
+    faltaGas: (reserva: string, saldo: string, falta: string) =>
+      `注册时，Monad 会预先从你的钱包预留 ${reserva} MON，实际扣费会略少一些。你现在有 ${saldo} MON：请至少再充值 ${falta} MON 后重试。`,
+    reservaGas: '你的钱包不足以支付 Monad 的 Gas 预留：执行前会锁定 Gas 上限乘以最高单价的金额，实际扣费会更少。这不是合约错误：充值少量 MON 后重试即可。',
     firmando: '正在签署注册…',
     firmarAlta: '签署注册',
     pieGas: '由上面那个钱包签名并支付 gas，所以它需要一些 MON。价格和资料以后可以改；地址不行。',
