@@ -11,7 +11,9 @@ import {
   PANAL_REGISTRY_V2_ADDRESS,
   PANAL_TOKEN_ADDRESS,
   currencySymbol,
+  publicClient,
 } from '@/contracts/config';
+import { gasDeRetirada } from '@/lib/reservaDeGas';
 import { ESTADO } from '@/lib/conversaciones';
 import { getTaskBrief } from '@/lib/taskBriefs';
 import Hoja, { Boton, Nota } from '~/componentes/Hoja';
@@ -334,6 +336,7 @@ function HojaCobrar({
 }): React.ReactElement {
   const { writeContract, data: hash, isPending, variables, reset } = useWriteContract();
   const recibo = useWaitForTransactionReceipt({ hash });
+  const { address } = useWallet();
 
   // La hoja NO se cierra al cobrar la primera moneda: si quedan las dos, cerrar
   // aquí escondería la segunda firma y parecería que ya está todo sacado.
@@ -344,13 +347,28 @@ function HojaCobrar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo.isSuccess]);
 
-  const sacar = (token: Address): void =>
-    writeContract({
+  /**
+   * Con el gas fijado a mano. La wallet integrada firma con una cuenta local de
+   * viem, y ahí viem le pide el gas al nodo (`eth_fillTransaction`): el de
+   * Monad lo infla al retirar MON y Monad cobra el límite entero. Una retirada
+   * de 1,092 MON llegó a pagar 1,096 de gas. Ver `gasDeRetirada`.
+   */
+  const [sinFirmar, setSinFirmar] = useState(false);
+  const sacar = async (token: Address): Promise<void> => {
+    const llamada = {
       address: PANAL_ESCROW_V2_ADDRESS,
       abi: panalEscrowV2Abi,
       functionName: 'withdraw',
       args: [token],
-    });
+    } as const;
+    setSinFirmar(false);
+    try {
+      const gas = await gasDeRetirada(publicClient as never, { ...llamada, account: address as Address });
+      writeContract({ ...llamada, gas });
+    } catch {
+      setSinFirmar(true);
+    }
+  };
 
   // Cuál se está sacando lo dice la propia llamada en curso, no un estado
   // paralelo que haya que acordarse de limpiar.
@@ -361,6 +379,7 @@ function HojaCobrar({
   return (
     <Hoja abierta titulo={T.panel.cobrarTitulo} onCerrar={onCerrar} bloqueada={trabajando}>
       <Nota>{T.panel.cobrarNota}</Nota>
+      {sinFirmar && <p className="mt-2 px-1 text-[12px] leading-[1.5] text-terra">{T.panel.retiradaNoSeFirmo}</p>}
 
       <div className="mt-3.5 flex flex-col gap-2.5">
         {pendiente.panal > 0n && (
@@ -369,7 +388,7 @@ function HojaCobrar({
             simbolo="$PANAL"
             trabajando={trabajando && enCurso === PANAL_TOKEN_ADDRESS.toLowerCase()}
             deshabilitado={trabajando}
-            onSacar={() => sacar(PANAL_TOKEN_ADDRESS)}
+            onSacar={() => void sacar(PANAL_TOKEN_ADDRESS)}
             T={T}
           />
         )}
@@ -379,7 +398,7 @@ function HojaCobrar({
             simbolo="MON"
             trabajando={trabajando && enCurso === NATIVE_CURRENCY.toLowerCase()}
             deshabilitado={trabajando}
-            onSacar={() => sacar(NATIVE_CURRENCY)}
+            onSacar={() => void sacar(NATIVE_CURRENCY)}
             T={T}
           />
         )}

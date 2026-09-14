@@ -1410,7 +1410,8 @@
       "cancel": "取消",
       "agentShare": "分配：{{pct}}% 给代理",
       "ratingLabel": "评分：{{rating}}/5"
-    }
+    },
+    "gasFueraDeRango": "没有签署任何交易：这次提取的 Gas 估算远高于正常值，而 Monad 会按 Gas 上限全额收费。请稍后再试。"
   },
   "token": {
     "official": "官方代币",

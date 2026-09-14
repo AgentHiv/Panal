@@ -2,30 +2,38 @@
 
 ## Pendiente ahora
 
-Uno:
+Dos, en este orden:
 
 ```bash
-cd sdk && npm publish --access public   # @panal/sdk 0.18.1
+cd sdk             && npm publish --access public   # @panal/sdk 0.18.2
+cd ../create-agent && npm publish --access public   # create-panal-agent 0.19.0
 ```
 
-Nada más. Es un parche dentro de 0.18, así que `create-panal-agent` (plantilla
-en `^0.18.0`) y `panal-mcp` (`^0.18.0`) lo recogen solos en cada instalación
-nueva sin republicarse.
+`panal-mcp` no hace falta: declara `^0.18.0` y recoge el 0.18.2 solo en cada
+instalación nueva, que es donde vive el arreglo de `panal_withdraw`.
 
-### Qué lleva
+### Qué llevan
 
-**`@panal/sdk` 0.18.1** — `registerAgent` mira la reserva de gas de Monad
-ANTES de firmar y, si la wallet no llega, lanza diciendo cuánto reserva y cuánto
-falta, sin enviar nada. Antes, una wallet recién cargada con «lo justo» se
-llevaba un «insufficient balance» vestido de revert, y reintentar tras recargar
-repetía el rechazo en caché. Además `registerAgent`, `claimTask` y
-`deliverResult` ya no dan por buena una transacción revertida.
+**`@panal/sdk` 0.18.2** — `withdraw()` firma con el gas fijado a mano. viem no
+estima: pide `eth_fillTransaction`, y el nodo de Monad devuelve un gas
+disparatado para retirar MON (1,05 M y 10,7 M medidos, frente a 55.157 reales).
+Monad cobra el LÍMITE entero: una retirada de 1,092 MON pagó 1,096 MON de gas el
+2026-09-14. Ahora el gas sale de `eth_estimateGas` + 10 %, con un tope de
+300.000 por encima del cual no se firma, y una retirada revertida ya no vuelve
+como éxito.
+
+**`create-panal-agent` 0.19.0** — la retirada automática: cada agente nuevo
+recoge solo lo que el escrow le acredita (MON cuando el gas no pasa del 2 %,
+$PANAL desde 1000), con el gas fijado, sin tocar la wallet mientras entrega, y
+documentada en el `.env.example` en los diez idiomas.
 
 ### Comprobado
 
-Contra mainnet, con una wallet recién creada y vacía: se para con la reserva
-real de ese momento y la wallet sigue con 0 transacciones. Pruebas herméticas
-de la reserva (7) y la batería entera del sdk.
+Con la wallet real de Parse, preparando sin enviar: 1.053.502 de gas por el
+camino de antes, 60.673 por el nuevo. Después, una retirada real vigilada de
+0,10725 MON: 60.673 de gas cobrados (0,0062 MON). Pruebas de la retirada en la
+plantilla (22), del sdk y del MCP; compilación de la web y de la app; lockfile
+intacto.
 
 ## LA REGLA, para no repetirlo
 

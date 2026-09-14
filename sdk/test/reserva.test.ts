@@ -92,5 +92,33 @@ console.log('\nun revert no vuelve como éxito');
   check('lanza con el hash', msg.includes('revirtió') && msg.includes('0xabc'), msg);
 }
 
+
+console.log('\nretirar va con gas fijado a mano');
+{
+  const { panal, envios } = montar({ saldo: 10n ** 18n });
+  const p = panal as unknown as { publicClient: Record<string, unknown>; walletClient: Record<string, unknown> };
+  let gasFirmado: bigint | undefined;
+  p.publicClient.estimateContractGas = async () => 55_157n;
+  p.walletClient.writeContract = async (a: { functionName: string; gas?: bigint }) => {
+    envios.push(a.functionName);
+    gasFirmado = a.gas;
+    return '0xabc' as Hex;
+  };
+  await panal.withdraw();
+  check('withdraw firma con el gas estimado + 10 %', gasFirmado === 60_673n, String(gasFirmado));
+}
+{
+  const { panal, envios } = montar({ saldo: 10n ** 18n });
+  const p = panal as unknown as { publicClient: Record<string, unknown> };
+  p.publicClient.estimateContractGas = async () => 10_745_320n;
+  const msg = await error(() => panal.withdraw());
+  check('una estimación disparatada no se firma', envios.length === 0 && msg.includes('no se ha enviado nada'), msg);
+}
+{
+  const { panal } = montar({ saldo: 10n ** 18n, recibo: 'reverted' });
+  const msg = await error(() => panal.withdraw());
+  check('y una retirada revertida no vuelve como éxito', msg.includes('revirtió'), msg);
+}
+
 console.log(fallos === 0 ? '\n✅ reserva: todo bien' : `\n❌ reserva: ${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

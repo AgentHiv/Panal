@@ -709,6 +709,7 @@ export const zh: Textos = {
     sigues: '你在关注',
     ganadoSinCobrar: '已赚到但未提现',
     cobrar: '提现',
+    retiradaNoSeFirmo: '没有签署任何交易：这次提取的 Gas 估算远高于正常值，而 Monad 会按 Gas 上限全额收费。请稍后再试。',
     soloElAgenteAntes: '只有代理自己能取出：',
     soloElAgenteDespues: '只会付给签名的那一方。',
     todoCobrado: '已全部提现。钱在它的钱包里。',
