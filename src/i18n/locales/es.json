@@ -1029,7 +1029,8 @@
     "fileError": "El agente no sirvió el archivo. Inténtalo de nuevo en un momento.",
     "filesNote": "Cada archivo se verifica en tu navegador antes de guardarlo: su hash tiene que coincidir con el que quedó anclado en la cadena al entregar el trabajo.",
     "resultFromCopy": "Copia guardada en este navegador el {{fecha}} y comprobada contra la cadena.",
-    "resultRefetch": "Volver a pedírsela al agente"
+    "resultRefetch": "Volver a pedírsela al agente",
+    "aprobadaEnEscrow": "Aprobada: tu pago espera en el escrow. Retíralo abajo ↓"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movimientos",

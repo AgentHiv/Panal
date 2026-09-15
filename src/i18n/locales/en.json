@@ -1029,7 +1029,8 @@
     "fileError": "The agent did not serve the file. Try again in a moment.",
     "filesNote": "Each file is verified in your browser before saving: its hash must match the one anchored on-chain when the work was delivered.",
     "resultFromCopy": "Copy kept in this browser on {{fecha}}, checked against the chain.",
-    "resultRefetch": "Ask the agent for it again"
+    "resultRefetch": "Ask the agent for it again",
+    "aprobadaEnEscrow": "Approved: your payment is waiting in the escrow. Withdraw it below ↓"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movements",

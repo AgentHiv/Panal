@@ -55,7 +55,7 @@ import ResultDialog from '@/components/dashboard/ResultDialog';
 import { useContractAction } from '@/hooks/useContractAction';
 import type { ContractActionRequest } from '@/hooks/useContractAction';
 import { shortAddress } from '@/hooks/useWallet';
-import { EXPLORER_TX, activeChain, currencySymbol } from '@/contracts/config';
+import { EXPLORER_TX, NATIVE_CURRENCY, PANAL_TOKEN_ADDRESS, V2_ENABLED, activeChain, currencySymbol } from '@/contracts/config';
 import type { Perspective } from './data';
 import { formatMonEs } from './data';
 
@@ -215,6 +215,36 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   }, [agents]);
 
   const meLc = address?.toLowerCase();
+
+  /**
+   * Lo aprobado que espera en el escrow, por moneda.
+   *
+   * Solo sirve para una cosa: que junto a una tarea que TE aprobaron no ponga
+   * únicamente «Completada». El escrow acredita, no envía; quien ve el encargo
+   * aprobado y mira su wallet no encuentra el dinero y cree que no le han
+   * pagado. Se mira el saldo pendiente y no la tarea, porque una vez retirado
+   * decir «te espera» sería mentira.
+   */
+  const pendienteMon = useReadContract({
+    address: ACTIVE_ESCROW_ADDRESS,
+    abi: ACTIVE_ESCROW_ABI,
+    functionName: 'pendingWithdrawals',
+    args: [NATIVE_CURRENCY, address as Address],
+    chainId: activeChain.id,
+    query: { enabled: V2_ENABLED && !!address },
+  } as never);
+  const pendientePanal = useReadContract({
+    address: ACTIVE_ESCROW_ADDRESS,
+    abi: ACTIVE_ESCROW_ABI,
+    functionName: 'pendingWithdrawals',
+    args: [PANAL_TOKEN_ADDRESS, address as Address],
+    chainId: activeChain.id,
+    query: { enabled: V2_ENABLED && !!address },
+  } as never);
+  const quedaPorRetirar = (currency: string): boolean => {
+    const dato = (currency.toLowerCase() === NATIVE_CURRENCY.toLowerCase() ? pendienteMon : pendientePanal).data;
+    return typeof dato === 'bigint' && dato > 0n;
+  };
   const mine = useMemo(
     () => tasks.filter((tk) => (perspective === 'proveedor' ? tk.role === 'worker' : tk.role === 'client')),
     [tasks, perspective],
@@ -498,7 +528,20 @@ export default function TasksSection({ perspective }: { perspective: Perspective
           <td className="whitespace-nowrap px-3 py-3.5 font-mono text-[0.8125rem] text-ink">
             {formatMonEs(Number(formatEther(task.amountWei)))} {currencySymbol(task.currency)}
           </td>
-          <td className="px-3 py-3.5"><StatusBadge status={task.status} /></td>
+          <td className="px-3 py-3.5">
+            <StatusBadge status={task.status} />
+            {task.role === 'worker' &&
+              task.status === TASK_STATUS.Completed &&
+              meLc === task.worker.toLowerCase() &&
+              quedaPorRetirar(task.currency) && (
+                <a
+                  href="#pagos"
+                  className="mt-1.5 block max-w-[14rem] text-[0.6875rem] leading-snug text-honey-deep hover:underline"
+                >
+                  {t('tasks.aprobadaEnEscrow')}
+                </a>
+              )}
+          </td>
           <td className="hidden whitespace-nowrap px-3 py-3.5 font-mono text-[0.75rem] text-ink-3 sm:table-cell">
             {fmtDate(task.deadline)}
           </td>

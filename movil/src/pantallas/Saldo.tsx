@@ -11,6 +11,8 @@ import HojaRecibir from '~/componentes/HojaRecibir';
 import Menu from '~/componentes/Menu';
 import { useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
+import { usePendiente } from '~/lib/agentes';
+import { monto } from '~/lib/formato';
 
 /**
  * El saldo.
@@ -27,6 +29,9 @@ import type { Textos } from '~/i18n/idiomas';
 export default function Saldo(): React.ReactElement {
   const { address, addressShort, connected, connecting, connect, disconnect, wrongNetwork, switchToMonad } =
     useWallet();
+  // Lo aprobado que espera en el escrow. Es la misma lectura que el panel del
+  // agente, con su caché: mirar aquí no añade consultas.
+  const { data: pendiente } = usePendiente(connected ? (address ?? undefined) : undefined);
   const { panal, mon, cargando } = useSaldos();
   const sesion = useSesion();
   const { cambiar } = useCambio();
@@ -183,6 +188,34 @@ export default function Saldo(): React.ReactElement {
               {T.saldo.dondeSeCompra}
             </p>
           </div>
+
+          {/* LO APROBADO QUE NO ESTÁ EN ESTE SALDO. Es el sitio donde alguien que
+              acaba de cobrar un encargo mira, no ve el dinero y cree que no le
+              han pagado: el escrow ACREDITA, no envía. Por eso se dice aquí, con
+              la cantidad, y lleva al panel, donde retirarlo es un botón. Solo
+              sale si hay algo esperando. */}
+          {address && pendiente && (pendiente.mon > 0n || pendiente.panal > 0n) && (
+            <Link
+              to={`/panel/${address.toLowerCase()}`}
+              className="pulsable flex shrink-0 items-center gap-3 rounded-[14px] border border-honey-line bg-honey-soft p-3.5"
+            >
+              <Icono nombre="cartera" tamano={18} color="#E29A2E" className="shrink-0" />
+              <div className="min-w-0 grow">
+                <p className="text-[13.5px] font-medium">
+                  {T.saldo.enEscrow(
+                    [
+                      pendiente.mon > 0n ? `${monto(pendiente.mon)} MON` : null,
+                      pendiente.panal > 0n ? `${monto(pendiente.panal)} $PANAL` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · '),
+                  )}
+                </p>
+                <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-2">{T.saldo.enEscrowPie}</p>
+              </div>
+              <Icono nombre="atras" tamano={15} color="#948DAE" className="rotate-180" />
+            </Link>
+          )}
 
           {/* El llavero cuelga de aquí y no de una pestaña propia: es otra
               forma de tener una wallet, así que vive donde se mira la que hay. */}

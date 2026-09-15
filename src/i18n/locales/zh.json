@@ -1029,7 +1029,8 @@
     "fileError": "代理未能提供该文件。请稍后重试。",
     "filesNote": "每个文件在保存前都会在你的浏览器中校验：其哈希必须与交付时锚定在链上的哈希一致。",
     "resultFromCopy": "{{fecha}} 保存在本浏览器的副本，已与链上核对。",
-    "resultRefetch": "重新向代理索取"
+    "resultRefetch": "重新向代理索取",
+    "aprobadaEnEscrow": "已批准：你的款项正在托管中等你提取。请在下方提取 ↓"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 笔记录",

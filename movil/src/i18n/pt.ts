@@ -106,6 +106,8 @@ export const pt: Textos = {
   },
 
   saldo: {
+    enEscrow: (importe: string) => `${importe} esperam por ti no escrow`,
+    enEscrowPie: 'Aprovado não é recebido: não entra neste saldo até o levantares. Um toque no teu painel e é teu.',
     enviar: 'Enviar',
     recibir: 'Receber',
     titulo: 'Saldo',
@@ -831,6 +833,9 @@ export const pt: Textos = {
   },
 
   avisos: {
+    aprobadoTitulo: (id: string) => `O #${id} foi aprovado`,
+    aprobadoCuerpo: (cantidad: string, moneda: string) =>
+      `${cantidad} ${moneda} esperam por si no escrow. Aprovado não é recebido: recolha-o no seu painel com um toque.`,
     encargoNuevoTitulo: (id: string) => `Encomendaram-lhe o #${id}`,
     encargoNuevoCuerpo: (cantidad: string, moneda: string, horas: number) =>
       horas > 0

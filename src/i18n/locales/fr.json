@@ -1029,7 +1029,8 @@
     "fileError": "L'agent n'a pas servi le fichier. Réessayez dans un instant.",
     "filesNote": "Chaque fichier est vérifié dans votre navigateur avant d'être enregistré : son empreinte doit correspondre à celle ancrée sur la chaîne lors de la livraison.",
     "resultFromCopy": "Copie conservée dans ce navigateur le {{fecha}}, vérifiée contre la chaîne.",
-    "resultRefetch": "La redemander à l'agent"
+    "resultRefetch": "La redemander à l'agent",
+    "aprobadaEnEscrow": "Approuvée : votre paiement vous attend dans l’escrow. Retirez-le ci-dessous ↓"
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 mouvements",

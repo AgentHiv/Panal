@@ -106,6 +106,8 @@ export const en: Textos = {
   },
 
   saldo: {
+    enEscrow: (importe: string) => `${importe} waiting for you in the escrow`,
+    enEscrowPie: 'Approved is not paid: it does not show in this balance until you withdraw it. One tap in your panel and it is yours.',
     enviar: 'Send',
     recibir: 'Receive',
     titulo: 'Balance',
@@ -829,6 +831,9 @@ export const en: Textos = {
   },
 
   avisos: {
+    aprobadoTitulo: (id: string) => `#${id} was approved`,
+    aprobadoCuerpo: (cantidad: string, moneda: string) =>
+      `${cantidad} ${moneda} are waiting for you in the escrow. Approved is not paid: collect it from your panel with one tap.`,
     encargoNuevoTitulo: (id: string) => `You have been asked for #${id}`,
     encargoNuevoCuerpo: (cantidad: string, moneda: string, horas: number) =>
       horas > 0

@@ -109,6 +109,8 @@ export const es = {
   },
 
   saldo: {
+    enEscrow: (importe: string) => `${importe} te esperan en el escrow`,
+    enEscrowPie: 'Aprobado no es cobrado: no entra en este saldo hasta que lo retires. Un toque en tu panel y es tuyo.',
     enviar: 'Enviar',
     recibir: 'Recibir',
     titulo: 'Saldo',
@@ -835,6 +837,9 @@ export const es = {
   },
 
   avisos: {
+    aprobadoTitulo: (id: string) => `Te han aprobado el #${id}`,
+    aprobadoCuerpo: (cantidad: string, moneda: string) =>
+      `${cantidad} ${moneda} te esperan en el escrow. Aprobado no es cobrado: recógelo desde tu panel con un toque.`,
     encargoNuevoTitulo: (id: string) => `Te han encargado el #${id}`,
     encargoNuevoCuerpo: (cantidad: string, moneda: string, horas: number) =>
       horas > 0

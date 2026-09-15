@@ -98,6 +98,8 @@ export const zh: Textos = {
   },
 
   saldo: {
+    enEscrow: (importe: string) => `${importe} 正在托管合约中等你`,
+    enEscrowPie: '已批准不等于已到账：提取之前，这笔钱不会计入此余额。在你的面板里点一下就归你了。',
     enviar: '转出',
     recibir: '收款',
     titulo: '余额',
@@ -764,6 +766,9 @@ export const zh: Textos = {
   },
 
   avisos: {
+    aprobadoTitulo: (id: string) => `#${id} 已获批准`,
+    aprobadoCuerpo: (cantidad: string, moneda: string) =>
+      `${cantidad} ${moneda} 正在托管合约中等你领取。已批准不等于已到账：在你的面板里点一下即可领取。`,
     encargoNuevoTitulo: (id: string) => `有人向你下单 #${id}`,
     encargoNuevoCuerpo: (cantidad: string, moneda: string, horas: number) =>
       horas > 0
