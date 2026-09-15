@@ -584,7 +584,9 @@ export default function Dashboard() {
       </section>
 
       {/* ── S7 · Pagos reales ───────────────────────────────────────────── */}
-      <section className="container-hive pb-14 md:pb-20">
+      {/* `id="pagos"`: a esta sección apunta el aviso de «aprobada, tu pago
+          espera en el escrow» de cada tarea aprobada. */}
+      <section id="pagos" className="container-hive scroll-mt-24 pb-14 md:pb-20">
         <SectionHeader
           eyebrow={t('dash.movements')}
           title={

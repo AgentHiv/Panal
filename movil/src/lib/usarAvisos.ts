@@ -10,6 +10,37 @@ import { getTaskBrief } from '@/lib/taskBriefs';
 import { AUTO_RELEASE_MS, monto } from '~/lib/formato';
 import { avisosEncendidos, hayAvisos, idDe, pedirPermiso, programar } from '~/lib/avisos';
 import { textos } from '~/i18n/idiomas';
+import { decidirAprobados } from '~/lib/aprobados';
+
+/**
+ * Qué encargos aprobados ya se han visto con esta wallet, guardado en el teléfono.
+ *
+ * Hace falta porque la cadena no dice CUÁNDO se aprobó un encargo: `tasks` solo
+ * guarda el estado. Sin memoria, cada vez que se abre la app un encargo aprobado
+ * hace meses parecería recién aprobado. `null` es «nunca se ha mirado», y ahí
+ * se toma nota de todo sin avisar de nada.
+ *
+ * Si el almacenamiento falla, se comporta como la primera vez: no avisa. Un
+ * aviso de menos es un fallo pequeño; veinte avisos de golpe, uno grande.
+ */
+function claveAprobados(direccion: string): string {
+  return `panal:aprobados-vistos:${direccion.toLowerCase()}`;
+}
+function leerAprobados(direccion: string): Set<string> | null {
+  try {
+    const crudo = localStorage.getItem(claveAprobados(direccion));
+    return crudo === null ? null : new Set(JSON.parse(crudo) as string[]);
+  } catch {
+    return null;
+  }
+}
+function guardarAprobados(direccion: string, vistos: Set<string>): void {
+  try {
+    localStorage.setItem(claveAprobados(direccion), JSON.stringify([...vistos].slice(-500)));
+  } catch {
+    /* sin almacenamiento: la próxima vez vuelve a tomar nota sin avisar */
+  }
+}
 
 /**
  * Los avisos, enganchados a las tareas que ya se leen.
@@ -73,6 +104,13 @@ export function useAvisos(): void {
   const dependeDeMi =
     !!miFicha?.registrado &&
     (esBuzon(miFicha.botUrl) || leerTipo(miFicha.metadataURI) === 'persona');
+  /**
+   * La ficha llega un momento DESPUÉS que las tareas. Hasta entonces no se sabe
+   * si esta wallet depende de mirar, y no se puede tocar la memoria de
+   * aprobados: se marcaría como visto, sin avisar, justo el caso más común —un
+   * encargo aprobado mientras la app estaba cerrada—.
+   */
+  const fichaLista = miFicha !== undefined;
 
   useEffect(() => {
     if (!hayAvisos() || !avisosEncendidos() || tasks.length === 0) return;
@@ -87,6 +125,18 @@ export function useAvisos(): void {
 
       const ahora = Date.now();
       const nuevos = [];
+
+      // Qué aprobados anunciar se decide de una vez, antes del bucle, con
+      // `decidirAprobados` —probada en test/aprobados.test.mjs—.
+      const decision = decidirAprobados(
+        tasks.map((x) => ({
+          id: x.id.toString(),
+          aprobadaParaMi: x.role === 'worker' && x.status === ESTADO.Completado,
+        })),
+        address ? leerAprobados(address) : null,
+        { fichaLista, dependeDeMi },
+      );
+      const anunciar = new Set(decision.avisar);
 
       for (const t of tasks) {
         const id = t.id.toString();
@@ -113,6 +163,30 @@ export function useAvisos(): void {
                 titulo: T.avisos.encargoNuevoTitulo(id),
                 cuerpo: T.avisos.encargoNuevoCuerpo(monto(t.amountWei), simbolo, horas),
                 ruta: `/guardia/${t.worker.toLowerCase()}`,
+              });
+            }
+          }
+
+          /**
+           * APROBADO. El cliente lo aprobó —o se liberó solo a los tres días— y
+           * el dinero está ACREDITADO en el escrow, no en la wallet. Es justo el
+           * momento en que alguien mira su saldo, no ve nada y cree que no le han
+           * pagado, así que se le dice ahí mismo, con lo que le espera y a dónde
+           * ir a recogerlo.
+           *
+           * Solo a quien depende de mirar, como el de encargo nuevo: un agente
+           * con servidor retira solo. Y lo que se anuncia es lo que se acredita
+           * de verdad: el 97,5 %, porque el escrow se queda el 2,5 %.
+           */
+          if (anunciar.has(id)) {
+            const aviso = idDe(id, 'sin-cobrar');
+            if (!yaAvisado.current.has(aviso)) {
+              yaAvisado.current.add(aviso);
+              nuevos.push({
+                id: aviso,
+                titulo: T.avisos.aprobadoTitulo(id),
+                cuerpo: T.avisos.aprobadoCuerpo(monto((BigInt(t.amountWei) * 975n) / 1000n), simbolo),
+                ruta: `/panel/${t.worker.toLowerCase()}`,
               });
             }
           }
@@ -197,6 +271,7 @@ export function useAvisos(): void {
         }
       }
 
+      if (address && decision.vistos) guardarAprobados(address, decision.vistos);
       if (vigente) await programar(nuevos);
     })();
 
@@ -207,5 +282,5 @@ export function useAvisos(): void {
     // después que las tareas. Sin él, el primer encargo de la sesión se
     // quedaría sin aviso hasta el siguiente sondeo. Repasar de más no duplica
     // nada: `yaAvisado` guarda lo ya mandado.
-  }, [tasks, dependeDeMi]);
+  }, [tasks, dependeDeMi, fichaLista]);
 }
