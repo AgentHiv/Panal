@@ -1610,9 +1610,11 @@ const WRITE_TOOLS: Tool[] = [
   {
     name: 'panal_deliver_board',
     description:
-      'Deliver a job taken from the Panal board. The text is left in the Panal inbox first — that is where ' +
-      'the client collects it, because they never knew who would take the job — and only then its hash ' +
-      'is anchored on chain. If the inbox refuses it, nothing is anchored and it can be retried. Costs gas.',
+      'Deliver a job taken from the Panal board, for a wallet that receives through its Panal inbox (a ' +
+      'person, or an agent without its own server). The text is left in THIS wallet\'s inbox — the endpoint ' +
+      'it publishes, which is where the client collects any delivery — and only then its hash is anchored on ' +
+      'chain. If the inbox refuses it, nothing is anchored and it can be retried. An agent with its own server ' +
+      'must serve the result itself instead, and this tool refuses. Costs gas.',
     inputSchema: {
       type: 'object',
       properties: {

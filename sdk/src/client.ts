@@ -264,6 +264,31 @@ export class PanalClient {
   }
 
   /**
+   * El gas con el que se firma: `eth_estimateGas` + 10 %, y nunca por encima
+   * de `TOPE_GAS_RETIRADA`.
+   *
+   * Hace falta porque viem no estima: le pide al nodo que rellene la
+   * transacción (`eth_fillTransaction`), el de Monad a veces infla el límite, y
+   * Monad cobra el límite ENTERO. Cinco retiradas de MON perdieron lo retirado
+   * así entre julio y septiembre. Se pasa explícito a todo lo que firma una
+   * cuenta local en nombre de un programa que nadie está mirando.
+   */
+  private async gasFijo(
+    que: string,
+    llamada: { address: Address; abi: Abi; functionName: string; args: readonly unknown[] },
+  ): Promise<bigint> {
+    const estimado = await this.publicClient.estimateContractGas({ ...llamada, account: this.account! } as never);
+    const gas = (estimado * 11n + 9n) / 10n;
+    if (gas > TOPE_GAS_RETIRADA) {
+      throw new Error(
+        `${que}: la estimación de gas salió en ${estimado}, muy por encima de lo normal. ` +
+          'Monad cobra el límite entero: no se ha enviado nada.',
+      );
+    }
+    return gas;
+  }
+
+  /**
    * Espera el recibo y comprueba que la transacción SALIÓ BIEN.
    *
    * Esperar el recibo no basta: un revert también llega con recibo. Sin mirar
@@ -945,11 +970,11 @@ export class PanalClient {
       );
     }
 
+    const llamada = { address: this.addresses.escrow, abi: escrowAbi, functionName: 'claimTask', args: [taskId] } as const;
+    const gas = await this.gasFijo(`Coger la tarea #${taskId}`, llamada as never);
     const txHash = await wallet.writeContract({
-      address: this.addresses.escrow,
-      abi: escrowAbi,
-      functionName: 'claimTask',
-      args: [taskId],
+      ...llamada,
+      gas,
       chain: chainFor(this.network),
       account: this.account!,
     });
@@ -1003,14 +1028,24 @@ export class PanalClient {
   }
 
   /**
-   * Entrega una tarea del tablón: deja el texto en el buzón y ancla su hash.
+   * Entrega una tarea del tablón hecha por una cuenta SIN servidor propio:
+   * deja el texto en su buzón y ancla su hash.
    *
-   * EN ESE ORDEN, y no al revés. El cliente recoge la entrega del buzón, porque
-   * cuando publicó el encargo no sabía quién lo iba a coger ni dónde vive su
-   * servidor. Si se anclara primero y el buzón fallara después, el cliente
-   * vería una entrega en la cadena que no puede descargar. Dejándola primero,
-   * un fallo del buzón no ancla nada y se puede reintentar; y el buzón acepta
-   * repetir la misma entrega, porque da el mismo hash.
+   * DÓNDE, Y POR QUÉ ESTO SE CORRIGIÓ. El cliente recoge una entrega del
+   * endpoint que el TRABAJADOR tiene publicado en el registro (`bot:`), igual
+   * que en cualquier encargo: es lo que hace la web, y así entregan en ella las
+   * personas que cogen del tablón. La primera versión la dejaba en el buzón del
+   * tablón (la dirección cero), donde el cliente no mira nunca: habría anclado
+   * el hash de una entrega que nadie podía descargar.
+   *
+   * Así que va al buzón de quien entrega. Y si su `bot:` es un servidor propio
+   * —la plantilla de create-panal-agent—, esto se niega: ahí la entrega la sirve
+   * ese servidor, y lo que toca es guardarla donde él la sirve y anclarla con
+   * `deliverResult`. Dejarla en un buzón no la haría visible.
+   *
+   * EN ESTE ORDEN, buzón y después cadena: si el buzón falla no se ancla nada y
+   * se puede reintentar; al revés, el cliente vería una entrega en la cadena que
+   * no puede descargar. El buzón acepta repetir la misma entrega.
    */
   async deliverBoardResult(taskId: bigint, resultText: string): Promise<{ txHash: Hex; resultHash: Hex }> {
     const wallet = this.wallet();
@@ -1023,9 +1058,21 @@ export class PanalClient {
       throw new Error(`La tarea #${taskId} está "${TaskStatus[task.status]}": solo se entrega lo que sigue abierto.`);
     }
 
+    const ficha = await this.leerAgente(yo);
+    const canal = ficha.metadata.botUrl?.replace(/\/+$/, '') ?? '';
+    if (!canal) {
+      throw new Error(`${yo} no publica ningún canal (\`bot:\`): el cliente no tendría de dónde recoger la entrega.`);
+    }
+    if (!canal.toLowerCase().startsWith(this.buzonUrl.toLowerCase() + '/')) {
+      throw new Error(
+        `${yo} recibe en ${canal}, su propio servidor: el cliente recoge la entrega de ahí. ` +
+          'Guárdala donde tu servidor sirve /result/:taskId y ánclala con deliverResult(). No se ha enviado nada.',
+      );
+    }
+
     const expira = Math.floor(Date.now() / 1000) + VENTANA_FIRMA_S;
     const firma = await wallet.signMessage({ account: this.account!, message: entregaSignMessage(taskId, expira) });
-    const { status, text } = await fetchLimited(`${this.buzonUrl}/${TABLON}/entrega/${taskId}`, {
+    const { status, text } = await fetchLimited(`${canal}/entrega/${taskId}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ entrega: resultText, address: yo, signature: firma, expira }),
@@ -1300,14 +1347,7 @@ export class PanalClient {
       functionName: 'withdraw',
       args: [currency],
     } as const;
-    const estimado = await this.publicClient.estimateContractGas({ ...llamada, account: this.account! });
-    const gas = (estimado * 11n + 9n) / 10n;
-    if (gas > TOPE_GAS_RETIRADA) {
-      throw new Error(
-        `La estimación de gas para retirar salió en ${estimado}, muy por encima de lo normal (~55.000 en MON, ` +
-          `~104.000 en $PANAL). Monad cobra el límite entero: no se ha enviado nada.`,
-      );
-    }
+    const gas = await this.gasFijo('La retirada', llamada as never);
     const hash = await wallet.writeContract({
       ...llamada,
       gas,
