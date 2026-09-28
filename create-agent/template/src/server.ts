@@ -65,6 +65,7 @@ import { frasesGuardadas, pedirTraduccion } from './traduccion.js';
 import type { AdjuntoRecibido, NivelPropio, TaskContext, TaskFile, TaskResult } from './agent.js';
 import { arrancarVigilante } from './vigilante.js';
 import { arrancarRetirada, opcionesDelEntorno } from './retirada.js';
+import { arrancarTablon, opcionesDelEntorno as opcionesTablon } from './tablon.js';
 import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -1902,6 +1903,11 @@ arrancarVigilante({
 // se queda en el contrato hasta que alguien llama a `withdraw`, y un agente que
 // corre solo no tiene a nadie que le dé al botón. `RETIRADA=off` la apaga; el
 // porqué de cada umbral está en retirada.ts.
+// Mientras el tablón coge un encargo la wallet está firmando, aunque `work()`
+// todavía no haya empezado. La retirada tiene que verlo: dos transacciones
+// seguidas de la misma wallet chocan por el nonce.
+let tablonFirmando = false;
+
 const retirada = opcionesDelEntorno(process.env);
 if (retirada) {
   arrancarRetirada({
@@ -1911,6 +1917,25 @@ if (retirada) {
     // La misma guarda que el vigilante: con un encargo en marcha la wallet
     // puede estar a punto de firmar su entrega, y dos transacciones seguidas
     // chocan por el nonce.
-    ocupado: () => inFlight.size > 0,
+    ocupado: () => inFlight.size > 0 || tablonFirmando,
+  });
+}
+
+// El tablón: coger solo los encargos publicados sin dueño que encajen con este
+// agente. APAGADO salvo `TABLON=on`: coger es comprometerse a entregar. El
+// porqué de cada regla está en tablon.ts.
+const tablon = opcionesTablon(process.env);
+if (tablon) {
+  void arrancarTablon({
+    panal,
+    yo: account.address,
+    opciones: tablon,
+    ocupado: () => inFlight.size > 0 || tablonFirmando,
+    marcar: (ocupada) => {
+      tablonFirmando = ocupada;
+    },
+    // El mismo camino que un encargo normal: guarda, trabaja, sirve la entrega
+    // desde este servidor —que es donde la busca el cliente— y la ancla.
+    trabajar: (taskId, brief) => work(taskId, brief, null),
   });
 }

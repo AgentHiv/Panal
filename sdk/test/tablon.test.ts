@@ -49,8 +49,9 @@ check(
 );
 
 /** Un cliente con la cadena y el buzón de mentira. */
-function montar(tareas: Record<string, Partial<Task>>, activo = true) {
+function montar(tareas: Record<string, Partial<Task>>, activo = true, bot: string | null = `https://buzon.prueba/buzon/${yo.address}`) {
   const panal = createPanalClient({ account: yo, buzonUrl: 'https://buzon.prueba/buzon' });
+  const gases: bigint[] = [];
   const escrituras: string[] = [];
   const peticiones: string[] = [];
   const base: Task = {
@@ -71,17 +72,19 @@ function montar(tareas: Record<string, Partial<Task>>, activo = true) {
     if (!t) throw new Error('no existe');
     return { ...base, id, ...t };
   };
-  p.leerAgente = async () => ({ active: activo });
+  p.leerAgente = async () => ({ active: activo, metadata: { botUrl: bot } });
   p.deliverResult = async (id: bigint, texto: string) => {
     escrituras.push(`deliverResult #${id}`);
     return { txHash: '0xabc' as Hex, resultHash: keccak256(toBytes(texto)) };
   };
-  (p.walletClient as Record<string, unknown>).writeContract = async (args: { functionName: string; args: bigint[] }) => {
+  (p.walletClient as Record<string, unknown>).writeContract = async (args: { functionName: string; args: bigint[]; gas?: bigint }) => {
     escrituras.push(`${args.functionName} #${args.args[0]}`);
+    gases.push(args.gas ?? -1n);
     return '0xdef' as Hex;
   };
   (p.publicClient as Record<string, unknown>).waitForTransactionReceipt = async () => ({ status: 'success' });
-  return { panal, escrituras, peticiones };
+  (p.publicClient as Record<string, unknown>).estimateContractGas = async () => 52_000n;
+  return { panal, escrituras, peticiones, gases };
 }
 
 /** Sustituye fetch por un buzón de mentira que responde según la ruta. */
@@ -145,6 +148,11 @@ console.log('\nclaimTask dice por qué antes de gastar gas');
   check('la buena sí se coge', escrituras.join() === 'claimTask #1', escrituras.join(', '));
 }
 {
+  const { panal, gases } = montar({ '1': {} });
+  await panal.claimTask(1n);
+  check('  y con el gas fijado a mano (estimado + 10 %)', gases[0] === 57_200n, gases.map(String).join());
+}
+{
   const { panal, escrituras } = montar({ '1': {} }, false);
   const msg = await lanza(() => panal.claimTask(1n));
   check('sin ser agente activo no se intenta', msg.includes('no es un agente activo') && escrituras.length === 0, msg);
@@ -165,7 +173,7 @@ console.log('\nreadBoardBrief solo devuelve lo que cuadra con la cadena');
   check('si no cuadra con el taskHash, no se devuelve', (await lanza(() => panal.readBoardBrief(3n))).includes('no cuadra'));
 }
 
-console.log('\ndeliverBoardResult: primero el buzón, luego la cadena');
+console.log('\ndeliverBoardResult: al buzón PROPIO, que es donde busca el cliente');
 {
   const { panal, escrituras, peticiones } = montar({ '1': { worker: yo.address }, '2': { worker: yo.address } });
   let cuerpo: Record<string, unknown> = {};
@@ -180,10 +188,27 @@ console.log('\ndeliverBoardResult: primero el buzón, luego la cadena');
     peticiones,
   );
   await panal.deliverBoardResult(1n, 'hecho');
+  check(
+    'lo deja en el buzón de quien entrega, no en el del tablón',
+    peticiones.some((u) => u === `POST https://buzon.prueba/buzon/${yo.address}/entrega/1`),
+    peticiones.join(' | '),
+  );
   check('deja el texto con la firma de entrega', cuerpo.entrega === 'hecho' && cuerpo.address === yo.address && typeof cuerpo.signature === 'string');
   check('y después ancla', escrituras.join() === 'deliverResult #1', escrituras.join(', '));
   const msg = await lanza(() => panal.deliverBoardResult(2n, 'hecho'));
   check('si el buzón la rechaza, no se ancla nada', msg.includes('No se ha anclado nada') && escrituras.length === 1, msg);
+}
+
+{
+  const { panal, escrituras, peticiones } = montar({ '1': { worker: yo.address } }, true, 'https://mi-agente.example');
+  const msg = await lanza(() => panal.deliverBoardResult(1n, 'hecho'));
+  check('con servidor propio se niega: ahí la entrega la sirve el servidor', msg.includes('su propio servidor'), msg);
+  check('  y no manda nada ni ancla', escrituras.length === 0 && !peticiones.some((u) => u.startsWith('POST')), peticiones.join(' | '));
+}
+{
+  const { panal, escrituras } = montar({ '1': { worker: yo.address } }, true, null);
+  const msg = await lanza(() => panal.deliverBoardResult(1n, 'hecho'));
+  check('sin canal publicado, tampoco', msg.includes('no publica ningún canal') && escrituras.length === 0, msg);
 }
 
 console.log(fallos === 0 ? '\n✅ tablón: todo bien' : `\n❌ tablón: ${fallos} fallo(s)`);

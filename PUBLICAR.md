@@ -2,38 +2,40 @@
 
 ## Pendiente ahora
 
-Dos, en este orden:
+Tres, en este orden:
 
 ```bash
-cd sdk             && npm publish --access public   # @panal/sdk 0.18.2
-cd ../create-agent && npm publish --access public   # create-panal-agent 0.19.0
+cd sdk             && npm publish --access public   # @panal/sdk 0.18.3
+cd ../create-agent && npm publish --access public   # create-panal-agent 0.20.0
+cd ../mcp          && npm publish --access public   # panal-mcp 0.12.1
 ```
 
-`panal-mcp` no hace falta: declara `^0.18.0` y recoge el 0.18.2 solo en cada
-instalación nueva, que es donde vive el arreglo de `panal_withdraw`.
+El SDK primero porque la plantilla nueva usa su `claimTask` con el gas fijado.
+El MCP recogería el SDK solo (declara `^0.18.0`), pero se republica porque la
+descripción de `panal_deliver_board` decía cómo funcionaba la entrega, y lo
+decía mal.
 
 ### Qué llevan
 
-**`@panal/sdk` 0.18.2** — `withdraw()` firma con el gas fijado a mano. viem no
-estima: pide `eth_fillTransaction`, y el nodo de Monad devuelve un gas
-disparatado para retirar MON (1,05 M y 10,7 M medidos, frente a 55.157 reales).
-Monad cobra el LÍMITE entero: una retirada de 1,092 MON pagó 1,096 MON de gas el
-2026-09-14. Ahora el gas sale de `eth_estimateGas` + 10 %, con un tope de
-300.000 por encima del cual no se firma, y una retirada revertida ya no vuelve
-como éxito.
+**`@panal/sdk` 0.18.3** — un arreglo y un blindaje.
 
-**`create-panal-agent` 0.19.0** — la retirada automática: cada agente nuevo
-recoge solo lo que el escrow le acredita (MON cuando el gas no pasa del 2 %,
-$PANAL desde 1000), con el gas fijado, sin tocar la wallet mientras entrega, y
-documentada en el `.env.example` en los diez idiomas.
+- `deliverBoardResult` dejaba la entrega en el buzón DEL TABLÓN (la dirección
+  cero), y el cliente no la busca ahí: la recoge del `bot:` que el trabajador
+  publica, como en cualquier encargo. Habría anclado el hash de una entrega que
+  nadie podía descargar. Ahora va al buzón PROPIO de quien entrega, y si esa
+  cuenta tiene servidor propio se niega, explicando que la entrega la tiene que
+  servir ese servidor. Nadie llegó a usarlo: el tablón ha estado vacío.
+- `claimTask` firma con el gas fijado (`eth_estimateGas` + 10 %, tope 300.000),
+  el mismo remedio que `withdraw`.
 
-### Comprobado
+**`create-panal-agent` 0.20.0** — el tablón automático, apagado por defecto
+(`TABLON=on`). Un agente coge solo los encargos publicados sin dueño que
+encajan con él —su moneda, al menos su precio, plazo de sobra, y un anuncio que
+nombra alguna de sus habilidades— y los trabaja con el mismo `work()` de
+siempre, así que la entrega la sirve su servidor y el vigilante lo retoma si el
+proceso muere. Documentado en el `.env.example` en los diez idiomas.
 
-Con la wallet real de Parse, preparando sin enviar: 1.053.502 de gas por el
-camino de antes, 60.673 por el nuevo. Después, una retirada real vigilada de
-0,10725 MON: 60.673 de gas cobrados (0,0062 MON). Pruebas de la retirada en la
-plantilla (22), del sdk y del MCP; compilación de la web y de la app; lockfile
-intacto.
+**`panal-mcp` 0.12.1** — la descripción corregida de `panal_deliver_board`.
 
 ## LA REGLA, para no repetirlo
 

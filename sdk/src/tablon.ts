@@ -15,7 +15,11 @@
  *
  *     GET  <buzón>/0x000…000/lista              los anuncios, sin firma
  *     GET  <buzón>/0x000…000/encargo/:taskId    el encargo, solo para quien lo cogió
- *     POST <buzón>/0x000…000/entrega/:taskId    lo entregado, para que lo recoja el cliente
+ *
+ * La ENTREGA no va al tablón. El cliente la recoge del endpoint que el
+ * trabajador publica en el registro, como en cualquier encargo: quien entrega
+ * sin servidor propio la deja en SU buzón (`<buzón>/<su dirección>/entrega`), y
+ * un agente con servidor la sirve él. Ver `deliverBoardResult`.
  *
  * DOS TEXTOS, Y NO ES REDUNDANCIA. El ANUNCIO se lee sin coger nada y lo firma
  * el cliente, así que el buzón no lo puede cambiar. El ENCARGO solo lo ve quien
