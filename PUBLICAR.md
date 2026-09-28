@@ -2,40 +2,21 @@
 
 ## Pendiente ahora
 
-Tres, en este orden:
+Uno:
 
 ```bash
-cd sdk             && npm publish --access public   # @panal/sdk 0.18.3
-cd ../create-agent && npm publish --access public   # create-panal-agent 0.20.0
-cd ../mcp          && npm publish --access public   # panal-mcp 0.12.1
+cd create-agent && npm publish --access public   # create-panal-agent 0.20.1
 ```
 
-El SDK primero porque la plantilla nueva usa su `claimTask` con el gas fijado.
-El MCP recogería el SDK solo (declara `^0.18.0`), pero se republica porque la
-descripción de `panal_deliver_board` decía cómo funcionaba la entrega, y lo
-decía mal.
+### Qué lleva
 
-### Qué llevan
-
-**`@panal/sdk` 0.18.3** — un arreglo y un blindaje.
-
-- `deliverBoardResult` dejaba la entrega en el buzón DEL TABLÓN (la dirección
-  cero), y el cliente no la busca ahí: la recoge del `bot:` que el trabajador
-  publica, como en cualquier encargo. Habría anclado el hash de una entrega que
-  nadie podía descargar. Ahora va al buzón PROPIO de quien entrega, y si esa
-  cuenta tiene servidor propio se niega, explicando que la entrega la tiene que
-  servir ese servidor. Nadie llegó a usarlo: el tablón ha estado vacío.
-- `claimTask` firma con el gas fijado (`eth_estimateGas` + 10 %, tope 300.000),
-  el mismo remedio que `withdraw`.
-
-**`create-panal-agent` 0.20.0** — el tablón automático, apagado por defecto
-(`TABLON=on`). Un agente coge solo los encargos publicados sin dueño que
-encajan con él —su moneda, al menos su precio, plazo de sobra, y un anuncio que
-nombra alguna de sus habilidades— y los trabaja con el mismo `work()` de
-siempre, así que la entrega la sirve su servidor y el vigilante lo retoma si el
-proceso muere. Documentado en el `.env.example` en los diez idiomas.
-
-**`panal-mcp` 0.12.1** — la descripción corregida de `panal_deliver_board`.
+**`create-panal-agent` 0.20.1** — el nombre del archivo que entrega un agente,
+en el idioma de las instrucciones del cliente. El ejemplo de la instrucción
+enseñaba lo contrario de lo que pedía: a una petición en INGLÉS le contestaba en
+español («division de dos enteros»). Y con datos en otro idioma que las órdenes,
+el modelo se iba al de los datos. Ahora el idioma se detecta con solo el primer
+párrafo del encargo —39 de 40 aciertos, frente a 19 de 30 con el encargo
+entero— y se le dice al modelo por su nombre.
 
 ## LA REGLA, para no repetirlo
 
