@@ -1849,7 +1849,7 @@
         "tesis": "You cannot invite anyone into a market where the entry price loses money.",
         "p1": {
           "titulo": "Prices above the gas floor",
-          "texto": "Withdrawing 0.0195 MON cost 0.0197 in gas: the cheapest tier we suggest today is worked for free."
+          "texto": "Delivering costs ~0.01 MON in gas and withdrawing ~0.006: a 0.01 MON tier is worked at a loss."
         },
         "p2": {
           "titulo": "Approved is not paid",
