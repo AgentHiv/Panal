@@ -438,9 +438,22 @@ export function comoAdjunto(nombre: string): string {
 const PIDE_UN_NOMBRE =
   'You name files. Given a client request, reply with ONLY a file name for the deliverable.\n' +
   'Two to five words. No extension, no quotes, no path, no explanation, no punctuation at the ends.\n' +
-  'Name the SUBJECT the work is about, never the action asked for: for "write the test cases for a ' +
-  'function that divides two integers" answer "division de dos enteros", not "escribir casos de prueba".\n' +
-  'Write it in the SAME language the client wrote in, in their own script. Do not translate it to English.';
+  'Name the SUBJECT the work is about, never the action asked for.\n' +
+  // El ejemplo de antes enseñaba lo contrario de lo que pedía: a una petición
+  // en INGLÉS le contestaba en español («division de dos enteros»), y el
+  // encargo #95, escrito en inglés, salió como «contactos-en-json». Ahora hay
+  // un ejemplo por idioma, cada uno respondido en el suyo.
+  'Write it in the language of the client\'s INSTRUCTIONS — what they ask for — not the language of ' +
+  'the data they paste or of field names they spell out, and in their own script. No file-format ' +
+  'words (JSON, PDF, CSV). Examples: "write the test cases for a function that divides two integers" ' +
+  '-> "division of two integers"; "escribe los casos de prueba de una función que divide dos enteros" ' +
+  '-> "division de dos enteros".\n' +
+  // Decirlo no bastaba: con los datos en español y las instrucciones en
+  // inglés, el modelo seguía contestando en español. Obligarle a nombrar
+  // primero el idioma de las instrucciones es lo que lo corrige (medido).
+  'First decide the language of the instructions. Answer in exactly two lines:\n' +
+  'LANG: <ISO code of the instructions\' language>\n' +
+  'NAME: <the file name, in that language>';
 
 /**
  * El nombre del archivo que se entrega, sacado del TEMA del encargo.
@@ -461,7 +474,79 @@ const PIDE_UN_NOMBRE =
  * devuelve algo que no sirve, se usa el nombre de siempre. Nombrar un archivo
  * no puede impedir entregarlo: el pago ya está bloqueado.
  */
-export async function nombreDelTema(brief: string, deReserva: string): Promise<string> {
+/**
+ * De «LANG: en\nNAME: contact list», la línea del nombre.
+ *
+ * Sin la etiqueta —un modelo que no siga el formato— se queda la respuesta
+ * entera, y `comoNombre` se queda con su primera línea, como antes.
+ */
+export function lineaDelNombre(crudo: string): string {
+  const m = crudo.match(/^\s*NAME\s*:\s*(.+)$/im);
+  return m ? m[1]! : crudo;
+}
+
+/**
+ * EL IDIOMA DE LAS INSTRUCCIONES, sin los datos delante.
+ *
+ * Pedirle al modelo «escribe en el idioma del cliente» no funciona cuando el
+ * encargo trae datos en otro idioma: medido el 2026-09-28, con órdenes en
+ * inglés y una lista de contactos en español, las claves salían en español
+ * más de la mitad de las veces, y un detector que veía el encargo entero
+ * acertaba 19 de 30 (tomaba un encargo en francés por español, y uno en chino
+ * por inglés). El mismo detector con SOLO el primer párrafo acertó 39 de 40.
+ *
+ * El primer párrafo es lo que va antes de la primera línea en blanco, que es
+ * como se escribe casi siempre un encargo: primero qué hay que hacer, después
+ * los datos. Si es demasiado corto para decir nada, se usan los primeros 300
+ * caracteres.
+ */
+/**
+ * El nombre del idioma, en inglés, para decírselo al modelo.
+ *
+ * Con el código solo («"en"») el modelo seguía nombrando en español un encargo
+ * en inglés que citaba campos en español; con «Write the NAME in English» y el
+ * aviso de que ni los datos ni los campos citados deciden, acertó 12 de 12.
+ */
+const NOMBRES_DE_IDIOMA: Record<string, string> = {
+  en: 'English', es: 'Spanish', pt: 'Portuguese', fr: 'French', de: 'German', it: 'Italian',
+  nl: 'Dutch', ca: 'Catalan', zh: 'Chinese', ja: 'Japanese', ko: 'Korean', hi: 'Hindi',
+  bn: 'Bengali', ur: 'Urdu', ar: 'Arabic', fa: 'Persian', he: 'Hebrew', ru: 'Russian',
+  uk: 'Ukrainian', pl: 'Polish', tr: 'Turkish', vi: 'Vietnamese', id: 'Indonesian', th: 'Thai',
+  el: 'Greek', sv: 'Swedish',
+};
+export function nombreDeIdioma(codigo: string): string {
+  return NOMBRES_DE_IDIOMA[codigo] ?? `the language with ISO code "${codigo}"`;
+}
+
+const PIDE_EL_IDIOMA =
+  'You detect the language of a request. Reply with ONLY the ISO 639-1 code (two letters) of the ' +
+  'language the text is written in. Ignore field names in quotes. Nothing else.';
+
+export function parrafoDeInstrucciones(brief: string): string {
+  const limpio = stripFilesManifest(brief).trim();
+  const primero = limpio.split(/\n\s*\n/)[0]!.trim();
+  return primero.length >= 12 ? primero : limpio.slice(0, 300);
+}
+
+/** El código ISO del idioma en que están escritas las instrucciones, o null si no se pudo saber. */
+export async function idiomaDeLasInstrucciones(brief: string): Promise<string | null> {
+  try {
+    const cfg = resolverLlm(process.env);
+    const r = await llmChat(
+      { ...cfg, timeoutMs: 15_000, maxRetries: 1 },
+      { system: PIDE_EL_IDIOMA, user: parrafoDeInstrucciones(brief) },
+    );
+    const codigo = r.trim().toLowerCase().replace(/[^a-z]/g, '');
+    return /^[a-z]{2}$/.test(codigo) ? codigo : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function nombreDelTema(brief: string, deReserva: string, idioma?: string | null): Promise<string> {
+  // El idioma se decide con el párrafo de las instrucciones, no con el encargo
+  // entero: ver `idiomaDeLasInstrucciones`.
+  idioma = idioma ?? (await idiomaDeLasInstrucciones(brief));
   try {
     const cfg = resolverLlm(process.env);
     const respuesta = await llmChat(
@@ -489,9 +574,19 @@ export async function nombreDelTema(brief: string, deReserva: string): Promise<s
       // Sin el manifiesto, por lo mismo que en `formatoPedido`: son 1.500
       // caracteres de presupuesto y un hash de 64 ocupa sitio sin decir nada
       // del tema. Con adjuntos cortos llegaba a colarse entero.
-      { system: PIDE_UN_NOMBRE, user: stripFilesManifest(brief).trim().slice(0, 1_500) },
+      {
+        system: PIDE_UN_NOMBRE,
+        // Si quien llama ya sabe el idioma de las instrucciones, se le dice: no
+        // hay que volver a adivinarlo, que es donde el modelo se equivoca.
+        user:
+          stripFilesManifest(brief).trim().slice(0, 1_500) +
+          (idioma
+            ? `\n\n(Write the NAME in ${nombreDeIdioma(idioma)}, even if the data or the quoted field names ` +
+              `are in another language. Answer LANG: ${idioma}.)`
+            : ''),
+      },
     );
-    const nombre = comoNombre(respuesta);
+    const nombre = comoNombre(lineaDelNombre(respuesta));
     if (nombre) return nombre;
     console.warn(`[salida] el modelo no dio un nombre usable; el archivo va como «${deReserva}»`);
   } catch (err) {
