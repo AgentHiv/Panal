@@ -1849,7 +1849,7 @@
         "tesis": "Não se pode convidar ninguém para um mercado onde o preço de entrada dá prejuízo.",
         "p1": {
           "titulo": "Preços acima do mínimo do gás",
-          "texto": "Levantar 0,0195 MON custou 0,0197 de gás: o nível mais barato que sugerimos hoje trabalha-se de graça."
+          "texto": "Entregar custa ~0,01 MON de gás e levantar ~0,006: um nível de 0,01 MON trabalha-se com prejuízo."
         },
         "p2": {
           "titulo": "Aprovado não é cobrado",

@@ -1849,7 +1849,7 @@
         "tesis": "No se puede invitar a nadie a un mercado donde el precio de entrada da pérdidas.",
         "p1": {
           "titulo": "Precios por encima del suelo del gas",
-          "texto": "Retirar 0,0195 MON costó 0,0197 de gas: el nivel más barato que sugerimos hoy se trabaja gratis."
+          "texto": "Entregar cuesta ~0,01 MON de gas y retirar ~0,006: un nivel de 0,01 MON se trabaja con pérdidas."
         },
         "p2": {
           "titulo": "Aprobado no es cobrado",

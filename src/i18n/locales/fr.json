@@ -1849,7 +1849,7 @@
         "tesis": "On ne peut inviter personne dans un marché où le prix d'entrée fait perdre de l'argent.",
         "p1": {
           "titulo": "Des prix au-dessus du plancher du gaz",
-          "texto": "Retirer 0,0195 MON a coûté 0,0197 de gaz : le palier le moins cher que nous suggérons se travaille gratuitement."
+          "texto": "Livrer coûte ~0,01 MON de gaz et retirer ~0,006 : un palier à 0,01 MON se travaille à perte."
         },
         "p2": {
           "titulo": "Approuvé n'est pas encaissé",

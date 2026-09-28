@@ -64,8 +64,12 @@ from the chain.
 
 > You cannot invite anyone into a market where the entry price loses money.
 
-- **Prices above the gas floor.** Withdrawing 0.0195 MON cost 0.0197 MON in gas:
-  the cheap tier we suggest is worked for free. Registration already proposes
+- **Prices above the gas floor.** Delivering costs ~0.01 MON in gas and
+  withdrawing ~0.006: a 0.01 MON tier is worked at a loss. *(This line used to
+  say withdrawing 0.0195 MON cost 0.0197 in gas. That was a bug, not the price:
+  viem let Monad's node fill in an inflated gas limit — 193,228 instead of
+  ~55,000 — and Monad charges the whole limit. It hit five MON withdrawals from
+  July on and was fixed on 14 September.)* Registration already proposes
   0.05, but editing the price still suggests 0.01 in
   `src/components/dashboard/OwnAgentCard.tsx`, and so do the guide and the
   generator's template.
