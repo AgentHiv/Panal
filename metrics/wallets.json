@@ -1,0 +1,89 @@
+{
+  "_note": "Wallets the Panal team knows to be its own, used by scripts/foto-del-mes.ts to count how many tasks were paid by someone else. The chain cannot tell who owns a wallet, so this list is the one input that has to be taken on trust; every snapshot stores the list it was made with. 'unconfirmed' are wallets that only ever paid the team's test addresses and are probably the team's, but nobody has confirmed it: they are counted apart, never as outsiders. 'collaborator' is someone helping test Panal: not the team, not a customer either.",
+  "team": [
+    {
+      "address": "0x5bacc4d590beb71895ee25a238f30824649ef9d5",
+      "label": "founder"
+    },
+    {
+      "address": "0x34a264a9b0b43e58197bad7ade6fe84ded6ddd1d",
+      "label": "founder"
+    },
+    {
+      "address": "0x86622fcff353850c3b9aeca07160b0088927a77b",
+      "label": "founder"
+    },
+    {
+      "address": "0x6073443C233382613622F3400447a26c9eC6b7B4",
+      "label": "deployer"
+    },
+    {
+      "address": "0x8a672775121deb778e19158425b34ee4f85f8539",
+      "label": "agent: LexPanal"
+    },
+    {
+      "address": "0x1558cf6aed695f3f8aafe488058efe28d216e69c",
+      "label": "agent: Lint"
+    },
+    {
+      "address": "0x6e4d695c1ca538d26d8323dc22239d30950b8aa7",
+      "label": "agent: Parse"
+    },
+    {
+      "address": "0x7fb3fc7e8b8c0b1748fbb94e1cd5a9b5620296f6",
+      "label": "agent: Spec"
+    },
+    {
+      "address": "0xdf90cd49278720741024a23acb449b28a3f5fb50",
+      "label": "agent: i18n"
+    },
+    {
+      "address": "0x6B61322C6a6b6DbE5B2c42Aba1C36169F07eD4aB",
+      "label": "agent: A56H"
+    },
+    {
+      "address": "0x0c9F2e29236D2BB866C71f562f0ab175CEae975F",
+      "label": "end-to-end test, client"
+    },
+    {
+      "address": "0x9E73eEF9895d1071c78F86e02D6FfAC252CB0fd4",
+      "label": "end-to-end test, person"
+    },
+    {
+      "address": "0x17b59Ac5B740De1549F6F92D47599Eaaf99F9302",
+      "label": "test payee"
+    }
+  ],
+  "unconfirmed": [
+    {
+      "address": "0x69D084926e68af78cDa512eF1Bf2c3e7B4307CBf",
+      "label": "arbitration multisig owner 0"
+    },
+    {
+      "address": "0xc549eB590563e317a6159DC7624d2AF48b056ED5",
+      "label": "arbitration multisig owner 1"
+    },
+    {
+      "address": "0x1227BDB6188D4700AaE6eA02E3a128832D0FE2cF",
+      "label": "arbitration multisig owner 2"
+    },
+    {
+      "address": "0xA6FBFA88372dd099ee0b48A9B4D86A3b8B596B25",
+      "label": "paid a test address in July"
+    },
+    {
+      "address": "0x9a3f5ef84e1018c1e8273e892929bba20ab2fdef",
+      "label": "paid a test address in July"
+    },
+    {
+      "address": "0xcd03be819be71cdc7f9f4063ecda9d6e62fd56f2",
+      "label": "paid a test address in July"
+    }
+  ],
+  "collaborator": [
+    {
+      "address": "0x6f2e22f3470749ea93D0AE1Ddc8197016edCaf39",
+      "label": "someone helping test Panal"
+    }
+  ]
+}

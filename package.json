@@ -9,6 +9,7 @@
     "build": "pnpm --filter @panal/sdk build && tsc -b && vite build",
     "lint": "eslint .",
     "check:i18n": "node scripts/check-i18n.mjs",
+    "foto": "tsx scripts/foto-del-mes.ts",
     "test:brief-retry": "tsx scripts/test-brief-retry.ts",
     "test:adjuntos": "tsx scripts/test-adjuntos.ts",
     "test:formato": "tsx scripts/test-formato.ts",
