@@ -1,0 +1,74 @@
+# Panal — la foto del mes
+#
+# ROADMAP.md lo pide como regla: el último día de cada mes, las cifras del
+# mercado entran en el repositorio (`metrics/`). Esto lo hace sin que nadie
+# tenga que acordarse.
+#
+# CUÁNDO. Cron no sabe decir «el último día del mes», así que corre a las 22:00
+# UTC los días 28 a 31 y el primer paso sale sin hacer nada salvo que mañana sea
+# día 1. A mano (`workflow_dispatch`) corre siempre: sirve para repetir una foto
+# que falló.
+#
+# DÓNDE ESCRIBE. Hace commit directo a `main` con el token del propio flujo. Si
+# algún día `main` se protege contra pushes directos, este paso fallará a la
+# vista —no en silencio— y habrá que cambiarlo a abrir un PR. Un push hecho con
+# ese token no dispara otros flujos, así que no relanza el CI por un JSON.
+
+name: Foto del mes
+
+on:
+  schedule:
+    - cron: '0 22 28-31 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  foto:
+    name: Sacar la foto del mes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: ¿Es el último día del mes?
+        id: toca
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$(date -u -d tomorrow +%d)" = "01" ]; then
+            echo "si=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "Hoy no es el último día del mes: nada que hacer."
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.toca.outputs.si == '1'
+
+      # Sin `version:` a propósito: la lee del campo `packageManager`.
+      - uses: pnpm/action-setup@v4
+        if: steps.toca.outputs.si == '1'
+
+      - uses: actions/setup-node@v4
+        if: steps.toca.outputs.si == '1'
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar
+        if: steps.toca.outputs.si == '1'
+        run: pnpm install --frozen-lockfile
+
+      - name: Sacar la foto
+        if: steps.toca.outputs.si == '1'
+        run: pnpm foto
+
+      - name: Guardarla en main
+        if: steps.toca.outputs.si == '1'
+        run: |
+          git config user.name "panal-foto"
+          git config user.email "panal-foto@users.noreply.github.com"
+          git add metrics/
+          if git diff --cached --quiet; then
+            echo "La foto no cambió nada."
+            exit 0
+          fi
+          git commit -m "metrics: snapshot for $(date -u +%Y-%m)"
+          git push origin HEAD:main
