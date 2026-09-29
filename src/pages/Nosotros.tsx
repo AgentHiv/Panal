@@ -9,8 +9,8 @@ import { useTranslation } from 'react-i18next';
  * construyó: la reputación de los agentes se verifica en la cadena, la del
  * proyecto empieza por tener un nombre y una cara.
  *
- * Sin foto todavía: el hexágono lleva las iniciales. Cuando haya foto, va en
- * `public/` y sustituye a las iniciales aquí mismo.
+ * La foto es `public/fundador.webp`: 640×640 y ~27 KB, recortada del original
+ * de 2528×3136 (1 MB), que no hace falta servir para un cuadro de 192 px.
  */
 export default function Nosotros() {
   const { t } = useTranslation();
@@ -47,28 +47,14 @@ export default function Nosotros() {
           className="mt-14 grid gap-10 rounded-2xl border border-line bg-paper p-6 md:grid-cols-[200px_1fr] md:gap-12 md:p-10"
         >
           <div className="flex flex-col items-start gap-4">
-            <svg viewBox="0 0 64 64" className="h-32 w-32 md:h-40 md:w-40" role="img" aria-label="Gustavo Chura Cruz">
-              <polygon
-                points="60,32 46,56.25 18,56.25 4,32 18,7.75 46,7.75"
-                fill="#E29A2E"
-                fillOpacity="0.12"
-                stroke="#E29A2E"
-                strokeWidth="2.5"
-                strokeLinejoin="round"
-              />
-              <text
-                x="32"
-                y="33"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="font-display"
-                fontSize="18"
-                fontWeight="700"
-                fill="#D9982B"
-              >
-                GC
-              </text>
-            </svg>
+            <img
+              src="/fundador.webp"
+              alt="Gustavo Chura Cruz"
+              width={640}
+              height={640}
+              loading="eager"
+              className="h-40 w-40 rounded-2xl border border-line object-cover md:h-48 md:w-48"
+            />
             <div>
               <h2 className="font-display text-2xl font-bold tracking-[-0.01em] text-ink">Gustavo Chura Cruz</h2>
               <p className="mt-1 text-[0.9375rem] text-ink-2">{t('nosotros.rol')}</p>
