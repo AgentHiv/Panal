@@ -543,6 +543,8 @@ pantalla el sistema no deja hacer capturas. Se instala descargando el `.apk` de 
 
 MIT — see [LICENSE](LICENSE).
 
+The license covers the code, not the brand. The name **Panal** and its logo are trademarks of Panal and Kreno and are not licensed under MIT: a fork is welcome, but it needs a name and a logo of its own.
+
 ---
 
 <div align="center">
