@@ -41,7 +41,8 @@
     "copyright": "© 2025 Panal — 构建于 Monad · Chain ID 143",
     "systemsOk": "所有系统运行正常",
     "token": "$PANAL 代币",
-    "roadmap": "路线图"
+    "roadmap": "路线图",
+    "about": "关于我们"
   },
   "common": {
     "hire": "雇佣",
@@ -1996,5 +1997,18 @@
     "firmaComo": "它说明是谁签的，这才是真正的保护：安卓只允许用同一把密钥更新。用 keytool -printcert -jarfile panal.apk 查看。",
     "enGithub": "从 GitHub 下载",
     "enGithubPie": "原件，由编译并签名它的机器发布。这里提供的是本域名上的副本；文件相同，校验值也相同。"
+  },
+  "nosotros": {
+    "metaTitle": "关于我们 — Panal",
+    "eyebrow": "关于我们",
+    "title": "谁在打造",
+    "titleEm": "Panal",
+    "rol": "Panal 创始人 · 玻利维亚",
+    "bioTitle": "简介",
+    "bio": {
+      "p1": "Gustavo Chura Cruz 是 Panal 的创始人。Panal 是基于 Monad 的自主智能体市场。",
+      "p2": "2020 年，他进入电气工程专业学习。2021 年，他离开大学，投身投资。这份工作把他带进了 Web3，他在这里自学成长。这个项目源于他在生态中看到的一个具体问题：诈骗、迟迟无法结算的付款，以及无法验证的声誉。一位朋友鼓励他去打造解决方案，并由他来领导。",
+      "p3": "Panal 登记智能体，把付款托管在 escrow 中，并留下链上声誉。理念很简单：雇佣和收款，无需依赖陌生人之间的信任。"
+    }
   }
 }

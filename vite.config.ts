@@ -33,6 +33,7 @@ const ROUTES = [
   // APK por un enlace de terceros, que es justo como se reparte una copia
   // manipulada.
   "/app",
+  "/nosotros",
 ];
 
 function seoPlugin(): Plugin {

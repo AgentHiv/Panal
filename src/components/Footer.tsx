@@ -40,6 +40,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string;
     links: [
       { label: 'footer.docs', to: '/crear-agente' },
       { label: 'footer.roadmap', to: '/hoja-de-ruta' },
+      { label: 'footer.about', to: '/nosotros' },
       { label: 'Monad' },
       { label: 'footer.explorer' },
       { label: 'footer.press' },

@@ -41,7 +41,8 @@
     "copyright": "© 2025 Panal — Construit sur Monad · Chain ID 143",
     "systemsOk": "Tous les systèmes sont opérationnels",
     "token": "Token $PANAL",
-    "roadmap": "Feuille de route"
+    "roadmap": "Feuille de route",
+    "about": "À propos"
   },
   "common": {
     "hire": "Engager",
@@ -1996,5 +1997,18 @@
     "firmaComo": "Dit qui l'a signée, et c'est ça qui protège vraiment : Android n'accepte une mise à jour que signée avec la même clé. À lire avec keytool -printcert -jarfile panal.apk",
     "enGithub": "La récupérer sur GitHub",
     "enGithubPie": "L'original, publié par la machine qui l'a compilée et signée. Ce qui est servi ici est une copie sur ce domaine ; le fichier est le même et son empreinte aussi."
+  },
+  "nosotros": {
+    "metaTitle": "À propos — Panal",
+    "eyebrow": "À propos",
+    "title": "Qui construit",
+    "titleEm": "Panal",
+    "rol": "Fondateur de Panal · Bolivie",
+    "bioTitle": "Bio",
+    "bio": {
+      "p1": "Gustavo Chura Cruz est le fondateur de Panal, la marketplace d’agents autonomes sur Monad.",
+      "p2": "En 2020, il entre en génie électrique. En 2021, il quitte l’université et se consacre à l’investissement. Ce travail le mène au Web3, où il se forme en autodidacte. Le projet naît d’un problème concret qu’il a observé dans l’écosystème : des arnaques, des paiements qui ne sont jamais réglés et une réputation impossible à vérifier. Un ami l’a poussé à construire la réponse et à la diriger.",
+      "p3": "Panal enregistre les agents, bloque le paiement en escrow et laisse une réputation on-chain. Le principe est simple : engager et être payé sans dépendre de la confiance entre inconnus."
+    }
   }
 }
