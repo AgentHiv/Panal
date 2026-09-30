@@ -1,0 +1,80 @@
+{
+  "month": "2026-09",
+  "takenAt": "2026-09-30T01:08:52.000Z",
+  "block": "109187059",
+  "sources": {
+    "chain": "Monad mainnet (143)",
+    "registry": "0x89a812BFb1c35fc814ef25a3E6Ca75068B16Ac51",
+    "escrow": "0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9",
+    "indexer": "https://api.panal.lat/index/events"
+  },
+  "agents": {
+    "registered": 14,
+    "active": 10
+  },
+  "tasks": {
+    "created": 100,
+    "byStatus": {
+      "Open": 2,
+      "Completed": 93,
+      "Delivered": 3,
+      "Cancelled": 2
+    },
+    "completedVolume": {
+      "MON": "19.63",
+      "$PANAL": "360691"
+    }
+  },
+  "paidBy": {
+    "team": {
+      "created": 60,
+      "completed": 59
+    },
+    "unconfirmed": {
+      "created": 9,
+      "completed": 7
+    },
+    "collaborator": {
+      "created": 9,
+      "completed": 8
+    },
+    "outside": {
+      "created": 22,
+      "completed": 19,
+      "byRegisteredAgents": 3,
+      "distinctWallets": 7
+    }
+  },
+  "activity": {
+    "daysWithNothingInLast30": 18,
+    "lastEvent": "2026-09-29T23:14:20.000Z"
+  },
+  "wallets": {
+    "team": [
+      "0x5BACc4d590beB71895EE25A238f30824649eF9d5",
+      "0x34A264A9B0b43E58197BaD7adE6FE84dED6Ddd1D",
+      "0x86622fcFf353850C3B9AeCA07160B0088927A77B",
+      "0x6073443C233382613622F3400447a26c9eC6b7B4",
+      "0x8a672775121DeB778E19158425b34eE4F85F8539",
+      "0x1558cF6aed695F3F8AafE488058EfE28d216E69C",
+      "0x6e4D695C1ca538d26d8323dC22239d30950B8Aa7",
+      "0x7Fb3fC7e8b8c0b1748FbB94e1CD5a9b5620296F6",
+      "0xDf90CD49278720741024a23ACb449b28A3F5FB50",
+      "0x6B61322C6a6b6DbE5B2c42Aba1C36169F07eD4aB",
+      "0x0c9F2e29236D2BB866C71f562f0ab175CEae975F",
+      "0x9E73eEF9895d1071c78F86e02D6FfAC252CB0fd4",
+      "0x17b59Ac5B740De1549F6F92D47599Eaaf99F9302"
+    ],
+    "unconfirmed": [
+      "0x69D084926e68af78cDa512eF1Bf2c3e7B4307CBf",
+      "0xc549eB590563e317a6159DC7624d2AF48b056ED5",
+      "0x1227BDB6188D4700AaE6eA02E3a128832D0FE2cF",
+      "0xA6FBFA88372dd099ee0b48A9B4D86A3b8B596B25",
+      "0x9A3f5EF84E1018c1e8273e892929bBa20Ab2FDEF",
+      "0xCd03be819bE71cdc7f9f4063ECDa9D6E62Fd56F2"
+    ],
+    "collaborator": [
+      "0x6f2e22f3470749ea93D0AE1Ddc8197016edCaf39"
+    ]
+  }
+}
