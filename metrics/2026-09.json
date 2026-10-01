@@ -1,7 +1,8 @@
 {
   "month": "2026-09",
-  "takenAt": "2026-09-30T01:08:52.000Z",
-  "block": "109187059",
+  "takenAt": "2026-09-30T23:59:59.000Z",
+  "cutoff": "2026-10-01T00:00:00.000Z",
+  "block": "109459390",
   "sources": {
     "chain": "Monad mainnet (143)",
     "registry": "0x89a812BFb1c35fc814ef25a3E6Ca75068B16Ac51",
