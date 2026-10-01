@@ -1,8 +1,8 @@
 /**
  * La foto del mes: las cifras del mercado, guardadas en el repositorio.
  *
- *   pnpm foto                       → metrics/AAAA-MM.json del mes en curso
- *   pnpm foto -- --mes 2026-09      → la de un mes concreto (el nombre del archivo)
+ *   pnpm foto                       → metrics/AAAA-MM.json del mes que acaba de terminar
+ *   pnpm foto -- --mes 2026-09      → la de un mes concreto, ya terminado
  *   pnpm foto -- --seco             → la calcula y la enseña, sin escribir nada
  *
  * POR QUÉ EXISTE. ROADMAP.md lo pide como regla: «el último día de cada mes la
@@ -16,6 +16,19 @@
  *   - quién pagó cada encargo: el `client` de la tarea en la cadena, clasificado
  *     con la lista de `metrics/wallets.json`.
  *
+ * EL CORTE ES LA MEDIANOCHE, NO LA HORA A LA QUE CORRE. Todo se lee en el
+ * último bloque del mes —el último con fecha anterior al día 1 a las 00:00
+ * UTC—, no en el bloque de ahora. La primera foto, la de septiembre, se sacó
+ * leyendo «ahora» desde un cron de las 22:00 del día 29 que GitHub arrancó con
+ * tres horas de retraso: ya era día 30, «mañana» era día 1, y la foto del mes
+ * salió sin su último día. Con el corte fijo da igual cuándo corra: dos
+ * ejecuciones del mismo mes leen el mismo bloque y escriben el mismo archivo.
+ *
+ * Eso exige que el RPC sirva estado pasado, y el de Monad lo guarda unos cinco
+ * días (medido el 2026-10-02: 1,5 M de bloques atrás sí, 2 M ya no). Más allá,
+ * la lectura falla con un error del RPC y no se escribe nada: una foto con el
+ * estado de otro día sería peor que ninguna.
+ *
  * La lista de wallets es la parte que NO sale de la cadena: nadie más que el
  * equipo sabe qué wallets son suyas. Por eso vive en un archivo aparte y se
  * guarda dentro de cada foto, tal como estaba ese día: si la lista cambia, las
@@ -25,7 +38,13 @@
 import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { formatEther, getAddress, type Address } from 'viem';
-import { createPanalClient, TaskStatus, NATIVE_CURRENCY } from '../sdk/src/index.ts';
+import {
+  createPanalClient,
+  escrowAbi,
+  registryAbi,
+  TaskStatus,
+  NATIVE_CURRENCY,
+} from '../sdk/src/index.ts';
 
 const RAIZ = join(import.meta.dirname, '..');
 const DIR = join(RAIZ, 'metrics');
@@ -33,7 +52,15 @@ const INDEXADOR = process.env.INDEXER_URL?.trim() || 'https://api.panal.lat';
 const args = process.argv.slice(2);
 const seco = args.includes('--seco');
 const mesArg = args[args.indexOf('--mes') + 1];
-const mes = args.includes('--mes') && /^\d{4}-\d{2}$/.test(mesArg ?? '') ? mesArg! : new Date().toISOString().slice(0, 7);
+
+/** El mes que acaba de terminar, en UTC. */
+function mesAnterior(ahora: Date): string {
+  return new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth() - 1, 1)).toISOString().slice(0, 7);
+}
+const mes = args.includes('--mes') && /^\d{4}-\d{2}$/.test(mesArg ?? '') ? mesArg! : mesAnterior(new Date());
+const [anio, numMes] = mes.split('-').map(Number) as [number, number];
+/** El día 1 del mes siguiente a las 00:00 UTC, en segundos: lo que ya NO entra. */
+const corte = Date.UTC(anio, numMes, 1) / 1000;
 
 type Categoria = 'team' | 'unconfirmed' | 'collaborator';
 interface ListaWallets {
@@ -65,17 +92,60 @@ async function enTandas<T, R>(xs: T[], n: number, f: (x: T) => Promise<R>): Prom
   return out;
 }
 
-async function main(): Promise<void> {
-  const bloque = await panal.publicClient.getBlock();
-  const cuando = new Date(Number(bloque.timestamp) * 1000);
+/**
+ * El último bloque con fecha anterior al corte, por bisección.
+ *
+ * Los bloques de Monad salen cada ~0,3 s, así que se estima primero dónde cae y
+ * se acota alrededor: unas 25 lecturas en vez de recorrer millones.
+ */
+async function ultimoBloqueAntesDe(segundos: number): Promise<{ number: bigint; timestamp: bigint }> {
+  const cabeza = await panal.publicClient.getBlock();
+  if (cabeza.timestamp < BigInt(segundos)) {
+    throw new Error(`El mes ${mes} no ha terminado todavía: la foto se saca cuando acaba, no antes.`);
+  }
+  let bajo = 0n;
+  let alto = cabeza.number; // invariante: timestamp(alto) >= corte
+  while (alto - bajo > 1n) {
+    const medio = (bajo + alto) / 2n;
+    const b = await panal.publicClient.getBlock({ blockNumber: medio });
+    if (b.timestamp < BigInt(segundos)) bajo = medio;
+    else alto = medio;
+  }
+  const b = await panal.publicClient.getBlock({ blockNumber: bajo });
+  return { number: b.number, timestamp: b.timestamp };
+}
 
-  // ---- Agentes ------------------------------------------------------------
-  const agentes = await panal.listAgents();
+/** Una lectura de contrato fijada al bloque del corte. */
+function leerEn(blockNumber: bigint) {
+  return <T>(address: Address, abi: typeof escrowAbi | typeof registryAbi, functionName: string, args: unknown[] = []) =>
+    panal.publicClient.readContract({ address, abi, functionName, args, blockNumber } as never) as Promise<T>;
+}
+
+async function main(): Promise<void> {
+  const bloque = await ultimoBloqueAntesDe(corte);
+  const cuando = new Date(Number(bloque.timestamp) * 1000);
+  const leer = leerEn(bloque.number);
+
+  // ---- Agentes, en el bloque del corte ------------------------------------
+  // A mano y no con `panal.listAgents()`: el SDK lee siempre el último bloque.
+  const numAgentes = Number(await leer<bigint>(panal.addresses.registry, registryAbi, 'getAgentCount'));
+  const direcciones: Address[] = [];
+  for (let desde = 0; desde < numAgentes; desde += 50) {
+    direcciones.push(...(await leer<readonly Address[]>(panal.addresses.registry, registryAbi, 'getAgents', [BigInt(desde), 50n])));
+  }
+  const agentes = await enTandas(direcciones, 8, async (a) => ({
+    address: a,
+    ...(await leer<{ active: boolean }>(panal.addresses.registry, registryAbi, 'getAgent', [a])),
+  }));
   const direccionesAgentes = new Set(agentes.map((a) => a.address.toLowerCase()));
 
-  // ---- Encargos -----------------------------------------------------------
-  const cuantas = Number(await panal.getTaskCount());
-  const tareas = await enTandas([...Array(cuantas).keys()], 8, (i) => panal.getTask(BigInt(i)));
+  // ---- Encargos, en el bloque del corte -----------------------------------
+  const cuantas = Number(await leer<bigint>(panal.addresses.escrow, escrowAbi, 'getTaskCount'));
+  const tareas = await enTandas([...Array(cuantas).keys()], 8, (i) =>
+    leer<{ client: Address; amount: bigint; status: number; currency: Address }>(panal.addresses.escrow, escrowAbi, 'tasks', [
+      BigInt(i),
+    ]),
+  );
 
   const porEstado: Record<string, number> = {};
   const volumen: Record<string, bigint> = {};
@@ -113,17 +183,22 @@ async function main(): Promise<void> {
     if (!r.next) break;
     antes = r.next;
   }
+  // Solo lo de antes del corte: lo que pasó después es del mes siguiente.
+  const delMes = eventos.filter((e) => e.ts < corte);
   const dia = (s: number): string => new Date(s * 1000).toISOString().slice(0, 10);
-  const conActividad = new Set(eventos.map((e) => dia(e.ts)));
+  const conActividad = new Set(delMes.map((e) => dia(e.ts)));
+  // Los 30 días que acaban el último día del mes, no los 30 hasta hoy.
   let sinNada = 0;
-  for (let d = 0; d < 30; d++) {
-    if (!conActividad.has(new Date(cuando.getTime() - d * 86_400_000).toISOString().slice(0, 10))) sinNada++;
+  for (let d = 1; d <= 30; d++) {
+    if (!conActividad.has(dia(corte - d * 86_400))) sinNada++;
   }
-  const ultimo = eventos.reduce((m, e) => Math.max(m, e.ts), 0);
+  const ultimo = delMes.reduce((m, e) => Math.max(m, e.ts), 0);
 
   const foto = {
     month: mes,
+    // El instante del bloque leído: el último antes de `cutoff`.
     takenAt: cuando.toISOString(),
+    cutoff: new Date(corte * 1000).toISOString(),
     block: bloque.number.toString(),
     sources: {
       chain: 'Monad mainnet (143)',
@@ -184,12 +259,14 @@ One snapshot at the end of every month, as ROADMAP.md commits to. Each row is
 a file in this folder; every number in it can be recomputed.
 
 - **Agents** and **tasks** are read from the chain — the registry and the escrow
-  at the block in the last column — not from the indexer.
+  at the block in the last column, the last one before midnight UTC on the 1st
+  of the next month — not from the indexer. It doesn't matter when the snapshot
+  runs: the month is always cut at the same block.
 - **Paid by outsiders** counts tasks whose client is not in the list of wallets
   the team knows to be its own (\`wallets.json\`). That list is the one thing the
   chain cannot tell, so each snapshot stores the list it was made with.
-- **Days with nothing** counts, over the last 30 days, the days without a single
-  on-chain event, from the indexer's event log.
+- **Days with nothing** counts, over the 30 days that end the month, the days
+  without a single on-chain event, from the indexer's event log.
 
 | Month | Agents registered | Active | Tasks | Completed | Paid by outsiders | Paid by the team | Days with nothing (of 30) | Block |
 |---|---|---|---|---|---|---|---|---|
