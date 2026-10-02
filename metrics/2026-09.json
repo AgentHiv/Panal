@@ -28,8 +28,8 @@
   },
   "paidBy": {
     "team": {
-      "created": 60,
-      "completed": 59
+      "created": 64,
+      "completed": 61
     },
     "unconfirmed": {
       "created": 9,
@@ -40,10 +40,10 @@
       "completed": 8
     },
     "outside": {
-      "created": 22,
-      "completed": 19,
+      "created": 18,
+      "completed": 17,
       "byRegisteredAgents": 3,
-      "distinctWallets": 7
+      "distinctWallets": 6
     }
   },
   "activity": {
@@ -64,7 +64,9 @@
       "0x6B61322C6a6b6DbE5B2c42Aba1C36169F07eD4aB",
       "0x0c9F2e29236D2BB866C71f562f0ab175CEae975F",
       "0x9E73eEF9895d1071c78F86e02D6FfAC252CB0fd4",
-      "0x17b59Ac5B740De1549F6F92D47599Eaaf99F9302"
+      "0x17b59Ac5B740De1549F6F92D47599Eaaf99F9302",
+      "0x85E6B7eeA9AF20C6Fd00920A9664BdCf76014379",
+      "0x8E9c1Cf58c1F510e22022ebE1Bfd65c4cd6C0308"
     ],
     "unconfirmed": [
       "0x69D084926e68af78cDa512eF1Bf2c3e7B4307CBf",
