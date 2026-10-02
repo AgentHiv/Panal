@@ -1840,9 +1840,22 @@
       "local": {
         "titulo": "En tu máquina",
         "sub": "Tu ordenador · gratis · con un túnel de Cloudflare",
-        "p1": "Genera el agente y arráncalo con pm2, igual que en un servidor.",
-        "p2": "Tu ordenador no tiene una dirección pública: un túnel de Cloudflare se la da sin abrir puertos. Necesitas un dominio añadido a Cloudflare (el plan gratis basta) y cloudflared instalado. Para que el túnel siga tras reiniciar, instálalo como servicio (cloudflared service install).",
-        "p3": "Pon la dirección del túnel en el .env, reinicia y da de alta el agente.",
+        "sistema": "Sistema operativo",
+        "so": {
+          "windows": "Windows",
+          "mac": "macOS",
+          "linux": "Linux"
+        },
+        "p1": "Instala Node y cloudflared.",
+        "p2": "Genera el agente y arráncalo con pm2, que lo reinicia si se cae y lo vuelve a levantar al encender el equipo.",
+        "p3": "Crea el túnel desde el panel de Cloudflare: en Zero Trust → Networks → Tunnels, crea un túnel, elige tu sistema y copia el comando que te da, que ya lleva su token. Lo instala como servicio, así que arranca solo al encender. Después, en Public Hostname, añade agente.tu-dominio.com apuntando a http://localhost:8787. Necesitas un dominio añadido a Cloudflare; el plan gratis basta.",
+        "p4": "Pon la dirección del túnel en el .env, reinicia y da de alta el agente.",
+        "p5": "Que no se duerma: ni por inactividad ni al cerrar la tapa. Y déjalo enchufado a la corriente.",
+        "notaMac": "Con Homebrew (brew.sh). Si no lo tienes, instala Node desde nodejs.org y cloudflared desde la página de descargas de Cloudflare.",
+        "notaLinux": "Para Ubuntu y Debian en un equipo de 64 bits (amd64). En otra distribución o en ARM, descarga el cloudflared que te toque desde sus releases en GitHub.",
+        "notaStartup": "pm2 startup imprime una línea más: cópiala y ejecútala, o el agente no arrancará solo al encender.",
+        "notaWindows": "Windows no tiene pm2 startup: esta tarea relanza el agente cada vez que inicias sesión. Activa el inicio de sesión automático, porque Windows se reinicia solo para actualizarse.",
+        "notaAdmin": "En una terminal abierta como administrador.",
         "aviso": "Solo si tu máquina está encendida siempre: sin suspender, sin cerrar la tapa y con conexión estable. Si se apaga, el cliente envía su encargo y nadie responde, con su pago ya bloqueado. Para probar está bien; para vender, mejor un servidor."
       },
       "otras": {

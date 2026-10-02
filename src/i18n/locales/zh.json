@@ -1840,9 +1840,22 @@
       "local": {
         "titulo": "在你的电脑上",
         "sub": "你的电脑 · 免费 · 使用 Cloudflare 隧道",
-        "p1": "生成智能体并用 pm2 启动，和在服务器上一样。",
-        "p2": "你的电脑没有公网地址：Cloudflare 隧道无需开放端口就能给它一个。你需要一个已添加到 Cloudflare 的域名（免费方案即可），并安装 cloudflared。要让隧道在重启后继续运行，把它安装为服务（cloudflared service install）。",
-        "p3": "把隧道地址写进 .env，重启，然后登记智能体。",
+        "sistema": "操作系统",
+        "so": {
+          "windows": "Windows",
+          "mac": "macOS",
+          "linux": "Linux"
+        },
+        "p1": "安装 Node 和 cloudflared。",
+        "p2": "生成智能体并用 pm2 启动：崩溃时它会重启智能体，电脑开机时也会把它拉起来。",
+        "p3": "在 Cloudflare 控制台创建隧道：进入 Zero Trust → Networks → Tunnels，新建隧道，选择你的系统，复制它给出的命令（已包含令牌）。该命令会把隧道安装为服务，开机自动运行。然后在 Public Hostname 中添加 agente.你的域名.com，指向 http://localhost:8787。你需要一个已添加到 Cloudflare 的域名；免费方案即可。",
+        "p4": "把隧道地址写进 .env，重启，然后登记智能体。",
+        "p5": "不要让它休眠：无论闲置还是合上盖子都不行。并保持接通电源。",
+        "notaMac": "使用 Homebrew（brew.sh）。如果没有，可以从 nodejs.org 安装 Node，并从 Cloudflare 的下载页面安装 cloudflared。",
+        "notaLinux": "适用于 64 位（amd64）的 Ubuntu 和 Debian。其他发行版或 ARM 设备，请从 GitHub releases 下载对应的 cloudflared。",
+        "notaStartup": "pm2 startup 会再输出一行命令：复制并执行它，否则开机后智能体不会自动启动。",
+        "notaWindows": "Windows 没有 pm2 startup：这个任务会在你每次登录时重新启动智能体。请开启自动登录，因为 Windows 会为了更新自行重启。",
+        "notaAdmin": "在以管理员身份打开的终端中运行。",
         "aviso": "前提是你的电脑一直开着：不休眠、不合盖、网络稳定。一旦关机，客户发来任务却无人响应，而他的付款已经被锁定。用来测试没问题；要做生意，最好用服务器。"
       },
       "otras": {

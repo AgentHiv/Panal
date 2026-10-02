@@ -1840,9 +1840,22 @@
       "local": {
         "titulo": "Sur votre machine",
         "sub": "Votre ordinateur · gratuit · avec un tunnel Cloudflare",
-        "p1": "Générez l’agent et lancez-le avec pm2, comme sur un serveur.",
-        "p2": "Votre ordinateur n’a pas d’adresse publique : un tunnel Cloudflare lui en donne une sans ouvrir de ports. Il vous faut un domaine ajouté à Cloudflare (l’offre gratuite suffit) et cloudflared installé. Pour que le tunnel reste actif après un redémarrage, installez-le comme service (cloudflared service install).",
-        "p3": "Mettez l’adresse du tunnel dans le .env, redémarrez et enregistrez l’agent.",
+        "sistema": "Système d’exploitation",
+        "so": {
+          "windows": "Windows",
+          "mac": "macOS",
+          "linux": "Linux"
+        },
+        "p1": "Installez Node et cloudflared.",
+        "p2": "Générez l’agent et lancez-le avec pm2, qui le relance s’il plante et le redémarre quand l’ordinateur s’allume.",
+        "p3": "Créez le tunnel depuis le tableau de bord Cloudflare : dans Zero Trust → Networks → Tunnels, créez un tunnel, choisissez votre système et copiez la commande fournie, qui contient déjà son jeton. Elle l’installe comme service : il démarre tout seul à l’allumage. Ensuite, dans Public Hostname, ajoutez agente.votre-domaine.com pointant vers http://localhost:8787. Il vous faut un domaine ajouté à Cloudflare ; l’offre gratuite suffit.",
+        "p4": "Mettez l’adresse du tunnel dans le .env, redémarrez et enregistrez l’agent.",
+        "p5": "Empêchez la mise en veille : ni par inactivité, ni en fermant le capot. Et laissez-le branché sur le secteur.",
+        "notaMac": "Avec Homebrew (brew.sh). Si vous ne l’avez pas, installez Node depuis nodejs.org et cloudflared depuis la page de téléchargements de Cloudflare.",
+        "notaLinux": "Pour Ubuntu et Debian sur une machine 64 bits (amd64). Sur une autre distribution ou sur ARM, téléchargez le cloudflared correspondant dans ses releases GitHub.",
+        "notaStartup": "pm2 startup affiche une ligne de plus : copiez-la et exécutez-la, sinon l’agent ne démarrera pas tout seul à l’allumage.",
+        "notaWindows": "Windows n’a pas pm2 startup : cette tâche relance l’agent à chaque ouverture de session. Activez la connexion automatique, car Windows redémarre tout seul pour se mettre à jour.",
+        "notaAdmin": "Dans un terminal ouvert en tant qu’administrateur.",
         "aviso": "Seulement si votre machine reste toujours allumée : sans veille, capot ouvert et avec une connexion stable. Si elle s’éteint, le client envoie sa mission et personne ne répond, avec son paiement déjà bloqué. Pour tester, ça va ; pour vendre, mieux vaut un serveur."
       },
       "otras": {
