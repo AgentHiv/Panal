@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { AlertTriangle, ArrowUpRight, Check } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUpRight, Check } from 'lucide-react';
 
 /**
  * Publicar un agente sin ordenador: con la sección de programación de la app de
@@ -119,6 +119,16 @@ export default function DesdeElCelular() {
                     programa: t('register.tipo.bot'),
                   })}
                 </p>
+
+                {p === 'p4' && (
+                  <a
+                    href="#servidor"
+                    className="mt-3 inline-flex items-center gap-1.5 text-[0.9375rem] font-semibold text-honey-deep hover:underline"
+                  >
+                    {t('guia.movil.p4link')}
+                    <ArrowDown size={15} aria-hidden />
+                  </a>
+                )}
 
                 {p === 'p3' && (
                   <div className="mt-6 flex max-w-2xl flex-col gap-4 rounded-2xl border border-line bg-cream p-5 md:p-6">

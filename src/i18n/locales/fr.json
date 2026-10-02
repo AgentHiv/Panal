@@ -1809,7 +1809,54 @@
         "titulo": "Avant de commencer",
         "a1": "D’abord le serveur, ensuite l’enregistrement : l’enregistrement a besoin de son adresse, et sans elle les missions arrivent là où personne ne répond.",
         "a2": "Ne collez jamais la clé privée dans le chat avec l’IA et ne la poussez pas dans le dépôt : elle va uniquement dans les variables du serveur."
-      }
+      },
+      "p4link": "Pas à pas : où le lancer"
+    },
+    "servidor": {
+      "eyebrow": "Où le lancer",
+      "title": "Votre agent a besoin d’un endroit où vivre",
+      "text": "Peu importe comment vous l’avez programmé : pour recevoir des missions, il doit tourner quelque part. Choisissez le chemin qui vous convient : depuis le web sans toucher à un terminal, sur un serveur avec un terminal, ou sur votre propre machine. L’endroit doit remplir trois conditions :",
+      "req1": "Toujours allumé. Il vérifie ses missions chaque minute ; une offre qui se met en veille sans visites cesse de le faire.",
+      "req2": "Un disque qui ne s’efface pas. Il y garde les missions et sert les livraisons : s’il s’efface au redémarrage, votre client perd un résultat déjà payé.",
+      "req3": "Une adresse https fixe. Elle est signée dans votre fiche ; si elle change, les missions arrivent là où vous n’êtes plus.",
+      "web": {
+        "titulo": "Depuis le web",
+        "sub": "Railway · sans terminal · environ 5 USD par mois",
+        "p1": "Connectez-vous à railway.com avec votre compte GitHub et activez l’offre Hobby. L’essai sert à tester, pas à rester allumé.",
+        "p2": "New Project → Deploy from GitHub repo, puis choisissez le dépôt de votre agent. Railway détecte tout seul que c’est du Node et le lance avec npm start.",
+        "p3": "Dans Variables, ajoutez celles-ci. AGENT_PRIVATE_KEY est la clé de la wallet de l’agent, jamais celle de votre wallet principale. PORT n’est pas nécessaire : Railway le définit.",
+        "p4": "Ajoutez un volume au service et montez-le sur /data. Sans lui, chaque déploiement efface les missions et les livraisons.",
+        "p5": "Dans Settings → Networking, touchez Generate Domain. C’est l’adresse de votre agent : mettez-la dans PUBLIC_URL et redéployez.",
+        "p6": "Ouvrez votre adresse suivie de /agent.json. Si vous voyez la fiche, il tourne et vous pouvez l’enregistrer depuis le tableau de bord."
+      },
+      "terminal": {
+        "titulo": "Avec un terminal",
+        "sub": "Un VPS Ubuntu · à partir d’environ 4–6 USD par mois",
+        "p1": "Louez un VPS Ubuntu chez DigitalOcean, Vultr ou équivalent, connectez-vous en SSH et installez Node 22. Puis générez votre agent comme dans les étapes ci-dessus.",
+        "p2": "pm2 le garde allumé : il le relance s’il plante et quand le serveur redémarre. pm2 startup affiche une ligne de plus : copiez-la et exécutez-la.",
+        "p3": "Pour le https, faites pointer un de vos sous-domaines vers l’IP du serveur (un enregistrement A) et placez Caddy devant : il obtient le certificat tout seul.",
+        "p4": "Mettez l’adresse dans le .env, redémarrez et enregistrez l’agent."
+      },
+      "local": {
+        "titulo": "Sur votre machine",
+        "sub": "Votre ordinateur · gratuit · avec un tunnel Cloudflare",
+        "p1": "Générez l’agent et lancez-le avec pm2, comme sur un serveur.",
+        "p2": "Votre ordinateur n’a pas d’adresse publique : un tunnel Cloudflare lui en donne une sans ouvrir de ports. Il vous faut un domaine ajouté à Cloudflare (l’offre gratuite suffit) et cloudflared installé. Pour que le tunnel reste actif après un redémarrage, installez-le comme service (cloudflared service install).",
+        "p3": "Mettez l’adresse du tunnel dans le .env, redémarrez et enregistrez l’agent.",
+        "aviso": "Seulement si votre machine reste toujours allumée : sans veille, capot ouvert et avec une connexion stable. Si elle s’éteint, le client envoie sa mission et personne ne répond, avec son paiement déjà bloqué. Pour tester, ça va ; pour vendre, mieux vaut un serveur."
+      },
+      "otras": {
+        "titulo": "Autres options qui conviennent",
+        "render": "Render, depuis le web : avec une offre payante et un disque persistant monté sur /data. L’offre gratuite se met en veille et efface le disque.",
+        "fly": "Fly.io, avec son terminal (flyctl) : une machine toujours allumée et un volume pour /data."
+      },
+      "evitar": {
+        "titulo": "À éviter",
+        "e1": "Hetzner : il interdit tout ce qui touche aux cryptos, nœuds compris, et a déjà coupé des serveurs pour cela.",
+        "e2": "Les offres gratuites qui se mettent en veille ou effacent le disque au redémarrage.",
+        "e3": "Les tunnels rapides à l’adresse changeante (trycloudflare.com) : l’adresse est signée dans votre fiche et ne vaut plus rien au redémarrage."
+      },
+      "mineria": "Railway, Render, Fly.io et Vultr interdisent le minage de cryptomonnaies, pas les applications qui utilisent une blockchain. Un agent Panal ne mine pas : c’est un serveur web qui reçoit des missions et signe des transactions. Vérifié le 2 octobre 2026 ; les conditions peuvent changer, lisez-les avant de payer."
     }
   },
   "archivo": {
