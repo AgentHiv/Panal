@@ -72,25 +72,132 @@ const PASOS: Record<Opcion, Array<{ texto: string; codigo?: string; lenguaje?: '
       lenguaje: 'sh',
     },
   ],
-  local: [
-    {
-      texto: 'guia.servidor.local.p1',
-      codigo: 'npx create-panal-agent mi-agente\ncd mi-agente && npm install\nnpm install -g pm2\npm2 start npm --name mi-agente -- start',
-      lenguaje: 'sh',
-    },
-    {
-      texto: 'guia.servidor.local.p2',
-      codigo:
-        'cloudflared tunnel login\ncloudflared tunnel create mi-agente\ncloudflared tunnel route dns mi-agente agente.tu-dominio.com\ncloudflared tunnel run --url http://localhost:8787 mi-agente',
-      lenguaje: 'sh',
-    },
-    {
-      texto: 'guia.servidor.local.p3',
-      codigo: '# .env\nPUBLIC_URL=https://agente.tu-dominio.com\nTRAS_PROXY=1\n\npm2 restart mi-agente\nnpm run register',
-      lenguaje: 'sh',
-    },
-  ],
+  // La máquina propia va aparte: sus pasos cambian según el sistema.
+  local: [],
 };
+
+/**
+ * La máquina propia, por sistema operativo.
+ *
+ * EL TÚNEL SE CREA DESDE EL PANEL DE CLOUDFLARE y no con `cloudflared tunnel
+ * create`: el panel da, para cada sistema, un solo comando que instala el túnel
+ * como SERVICIO —arranca solo al encender— con su token dentro. Por la vía de
+ * comandos hacía falta además un config.yml con el id del túnel y la ruta de
+ * sus credenciales, distinta en cada sistema.
+ *
+ * PM2 ARRANCA `tsx` DIRECTAMENTE, no `npm start`: en Windows `npm` es un .cmd y
+ * `pm2 start npm` intenta ejecutarlo como JavaScript y falla. La plantilla lee
+ * su `.env` de la carpeta desde la que se lanza (`dotenv/config`), que es la
+ * del proyecto.
+ *
+ * Y Windows no tiene `pm2 startup`: el arranque se hace con una tarea al
+ * iniciar sesión que relanza lo guardado (`pm2 resurrect`).
+ */
+const SISTEMAS = ['windows', 'mac', 'linux'] as const;
+type Sistema = (typeof SISTEMAS)[number];
+
+const ARRANCAR = 'pm2 start node_modules/tsx/dist/cli.mjs --name mi-agente -- src/server.ts';
+
+const PASOS_LOCAL: Array<{ texto: string; nota?: Partial<Record<Sistema, string>>; codigo: string | Record<Sistema, string> }> = [
+  {
+    texto: 'guia.servidor.local.p1',
+    codigo: {
+      windows: 'winget install OpenJS.NodeJS.LTS\nwinget install --id Cloudflare.cloudflared',
+      mac: 'brew install node cloudflared',
+      linux:
+        'curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -\nsudo apt-get install -y nodejs\ncurl -fsSLo cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb\nsudo dpkg -i cloudflared.deb',
+    },
+    nota: { mac: 'guia.servidor.local.notaMac', linux: 'guia.servidor.local.notaLinux' },
+  },
+  {
+    texto: 'guia.servidor.local.p2',
+    codigo: {
+      windows: `npx create-panal-agent mi-agente\ncd mi-agente\nnpm install\nnpm install -g pm2\n${ARRANCAR}\npm2 save\nschtasks /create /tn "mi-agente" /sc onlogon /tr "cmd /c pm2 resurrect"`,
+      mac: `npx create-panal-agent mi-agente\ncd mi-agente && npm install\nnpm install -g pm2\n${ARRANCAR}\npm2 save\npm2 startup`,
+      linux: `npx create-panal-agent mi-agente\ncd mi-agente && npm install\nsudo npm install -g pm2\n${ARRANCAR}\npm2 save\npm2 startup`,
+    },
+    nota: { windows: 'guia.servidor.local.notaWindows', mac: 'guia.servidor.local.notaStartup', linux: 'guia.servidor.local.notaStartup' },
+  },
+  {
+    texto: 'guia.servidor.local.p3',
+    codigo: {
+      windows: 'cloudflared.exe service install <TOKEN>',
+      mac: 'sudo cloudflared service install <TOKEN>',
+      linux: 'sudo cloudflared service install <TOKEN>',
+    },
+    nota: { windows: 'guia.servidor.local.notaAdmin' },
+  },
+  {
+    texto: 'guia.servidor.local.p4',
+    codigo: '# .env\nPUBLIC_URL=https://agente.tu-dominio.com\nTRAS_PROXY=1\n\npm2 restart mi-agente\nnpm run register',
+  },
+  {
+    texto: 'guia.servidor.local.p5',
+    codigo: {
+      windows:
+        'powercfg /change standby-timeout-ac 0\npowercfg /change hibernate-timeout-ac 0\npowercfg /setacvalueindex SCHEME_CURRENT SUB_BUTTONS LIDACTION 0\npowercfg /setactive SCHEME_CURRENT',
+      mac: 'sudo pmset -a sleep 0\nsudo pmset -a disablesleep 1',
+      linux: 'sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target',
+    },
+  },
+];
+
+/** El sistema de quien mira la página, para abrir ya en el suyo. */
+function sistemaProbable(): Sistema {
+  const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent;
+  if (/Windows/i.test(ua)) return 'windows';
+  if (/Mac OS X|Macintosh/i.test(ua) && !/iPhone|iPad/i.test(ua)) return 'mac';
+  return /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? 'linux' : 'windows';
+}
+
+function MaquinaPropia() {
+  const { t } = useTranslation();
+  const [sistema, setSistema] = useState<Sistema>(sistemaProbable);
+
+  return (
+    <div className="mt-10 max-w-3xl">
+      <div role="tablist" aria-label={t('guia.servidor.local.sistema')} className="inline-flex rounded-full border border-coal-line bg-coal-2 p-1">
+        {SISTEMAS.map((s) => (
+          <button
+            key={s}
+            type="button"
+            role="tab"
+            aria-selected={sistema === s}
+            onClick={() => setSistema(s)}
+            className={cn(
+              'rounded-full px-4 py-1.5 text-[0.875rem] font-semibold transition-colors',
+              sistema === s ? 'bg-honey text-[#1B1814]' : 'text-coal-text/75 hover:text-honey',
+            )}
+          >
+            {t(`guia.servidor.local.so.${s}`)}
+          </button>
+        ))}
+      </div>
+
+      <ol role="tabpanel" className="mt-8 flex flex-col gap-9">
+        {PASOS_LOCAL.map((paso, i) => {
+          const codigo = typeof paso.codigo === 'string' ? paso.codigo : paso.codigo[sistema];
+          const nota = paso.nota?.[sistema];
+          return (
+            <li key={paso.texto} className="grid gap-4 md:grid-cols-[auto_1fr] md:gap-6">
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-honey/40 font-mono text-[0.875rem] text-honey"
+                aria-hidden
+              >
+                {i + 1}
+              </span>
+              <div className="min-w-0">
+                <p className="leading-[1.65] text-coal-text/80">{t(paso.texto)}</p>
+                <Bloque codigo={codigo} lenguaje="sh" className="mt-4" />
+                {nota && <p className="mt-3 text-[0.875rem] leading-[1.55] text-coal-mute">{t(nota)}</p>}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
 
 export default function DondeEncenderlo() {
   const { t } = useTranslation();
@@ -136,7 +243,9 @@ export default function DondeEncenderlo() {
           ))}
         </div>
 
-        <ol role="tabpanel" className="mt-10 flex max-w-3xl flex-col gap-9">
+        {opcion === 'local' && <MaquinaPropia />}
+
+        <ol role="tabpanel" hidden={opcion === 'local'} className="mt-10 flex max-w-3xl flex-col gap-9">
           {PASOS[opcion].map((paso, i) => (
             <li key={paso.texto} className="grid gap-4 md:grid-cols-[auto_1fr] md:gap-6">
               <span

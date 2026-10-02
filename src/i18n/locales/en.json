@@ -1840,9 +1840,22 @@
       "local": {
         "titulo": "On your machine",
         "sub": "Your computer · free · with a Cloudflare tunnel",
-        "p1": "Generate the agent and start it with pm2, just like on a server.",
-        "p2": "Your computer has no public address: a Cloudflare tunnel gives it one without opening ports. You need a domain added to Cloudflare (the free plan is enough) and cloudflared installed. To keep the tunnel up after a reboot, install it as a service (cloudflared service install).",
-        "p3": "Put the tunnel's address in the .env, restart and register the agent.",
+        "sistema": "Operating system",
+        "so": {
+          "windows": "Windows",
+          "mac": "macOS",
+          "linux": "Linux"
+        },
+        "p1": "Install Node and cloudflared.",
+        "p2": "Generate the agent and start it with pm2, which restarts it if it crashes and brings it back up when the computer turns on.",
+        "p3": "Create the tunnel from the Cloudflare dashboard: in Zero Trust → Networks → Tunnels, create a tunnel, choose your system and copy the command it gives you, which already carries its token. It installs it as a service, so it starts by itself on boot. Then, under Public Hostname, add agente.your-domain.com pointing to http://localhost:8787. You need a domain added to Cloudflare; the free plan is enough.",
+        "p4": "Put the tunnel's address in the .env, restart and register the agent.",
+        "p5": "Keep it from sleeping: neither when idle nor when the lid is closed. And leave it plugged in.",
+        "notaMac": "With Homebrew (brew.sh). If you don't have it, install Node from nodejs.org and cloudflared from Cloudflare's downloads page.",
+        "notaLinux": "For Ubuntu and Debian on a 64-bit machine (amd64). On another distribution or on ARM, download the matching cloudflared from its GitHub releases.",
+        "notaStartup": "pm2 startup prints one more line: copy it and run it, or the agent won't start by itself when the computer turns on.",
+        "notaWindows": "Windows has no pm2 startup: this task relaunches the agent every time you sign in. Turn on automatic sign-in, because Windows restarts on its own to update.",
+        "notaAdmin": "In a terminal opened as administrator.",
         "aviso": "Only if your machine is always on: no sleep, lid open and a stable connection. If it goes off, a client sends their job and nobody answers, with their payment already locked. Fine for testing; for selling, a server is better."
       },
       "otras": {

@@ -1840,9 +1840,22 @@
       "local": {
         "titulo": "Na sua máquina",
         "sub": "Seu computador · grátis · com um túnel da Cloudflare",
-        "p1": "Gere o agente e inicie-o com o pm2, igual a num servidor.",
-        "p2": "Seu computador não tem endereço público: um túnel da Cloudflare dá um a ele sem abrir portas. Você precisa de um domínio adicionado à Cloudflare (o plano grátis basta) e do cloudflared instalado. Para o túnel continuar depois de reiniciar, instale-o como serviço (cloudflared service install).",
-        "p3": "Coloque o endereço do túnel no .env, reinicie e registre o agente.",
+        "sistema": "Sistema operacional",
+        "so": {
+          "windows": "Windows",
+          "mac": "macOS",
+          "linux": "Linux"
+        },
+        "p1": "Instale o Node e o cloudflared.",
+        "p2": "Gere o agente e inicie-o com o pm2, que o reinicia se ele cair e o levanta de novo quando o computador liga.",
+        "p3": "Crie o túnel pelo painel da Cloudflare: em Zero Trust → Networks → Tunnels, crie um túnel, escolha seu sistema e copie o comando que ele te dá, que já leva o token. Ele o instala como serviço, então inicia sozinho ao ligar. Depois, em Public Hostname, adicione agente.seu-dominio.com apontando para http://localhost:8787. Você precisa de um domínio adicionado à Cloudflare; o plano grátis basta.",
+        "p4": "Coloque o endereço do túnel no .env, reinicie e registre o agente.",
+        "p5": "Que ele não durma: nem por inatividade nem ao fechar a tampa. E deixe-o ligado na tomada.",
+        "notaMac": "Com o Homebrew (brew.sh). Se não o tiver, instale o Node pelo nodejs.org e o cloudflared pela página de downloads da Cloudflare.",
+        "notaLinux": "Para Ubuntu e Debian num computador de 64 bits (amd64). Em outra distribuição ou em ARM, baixe o cloudflared correspondente nas releases dele no GitHub.",
+        "notaStartup": "O pm2 startup imprime mais uma linha: copie e execute, senão o agente não vai iniciar sozinho quando o computador ligar.",
+        "notaWindows": "O Windows não tem pm2 startup: esta tarefa reinicia o agente toda vez que você entra na sessão. Ative o login automático, porque o Windows reinicia sozinho para se atualizar.",
+        "notaAdmin": "Num terminal aberto como administrador.",
         "aviso": "Só se a sua máquina ficar sempre ligada: sem suspender, sem fechar a tampa e com conexão estável. Se ela desligar, o cliente envia o pedido e ninguém responde, com o pagamento já bloqueado. Para testar, tudo bem; para vender, melhor um servidor."
       },
       "otras": {
