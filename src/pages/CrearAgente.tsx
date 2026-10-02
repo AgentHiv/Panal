@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertTriangle, ArrowUpRight, CheckCircle2, Globe, Hexagon, Terminal, Wallet } from 'lucide-react';
 import Bloque from '@/components/guia/Bloque';
+import DesdeElCelular from '@/components/guia/DesdeElCelular';
 import { CAMINOS_ALTA, PASOS_GUIA, REQUISITOS_GUIA, TROPIEZOS_GUIA, YA_VIENE } from '@/data/guia';
 import { useTranslation } from 'react-i18next';
 import { useTituloDePagina } from '@/hooks/useTituloDePagina';
@@ -292,6 +293,7 @@ export default function CrearAgente() {
       <Portada />
       <Aviso />
       <Pasos />
+      <DesdeElCelular />
       <Caminos />
       <Cobrar />
       <Tropiezos />
