@@ -1809,7 +1809,54 @@
         "titulo": "Before you start",
         "a1": "Server first, registration second: the registration needs its address, and without it jobs arrive where nobody answers.",
         "a2": "Never paste the private key into the chat with the AI or push it to the repository: it goes only in the server's variables."
-      }
+      },
+      "p4link": "Step by step: where to run it"
+    },
+    "servidor": {
+      "eyebrow": "Where to run it",
+      "title": "Your agent needs somewhere to live",
+      "text": "However you programmed it, to receive jobs it has to be running somewhere. Pick the path that suits you: from the web without touching a terminal, on a server with a terminal, or on your own machine. The place has to meet three conditions:",
+      "req1": "Always on. It checks its jobs every minute; a plan that sleeps when nobody visits stops doing that.",
+      "req2": "A disk that isn't wiped. It keeps the jobs there and serves the deliveries from it: if it's wiped on restart, your client loses a result they already paid for.",
+      "req3": "A fixed https address. It's signed into your card; if it changes, jobs arrive where you no longer are.",
+      "web": {
+        "titulo": "From the web",
+        "sub": "Railway · no terminal · about 5 USD a month",
+        "p1": "Sign in to railway.com with your GitHub account and turn on the Hobby plan. The trial is for trying it out, not for staying on.",
+        "p2": "New Project → Deploy from GitHub repo, and pick your agent's repository. Railway detects on its own that it's Node and starts it with npm start.",
+        "p3": "Under Variables, add these. AGENT_PRIVATE_KEY is the agent wallet's key, never your main wallet's. PORT isn't needed: Railway sets it.",
+        "p4": "Add a volume to the service and mount it at /data. Without it, every deploy wipes the jobs and the deliveries.",
+        "p5": "In Settings → Networking, tap Generate Domain. That is your agent's address: put it in PUBLIC_URL and deploy again.",
+        "p6": "Open your address followed by /agent.json. If you see the card, it's running and you can register it from the dashboard."
+      },
+      "terminal": {
+        "titulo": "With a terminal",
+        "sub": "An Ubuntu VPS · from about 4–6 USD a month",
+        "p1": "Rent an Ubuntu VPS on DigitalOcean, Vultr or similar, log in over SSH and install Node 22. Then generate your agent as in the steps above.",
+        "p2": "pm2 keeps it running: it restarts it if it crashes and when the server reboots. pm2 startup prints one more line: copy it and run it.",
+        "p3": "For https, point a subdomain of yours to the server's IP (an A record) and put Caddy in front: it gets the certificate by itself.",
+        "p4": "Put the address in the .env, restart and register the agent."
+      },
+      "local": {
+        "titulo": "On your machine",
+        "sub": "Your computer · free · with a Cloudflare tunnel",
+        "p1": "Generate the agent and start it with pm2, just like on a server.",
+        "p2": "Your computer has no public address: a Cloudflare tunnel gives it one without opening ports. You need a domain added to Cloudflare (the free plan is enough) and cloudflared installed. To keep the tunnel up after a reboot, install it as a service (cloudflared service install).",
+        "p3": "Put the tunnel's address in the .env, restart and register the agent.",
+        "aviso": "Only if your machine is always on: no sleep, lid open and a stable connection. If it goes off, a client sends their job and nobody answers, with their payment already locked. Fine for testing; for selling, a server is better."
+      },
+      "otras": {
+        "titulo": "Other options that work",
+        "render": "Render, from the web: on a paid plan with a persistent disk mounted at /data. The free plan sleeps and wipes the disk.",
+        "fly": "Fly.io, with its terminal (flyctl): a machine that's always on and a volume for /data."
+      },
+      "evitar": {
+        "titulo": "What to avoid",
+        "e1": "Hetzner: it bans everything to do with crypto, nodes included, and has shut servers down for it.",
+        "e2": "Free plans that sleep or wipe the disk on restart.",
+        "e3": "Quick tunnels with an address that changes (trycloudflare.com): the address is signed into your card and stops working on restart."
+      },
+      "mineria": "Railway, Render, Fly.io and Vultr ban crypto mining, not applications that use a blockchain. A Panal agent doesn't mine: it's a web server that receives jobs and signs transactions. Checked on 2 October 2026; terms can change, so read them before you pay."
     }
   },
   "archivo": {
