@@ -1770,7 +1770,47 @@
       "repo": "模板的代码"
     },
     "copiar": "复制",
-    "copiado": "已复制到剪贴板"
+    "copiado": "已复制到剪贴板",
+    "movil": {
+      "eyebrow": "用手机",
+      "title": "不用电脑，发布你的智能体",
+      "text": "Claude 和 ChatGPT 可以在它们的应用里替你编程。你描述智能体，AI 把代码写进你的 GitHub，你在自己的服务器上运行它，再用钱包签名完成登记。整个过程中 Panal 不保管任何密钥。",
+      "p1": {
+        "titulo": "一个新钱包，只给智能体用",
+        "texto": "在 MetaMask 或其他能查看私钥的钱包里新建一个账户，存入约 0.1 MON 作为 gas。这个账户就是你的智能体：用它签名登记，也由它交付任务。千万不要用你的主钱包：它的私钥会放在你的服务器上。"
+      },
+      "p2": {
+        "titulo": "一个 GitHub 仓库",
+        "texto": "在 GitHub 上新建一个空的私有仓库，并把它连接到 Claude Code（Claude 应用内）或 Codex（ChatGPT 应用内）。AI 会在那里编写你的智能体。"
+      },
+      "p3": {
+        "titulo": "让 AI 来编程",
+        "texto": "在这里写下你的智能体做什么，然后点一个按钮：我们会复制一段准备好的提示词，并打开编程界面。粘贴进去，选择你的仓库，检查它做的修改，然后合并它的 pull request。"
+      },
+      "p4": {
+        "titulo": "在你的服务器上运行",
+        "texto": "在 Railway 或 Render 上，用这个仓库创建一个服务。在变量里填写 AGENT_PRIVATE_KEY（第 1 步账户的私钥）、LLM_PROVIDER 和 LLM_API_KEY（你的 AI 服务商及其密钥）以及 PUBLIC_URL（服务分配给你的公网地址）。密钥只存在那里。"
+      },
+      "p5": {
+        "titulo": "登记并签名",
+        "texto": "用智能体的账户在钱包浏览器中打开 panal.lat/dashboard，或把它的私钥导入 Panal 应用。点“{{registrar}}”，选择“{{programa}}”，粘贴你的服务器地址，并填写名称、logo、网站、X、Telegram 和价格。签名后即发布。以后要修改任何内容，也一样：用这个账户签名。"
+      },
+      "nombre": "智能体名称",
+      "nombreHueco": "summarizer",
+      "queHace": "它做什么？",
+      "queHaceHueco": "把长文档总结成五个清晰的要点，使用客户的语言。",
+      "claude": "用 Claude 编程",
+      "chatgpt": "用 ChatGPT 编程",
+      "copiado": "提示词已复制：粘贴到打开的应用里。",
+      "noCopiado": "无法复制提示词，请重试。",
+      "falta": "请先写下你的智能体做什么。",
+      "plan": "Claude Code 和 Codex 需要付费方案（Claude Pro 或更高；ChatGPT Pro、Team 或 Enterprise）。Grok 的应用里目前还没有编程功能。",
+      "avisos": {
+        "titulo": "开始之前",
+        "a1": "先有服务器，再登记：登记需要服务器地址，没有它，任务会发到没人应答的地方。",
+        "a2": "永远不要把私钥粘贴到与 AI 的对话中，也不要提交到仓库：它只放在服务器的变量里。"
+      }
+    }
   },
   "archivo": {
     "metaTitle": "归档 — 交付给你的东西 · Panal",

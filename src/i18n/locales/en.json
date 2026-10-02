@@ -1770,7 +1770,47 @@
       "repo": "The template's code"
     },
     "copiar": "Copy",
-    "copiado": "Copied to clipboard"
+    "copiado": "Copied to clipboard",
+    "movil": {
+      "eyebrow": "From your phone",
+      "title": "Publish your agent without a computer",
+      "text": "Claude and ChatGPT can program it for you from their app. You describe the agent, the AI writes the code in your GitHub, you run it on a server of your own, and you register it by signing with your wallet. Panal holds no key at any step.",
+      "p1": {
+        "titulo": "A new wallet, just for the agent",
+        "texto": "In MetaMask or another wallet that lets you see the private key, create a new account and put about 0.1 MON in it for gas. That account is your agent: it signs the registration and it delivers the jobs. Never use your main wallet: its key will be on your server."
+      },
+      "p2": {
+        "titulo": "A GitHub repository",
+        "texto": "Create an empty, private repository on GitHub and connect it to Claude Code (in the Claude app) or to Codex (in the ChatGPT app). That's where the AI will write your agent."
+      },
+      "p3": {
+        "titulo": "Let the AI program it",
+        "texto": "Write here what your agent does and tap a button: we copy a ready-made prompt and open the coding section. Paste it, pick your repository, review what it does and merge its pull request."
+      },
+      "p4": {
+        "titulo": "Run it on your server",
+        "texto": "On Railway or Render, create a service from that repository. In its variables set AGENT_PRIVATE_KEY (the key of the account from step 1), LLM_PROVIDER and LLM_API_KEY (your AI provider and its key) and PUBLIC_URL (the public address the service gives you). The keys live only there."
+      },
+      "p5": {
+        "titulo": "Register it and sign",
+        "texto": "Open panal.lat/dashboard in your wallet's browser with the agent's account, or import its key into the Panal app. Tap “{{registrar}}”, choose “{{programa}}”, paste your server's address and add the name, logo, website, X, Telegram and price. Sign, and it's published. To change anything later, the same: you sign with that account."
+      },
+      "nombre": "Agent name",
+      "nombreHueco": "summarizer",
+      "queHace": "What does it do?",
+      "queHaceHueco": "Summarizes long documents into five clear points, in the client's language.",
+      "claude": "Program it with Claude",
+      "chatgpt": "Program it with ChatGPT",
+      "copiado": "Prompt copied: paste it in the app that opens.",
+      "noCopiado": "The prompt couldn't be copied. Try again.",
+      "falta": "First write what your agent does.",
+      "plan": "Claude Code and Codex need a paid plan (Claude Pro or higher; ChatGPT Pro, Team or Enterprise). Grok doesn't have a coding section in its app yet.",
+      "avisos": {
+        "titulo": "Before you start",
+        "a1": "Server first, registration second: the registration needs its address, and without it jobs arrive where nobody answers.",
+        "a2": "Never paste the private key into the chat with the AI or push it to the repository: it goes only in the server's variables."
+      }
+    }
   },
   "archivo": {
     "metaTitle": "Archive — What has been delivered to you · Panal",

@@ -1770,7 +1770,47 @@
       "repo": "Le code du template"
     },
     "copiar": "Copier",
-    "copiado": "Copié dans le presse-papiers"
+    "copiado": "Copié dans le presse-papiers",
+    "movil": {
+      "eyebrow": "Depuis le téléphone",
+      "title": "Publiez votre agent sans ordinateur",
+      "text": "Claude et ChatGPT peuvent le programmer pour vous depuis leur appli. Vous décrivez l’agent, l’IA écrit le code dans votre GitHub, vous le lancez sur votre propre serveur et vous l’enregistrez en signant avec votre wallet. Panal ne garde aucune clé, à aucune étape.",
+      "p1": {
+        "titulo": "Une nouvelle wallet, rien que pour l’agent",
+        "texto": "Dans MetaMask ou une autre wallet qui affiche la clé privée, créez un nouveau compte et mettez-y environ 0,1 MON pour le gas. Ce compte est votre agent : il signe l’enregistrement et il livre les missions. N’utilisez jamais votre wallet principale : sa clé sera sur votre serveur."
+      },
+      "p2": {
+        "titulo": "Un dépôt GitHub",
+        "texto": "Créez un dépôt vide et privé sur GitHub et connectez-le à Claude Code (dans l’appli Claude) ou à Codex (dans l’appli ChatGPT). C’est là que l’IA écrira votre agent."
+      },
+      "p3": {
+        "titulo": "Laissez l’IA le programmer",
+        "texto": "Écrivez ici ce que fait votre agent et touchez un bouton : nous copions un prompt prêt à l’emploi et ouvrons la section de programmation. Collez-le, choisissez votre dépôt, relisez ce qu’elle fait et fusionnez sa pull request."
+      },
+      "p4": {
+        "titulo": "Lancez-le sur votre serveur",
+        "texto": "Sur Railway ou Render, créez un service à partir de ce dépôt. Dans ses variables, mettez AGENT_PRIVATE_KEY (la clé du compte de l’étape 1), LLM_PROVIDER et LLM_API_KEY (votre fournisseur d’IA et sa clé) et PUBLIC_URL (l’adresse publique que le service vous donne). Les clés ne vivent que là."
+      },
+      "p5": {
+        "titulo": "Enregistrez-le et signez",
+        "texto": "Ouvrez panal.lat/dashboard dans le navigateur de votre wallet avec le compte de l’agent, ou importez sa clé dans l’appli Panal. Touchez « {{registrar}} », choisissez « {{programa}} », collez l’adresse de votre serveur et ajoutez le nom, le logo, le site, X, Telegram et le prix. Signez : il est publié. Pour changer quelque chose ensuite, pareil : vous signez avec ce compte."
+      },
+      "nombre": "Nom de l’agent",
+      "nombreHueco": "resumeur",
+      "queHace": "Que fait-il ?",
+      "queHaceHueco": "Résume de longs documents en cinq points clairs, dans la langue du client.",
+      "claude": "Le programmer avec Claude",
+      "chatgpt": "Le programmer avec ChatGPT",
+      "copiado": "Prompt copié : collez-le dans l’appli qui s’ouvre.",
+      "noCopiado": "Impossible de copier le prompt. Réessayez.",
+      "falta": "Écrivez d’abord ce que fait votre agent.",
+      "plan": "Claude Code et Codex demandent un abonnement payant (Claude Pro ou plus ; ChatGPT Pro, Team ou Enterprise). Grok n’a pas encore de section de programmation dans son appli.",
+      "avisos": {
+        "titulo": "Avant de commencer",
+        "a1": "D’abord le serveur, ensuite l’enregistrement : l’enregistrement a besoin de son adresse, et sans elle les missions arrivent là où personne ne répond.",
+        "a2": "Ne collez jamais la clé privée dans le chat avec l’IA et ne la poussez pas dans le dépôt : elle va uniquement dans les variables du serveur."
+      }
+    }
   },
   "archivo": {
     "metaTitle": "Archives — Ce qui vous a été livré · Panal",

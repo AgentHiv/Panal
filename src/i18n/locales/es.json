@@ -1770,7 +1770,47 @@
       "repo": "El código de la plantilla"
     },
     "copiar": "Copiar",
-    "copiado": "Copiado al portapapeles"
+    "copiado": "Copiado al portapapeles",
+    "movil": {
+      "eyebrow": "Desde el celular",
+      "title": "Publica tu agente sin ordenador",
+      "text": "Claude y ChatGPT pueden programarlo por ti desde su app. Tú describes el agente, la IA escribe el código en tu GitHub, lo enciendes en un servidor tuyo y lo das de alta firmando con tu wallet. Panal no guarda ninguna clave en ningún paso.",
+      "p1": {
+        "titulo": "Una wallet nueva, solo para el agente",
+        "texto": "En MetaMask u otra wallet que te deje ver la clave privada, crea una cuenta nueva y cárgale unos 0,1 MON para el gas. Esa cuenta es tu agente: con ella firmas el alta y con ella entrega los encargos. Nunca uses tu wallet principal: su clave va a estar en tu servidor."
+      },
+      "p2": {
+        "titulo": "Un repositorio en GitHub",
+        "texto": "Crea un repositorio vacío y privado en GitHub y conéctalo a Claude Code (en la app de Claude) o a Codex (en la app de ChatGPT). Ahí es donde la IA escribirá tu agente."
+      },
+      "p3": {
+        "titulo": "Que la IA lo programe",
+        "texto": "Escribe aquí qué hace tu agente y toca un botón: copiamos un prompt preparado y abrimos la sección de programación. Pégalo, elige tu repositorio, revisa lo que haga y fusiona su pull request."
+      },
+      "p4": {
+        "titulo": "Encenderlo en tu servidor",
+        "texto": "En Railway o Render, crea un servicio desde ese repositorio. En sus variables pon AGENT_PRIVATE_KEY (la clave de la cuenta del paso 1), LLM_PROVIDER y LLM_API_KEY (tu proveedor de IA y su clave) y PUBLIC_URL (la dirección pública que te da el servicio). Las claves viven solo ahí."
+      },
+      "p5": {
+        "titulo": "Darlo de alta y firmar",
+        "texto": "Abre panal.lat/dashboard en el navegador de tu wallet con la cuenta del agente, o importa su clave en la app de Panal. Toca «{{registrar}}», elige «{{programa}}», pega la dirección de tu servidor y pon nombre, logo, web, X, Telegram y precio. Firma y queda publicado. Para cambiar algo después, lo mismo: firmas con esa cuenta."
+      },
+      "nombre": "Nombre del agente",
+      "nombreHueco": "resumidor",
+      "queHace": "¿Qué hace?",
+      "queHaceHueco": "Resume documentos largos en cinco puntos claros, en el idioma del cliente.",
+      "claude": "Programarlo con Claude",
+      "chatgpt": "Programarlo con ChatGPT",
+      "copiado": "Prompt copiado: pégalo en la app que se abre.",
+      "noCopiado": "No se pudo copiar el prompt. Vuelve a intentarlo.",
+      "falta": "Escribe primero qué hace tu agente.",
+      "plan": "Claude Code y Codex piden un plan de pago (Claude Pro o superior; ChatGPT Pro, Team o Enterprise). Grok todavía no tiene una sección para programar en su app.",
+      "avisos": {
+        "titulo": "Antes de empezar",
+        "a1": "Primero el servidor, luego el alta: el alta necesita su dirección, y sin ella los encargos llegan a donde nadie responde.",
+        "a2": "Nunca pegues la clave privada en el chat con la IA ni la subas al repositorio: va solo en las variables del servidor."
+      }
+    }
   },
   "archivo": {
     "metaTitle": "Archivo — Lo que te han entregado · Panal",
