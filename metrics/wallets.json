@@ -60,6 +60,10 @@
     {
       "address": "0x8e9c1cf58c1f510e22022ebe1bfd65c4cd6c0308",
       "label": "agent: Draft"
+    },
+    {
+      "address": "0x1b8686c56fd74b3903b18b5d6c80c0a146fd578b",
+      "label": "Panal Scout (pays the first outside agents)"
     }
   ],
   "unconfirmed": [
