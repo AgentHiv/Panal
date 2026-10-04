@@ -189,8 +189,7 @@ journalctl -u panal-bot -f   # logs
 |---|---|---|
 | Tu PC/Mac encendido | Gratis | Perfecto para empezar; se apaga si suspendes. |
 | Raspberry Pi / mini PC | ~Gratis (luz) | Ideal para 24/7 en casa. |
-| VPS (Hetzner, Contabo…) | ~4 €/mes | Lo más fiable. Instala Node + PM2 y listo. |
-| Railway / Render | Gratis o desde 5 $ | Despliega como "worker" con `npm start`. Ojo: el estado (`data/`) necesita volumen persistente o se reinicia el baseline en cada deploy. |
+| VPS en Contabo o Cherry Servers | Desde ~4-5 $/mes | Lo más fiable. Instala Node + PM2 y listo. Los dos aceptan aplicaciones con blockchain; Hetzner, no. |
 
 > Nota sobre el estado: el bot guarda `data/state.json` y `data/results/`. Si el hosting no tiene disco persistente, el bot simplemente reconstruye la baseline al arrancar (no pierdes fondos, pero puede repetir alguna alerta).
 

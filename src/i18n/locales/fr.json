@@ -1789,7 +1789,7 @@
       },
       "p4": {
         "titulo": "Lancez-le sur votre serveur",
-        "texto": "Sur Railway ou Render, créez un service à partir de ce dépôt. Dans ses variables, mettez AGENT_PRIVATE_KEY (la clé du compte de l’étape 1), LLM_PROVIDER et LLM_API_KEY (votre fournisseur d’IA et sa clé) et PUBLIC_URL (l’adresse publique que le service vous donne). Les clés ne vivent que là."
+        "texto": "Louez un serveur chez Contabo ou Cherry Servers et suivez les étapes de « Où le lancer », plus bas, mais au lieu de générer l’agent, clonez votre dépôt ; depuis le téléphone, c’est possible avec une appli SSH. Dans le .env, mettez AGENT_PRIVATE_KEY (la clé du compte de l’étape 1), LLM_PROVIDER et LLM_API_KEY (votre fournisseur d’IA et sa clé) et PUBLIC_URL (l’adresse https de votre serveur). Les clés ne vivent que là."
       },
       "p5": {
         "titulo": "Enregistrez-le et signez",
@@ -1815,27 +1815,18 @@
     "servidor": {
       "eyebrow": "Où le lancer",
       "title": "Votre agent a besoin d’un endroit où vivre",
-      "text": "Peu importe comment vous l’avez programmé : pour recevoir des missions, il doit tourner quelque part. Choisissez le chemin qui vous convient : depuis le web sans toucher à un terminal, sur un serveur avec un terminal, ou sur votre propre machine. L’endroit doit remplir trois conditions :",
+      "text": "Peu importe comment vous l’avez programmé : pour recevoir des missions, il doit tourner quelque part. Nous recommandons deux chemins : un serveur dans le cloud, chez Contabo ou Cherry Servers, ou votre propre machine. L’endroit doit remplir trois conditions :",
       "req1": "Toujours allumé. Il vérifie ses missions chaque minute ; une offre qui se met en veille sans visites cesse de le faire.",
       "req2": "Un disque qui ne s’efface pas. Il y garde les missions et sert les livraisons : s’il s’efface au redémarrage, votre client perd un résultat déjà payé.",
       "req3": "Une adresse https fixe. Elle est signée dans votre fiche ; si elle change, les missions arrivent là où vous n’êtes plus.",
-      "web": {
-        "titulo": "Depuis le web",
-        "sub": "Railway · sans terminal · environ 5 USD par mois",
-        "p1": "Connectez-vous à railway.com avec votre compte GitHub et activez l’offre Hobby. L’essai sert à tester, pas à rester allumé.",
-        "p2": "New Project → Deploy from GitHub repo, puis choisissez le dépôt de votre agent. Railway détecte tout seul que c’est du Node et le lance avec npm start.",
-        "p3": "Dans Variables, ajoutez celles-ci. AGENT_PRIVATE_KEY est la clé de la wallet de l’agent, jamais celle de votre wallet principale. PORT n’est pas nécessaire : Railway le définit.",
-        "p4": "Ajoutez un volume au service et montez-le sur /data. Sans lui, chaque déploiement efface les missions et les livraisons.",
-        "p5": "Dans Settings → Networking, touchez Generate Domain. C’est l’adresse de votre agent : mettez-la dans PUBLIC_URL et redéployez.",
-        "p6": "Ouvrez votre adresse suivie de /agent.json. Si vous voyez la fiche, il tourne et vous pouvez l’enregistrer depuis le tableau de bord."
-      },
-      "terminal": {
-        "titulo": "Avec un terminal",
-        "sub": "Un VPS Ubuntu · à partir d’environ 4–6 USD par mois",
-        "p1": "Louez un VPS Ubuntu chez DigitalOcean, Vultr ou équivalent, connectez-vous en SSH et installez Node 22. Puis générez votre agent comme dans les étapes ci-dessus.",
-        "p2": "pm2 le garde allumé : il le relance s’il plante et quand le serveur redémarre. pm2 startup affiche une ligne de plus : copiez-la et exécutez-la.",
-        "p3": "Pour le https, faites pointer un de vos sous-domaines vers l’IP du serveur (un enregistrement A) et placez Caddy devant : il obtient le certificat tout seul.",
-        "p4": "Mettez l’adresse dans le .env, redémarrez et enregistrez l’agent."
+      "nube": {
+        "titulo": "Dans le cloud",
+        "sub": "Contabo ou Cherry Servers · à partir d’environ 4–5 USD par mois",
+        "p1": "Créez un serveur Ubuntu 24.04 chez Contabo ou Cherry Servers (Cloud VPS) ; la plus petite offre suffit. Vous obtiendrez une IP et un mot de passe : connectez-vous en SSH depuis votre terminal, ou depuis votre téléphone avec une appli SSH.",
+        "p2": "Installez Node 22 et générez votre agent.",
+        "p3": "Lancez-le avec pm2, qui le relance s’il plante et quand le serveur redémarre. pm2 startup affiche une ligne de plus : copiez-la et exécutez-la.",
+        "p4": "Donnez-lui le https avec Caddy, qui obtient le certificat tout seul. Si vous avez un domaine, faites pointer un sous-domaine vers l’IP du serveur (un enregistrement A) et utilisez ce nom. Sinon, inutile d’acheter quoi que ce soit : utilisez votre IP avec des tirets au lieu des points, suivie de .sslip.io (par exemple 203-0-113-5.sslip.io pour l’IP 203.0.113.5).",
+        "p5": "Mettez cette adresse dans le .env, redémarrez et enregistrez l’agent."
       },
       "local": {
         "titulo": "Sur votre machine",
@@ -1858,18 +1849,13 @@
         "notaAdmin": "Dans un terminal ouvert en tant qu’administrateur.",
         "aviso": "Seulement si votre machine reste toujours allumée : sans veille, capot ouvert et avec une connexion stable. Si elle s’éteint, le client envoie sa mission et personne ne répond, avec son paiement déjà bloqué. Pour tester, ça va ; pour vendre, mieux vaut un serveur."
       },
-      "otras": {
-        "titulo": "Autres options qui conviennent",
-        "render": "Render, depuis le web : avec une offre payante et un disque persistant monté sur /data. L’offre gratuite se met en veille et efface le disque.",
-        "fly": "Fly.io, avec son terminal (flyctl) : une machine toujours allumée et un volume pour /data."
-      },
       "evitar": {
         "titulo": "À éviter",
         "e1": "Hetzner : il interdit tout ce qui touche aux cryptos, nœuds compris, et a déjà coupé des serveurs pour cela.",
         "e2": "Les offres gratuites qui se mettent en veille ou effacent le disque au redémarrage.",
         "e3": "Les tunnels rapides à l’adresse changeante (trycloudflare.com) : l’adresse est signée dans votre fiche et ne vaut plus rien au redémarrage."
       },
-      "mineria": "Railway, Render, Fly.io et Vultr interdisent le minage de cryptomonnaies, pas les applications qui utilisent une blockchain. Un agent Panal ne mine pas : c’est un serveur web qui reçoit des missions et signe des transactions. Vérifié le 2 octobre 2026 ; les conditions peuvent changer, lisez-les avant de payer."
+      "mineria": "Contabo et Cherry Servers acceptent les applications qui utilisent une blockchain : Contabo n’interdit que le minage sur ses VPS, et Cherry Servers propose des serveurs conçus pour les nœuds Monad. Un agent Panal ne mine pas : c’est un serveur web qui reçoit des missions et signe des transactions. Vérifié le 4 octobre 2026 ; les conditions peuvent changer, lisez-les avant de payer."
     }
   },
   "archivo": {

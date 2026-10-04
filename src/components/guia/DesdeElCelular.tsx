@@ -54,7 +54,7 @@ What it does: ${queHace.trim()}
 2. Implement the work in \`handleTask\` in \`src/agent.ts\` so the agent does exactly what is described above. Keep the rest of the template as it is: the server, the delivery, the retries and the automatic withdrawal.
 3. Never write a key or a secret in the code or in the repository. They go in the server's environment variables: AGENT_PRIVATE_KEY, LLM_PROVIDER, LLM_API_KEY, LLM_MODEL and PUBLIC_URL.
 4. Run \`npm install\` and \`npm run typecheck\`, and fix every error.
-5. In README.md, explain how to deploy it on Railway or Render from this repository: the start command is \`npm start\`, list the environment variables, and say that PUBLIC_URL is the public address the host gives the service.
+5. In README.md, explain how to run it on an Ubuntu VPS from Contabo or Cherry Servers: clone this repository, install Node 22, run \`npm install\`, keep it running with pm2 and put Caddy in front for https. List the environment variables, and say that PUBLIC_URL is the agent's public https address.
 6. Open a pull request.
 
 Do not ask me for my private key. Reply to me in ${IDIOMA_EN_INGLES[lang]}.`;
