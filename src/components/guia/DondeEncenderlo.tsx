@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, CheckCircle2, Globe, Laptop, Terminal } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Cloud, Laptop } from 'lucide-react';
 import Bloque from '@/components/guia/Bloque';
 import { cn } from '@/lib/utils';
 
 /**
- * Dónde encender el agente: desde la web, con terminal o en la máquina propia.
+ * Dónde encender el agente: en un servidor en la nube o en la máquina propia.
  *
  * LO QUE DECIDE EL SITIO no es el precio, son tres cosas que la plantilla da
  * por hechas (create-agent/template/src/server.ts):
@@ -17,58 +17,53 @@ import { cn } from '@/lib/utils';
  *     que ya pagó.
  *   - Una dirección https fija. Va firmada en la ficha (`bot:`); si cambia, los
  *     encargos llegan a donde ya no hay nadie.
- * Y todo lo que pone un proxy delante (Railway, Render, Caddy, cloudflared)
- * necesita `TRAS_PROXY=1`, o el límite por IP se vuelve uno solo para todos.
+ * Y todo lo que pone un proxy delante (Caddy, cloudflared) necesita
+ * `TRAS_PROXY=1`, o el límite por IP se vuelve uno solo para todos.
  *
- * CRIPTO Y SERVIDORES (revisado el 2026-10-02). Railway, Render, Fly.io y Vultr
- * prohíben la MINERÍA, no las aplicaciones con blockchain; un agente no mina.
- * Hetzner prohíbe todo lo que tenga que ver con cripto, nodos incluidos, y ya
- * ha cortado servidores por eso: se nombra para evitarlo.
+ * SOLO DOS PROVEEDORES EN LA NUBE, por decisión del fundador (2026-10-04):
+ * Contabo y Cherry Servers. Son de los pocos que, por unos pocos dólares al
+ * mes, aceptan sin reparos lo que tenga que ver con cripto: Contabo permite
+ * nodos y aplicaciones con blockchain y solo prohíbe minar en sus VPS, y
+ * Cherry Servers tiene servidores pensados para nodos de Monad. Un agente no
+ * mina. Hetzner, en cambio, prohíbe todo lo que suene a cripto y ha cortado
+ * servidores por eso: se nombra para evitarlo.
+ *
+ * HTTPS SIN COMPRAR DOMINIO. Un VPS da una IP, no una dirección https. Con
+ * dominio propio basta un registro A; sin él, `<ip-con-guiones>.sslip.io`
+ * resuelve a esa IP y Caddy le saca certificado igual. Así nadie tiene que
+ * comprar nada para cumplir la tercera condición.
  */
 
 const OPCIONES = [
-  { id: 'web', Icono: Globe },
-  { id: 'terminal', Icono: Terminal },
+  { id: 'nube', Icono: Cloud },
   { id: 'local', Icono: Laptop },
 ] as const;
 type Opcion = (typeof OPCIONES)[number]['id'];
 
 /** Los pasos de cada camino; el código va literal, sin traducir. */
 const PASOS: Record<Opcion, Array<{ texto: string; codigo?: string; lenguaje?: 'sh' | 'env' }>> = {
-  web: [
-    { texto: 'guia.servidor.web.p1' },
-    { texto: 'guia.servidor.web.p2' },
+  nube: [
+    { texto: 'guia.servidor.nube.p1', codigo: 'ssh root@TU-IP', lenguaje: 'sh' },
     {
-      texto: 'guia.servidor.web.p3',
-      codigo:
-        'AGENT_PRIVATE_KEY=0x…\nLLM_PROVIDER=deepseek\nLLM_API_KEY=…\nTRAS_PROXY=1\nDATA_DIR=/data\nPUBLIC_URL=https://mi-agente.up.railway.app',
-      lenguaje: 'env',
-    },
-    { texto: 'guia.servidor.web.p4' },
-    { texto: 'guia.servidor.web.p5' },
-    { texto: 'guia.servidor.web.p6' },
-  ],
-  terminal: [
-    {
-      texto: 'guia.servidor.terminal.p1',
+      texto: 'guia.servidor.nube.p2',
       codigo:
         'curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -\nsudo apt-get install -y nodejs\n\nnpx create-panal-agent mi-agente\ncd mi-agente && npm install',
       lenguaje: 'sh',
     },
     {
-      texto: 'guia.servidor.terminal.p2',
-      codigo: 'sudo npm install -g pm2\npm2 start npm --name mi-agente -- start\npm2 save\npm2 startup',
+      texto: 'guia.servidor.nube.p3',
+      codigo: 'sudo npm install -g pm2\npm2 start node_modules/tsx/dist/cli.mjs --name mi-agente -- src/server.ts\npm2 save\npm2 startup',
       lenguaje: 'sh',
     },
     {
-      texto: 'guia.servidor.terminal.p3',
+      texto: 'guia.servidor.nube.p4',
       codigo:
-        "sudo apt-get install -y caddy\nprintf 'agente.tu-dominio.com {\\n  reverse_proxy localhost:8787\\n}\\n' | sudo tee /etc/caddy/Caddyfile\nsudo systemctl reload caddy",
+        "sudo apt-get install -y caddy\nprintf '203-0-113-5.sslip.io {\\n  reverse_proxy localhost:8787\\n}\\n' | sudo tee /etc/caddy/Caddyfile\nsudo systemctl reload caddy",
       lenguaje: 'sh',
     },
     {
-      texto: 'guia.servidor.terminal.p4',
-      codigo: '# .env\nPUBLIC_URL=https://agente.tu-dominio.com\nTRAS_PROXY=1\n\npm2 restart mi-agente\nnpm run register',
+      texto: 'guia.servidor.nube.p5',
+      codigo: '# .env\nPUBLIC_URL=https://203-0-113-5.sslip.io\nTRAS_PROXY=1\n\npm2 restart mi-agente\nnpm run register',
       lenguaje: 'sh',
     },
   ],
@@ -201,7 +196,7 @@ function MaquinaPropia() {
 
 export default function DondeEncenderlo() {
   const { t } = useTranslation();
-  const [opcion, setOpcion] = useState<Opcion>('web');
+  const [opcion, setOpcion] = useState<Opcion>('nube');
 
   return (
     <section id="servidor" className="scroll-mt-24 border-t border-coal-line bg-coal py-24 text-coal-text md:py-28">
@@ -219,7 +214,7 @@ export default function DondeEncenderlo() {
           ))}
         </ul>
 
-        <div role="tablist" aria-label={t('guia.servidor.title')} className="mt-12 grid gap-3 sm:grid-cols-3">
+        <div role="tablist" aria-label={t('guia.servidor.title')} className="mt-12 grid gap-3 sm:grid-cols-2">
           {OPCIONES.map(({ id, Icono }) => (
             <button
               key={id}
@@ -269,12 +264,7 @@ export default function DondeEncenderlo() {
           </p>
         )}
 
-        <div className="mt-14 grid gap-5 md:grid-cols-2">
-          <div className="rounded-xl border border-coal-line bg-coal-2 p-6">
-            <p className="font-semibold text-coal-text">{t('guia.servidor.otras.titulo')}</p>
-            <p className="mt-3 leading-[1.6] text-coal-text/75">{t('guia.servidor.otras.render')}</p>
-            <p className="mt-3 leading-[1.6] text-coal-text/75">{t('guia.servidor.otras.fly')}</p>
-          </div>
+        <div className="mt-14 max-w-3xl">
           <div className="rounded-xl border border-honey/40 bg-honey/[0.07] p-6">
             <p className="flex items-center gap-2 font-semibold text-coal-text">
               <AlertTriangle size={16} className="text-honey" strokeWidth={2} />

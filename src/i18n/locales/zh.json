@@ -1789,7 +1789,7 @@
       },
       "p4": {
         "titulo": "在你的服务器上运行",
-        "texto": "在 Railway 或 Render 上，用这个仓库创建一个服务。在变量里填写 AGENT_PRIVATE_KEY（第 1 步账户的私钥）、LLM_PROVIDER 和 LLM_API_KEY（你的 AI 服务商及其密钥）以及 PUBLIC_URL（服务分配给你的公网地址）。密钥只存在那里。"
+        "texto": "在 Contabo 或 Cherry Servers 租一台服务器，按下方“在哪里运行”的步骤操作，只是不用生成智能体，而是克隆你的仓库；在手机上可以用 SSH 应用完成。在 .env 中填写 AGENT_PRIVATE_KEY（第 1 步账户的私钥）、LLM_PROVIDER 和 LLM_API_KEY（你的 AI 服务商及其密钥）以及 PUBLIC_URL（你服务器的 https 地址）。密钥只存在那里。"
       },
       "p5": {
         "titulo": "登记并签名",
@@ -1815,27 +1815,18 @@
     "servidor": {
       "eyebrow": "在哪里运行",
       "title": "你的智能体需要一个安身之处",
-      "text": "无论你怎么编写它，要接收任务，它都必须在某处运行。选择适合你的方式：通过网页、无需终端；在服务器上用终端；或者在你自己的电脑上。这个地方必须满足三点：",
+      "text": "无论你怎么编写它，要接收任务，它都必须在某处运行。我们推荐两种方式：在 Contabo 或 Cherry Servers 租一台云服务器，或者用你自己的电脑。这个地方必须满足三点：",
       "req1": "始终在线。它每分钟检查一次任务；没人访问就休眠的方案会让它停下来。",
       "req2": "不会被清空的磁盘。任务存放在那里，交付结果也从那里提供：如果重启时磁盘被清空，客户会失去已经付过钱的结果。",
       "req3": "固定的 https 地址。它签名写在你的资料卡里；地址一变，任务就会发到你已不在的地方。",
-      "web": {
-        "titulo": "通过网页",
-        "sub": "Railway · 无需终端 · 每月约 5 美元",
-        "p1": "用 GitHub 账号登录 railway.com，并开通 Hobby 方案。试用版只适合试一试，不适合长期运行。",
-        "p2": "New Project → Deploy from GitHub repo，选择你智能体的仓库。Railway 会自动识别这是 Node 项目，并用 npm start 启动。",
-        "p3": "在 Variables 里添加这些变量。AGENT_PRIVATE_KEY 是智能体钱包的私钥，绝不能是你主钱包的。PORT 不用填：Railway 会自动设置。",
-        "p4": "给服务添加一个卷（volume），挂载到 /data。没有它，每次部署都会清空任务和交付结果。",
-        "p5": "在 Settings → Networking 中点 Generate Domain。这就是你智能体的地址：填到 PUBLIC_URL 里，然后重新部署。",
-        "p6": "打开你的地址并在后面加上 /agent.json。如果能看到资料卡，说明它已在运行，就可以在控制台里登记了。"
-      },
-      "terminal": {
-        "titulo": "使用终端",
-        "sub": "Ubuntu VPS · 每月约 4–6 美元起",
-        "p1": "在 DigitalOcean、Vultr 或类似服务商租一台 Ubuntu VPS，用 SSH 登录并安装 Node 22。然后按上面的步骤生成你的智能体。",
-        "p2": "pm2 让它保持运行：崩溃时会重启它，服务器重启后也会自动拉起。pm2 startup 会再输出一行命令：复制并执行它。",
-        "p3": "要启用 https，把你的一个子域名指向服务器 IP（A 记录），再在前面放上 Caddy：它会自动申请证书。",
-        "p4": "把地址写进 .env，重启，然后登记智能体。"
+      "nube": {
+        "titulo": "云服务器",
+        "sub": "Contabo 或 Cherry Servers · 每月约 4–5 美元起",
+        "p1": "在 Contabo 或 Cherry Servers 创建一台 Ubuntu 24.04 服务器（Cloud VPS），最小的方案就够了。你会拿到一个 IP 和一个密码：在终端里用 SSH 登录，或在手机上用 SSH 应用登录。",
+        "p2": "安装 Node 22 并生成你的智能体。",
+        "p3": "用 pm2 启动它：崩溃时会重启，服务器重启后也会自动拉起。pm2 startup 会再输出一行命令：复制并执行它。",
+        "p4": "用 Caddy 启用 https，它会自动申请证书。如果你有域名，把一个子域名指向服务器 IP（A 记录），然后用这个名字。如果没有，也不用买：把 IP 中的点换成连字符，再加上 .sslip.io（例如 IP 203.0.113.5 对应 203-0-113-5.sslip.io）。",
+        "p5": "把这个地址写进 .env，重启，然后登记智能体。"
       },
       "local": {
         "titulo": "在你的电脑上",
@@ -1858,18 +1849,13 @@
         "notaAdmin": "在以管理员身份打开的终端中运行。",
         "aviso": "前提是你的电脑一直开着：不休眠、不合盖、网络稳定。一旦关机，客户发来任务却无人响应，而他的付款已经被锁定。用来测试没问题；要做生意，最好用服务器。"
       },
-      "otras": {
-        "titulo": "其他可用的选择",
-        "render": "Render，通过网页：使用付费方案，并把持久化磁盘挂载到 /data。免费方案会休眠并清空磁盘。",
-        "fly": "Fly.io，通过它的终端（flyctl）：一台始终在线的机器，加一个用于 /data 的卷。"
-      },
       "evitar": {
         "titulo": "要避免的",
         "e1": "Hetzner：禁止一切与加密货币有关的用途，包括节点，并已因此关停过服务器。",
         "e2": "会休眠或在重启时清空磁盘的免费方案。",
         "e3": "地址会变的快速隧道（trycloudflare.com）：地址签名写在你的资料卡里，重启后就失效了。"
       },
-      "mineria": "Railway、Render、Fly.io 和 Vultr 禁止的是挖矿，而不是使用区块链的应用。Panal 智能体不挖矿：它是一个接收任务并签署交易的网页服务器。核实于 2026 年 10 月 2 日；条款可能变化，付款前请先阅读。"
+      "mineria": "Contabo 和 Cherry Servers 都接受使用区块链的应用：Contabo 只禁止在其 VPS 上挖矿，Cherry Servers 还提供专为 Monad 节点设计的服务器。Panal 智能体不挖矿：它是一个接收任务并签署交易的网页服务器。核实于 2026 年 10 月 4 日；条款可能变化，付款前请先阅读。"
     }
   },
   "archivo": {

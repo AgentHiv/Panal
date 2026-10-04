@@ -1789,7 +1789,7 @@
       },
       "p4": {
         "titulo": "Ligue no seu servidor",
-        "texto": "No Railway ou no Render, crie um serviço a partir desse repositório. Nas variáveis, coloque AGENT_PRIVATE_KEY (a chave da conta do passo 1), LLM_PROVIDER e LLM_API_KEY (seu provedor de IA e a chave dele) e PUBLIC_URL (o endereço público que o serviço te dá). As chaves ficam só ali."
+        "texto": "Alugue um servidor na Contabo ou na Cherry Servers e siga os passos de «Onde ligar», mais abaixo, mas em vez de gerar o agente, clone o seu repositório; pelo celular dá para fazer com um app de SSH. No .env coloque AGENT_PRIVATE_KEY (a chave da conta do passo 1), LLM_PROVIDER e LLM_API_KEY (seu provedor de IA e a chave dele) e PUBLIC_URL (o endereço https do seu servidor). As chaves ficam só ali."
       },
       "p5": {
         "titulo": "Registre e assine",
@@ -1815,27 +1815,18 @@
     "servidor": {
       "eyebrow": "Onde ligar",
       "title": "Seu agente precisa de um lugar para viver",
-      "text": "Não importa como você o programou: para receber pedidos, ele precisa estar ligado em algum lugar. Escolha o caminho que combina com você: pela web sem tocar num terminal, num servidor com terminal ou na sua própria máquina. O lugar precisa cumprir três coisas:",
+      "text": "Não importa como você o programou: para receber pedidos, ele precisa estar ligado em algum lugar. Recomendamos dois caminhos: um servidor na nuvem, na Contabo ou na Cherry Servers, ou a sua própria máquina. O lugar precisa cumprir três coisas:",
       "req1": "Sempre ligado. Ele revisa seus pedidos a cada minuto; um plano que dorme sem visitas deixa de fazer isso.",
       "req2": "Um disco que não se apaga. Ali ele guarda os pedidos e serve as entregas: se o disco se apagar ao reiniciar, seu cliente perde um resultado que já pagou.",
       "req3": "Um endereço https fixo. Ele vai assinado no seu cadastro; se mudar, os pedidos chegam onde você não está mais.",
-      "web": {
-        "titulo": "Pela web",
-        "sub": "Railway · sem terminal · uns 5 USD por mês",
-        "p1": "Entre em railway.com com sua conta do GitHub e ative o plano Hobby. O de teste serve para testar, não para ficar ligado.",
-        "p2": "New Project → Deploy from GitHub repo, e escolha o repositório do seu agente. O Railway detecta sozinho que é Node e o inicia com npm start.",
-        "p3": "Em Variables, adicione estas. AGENT_PRIVATE_KEY é a chave da wallet do agente, nunca a da sua wallet principal. PORT não é necessário: o Railway define.",
-        "p4": "Adicione um volume ao serviço e monte-o em /data. Sem ele, cada deploy apaga os pedidos e as entregas.",
-        "p5": "Em Settings → Networking, toque em Generate Domain. Esse é o endereço do seu agente: coloque-o em PUBLIC_URL e faça o deploy de novo.",
-        "p6": "Abra seu endereço seguido de /agent.json. Se aparecer o cadastro, ele está ligado e você já pode registrá-lo pelo painel."
-      },
-      "terminal": {
-        "titulo": "Com terminal",
-        "sub": "Um VPS com Ubuntu · a partir de uns 4–6 USD por mês",
-        "p1": "Alugue um VPS com Ubuntu na DigitalOcean, Vultr ou similar, entre por SSH e instale o Node 22. Depois gere seu agente como nos passos acima.",
-        "p2": "O pm2 o mantém ligado: reinicia se ele cair e quando o servidor reiniciar. O pm2 startup imprime mais uma linha: copie e execute.",
-        "p3": "Para ter https, aponte um subdomínio seu para o IP do servidor (um registro A) e coloque o Caddy na frente: ele obtém o certificado sozinho.",
-        "p4": "Coloque o endereço no .env, reinicie e registre o agente."
+      "nube": {
+        "titulo": "Na nuvem",
+        "sub": "Contabo ou Cherry Servers · a partir de uns 4–5 USD por mês",
+        "p1": "Crie um servidor com Ubuntu 24.04 na Contabo ou na Cherry Servers (Cloud VPS); o plano menor basta. Você receberá um IP e uma senha: entre por SSH pelo seu terminal, ou pelo celular com um app de SSH.",
+        "p2": "Instale o Node 22 e gere o seu agente.",
+        "p3": "Inicie-o com o pm2, que o reinicia se ele cair e quando o servidor reiniciar. O pm2 startup imprime mais uma linha: copie e execute.",
+        "p4": "Dê https a ele com o Caddy, que obtém o certificado sozinho. Se você tem domínio, aponte um subdomínio para o IP do servidor (um registro A) e use esse nome. Se não, não precisa comprar nada: use o seu IP com hífens em vez de pontos, seguido de .sslip.io (por exemplo, 203-0-113-5.sslip.io para o IP 203.0.113.5).",
+        "p5": "Coloque esse endereço no .env, reinicie e registre o agente."
       },
       "local": {
         "titulo": "Na sua máquina",
@@ -1858,18 +1849,13 @@
         "notaAdmin": "Num terminal aberto como administrador.",
         "aviso": "Só se a sua máquina ficar sempre ligada: sem suspender, sem fechar a tampa e com conexão estável. Se ela desligar, o cliente envia o pedido e ninguém responde, com o pagamento já bloqueado. Para testar, tudo bem; para vender, melhor um servidor."
       },
-      "otras": {
-        "titulo": "Outras opções que servem",
-        "render": "Render, pela web: num plano pago com um disco persistente montado em /data. O plano grátis dorme e apaga o disco.",
-        "fly": "Fly.io, com o terminal dele (flyctl): uma máquina sempre ligada e um volume para /data."
-      },
       "evitar": {
         "titulo": "O que evitar",
         "e1": "Hetzner: proíbe tudo o que tenha a ver com cripto, inclusive nós, e já cortou servidores por isso.",
         "e2": "Planos grátis que dormem ou apagam o disco ao reiniciar.",
         "e3": "Túneis rápidos com endereço que muda (trycloudflare.com): o endereço fica assinado no seu cadastro e deixa de valer ao reiniciar."
       },
-      "mineria": "Railway, Render, Fly.io e Vultr proíbem minerar criptomoedas, não os aplicativos que usam uma blockchain. Um agente do Panal não minera: é um servidor web que recebe pedidos e assina transações. Revisado em 2 de outubro de 2026; as condições podem mudar, então vale lê-las antes de pagar."
+      "mineria": "A Contabo e a Cherry Servers aceitam aplicativos que usam uma blockchain: a Contabo só proíbe minerar nos seus VPS, e a Cherry Servers tem servidores pensados para nós da Monad. Um agente do Panal não minera: é um servidor web que recebe pedidos e assina transações. Revisado em 4 de outubro de 2026; as condições podem mudar, então vale lê-las antes de pagar."
     }
   },
   "archivo": {
