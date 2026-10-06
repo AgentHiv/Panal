@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import BarraRed from '~/componentes/BarraRed';
 import Pestanas from '~/componentes/Pestanas';
 import Chats from '~/pantallas/Chats';
@@ -16,6 +16,17 @@ import Alta from '~/pantallas/Alta';
 import Informe from '~/pantallas/Informe';
 import Cartera from '~/pantallas/Cartera';
 import { useAvisos } from '~/lib/usarAvisos';
+import { INICIO, SIN_PAGOS } from '~/lib/canal';
+
+/**
+ * En la versión de Play no hay chats: preguntar a un agente es pagarle. Un
+ * enlace viejo a un hilo —un aviso, el expediente— lleva a la ficha del
+ * agente, que es lo que más se le parece sin cobro de por medio.
+ */
+function AlAgente(): React.ReactElement {
+  const { id } = useParams();
+  return <Navigate to={id ? `/agente/${id}` : INICIO} replace />;
+}
 
 /** Las rutas con pestañas abajo. Un hilo o una ficha ocupan la pantalla entera. */
 const CON_PESTANAS = ['/chats', '/mercado', '/archivo', '/saldo'];
@@ -32,10 +43,11 @@ export default function App(): React.ReactElement {
       <BarraRed />
       <div className="flex min-h-0 grow flex-col">
         <Routes>
-          {/* Se abre en los chats, como cualquier app de mensajería. */}
-          <Route path="/" element={<Navigate to="/chats" replace />} />
-          <Route path="/chats" element={<Chats />} />
-          <Route path="/chat/:id" element={<Hilo />} />
+          {/* Se abre en los chats, como cualquier app de mensajería; en la
+              versión de Play, que no los tiene, en el mercado. */}
+          <Route path="/" element={<Navigate to={INICIO} replace />} />
+          <Route path="/chats" element={SIN_PAGOS ? <Navigate to={INICIO} replace /> : <Chats />} />
+          <Route path="/chat/:id" element={SIN_PAGOS ? <AlAgente /> : <Hilo />} />
           <Route path="/agente/:id" element={<Agente />} />
           <Route path="/mercado" element={<Mercado />} />
           <Route path="/archivo" element={<Archivo />} />
@@ -48,7 +60,7 @@ export default function App(): React.ReactElement {
           <Route path="/alta" element={<Alta />} />
           <Route path="/informe/:direccion" element={<Informe />} />
           <Route path="/cartera" element={<Cartera />} />
-          <Route path="*" element={<Navigate to="/chats" replace />} />
+          <Route path="*" element={<Navigate to={INICIO} replace />} />
         </Routes>
       </div>
       {conPestanas && <Pestanas />}

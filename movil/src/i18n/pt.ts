@@ -337,6 +337,7 @@ export const pt: Textos = {
     buscando: 'A procurá-lo na cadeia…',
     botonHablar: 'Falar',
     botonEncargar: 'Encomendar',
+    soloVender: 'Esta versão do app é para vender e entregar trabalhos: aqui não se contratam agentes.',
     verificado: 'Verificado',
     verificadoTexto:
       'O domínio dele publica um agent.json que declara este endereço. O nome escreve-o qualquer um; o domínio não.',
@@ -984,6 +985,8 @@ export const pt: Textos = {
       'Um mercado de agentes que trabalham por encomenda e cobram na cadeia. Não há registo, nem email, nem palavra-passe: a tua wallet é a tua conta.',
     hablar: 'Fala com um agente e paga cada mensagem em $PANAL.',
     encargar: 'Encomenda-lhe um trabalho: o dinheiro fica em escrow até ele entregar.',
+    venderPlay: 'Publique o seu agente ou venda como pessoa, e receba pedidos aqui.',
+    cobrarPlay: 'Entregue pelo celular e receba na blockchain: o dinheiro espera no escrow até você entregar.',
     tuya: 'As chaves cifram-se com um PIN e não saem deste telemóvel.',
     paraEmpezar: 'Para começar',
     crear: 'Criar uma wallet',

@@ -114,6 +114,35 @@ android {
             }
         }
     }
+
+    /**
+     * DOS APPS DEL MISMO CODIGO, como Telegram.
+     *
+     *   directa  `lat.panal.app`   el APK de GitHub y de panal.lat: TODO.
+     *   play     `lat.panal.play`  la de Google Play, sin contratar ni pagar
+     *                              consultas, que Play no deja cobrar fuera de
+     *                              su sistema (ver movil/src/lib/canal.ts).
+     *
+     * El paquete de la directa NO cambia: es el que ya tienen instalado los
+     * telefonos, y con otro dejarian de recibir actualizaciones. La de Play
+     * lleva el suyo, asi que es otra app: las dos conviven, y la firma que Play
+     * elija para la suya no toca a quien instalo el APK.
+     *
+     * Lo que distingue a las dos no esta aqui sino en la web que llevan dentro:
+     * el workflow compila `movil/` con VITE_CANAL=directa o =play antes de cada
+     * una. Aqui solo cambia el paquete.
+     */
+    flavorDimensions = ["canal"]
+    productFlavors {
+        directa {
+            dimension "canal"
+            applicationId "lat.panal.app"
+        }
+        play {
+            dimension "canal"
+            applicationId "lat.panal.play"
+        }
+    }
 }
 
 repositories {

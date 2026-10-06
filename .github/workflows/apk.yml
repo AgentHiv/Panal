@@ -14,9 +14,14 @@
 # En los dos casos se instala activando "orígenes desconocidos".
 #
 # Y, con la clave estable, sale ADEMÁS el AAB (Android App Bundle), que es lo
-# único que acepta Google Play. No se adjunta a la release: en un teléfono no se
-# puede instalar y solo confundiría a quien busca la app. Se baja de la página
-# de la ejecución, en «Artifacts», y se sube a mano a Play Console.
+# único que acepta Google Play. Es OTRA APP, como en Telegram: la variante
+# `play` (`lat.panal.play`), sin contratar ni pagar consultas, que Play no deja
+# cobrar fuera de su sistema. El APK es la variante `directa` (`lat.panal.app`),
+# completa. Ver `android/app/build.gradle` y `movil/src/lib/canal.ts`.
+#
+# El AAB no se adjunta a la release: en un teléfono no se puede instalar y solo
+# confundiría a quien busca la app. Se baja de la página de la ejecución, en
+# «Artifacts», y se sube a mano a Play Console.
 #
 # No corre en cada push. Un APK por commit no le sirve a nadie y son minutos de
 # CI: se lanza a mano, o publicando una etiqueta `apk-v1.0.0`. Ojo: la app va
@@ -166,6 +171,9 @@ jobs:
           # La misma que `versionName`: el menu de la app la enseña, y sin esto
           # diria «compilacion de desarrollo» en una release de verdad.
           VITE_VERSION: ${{ env.VERSION_NAME }}
+          # La version DIRECTA, la completa: la del APK. La de Google Play se
+          # compila aparte mas abajo, con VITE_CANAL=play.
+          VITE_CANAL: directa
 
       # Que no se cuele un APK con un bundle viejo o con el del sitio: sin los
       # archivos correctos la app abre una pantalla en blanco y eso solo se ve
@@ -185,6 +193,10 @@ jobs:
           # entrar.
           grep -rqF "$VITE_WALLETCONNECT_PROJECT_ID" movil/dist/assets || {
             echo 'ERROR: el paquete no lleva el projectId de WalletConnect: el boton de conectar no haria nada'; exit 1; }
+          # Y que esta, la directa, SI lleve el chat que paga: si VITE_CANAL se
+          # colara como `play` aqui, el APK saldria capado sin que nadie lo note.
+          grep -rqF 'topeMaximo' movil/dist/assets || {
+            echo 'ERROR: el APK directo no lleva el chat de pago: se compilo como la version de Play'; exit 1; }
           echo "movil/dist: $(du -sh movil/dist | cut -f1), $(find movil/dist -type f | wc -l) archivos"
 
       - name: Sincronizar el proyecto Android
@@ -283,20 +295,19 @@ jobs:
         run: |
           # `release` solo cuando hay clave estable: sin ella saldria un APK sin
           # firmar, que no se puede instalar en ningun telefono.
+          # La variante DIRECTA (`lat.panal.app`): la del APK, completa.
           if [ -n "$PANAL_KEYSTORE" ]; then
-            # El AAB en la MISMA pasada que el APK: los dos salen del mismo
-            # código, con la misma versión y firmados con la misma clave.
-            ./gradlew assembleRelease bundleRelease --no-daemon
+            ./gradlew assembleDirectaRelease --no-daemon
           else
-            ./gradlew assembleDebug --no-daemon
+            ./gradlew assembleDirectaDebug --no-daemon
           fi
 
       - name: Renombrar con la versión
         run: |
           if [ "${{ steps.firma.outputs.estable }}" = "si" ]; then
-            ORIGEN=android/app/build/outputs/apk/release/app-release.apk
+            ORIGEN=android/app/build/outputs/apk/directa/release/app-directa-release.apk
           else
-            ORIGEN=android/app/build/outputs/apk/debug/app-debug.apk
+            ORIGEN=android/app/build/outputs/apk/directa/debug/app-directa-debug.apk
           fi
           cp "$ORIGEN" "panal-${GITHUB_REF_NAME//\//-}.apk"
 
@@ -314,13 +325,44 @@ jobs:
       # Y avisa si la ejecucion es a mano: entonces versionCode es 1, y Play
       # rechaza cualquier version cuyo numero no sea mayor que el de la ultima
       # subida. Un AAB de prueba subido a Play quema ese numero para siempre.
+      #
+      # Y es OTRA APP: la variante `play` (`lat.panal.play`), compilada con
+      # VITE_CANAL=play, que deja fuera contratar y pagar consultas. Por eso se
+      # recompila la web y se vuelve a sincronizar: lo que lleva dentro el AAB no
+      # es lo mismo que lleva el APK.
+      - name: Compilar la app para Google Play
+        if: steps.firma.outputs.estable == 'si'
+        env:
+          VITE_VERSION: ${{ env.VERSION_NAME }}
+          VITE_CANAL: play
+        run: |
+          pnpm --filter @panal/movil build
+          # Que de verdad no lleve el pago de consultas: `topeMaximo` solo
+          # aparece en el codigo del chat que paga. Si se colara, Play podria
+          # rechazar la app, y eso se ve semanas despues, en la revision.
+          if grep -rqF 'topeMaximo' movil/dist/assets; then
+            echo "::error::la version de Play lleva el codigo de pagar consultas"; exit 1
+          fi
+          grep -rqF "$VITE_WALLETCONNECT_PROJECT_ID" movil/dist/assets || {
+            echo "::error::la version de Play no lleva el projectId de WalletConnect"; exit 1; }
+          pnpm exec cap sync android
+
+      - name: Compilar el AAB de Google Play
+        if: steps.firma.outputs.estable == 'si'
+        working-directory: android
+        env:
+          PANAL_KEYSTORE: ${{ format('{0}/panal.p12', runner.temp) }}
+          PANAL_KEYSTORE_PASS: ${{ secrets.PANAL_KEYSTORE_PASS }}
+          PANAL_KEY_ALIAS: ${{ secrets.PANAL_KEY_ALIAS || 'panal' }}
+        run: ./gradlew bundlePlayRelease --no-daemon
+
       - name: Preparar el AAB para Google Play
         id: aab
         if: steps.firma.outputs.estable == 'si'
         run: |
-          ORIGEN=android/app/build/outputs/bundle/release/app-release.aab
-          test -s "$ORIGEN" || { echo "::error::bundleRelease no dejo el AAB en $ORIGEN"; exit 1; }
-          AAB="panal-${GITHUB_REF_NAME//\//-}.aab"
+          ORIGEN=android/app/build/outputs/bundle/playRelease/app-play-release.aab
+          test -s "$ORIGEN" || { echo "::error::bundlePlayRelease no dejo el AAB en $ORIGEN"; exit 1; }
+          AAB="panal-play-${GITHUB_REF_NAME//\//-}.aab"
           cp "$ORIGEN" "$AAB"
           HUELLA=$(keytool -printcert -jarfile "$AAB" 2>/dev/null | grep -m1 'SHA256:' | sed 's/.*SHA256: *//')
           test -n "$HUELLA" || { echo "::error::el AAB no lleva firma legible"; exit 1; }

@@ -22,6 +22,7 @@ import Bienvenida from '~/pantallas/Bienvenida';
 import Olvidado from '~/componentes/Olvidado';
 import { useTextos } from '~/i18n/idiomas';
 import type { WalletGuardada } from '~/lib/llavero';
+import { INICIO } from '~/lib/canal';
 
 /**
  * El mismo contrato que la web, la interfaz de nadie.
@@ -570,7 +571,7 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
             setGuardadas([]);
             setHayLlave(false);
             setEmpezando(false);
-            navegar('/chats');
+            navegar(INICIO);
           }}
         />
       )}

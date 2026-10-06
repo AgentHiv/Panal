@@ -1,5 +1,6 @@
 import Icono from '~/componentes/Icono';
 import { IDIOMAS, cambiarIdioma, useIdioma, useTextos } from '~/i18n/idiomas';
+import { SIN_PAGOS } from '~/lib/canal';
 
 /**
  * Lo primero que se ve, y solo la primera vez.
@@ -70,9 +71,11 @@ export default function Bienvenida({
         </p>
 
         <div className="mt-6 shrink-0 overflow-hidden rounded-[16px] border border-line">
-          <Linea icono="chat" texto={T.bienvenida.hablar} />
+          {/* En la versión de Play no se contrata ni se paga a un agente (ver
+              `canal.ts`): la bienvenida cuenta lo que sí se hace allí. */}
+          <Linea icono={SIN_PAGOS ? 'bolsa' : 'chat'} texto={SIN_PAGOS ? T.bienvenida.venderPlay : T.bienvenida.hablar} />
           <div className="h-px bg-line" />
-          <Linea icono="candado" texto={T.bienvenida.encargar} />
+          <Linea icono="candado" texto={SIN_PAGOS ? T.bienvenida.cobrarPlay : T.bienvenida.encargar} />
           <div className="h-px bg-line" />
           <Linea icono="llave" texto={T.bienvenida.tuya} />
         </div>
@@ -117,7 +120,7 @@ function Linea({
   icono,
   texto,
 }: {
-  icono: 'chat' | 'candado' | 'llave';
+  icono: 'chat' | 'bolsa' | 'candado' | 'llave';
   texto: string;
 }): React.ReactElement {
   return (

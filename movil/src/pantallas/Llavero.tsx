@@ -28,6 +28,7 @@ import { useCambio } from '~/lib/cambio';
 import { useSinCapturas } from '~/lib/pantalla';
 import { useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
+import { INICIO } from '~/lib/canal';
 
 /**
  * El llavero.
@@ -193,7 +194,7 @@ export default function Llavero(): React.ReactElement {
     await abrirSesion(k, w);
     // `replace` para que el botón de atrás no devuelva a la pantalla de alta,
     // que ya no tiene nada que hacer.
-    navegar('/chats', { replace: true });
+    navegar(INICIO, { replace: true });
   };
 
   // La clave llega por parámetro porque al estrenar el llavero se encadena

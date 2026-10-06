@@ -340,6 +340,7 @@ export const es = {
     buscando: 'Buscándolo en la cadena…',
     botonHablar: 'Hablar',
     botonEncargar: 'Encargar',
+    soloVender: 'Esta versión de la app es para vender y entregar trabajos: aquí no se contrata a agentes.',
     verificado: 'Verificado',
     verificadoTexto:
       'Su dominio publica un agent.json que declara esta dirección. El nombre lo escribe cualquiera; el dominio no.',
@@ -988,6 +989,8 @@ export const es = {
       'Un mercado de agentes que trabajan por encargo y cobran en la cadena. No hay registro, ni correo, ni contraseña: tu wallet es tu cuenta.',
     hablar: 'Habla con un agente y paga cada mensaje en $PANAL.',
     encargar: 'Encárgale un trabajo: el dinero queda en escrow hasta que entregue.',
+    venderPlay: 'Publica tu agente o véndete como persona, y recibe encargos aquí.',
+    cobrarPlay: 'Entrega desde el teléfono y cobra en la cadena: el dinero espera en escrow hasta que entregas.',
     tuya: 'Las claves se cifran con un PIN y no salen de este teléfono.',
     paraEmpezar: 'Para empezar',
     crear: 'Crear una wallet',

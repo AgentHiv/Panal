@@ -13,6 +13,7 @@ import Icono from '~/componentes/Icono';
 import { monto, precio } from '~/lib/formato';
 import { useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
+import { SIN_PAGOS } from '~/lib/canal';
 
 /**
  * La ficha del agente.
@@ -182,6 +183,14 @@ export default function Agente(): React.ReactElement {
         )}
       </div>
 
+      {/* En la versión de Play no se contrata ni se pregunta: es pagar un
+          servicio digital dentro de la app (ver `canal.ts`). Se dice sin
+          enlace a ningún otro sitio, que Play tampoco lo permite. */}
+      {SIN_PAGOS ? (
+        <p className="con-barra-abajo shrink-0 border-t border-line bg-noche px-[18px] pt-3 text-center text-[13px] leading-[1.5] text-ink-3">
+          {T.agente.soloVender}
+        </p>
+      ) : (
       <div className="con-barra-abajo flex shrink-0 gap-2.5 border-t border-line bg-noche px-[18px] pt-3">
         {/* «Hablar» solo si de verdad se puede: un agente sin cobro por llamada
             no atiende mensajes sueltos. Antes salía apagado al 40 %, que es un
@@ -214,6 +223,7 @@ export default function Agente(): React.ReactElement {
           {T.agente.botonEncargar}
         </button>
       </div>
+      )}
     </div>
   );
 }

@@ -20,35 +20,45 @@ entero— y se le dice al modelo por su nombre.
 
 ## Google Play: el AAB
 
-Play no acepta el APK: pide un **AAB** (Android App Bundle). Sale en el mismo
-workflow que el APK (`.github/workflows/apk.yml`), firmado con la misma clave
-estable, cada vez que se publica una etiqueta `apk-vX.Y.Z`.
+Panal se reparte como **dos apps del mismo código**, como Telegram:
+
+| | APK directo | Google Play |
+|---|---|---|
+| Paquete | `lat.panal.app` | `lat.panal.play` |
+| Dónde | GitHub y panal.lat/app | Play Store |
+| Qué lleva | Todo | Todo menos contratar y pagar consultas (x402) |
+
+Play exige su propio sistema de cobro para los pagos de servicios digitales
+hechos dentro de la app, así que la versión de Play no contrata ni pregunta a
+los agentes: sirve para vender, entregar, cobrar y seguir lo contratado desde
+la web. Lo decide `VITE_CANAL` al compilar (`movil/src/lib/canal.ts`); las dos
+variantes están en `android/app/build.gradle`.
+
+Play no acepta APK: pide un **AAB** (Android App Bundle). El workflow
+(`.github/workflows/apk.yml`) saca los dos en cada etiqueta `apk-vX.Y.Z`: el APK
+directo y el AAB de Play, firmados con la clave estable.
 
 1. **Publicar la etiqueta** `apk-vX.Y.Z`, como para cualquier APK. Una
    ejecución a mano también genera el AAB, pero con `versionCode` 1: **no se
    sube a Play**, porque Play no deja volver a usar un número.
 2. En la página de esa ejecución de Actions, abajo, en **Artifacts**, bajar
-   `aab-google-play` (viene en un .zip) y descomprimirlo.
+   `aab-google-play` (viene en un .zip) y descomprimirlo: dentro está
+   `panal-play-apk-vX.Y.Z.aab`.
 3. El log del paso «Preparar el AAB para Google Play» dice con qué clave va
-   firmado (huella SHA-256). Es la que hay que reconocer en Play Console.
-4. En Play Console: la app es `lat.panal.app`; la política de privacidad,
-   `https://panal.lat/privacy`.
+   firmado (huella SHA-256).
+4. En Play Console, la app se crea con el paquete **`lat.panal.play`**; la
+   política de privacidad es `https://panal.lat/privacy`.
 
-### La decisión de la firma, y no tiene vuelta atrás
+### La firma
 
-Al subir el primer AAB, Play pregunta con qué clave firmar la app que reparte
-(«Play App Signing»):
+Como la de Play es otra app, su firma no toca a nadie que tenga el APK. Al subir
+el primer AAB, Play pregunta por la clave («Play App Signing»): lo más sencillo
+es **dejar que Google genere la clave de la app** y usar nuestra clave estable
+como **clave de subida**, que es con la que el workflow ya firma el AAB.
 
-- **Usar nuestra clave estable** (la de `/root/claves-apk/`, exportada con la
-  herramienta PEPK que da Play Console). La versión de Play queda firmada igual
-  que los APK de GitHub, así que **quien tiene el APK puede pasarse a Play sin
-  desinstalar**. Es la recomendada.
-- **Dejar que Google genere una clave nueva.** Es más cómodo, pero la versión
-  de Play y la de GitHub quedan firmadas distinto: pasar de una a otra obliga a
-  desinstalar, y desinstalar **borra el llavero cifrado del teléfono**
-  (`allowBackup="false"`). Ver la nota de 2.2.0 más abajo.
-
-Elegida una, Play no deja cambiarla para esa app.
+Quien quiera pasar del APK a la de Play (o al revés) instala la otra app e
+importa su wallet con las 12 palabras: son apps distintas y no comparten el
+llavero.
 
 ### La prueba cerrada
 

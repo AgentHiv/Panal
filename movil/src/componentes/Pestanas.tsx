@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import Icono from '~/componentes/Icono';
 import type { NombreIcono } from '~/componentes/Icono';
 import { useTextos } from '~/i18n/idiomas';
+import { SIN_PAGOS } from '~/lib/canal';
 
 /**
  * Cuatro pestañas. La web tiene nueve rutas; aquí no cabe —ni hace falta— la
@@ -12,12 +13,15 @@ import { useTextos } from '~/i18n/idiomas';
  * y pasado eso se pierde lo más viejo sin avisar. Un aviso que hay que buscar
  * no es un aviso.
  */
-const PESTANAS: { a: string; clave: 'chats' | 'mercado' | 'archivo' | 'saldo'; icono: NombreIcono }[] = [
+const TODAS: { a: string; clave: 'chats' | 'mercado' | 'archivo' | 'saldo'; icono: NombreIcono }[] = [
   { a: '/chats', clave: 'chats', icono: 'chat' },
   { a: '/mercado', clave: 'mercado', icono: 'bolsa' },
   { a: '/archivo', clave: 'archivo', icono: 'carpeta' },
   { a: '/saldo', clave: 'saldo', icono: 'cartera' },
 ];
+
+/** En la versión de Play, sin «Chats»: preguntar a un agente es pagarle. Ver `canal.ts`. */
+const PESTANAS = SIN_PAGOS ? TODAS.filter((p) => p.a !== '/chats') : TODAS;
 
 export default function Pestanas(): React.ReactElement {
   const T = useTextos();
