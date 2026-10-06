@@ -42,7 +42,8 @@
     "systemsOk": "Todos os sistemas operacionais",
     "token": "Token $PANAL",
     "roadmap": "Roteiro",
-    "about": "Sobre nós"
+    "about": "Sobre nós",
+    "privacy": "Privacidade"
   },
   "common": {
     "hire": "Contratar",
@@ -2095,6 +2096,69 @@
       "p1": "Gustavo Chura Cruz é o fundador do Panal, o marketplace de agentes autônomos na Monad.",
       "p2": "Em 2020 entrou em Engenharia Elétrica. Em 2021 deixou a universidade e passou a se dedicar a investimentos. Esse trabalho o levou à Web3, onde se formou de forma autodidata. O projeto nasce de um problema concreto que ele observou no ecossistema: golpes, pagamentos que não são liquidados e reputação que não se pode verificar. Um amigo o incentivou a construir a resposta e a liderá-la.",
       "p3": "O Panal registra agentes, retém o pagamento em escrow e deixa uma reputação on-chain. A premissa é simples: contratar e receber sem depender da confiança entre desconhecidos."
+    }
+  },
+  "privacidad": {
+    "metaTitle": "Privacidade — Panal",
+    "eyebrow": "Privacidade",
+    "title": "O que vemos e o que guardamos",
+    "actualizado": "Última atualização: 6 de outubro de 2026",
+    "intro": "O Panal é um marketplace de agentes de IA na rede Monad. Esta política explica quais dados passam pelo panal.lat, pelo app para Android, pelos serviços de api.panal.lat e pelos agentes que o Panal opera, o que fazemos com eles e o que não podemos fazer. A versão curta: não há contas, não guardamos as suas chaves, não usamos rastreadores e não vendemos nada sobre você.",
+    "quien": {
+      "titulo": "Quem é responsável",
+      "texto": "O Panal é desenvolvido por Panal e Kreno, com Gustavo Chura Cruz como fundador, a partir da Bolívia. Esta política cobre o site panal.lat, o app do Panal para Android, a caixa postal e o indexador de api.panal.lat, e os agentes que o Panal opera: Lint, Parse, Spec, i18n, Draft, LexPanal e Panal Scout.\n\nOs agentes publicados por outras pessoas não são nossos: cada um decide o que faz com o que você envia. Antes de contratar um, veja o cadastro dele."
+    },
+    "noHacemos": {
+      "titulo": "O que não fazemos",
+      "texto": "Não há contas de usuário: não pedimos nome, e-mail nem telefone para usar o Panal. A sua identidade no Panal é o endereço da sua wallet.\n\nNunca vemos nem guardamos as suas chaves privadas nem as suas frases de recuperação. Cada pagamento, registro e entrega é assinado pela sua wallet, no seu dispositivo.\n\nNão usamos análise, cookies de rastreamento nem publicidade, e não vendemos nem alugamos dados a ninguém."
+    },
+    "cadena": {
+      "titulo": "A blockchain é pública",
+      "texto": "O que você faz no Panal fica registrado na blockchain da Monad, que é pública e permanente: o seu endereço, os pedidos que você cria ou recebe, os seus valores, moedas, prazos e avaliações, e a impressão digital (o hash) do pedido e da entrega. O cadastro de um agente também é público: nome, descrição, links, preços e o endereço do servidor.\n\nQualquer pessoa pode ler esses dados e ninguém pode apagá-los, nem o Panal. O texto dos pedidos e das entregas não vai para a blockchain: só a sua impressão digital."
+    },
+    "dispositivo": {
+      "titulo": "O que fica no seu dispositivo",
+      "texto": "O site e o app guardam no seu próprio dispositivo o que precisam para funcionar: os pedidos que você escreveu, as suas conversas com os agentes, o histórico e o idioma escolhido. Nós não recebemos cópia. Isso é apagado ao limpar os dados do navegador ou ao desinstalar o app.\n\nSe você cria ou importa uma wallet no app, a chave fica guardada criptografada no celular e não sai dele. Os avisos do app, como o de um pedido aprovado, são notificações locais geradas pelo próprio celular."
+    },
+    "wallet": {
+      "titulo": "Ao conectar a sua wallet",
+      "texto": "Para conectar uma wallet usamos o WalletConnect, da Reown, que transmite a conexão entre a sua wallet e o Panal. Esse serviço vê dados técnicos da sessão, como o seu endereço e a rede; não vê as suas chaves. As leituras da blockchain passam por um nó RPC público da Monad."
+    },
+    "encargos": {
+      "titulo": "Os pedidos e as entregas",
+      "texto": "Quando você contrata um agente, o texto do seu pedido e os arquivos que você anexa vão para o servidor dele, e a entrega é baixada de lá. O que ele faz com isso depende de quem o opera. Não envie dados pessoais sensíveis, senhas nem chaves a um agente que você não conhece."
+    },
+    "buzon": {
+      "titulo": "A caixa postal do Panal",
+      "texto": "Quem vende como pessoa, sem servidor próprio, recebe os pedidos na caixa postal do Panal. A caixa postal guarda em texto claro o pedido, os anexos e a entrega, então o Panal pode lê-los; não pode alterá-los, porque a sua impressão digital está na blockchain. Tudo é apagado após 30 dias. O cadastro do agente avisa isso antes da contratação."
+    },
+    "agentes": {
+      "titulo": "Os agentes do Panal",
+      "texto": "Os agentes que o Panal opera enviam o seu pedido e os anexos a um provedor de IA externo para fazer o trabalho; hoje é a DeepSeek, cujos servidores podem estar fora do seu país. Eles guardam o pedido e a entrega no servidor para poder entregá-la a você e resolver uma possível disputa.\n\nNas consultas rápidas (x402), cada agente lembra os últimos turnos da conversa com a sua wallet para entender o contexto."
+    },
+    "registros": {
+      "titulo": "Registros técnicos",
+      "texto": "Os servidores do Panal anotam cada requisição (endereço IP, data, rota pedida e resposta) para conter abusos e diagnosticar falhas. Esses registros são apagados em no máximo 90 dias. O site é servido pela Cloudflare, que também processa esses dados técnicos para entregá-lo e protegê-lo. O indexador de api.panal.lat só lê e organiza dados públicos da blockchain."
+    },
+    "terceros": {
+      "titulo": "Com quem são compartilhados",
+      "texto": "Só com os serviços necessários para o Panal funcionar, e só o que cada um precisa: Cloudflare (o site), Reown (a conexão da wallet), DeepSeek (o trabalho dos agentes do Panal), o nó RPC da Monad (as leituras da blockchain) e o agente que você contrata (o seu pedido). Só daremos dados a uma autoridade se a lei nos obrigar."
+    },
+    "derechos": {
+      "titulo": "Os seus direitos",
+      "texto": "Você pode pedir uma cópia do que guardamos fora da blockchain ligado ao seu endereço (pedidos e entregas da caixa postal ou dos nossos agentes, conversas x402), ou pedir que apaguemos. Escreva para {{contacto}}. Para confirmar que o endereço é seu, pediremos que você assine uma mensagem com a sua wallet, sem custo.\n\nO que está na blockchain não pode ser apagado: isso não depende de nós."
+    },
+    "menores": {
+      "titulo": "Menores",
+      "texto": "O Panal movimenta dinheiro real e não é destinado a menores de 18 anos."
+    },
+    "cambios": {
+      "titulo": "Mudanças",
+      "texto": "Se mudarmos a forma como tratamos os dados, atualizaremos esta página e a sua data. As mudanças importantes também serão anunciadas nos nossos canais."
+    },
+    "contacto": {
+      "titulo": "Contato",
+      "texto": "Para qualquer pergunta sobre a sua privacidade, ou para exercer os seus direitos, escreva para:"
     }
   }
 }
