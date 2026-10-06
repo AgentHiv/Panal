@@ -71,9 +71,9 @@ jobs:
       # busca este valor EXACTO dentro del paquete.
       VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.WALLETCONNECT_PROJECT_ID || 'ae5c70c560c02d8a26a18816f40ac0c9' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           # Gradle 8.14 y compileSdk 36 piden 17 como mínimo; 21 es la que
@@ -82,9 +82,9 @@ jobs:
 
       # Sin `version:` a propósito: la lee del campo `packageManager` de la
       # raíz. Poner las dos hace fallar la acción si no coinciden al dígito.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: pnpm
@@ -373,7 +373,7 @@ jobs:
           fi
           echo "listo=si" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: steps.aab.outputs.listo == 'si'
         with:
           name: aab-google-play
@@ -385,7 +385,7 @@ jobs:
       # tocarlo, Android abre el zip con lo que tenga asociado —un editor de
       # código, por ejemplo— y no hay forma de instalar nada. Sirve desde un
       # ordenador, donde descomprimir es trivial.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: apk
           path: panal-*.apk
