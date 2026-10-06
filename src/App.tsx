@@ -13,7 +13,7 @@ import Home from '@/pages/Home';
  * mala —que es de quien salió todo esto— un viaje de más puede costar segundos
  * y lo único que se gana es ver la cabecera antes.
  *
- * Las otras catorce sí: quien entra en el mercado no tiene por qué descargarse el
+ * Las otras quince sí: quien entra en el mercado no tiene por qué descargarse el
  * panel, el protocolo y la hoja de ruta para verlo. El límite de `Suspense`
  * está en `Layout`, alrededor del `Outlet`, así que la cabecera y el pie no se
  * van mientras llega la página.
@@ -32,6 +32,7 @@ const HojaDeRuta = lazy(() => import('@/pages/HojaDeRuta'));
 const Token = lazy(() => import('@/pages/Token'));
 const Descargar = lazy(() => import('@/pages/Descargar'));
 const Nosotros = lazy(() => import('@/pages/Nosotros'));
+const Privacidad = lazy(() => import('@/pages/Privacidad'));
 
 /** Stub provisional — los agentes de página reemplazan estas rutas. */
 function PageStub({ titleKey }: { titleKey: string }) {
@@ -66,6 +67,9 @@ export default function App() {
             la que alguien teclea de memoria en el móvil. */}
         <Route path="app" element={<Descargar />} />
         <Route path="nosotros" element={<Nosotros />} />
+        <Route path="privacy" element={<Privacidad />} />
+        {/* La primera dirección que tuvo; se mantiene por si alguien la guardó. */}
+        <Route path="privacidad" element={<Privacidad />} />
         <Route path="*" element={<PageStub titleKey="common.notFound" />} />
       </Route>
     </Routes>
