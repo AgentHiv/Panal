@@ -13,6 +13,11 @@
 #
 # En los dos casos se instala activando "orígenes desconocidos".
 #
+# Y, con la clave estable, sale ADEMÁS el AAB (Android App Bundle), que es lo
+# único que acepta Google Play. No se adjunta a la release: en un teléfono no se
+# puede instalar y solo confundiría a quien busca la app. Se baja de la página
+# de la ejecución, en «Artifacts», y se sube a mano a Play Console.
+#
 # No corre en cada push. Un APK por commit no le sirve a nadie y son minutos de
 # CI: se lanza a mano, o publicando una etiqueta `apk-v1.0.0`. Ojo: la app va
 # DENTRO del APK, así que se queda congelada en el commit con el que se
@@ -279,7 +284,9 @@ jobs:
           # `release` solo cuando hay clave estable: sin ella saldria un APK sin
           # firmar, que no se puede instalar en ningun telefono.
           if [ -n "$PANAL_KEYSTORE" ]; then
-            ./gradlew assembleRelease --no-daemon
+            # El AAB en la MISMA pasada que el APK: los dos salen del mismo
+            # código, con la misma versión y firmados con la misma clave.
+            ./gradlew assembleRelease bundleRelease --no-daemon
           else
             ./gradlew assembleDebug --no-daemon
           fi
@@ -292,6 +299,44 @@ jobs:
             ORIGEN=android/app/build/outputs/apk/debug/app-debug.apk
           fi
           cp "$ORIGEN" "panal-${GITHUB_REF_NAME//\//-}.apk"
+
+      # ---- El AAB para Google Play -------------------------------------------
+      #
+      # Solo con la clave estable: Play rechaza un paquete sin firmar, y uno
+      # firmado con una clave de usar y tirar dejaria la ficha de Play atada a
+      # una clave que ya no existe.
+      #
+      # Se dice CON QUE CLAVE va firmado, por su huella SHA-256, y no se da por
+      # supuesto: es la que hay que comparar en Play Console (Configuracion ->
+      # Integridad de la app) y la que decide si la version de Play se puede
+      # instalar encima de un APK bajado de GitHub sin desinstalar nada.
+      #
+      # Y avisa si la ejecucion es a mano: entonces versionCode es 1, y Play
+      # rechaza cualquier version cuyo numero no sea mayor que el de la ultima
+      # subida. Un AAB de prueba subido a Play quema ese numero para siempre.
+      - name: Preparar el AAB para Google Play
+        id: aab
+        if: steps.firma.outputs.estable == 'si'
+        run: |
+          ORIGEN=android/app/build/outputs/bundle/release/app-release.aab
+          test -s "$ORIGEN" || { echo "::error::bundleRelease no dejo el AAB en $ORIGEN"; exit 1; }
+          AAB="panal-${GITHUB_REF_NAME//\//-}.aab"
+          cp "$ORIGEN" "$AAB"
+          HUELLA=$(keytool -printcert -jarfile "$AAB" 2>/dev/null | grep -m1 'SHA256:' | sed 's/.*SHA256: *//')
+          test -n "$HUELLA" || { echo "::error::el AAB no lleva firma legible"; exit 1; }
+          echo "AAB: $AAB · $(du -h "$AAB" | cut -f1) · versionCode $VERSION_CODE · versionName $VERSION_NAME"
+          echo "Firmado con la clave de huella SHA-256 $HUELLA"
+          if [ "$VERSION_CODE" = "1" ]; then
+            echo "::warning::Este AAB es de una ejecucion a mano (versionCode 1). NO lo subas a Google Play: quemaria el numero. Para Play, publica una etiqueta apk-vX.Y.Z."
+          fi
+          echo "listo=si" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        if: steps.aab.outputs.listo == 'si'
+        with:
+          name: aab-google-play
+          path: panal-*.aab
+          retention-days: 30
 
       # El artefacto se descarga SIEMPRE dentro de un .zip; eso lo decide
       # GitHub y no se puede cambiar. En un teléfono es un problema real: al
