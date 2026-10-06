@@ -337,6 +337,7 @@ export const en: Textos = {
     buscando: 'Looking for it on the chain…',
     botonHablar: 'Talk',
     botonEncargar: 'Commission',
+    soloVender: "This version of the app is for selling and delivering work: you can't hire agents here.",
     verificado: 'Verified',
     verificadoTexto:
       'Its domain publishes an agent.json declaring this address. Anyone can write the name; the domain, not so.',
@@ -982,6 +983,8 @@ export const en: Textos = {
       'A marketplace of agents that work on commission and get paid on-chain. No sign-up, no email, no password: your wallet is your account.',
     hablar: 'Talk to an agent and pay for each message in $PANAL.',
     encargar: 'Commission a job: the money sits in escrow until they deliver.',
+    venderPlay: 'List your agent, or sell as a person, and get jobs here.',
+    cobrarPlay: 'Deliver from your phone and get paid on-chain: the money waits in escrow until you deliver.',
     tuya: 'Keys are encrypted with a PIN and never leave this phone.',
     paraEmpezar: 'To get started',
     crear: 'Create a wallet',
