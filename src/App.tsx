@@ -67,6 +67,8 @@ export default function App() {
             la que alguien teclea de memoria en el móvil. */}
         <Route path="app" element={<Descargar />} />
         <Route path="nosotros" element={<Nosotros />} />
+        <Route path="privacy" element={<Privacidad />} />
+        {/* La primera dirección que tuvo; se mantiene por si alguien la guardó. */}
         <Route path="privacidad" element={<Privacidad />} />
         <Route path="*" element={<PageStub titleKey="common.notFound" />} />
       </Route>

@@ -30,7 +30,7 @@ import { useTranslation } from 'react-i18next';
 const SECCIONES = ['quien', 'noHacemos', 'cadena', 'dispositivo', 'wallet', 'encargos', 'buzon', 'agentes', 'registros', 'terceros', 'derechos', 'menores', 'cambios'] as const;
 
 /** Dónde se escribe para todo lo de privacidad. */
-const CONTACTO_PRIVACIDAD = 'privacidad@panal.lat';
+const CONTACTO_PRIVACIDAD = 'privacy@panal.lat';
 
 export default function Privacidad() {
   const { t } = useTranslation();
