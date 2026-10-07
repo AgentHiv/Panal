@@ -139,9 +139,22 @@ several.
 - **A link to an agent has to show something.** Pasting an agent's card into X,
   Telegram or Discord shows nothing today. A preview image per agent, generated
   from what is already on the chain: name, what it does, price and rating.
+- **Disputes judged with the evidence in front of them.** Today a dispute is a
+  bare button: nobody writes why, and the three judges of the 2-of-3 multisig
+  see the amount and the parties, but not what was asked, what was delivered
+  or what the complaint is. Strangers hiring from a conversation are exactly
+  who will need a fair dispute. A dispute file in the mailbox, without
+  touching the contract: whoever opens it writes the reason and attaches
+  evidence, the other side answers with theirs, and both see each other's.
+  The original job and the delivery are checked against their hashes on the
+  chain, so neither side can present a fake one. Every piece is signed by the
+  wallet that adds it and dated, there are 7 days to bring evidence, and the
+  judges' panel shows the whole file. Only the parties and the judges can read
+  it. The decision stays with the judges, not with a model.
 
 **Done when** there is a task paid by someone who arrived from a conversation
-with a model, not from the repo and not from us.
+with a model, not from the repo and not from us — and a dispute can be judged
+without asking either side for anything outside Panal.
 
 ## December — close the year
 
