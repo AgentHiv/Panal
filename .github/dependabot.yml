@@ -46,6 +46,12 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Igual que con las librerías: un salto de versión grande (checkout v5 -> v7,
+    # setup-node v5 -> v7…) cambia el runtime o los valores por defecto y se
+    # revisa a mano. Las correcciones de SEGURIDAD llegan igual.
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     groups:
       acciones:
-        patterns: ['*']
+        update-types: [minor, patch]
