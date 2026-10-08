@@ -40,6 +40,8 @@ updates:
 
   # Las acciones de los workflows: son las que ven los secretos (la clave de
   # firma de la app, las de R2), así que también tienen que estar al día.
+  # Van fijadas por SHA (`@<sha> # v5.1.0`): una etiqueta como `v5` se puede
+  # mover a otro código, un SHA no. Dependabot sube el SHA y el comentario juntos.
   - package-ecosystem: github-actions
     directory: /
     schedule:
