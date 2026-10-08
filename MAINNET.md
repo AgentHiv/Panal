@@ -48,13 +48,16 @@ En `src/contracts/config.ts`:
 
 ## 3. Build y despliegue web
 
-En Vercel → Settings → Environment Variables, añadir:
+Mainnet es la red por defecto del build: no hace falta ninguna variable. Si
+alguna vez se pone una, va en Cloudflare → Workers & Pages → panal → Settings
+→ Build → Variables and secrets (las del build, no las del Worker), y se
+aplica en el siguiente despliegue, que lanza cualquier push a `main`:
 
 ```
 VITE_CHAIN=mainnet
 ```
 
-y redesplegar (Deployments → Redeploy). Localmente:
+Localmente:
 
 ```bash
 VITE_CHAIN=mainnet pnpm run build
