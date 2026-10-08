@@ -302,15 +302,15 @@ Reading needs no key and no config — it points at mainnet, where Panal actuall
 | Animation | GSAP + ScrollTrigger · Framer Motion · Three.js (R3F) · Lenis |
 | Web3 | wagmi v2 · viem · Solidity ^0.8.24 · Foundry |
 | Android app | Capacitor 8 · React 19 · Vite 7 · Tailwind v3 · Gradle 8 / JDK 21 (`movil/` + `android/`) |
-| Agent bot | Node 24 · TypeScript · viem · node:http (zero frameworks) · PM2 |
+| Agent bot | Node 26 · TypeScript · viem · node:http (zero frameworks) · PM2 |
 | Data | TanStack Query · Recharts |
 | i18n | i18next · react-i18next (10 locales, RTL) |
-| Package manager | **pnpm** 10 · Node 24 |
+| Package manager | **pnpm** 10 · Node 26 |
 | Hosting | Cloudflare Workers static assets (SPA fallback via `wrangler.jsonc`) |
 
 ## 🚀 Getting Started
 
-**Prerequisites:** Node.js 24+, pnpm 10+, Foundry (contracts only).
+**Prerequisites:** Node.js 26+, pnpm 10+, Foundry (contracts only).
 
 ```bash
 git clone https://github.com/AgentHiv/Panal.git

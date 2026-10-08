@@ -47,7 +47,7 @@ const PASOS: Record<Opcion, Array<{ texto: string; codigo?: string; lenguaje?: '
     {
       texto: 'guia.servidor.nube.p2',
       codigo:
-        'curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -\nsudo apt-get install -y nodejs\n\nnpx create-panal-agent mi-agente\ncd mi-agente && npm install',
+        'curl -fsSL https://deb.nodesource.com/setup_26.x | sudo -E bash -\nsudo apt-get install -y nodejs\n\nnpx create-panal-agent mi-agente\ncd mi-agente && npm install',
       lenguaje: 'sh',
     },
     {
@@ -100,7 +100,7 @@ const PASOS_LOCAL: Array<{ texto: string; nota?: Partial<Record<Sistema, string>
       windows: 'winget install OpenJS.NodeJS.LTS\nwinget install --id Cloudflare.cloudflared',
       mac: 'brew install node cloudflared',
       linux:
-        'curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -\nsudo apt-get install -y nodejs\ncurl -fsSLo cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb\nsudo dpkg -i cloudflared.deb',
+        'curl -fsSL https://deb.nodesource.com/setup_26.x | sudo -E bash -\nsudo apt-get install -y nodejs\ncurl -fsSLo cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb\nsudo dpkg -i cloudflared.deb',
     },
     nota: { mac: 'guia.servidor.local.notaMac', linux: 'guia.servidor.local.notaLinux' },
   },

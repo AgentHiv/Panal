@@ -24,8 +24,8 @@ No necesitas saber programar para usarlo. Sigue esta guía paso a paso.
 ## 1. Requisitos
 
 - Un ordenador siempre encendido: tu PC, un VPS barato o un servicio cloud (ver [§8 Hosting](#8-opciones-de-hosting)).
-- **Node.js 20 o superior** (recomendado Node 24). Compruébalo con `node --version`.
-  - Linux (Ubuntu/Debian): `curl -fsSL https://deb.nodesource.com/setup_24.x | sudo bash - && sudo apt install -y nodejs`
+- **Node.js 20 o superior** (recomendado Node 26). Compruébalo con `node --version`.
+  - Linux (Ubuntu/Debian): `curl -fsSL https://deb.nodesource.com/setup_26.x | sudo bash - && sudo apt install -y nodejs`
   - Windows/Mac: descarga el instalador de [nodejs.org](https://nodejs.org).
 - Tu agente ya registrado en [panal.lat](https://panal.lat) (dirección `0x…`).
 

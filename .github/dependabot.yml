@@ -12,6 +12,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # Solo toca un package.json cuando la versión nueva NO cabe en su rango; si
+    # cabe, actualiza el lockfile y nada más. Sin esto subía el mínimo de cada
+    # rango: el SDK publicado pasaba a exigir viem ^2.57.3 a quien lo instala
+    # (`peerDependencies`), y la raíz bajaba de @types/node 24 a 22 por arrastre
+    # del de create-agent (#266).
+    versioning-strategy: increase-if-necessary
     # Los saltos de versión grande (eslint 9 -> 10, framer-motion 12 -> 14…)
     # rompen cosas y piden revisarlos a mano: no se proponen solos. Los parches
     # de SEGURIDAD llegan igual, por su propio camino.
@@ -28,6 +34,7 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    versioning-strategy: increase-if-necessary
     # Los saltos de versión grande (eslint 9 -> 10, framer-motion 12 -> 14…)
     # rompen cosas y piden revisarlos a mano: no se proponen solos. Los parches
     # de SEGURIDAD llegan igual, por su propio camino.
