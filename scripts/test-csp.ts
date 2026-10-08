@@ -22,6 +22,11 @@
  */
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
+import { parse } from 'parse5';
+import type { DefaultTreeAdapterMap } from 'parse5';
+
+type Nodo = DefaultTreeAdapterMap['node'];
+type Elemento = DefaultTreeAdapterMap['element'];
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -34,7 +39,6 @@ if (!existsSync('dist/index.html')) {
   process.exit(1);
 }
 
-const html = readFileSync('dist/index.html', 'utf8');
 const cabeceras = readFileSync('public/_headers', 'utf8');
 
 // La CSP que se sirve a todas las páginas (el bloque `/*`).
@@ -49,15 +53,37 @@ const fuentes = scriptSrc?.split(/\s+/).slice(1) ?? [];
 
 check("script-src solo admite 'self' y huellas", fuentes.every((f) => f === "'self'" || /^'sha256-[A-Za-z0-9+/]+=*'$/.test(f)), fuentes.join(' '));
 
-// Los <script> sin `src` que el navegador EJECUTA. Los de datos —el JSON-LD
-// para los buscadores— no se ejecutan y la CSP no los mira.
-const enLinea = [...html.matchAll(/<script(?<attrs>[^>]*)>(?<cuerpo>[\s\S]*?)<\/script>/g)].filter(
-  (m) => !/\ssrc=/.test(m.groups!.attrs) && !/application\/ld\+json/.test(m.groups!.attrs),
-);
+// El HTML se lee con parse5, que lo trocea como un navegador: mayúsculas,
+// `</script >`, comentarios raros y todo lo demás que una expresión regular
+// se deja. Lo que importa es qué ejecutaría el navegador, no qué parece.
+const elementos: Elemento[] = [];
+const recorrer = (n: Nodo): void => {
+  if ('tagName' in n) elementos.push(n);
+  const hijos = 'content' in n && n.nodeName === 'template' ? n.content.childNodes : 'childNodes' in n ? n.childNodes : [];
+  for (const h of hijos) recorrer(h);
+};
+recorrer(parse(readFileSync('dist/index.html', 'utf8')));
+
+const atributo = (e: Elemento, nombre: string): string | undefined => e.attrs.find((a) => a.name === nombre)?.value;
+
+// Los tipos que el navegador ejecuta, o que la CSP trata como script. El resto
+// —el JSON-LD para los buscadores— son datos: no corren y la CSP no los mira.
+const EJECUTABLES = new Set(['', 'module', 'importmap', 'speculationrules', 'text/javascript', 'application/javascript', 'text/ecmascript', 'application/ecmascript']);
+const scripts = elementos.filter((e) => e.tagName === 'script' && EJECUTABLES.has((atributo(e, 'type') ?? '').trim().toLowerCase()));
+
+const externos = scripts.filter((e) => atributo(e, 'src') !== undefined);
+for (const e of externos) {
+  const src = atributo(e, 'src')!;
+  check(`el script ${src} sale de panal.lat`, src.startsWith('/') && !src.startsWith('//'), `'self' lo bloquearía en producción`);
+}
+
+const enLinea = scripts.filter((e) => atributo(e, 'src') === undefined);
 check('index.html tiene su script de arranque en línea', enLinea.length > 0, 'no se encontró ninguno');
 
-for (const [i, m] of enLinea.entries()) {
-  const huella = `'sha256-${createHash('sha256').update(m.groups!.cuerpo, 'utf8').digest('base64')}'`;
+for (const [i, e] of enLinea.entries()) {
+  // El texto del script tal cual está en el archivo: es lo que hashea el navegador.
+  const cuerpo = e.childNodes.map((h) => ('value' in h ? h.value : '')).join('');
+  const huella = `'sha256-${createHash('sha256').update(cuerpo, 'utf8').digest('base64')}'`;
   check(
     `el script en línea nº ${i + 1} está permitido por su huella`,
     fuentes.includes(huella),
@@ -69,11 +95,13 @@ for (const [i, m] of enLinea.entries()) {
 const huellas = fuentes.filter((f) => f.startsWith("'sha256-"));
 check('no sobra ninguna huella', huellas.length === enLinea.length, `${huellas.length} huellas para ${enLinea.length} script(s)`);
 
-// Un `onclick="…"` o un `onerror="…"` en el HTML tampoco correría: sin
-// comentarios, no tiene que quedar ninguno.
-const sinComentarios = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<script[\s\S]*?<\/script>/g, '');
-const manejador = sinComentarios.match(/<[^>]+\son[a-z]+\s*=/i)?.[0];
-check('ninguna etiqueta lleva un manejador en línea (on…=)', !manejador, manejador ?? '');
+// Un `onclick="…"` o un `onerror="…"` tampoco correría con esta CSP.
+const conManejador = elementos.find((e) => e.attrs.some((a) => a.name.startsWith('on')));
+check(
+  'ninguna etiqueta lleva un manejador en línea (on…=)',
+  !conManejador,
+  conManejador ? `<${conManejador.tagName} ${conManejador.attrs.map((a) => a.name).join(' ')}>` : '',
+);
 
 console.log(
   fallos === 0
