@@ -28,14 +28,23 @@
 #   - `Permissions-Policy`: la web no usa camara, microfono ni ubicacion, asi
 #     que nada de lo que cargue puede pedirlos.
 #
-# NO lleva una CSP completa (script-src, connect-src) a proposito: la web habla
-# con el endpoint de cada agente, que puede estar en cualquier dominio, y con
-# WalletConnect; una lista cerrada romperia la contratacion. Lo que se pone es
-# lo que protege sin poder romper nada.
+#
+# `script-src` (2026-10-08): solo corre el codigo de panal.lat. La forma
+# habitual de vaciar una wallet conectada es colar un script en la web que le
+# pida una firma —asi fue lo de Ledger Connect Kit en 2023, una libreria
+# comprometida que descargaba un «drainer» de fuera—, y con esto el navegador
+# no ejecuta nada que no venga de aqui. El unico script escrito dentro de
+# index.html (el aviso de «no arranca») va permitido por su huella: si se
+# toca, scripts/test-csp.ts falla en el CI y dice la huella nueva.
+#
+# Lo que NO se cierra, a proposito: a donde se conecta la web (connect-src),
+# porque habla con el endpoint de cada agente, que puede estar en cualquier
+# dominio, y con WalletConnect. Cerrar eso romperia la contratacion; cerrar
+# los scripts no.
 /*
   Strict-Transport-Security: max-age=63072000
   Access-Control-Allow-Origin: *
-  Content-Security-Policy: frame-ancestors 'none'; object-src 'none'; base-uri 'self'
+  Content-Security-Policy: script-src 'self' 'sha256-KD/n3+eaGYaQFsio6Zc2jCvdESJWUAAuart0B+nMtHo='; frame-ancestors 'none'; object-src 'none'; base-uri 'self'
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

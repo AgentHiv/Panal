@@ -17,14 +17,17 @@ api.panal.lat (Caddy) ──HTTPS──> 127.0.0.1:8788 (indexador, opcional)
 
 El bot sigue escuchando SOLO en localhost:8787 — Caddy es la única puerta.
 
-## Paso 1 · DNS (en Vercel, donde vive tu DNS)
+## Paso 1 · DNS (en Cloudflare, donde vive el DNS de panal.lat)
 
-Vercel → **Domains → panal.lat → DNS Records → Add Record**:
+Cloudflare → **panal.lat → DNS → Records → Add record**:
 
-| Type | Name | Value | TTL |
-|------|------|-------|-----|
-| A | `bot` | `<IP de tu Hetzner>` | 60 |
-| A | `api` | `<IP de tu Hetzner>` | 60 (opcional, para el indexador) |
+| Type | Name | Value | Proxy status |
+|------|------|-------|--------------|
+| A | `bot` | `<IP de tu servidor>` | **DNS only** (nube gris) |
+| A | `api` | `<IP de tu servidor>` | **DNS only** (opcional, para el indexador) |
+
+**DNS only, no Proxied.** Con la nube naranja el tráfico entra por Cloudflare,
+Caddy no ve llegar a Let's Encrypt y nunca consigue el certificado.
 
 Verifica propagación (~1-5 min): `dig +short bot.panal.lat` debe dar tu IP.
 
