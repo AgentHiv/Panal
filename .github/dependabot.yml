@@ -1,0 +1,36 @@
+# Dependabot: avisa de dependencias con fallos de seguridad y abre un PR para
+# subirlas. Agrupado para que llegue un PR por semana y por sitio, no veinte.
+#
+# Las de seguridad llegan en cuanto se publican, sin esperar a la semana: eso lo
+# hace Dependabot solo, aparte de estas actualizaciones de rutina.
+version: 2
+updates:
+  # El monorepo de pnpm: web, app, SDK, MCP y generador comparten lockfile.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      menores:
+        update-types: [minor, patch]
+
+  # El bot va aparte: tiene su propio lockfile y su propio ciclo.
+  - package-ecosystem: npm
+    directory: /bot
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      menores:
+        update-types: [minor, patch]
+
+  # Las acciones de los workflows: son las que ven los secretos (la clave de
+  # firma de la app, las de R2), así que también tienen que estar al día.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      acciones:
+        patterns: ['*']

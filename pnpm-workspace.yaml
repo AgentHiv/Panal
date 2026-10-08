@@ -55,3 +55,13 @@ linkWorkspacePackages: true
 
 minimumReleaseAgeExclude:
   - '@panal/sdk@0.7.0'
+
+# Versiones forzadas por seguridad (2026-10-08, `pnpm audit --prod`). Ninguna la
+# usa Panal directamente: entran por las librerías de wallet —el SDK de Coinbase
+# trae axios, viem/isows trae ws— y ahí esperan a que su autor las suba.
+#   - axios < 1.20: varias de gravedad alta (DoS, prototype pollution, proxy).
+#   - ws 8.0–8.21: DoS por agotamiento de memoria.
+# Quitar de aquí cuando las dependencias que las traen ya pidan versiones buenas.
+overrides:
+  axios: ^1.20.0
+  'ws@>=8.0.0 <8.21.0': ^8.21.0

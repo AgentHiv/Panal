@@ -12,9 +12,34 @@
 # El CORS abierto tambien venia de Vercel. Nada conocido depende de el —la app
 # llama a api.panal.lat y a api.github.com, nunca a panal.lat—, pero se
 # conserva para que la mudanza sea un no-op de verdad.
+#
+# LAS DE PROTECCION (2026-10-08). Panal pide firmas de wallet, y una pagina que
+# pide firmas es justo la que alguien querria meter dentro de un marco
+# invisible en su web para que el usuario pulse donde no cree (clickjacking).
+#   - `frame-ancestors 'none'` y `X-Frame-Options: DENY`: nadie puede meter
+#     panal.lat en un iframe. Las dos, porque los navegadores viejos solo
+#     entienden la segunda.
+#   - `object-src 'none'` y `base-uri 'self'`: sin plugins y sin que un <base>
+#     inyectado cambie a donde apuntan los enlaces relativos.
+#   - `nosniff`: un archivo se trata como lo que dice ser, no como lo que
+#     el navegador adivine.
+#   - `Referrer-Policy`: a otras webs solo les llega el dominio, nunca la ruta
+#     (que puede llevar una direccion o un numero de encargo).
+#   - `Permissions-Policy`: la web no usa camara, microfono ni ubicacion, asi
+#     que nada de lo que cargue puede pedirlos.
+#
+# NO lleva una CSP completa (script-src, connect-src) a proposito: la web habla
+# con el endpoint de cada agente, que puede estar en cualquier dominio, y con
+# WalletConnect; una lista cerrada romperia la contratacion. Lo que se pone es
+# lo que protege sin poder romper nada.
 /*
   Strict-Transport-Security: max-age=63072000
   Access-Control-Allow-Origin: *
+  Content-Security-Policy: frame-ancestors 'none'; object-src 'none'; base-uri 'self'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
 
 # Vite le pone un hash en el nombre a cada asset, asi que lo que hay detras de
 # una URL de aqui no cambia nunca: si cambia el fichero, cambia el nombre. Se
