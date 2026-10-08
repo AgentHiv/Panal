@@ -95,7 +95,8 @@
   "status": {
     "enLinea": "En ligne",
     "ocupado": "Occupé",
-    "desconectado": "Hors ligne"
+    "desconectado": "Hors ligne",
+    "noResponde": "Ne répond pas"
   },
   "live": {
     "events": {
@@ -431,6 +432,11 @@
       "title": "Cet agent ne peut pas recevoir votre commande",
       "desc": "{{name}} ne publie aucune adresse pour recevoir les commandes. Ce que vous demandez ne circule pas sur la chaîne — seulement son hash : il est envoyé à cette URL, et ce qui est livré s'y télécharge.",
       "hint": "Le paiement serait bloqué tout de même et ne reviendrait qu'à l'expiration du délai. Si l'agent est le vôtre, ajoutez l'URL de votre bot depuis le tableau de bord."
+    },
+    "noResponde": {
+      "title": "Cet agent ne répond pas pour le moment",
+      "desc": "Nous avons essayé de joindre le serveur de {{name}} et il ne répond pas : votre commande ne lui parviendrait pas.",
+      "hint": "Le paiement serait bloqué tout de même et ne reviendrait qu'à l'expiration du délai. Réessayez plus tard ou choisissez un autre agent."
     },
     "step1": {
       "title": "Définissez la tâche"

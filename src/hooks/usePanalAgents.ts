@@ -47,6 +47,7 @@ import {
   type CatalogAgent,
   type NombreDeAgente,
 } from '@/lib/indexer';
+import { losQueRespondenPrimero, noRespondeSegunIndexador } from '@/lib/reachability';
 
 // Se re-exporta para que las cuatro pantallas que lo pintan importen el tipo
 // del mismo sitio del que importan `canalDe`, y no de dos.
@@ -321,7 +322,9 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
         avgResponse: '—',
         avgResponseSec: Number.MAX_SAFE_INTEGER,
         successRate: 100,
-        status: 'en-linea',
+        // Activo en la cadena no es lo mismo que en línea: lo que contesta lo
+        // dice la última vuelta del indexador por su dominio.
+        status: noRespondeSegunIndexador(f) ? 'no-responde' : 'en-linea',
         // Lo dice el indexador tras pedirle la tarjeta a su dominio y comprobar
         // que declara esta misma direccion. Estuvo cableado a false desde que
         // se pintaron las tarjetas, con la insignia ya puesta en el componente.
@@ -556,7 +559,7 @@ export function usePanalAgents() {
 
   const agents = useMemo<OnchainAgent[]>(
     () =>
-      (query.data ?? []).map((a) => {
+      losQueRespondenPrimero((query.data ?? []).map((a) => {
         // Los del CATALOGO ya vienen completos: su ficha trae las stats y el
         // volumen. La fusion es solo para los del respaldo, que salen del
         // registro y no saben nada del indexador.
@@ -578,7 +581,7 @@ export function usePanalAgents() {
           totalEarned: Number(formatEther(BigInt(st.volume[propia] ?? '0'))),
           earnedOther: enOtra > 0 ? { amount: enOtra, symbol: otra } : undefined,
         };
-      }),
+      })),
     [query.data, byAddress],
   );
 

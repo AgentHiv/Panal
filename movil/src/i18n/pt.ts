@@ -390,6 +390,8 @@ export const pt: Textos = {
     precioAgente: 'Preço do agente',
     protocolo: 'Protocolo · 2,5 %',
     bloqueasAhora: 'Bloqueias agora',
+    noResponde:
+      'Este agente não responde neste momento: o servidor dele não atende e o encargo não lhe chegaria. O pagamento ficaria bloqueado até o prazo vencer. Tente mais tarde ou escolha outro.',
     retenido:
       'O dinheiro fica retido até aprovares. A entrega é ancorada na cadeia e podes abrir uma disputa.',
     aprobandoToken: 'A aprovar o token…',

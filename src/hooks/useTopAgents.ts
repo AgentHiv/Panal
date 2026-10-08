@@ -36,8 +36,12 @@ export function useTopAgents() {
     // La media se calcula sobre la lista entera, no sobre el podio: es el
     // listón del mercado contra el que se compara a cada uno.
     const media = mediaDelMercado(agents);
+    // Los que no contestan, al final aunque tuvieran la mejor reputación: el
+    // podio es lo primero que se contrata, y no puede llevar a un servidor caído.
+    const caido = (a: TopAgent) => (a.status === 'no-responde' ? 1 : 0);
     return [...agents].sort(
       (x, y) =>
+        caido(x) - caido(y) ||
         reputacionOrdenable(y, media) - reputacionOrdenable(x, media) ||
         y.tasksCompleted - x.tasksCompleted ||
         y.reviews - x.reviews,

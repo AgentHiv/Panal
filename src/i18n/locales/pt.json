@@ -95,7 +95,8 @@
   "status": {
     "enLinea": "Online",
     "ocupado": "Ocupado",
-    "desconectado": "Offline"
+    "desconectado": "Offline",
+    "noResponde": "Não responde"
   },
   "live": {
     "events": {
@@ -431,6 +432,11 @@
       "title": "Este agente não pode receber o seu encargo",
       "desc": "{{name}} não publica um endereço onde receber encargos. O que pedir não viaja na cadeia — só o seu hash: é enviado para esse URL, e é de lá que se descarrega o que entregar.",
       "hint": "O pagamento ficaria bloqueado na mesma e só voltaria quando o prazo expirasse. Se o agente for seu, adicione o URL do seu bot a partir do painel."
+    },
+    "noResponde": {
+      "title": "Este agente não responde neste momento",
+      "desc": "Tentámos contactar o servidor de {{name}} e não obtivemos resposta, por isso o seu encargo não lhe chegaria.",
+      "hint": "O pagamento ficaria bloqueado na mesma e só voltaria quando o prazo expirasse. Tente mais tarde ou escolha outro agente."
     },
     "step1": {
       "title": "Definir a tarefa"

@@ -56,6 +56,7 @@ import {
   publicClient,
 } from '@/contracts/config';
 import { panalEscrowAbi, panalEscrowV2Abi, panalRegistryAbi, panalRegistryV2Abi, panalTokenAbi } from '@/contracts/abis';
+import { respondeElAgente } from '@/lib/reachability';
 
 export interface HireDialogProps {
   agent: Agent | null;
@@ -154,6 +155,14 @@ function HireWizard({
    */
   const [canalDelAgente, setCanalDelAgente] = useState<Canal>(() => canalDe(agent));
   /**
+   * Si su servidor contesta, preguntado desde aquí mismo al abrir.
+   *
+   * «Activo» en la cadena no lo garantiza: lo pone su dueño y se queda puesto
+   * aunque el servidor lleve semanas apagado. `null` mientras se pregunta;
+   * solo `false` corta, para que una red lenta no bloquee a nadie.
+   */
+  const [responde, setResponde] = useState<boolean | null>(null);
+  /**
    * El encargo TAL Y COMO se hasheó al contratar.
    *
    * `componerBrief()` lo compone a partir del estado, y el estado puede haber
@@ -227,6 +236,11 @@ function HireWizard({
           // La cadena manda sobre lo que trajera el catálogo: aquí la ficha
           // viene entera, así que la respuesta ya no puede ser «no se sabe».
           setCanalDelAgente(botUrl ? 'publicado' : 'ninguno');
+        }
+        if (botUrl) {
+          void respondeElAgente(botUrl).then((r) => {
+            if (vigente) setResponde(r);
+          });
         }
         /**
          * El precio de la CADENA, el texto de la tarjeta.
@@ -647,6 +661,34 @@ function HireWizard({
             {t('hire.sinCanal.desc', { name: agent.name })}
           </p>
           <p className="text-[0.8125rem] leading-relaxed text-ink-3">{t('hire.sinCanal.hint')}</p>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
+          >
+            {t('common.close')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /**
+   * Lo mismo, cuando sí publica dónde recibir pero ahí no contesta nadie.
+   *
+   * Solo ANTES de pagar: la respuesta llega a los pocos segundos de abrir, y
+   * si alguien ya firmó, quitarle la pantalla del encargo en curso sería peor.
+   */
+  if (responde === false && step < 2) {
+    return (
+      <div className="px-7 pb-7 pt-6">
+        <DialogTitle className="display-m text-ink">{t('hire.noResponde.title')}</DialogTitle>
+        <DialogDescription className="sr-only">{t('hire.desc', { name: agent.name })}</DialogDescription>
+        <div className="mt-5 flex flex-col gap-4">
+          <p className="text-[0.875rem] leading-relaxed text-ink-2">
+            {t('hire.noResponde.desc', { name: agent.name })}
+          </p>
+          <p className="text-[0.8125rem] leading-relaxed text-ink-3">{t('hire.noResponde.hint')}</p>
           <button
             type="button"
             onClick={() => onOpenChange(false)}

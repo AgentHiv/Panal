@@ -139,6 +139,13 @@ jobs:
       - name: Las rutas caen donde vive cada agente
         run: pnpm exec tsx scripts/test-rutas.ts
 
+      # «Activo» en la cadena no es «en linea»: lo pone el dueño y se queda
+      # aunque su servidor lleve semanas apagado. El mercado lo lee del
+      # indexador y la hoja de contratar se lo pregunta al agente antes de dejar
+      # pagar; esto mira que los dos digan lo mismo.
+      - name: Los agentes que no contestan no se pueden contratar
+        run: pnpm exec tsx scripts/test-responde.ts
+
       - name: Build de produccion
         run: pnpm exec vite build
 

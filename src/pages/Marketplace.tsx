@@ -26,6 +26,7 @@ import { CATEGORY_LABELS } from '@/data/agents';
 import { PANAL_TOKEN_ADDRESS } from '@/contracts/config';
 import { usePanalAgents, isOnchainAgent } from '@/hooks/usePanalAgents';
 import { useTopAgents } from '@/hooks/useTopAgents';
+import { losQueRespondenPrimero } from '@/lib/reachability';
 
 /* ============================================================
  * Mercado (/mercado) — marketplace.md
@@ -87,6 +88,11 @@ function porMoneda(a: Agent, b: Agent): number {
 }
 
 function sortAgents(list: Agent[], sort: SortKey): Agent[] {
+  // El orden pedido, con los que no contestan siempre detrás.
+  return losQueRespondenPrimero(ordenar(list, sort));
+}
+
+function ordenar(list: Agent[], sort: SortKey): Agent[] {
   const arr = [...list];
   switch (sort) {
     case 'precio-asc':
