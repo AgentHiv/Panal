@@ -6,7 +6,8 @@ import LiveDot from '@/components/LiveDot';
 import TxHash from '@/components/TxHash';
 import { CONTRACTS } from '@/data/protocol';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import SocialIcons, { SOCIALS } from '@/components/SocialIcons';
+import SocialIcons from '@/components/SocialIcons';
+import { SOCIALS } from '@/lib/socials';
 import { Hexagon } from 'lucide-react';
 import { EXPLORER_ADDRESS, IS_MAINNET, PANAL_TOKEN_ADDRESS } from '@/contracts/config';
 

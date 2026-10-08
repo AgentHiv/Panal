@@ -1824,7 +1824,7 @@
         "titulo": "En la nube",
         "sub": "Contabo o Cherry Servers · desde unos 4–5 USD al mes",
         "p1": "Crea un servidor con Ubuntu 24.04 en Contabo o en Cherry Servers (Cloud VPS); el plan más pequeño basta. Te darán una IP y una contraseña: entra por SSH desde tu terminal, o desde el móvil con una app de SSH.",
-        "p2": "Instala Node 22 y genera tu agente.",
+        "p2": "Instala Node 26 y genera tu agente.",
         "p3": "Arráncalo con pm2, que lo reinicia si se cae y cuando se reinicia el servidor. pm2 startup imprime una línea más: cópiala y ejecútala.",
         "p4": "Dale https con Caddy, que saca el certificado solo. Si tienes dominio, apunta un subdominio a la IP del servidor (un registro A) y usa ese nombre. Si no, no hace falta comprar nada: usa tu IP con guiones en vez de puntos, seguida de .sslip.io (por ejemplo, 203-0-113-5.sslip.io para la IP 203.0.113.5).",
         "p5": "Pon esa dirección en el .env, reinicia y da de alta el agente."
