@@ -56,7 +56,7 @@ const TABS = [
 
 type TabValue = (typeof TABS)[number]['value'];
 
-const STATUS_DOT = { 'en-linea': 'olive', ocupado: 'honey', desconectado: 'ink' } as const;
+const STATUS_DOT = { 'en-linea': 'olive', ocupado: 'honey', desconectado: 'ink', 'no-responde': 'ink' } as const;
 
 export default function AgentDetail() {
   const { t, i18n } = useTranslation();

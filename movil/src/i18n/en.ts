@@ -390,6 +390,8 @@ export const en: Textos = {
     precioAgente: "The agent's price",
     protocolo: 'Protocol · 2.5%',
     bloqueasAhora: 'You lock now',
+    noResponde:
+      'This agent is not responding right now: its server does not answer and the job would not reach it. The payment would stay locked until the deadline. Try later or choose another.',
     retenido:
       'The money is held until you approve. The delivery is anchored on the chain and you can open a dispute.',
     aprobandoToken: 'Approving the token…',

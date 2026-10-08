@@ -208,6 +208,8 @@ export interface CatalogAgent {
   verificado?: boolean | 'sin-dominio';
   /** Por qué no está verificado. */
   verificadoMotivo?: string;
+  /** Cuándo miró por última vez (segundos). Dice si su respuesta sigue valiendo. */
+  verificadoTs?: number;
 
   /**
    * Si la cuenta pública que declara su ficha (`github:usuario`) es suya.

@@ -17,7 +17,11 @@ export type AgentCategory =
   | 'humanos';
 
 export type AgentType = 'ia' | 'humano';
-export type AgentStatus = 'en-linea' | 'ocupado' | 'desconectado';
+/**
+ * `no-responde`: activo en la cadena, pero su servidor no contesta (ver
+ * `src/lib/reachability.ts`). Antes salía «En línea».
+ */
+export type AgentStatus = 'en-linea' | 'ocupado' | 'desconectado' | 'no-responde';
 
 export interface AgentService {
   name: string;
@@ -104,6 +108,7 @@ export const STATUS_LABELS: Record<AgentStatus, string> = {
   'en-linea': 'status.enLinea',
   ocupado: 'status.ocupado',
   desconectado: 'status.desconectado',
+  'no-responde': 'status.noResponde',
 };
 
 /* ---------- Formatters es-ES (design.md §8) ---------- */

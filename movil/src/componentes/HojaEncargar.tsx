@@ -10,6 +10,7 @@ import {
 } from '@/contracts/config';
 import { panalEscrowV2Abi, panalTokenAbi } from '@/contracts/abis';
 import { saveTaskBrief } from '@/lib/taskBriefs';
+import { respondeElAgente } from '@/lib/reachability';
 import { permitirEncargo } from '~/lib/signingPolicy';
 import {
   briefSignMessage,
@@ -177,6 +178,29 @@ export default function HojaEncargar({
 
   const T = useTextos();
   const idioma = useIdioma();
+
+  /* ── ¿contesta? ───────────────────────────────────────────────────────── */
+
+  /**
+   * Si su servidor contesta, preguntado desde el teléfono al abrir la hoja.
+   *
+   * «Activo» en la cadena no lo garantiza: lo pone su dueño y se queda puesto
+   * aunque el servidor lleve semanas apagado, y bloquear el dinero para un
+   * encargo que no va a llegar a nadie es justo lo que esta hoja tiene que
+   * evitar. `null` mientras se pregunta; solo `false` corta.
+   */
+  const [responde, setResponde] = useState<boolean | null>(null);
+  useEffect(() => {
+    const botUrl = datos?.botUrl;
+    if (!botUrl) return;
+    let vigente = true;
+    void respondeElAgente(botUrl).then((r) => {
+      if (vigente) setResponde(r);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [datos?.botUrl]);
 
   /* ── ¿acepta archivos? ¿vende niveles? ─────────────────────────────────── */
 
@@ -706,10 +730,14 @@ export default function HojaEncargar({
             />
           </Tarjeta>
 
-          <Nota>{T.encargar.retenido}</Nota>
+          {responde === false ? (
+            <Nota tono="miel">{T.encargar.noResponde}</Nota>
+          ) : (
+            <Nota>{T.encargar.retenido}</Nota>
+          )}
 
           <div className="mt-[18px] pb-1">
-            <Boton onClick={empezar} disabled={!brief.trim() || trabajando}>
+            <Boton onClick={empezar} disabled={!brief.trim() || trabajando || responde === false}>
               {aprobando
                 ? T.encargar.aprobandoToken
                 : pagando

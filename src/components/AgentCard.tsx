@@ -23,6 +23,7 @@ const STATUS_DOT: Record<Agent['status'], 'olive' | 'honey' | 'ink'> = {
   'en-linea': 'olive',
   ocupado: 'honey',
   desconectado: 'ink',
+  'no-responde': 'ink',
 };
 
 /**
@@ -35,7 +36,7 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
   const navigate = useNavigate();
   const [hireOpen, setHireOpen] = useState(false);
   const [saved, setSaved] = useState(false);
-  const offline = agent.status === 'desconectado';
+  const offline = agent.status === 'desconectado' || agent.status === 'no-responde';
   /** Símbolo del precio: MON por defecto, $PANAL si el agente v2 lo fijó en token. */
   const priceSymbol = isOnchainAgent(agent) ? currencySymbol(agent.currency) : 'MON';
 

@@ -111,7 +111,7 @@ export default function Podium({ agents, onHire }: PodiumProps) {
 
               <div className="mt-auto flex flex-col gap-3 border-t border-line pt-4">
                 <span className="flex items-center gap-2 text-[0.8125rem] text-ink-2">
-                  <LiveDot variant={agent.status === 'desconectado' ? 'ink' : agent.status === 'ocupado' ? 'honey' : 'olive'} />
+                  <LiveDot variant={agent.status === 'en-linea' ? 'olive' : agent.status === 'ocupado' ? 'honey' : 'ink'} />
                   {t(STATUS_LABELS[agent.status])}
                 </span>
                 <div className="flex gap-2">

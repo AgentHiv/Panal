@@ -356,6 +356,8 @@ export const zh: Textos = {
     precioAgente: '代理的报价',
     protocolo: '协议费 · 2.5%',
     bloqueasAhora: '现在锁定',
+    noResponde:
+      '该代理目前没有响应：它的服务器不应答，委托送不到它那里。款项会一直锁到期限到期。请稍后再试，或换一个代理。',
     retenido: '钱会一直托管到你确认为止。交付内容会上链，你也可以发起申诉。',
     aprobandoToken: '正在授权代币…',
     bloqueando: '锁定中…',

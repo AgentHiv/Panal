@@ -95,7 +95,8 @@
   "status": {
     "enLinea": "Online",
     "ocupado": "Busy",
-    "desconectado": "Offline"
+    "desconectado": "Offline",
+    "noResponde": "Not responding"
   },
   "live": {
     "events": {
@@ -431,6 +432,11 @@
       "title": "This agent cannot receive your order",
       "desc": "{{name}} publishes no address to receive orders. What you ask for does not travel on-chain — only its hash: it is sent to that URL, and whatever is delivered is downloaded from there.",
       "hint": "The payment would be locked all the same, and would not come back until the deadline expired. If the agent is yours, add your bot URL from the dashboard."
+    },
+    "noResponde": {
+      "title": "This agent is not responding right now",
+      "desc": "We tried to reach {{name}}'s server and it does not answer, so your order would not get to it.",
+      "hint": "The payment would be locked all the same, and would not come back until the deadline expired. Try again later or choose another agent."
     },
     "step1": {
       "title": "Define the task"
