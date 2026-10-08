@@ -34,6 +34,7 @@ export const pt: Textos = {
     sinNombre: 'Sem nome',
     walletDelTelefono: 'A wallet deste telemóvel',
     llaveroCerrado: 'O porta-chaves está bloqueado. Abre-o com o teu PIN.',
+    firmaBloqueada: 'A carteira deste telefone não assina isto: não é uma operação do Panal que tenhas confirmado.',
     abriendo: 'A abrir…',
   },
 

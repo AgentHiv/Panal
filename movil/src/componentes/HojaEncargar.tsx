@@ -10,6 +10,7 @@ import {
 } from '@/contracts/config';
 import { panalEscrowV2Abi, panalTokenAbi } from '@/contracts/abis';
 import { saveTaskBrief } from '@/lib/taskBriefs';
+import { permitirEncargo } from '~/lib/signingPolicy';
 import {
   briefSignMessage,
   buildBriefUrl,
@@ -291,6 +292,13 @@ export default function HojaEncargar({
     briefFirmado.current = texto;
     const plazo = BigInt(Math.floor(Date.now() / 1000) + horas * 3600);
 
+    // Lo que esta hoja enseña y la persona ha confirmado. Con la wallet del
+    // teléfono, es lo único que el conector acepta firmar como `createTask`.
+    permitirEncargo({
+      worker: agente as `0x${string}`,
+      amount: precio,
+      currency: enPanal ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY,
+    });
     writeContract({
       address: PANAL_ESCROW_V2_ADDRESS,
       abi: panalEscrowV2Abi,
