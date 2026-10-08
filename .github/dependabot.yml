@@ -1,5 +1,6 @@
 # Dependabot: avisa de dependencias con fallos de seguridad y abre un PR para
-# subirlas. Agrupado para que llegue un PR por semana y por sitio, no veinte.
+# subirlas. Agrupado para que llegue un PR por semana y por sitio, no veinte, y
+# sin saltos de versión grande, que se hacen a mano cuando toca.
 #
 # Las de seguridad llegan en cuanto se publican, sin esperar a la semana: eso lo
 # hace Dependabot solo, aparte de estas actualizaciones de rutina.
@@ -11,6 +12,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # Los saltos de versión grande (eslint 9 -> 10, framer-motion 12 -> 14…)
+    # rompen cosas y piden revisarlos a mano: no se proponen solos. Los parches
+    # de SEGURIDAD llegan igual, por su propio camino.
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     groups:
       menores:
         update-types: [minor, patch]
@@ -21,6 +28,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    # Los saltos de versión grande (eslint 9 -> 10, framer-motion 12 -> 14…)
+    # rompen cosas y piden revisarlos a mano: no se proponen solos. Los parches
+    # de SEGURIDAD llegan igual, por su propio camino.
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     groups:
       menores:
         update-types: [minor, patch]
