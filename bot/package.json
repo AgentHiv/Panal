@@ -27,11 +27,11 @@
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "viem": "^2.23.0"
+    "viem": "^2.57.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "tsx": "^4.19.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.0"
   }
 }
