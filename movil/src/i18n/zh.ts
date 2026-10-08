@@ -32,6 +32,7 @@ export const zh: Textos = {
     sinNombre: '未命名',
     walletDelTelefono: '这台手机上的钱包',
     llaveroCerrado: '钥匙串是锁着的。用你的 PIN 打开它。',
+    firmaBloqueada: '这部手机上的钱包不会签署此操作：这不是你确认过的 Panal 操作。',
     abriendo: '正在打开…',
   },
 

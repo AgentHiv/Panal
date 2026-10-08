@@ -152,7 +152,7 @@ const cliente = createWalletClient({
   chain: activeChain,
   transport: custom(PROVEEDOR),
 });
-const mensaje = 'panal:result:42:1780000000';
+const mensaje = 'Panal resultado #42 · 1780000000';
 const firma = await cliente.signMessage({ message: mensaje });
 dice(
   'la dirección que sale de la firma es la de la segunda',

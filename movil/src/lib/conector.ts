@@ -28,6 +28,11 @@
  * cada acción que cuesta dinero pasa por una hoja que dice qué se firma, y por
  * eso el llavero se abre con el PIN una vez por sesión y no se queda abierto
  * de un día para otro.
+ *
+ * Y por eso no firma CUALQUIER cosa que le llegue: antes de tocar la clave,
+ * `lib/signingPolicy.ts` mira que sea una operación de Panal, y las que mueven
+ * dinero hacia otro —encargar, pagar un mensaje— que coincidan con lo que la
+ * hoja acaba de confirmar.
  */
 
 import { createConnector } from 'wagmi';
@@ -35,6 +40,7 @@ import { SwitchChainError, UserRejectedRequestError, createWalletClient, http, n
 import type { Address, Hex, TypedDataDefinition } from 'viem';
 import { activeChain, publicClient } from '@/contracts/config';
 import { alCambiarDeWallet, cerrarSesion, cuentaViva } from '~/lib/sesion';
+import { olvidarPermisos, revisarMensaje, revisarTipado, revisarTransaccion } from '~/lib/signingPolicy';
 import { textos } from '~/i18n/idiomas';
 
 export const ID_LLAVERO = 'panal-llavero';
@@ -87,6 +93,7 @@ function proveedor() {
           const cuenta = exigirCuenta();
           // El orden es [mensaje, dirección], al revés que en signTypedData.
           const [datos] = params as [Hex, Address];
+          revisarMensaje(datos);
           return cuenta.signMessage!({ message: { raw: datos } });
         }
 
@@ -98,12 +105,14 @@ function proveedor() {
           const tipado = (
             typeof sinAbrir === 'string' ? JSON.parse(sinAbrir) : sinAbrir
           ) as TypedDataDefinition;
+          revisarTipado(tipado, cuenta.address);
           return cuenta.signTypedData!(tipado);
         }
 
         case 'eth_sendTransaction': {
           const cuenta = exigirCuenta();
           const [t] = params as [TxCruda];
+          revisarTransaccion({ to: t.to, data: t.data, value: aBigInt(t.value) });
           const cliente = createWalletClient({
             account: cuenta,
             chain: activeChain,
@@ -189,6 +198,7 @@ export function conectorLlavero() {
       async disconnect() {
         soltar?.();
         soltar = null;
+        olvidarPermisos();
         cerrarSesion();
       },
 

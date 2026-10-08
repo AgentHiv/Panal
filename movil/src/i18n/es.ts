@@ -37,6 +37,7 @@ export const es = {
     sinNombre: 'Sin nombre',
     walletDelTelefono: 'La wallet de este teléfono',
     llaveroCerrado: 'El llavero está cerrado. Ábrelo con tu PIN.',
+    firmaBloqueada: 'La wallet de este teléfono no firma esto: no es una operación de Panal que hayas confirmado.',
     abriendo: 'Abriendo…',
   },
 

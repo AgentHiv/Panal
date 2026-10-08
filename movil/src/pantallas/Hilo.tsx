@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useWalletClient } from 'wagmi';
+import { getAddress } from 'viem';
 import { useWallet } from '@/hooks/useWallet';
 import { useMyTasks } from '@/hooks/useMyTasks';
 import { anadirMensaje, leerHilo, nuevoId } from '@/lib/historial';
@@ -13,6 +14,7 @@ import { getTaskBrief } from '@/lib/taskBriefs';
 import type { X402Accept } from '@panal/sdk';
 import { useAgente } from '~/lib/agente';
 import { avisandoAlFirmar } from '~/lib/firma';
+import { permitirPago } from '~/lib/signingPolicy';
 import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
 import HojaFirmar from '~/componentes/HojaFirmar';
@@ -152,6 +154,9 @@ export default function Hilo(): React.ReactElement {
     /** Cuándo salió. Lo pone el aviso de la firma; hasta entonces, ahora. */
     let mandado = Date.now();
     try {
+      // El permit que esta hoja enseña: a quién y cuánto. Con la wallet del
+      // teléfono, es lo único que el conector acepta firmar como pago.
+      permitirPago({ spender: getAddress(cotizacion.payTo), value: BigInt(cotizacion.amount) });
       const res = await enviarMensaje({
         cobro: datos.cobro,
         mensaje: texto,

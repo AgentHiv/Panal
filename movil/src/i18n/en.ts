@@ -34,6 +34,7 @@ export const en: Textos = {
     sinNombre: 'Unnamed',
     walletDelTelefono: 'The wallet on this phone',
     llaveroCerrado: 'The keyring is locked. Open it with your PIN.',
+    firmaBloqueada: 'The wallet on this phone will not sign this: it is not a Panal operation you confirmed.',
     abriendo: 'Opening…',
   },
 
