@@ -142,6 +142,13 @@ jobs:
       - name: Build de produccion
         run: pnpm exec vite build
 
+      # La CSP solo deja correr el codigo de panal.lat y el script de arranque
+      # de index.html, este por su huella. Si alguien toca ese script y no la
+      # huella, en produccion el navegador lo bloquea en silencio: esto lo para
+      # aqui, sobre lo recien construido, y dice la huella nueva.
+      - name: La CSP deja correr el script de index.html
+        run: pnpm exec tsx scripts/test-csp.ts
+
   packages:
     name: SDK y MCP contra Monad mainnet (solo lectura)
     runs-on: ubuntu-latest
