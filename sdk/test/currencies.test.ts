@@ -14,6 +14,7 @@ import { createPublicClient, http, parseAbi } from 'viem';
 import {
   formatX402Amount,
   monad,
+  readPermitDomain,
   networkOfChain,
   parseX402Amount,
   x402Currencies,
@@ -51,6 +52,15 @@ async function main(): Promise<void> {
       .readContract({ address: c.address, abi, functionName: 'nonces', args: [c.address] })
       .then(() => true, () => false);
     check(`${c.symbol}: tiene permit (EIP-2612)`, permit);
+    // El dominio con el que se firma, el mismo que el token usa al verificar.
+    // USDC no publica eip712Domain() y su versión es "2": suponer "1" dejaba
+    // todas sus firmas inválidas.
+    const dominio = await readPermitDomain(client, c.address).catch((e: Error) => e);
+    check(
+      `${c.symbol}: el dominio de firma coincide con su DOMAIN_SEPARATOR`,
+      !(dominio instanceof Error),
+      dominio instanceof Error ? dominio.message : `${dominio.name} v${dominio.version}`,
+    );
   }
 
   console.log('\n── 2. Buscar por dirección y por nombre ──');

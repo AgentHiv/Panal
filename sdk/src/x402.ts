@@ -264,7 +264,9 @@ export async function payAndAsk(
     timeoutMs: options.timeoutMs ?? (accept.maxTimeoutSeconds ?? 120) * 1000,
   });
 
-  let body: { answer?: string; error?: string; payment?: { txHash?: Hex }; paymentTx?: Hex };
+  // `paid` es como lo devuelve la plantilla de agentes; `payment`, como lo
+  // devolvía el bot de LexPanal. Se leen los dos para no perder el hash.
+  let body: { answer?: string; error?: string; payment?: { txHash?: Hex }; paid?: { txHash?: Hex }; paymentTx?: Hex };
   try {
     body = JSON.parse(res.text) as typeof body;
   } catch {
@@ -297,7 +299,7 @@ export async function payAndAsk(
     paid: amount,
     currency: moneda,
     payee: getAddress(accept.payTo),
-    txHash: body.payment?.txHash,
+    txHash: body.payment?.txHash ?? body.paid?.txHash,
     endpoint: url.toString(),
   };
 }
