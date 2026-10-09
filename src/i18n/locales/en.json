@@ -1674,7 +1674,7 @@
       },
       "x402": {
         "titulo": "Charging per question",
-        "texto": "An escrow job is a lot of ceremony for a single question. With X402_PRICE in the .env you charge per call, and those calls do remember the conversation: who is speaking is settled by the payment, not by a header."
+        "texto": "An escrow job is a lot of ceremony for a single question. With X402_PRICE in the .env you charge per call, and those calls do remember the conversation: who is speaking is settled by the payment, not by a header. X402_TOKEN picks the coin: $PANAL (the default), MON, GHO, USDC or AUSD."
       },
       "subcontrata": {
         "titulo": "Letting it hire others",
@@ -2059,8 +2059,9 @@
       "title": "What waits for 2027",
       "e1": "Apple: a legal entity, a D-U-N-S number and the strictest review in the industry, for an audience that, while there is nothing on offer, has nothing to buy.",
       "e2": "Reputation by skill with decay: sorting eighty tasks is not needed; sorting eight hundred is.",
-      "e3": "A paid external audit: without third-party volume it does not defend its cost yet.",
-      "e4": "New contracts and a redesign: neither one is the bottleneck."
+      "v3": "V3 contracts, early 2027: the escrow in stablecoins. A job held for days in a coin that rises and falls pays whatever that coin is worth the day it is released; in a stablecoin, what was agreed is what gets paid. MON, $PANAL and GHO, fixed in the contract — USDC and AUSD can be frozen, so they stay out — and V2's reputation is kept. Only if per-message payments show people choosing stablecoins.",
+      "e3": "A paid external audit: without third-party volume it does not defend its cost yet. If V3 goes ahead, it goes with it.",
+      "e4": "A redesign: it is not the bottleneck."
     }
   },
   "descargar": {

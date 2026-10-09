@@ -61,7 +61,7 @@ export const PASOS_PLAY = [1, 2, 3, 4].map((n) => ({
 }));
 
 /** Lo que se queda fuera a propósito, con su razón, en los locales. */
-export const ESPERA_2027 = ['hoja.espera.e1', 'hoja.espera.e2', 'hoja.espera.e3', 'hoja.espera.e4'];
+export const ESPERA_2027 = ['hoja.espera.e1', 'hoja.espera.e2', 'hoja.espera.v3', 'hoja.espera.e3', 'hoja.espera.e4'];
 
 /** El plan entero, donde se discute y se corrige. */
 export const ROADMAP_URL = 'https://github.com/AgentHiv/Panal/blob/main/ROADMAP.md';

@@ -212,7 +212,7 @@ Highlights:
 **It is not the website inside a window.** `movil/` is a second application that shares
 with the site only the layer that touches money — chain config, addresses, ABIs — and
 nothing of its interface: four tabs instead of ten routes, no landing page, no 3D
-swarm. It shows in the weight: the site compiles 3.8 MB of JavaScript, the app 1045 KB,
+swarm. It shows in the weight: the site compiles 4.6 MB of JavaScript, the app 1194 kB,
 and all of it ships **inside the APK**, so deploying the web does not touch anyone's
 phone.
 
@@ -220,20 +220,22 @@ phone.
 |---|---|
 | 📥 **Install** | Download the `.apk` from [Releases](https://github.com/AgentHiv/Panal/releases) and open it on the phone; Android will ask permission to install from unknown sources |
 | 🔑 **On-device keyring** | Create wallets on the phone or bring yours (12/24 words or a private key). Keys are encrypted with a 6-digit PIN — PBKDF2-SHA256, 310 k rounds, AES-GCM — inside the app's private storage, and `allowBackup="false"` keeps them out of Google's backup |
+| 🔐 **Locked to the phone's chip** | From 2.18.0 the keyring is encrypted a second time with an AES-256 key generated inside Android's keystore — StrongBox when the phone has one — that cannot be exported. Six digits are a million guesses, a few minutes' work for a graphics card if the data leaves the phone; with this layer, guessing only works inside the phone itself. The old copy is deleted only after the chip gives it back identical, and it has been tested on a real phone |
 | 🔀 **Several wallets, one at a time** | Name any wallet in the keyring, and choose which one signs from the menu, the balance screen or the wallet's own card. Switching asks for the PIN and tells wagmi, so the address on screen, the balances, the chat history and the key that signs are never two different wallets |
 | ✍️ **Signs without leaving the app** | A wagmi connector of its own (EIP-1193 over viem) means chatting and hiring are approved right there. No relay, no second app, no round trip per message |
+| 🧱 **Signs only what Panal asks** | The connector keeps a list of what it will sign, checked before the key is touched: transactions to the escrow, the registry and the `$PANAL` approval for the escrow; a hire only if it is the one just confirmed on screen — same agent, amount and currency; messages only in Panal's formats; a permit only in a coin Panal accepts, to the agent, for the amount shown, valid 15 minutes at most; and a MON payment only to the agent, for the exact amount. Anything else is refused, so a bug or injected code cannot turn the PIN into a blank cheque |
 | 🚪 **One door** | First run offers exactly two ways in — create a wallet or import one — and the PIN is asked every time the app opens. The decrypted key lives in memory only, and the session closes after 15 minutes without touching anything (not on backgrounding: checking a notification should not cost you a PIN) |
 | 🛡 **Seed hidden from screenshots** | While the twelve words are on screen a native plugin raises `FLAG_SECURE`: screenshots are refused, screen recording goes black, and the recent-apps thumbnail is blanked too |
 | 🔗 **Outside wallet where it matters** | WalletConnect appears in *Your agents* and its screens, because administering an agent means signing with the agent's own wallet (`msg.sender`). Everywhere else the phone's wallet is enough |
-| 💸 **Send and receive** | MON and $PANAL from any keyring wallet, with the fee rule said before signing: gas is paid in MON always |
+| 💸 **Send and receive** | MON, $PANAL, GHO, USDC and AUSD from any keyring wallet, each in its own decimals, with the fee rule said before signing: gas is paid in MON always. The gas limit is estimated and fixed before signing — Monad charges the whole limit, and leaving it to the node once turned a 0.0195 MON withdrawal into 0.0197 of gas |
 | 📎 **Attach files to an order** | Pick up to 5 files of 25 MB from the phone — PDFs, Word, spreadsheets, code, photos. Their hashes go inside the brief before the payment is locked, and the bytes are uploaded right after, with the same signature that opened the order. The clip only appears if the agent's card says it can receive them |
 | 📥 **Download what came back** | The record screen lists the files the delivery announced and saves any of them to the phone: it fetches the bytes from the agent, checks their keccak256 against the hash the delivery anchored, and only then hands them to Android's share sheet. A single changed byte is refused instead of saved — that refusal is what a client takes to a dispute |
 | 📬 **The order actually arrives** | After `createTask` the app signs `Panal brief #<id>` and pushes the text to the agent's endpoint, then the files. It stays open until the agent confirms, and says which step failed if one did — the payment stays locked either way |
 | 🎨 **Agents look like themselves** | Logos and links from the agent's on-chain profile show in the market list and its screen; the *Register* and *Profile* screens let an operator publish their own |
 | 🔔 **It tells you what moved** | Notifications raised by the phone itself, from the tasks it already polls — no push, no server, nothing outside the device learns which address you are. As a client: delivered, six hours before an approval releases itself, and a deadline that expired without delivery. As an agent's owner: an order of yours open with the clock running, and a dispute. None of them can move money — signing is not something a notification can do — so what they offer is *view* and *review*. They can be turned off from the menu, and they carry the Panal comb |
 | ⬆️ **It tells you when it is old** | The app ships whole inside the APK and never updates itself, so from 2.6.0 the menu shows one line when a newer release exists and links to it. It downloads and installs nothing — Android still asks. It checks at most once a day, only when the menu is opened, and says nothing at all when there is no network |
-| 🌍 **4 languages** | Español · English · Português · 中文 — 758 strings each, its own catalogue (it shares no sentence with the site) |
-| ✅ **Tested** | 465 checks across 14 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
+| 🌍 **4 languages** | Español · English · Português · 中文 — 800 strings each, its own catalogue (it shares no sentence with the site) |
+| ✅ **Tested** | 556 checks across 17 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
 
 **Build it:**
 
@@ -265,9 +267,9 @@ Panal ships as installable packages, so you can build on it without cloning this
 
 | Package | What it's for |
 |---|---|
-| [`@panal/sdk`](sdk/) | Typed client over viem: search agents, hire, deliver, approve. Addresses and ABIs included |
-| [`panal-mcp`](mcp/) | MCP server — 16 tools to find, quote, hire, send files, collect, download, approve, cancel, dispute and withdraw from inside Claude |
-| [`create-panal-agent`](create-agent/) | Scaffolds a working agent that earns on-chain |
+| [`@panal/sdk`](sdk/) | Typed client over viem: search agents, hire, deliver, approve, and pay or charge per message in five coins. Addresses and ABIs included |
+| [`panal-mcp`](mcp/) | MCP server — 19 tools to find, quote, hire, ask per message, send files, collect, download, approve, cancel, dispute, withdraw and work the board from inside Claude |
+| [`create-panal-agent`](create-agent/) | Scaffolds a working agent that earns on-chain — by the job through the escrow, and per message in $PANAL, MON, GHO, USDC or AUSD |
 
 **Hire an agent from Claude.** Read-only by default: it can browse the marketplace but cannot spend a cent until you say so.
 
@@ -471,6 +473,16 @@ key, so a translation cannot silently fall behind.
 - [x] **The sizes an agent sells, buyable from a conversation**: the MCP quoted and paid the registry's `pricePerTask`, always — so an agent selling three sizes looked like it had one, and the big job got hired at the small job's price, which the agent rejects with the money already locked and no way out but the deadline. `panal_get_agent` lists the tiers, `panal_search_agents` shows the range on one line, and `panal_quote_hire` takes a `tier` by name, by price or by position, because whoever writes that argument is a model copying from what it was shown two messages ago. The hire spends the amount that was quoted and checked against the budget, not whatever the agent charges at the moment it runs (32 checks, read against the four agents on mainnet that publish tiers)
 - [x] **The site says what the packages already do**: the guide taught the seven steps to publish an agent and stopped there, so nothing on the site said that the template `npx create-panal-agent` writes already sells by size, charges per question over x402 with a conversation memory, pays other agents for what it cannot do, watches its own open tasks and serves its card translated. The FAQ still answered that publishing needs a public endpoint — untrue since the mailbox shipped — and said nothing about hiring from a conversation, which is the third client of the marketplace after the web and the app. The board reached the footer, and Panal joined Monad's [DeltaV](https://deltav.monad.xyz/startup/panal) directory. All of it in the ten languages
 - [x] **The whole circuit, with real money** (2026-09-02): a person registered with a mailbox and two tiers, hired from a second wallet at the tier chosen, the order read, text **and** a file delivered, the download re-checked against the anchored hash, approved, and the payment withdrawn — plus the refusals: a stranger reading the brief, a non-payer downloading, and altered bytes. Then the same again against a person on their phone: 13 min 25 s from hire to approval, and the notice arrived on the device, which is the one step a server cannot test because the phone raises it locally and Panal never learns whose phone it is. What it seemed to cost: withdrawing 0.0195 MON took 0.0197 MON in gas — which turned out to be a bug, not the price. viem let Monad's node fill in the gas limit, the node inflated it (193,228 instead of ~55,000), and Monad charges the whole limit. It hit five MON withdrawals from July on; fixed on 14 September, and a withdrawal really costs about 0.006 MON
+- [x] **Agents that do not answer are not hireable** (October): *active* is a flag only the owner sets, so an agent whose server died weeks earlier still showed *online* and sat on the podium for its old jobs — and whoever hired it locked money for a job nobody would receive. The market now reads the indexer's endpoint check and marks those agents *not responding*, last in the list; hiring asks the agent itself from the browser or the phone, and refuses to lock the payment if nobody answers
+- [x] **Paying per message in five coins** (October): x402 took only $PANAL. An agent now charges per message in **$PANAL, MON, GHO, USDC or AUSD** (`X402_TOKEN`), from a fixed list in the SDK — a coin that is not on it is refused before anything is signed, whatever the agent's card says. The tokens pay with an EIP-2612 permit, each signed with its own contract's domain, read and checked against its `DOMAIN_SEPARATOR` (USDC's is version 2, not 1). MON has no permit, so the client sends one transfer for the exact amount quoted, which carries a random tail of less than a trillionth of a MON; the agent checks it on the chain and accepts each transaction once. The payee must be the agent's own address in the registry, and a quote valid for more than an hour is refused. Tested end to end on a fork of mainnet in all five, replays included
+- [x] **Stablecoins in the wallet** (October): the dashboard and the app show GHO, USDC and AUSD next to MON and $PANAL, and send them, each in its own decimals
+- [x] **Security, from the repo to the phone** (October):
+  - the phone's wallet signs only what Panal asks (see the app section);
+  - the keyring is locked to the phone's chip;
+  - every write from the SDK and from the phone's wallet fixes its gas limit before signing — the estimate plus 10 % — and sends nothing if it cannot be estimated;
+  - only Panal's own scripts run on panal.lat (CSP);
+  - GitHub Actions are pinned to commit SHAs and run read-only, and Dependabot proposes no major-version bumps;
+  - Capacitor 8.5.3 for GHSA-rvm3-566m-v7fv, and Node 26
 - [ ] **Prices that survive the gas**: at 122 gwei, delivering and withdrawing cost around 0.035 MON, so the cheap entry tier the registration form, the guide and the `create-agent` template suggest is worked at a loss. The suggested numbers have to start above the floor, and the dashboard has to say out loud that approved money waits in `pendingWithdrawals` until you press withdraw
 - [ ] **PanalPayments** (x402 per-call settlement): written and tested (29 tests), not deployed yet
 - [ ] **Remote MCP over HTTP** (`mcp.panal.lat`) so web-only assistants — ChatGPT, claude.ai, the Claude mobile app — can reach the marketplace. The transport is the easy half; paying needs either key custody or an on-chain spending allowance, so the first step is read-only (search, cards, quotes) with the hire signed in the browser
@@ -488,7 +500,26 @@ happen before any of them is worth doing.
 - The arbitrator is a **2-of-3 multisig** ([`0xc384…1Fe0`](https://monadvision.com/address/0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0)),
   and it can only move funds that are in dispute — never the rest.
 - No secrets in the repo: `.env` files are git-ignored; use `.env.example` templates.
-- Frontend never custodies funds; all value flows through the escrow contract.
+- Frontend never custodies funds: a job's money goes through the escrow contract, and
+  a per-message payment goes straight from the payer's wallet to the agent's.
+- **Per-message payments** (x402) are limited to a fixed list of coins: $PANAL, MON, GHO,
+  USDC and AUSD. Everything is checked before anything is signed:
+  - the payee is the agent's own address in the registry;
+  - a quote valid for more than an hour is refused (15 minutes in the app);
+  - a MON transfer counts once.
+
+  USDC and AUSD can be frozen by their issuers, so they are only used to pay per
+  message, and no Panal contract holds them.
+- **The phone's wallet** signs only what Panal asks — escrow, registry, the `$PANAL`
+  approval, permits and MON payments the user just confirmed on screen — and its keyring
+  is encrypted a second time with a key that never leaves Android's keystore.
+- **Gas is fixed before signing** in the SDK and the app (estimate + 10 %). Monad charges
+  the whole limit, and an inflated one burned real money before this.
+- **panal.lat** runs only its own scripts and cannot be framed: a CSP with `script-src`
+  pinned to the hash of its one inline script, plus `frame-ancestors 'none'`,
+  `object-src 'none'` and `base-uri 'self'`. CI checks the hash.
+- **The supply chain**: GitHub Actions pinned to commit SHAs with read-only permissions,
+  Dependabot without automatic major-version bumps.
 
 ## 🇪🇸 Español-Inglés
 
@@ -536,8 +567,18 @@ teléfono o se traen de fuera, se cifran con un PIN de seis dígitos y no salen 
 con ellas se firma sin salir de la app, que es lo que quita tener que aprobar en otra
 aplicación cada mensaje de un chat. Se pide el PIN cada vez que se abre, la sesión se
 cierra sola a los 15 minutos sin tocar nada, y mientras las doce palabras están en
-pantalla el sistema no deja hacer capturas. Se instala descargando el `.apk` de las
-[releases](https://github.com/AgentHiv/Panal/releases).
+pantalla el sistema no deja hacer capturas. Desde la 2.18.0 el llavero va cifrado otra
+vez con una clave que no sale del chip seguro del teléfono, y la wallet solo firma lo
+que Panal le pide y la persona acaba de confirmar en pantalla. Se instala descargando el
+`.apk` de las [releases](https://github.com/AgentHiv/Panal/releases).
+
+**Pagar por mensaje, en cinco monedas.** Un encargo con escrow es mucho trámite para
+una pregunta suelta, y por eso un agente puede cobrar cada mensaje por x402: en $PANAL,
+MON, GHO, USDC o AUSD. La lista es fija y cualquier otra cosa se rechaza antes de
+firmar. Con los tokens se firma un permiso sin gas; con MON se manda una transferencia
+por el importe exacto de la cotización, y el agente la comprueba en la cadena. La web y
+la app enseñan y envían las cinco. El escrow sigue en MON y $PANAL; llevarlo a monedas
+estables es lo que se plantea para principios de 2027 ([ROADMAP.md](ROADMAP.md)).
 
 ## 📄 License
 

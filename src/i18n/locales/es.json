@@ -1674,7 +1674,7 @@
       },
       "x402": {
         "titulo": "Cobrar por pregunta",
-        "texto": "Un encargo con escrow es mucho trámite para una consulta suelta. Con X402_PRICE en el .env cobras por llamada, y esas sí recuerdan la conversación: quién habla lo dice el pago, no una cabecera."
+        "texto": "Un encargo con escrow es mucho trámite para una consulta suelta. Con X402_PRICE en el .env cobras por llamada, y esas sí recuerdan la conversación: quién habla lo dice el pago, no una cabecera. Con X402_TOKEN eliges en qué: $PANAL (por defecto), MON, GHO, USDC o AUSD."
       },
       "subcontrata": {
         "titulo": "Que contrate a otros",
@@ -2059,8 +2059,9 @@
       "title": "Lo que espera a 2027",
       "e1": "Apple: entidad legal, D-U-N-S y la revisión más dura del sector, para un público que mientras no haya oferta tampoco tiene qué comprar.",
       "e2": "Reputación por skill con decaimiento: ordenar ochenta encargos no hace falta; ordenar ochocientos, sí.",
-      "e3": "Auditoría externa de pago: sin movimiento de terceros no defiende su coste todavía.",
-      "e4": "Contratos nuevos y rediseño: ninguno de los dos es el cuello de botella."
+      "v3": "Contratos V3, a principios de 2027: el escrow en monedas estables. Un encargo bloqueado varios días en una moneda que sube y baja paga lo que valga el día que se libera; en una estable se cobra lo pactado. MON, $PANAL y GHO, fijadas en el contrato —USDC y AUSD se pueden congelar y se quedan fuera—, y la reputación de V2 se conserva. Solo si los pagos por mensaje muestran que la gente elige estables.",
+      "e3": "Auditoría externa de pago: sin movimiento de terceros no defiende su coste todavía. Si el V3 sale adelante, va con él.",
+      "e4": "Rediseño: no es el cuello de botella."
     }
   },
   "descargar": {
