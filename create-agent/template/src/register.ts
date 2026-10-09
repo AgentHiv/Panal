@@ -410,7 +410,11 @@ async function reclamaTuNombre(account: ReturnType<typeof privateKeyToAccount>, 
       return;
     }
 
-    const hash = await cartera.writeContract({ address: donde, abi: NOMBRES_ABI, functionName: 'reclamar', args: [handle], chain });
+    // Con el gas fijado: Monad cobra el límite entero, y viem lo rellena con
+    // `eth_fillTransaction`, que el nodo a veces infla.
+    const reclamo = { address: donde, abi: NOMBRES_ABI, functionName: 'reclamar', args: [handle], account } as const;
+    const estimado = await publico.estimateContractGas(reclamo);
+    const hash = await cartera.writeContract({ ...reclamo, gas: (estimado * 11n + 9n) / 10n, chain });
     await publico.waitForTransactionReceipt({ hash });
     console.log(`\nTu nombre único en Panal: ${handle}`);
   } catch (err) {

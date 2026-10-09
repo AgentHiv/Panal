@@ -28,6 +28,9 @@ export const X402_SCHEME = 'eip2612-permit';
 /** El de MON, que no tiene `permit`: se manda una transferencia y se presenta. */
 const ESQUEMA_MON = 'native-transfer';
 
+/** Lo más que puede valer una cotización: una hora. Ver `payAndAsk`. */
+const PLAZO_MAX_S = 60 * 60;
+
 const PERMIT_TYPES = {
   Permit: [
     { name: 'owner', type: 'address' },
@@ -219,6 +222,14 @@ export async function payAndAsk(
   const ahora = Math.floor(Date.now() / 1000);
   if (accept.deadline <= ahora + 30) {
     throw new X402Error('La cotización caduca de inmediato: pide otra.');
+  }
+  // Y tampoco una que valga demasiado. El plazo lo pone el agente, y un permiso
+  // firmado con un plazo de años se puede cobrar cuando él quiera mientras no
+  // se use otro antes. Las cotizaciones de Panal duran 5 minutos.
+  if (accept.deadline > ahora + PLAZO_MAX_S) {
+    throw new X402Error(
+      `La cotización vale hasta dentro de ${Math.round((accept.deadline - ahora) / 60)} minutos, y el máximo es una hora: no se firma.`,
+    );
   }
 
   const header =

@@ -83,6 +83,13 @@ export interface PanalClientOptions {
  * $PANAL 103.511. Ver `withdraw()` para lo que pasó sin este tope.
  */
 const TOPE_GAS_RETIRADA = 300_000n;
+/**
+ * El tope para dar de alta o cambiar la ficha. Guardar texto en la cadena
+ * cuesta por cada 32 bytes, y una ficha con el logo dentro es grande: aquí el
+ * tope solo está para cortar un disparate, no para medir lo normal. Lo normal
+ * lo da `eth_estimateGas`, que es fiable; el que inflaba era `eth_fillTransaction`.
+ */
+const TOPE_GAS_FICHA = 30_000_000n;
 
 /** Cuántos agentes se leen por llamada al registry. */
 const REGISTRY_PAGE = 50n;
@@ -270,16 +277,19 @@ export class PanalClient {
    * Hace falta porque viem no estima: le pide al nodo que rellene la
    * transacción (`eth_fillTransaction`), el de Monad a veces infla el límite, y
    * Monad cobra el límite ENTERO. Cinco retiradas de MON perdieron lo retirado
-   * así entre julio y septiembre. Se pasa explícito a todo lo que firma una
-   * cuenta local en nombre de un programa que nadie está mirando.
+   * así entre julio y septiembre. Se pasa explícito a TODO lo que firma una
+   * cuenta local en nombre de un programa que nadie está mirando: contratar,
+   * aprobar, entregar, disputar, darse de alta. Antes solo la retirada y el
+   * tablón, y un agente entrega en cada encargo.
    */
   private async gasFijo(
     que: string,
-    llamada: { address: Address; abi: Abi; functionName: string; args: readonly unknown[] },
+    llamada: { address: Address; abi: Abi; functionName: string; args: readonly unknown[]; value?: bigint },
+    tope: bigint = TOPE_GAS_RETIRADA,
   ): Promise<bigint> {
     const estimado = await this.publicClient.estimateContractGas({ ...llamada, account: this.account! } as never);
     const gas = (estimado * 11n + 9n) / 10n;
-    if (gas > TOPE_GAS_RETIRADA) {
+    if (gas > tope) {
       throw new Error(
         `${que}: la estimación de gas salió en ${estimado}, muy por encima de lo normal. ` +
           'Monad cobra el límite entero: no se ha enviado nada.',
@@ -610,23 +620,20 @@ export class PanalClient {
     if (!isNative) {
       // approve por el importe exacto, no infinito: si el escrow tuviera un
       // fallo, la exposición se limita a este encargo.
+      const aFirmar = { address: agent.currency, abi: erc20Abi, functionName: 'approve', args: [this.addresses.escrow, amount] } as const;
       const approveHash = await wallet.writeContract({
-        address: agent.currency,
-        abi: erc20Abi,
-        functionName: 'approve',
-        args: [this.addresses.escrow, amount],
+        ...aFirmar,
+        gas: await this.gasFijo('El approve', aFirmar as never),
         chain: chainFor(this.network),
         account: this.account!,
       });
       await this.publicClient.waitForTransactionReceipt({ hash: approveHash });
     }
 
+    const aFirmar = { address: this.addresses.escrow, abi: escrowAbi, functionName: 'createTask', args: [agent.address, taskHash, deadline, agent.currency, amount], value: isNative ? amount : 0n } as const;
     const txHash = await wallet.writeContract({
-      address: this.addresses.escrow,
-      abi: escrowAbi,
-      functionName: 'createTask',
-      args: [agent.address, taskHash, deadline, agent.currency, amount],
-      value: isNative ? amount : 0n,
+      ...aFirmar,
+      gas: await this.gasFijo('El encargo', aFirmar as never),
       chain: chainFor(this.network),
       account: this.account!,
     });
@@ -654,11 +661,10 @@ export class PanalClient {
     if (task.status !== TaskStatus.Delivered) {
       throw new Error(`La tarea #${taskId} está "${TaskStatus[task.status]}": solo se aprueba lo entregado.`);
     }
+    const aFirmar = { address: this.addresses.escrow, abi: escrowAbi, functionName: 'approveAndRelease', args: [taskId, rating] } as const;
     const hash = await wallet.writeContract({
-      address: this.addresses.escrow,
-      abi: escrowAbi,
-      functionName: 'approveAndRelease',
-      args: [taskId, rating],
+      ...aFirmar,
+      gas: await this.gasFijo('La aprobación', aFirmar as never),
       chain: chainFor(this.network),
       account: this.account!,
     });
@@ -688,11 +694,10 @@ export class PanalClient {
     if (task.status !== TaskStatus.Open) {
       throw new Error(`La tarea #${taskId} está "${TaskStatus[task.status]}": solo se cancela lo que sigue abierto.`);
     }
+    const aFirmar = { address: this.addresses.escrow, abi: escrowAbi, functionName: 'cancelTask', args: [taskId] } as const;
     const hash = await wallet.writeContract({
-      address: this.addresses.escrow,
-      abi: escrowAbi,
-      functionName: 'cancelTask',
-      args: [taskId],
+      ...aFirmar,
+      gas: await this.gasFijo('La cancelación', aFirmar as never),
       chain: chainFor(this.network),
       account: this.account!,
     });
@@ -717,11 +722,10 @@ export class PanalClient {
     if (task.status !== TaskStatus.Delivered) {
       throw new Error(`La tarea #${taskId} está "${TaskStatus[task.status]}": solo se disputa lo entregado.`);
     }
+    const aFirmar = { address: this.addresses.escrow, abi: escrowAbi, functionName: 'openDispute', args: [taskId] } as const;
     const hash = await wallet.writeContract({
-      address: this.addresses.escrow,
-      abi: escrowAbi,
-      functionName: 'openDispute',
-      args: [taskId],
+      ...aFirmar,
+      gas: await this.gasFijo('La disputa', aFirmar as never),
       chain: chainFor(this.network),
       account: this.account!,
     });
@@ -756,6 +760,7 @@ export class PanalClient {
       ...llamada,
       abi: registryAbi,
       functionName: 'registerAgent',
+      gas: await this.gasFijo('El alta', llamada as never, TOPE_GAS_FICHA),
       chain: chainFor(this.network),
       account: this.account!,
     });
@@ -766,11 +771,10 @@ export class PanalClient {
   /** Cambia el nombre, la descripción, las skills o el endpoint publicados. */
   async updateMetadata(metadata: AgentMetadata): Promise<Hex> {
     const wallet = this.wallet();
+    const aFirmar = { address: this.addresses.registry, abi: registryAbi, functionName: 'updateMetadata', args: [formatAgentMetadata(metadata)] } as const;
     const hash = await wallet.writeContract({
-      address: this.addresses.registry,
-      abi: registryAbi,
-      functionName: 'updateMetadata',
-      args: [formatAgentMetadata(metadata)],
+      ...aFirmar,
+      gas: await this.gasFijo('El cambio de ficha', aFirmar as never, TOPE_GAS_FICHA),
       chain: chainFor(this.network),
       account: this.account!,
     });
@@ -781,11 +785,10 @@ export class PanalClient {
   /** Cambia el precio por tarea, y opcionalmente la moneda en la que cobras. */
   async updatePrice(pricePerTask: bigint, currency: Address = NATIVE_CURRENCY): Promise<Hex> {
     const wallet = this.wallet();
+    const aFirmar = { address: this.addresses.registry, abi: registryAbi, functionName: 'updatePrice', args: [pricePerTask, currency] } as const;
     const hash = await wallet.writeContract({
-      address: this.addresses.registry,
-      abi: registryAbi,
-      functionName: 'updatePrice',
-      args: [pricePerTask, currency],
+      ...aFirmar,
+      gas: await this.gasFijo('El cambio de precio', aFirmar as never),
       chain: chainFor(this.network),
       account: this.account!,
     });
@@ -800,11 +803,10 @@ export class PanalClient {
    */
   async setActive(active: boolean): Promise<Hex> {
     const wallet = this.wallet();
+    const aFirmar = { address: this.addresses.registry, abi: registryAbi, functionName: 'setActive', args: [active] } as const;
     const hash = await wallet.writeContract({
-      address: this.addresses.registry,
-      abi: registryAbi,
-      functionName: 'setActive',
-      args: [active],
+      ...aFirmar,
+      gas: await this.gasFijo('El cambio de estado', aFirmar as never),
       chain: chainFor(this.network),
       account: this.account!,
     });
@@ -830,11 +832,10 @@ export class PanalClient {
     }
 
     const resultHash = keccak256(toBytes(resultText));
+    const aFirmar = { address: this.addresses.escrow, abi: escrowAbi, functionName: 'deliverResult', args: [taskId, resultHash] } as const;
     const txHash = await wallet.writeContract({
-      address: this.addresses.escrow,
-      abi: escrowAbi,
-      functionName: 'deliverResult',
-      args: [taskId, resultHash],
+      ...aFirmar,
+      gas: await this.gasFijo('La entrega', aFirmar as never),
       chain: chainFor(this.network),
       account: this.account!,
     });

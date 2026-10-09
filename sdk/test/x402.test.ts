@@ -165,6 +165,11 @@ async function main(): Promise<void> {
     'se paga con',
   );
   await rejects(
+    'una cotización que valdría años',
+    () => payAndAsk(wallet, account, ENDPOINT, 'x', { ...base, quote: fakeQuote({ deadline: Math.floor(Date.now() / 1000) + 3 * 365 * 86_400 }) }),
+    'el máximo es una hora',
+  );
+  await rejects(
     'una cotización a punto de caducar',
     () => payAndAsk(wallet, account, ENDPOINT, 'x', { ...base, quote: fakeQuote({ deadline: Math.floor(Date.now() / 1000) + 5 }) }),
     'caduca',

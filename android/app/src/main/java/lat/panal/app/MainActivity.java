@@ -1,5 +1,6 @@
 package lat.panal.app;
 
+import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.webkit.WebView;
 
@@ -30,21 +31,21 @@ public class MainActivity extends BridgeActivity {
         // ANTES de `super.onCreate`: el puente de Capacitor se monta ahí
         // dentro, y un plugin registrado después no existe para la página.
         registerPlugin(Pantalla.class);
+        registerPlugin(SecureKey.class);
 
         super.onCreate(savedInstanceState);
 
-        // Depuración remota del WebView, siempre.
+        // Depuración remota del WebView: SOLO en las compilaciones de depuración.
         //
-        // Sin esto, una pantalla en negro dentro de la app no se puede
-        // diagnosticar de ninguna forma: no hay consola, no hay mensaje, y
-        // desde fuera es indistinguible de que la app no arranque. Con esto,
-        // `chrome://inspect` desde un ordenador con el teléfono conectado
-        // enseña la consola de la página como si fuera una pestaña más.
-        //
-        // Android ya lo activa solo en compilaciones de depuración, pero
-        // ponerlo explícito hace que siga sirviendo el día que se firme una
-        // release, que es justo cuando cuesta más averiguar qué pasó.
-        WebView.setWebContentsDebuggingEnabled(true);
+        // Antes iba siempre, también en el APK publicado, para poder ver la
+        // consola de una pantalla en negro con `chrome://inspect`. Pero en una
+        // app que guarda una wallet eso es una puerta: con el teléfono por USB
+        // y la depuración de Android activada, cualquiera abre las DevTools
+        // dentro de la app y ejecuta lo que quiera con el llavero abierto. La
+        // pantalla en negro se diagnostica con una compilación de depuración;
+        // la de la gente no se deja inspeccionar.
+        boolean depurable = (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        WebView.setWebContentsDebuggingEnabled(depurable);
 
         // El dispatcher y no `onBackPressed()`: ese está desaprobado y con el
         // gesto predictivo de Android moderno deja de llamarse.

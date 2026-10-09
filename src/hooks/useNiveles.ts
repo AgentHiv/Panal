@@ -114,7 +114,7 @@ export function useNiveles(agent: Agent | null): ServiciosDelAgente {
           // En el idioma de quien mira: los niveles se llaman «Un archivo» o
           // «El repositorio», y en árabe eso no lo lee nadie.
           leerCapacidades(botUrl, 6_000, idioma),
-          leerCobroPorLlamada(botUrl),
+          de ? leerCobroPorLlamada(botUrl, de) : Promise.resolve(null),
         ]);
         // El precio de la cadena con el texto de la ficha: ver
         // `conTextoDeLaFicha`. Sin esto el escaparate sale en francés y los

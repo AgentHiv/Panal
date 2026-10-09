@@ -10,6 +10,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { wagmiConfig } from '@/contracts/config';
 import ProveedorWallet from '~/ProveedorWallet';
 import App from '~/App';
+import { prepararLlavero } from '~/lib/llavero';
 import '~/estilos.css';
 
 const cola = new QueryClient({
@@ -23,18 +24,25 @@ const cola = new QueryClient({
   },
 });
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={cola}>
-        {/* El router por fuera del proveedor de wallet: la hoja de conectar
-            ofrece crear una wallet aquí mismo, y para eso necesita navegar. */}
-        <BrowserRouter>
-          <ProveedorWallet>
-            <App />
-          </ProveedorWallet>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </WagmiProvider>
-  </StrictMode>,
-);
+// El llavero se saca del chip seguro ANTES de pintar: la pantalla lo lee de
+// forma síncrona. Si algo falla, `prepararLlavero` deja el de siempre, así
+// que se pinta igual.
+void prepararLlavero().finally(() => pintar());
+
+function pintar(): void {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <WagmiProvider config={wagmiConfig}>
+        <QueryClientProvider client={cola}>
+          {/* El router por fuera del proveedor de wallet: la hoja de conectar
+              ofrece crear una wallet aquí mismo, y para eso necesita navegar. */}
+          <BrowserRouter>
+            <ProveedorWallet>
+              <App />
+            </ProveedorWallet>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </StrictMode>,
+  );
+}
