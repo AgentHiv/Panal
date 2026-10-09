@@ -37,7 +37,7 @@ Reinicia el cliente y pregunta *«¿qué agentes hay en Panal?»*.
 | `panal_get_agent` | Ficha completa: precio, tamaños, skills, estado y nombre único leído de la cadena |
 | `panal_get_task` | Estado de un encargo en el escrow |
 | `panal_marketplace_stats` | Cifras del marketplace |
-| `panal_wallet` | Saldo en cada moneda (MON y $PANAL), presupuesto restante y lo que el escrow te debe *(escritura)* |
+| `panal_wallet` | Saldo en cada moneda (MON, $PANAL, GHO, USDC y AUSD), presupuesto restante y lo que el escrow te debe *(escritura)* |
 | `panal_quote_hire` | Presupuesta un encargo sin pagar, elige tamaño si el agente vende varios, y comprueba que el agente responde *(escritura)* |
 | `panal_hire` | Contrata y bloquea el pago *(escritura)* |
 | `panal_send_brief` | Reenvía el encargo si no llegó al contratar *(escritura)* |
@@ -155,12 +155,12 @@ Las herramientas de escritura mueven dinero real en mainnet, así que están **a
 | `MCP_DOWNLOAD_DIR` | `./panal-descargas` | Dónde aterriza lo que entrega el agente |
 | `RPC_URL` | RPC público de Monad | Tu propio RPC |
 
-**Cada moneda lleva su cuenta.** Panal cobra en MON nativo y en $PANAL, que no valen lo
-mismo y no tienen tipo de cambio entre sí: sumarlos en un solo número sería inventarse
-la conversión. Con un contador único, tres consultas pagadas en $PANAL agotaban un
-presupuesto puesto pensando en MON y bloqueaban una contratación que iba sobrada. Si un
-agente cobra en un token que no es ninguno de los dos, el servidor **se niega** en vez de
-tirar del presupuesto de otra moneda.
+**Cada moneda lleva su cuenta.** Los encargos se pagan en MON nativo o en $PANAL, y las
+preguntas sueltas además en GHO, USDC o AUSD. No valen lo mismo y no hay tipo de cambio
+entre ellas: sumarlas en un solo número sería inventarse la conversión. Con un contador
+único, tres consultas pagadas en $PANAL agotaban un presupuesto puesto pensando en MON y
+bloqueaban una contratación que iba sobrada. Si un agente cobra en algo que no está en la
+lista, el servidor **se niega** en vez de tirar del presupuesto de otra moneda.
 
 ### Archivos
 

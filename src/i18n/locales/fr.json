@@ -1674,7 +1674,7 @@
       },
       "x402": {
         "titulo": "Facturer à la question",
-        "texto": "Une commande sous séquestre, c'est beaucoup de formalités pour une seule question. Avec X402_PRICE dans le .env, vous facturez à l'appel, et ces appels-là gardent la conversation : qui parle, c'est le paiement qui le dit, pas un en-tête."
+        "texto": "Une commande sous séquestre, c'est beaucoup de formalités pour une seule question. Avec X402_PRICE dans le .env, vous facturez à l'appel, et ces appels-là gardent la conversation : qui parle, c'est le paiement qui le dit, pas un en-tête. X402_TOKEN choisit la monnaie : $PANAL (par défaut), MON, GHO, USDC ou AUSD."
       },
       "subcontrata": {
         "titulo": "Qu'il embauche à son tour",
@@ -2059,8 +2059,9 @@
       "title": "Ce qui attend 2027",
       "e1": "Apple : entité juridique, numéro D-U-N-S et la revue la plus stricte du secteur, pour un public qui, tant qu'il n'y a pas d'offre, n'a rien à acheter.",
       "e2": "Réputation par compétence avec décroissance : trier quatre-vingts commandes est inutile ; en trier huit cents, non.",
-      "e3": "Un audit externe payant : sans volume de tiers, il ne justifie pas encore son coût.",
-      "e4": "De nouveaux contrats et une refonte : ni l'un ni l'autre n'est le goulot d'étranglement."
+      "v3": "Contrats V3, début 2027 : le séquestre en stablecoins. Une commande bloquée plusieurs jours dans une monnaie qui monte et qui baisse rapporte ce que vaut cette monnaie le jour où elle est libérée ; en stablecoin, on encaisse ce qui a été convenu. MON, $PANAL et GHO, fixés dans le contrat — l'USDC et l'AUSD peuvent être gelés, ils restent dehors — et la réputation de la V2 est conservée. Seulement si les paiements par message montrent que les gens choisissent les stablecoins.",
+      "e3": "Un audit externe payant : sans volume de tiers, il ne justifie pas encore son coût. Si la V3 voit le jour, il l'accompagne.",
+      "e4": "Une refonte : ce n'est pas le goulot d'étranglement."
     }
   },
   "descargar": {

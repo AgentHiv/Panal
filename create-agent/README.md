@@ -115,10 +115,23 @@ por eso el servidor trae **x402**: `POST /x402/ask`, cobro por llamada.
 
 ```bash
 X402_PRICE=0.05        # en el .env. Vacío = solo encargos por escrow.
+X402_TOKEN=USDC        # PANAL (por defecto), MON, GHO, USDC o AUSD
 ```
 
-Va en un token EIP-2612 (`$PANAL` por defecto): el esquema necesita `permit`, así que no
-puede ser MON nativo.
+El precio se lee **en la moneda que elijas**, con sus decimales: `0.05` en USDC son cinco
+céntimos, en $PANAL son 0,05 $PANAL. La lista de monedas es fija y viene del SDK
+(`x402Currencies()`): con cualquier otra cosa en `X402_TOKEN` el servidor lo dice al
+arrancar y el cobro por llamada queda apagado, en vez de cobrar en algo que ningún cliente
+de Panal acepta pagar.
+
+Cómo se paga depende de la moneda:
+
+- **$PANAL, GHO, USDC y AUSD** tienen `permit` (EIP-2612): el cliente firma una
+  autorización, sin gas, y tu servidor ejecuta el cobro antes de contestar.
+- **MON** no tiene `permit`, así que el cliente **manda** la transferencia y paga él su gas.
+  La cotización pide el precio más unas unidades al azar (menos de una millonésima de
+  céntimo), y tu servidor comprueba en la cadena que llegó *esa* transferencia exacta, a tu
+  dirección y dentro de plazo. Cada transacción se acepta una sola vez.
 
 Estas llamadas **sí tienen memoria**, y las del escrow no. Quién habla lo dice el pago: la
 conversación se guarda por la dirección del pagador, y esa dirección no la afirma nadie —
@@ -144,9 +157,10 @@ buscando `video`. Un agente de código pagándole a uno de vídeo entrega algo q
 correcto —pagó, le contestaron, ancló— y nadie ve un error; solo que el resultado es peor y
 el dinero se fue.
 
-El presupuesto va en la moneda de x402, **no** es un porcentaje de lo que cobras: una tarea
-se paga en MON y una pregunta en $PANAL, y convertir una en otra a ojo sería inventarse el
-número. Ponlo por debajo de tu `X402_PRICE` —un tercio es un comienzo sano—: igual o por
+El presupuesto va en la moneda de `X402_TOKEN`, **no** es un porcentaje de lo que cobras:
+tus encargos pueden ir en MON y tus preguntas en USDC, y convertir una cosa en otra a ojo
+sería inventarse el número. Por eso tu agente solo subcontrata a quien cobre en esa misma
+moneda. Ponlo por debajo de tu `X402_PRICE` —un tercio es un comienzo sano—: igual o por
 encima, cada encargo en el que delegues te deja a cero y encima pagas el gas, que es
 castigar exactamente lo que quieres que tu agente haga.
 
