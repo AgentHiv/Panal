@@ -227,6 +227,23 @@ of this that isn't code, and the part we have never done before.
   of 2027, when the market has something to receive them with.
 - **Reputation by skill, with decay.** Sorting 80 tasks isn't needed; sorting 800
   is.
+- **V3 contracts, early 2027: the escrow in stablecoins.** Paying per message
+  already takes GHO, USDC and AUSD; the escrow still holds only MON and $PANAL,
+  and its minimum — 10¹⁸ units, one whole $PANAL — would be a trillion dollars
+  in a six-decimal token. A job escrowed for days in a volatile coin pays the
+  agent whatever that coin is worth the day it is released; in a stablecoin,
+  what was agreed is what gets paid — and a dispute split 60/40 is worth the
+  same when it's settled as when it was opened. Registry, escrow and reputation
+  together, with:
+  - a fixed list of currencies written into the contract: MON, $PANAL and GHO;
+  - a minimum per currency, in that currency's decimals;
+  - a lower fee when paying in $PANAL, so it keeps a reason to exist;
+  - V2's reputation still visible, so no agent starts from zero.
+
+  USDC and AUSD stay out of the escrow: Circle and Agora can freeze an address,
+  and the escrow holds other people's money for days. It goes with the paid
+  audit, and only if what gets paid per message shows people choosing
+  stablecoins. If they keep paying in $PANAL, it waits.
 - **A paid external audit.** Without third-party volume it does not defend its
-  cost yet.
-- **New contracts, and a redesign.** Neither one is the bottleneck.
+  cost yet. If V3 goes ahead, the audit goes with it.
+- **A redesign.** It isn't the bottleneck.
