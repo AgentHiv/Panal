@@ -41,7 +41,9 @@ import type { WalletClient } from 'viem';
 export function avisandoAlFirmar(wallet: WalletClient, alFirmar: () => void): WalletClient {
   return new Proxy(wallet, {
     get(destino, prop, receptor) {
-      if (prop !== 'signTypedData') return Reflect.get(destino, prop, receptor);
+      // `sendTransaction` es el momento del pago en MON: no se firma un
+      // permiso, se manda la transferencia, y a partir de ahí la hoja sobra.
+      if (prop !== 'signTypedData' && prop !== 'sendTransaction') return Reflect.get(destino, prop, receptor);
       const original = Reflect.get(destino, prop, receptor) as (
         ...args: unknown[]
       ) => Promise<unknown>;

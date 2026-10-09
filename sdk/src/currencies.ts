@@ -15,9 +15,12 @@
  * para todas las capas —web, app, MCP y agentes— para que ninguna pueda
  * enseñar un precio distinto del que se firma.
  *
- * Todas cobran con `permit` (EIP-2612), comprobado en mainnet: firma gratis,
- * y el gas lo pone el agente que cobra.
+ * Las cuatro de token cobran con `permit` (EIP-2612), comprobado en mainnet:
+ * firma gratis, y el gas lo pone el agente que cobra. MON, la moneda nativa,
+ * no tiene `permit`: quien paga MANDA una transferencia (paga él su gas, una
+ * fracción de céntimo) y la presenta. Ver `native-transfer` en x402-server.ts.
  *
+ *   - MON    — la moneda de Monad. Nadie puede congelarla.
  *   - $PANAL — el token de Panal.
  *   - GHO    — de Aave. Respaldo cripto, sin lista negra ni pausa: nadie puede
  *              congelarlo. La opción estable que no depende de una empresa.
@@ -34,8 +37,22 @@
 import { formatUnits, getAddress, parseUnits, type Address } from 'viem';
 import type { PanalNetwork } from './chains.js';
 
-/** Cómo se cobra en una moneda. */
-export type X402Scheme = 'eip2612-permit';
+/**
+ * Cómo se cobra en una moneda: con una firma de `permit` que ejecuta quien
+ * cobra, o con una transferencia que manda quien paga.
+ */
+export type X402Scheme = 'eip2612-permit' | 'native-transfer';
+
+/** La moneda nativa, como la escribe Panal en todas partes: la dirección cero. */
+export const X402_NATIVE = '0x0000000000000000000000000000000000000000' as Address;
+
+const MON: X402Currency = {
+  symbol: 'MON',
+  address: X402_NATIVE,
+  decimals: 18,
+  scheme: 'native-transfer',
+  issuerCanFreeze: false,
+};
 
 export interface X402Currency {
   /** Como se enseña: `$PANAL`, `GHO`, `USDC`, `AUSD`. */
@@ -55,6 +72,7 @@ const MAINNET: readonly X402Currency[] = [
     scheme: 'eip2612-permit',
     issuerCanFreeze: false,
   },
+  MON,
   {
     symbol: 'GHO',
     address: getAddress('0xfc421ad3c883bf9e7c4f42de845c4e4405799e73'),
@@ -78,8 +96,8 @@ const MAINNET: readonly X402Currency[] = [
   },
 ];
 
-/** En testnet no hay ninguno de estos tokens: no se cobra por llamada. */
-const TESTNET: readonly X402Currency[] = [];
+/** En testnet no hay ninguno de estos tokens, pero MON sí. */
+const TESTNET: readonly X402Currency[] = [MON];
 
 /** Las monedas aceptadas en una red, en el orden en que se ofrecen. */
 export function x402Currencies(network: PanalNetwork = 'mainnet'): readonly X402Currency[] {

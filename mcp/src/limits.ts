@@ -278,7 +278,8 @@ export function limitsFromEnv(): Limits {
   // con su cuenta, en SUS unidades mínimas (6 decimales en USDC y AUSD): 1 por
   // consulta y 5 al día de partida, que es un dólar y cinco.
   for (const c of x402Currencies()) {
-    if (c.address.toLowerCase() === PANAL) continue;
+    // $PANAL y MON ya tienen las suyas, las de siempre.
+    if (c.address.toLowerCase() === PANAL || c.scheme === 'native-transfer') continue;
     const nombre = c.symbol.replace(/^\$/, '');
     const unidad = 10n ** BigInt(c.decimals);
     porMoneda.set(clave(c.address), {

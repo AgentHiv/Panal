@@ -42,7 +42,6 @@ import {
   nivelPara,
   parseAttachmentsManifest,
   parseEnvelope,
-  parsePaymentHeader,
   permitNonce,
   readPermitDomain,
   sanitizeFileName,
@@ -56,8 +55,14 @@ import {
   type Nivel,
   type PermitDomain,
   type X402Currency,
+  X402_NATIVE_SCHEME,
+  buildNativeQuote,
   formatX402Amount,
+  newQuoteSecret,
+  parseX402Header,
   parseX402Amount,
+  resourceId,
+  verifyNativePayment,
   x402Currencies,
   x402CurrencyByName,
 } from '@panal/sdk';
@@ -308,9 +313,11 @@ setInterval(() => void refrescarNiveles(), REFRESCO_NIVELES).unref();
 // Es OPCIONAL: sin X402_PRICE en el .env, esta ruta no existe y tu agente
 // funciona igual solo con encargos del escrow.
 //
-// Se cobra en una de las monedas que Panal acepta: $PANAL (por defecto), GHO,
-// USDC o AUSD. Las cuatro tienen `permit`, que es en lo que se apoya el
-// esquema. El nombre y los decimales salen de la lista del SDK
+// Se cobra en una de las monedas que Panal acepta: $PANAL (por defecto), MON,
+// GHO, USDC o AUSD. Las de token tienen `permit`: el cliente firma y tú
+// ejecutas el cobro. MON no lo tiene: el cliente te MANDA la transferencia
+// (paga él su gas) y tú solo compruebas en la cadena que es la de su
+// cotización. El nombre y los decimales salen de la lista del SDK
 // (`x402Currencies`), no de lo que se escriba aquí: así el precio que ves en
 // el .env es el que ven los clientes.
 //
@@ -345,6 +352,15 @@ const X402_PRICE = (() => {
 const X402_TOKEN: Address = X402_MONEDA?.address ?? (MAINNET_ADDRESSES.panalToken as Address);
 const X402_SYMBOL = X402_MONEDA?.symbol ?? '$PANAL';
 const X402_DECIMALES = X402_MONEDA?.decimals ?? 18;
+/** Si se cobra en MON: transferencia del cliente en vez de permit. */
+const X402_EN_MON = X402_MONEDA?.scheme === X402_NATIVE_SCHEME;
+/**
+ * Con MON, el secreto con el que se firman las cotizaciones y las
+ * transferencias ya cobradas. Basta en memoria: una cotización vale 5 minutos,
+ * y al reiniciar se pide otra.
+ */
+const X402_SECRETO = newQuoteSecret();
+const X402_USADOS = new Set<string>();
 if (process.env.X402_SYMBOL?.trim() && process.env.X402_SYMBOL.trim() !== X402_SYMBOL) {
   console.warn(`[panal] X402_SYMBOL ya no se usa: el nombre sale de X402_TOKEN, y es ${X402_SYMBOL}.`);
 }
@@ -1341,7 +1357,7 @@ const server = createServer((req, res) => {
               method: 'POST' as const,
               path: '/x402/ask',
               ...(base ? { url: `${base}/x402/ask` } : {}),
-              scheme: 'eip2612-permit',
+              scheme: X402_EN_MON ? X402_NATIVE_SCHEME : 'eip2612-permit',
               asset: X402_TOKEN,
               assetSymbol: X402_SYMBOL,
               // Para quien lea la ficha a mano. Los clientes de Panal no se
@@ -1349,7 +1365,9 @@ const server = createServer((req, res) => {
               assetDecimals: X402_DECIMALES,
               amount: X402_PRICE.toString(),
               payTo: account.address,
-              howTo: 'POST {"prompt":"…"} and you get a 402 with the quote. Sign it and repeat with X-Payment.',
+              howTo: X402_EN_MON
+                ? 'POST {"prompt":"…"} and you get a 402 with the quote. Send exactly `amount` MON to `payTo` and repeat with X-Payment.'
+                : 'POST {"prompt":"…"} and you get a 402 with the quote. Sign it and repeat with X-Payment.',
             }
           : null;
 
@@ -1437,7 +1455,9 @@ const server = createServer((req, res) => {
         throw err;
       }
 
-      const domain = await dominioPermit();
+      // El pago se ata a ESTA pregunta: una transferencia en MON presentada con
+      // otra pregunta no cuadra.
+      const recurso = resourceId('POST', '/x402/ask', prompt);
       const pagoCrudo = req.headers['x-payment'];
 
       // Sin pago: se responde 402 con el presupuesto. Este es el paso que le da
@@ -1448,6 +1468,23 @@ const server = createServer((req, res) => {
         // consulta a la cadena antes de poder firmar.
         const quien = req.headers['x-payment-payer'];
         const payer = typeof quien === 'string' && isAddress(quien) ? (quien as Address) : null;
+        if (X402_EN_MON) {
+          res.setHeader('www-authenticate', `${X402_NATIVE_SCHEME} realm="panal"`);
+          json(
+            res,
+            402,
+            buildNativeQuote({
+              secret: X402_SECRETO,
+              price: X402_PRICE,
+              payTo: account.address,
+              resource: recurso,
+              description: X402_DESCRIPTION,
+              payer,
+            }),
+          );
+          return;
+        }
+        const domain = await dominioPermit();
         const nonce = payer ? await permitNonce(panal.publicClient, X402_TOKEN, payer).catch(() => undefined) : undefined;
 
         res.setHeader('www-authenticate', `eip2612-permit realm="panal", chain="${domain.chainId}"`);
@@ -1468,19 +1505,38 @@ const server = createServer((req, res) => {
         return;
       }
 
-      const leido = parsePaymentHeader(pagoCrudo);
+      const leido = parseX402Header(pagoCrudo);
       if (!leido.ok) {
         json(res, 400, { error: leido.error });
         return;
       }
+      if ((leido.payment.scheme === X402_NATIVE_SCHEME) !== X402_EN_MON) {
+        json(res, 400, { error: `this agent charges in ${X402_SYMBOL}: ask for a new quote` });
+        return;
+      }
 
       // SE COBRA ANTES DE SERVIR. Si se sirviera primero y el cobro fallara, el
-      // trabajo estaría regalado y no habría forma de recuperarlo.
-      const cobro = await verifyAndSettle(
-        { publicClient: panal.publicClient, walletClient: panal.walletClient ?? null, token: X402_TOKEN, domain, payee: account.address },
-        leido.payment,
-        X402_PRICE,
-      );
+      // trabajo estaría regalado y no habría forma de recuperarlo. En MON el
+      // dinero ya lo mandó el cliente: se comprueba en la cadena que es el de
+      // su cotización y que no se ha usado antes.
+      const cobro =
+        leido.payment.scheme === X402_NATIVE_SCHEME
+          ? await verifyNativePayment(
+              { publicClient: panal.publicClient, payee: account.address, secret: X402_SECRETO, used: X402_USADOS },
+              leido.payment,
+              { price: X402_PRICE, resource: recurso },
+            )
+          : await verifyAndSettle(
+              {
+                publicClient: panal.publicClient,
+                walletClient: panal.walletClient ?? null,
+                token: X402_TOKEN,
+                domain: await dominioPermit(),
+                payee: account.address,
+              },
+              leido.payment,
+              X402_PRICE,
+            );
       if (!cobro.ok) {
         json(res, cobro.status, { error: cobro.error });
         return;

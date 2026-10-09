@@ -36,10 +36,12 @@
  */
 
 import {
+  encodeAbiParameters,
   getAddress,
   hashDomain,
   hexToNumber,
   isAddress,
+  isAddressEqual,
   isHex,
   keccak256,
   slice,
@@ -61,6 +63,8 @@ export type { PermitDomain };
 
 export const X402_VERSION = 1;
 export const X402_SERVER_SCHEME = 'eip2612-permit';
+/** El esquema de MON: quien paga manda una transferencia y la presenta. */
+export const X402_NATIVE_SCHEME = 'native-transfer';
 
 /** Margen mínimo de vigencia que se exige a la firma al llegar. */
 const MIN_DEADLINE_MARGIN_S = 30;
@@ -265,7 +269,7 @@ export function buildQuote(params: {
 // ---------------------------------------------------------------------------
 
 export interface X402Payment {
-  scheme: string;
+  scheme: typeof X402_SERVER_SCHEME;
   payer: Address;
   value: bigint;
   deadline: bigint;
@@ -518,4 +522,264 @@ const permitAbi = [
 /** Identificador estable del recurso pagado, para trazas y recibos. */
 export function resourceId(method: string, path: string, body: string): Hex {
   return keccak256(toHex(`${method} ${path}\n${body}`));
+}
+
+// ---------------------------------------------------------------------------
+// MON: el esquema `native-transfer`.
+//
+// La moneda nativa no tiene `permit`, así que no se puede cobrar con una firma.
+// Quien paga MANDA el MON al agente (paga él su gas: una fracción de céntimo
+// en Monad) y repite la petición con el hash de esa transacción.
+//
+// Lo difícil es que una transferencia es pública: cualquiera la ve en la
+// cadena en cuanto entra. Sin cuidado, otro podría presentarla como suya y
+// llevarse la respuesta que pagó un tercero. Lo impiden dos cosas:
+//
+//   1. EL IMPORTE ES ÚNICO. La cotización pide el precio más unas pocas
+//      unidades al azar (menos de una millonésima de céntimo). La transferencia
+//      tiene que ser EXACTAMENTE de ese importe, así que solo vale para la
+//      cotización que lo pidió: quien pida otra recibe otro importe.
+//   2. EL CÓDIGO DE PAGO ES SECRETO. La cotización lleva un `paymentId` que
+//      solo conoce quien la pidió (va por HTTPS, no por la cadena) y que ata
+//      pagador, agente, importe, caducidad y la pregunta exacta. Sin él, una
+//      transferencia vista en la cadena no se puede presentar.
+//
+// El `paymentId` es un keccak256 de un secreto del agente con esos datos: el
+// agente no tiene que guardar las cotizaciones que da, solo rehacer la cuenta.
+// Y cada transacción se acepta UNA vez.
+// ---------------------------------------------------------------------------
+
+/** Un secreto nuevo para firmar cotizaciones. Uno por arranque basta. */
+export function newQuoteSecret(): Hex {
+  return toHex(crypto.getRandomValues(new Uint8Array(32)));
+}
+
+/** Margen tras la caducidad para que la transferencia llegue a minarse. */
+const NATIVE_GRACE_S = 120;
+
+function nativePaymentId(
+  secret: Hex,
+  q: { payer: Address; payTo: Address; amount: bigint; deadline: number; resource: Hex },
+): Hex {
+  return keccak256(
+    encodeAbiParameters(
+      [
+        { type: 'bytes32' },
+        { type: 'address' },
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+      ],
+      [secret, getAddress(q.payer), getAddress(q.payTo), q.amount, BigInt(q.deadline), q.resource],
+    ),
+  );
+}
+
+export interface X402NativeAccept {
+  scheme: typeof X402_NATIVE_SCHEME;
+  network: string;
+  chainId: number;
+  asset: Address;
+  assetSymbol: 'MON';
+  /** El precio más unas unidades al azar: la transferencia tiene que ser de ESTO exactamente. */
+  amount: string;
+  payTo: Address;
+  resource: string;
+  description: string;
+  deadline: number;
+  maxTimeoutSeconds: number;
+  /** Secreto de esta cotización: se presenta con el pago, nunca va a la cadena. */
+  paymentId: Hex;
+}
+
+/**
+ * La cotización de una pregunta en MON.
+ *
+ * @param resource `resourceId()` de la petición: ata el pago a ESTA pregunta.
+ * @param payer    Quien dijo que iba a pagar (cabecera X-Payment-Payer). Sin
+ *                 él, la cotización vale para cualquier pagador, y lo que la
+ *                 protege es el importe único y el secreto.
+ */
+export function buildNativeQuote(params: {
+  secret: Hex;
+  price: bigint;
+  payTo: Address;
+  resource: Hex;
+  description: string;
+  payer?: Address | null;
+  network?: PanalNetwork;
+  nowS?: number;
+}): { x402Version: typeof X402_VERSION; accepts: X402NativeAccept[]; hint: string } {
+  const now = params.nowS ?? Math.floor(Date.now() / 1000);
+  const deadline = now + QUOTE_TTL_S;
+  // De 1 a 1.048.576 unidades (2²⁰): menos de una millonésima de céntimo, y
+  // basta para que dos cotizaciones no pidan el mismo importe.
+  //
+  // Con una máscara y no con `%`: el rango es una potencia de dos, así que
+  // cada valor sale con la misma probabilidad. Con `% 999999` unos salían un
+  // poco más que otros (lo marcó CodeQL); aquí no importaba, porque solo hace
+  // falta que no se repita ni se adivine, pero sin sesgo no hay que pensarlo.
+  const azar = BigInt(1 + (crypto.getRandomValues(new Uint32Array(1))[0]! & 0xfffff));
+  const amount = params.price + azar;
+  const payer = params.payer ? getAddress(params.payer) : ZERO;
+  return {
+    x402Version: X402_VERSION,
+    accepts: [
+      {
+        scheme: X402_NATIVE_SCHEME,
+        network: 'monad',
+        chainId: chainFor(params.network ?? 'mainnet').id,
+        asset: ZERO,
+        assetSymbol: 'MON',
+        amount: amount.toString(),
+        payTo: getAddress(params.payTo),
+        resource: params.resource,
+        description: params.description,
+        deadline,
+        maxTimeoutSeconds: 120,
+        paymentId: nativePaymentId(params.secret, { payer, payTo: params.payTo, amount, deadline, resource: params.resource }),
+      },
+    ],
+    hint:
+      'Send EXACTLY `amount` MON to `payTo` before `deadline`, then repeat the request with the header ' +
+      'X-Payment: base64({scheme:"native-transfer",payer,value,deadline,paymentId,txHash}).',
+  };
+}
+
+const ZERO = '0x0000000000000000000000000000000000000000' as Address;
+
+export interface X402NativePayment {
+  scheme: typeof X402_NATIVE_SCHEME;
+  payer: Address;
+  value: bigint;
+  deadline: bigint;
+  paymentId: Hex;
+  txHash: Hex;
+}
+
+/**
+ * Lee X-Payment de los dos esquemas. Nunca lanza: devuelve el motivo.
+ *
+ * `parsePaymentHeader` sigue aceptando solo el permit, como antes, para que un
+ * agente que no sabe cobrar en MON no reciba un pago que no sabe comprobar.
+ */
+export function parseX402Header(
+  header: string,
+): { ok: true; payment: X402Payment | X402NativePayment } | { ok: false; error: string } {
+  const encoded = header.trim();
+  if (!/^[A-Za-z0-9+/_-]+={0,2}$/.test(encoded)) return { ok: false, error: 'the X-Payment header is not base64' };
+  let raw: Record<string, unknown>;
+  try {
+    raw = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8')) as Record<string, unknown>;
+  } catch {
+    return { ok: false, error: 'the contents of X-Payment are not JSON' };
+  }
+  if (raw.scheme !== X402_NATIVE_SCHEME) return parsePaymentHeader(header);
+
+  const { payer, value, deadline, paymentId, txHash } = raw;
+  if (typeof payer !== 'string' || !isAddress(payer)) return { ok: false, error: 'payer is not an address' };
+  const es32 = (x: unknown): x is Hex => typeof x === 'string' && isHex(x) && x.length === 66;
+  if (!es32(paymentId)) return { ok: false, error: 'paymentId must be the 32-byte hex from the quote' };
+  if (!es32(txHash)) return { ok: false, error: 'txHash must be a 32-byte transaction hash' };
+  let valueBig: bigint;
+  let deadlineBig: bigint;
+  try {
+    valueBig = BigInt(String(value));
+    deadlineBig = BigInt(String(deadline));
+  } catch {
+    return { ok: false, error: 'value and deadline must be integers' };
+  }
+  if (valueBig <= 0n) return { ok: false, error: 'value must be greater than zero' };
+  return {
+    ok: true,
+    payment: {
+      scheme: X402_NATIVE_SCHEME,
+      payer: getAddress(payer),
+      value: valueBig,
+      deadline: deadlineBig,
+      paymentId: paymentId.toLowerCase() as Hex,
+      txHash: txHash.toLowerCase() as Hex,
+    },
+  };
+}
+
+/** Las transacciones ya cobradas. Basta en memoria: una cotización caduca a los 5 minutos. */
+export interface NativeReplayGuard {
+  has(txHash: string): boolean;
+  add(txHash: string): void;
+}
+
+/**
+ * Comprueba en la cadena un pago en MON. El recurso NO debe servirse hasta
+ * que esto salga bien. No hace falta wallet: el pago ya lo mandó el cliente.
+ */
+export async function verifyNativePayment(
+  deps: {
+    publicClient: PublicClient;
+    payee: Address;
+    secret: Hex;
+    used: NativeReplayGuard;
+    /** Para las pruebas. */
+    nowS?: number;
+    /** Cuánto esperar a que el nodo vea la transacción. */
+    waitMs?: number;
+  },
+  payment: X402NativePayment,
+  params: { price: bigint; resource: Hex },
+): Promise<SettleResult> {
+  if (payment.value < params.price) {
+    return { ok: false, status: 402, error: `the payment (${payment.value}) is less than the price (${params.price})` };
+  }
+  // El código de pago se rehace con lo que dice el pago. Si alguien cambia el
+  // importe, la caducidad o el pagador, o presenta una cotización de otra
+  // pregunta, no cuadra. Se prueba también sin pagador: la cotización se pudo
+  // pedir sin decir quién pagaría.
+  const datos = { payTo: deps.payee, amount: payment.value, deadline: Number(payment.deadline), resource: params.resource };
+  const esperado = [payment.payer, ZERO].map((payer) => nativePaymentId(deps.secret, { ...datos, payer }));
+  if (!esperado.includes(payment.paymentId.toLowerCase() as Hex)) {
+    return { ok: false, status: 402, error: 'unknown or altered quote: ask for a new one and pay exactly what it says' };
+  }
+  const nowS = deps.nowS ?? Math.floor(Date.now() / 1000);
+  if (BigInt(nowS) > payment.deadline + BigInt(NATIVE_GRACE_S)) {
+    return { ok: false, status: 402, error: 'the quote has expired' };
+  }
+  if (deps.used.has(payment.txHash)) {
+    return { ok: false, status: 409, error: 'this payment was already used' };
+  }
+
+  // El nodo puede tardar un instante en ver una transacción recién minada.
+  const hasta = Date.now() + (deps.waitMs ?? 6_000);
+  let recibo: Awaited<ReturnType<PublicClient['getTransactionReceipt']>> | null = null;
+  for (;;) {
+    recibo = await deps.publicClient.getTransactionReceipt({ hash: payment.txHash }).catch(() => null);
+    if (recibo || Date.now() >= hasta) break;
+    await new Promise((r) => setTimeout(r, 750));
+  }
+  if (!recibo) return { ok: false, status: 402, error: 'the payment transaction is not on chain yet' };
+  if (recibo.status !== 'success') return { ok: false, status: 402, error: 'the payment transaction reverted' };
+
+  const tx = await deps.publicClient.getTransaction({ hash: payment.txHash });
+  if (!isAddressEqual(tx.from, payment.payer)) {
+    return { ok: false, status: 402, error: 'the payment was sent by someone else' };
+  }
+  if (!tx.to || !isAddressEqual(tx.to, deps.payee)) {
+    return { ok: false, status: 402, error: 'the payment was not sent to this agent' };
+  }
+  if (tx.value !== payment.value) {
+    return { ok: false, status: 402, error: `the payment sent ${tx.value}, and the quote asked for exactly ${payment.value}` };
+  }
+  const bloque = await deps.publicClient.getBlock({ blockNumber: recibo.blockNumber });
+  if (bloque.timestamp > payment.deadline) {
+    return { ok: false, status: 402, error: 'the payment arrived after the quote expired' };
+  }
+  if (bloque.timestamp + BigInt(QUOTE_TTL_S + 60) < payment.deadline) {
+    return { ok: false, status: 402, error: 'the payment is older than the quote' };
+  }
+
+  // Se marca ANTES de servir: dos peticiones con la misma transacción a la
+  // vez no pueden pasar las dos.
+  if (deps.used.has(payment.txHash)) return { ok: false, status: 409, error: 'this payment was already used' };
+  deps.used.add(payment.txHash);
+  return { ok: true, txHash: payment.txHash, amount: tx.value };
 }

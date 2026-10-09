@@ -26,6 +26,9 @@
  *   - Datos tipados, solo el permit de x402 en una moneda que Panal acepta
  *     ($PANAL, GHO, USDC o AUSD), al agente, por el importe y EN LA MONEDA que
  *     enseñó la hoja del chat, y que caduque pronto.
+ *   - Y el pago por mensaje en MON, que no se firma sino que se MANDA: una
+ *     transferencia sin datos, al agente y por el importe exacto que enseñó
+ *     la hoja del chat. Es el único MON suelto que sale por aquí.
  *
  * Lo que una hoja confirma se ARMA aquí justo antes de firmar y se GASTA al
  * firmar: vale para una firma y caduca a los pocos minutos.
@@ -44,7 +47,7 @@ import {
   PANAL_TOKEN_ADDRESS,
   activeChain,
 } from '@/contracts/config';
-import { x402Currency } from '@panal/sdk';
+import { X402_NATIVE, x402Currency } from '@panal/sdk';
 import { textos } from '~/i18n/idiomas';
 
 /** Cuánto vale lo armado por una hoja. Da para minar un `approve` y volver. */
@@ -137,6 +140,18 @@ export function revisarTransaccion(t: { to?: Address; data?: Hex; value?: bigint
   if (!t.to) bloquear('crear un contrato');
   const valor = t.value ?? 0n;
   const datos = t.data ?? '0x';
+
+  // MON por mensaje: la transferencia que la hoja del chat acaba de enseñar.
+  // Sin datos —una transferencia, no una llamada—, al agente y por el importe
+  // exacto, que lleva unas unidades al azar y no se repite.
+  const p = pago;
+  if (p && p.vence >= ahora && isAddressEqual(p.token, X402_NATIVE) && isAddressEqual(t.to, p.spender)) {
+    if (datos !== '0x' || valor !== p.value) {
+      bloquear(`un pago en MON a ${t.to} por ${valor}, y la hoja confirmó ${p.value} sin datos`);
+    }
+    pago = null;
+    return;
+  }
 
   if (isAddressEqual(t.to, PANAL_ESCROW_V2_ADDRESS)) {
     const llamada = decodificar(panalEscrowV2Abi, datos, 'el escrow');

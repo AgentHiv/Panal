@@ -11,12 +11,17 @@
  * dos veces al mismo cliente por una sola respuesta.
  */
 
-import { parseEther, verifyTypedData, type Address, type Hex } from 'viem';
+import { parseEther, verifyTypedData, type Address, type Hex, type PublicClient } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import {
+  X402_NATIVE_SCHEME,
   X402_SERVER_SCHEME,
   X402_VERSION,
+  buildNativeQuote,
   buildQuote,
+  newQuoteSecret,
+  parseX402Header,
+  verifyNativePayment,
   enqueueByPayer,
   parsePaymentHeader,
   permitTypedData,
@@ -210,6 +215,80 @@ const id1 = resourceId('POST', '/x402/ask', '{"prompt":"hola"}');
 check('es estable para la misma petición', id1 === resourceId('POST', '/x402/ask', '{"prompt":"hola"}'));
 check('cambia si cambia el cuerpo', id1 !== resourceId('POST', '/x402/ask', '{"prompt":"adiós"}'));
 check('cambia si cambia la ruta', id1 !== resourceId('POST', '/otra', '{"prompt":"hola"}'));
+
+console.log('\n── 7. MON: cobrar una transferencia que manda el cliente ──');
+
+{
+  const secreto = newQuoteSecret();
+  const recurso = resourceId('POST', '/x402/ask', '{"prompt":"hola"}');
+  const precio = parseEther('2');
+  const ahora = 2_000_000;
+  const cotiza = () =>
+    buildNativeQuote({ secret: secreto, price: precio, payTo: AGENTE, resource: recurso, description: 'x', payer: cliente.address, nowS: ahora }).accepts[0]!;
+  const q = cotiza();
+  const extra = BigInt(q.amount) - precio;
+  check('el esquema es el de MON', q.scheme === X402_NATIVE_SCHEME, q.scheme);
+  check('la moneda es la nativa', q.asset === '0x0000000000000000000000000000000000000000');
+  check('pide el precio más unas pocas unidades al azar', extra >= 1n && extra <= 1_048_576n, extra.toString());
+  check('lleva un código de pago de 32 bytes', /^0x[0-9a-f]{64}$/.test(q.paymentId), q.paymentId);
+  // Dos cotizaciones casi nunca piden lo mismo: es lo que ata cada pago a la suya.
+  const importes = new Set(Array.from({ length: 50 }, () => cotiza().amount));
+  check('cincuenta cotizaciones, importes distintos', importes.size >= 49, `${importes.size} distintos`);
+
+  const tx = ('0x' + 'ab'.repeat(32)) as Hex;
+  const pago = { scheme: X402_NATIVE_SCHEME, payer: cliente.address, value: BigInt(q.amount), deadline: BigInt(q.deadline), paymentId: q.paymentId, txHash: tx };
+
+  // Lo que diría la cadena. Por defecto, el pago de verdad.
+  const cadena = (over: { from?: Address; to?: Address; value?: bigint; status?: string; ts?: number; falta?: boolean } = {}) =>
+    ({
+      getTransactionReceipt: async () => (over.falta ? null : { status: over.status ?? 'success', blockNumber: 7n }),
+      getTransaction: async () => ({ from: over.from ?? cliente.address, to: over.to ?? AGENTE, value: over.value ?? BigInt(q.amount) }),
+      getBlock: async () => ({ timestamp: BigInt(over.ts ?? ahora + 10) }),
+    }) as unknown as PublicClient;
+  const usados = () => new Set<string>();
+  const comprobar = (pc: PublicClient, p = pago, extraDeps: { used?: Set<string>; secret?: Hex } = {}, resource = recurso) =>
+    verifyNativePayment(
+      { publicClient: pc, payee: AGENTE, secret: extraDeps.secret ?? secreto, used: extraDeps.used ?? usados(), nowS: ahora + 20, waitMs: 0 },
+      p,
+      { price: precio, resource },
+    );
+
+  const bien = await comprobar(cadena());
+  check('el pago de verdad se acepta', bien.ok === true, bien.ok ? '' : bien.error);
+  const memoria = usados();
+  await comprobar(cadena(), pago, { used: memoria });
+  const otraVez = await comprobar(cadena(), pago, { used: memoria });
+  check('la misma transacción, una sola vez', !otraVez.ok && otraVez.status === 409, otraVez.ok ? '' : otraVez.error);
+
+  const mal = async (nombre: string, r: ReturnType<typeof comprobar>, trozo: string) => {
+    const x = await r;
+    check(nombre, !x.ok && x.error.includes(trozo), x.ok ? 'SE ACEPTÓ' : x.error);
+  };
+  await mal('mandó menos de lo que pide la cotización', comprobar(cadena({ value: BigInt(q.amount) - 1n })), 'exactly');
+  await mal('mandó más: tampoco es su cotización', comprobar(cadena({ value: BigInt(q.amount) + 1n })), 'exactly');
+  await mal('la mandó otra wallet', comprobar(cadena({ from: '0x1111111111111111111111111111111111111111' })), 'someone else');
+  await mal('la mandó a otra dirección', comprobar(cadena({ to: '0x2222222222222222222222222222222222222222' })), 'not sent to this agent');
+  await mal('la transacción se revirtió', comprobar(cadena({ status: 'reverted' })), 'reverted');
+  await mal('todavía no está en la cadena', comprobar(cadena({ falta: true })), 'not on chain');
+  await mal('llegó después de caducar la cotización', comprobar(cadena({ ts: q.deadline + 5 })), 'after the quote expired');
+  await mal('es anterior a la cotización', comprobar(cadena({ ts: ahora - 400 })), 'older than the quote');
+  // EL ATAQUE: alguien ve la transferencia en la cadena y la presenta con una
+  // cotización suya, o cambia el importe del pago para que cuadre.
+  await mal('con el código de otra cotización', comprobar(cadena(), { ...pago, paymentId: cotiza().paymentId }), 'unknown or altered');
+  await mal('cambiando el importe del pago', comprobar(cadena({ value: BigInt(q.amount) + 7n }), { ...pago, value: BigInt(q.amount) + 7n }), 'unknown or altered');
+  await mal('presentada para otra pregunta', comprobar(cadena(), pago, {}, resourceId('POST', '/x402/ask', '{"prompt":"otra"}')), 'unknown or altered');
+  await mal('con el secreto de otro agente', comprobar(cadena(), pago, { secret: newQuoteSecret() }), 'unknown or altered');
+  await mal('por debajo del precio', comprobar(cadena(), { ...pago, value: 1n }), 'less than the price');
+
+  console.log('');
+  const cab = (p: Record<string, unknown>) => Buffer.from(JSON.stringify(p), 'utf8').toString('base64');
+  const leida = parseX402Header(cab({ ...pago, value: pago.value.toString(), deadline: pago.deadline.toString() }));
+  check('la cabecera de MON se lee', leida.ok && leida.payment.scheme === X402_NATIVE_SCHEME);
+  const sinCodigo = parseX402Header(cab({ ...pago, value: '1', deadline: '1', paymentId: '0x12' }));
+  check('sin un código de pago de verdad, no', !sinCodigo.ok);
+  const permit = parseX402Header(cabecera({ scheme: X402_SERVER_SCHEME, payer: cliente.address, value: '1', deadline: '9', signature: '0x' + '11'.repeat(65) }));
+  check('y la del permit se sigue leyendo igual', permit.ok && permit.payment.scheme === X402_SERVER_SCHEME);
+}
 
 console.log('');
 if (failures === 0) console.log('✅ La mitad servidor de x402 cobra lo pactado y rechaza lo demás');
