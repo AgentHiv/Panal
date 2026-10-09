@@ -222,12 +222,12 @@ export const en: Textos = {
   recibir: {
     titulo: (nombre: string) => `Top up ${nombre}`,
     texto:
-      'Send MON or $PANAL to this address from wherever you already have them: your other wallet, an exchange, another person.',
+      'Send MON, $PANAL or the stablecoins GHO, USDC and AUSD to this address from wherever you already have them: your other wallet, an exchange, another person. It is the same address for all of them.',
     compartir: 'Share',
     redAviso: (red: string, id: number) =>
       `It has to arrive over ${red} (${id}). The same address exists on other networks, and anything arriving over another one does not show up here and cannot be recovered from the app.`,
     gasAviso:
-      'Leave some MON even if you only plan to move $PANAL: the network fee is paid in MON, and a wallet with $PANAL and no MON cannot send anything.',
+      'Leave some MON even if you only plan to move $PANAL or stablecoins: the network fee is paid in MON, and a wallet with $PANAL and no MON cannot send anything.',
   },
 
   importar: {

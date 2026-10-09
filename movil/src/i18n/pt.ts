@@ -222,12 +222,12 @@ export const pt: Textos = {
   recibir: {
     titulo: (nombre: string) => `Carregar ${nombre}`,
     texto:
-      'Envia MON ou $PANAL para este endereço a partir de onde já os tenhas: a tua outra wallet, uma exchange, outra pessoa.',
+      'Envia MON, $PANAL ou as stablecoins GHO, USDC e AUSD para este endereço a partir de onde já as tenhas: a tua outra wallet, uma exchange, outra pessoa. É o mesmo endereço para todas.',
     compartir: 'Partilhar',
     redAviso: (red: string, id: number) =>
       `Tem de chegar pela ${red} (${id}). O mesmo endereço existe noutras redes, e o que chegar por outra não aparece aqui nem se pode recuperar a partir da app.`,
     gasAviso:
-      'Deixa algum MON mesmo que só vás mexer em $PANAL: a taxa da rede paga-se em MON, e uma wallet com $PANAL e zero MON não pode enviar nada.',
+      'Deixa algum MON mesmo que só vás mexer em $PANAL ou stablecoins: a taxa da rede paga-se em MON, e uma wallet com $PANAL e zero MON não pode enviar nada.',
   },
 
   importar: {

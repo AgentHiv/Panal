@@ -20,11 +20,10 @@
  * que la hoja de confirmación enseña destino y cantidad enteros.
  */
 
-import { createWalletClient, http } from 'viem';
+import { createWalletClient, erc20Abi, http } from 'viem';
 import type { Account } from 'viem';
-import { activeChain, PANAL_TOKEN_ADDRESS, publicClient } from '@/contracts/config';
-import { panalTokenAbi } from '@/contracts/abis';
-import type { Moneda } from '@/lib/envio';
+import { activeChain, publicClient } from '@/contracts/config';
+import { monedaEnvio, type Moneda } from '@/lib/envio';
 
 /** Lo que dijo el nodo, ya clasificado. La pantalla lo escribe en su idioma. */
 export type PegaRed =
@@ -62,15 +61,21 @@ function cliente(cuenta: Account) {
  */
 export async function enviar({ cuenta, moneda, wei, destino }: Orden): Promise<Resultado> {
   try {
-    const hash =
-      moneda === 'MON'
-        ? await cliente(cuenta).sendTransaction({ to: destino, value: wei })
-        : await cliente(cuenta).writeContract({
-            address: PANAL_TOKEN_ADDRESS,
-            abi: panalTokenAbi,
-            functionName: 'transfer',
-            args: [destino, wei],
-          });
+    const { token } = monedaEnvio(moneda);
+    // Con el gas FIJADO. Monad cobra el límite entero, y si se deja a viem lo
+    // rellena con `eth_fillTransaction`, que el nodo a veces infla: así se fue
+    // una retirada de 1,092 MON entera en gas. `eth_estimateGas` es fiable;
+    // un MON a una wallet normal son 21.000 exactos.
+    let hash: `0x${string}`;
+    if (token === null) {
+      const estimado = await publicClient.estimateGas({ account: cuenta, to: destino, value: wei });
+      const gas = estimado > 21_000n ? (estimado * 11n + 9n) / 10n : estimado;
+      hash = await cliente(cuenta).sendTransaction({ to: destino, value: wei, gas });
+    } else {
+      const llamada = { address: token, abi: erc20Abi, functionName: 'transfer', args: [destino, wei] } as const;
+      const estimado = await publicClient.estimateContractGas({ ...llamada, account: cuenta });
+      hash = await cliente(cuenta).writeContract({ ...llamada, gas: (estimado * 11n + 9n) / 10n });
+    }
     return { ok: true, hash };
   } catch (e) {
     return { ok: false, pega: traducir(e) };

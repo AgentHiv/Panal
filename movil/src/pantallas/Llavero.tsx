@@ -655,7 +655,9 @@ function Detalle({
     }
   };
 
-  const vacia = !sinLeer && saldo.mon === 0n && saldo.panal === 0n;
+  // Las estables también cuentan: con solo USDC hay algo que mandar.
+  const vacia =
+    !sinLeer && saldo.mon === 0n && saldo.panal === 0n && saldo.estables.every((e) => e.valor === 0n);
 
   return (
     <Hoja abierta titulo={wallet.nombre} onCerrar={onCerrar}>
