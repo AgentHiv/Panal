@@ -159,7 +159,7 @@ export default function Agente(): React.ReactElement {
               cargandoFicha
                 ? '…'
                 : datos?.cobro
-                  ? `${monto(datos.cobro.amount)} ${datos.cobro.simbolo}`
+                  ? `${monto(datos.cobro.amount, datos.cobro.decimales)} ${datos.cobro.simbolo}`
                   : T.agente.noDisponible
             }
             color={datos?.cobro ? 'text-honey' : 'text-ink-3'}

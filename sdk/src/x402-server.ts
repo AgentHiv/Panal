@@ -37,6 +37,7 @@
 
 import {
   getAddress,
+  hashDomain,
   hexToNumber,
   isAddress,
   isHex,
@@ -88,50 +89,90 @@ export function permitTypedData(
 }
 
 /**
- * Lee el dominio EIP-712 del token en cadena (ERC-5267), con respaldo a
- * `name()` + version "1", que es lo que usan las implementaciones habituales.
+ * Lee el dominio EIP-712 del token en cadena.
  *
  * Se lee de la cadena en vez de escribirlo a mano porque un dominio mal
  * construido produce firmas que verifican en local y revierten al llegar al
  * contrato: el fallo aparecería solo en producción y con dinero de por medio.
+ *
+ * Y no basta con una sola fuente. ERC-5267 (`eip712Domain()`) lo tienen
+ * $PANAL y AUSD, pero no GHO ni USDC; y la versión no es siempre "1": USDC usa
+ * "2". Antes se suponía "1" si faltaba `eip712Domain()`, y TODAS las firmas de
+ * USDC salían inválidas. Ahora se reúnen los candidatos —ERC-5267, `name()`
+ * con `version()`, con "1" y con "2"— y se elige el que da exactamente el
+ * `DOMAIN_SEPARATOR()` del token. Si el token no lo expone, se usa el primero.
  */
 export async function readPermitDomain(
   publicClient: PublicClient,
   token: Address,
   network: PanalNetwork = 'mainnet',
 ): Promise<PermitDomain> {
-  try {
-    const d = (await publicClient.readContract({
-      address: token,
-      abi: [
-        {
-          type: 'function',
-          name: 'eip712Domain',
-          stateMutability: 'view',
-          inputs: [],
-          outputs: [
-            { name: 'fields', type: 'bytes1' },
+  const leer = <T>(functionName: string): Promise<T | null> =>
+    publicClient
+      .readContract({ address: token, abi: dominioAbi, functionName: functionName as never })
+      .then((v) => v as T, () => null);
+
+  const [erc5267, nombre, version, separador] = await Promise.all([
+    leer<readonly [Hex, string, string, bigint, Address, Hex, readonly bigint[]]>('eip712Domain'),
+    leer<string>('name'),
+    leer<string>('version'),
+    leer<Hex>('DOMAIN_SEPARATOR'),
+  ]);
+  const chainId = chainFor(network).id;
+  const verifyingContract = getAddress(token);
+
+  const candidatos: PermitDomain[] = [];
+  if (erc5267) {
+    candidatos.push({ name: erc5267[1], version: erc5267[2], chainId: Number(erc5267[3]), verifyingContract: getAddress(erc5267[4]) });
+  }
+  if (nombre !== null) {
+    for (const v of [version, '1', '2']) {
+      if (v !== null) candidatos.push({ name: nombre, version: v, chainId, verifyingContract });
+    }
+  }
+  if (!candidatos.length) throw new Error(`no se pudo leer el dominio EIP-712 de ${token}`);
+  if (!separador) return candidatos[0]!;
+
+  const bueno = candidatos.find(
+    (d) =>
+      hashDomain({
+        domain: { ...d, chainId: BigInt(d.chainId) },
+        types: {
+          EIP712Domain: [
             { name: 'name', type: 'string' },
             { name: 'version', type: 'string' },
             { name: 'chainId', type: 'uint256' },
             { name: 'verifyingContract', type: 'address' },
-            { name: 'salt', type: 'bytes32' },
-            { name: 'extensions', type: 'uint256[]' },
           ],
         },
-      ] as const,
-      functionName: 'eip712Domain',
-    })) as readonly [Hex, string, string, bigint, Address, Hex, readonly bigint[]];
-    return { name: d[1], version: d[2], chainId: Number(d[3]), verifyingContract: getAddress(d[4]) };
-  } catch {
-    const name = (await publicClient.readContract({
-      address: token,
-      abi: tokenExtraAbi,
-      functionName: 'name',
-    })) as string;
-    return { name, version: '1', chainId: chainFor(network).id, verifyingContract: getAddress(token) };
+      }) === separador,
+  );
+  if (!bueno) {
+    throw new Error(`ningún dominio candidato de ${token} coincide con su DOMAIN_SEPARATOR: no se puede firmar con seguridad`);
   }
+  return bueno;
 }
+
+const dominioAbi = [
+  {
+    type: 'function',
+    name: 'eip712Domain',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [
+      { name: 'fields', type: 'bytes1' },
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'chainId', type: 'uint256' },
+      { name: 'verifyingContract', type: 'address' },
+      { name: 'salt', type: 'bytes32' },
+      { name: 'extensions', type: 'uint256[]' },
+    ],
+  },
+  { type: 'function', name: 'name', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'string' }] },
+  { type: 'function', name: 'version', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'string' }] },
+  { type: 'function', name: 'DOMAIN_SEPARATOR', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'bytes32' }] },
+] as const;
 
 /** Nonce de permit actual del pagador. Cambia con cada pago consumido. */
 export async function permitNonce(publicClient: PublicClient, token: Address, owner: Address): Promise<bigint> {

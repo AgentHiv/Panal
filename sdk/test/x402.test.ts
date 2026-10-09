@@ -132,6 +132,22 @@ async function main(): Promise<void> {
       }),
     'dominio',
   );
+  // EL AGUJERO: un token que no está en la lista de Panal, con su dominio bien
+  // puesto para que nada más falle. Antes se firmaba, con el nombre y los
+  // decimales que el agente quisiera escribir en la cotización.
+  await rejects(
+    'un token que Panal no acepta, aunque todo lo demás cuadre',
+    () =>
+      payAndAsk(wallet, account, ENDPOINT, 'x', {
+        ...base,
+        quote: fakeQuote({
+          asset: '0x4444444444444444444444444444444444444444',
+          assetSymbol: '$PANAL',
+          domain: { name: 'PANAL', version: '1', chainId: 143, verifyingContract: '0x4444444444444444444444444444444444444444' },
+        }),
+      }),
+    'no es una moneda que panal acepte',
+  );
   await rejects(
     'una cotización a punto de caducar',
     () => payAndAsk(wallet, account, ENDPOINT, 'x', { ...base, quote: fakeQuote({ deadline: Math.floor(Date.now() / 1000) + 5 }) }),

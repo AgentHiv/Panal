@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { formatEther } from 'viem';
+import { formatEther, formatUnits } from 'viem';
 import type { Nivel } from '@panal/sdk';
 import type { Agent } from '@/data/agents';
 import { formatMon } from '@/data/agents';
@@ -124,7 +124,7 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
                   clave: 'x402',
                   nombre: t('detail.services.ask.name'),
                   descripcion: t('detail.services.ask.desc'),
-                  precio: formatMon(Number(formatEther(cobro.amount))),
+                  precio: formatMon(Number(formatUnits(cobro.amount, cobro.decimales))),
                   simbolo: cobro.simbolo,
                   chat: `/chat/${agent.id}`,
                 },

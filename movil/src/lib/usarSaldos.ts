@@ -3,6 +3,8 @@ import { useAccount, useBalance, useReadContract } from 'wagmi';
 import { activeChain, PANAL_TOKEN_ADDRESS, publicClient } from '@/contracts/config';
 import { panalTokenAbi } from '@/contracts/abis';
 import { conDecimales } from '~/lib/formato';
+import { x402Currencies } from '@panal/sdk';
+import { erc20Abi, type Address } from 'viem';
 
 // Se reexporta porque media app la importaba de aquí, y porque este sigue
 // siendo el sitio donde uno la busca: es la que da formato a estos saldos.
@@ -22,8 +24,37 @@ export { conDecimales };
 export type Saldos = {
   panal: { valor: bigint; texto: string } | null;
   mon: { valor: bigint; texto: string } | null;
+  /** GHO, USDC y AUSD, solo los que tienen algo. Con ellos se paga por mensaje. */
+  estables: Estable[];
   cargando: boolean;
 };
+
+/** Un saldo en una de las monedas estables con las que se paga por mensaje. */
+export interface Estable {
+  simbolo: string;
+  decimales: number;
+  valor: bigint;
+}
+
+/**
+ * Las monedas estables de la lista de x402: todas menos $PANAL, que tiene su
+ * propio sitio. Salen de la lista del SDK para que la app enseñe exactamente
+ * las monedas con las que deja pagar.
+ */
+const ESTABLES = x402Currencies().filter((c) => c.symbol !== '$PANAL');
+
+/** Los saldos estables de una dirección, en el orden de la lista. */
+async function leerEstables(dir: Address): Promise<Estable[]> {
+  return Promise.all(
+    ESTABLES.map(async (c) => ({
+      simbolo: c.symbol,
+      decimales: c.decimals,
+      valor: await publicClient
+        .readContract({ address: c.address, abi: erc20Abi, functionName: 'balanceOf', args: [dir] })
+        .catch(() => 0n),
+    })),
+  );
+}
 
 /** Los decimales se LEEN, no se dan por hechos: 18 es lo normal, no lo seguro. */
 export function useSaldos(): Saldos {
@@ -50,12 +81,20 @@ export function useSaldos(): Saldos {
 
   const dec = decimales.data ?? 18;
 
+  const estables = useQuery({
+    queryKey: ['saldos-estables', address, activeChain.id],
+    enabled: activo && ESTABLES.length > 0,
+    refetchInterval: 30_000,
+    queryFn: () => leerEstables(address as Address),
+  });
+
   return {
     panal:
       panal.data === undefined
         ? null
         : { valor: panal.data, texto: conDecimales(panal.data, dec) },
     mon: mon.data === undefined ? null : { valor: mon.data.value, texto: conDecimales(mon.data.value, 18) },
+    estables: (estables.data ?? []).filter((e) => e.valor > 0n),
     cargando: activo && (panal.isLoading || mon.isLoading),
   };
 }
@@ -66,6 +105,8 @@ export function useSaldos(): Saldos {
 export interface Par {
   mon: bigint;
   panal: bigint;
+  /** GHO, USDC y AUSD. Vacío si no se pudieron leer. */
+  estables: Estable[];
 }
 
 export interface SaldosLlavero {
@@ -105,7 +146,7 @@ export function useSaldosLlavero(direcciones: string[]): SaldosLlavero {
       const filas = await Promise.all(
         clave.split(',').map(async (d) => {
           const dir = d as `0x${string}`;
-          const [mon, panal] = await Promise.all([
+          const [mon, panal, estables] = await Promise.all([
             publicClient.getBalance({ address: dir }),
             publicClient.readContract({
               address: PANAL_TOKEN_ADDRESS,
@@ -113,8 +154,9 @@ export function useSaldosLlavero(direcciones: string[]): SaldosLlavero {
               functionName: 'balanceOf',
               args: [dir],
             }),
+            leerEstables(dir),
           ]);
-          return [d, { mon, panal }] as const;
+          return [d, { mon, panal, estables }] as const;
         }),
       );
       return Object.fromEntries(filas);

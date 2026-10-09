@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/hooks/useWallet';
-import { useSaldos } from '~/lib/usarSaldos';
+import { conDecimales, useSaldos } from '~/lib/usarSaldos';
 import Icono from '~/componentes/Icono';
 import Menu from '~/componentes/Menu';
 import { useTextos } from '~/i18n/idiomas';
@@ -117,7 +117,7 @@ function Fuera({
 
 /** Con wallet y sin conversaciones: lo que tienes y con qué se hace qué. */
 function Dentro({ T }: { T: Textos }): React.ReactElement {
-  const { panal, mon, cargando } = useSaldos();
+  const { panal, mon, estables, cargando } = useSaldos();
   const sinNada = !cargando && panal?.valor === 0n && mon?.valor === 0n;
 
   return (
@@ -133,6 +133,19 @@ function Dentro({ T }: { T: Textos }): React.ReactElement {
         <Bolsillo simbolo="$PANAL" valor={panal?.texto ?? null} color="#E29A2E" cargando={cargando} />
         <Bolsillo simbolo="MON" valor={mon?.texto ?? null} color="#B7A8FC" cargando={cargando} />
       </div>
+      {estables.length > 0 && (
+        <div className="mt-2.5 flex shrink-0 gap-2.5">
+          {estables.map((e) => (
+            <Bolsillo
+              key={e.simbolo}
+              simbolo={e.simbolo}
+              valor={conDecimales(e.valor, e.decimales)}
+              color="#7FC8A9"
+              cargando={false}
+            />
+          ))}
+        </div>
+      )}
     </>
   );
 }

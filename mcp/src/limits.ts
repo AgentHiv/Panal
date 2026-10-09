@@ -10,7 +10,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { Address } from 'viem';
-import type { AttachedFile } from '@panal/sdk';
+import { x402Currencies, type AttachedFile } from '@panal/sdk';
 
 /** Vida de un presupuesto. Corto a propósito: el precio del agente puede cambiar. */
 const QUOTE_TTL_MS = 5 * 60 * 1000;
@@ -274,6 +274,20 @@ export function limitsFromEnv(): Limits {
     envMaxPerTask: 'MCP_MAX_PER_TASK_PANAL_WEI',
     envDailyBudget: 'MCP_DAILY_BUDGET_PANAL_WEI',
   });
+  // Las estables con las que se paga por consulta: GHO, USDC y AUSD. Cada una
+  // con su cuenta, en SUS unidades mínimas (6 decimales en USDC y AUSD): 1 por
+  // consulta y 5 al día de partida, que es un dólar y cinco.
+  for (const c of x402Currencies()) {
+    if (c.address.toLowerCase() === PANAL) continue;
+    const nombre = c.symbol.replace(/^\$/, '');
+    const unidad = 10n ** BigInt(c.decimals);
+    porMoneda.set(clave(c.address), {
+      maxPerTaskWei: parse(`MCP_MAX_PER_TASK_${nombre}_UNITS`, unidad),
+      dailyBudgetWei: parse(`MCP_DAILY_BUDGET_${nombre}_UNITS`, 5n * unidad),
+      envMaxPerTask: `MCP_MAX_PER_TASK_${nombre}_UNITS`,
+      envDailyBudget: `MCP_DAILY_BUDGET_${nombre}_UNITS`,
+    });
+  }
 
   return { deadlineHours: Number.isFinite(hours) && hours > 0 ? hours : 24, porMoneda };
 }

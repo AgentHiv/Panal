@@ -125,7 +125,7 @@ const permit = {
   },
 };
 // Lo que arma la hoja del chat antes de firmar: a quién y cuánto.
-politica.permitirPago({ spender: permit.message.spender, value: permit.message.value });
+politica.permitirPago({ spender: permit.message.spender, value: permit.message.value, token: permit.domain.verifyingContract });
 const firmaPermit = await cliente.signTypedData(permit);
 dice('sale una firma', /^0x[0-9a-f]{130}$/i.test(firmaPermit));
 dice(
@@ -174,26 +174,41 @@ const permitDe = (cambios = {}, dominio = {}) =>
     (_, v) => (typeof v === 'bigint' ? v.toString() : v),
   );
 dice('sin hoja que lo arme, no', await parado('eth_signTypedData_v4', [wallet.direccion, permitDe()]));
-politica.permitirPago({ spender: AGENTE, value: 50n });
+politica.permitirPago({ spender: AGENTE, value: 50n, token: TOKEN });
 dice('por más de lo confirmado, no', await parado('eth_signTypedData_v4', [wallet.direccion, permitDe({ value: '51' })]));
-politica.permitirPago({ spender: AGENTE, value: 50n });
+politica.permitirPago({ spender: AGENTE, value: 50n, token: TOKEN });
 dice('a otro beneficiario, no', await parado('eth_signTypedData_v4', [wallet.direccion, permitDe({ value: '50', spender: DESCONOCIDO })]));
-politica.permitirPago({ spender: AGENTE, value: 50n });
+politica.permitirPago({ spender: AGENTE, value: 50n, token: TOKEN });
 dice(
   'de otro token, no',
   await parado('eth_signTypedData_v4', [wallet.direccion, permitDe({ value: '50' }, { verifyingContract: DESCONOCIDO })]),
 );
-politica.permitirPago({ spender: AGENTE, value: 50n });
+politica.permitirPago({ spender: AGENTE, value: 50n, token: TOKEN });
 dice(
   'que valga un día entero, no',
   await parado('eth_signTypedData_v4', [wallet.direccion, permitDe({ value: '50', deadline: String(Math.floor(Date.now() / 1000) + 86_400) })]),
 );
-politica.permitirPago({ spender: AGENTE, value: 50n });
+politica.permitirPago({ spender: AGENTE, value: 50n, token: TOKEN });
 dice('el confirmado, sí', !(await parado('eth_signTypedData_v4', [wallet.direccion, permitDe({ value: '50' })])));
 dice('y una sola vez', await parado('eth_signTypedData_v4', [wallet.direccion, permitDe({ value: '50' })]));
-politica.permitirPago({ spender: AGENTE, value: 50n }, Date.now() - politica.VIDA_PERMISO_MS - 1);
+politica.permitirPago({ spender: AGENTE, value: 50n, token: TOKEN }, Date.now() - politica.VIDA_PERMISO_MS - 1);
 dice('lo armado caduca', await parado('eth_signTypedData_v4', [wallet.direccion, permitDe({ value: '50' })]));
-politica.permitirPago({ spender: AGENTE, value: 50n });
+// Las monedas estables de la lista: el mismo permit, otro token.
+const USDC = '0x754704Bc059F8C67012fEd69BC8A327a5aafb603';
+const enUsdc = { verifyingContract: USDC, name: 'USDC', version: '2' };
+politica.permitirPago({ spender: AGENTE, value: 50_000n, token: USDC });
+dice('en USDC, si la hoja lo enseñó en USDC, sí', !(await parado('eth_signTypedData_v4', [wallet.direccion, permitDe({ value: '50000' }, enUsdc)])));
+politica.permitirPago({ spender: AGENTE, value: 50n, token: USDC });
+dice(
+  'la hoja enseñó USDC y se pide firmar en $PANAL, no',
+  await parado('eth_signTypedData_v4', [wallet.direccion, permitDe({ value: '50' })]),
+);
+politica.permitirPago({ spender: AGENTE, value: 50n, token: TOKEN });
+dice(
+  'la hoja enseñó $PANAL y se pide firmar en USDC, no',
+  await parado('eth_signTypedData_v4', [wallet.direccion, permitDe({ value: '50' }, enUsdc)]),
+);
+politica.permitirPago({ spender: AGENTE, value: 50n, token: TOKEN });
 dice(
   'y un tipado que no es un permit, no',
   await parado('eth_signTypedData_v4', [

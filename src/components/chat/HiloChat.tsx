@@ -128,7 +128,7 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
     finRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [entradas.length, enviando]);
 
-  const precio = cobro ? `${formatUnits(cobro.amount, 18)} ${cobro.simbolo}` : '';
+  const precio = cobro ? `${formatUnits(cobro.amount, cobro.decimales)} ${cobro.simbolo}` : '';
 
   /** Paso 1: pedir el precio de ESTE mensaje. Gratis, y no compromete a nada. */
   const pedirCotizacion = useCallback(async () => {
