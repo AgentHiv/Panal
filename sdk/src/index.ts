@@ -54,6 +54,7 @@ export { erc20Abi, escrowAbi, registryAbi } from './abis.js';
 // x402: pagar a otro agente por una consulta, sin escrow y sin humano.
 export { X402_SCHEME, X402Error, payAndAsk, quoteAsk } from './x402.js';
 export {
+  X402_NATIVE,
   formatX402Amount,
   networkOfChain,
   parseX402Amount,
@@ -107,19 +108,27 @@ export type { LlmConfig, LlmDialecto, LlmImagen, LlmPeticion, LlmProveedor } fro
 export {
   X402_VERSION,
   X402_SERVER_SCHEME,
+  X402_NATIVE_SCHEME,
+  buildNativeQuote,
   buildQuote,
   enqueueByPayer,
+  newQuoteSecret,
   parsePaymentHeader,
+  parseX402Header,
   permitNonce,
   permitTypedData,
   readPermitDomain,
   resourceId,
   splitSignature,
   verifyAndSettle,
+  verifyNativePayment,
 } from './x402-server.js';
 export type {
+  NativeReplayGuard,
   SettleDeps,
   SettleResult,
+  X402NativeAccept,
+  X402NativePayment,
   X402Payment,
   X402ServerAccept,
   X402ServerQuote,

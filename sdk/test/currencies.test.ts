@@ -41,7 +41,7 @@ const abi = parseAbi([
 async function main(): Promise<void> {
   console.log('── 1. Cada moneda de la lista, tal y como es en mainnet ──');
   const client = createPublicClient({ chain: monad, transport: http() });
-  for (const c of x402Currencies('mainnet')) {
+  for (const c of x402Currencies('mainnet').filter((c) => c.scheme === 'eip2612-permit')) {
     const [symbol, decimals] = await Promise.all([
       client.readContract({ address: c.address, abi, functionName: 'symbol' }),
       client.readContract({ address: c.address, abi, functionName: 'decimals' }),
@@ -69,8 +69,10 @@ async function main(): Promise<void> {
   check('$PANAL con y sin el $', x402CurrencyByName('PANAL')?.symbol === '$PANAL' && x402CurrencyByName('$panal')?.symbol === '$PANAL');
   check('por dirección, en minúsculas', x402Currency(usdc.address.toLowerCase())?.symbol === 'USDC');
   check('un token cualquiera no está', x402Currency('0x4444444444444444444444444444444444444444') === null);
-  check('MON no es de x402 (todavía)', x402CurrencyByName('MON') === null);
-  check('en testnet no hay monedas', x402Currencies('testnet').length === 0);
+  const mon = x402CurrencyByName('MON');
+  check('MON se paga por transferencia, no con permit', mon?.scheme === 'native-transfer', mon?.scheme);
+  check('y su dirección es la cero, como en el escrow', x402Currency('0x0000000000000000000000000000000000000000')?.symbol === 'MON');
+  check('en testnet solo MON', x402Currencies('testnet').map((c) => c.symbol).join() === 'MON');
   check('143 es mainnet y 10143 testnet', networkOfChain(143) === 'mainnet' && networkOfChain(10143) === 'testnet' && networkOfChain(1) === null);
 
   console.log('\n── 3. Los decimales de cada una ──');

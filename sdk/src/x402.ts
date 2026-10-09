@@ -17,13 +17,16 @@
  */
 
 import { isAddress, getAddress } from 'viem';
+import { estimateGas, waitForTransactionReceipt } from 'viem/actions';
 import type { Account, Address, Hex, WalletClient } from 'viem';
 import { assertPublicUrl, fetchLimited, type UrlGuardOptions } from './net.js';
 import { envelopeHeaders, type CallEnvelope } from './envelope.js';
 import { networkOfChain, x402Currency, type X402Currency } from './currencies.js';
 
-/** El único esquema que entiende este cliente. Debe coincidir con el servidor. */
+/** El esquema de las monedas con `permit`. Debe coincidir con el servidor. */
 export const X402_SCHEME = 'eip2612-permit';
+/** El de MON, que no tiene `permit`: se manda una transferencia y se presenta. */
+const ESQUEMA_MON = 'native-transfer';
 
 const PERMIT_TYPES = {
   Permit: [
@@ -56,7 +59,10 @@ export interface X402Accept {
   deadline: number;
   maxTimeoutSeconds?: number;
   payerNonce?: string;
-  domain: PermitDomain;
+  /** Solo en las de `permit`: el dominio con el que firmar. */
+  domain?: PermitDomain;
+  /** Solo en MON: el código de esta cotización, que se presenta con el pago. */
+  paymentId?: Hex;
 }
 
 export interface X402Quote {
@@ -115,10 +121,10 @@ export async function quoteAsk(
   } catch {
     throw new X402Error('La cotización no es JSON válido.');
   }
-  const accept = quote.accepts?.find((a) => a.scheme === X402_SCHEME);
+  const accept = quote.accepts?.find((a) => a.scheme === X402_SCHEME || a.scheme === ESQUEMA_MON);
   if (!accept) {
     const vistos = quote.accepts?.map((a) => a.scheme).join(', ') || 'ninguno';
-    throw new X402Error(`Ese agente no acepta "${X402_SCHEME}". Esquemas que ofrece: ${vistos}.`);
+    throw new X402Error(`Ese agente no cobra con un esquema que sepamos pagar. Esquemas que ofrece: ${vistos}.`);
   }
   return accept;
 }
@@ -210,14 +216,87 @@ export async function payAndAsk(
   if (accept.scheme !== moneda.scheme) {
     throw new X402Error(`${moneda.symbol} se paga con "${moneda.scheme}" y la cotización pide "${accept.scheme}".`);
   }
-  if (getAddress(accept.domain.verifyingContract) !== getAddress(accept.asset)) {
-    // El dominio EIP-712 tiene que ser el del propio token: si apunta a otro
-    // contrato, la firma valdría para algo distinto de lo que crees.
-    throw new X402Error('El dominio de firma no corresponde al token que se va a pagar.');
-  }
   const ahora = Math.floor(Date.now() / 1000);
   if (accept.deadline <= ahora + 30) {
     throw new X402Error('La cotización caduca de inmediato: pide otra.');
+  }
+
+  const header =
+    moneda.scheme === ESQUEMA_MON
+      ? await pagarEnMon(wallet, account, accept, amount)
+      : await firmarPermit(wallet, account, accept, amount);
+
+  // ---- Segunda llamada: se cobra y se responde en la misma ----------------
+
+  const res = await fetchLimited(url, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-payment': header.value,
+      ...(options.envelope ? envelopeHeaders(options.envelope) : {}),
+    },
+    body: JSON.stringify({ prompt }),
+    timeoutMs: options.timeoutMs ?? (accept.maxTimeoutSeconds ?? 120) * 1000,
+  });
+
+  // `paid` es como lo devuelve la plantilla de agentes; `payment`, como lo
+  // devolvía el bot de LexPanal. Se leen los dos para no perder el hash.
+  let body: { answer?: string; error?: string; payment?: { txHash?: Hex }; paid?: { txHash?: Hex }; paymentTx?: Hex };
+  try {
+    body = JSON.parse(res.text) as typeof body;
+  } catch {
+    throw new X402Error(
+      `Respuesta ilegible del agente (HTTP ${res.status}).${header.txHash ? ` Tu pago: tx ${header.txHash}.` : ''}`,
+      res.status,
+    );
+  }
+
+  if (res.status !== 200) {
+    // El 502 con `paymentTx` es el caso feo y hay que distinguirlo: te han
+    // cobrado y no han respondido, así que el hash es tu prueba para reclamar.
+    // En MON el pago ya salió de tu wallet al mandarlo: el hash es el tuyo.
+    const pagado = body.paymentTx ?? header.txHash;
+    if (pagado) {
+      throw new X402Error(
+        `Pagaste (tx ${pagado}) y el agente no entregó respuesta: ${body.error ?? `HTTP ${res.status}`}`,
+        res.status,
+      );
+    }
+    if (res.status === 508) {
+      throw new X402Error(
+        `El agente rechazó la llamada por ciclo: ya había atendido esta cadena. ${body.error ?? ''}`.trim(),
+        508,
+      );
+    }
+    throw new X402Error(body.error ?? `El agente respondió ${res.status}.`, res.status);
+  }
+  if (typeof body.answer !== 'string' || !body.answer) {
+    throw new X402Error('El agente respondió 200 pero sin `answer`.');
+  }
+
+  return {
+    answer: body.answer,
+    paid: amount,
+    currency: moneda,
+    payee: getAddress(accept.payTo),
+    txHash: body.payment?.txHash ?? body.paid?.txHash ?? header.txHash,
+    endpoint: url.toString(),
+  };
+}
+
+/**
+ * Las de `permit`: una firma, sin gas ni transacción. Quien cobra la ejecuta.
+ */
+async function firmarPermit(
+  wallet: WalletClient,
+  account: Account,
+  accept: X402Accept,
+  amount: bigint,
+): Promise<{ value: string; txHash?: Hex }> {
+  if (!accept.domain || getAddress(accept.domain.verifyingContract) !== getAddress(accept.asset)) {
+    // El dominio EIP-712 tiene que ser el del propio token: si apunta a otro
+    // contrato, la firma valdría para algo distinto de lo que crees.
+    throw new X402Error('El dominio de firma no corresponde al token que se va a pagar.');
   }
   if (accept.payerNonce === undefined) {
     throw new X402Error(
@@ -241,66 +320,61 @@ export async function payAndAsk(
     },
   });
 
-  const header = toBase64(
-    JSON.stringify({
-      scheme: X402_SCHEME,
-      payer: account.address,
-      value: amount.toString(),
-      deadline: accept.deadline.toString(),
-      signature,
-    }),
-  );
-
-  // ---- Segunda llamada: se cobra y se responde en la misma ----------------
-
-  const res = await fetchLimited(url, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-payment': header,
-      ...(options.envelope ? envelopeHeaders(options.envelope) : {}),
-    },
-    body: JSON.stringify({ prompt }),
-    timeoutMs: options.timeoutMs ?? (accept.maxTimeoutSeconds ?? 120) * 1000,
-  });
-
-  // `paid` es como lo devuelve la plantilla de agentes; `payment`, como lo
-  // devolvía el bot de LexPanal. Se leen los dos para no perder el hash.
-  let body: { answer?: string; error?: string; payment?: { txHash?: Hex }; paid?: { txHash?: Hex }; paymentTx?: Hex };
-  try {
-    body = JSON.parse(res.text) as typeof body;
-  } catch {
-    throw new X402Error(`Respuesta ilegible del agente (HTTP ${res.status}).`, res.status);
-  }
-
-  if (res.status !== 200) {
-    // El 502 con `paymentTx` es el caso feo y hay que distinguirlo: te han
-    // cobrado y no han respondido, así que el hash es tu prueba para reclamar.
-    if (body.paymentTx) {
-      throw new X402Error(
-        `El agente cobró (tx ${body.paymentTx}) pero no entregó respuesta: ${body.error ?? 'sin detalle'}`,
-        res.status,
-      );
-    }
-    if (res.status === 508) {
-      throw new X402Error(
-        `El agente rechazó la llamada por ciclo: ya había atendido esta cadena. ${body.error ?? ''}`.trim(),
-        508,
-      );
-    }
-    throw new X402Error(body.error ?? `El agente respondió ${res.status}.`, res.status);
-  }
-  if (typeof body.answer !== 'string' || !body.answer) {
-    throw new X402Error('El agente respondió 200 pero sin `answer`.');
-  }
-
   return {
-    answer: body.answer,
-    paid: amount,
-    currency: moneda,
-    payee: getAddress(accept.payTo),
-    txHash: body.payment?.txHash ?? body.paid?.txHash,
-    endpoint: url.toString(),
+    value: toBase64(
+      JSON.stringify({
+        scheme: X402_SCHEME,
+        payer: account.address,
+        value: amount.toString(),
+        deadline: accept.deadline.toString(),
+        signature,
+      }),
+    ),
+  };
+}
+
+/**
+ * MON: se MANDA la transferencia y se presenta su hash.
+ *
+ * El importe es exactamente el de la cotización —lleva unas unidades al azar
+ * que la hacen única— y el código de pago no va a la cadena: es lo que impide
+ * que otro presente esta transferencia como suya. Ver x402-server.ts.
+ *
+ * Aquí sí pagas tú el gas, una fracción de céntimo en Monad, y se espera a que
+ * entre en un bloque: el agente lo va a comprobar en la cadena.
+ */
+async function pagarEnMon(
+  wallet: WalletClient,
+  account: Account,
+  accept: X402Accept,
+  amount: bigint,
+): Promise<{ value: string; txHash: Hex }> {
+  if (!accept.paymentId || !/^0x[0-9a-fA-F]{64}$/.test(accept.paymentId)) {
+    throw new X402Error('La cotización en MON no trae su código de pago: pide otra.');
+  }
+  const to = getAddress(accept.payTo);
+  // Monad cobra el límite de gas entero, no el gastado: se pide lo justo. Una
+  // transferencia a una wallet normal son 21.000 exactos; solo se deja margen
+  // si la estimación dice que el destino ejecuta código.
+  const estimado = await estimateGas(wallet, { account, to, value: amount });
+  const gas = estimado > 21_000n ? (estimado * 11n) / 10n : estimado;
+  const txHash = await wallet.sendTransaction({ account, chain: wallet.chain ?? null, to, value: amount, gas });
+  const recibo = await waitForTransactionReceipt(wallet, { hash: txHash, timeout: 90_000 });
+  if (recibo.status !== 'success') {
+    throw new X402Error(`La transferencia de MON se revirtió (tx ${txHash}): no se ha preguntado nada.`);
+  }
+  return {
+    txHash,
+    value: toBase64(
+      JSON.stringify({
+        scheme: ESQUEMA_MON,
+        payer: account.address,
+        value: amount.toString(),
+        deadline: accept.deadline.toString(),
+        paymentId: accept.paymentId,
+        txHash,
+      }),
+    ),
   };
 }
 

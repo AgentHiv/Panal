@@ -148,6 +148,22 @@ async function main(): Promise<void> {
       }),
     'no es una moneda que panal acepte',
   );
+  // MON: sin el código de pago no se manda nada. Se para ANTES de enviar la
+  // transferencia, que en MON es dinero que sale ya.
+  await rejects(
+    'una cotización en MON sin código de pago',
+    () =>
+      payAndAsk(wallet, account, ENDPOINT, 'x', {
+        ...base,
+        quote: fakeQuote({ scheme: 'native-transfer', asset: '0x0000000000000000000000000000000000000000', domain: undefined }),
+      }),
+    'código de pago',
+  );
+  await rejects(
+    'MON pedido como si tuviera permit',
+    () => payAndAsk(wallet, account, ENDPOINT, 'x', { ...base, quote: fakeQuote({ asset: '0x0000000000000000000000000000000000000000' }) }),
+    'se paga con',
+  );
   await rejects(
     'una cotización a punto de caducar',
     () => payAndAsk(wallet, account, ENDPOINT, 'x', { ...base, quote: fakeQuote({ deadline: Math.floor(Date.now() / 1000) + 5 }) }),

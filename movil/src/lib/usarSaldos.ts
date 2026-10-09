@@ -37,11 +37,11 @@ export interface Estable {
 }
 
 /**
- * Las monedas estables de la lista de x402: todas menos $PANAL, que tiene su
- * propio sitio. Salen de la lista del SDK para que la app enseñe exactamente
+ * Las monedas estables de la lista de x402: las de token menos $PANAL, que
+ * tiene su propio sitio igual que MON. Salen de la lista del SDK para que la app enseñe exactamente
  * las monedas con las que deja pagar.
  */
-const ESTABLES = x402Currencies().filter((c) => c.symbol !== '$PANAL');
+const ESTABLES = x402Currencies().filter((c) => c.scheme === 'eip2612-permit' && c.symbol !== '$PANAL');
 
 /** Los saldos estables de una dirección, en el orden de la lista. */
 async function leerEstables(dir: Address): Promise<Estable[]> {

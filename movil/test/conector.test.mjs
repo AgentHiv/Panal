@@ -280,6 +280,21 @@ dice(
   'mandar MON al registro, no',
   !pasa({ to: REGISTRO, data: encodeFunctionData({ abi: panalRegistryV2Abi, functionName: 'setActive', args: [true] }), value: 1n }),
 );
+// MON por mensaje: no se firma, se manda. La única transferencia suelta que
+// sale, y solo la que armó la hoja.
+const MON = '0x0000000000000000000000000000000000000000';
+const IMPORTE_MON = 2_000_000_000_000_356_003n;
+politica.permitirPago({ spender: AGENTE, value: IMPORTE_MON, token: MON });
+dice('el pago en MON que enseñó la hoja, sí', pasa({ to: AGENTE, value: IMPORTE_MON }));
+dice('y una sola vez', !pasa({ to: AGENTE, value: IMPORTE_MON }));
+politica.permitirPago({ spender: AGENTE, value: IMPORTE_MON, token: MON });
+dice('por una unidad más, no', !pasa({ to: AGENTE, value: IMPORTE_MON + 1n }));
+politica.permitirPago({ spender: AGENTE, value: IMPORTE_MON, token: MON });
+dice('a otro que el agente, no', !pasa({ to: DESCONOCIDO, value: IMPORTE_MON }));
+politica.permitirPago({ spender: AGENTE, value: IMPORTE_MON, token: MON });
+dice('con datos, no: es una transferencia, no una llamada', !pasa({ to: AGENTE, value: IMPORTE_MON, data: '0xa9059cbb' }));
+politica.permitirPago({ spender: AGENTE, value: 50n, token: TOKEN });
+dice('la hoja armó $PANAL y llega MON, no', !pasa({ to: AGENTE, value: 50n }));
 politica.olvidarPermisos();
 
 console.log('\nse cierra sola por inactividad');
