@@ -57,6 +57,7 @@ export const zh: Textos = {
     version: (v: string) => `版本 ${v}`,
     sinVersion: '开发版',
     hayVersion: (v: string) => `有新版本 ${v}`,
+    propiedad: '© 2026 Panal 与 Kreno · 代码采用 MIT 许可；名称和标志不在其内',
   },
 
   barraRed: {

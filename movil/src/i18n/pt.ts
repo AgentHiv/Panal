@@ -59,6 +59,7 @@ export const pt: Textos = {
     version: (v: string) => `Versão ${v}`,
     sinVersion: 'Compilação de desenvolvimento',
     hayVersion: (v: string) => `Versão ${v} disponível`,
+    propiedad: '© 2026 Panal e Kreno · o código é MIT; o nome e o logo, não',
   },
 
   barraRed: {

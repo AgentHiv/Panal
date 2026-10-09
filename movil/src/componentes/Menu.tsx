@@ -254,6 +254,10 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
                 {T.menu.hayVersion(nueva)}
               </a>
             )}
+
+            {/* La regla de propiedad, como en el README y en las releases: la
+                licencia MIT cubre el código, no el nombre ni el logo. */}
+            <p className="mt-2 text-[10.5px] leading-snug text-ink-3">{T.menu.propiedad}</p>
           </div>
         </div>
       </div>

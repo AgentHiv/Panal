@@ -66,7 +66,10 @@ console.log('\nestrenar el llavero con chip');
   dice('y NO en la de antes', !disco.has(V1));
   const guardado = JSON.parse(disco.get(V2));
   dice('en el disco solo hay iv y datos del chip', Object.keys(guardado).sort().join() === 'datos,iv');
-  dice('sin la sal ni el testigo a la vista', !disco.get(V2).includes('sal') && !disco.get(V2).includes('testigo'));
+  // Con comillas: se busca el CAMPO del JSON en claro. Sin ellas, «sal» salía
+  // de vez en cuando por azar dentro del base64 del cifrado, y la prueba
+  // fallaba sin que nada estuviera mal. Las comillas no existen en base64.
+  dice('sin la sal ni el testigo a la vista', !disco.get(V2).includes('"sal"') && !disco.get(V2).includes('"testigo"'));
   dice('ni la dirección', !disco.get(V2).toLowerCase().includes(wallet.direccion.slice(2).toLowerCase()));
 
   // Reabrir la app: se prepara otra vez con el MISMO chip.
