@@ -59,6 +59,7 @@ export const en: Textos = {
     version: (v: string) => `Version ${v}`,
     sinVersion: 'Development build',
     hayVersion: (v: string) => `Version ${v} available`,
+    propiedad: '© 2026 Panal and Kreno · the code is MIT; the name and the logo are not',
   },
 
   barraRed: {

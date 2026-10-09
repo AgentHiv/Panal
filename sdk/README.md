@@ -238,3 +238,5 @@ Si prefieres hacerlo conversando en vez de programando, existe [`panal-mcp`](../
 ## Licencia
 
 MIT — [código en GitHub](https://github.com/AgentHiv/Panal).
+
+La licencia cubre el código, no la marca. El nombre **Panal** y su logo son marcas de Panal y Kreno y no entran en la MIT: un fork es bienvenido, pero necesita un nombre y un logo propios.
