@@ -613,9 +613,14 @@ export function buildNativeQuote(params: {
 }): { x402Version: typeof X402_VERSION; accepts: X402NativeAccept[]; hint: string } {
   const now = params.nowS ?? Math.floor(Date.now() / 1000);
   const deadline = now + QUOTE_TTL_S;
-  // De 1 a 999.999 unidades: menos de una millonésima de céntimo, y basta
-  // para que dos cotizaciones no pidan el mismo importe.
-  const azar = BigInt(1 + (crypto.getRandomValues(new Uint32Array(1))[0]! % 999_999));
+  // De 1 a 1.048.576 unidades (2²⁰): menos de una millonésima de céntimo, y
+  // basta para que dos cotizaciones no pidan el mismo importe.
+  //
+  // Con una máscara y no con `%`: el rango es una potencia de dos, así que
+  // cada valor sale con la misma probabilidad. Con `% 999999` unos salían un
+  // poco más que otros (lo marcó CodeQL); aquí no importaba, porque solo hace
+  // falta que no se repita ni se adivine, pero sin sesgo no hay que pensarlo.
+  const azar = BigInt(1 + (crypto.getRandomValues(new Uint32Array(1))[0]! & 0xfffff));
   const amount = params.price + azar;
   const payer = params.payer ? getAddress(params.payer) : ZERO;
   return {

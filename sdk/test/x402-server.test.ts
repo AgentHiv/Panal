@@ -229,7 +229,7 @@ console.log('\n── 7. MON: cobrar una transferencia que manda el cliente ─�
   const extra = BigInt(q.amount) - precio;
   check('el esquema es el de MON', q.scheme === X402_NATIVE_SCHEME, q.scheme);
   check('la moneda es la nativa', q.asset === '0x0000000000000000000000000000000000000000');
-  check('pide el precio más unas pocas unidades al azar', extra >= 1n && extra < 1_000_000n, extra.toString());
+  check('pide el precio más unas pocas unidades al azar', extra >= 1n && extra <= 1_048_576n, extra.toString());
   check('lleva un código de pago de 32 bytes', /^0x[0-9a-f]{64}$/.test(q.paymentId), q.paymentId);
   // Dos cotizaciones casi nunca piden lo mismo: es lo que ata cada pago a la suya.
   const importes = new Set(Array.from({ length: 50 }, () => cotiza().amount));
