@@ -42,7 +42,7 @@ export default function HojaFirmar({
       <Tarjeta>
         <Fila
           etiqueta={T.firmar.coste}
-          valor={`${monto(importe)} ${cobro.simbolo}`}
+          valor={`${monto(importe, cobro.decimales)} ${cobro.simbolo}`}
           color="text-ink"
         />
         <Fila etiqueta={T.firmar.gas} valor={T.firmar.gasLoPaga} color="text-olive" />
@@ -52,7 +52,7 @@ export default function HojaFirmar({
           por encima del tope, pero enterarse por un fallo es enterarse tarde. */}
       {subio && (
         <Nota tono="miel">
-          {T.firmar.subioPrecio(monto(cobro.amount), cobro.simbolo)}
+          {T.firmar.subioPrecio(monto(cobro.amount, cobro.decimales), cobro.simbolo)}
         </Nota>
       )}
 

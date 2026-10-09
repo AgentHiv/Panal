@@ -1192,6 +1192,13 @@ export class PanalClient {
        * cuesta ni una petición.
        */
       skillsPermitidas?: string[];
+      /**
+       * En qué moneda se paga, y por tanto en qué unidades va `maxSpend`.
+       * Por defecto $PANAL. Solo se cotiza con quien cobre en ESTA: comparar
+       * precios de monedas distintas era comparar 1 USDC con 1 wei de $PANAL,
+       * y un tope en una moneda no dice nada de otra.
+       */
+      asset?: Address;
     },
   ): Promise<AskResult & { agent: Address; skill: string }> {
     const wallet = this.wallet();
@@ -1249,6 +1256,7 @@ export class PanalClient {
       );
     }
 
+    const moneda = getAddress(options.asset ?? this.addresses.panalToken);
     const quotes: { agent: Agent; endpoint: string; accept: X402Accept }[] = [];
     const rechazos: string[] = [];
     for (const agent of candidates) {
@@ -1259,7 +1267,9 @@ export class PanalClient {
           ...options,
           envelope: heredado,
         });
-        if (BigInt(accept.amount) <= tope) quotes.push({ agent, endpoint, accept });
+        if (getAddress(accept.asset) !== moneda) {
+          rechazos.push(`${agent.metadata.name || agent.address}: cobra en ${accept.asset}, no en ${moneda}`);
+        } else if (BigInt(accept.amount) <= tope) quotes.push({ agent, endpoint, accept });
         else rechazos.push(`${agent.metadata.name || agent.address}: pide ${accept.amount}, por encima del tope`);
       } catch (err) {
         rechazos.push(`${agent.metadata.name || agent.address}: ${err instanceof Error ? err.message : err}`);
@@ -1284,6 +1294,7 @@ export class PanalClient {
       maxSpend: tope,
       chainId: chainFor(this.network).id,
       expectedPayee: elegido.agent.address,
+      asset: moneda,
       quote: elegido.accept,
       envelope: siguiente,
     });

@@ -140,5 +140,21 @@ for (const basura of ['', '{', 'null', '[]', '{"day":"' + hoy + '","spent":{"0xa
   check('  y el presupuesto de MON sigue entero', l.spentToday(MON) === 0n);
 }
 
+// Las estables de x402, cada una con su cuenta y en SUS unidades: un USDC son
+// 10⁶ unidades, no 10¹⁸. Con el tope de 18 decimales, «1 USDC» habría sido un
+// billón de dólares.
+{
+  const lim = limitsFromEnv();
+  const usdc = limitFor(lim, '0x754704Bc059F8C67012fEd69BC8A327a5aafb603' as Address);
+  const gho = limitFor(lim, '0xfc421aD3C883Bf9E7C4f42dE845C4e4405799e73' as Address);
+  const ausd = limitFor(lim, '0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a' as Address);
+  check('USDC tiene su tope: 1 USDC por consulta', usdc?.maxPerTaskWei === 1_000_000n, String(usdc?.maxPerTaskWei));
+  check('y 5 USDC al día', usdc?.dailyBudgetWei === 5_000_000n, String(usdc?.dailyBudgetWei));
+  check('AUSD igual, con sus 6 decimales', ausd?.maxPerTaskWei === 1_000_000n, String(ausd?.maxPerTaskWei));
+  check('GHO con 18', gho?.maxPerTaskWei === 10n ** 18n, String(gho?.maxPerTaskWei));
+  check('se ajusta con su propia variable', usdc?.envMaxPerTask === 'MCP_MAX_PER_TASK_USDC_UNITS', usdc?.envMaxPerTask);
+  check('un token cualquiera sigue sin presupuesto', limitFor(lim, '0x4444444444444444444444444444444444444444' as Address) === null);
+}
+
 console.log(fallos === 0 ? '\n✅ Todas las comprobaciones de monedas pasaron' : `\n❌ ${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

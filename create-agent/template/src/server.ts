@@ -55,10 +55,15 @@ import {
   type LlmConfig,
   type Nivel,
   type PermitDomain,
+  type X402Currency,
+  formatX402Amount,
+  parseX402Amount,
+  x402Currencies,
+  x402CurrencyByName,
 } from '@panal/sdk';
 import { comoAdjunto } from './salida.js';
 import { privateKeyToAccount } from 'viem/accounts';
-import { isAddress, keccak256, parseEther, toBytes, verifyMessage } from 'viem';
+import { isAddress, keccak256, parseEther, parseUnits, toBytes, verifyMessage } from 'viem';
 import type { Address } from 'viem';
 import { handleTask, NIVELES, SUBCONTRATA_SKILLS } from './agent.js';
 import { frasesGuardadas, pedirTraduccion } from './traduccion.js';
@@ -303,26 +308,46 @@ setInterval(() => void refrescarNiveles(), REFRESCO_NIVELES).unref();
 // Es OPCIONAL: sin X402_PRICE en el .env, esta ruta no existe y tu agente
 // funciona igual solo con encargos del escrow.
 //
-// Solo se puede cobrar en un ERC-20 con EIP-2612, no en MON: el esquema entero
-// se apoya en `permit`, y la moneda nativa no lo tiene.
+// Se cobra en una de las monedas que Panal acepta: $PANAL (por defecto), GHO,
+// USDC o AUSD. Las cuatro tienen `permit`, que es en lo que se apoya el
+// esquema. El nombre y los decimales salen de la lista del SDK
+// (`x402Currencies`), no de lo que se escriba aquí: así el precio que ves en
+// el .env es el que ven los clientes.
+//
+//   X402_TOKEN=USDC
+//   X402_PRICE=0.05      # cinco céntimos: se lee en la moneda elegida
 // ---------------------------------------------------------------------------
 
+const X402_MONEDA: X402Currency | null = (() => {
+  const raw = process.env.X402_TOKEN?.trim() || MAINNET_ADDRESSES.panalToken;
+  const moneda = x402CurrencyByName(raw);
+  if (!moneda) {
+    const aceptadas = x402Currencies().map((c) => c.symbol).join(', ');
+    console.error(`X402_TOKEN="${raw}" no es una moneda que Panal acepte (${aceptadas}): el cobro por llamada queda desactivado.`);
+  }
+  return moneda;
+})();
 const X402_PRICE = (() => {
   const raw = process.env.X402_PRICE?.trim();
-  if (!raw) return null;
+  if (!raw || !X402_MONEDA) return null;
   try {
-    const wei = parseEther(raw);
-    return wei > 0n ? wei : null;
+    // En los decimales de SU moneda. Con parseEther, «0.05» en USDC eran
+    // 5·10¹⁶ unidades: cincuenta mil millones de dólares por pregunta.
+    const unidades = parseX402Amount(raw, X402_MONEDA);
+    return unidades > 0n ? unidades : null;
   } catch {
     console.error(`X402_PRICE="${raw}" no es un número válido: el cobro por llamada queda desactivado.`);
     return null;
   }
 })();
-const X402_TOKEN: Address = (() => {
-  const raw = process.env.X402_TOKEN?.trim();
-  return raw && isAddress(raw) ? (raw as Address) : MAINNET_ADDRESSES.panalToken;
-})();
-const X402_SYMBOL = process.env.X402_SYMBOL?.trim() || '$PANAL';
+// Con la moneda desactivada se quedan los de $PANAL: los usa el log y el
+// presupuesto de subcontratar, que siguen leyéndose aunque no se cobre.
+const X402_TOKEN: Address = X402_MONEDA?.address ?? (MAINNET_ADDRESSES.panalToken as Address);
+const X402_SYMBOL = X402_MONEDA?.symbol ?? '$PANAL';
+const X402_DECIMALES = X402_MONEDA?.decimals ?? 18;
+if (process.env.X402_SYMBOL?.trim() && process.env.X402_SYMBOL.trim() !== X402_SYMBOL) {
+  console.warn(`[panal] X402_SYMBOL ya no se usa: el nombre sale de X402_TOKEN, y es ${X402_SYMBOL}.`);
+}
 // En inglés porque viaja en el 402 y lo lee un desconocido de cualquier parte.
 // Cámbialo por lo tuyo con X402_DESCRIPTION en el .env.
 const X402_DESCRIPTION = process.env.X402_DESCRIPTION?.trim() || 'One question to the agent, answered on the spot.';
@@ -352,7 +377,7 @@ const SUBCONTRATA_MAX = (() => {
   const raw = process.env.SUBCONTRATA_MAX?.trim();
   if (!raw) return 0n;
   try {
-    const wei = parseEther(raw);
+    const wei = parseUnits(raw, X402_DECIMALES);
     return wei > 0n ? wei : 0n;
   } catch {
     console.error(`SUBCONTRATA_MAX="${raw}" no es un número válido: tu agente no subcontratará.`);
@@ -762,6 +787,9 @@ function contexto(
       }
       const res = await panal.ask(skill, pregunta, {
         maxSpend: presupuesto,
+        // En la moneda del presupuesto, que es la del x402: solo se cotiza con
+        // quien cobre en ella.
+        asset: X402_TOKEN,
         skillsPermitidas: SUBCONTRATA_SKILLS,
         depth: SUBCONTRATA_SALTOS,
         // El sobre recibido, si lo hay. Sin él se abre una cadena nueva.
@@ -771,7 +799,7 @@ function contexto(
         exclude: [account.address],
       });
       console.log(
-        `[panal] consulta a ${res.agent} por ${res.paid} (${skill}) · trace ${sobre?.trace ?? 'nuevo'}`,
+        `[panal] consulta a ${res.agent} por ${formatX402Amount(res.paid, res.currency)} ${res.currency.symbol} (${skill}) · trace ${sobre?.trace ?? 'nuevo'}`,
       );
       return res.answer;
     },
@@ -1316,6 +1344,9 @@ const server = createServer((req, res) => {
               scheme: 'eip2612-permit',
               asset: X402_TOKEN,
               assetSymbol: X402_SYMBOL,
+              // Para quien lea la ficha a mano. Los clientes de Panal no se
+              // fían de esto: sacan los decimales de su propia lista.
+              assetDecimals: X402_DECIMALES,
               amount: X402_PRICE.toString(),
               payTo: account.address,
               howTo: 'POST {"prompt":"…"} and you get a 402 with the quote. Sign it and repeat with X-Payment.',

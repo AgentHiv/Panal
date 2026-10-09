@@ -143,6 +143,12 @@ Las herramientas de escritura mueven dinero real en mainnet, así que están **a
 | `MCP_DAILY_BUDGET_WEI` | `5e18` (5 MON) | Tope por día UTC **en MON**, persistido en disco |
 | `MCP_MAX_PER_TASK_PANAL_WEI` | `1e18` (1 $PANAL) | Tope por encargo, **en $PANAL** |
 | `MCP_DAILY_BUDGET_PANAL_WEI` | `5e18` (5 $PANAL) | Tope por día UTC **en $PANAL** |
+| `MCP_MAX_PER_TASK_GHO_UNITS` | `1e18` (1 GHO) | Tope por consulta **en GHO** |
+| `MCP_DAILY_BUDGET_GHO_UNITS` | `5e18` (5 GHO) | Tope por día UTC **en GHO** |
+| `MCP_MAX_PER_TASK_USDC_UNITS` | `1e6` (1 USDC) | Tope por consulta **en USDC** (6 decimales) |
+| `MCP_DAILY_BUDGET_USDC_UNITS` | `5e6` (5 USDC) | Tope por día UTC **en USDC** |
+| `MCP_MAX_PER_TASK_AUSD_UNITS` | `1e6` (1 AUSD) | Tope por consulta **en AUSD** (6 decimales) |
+| `MCP_DAILY_BUDGET_AUSD_UNITS` | `5e6` (5 AUSD) | Tope por día UTC **en AUSD** |
 | `MCP_TASK_DEADLINE_HOURS` | `24` | Plazo de entrega |
 | `MCP_SPEND_FILE` | `.panal-mcp/spend.json` | Dónde se guarda el gasto del día |
 | `MCP_ATTACH_DIR` | el directorio de trabajo | Única carpeta desde la que se puede adjuntar |

@@ -41,7 +41,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { formatEther, isAddress, keccak256, parseEther, toBytes } from 'viem';
+import { formatEther, formatUnits, isAddress, keccak256, parseEther, toBytes } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { Address } from 'viem';
 import {
@@ -55,6 +55,7 @@ import {
   parseAttachmentsManifest,
   parseFilesManifest,
   stripFilesManifest,
+  x402Currency,
   type Agent,
   type DeliveredFile,
   type Nivel,
@@ -160,8 +161,23 @@ function esNativa(currency: Address): boolean {
   return currency.toLowerCase() === NATIVE_CURRENCY.toLowerCase();
 }
 
+/**
+ * El nombre de una moneda, de la lista de Panal. Nunca el que trae la
+ * cotización: lo escribe el agente, y con un nombre a su gusto se podía cobrar
+ * en un token enseñando otro. Lo que no está en la lista se nombra por su
+ * dirección, que es lo único que se sabe de verdad.
+ */
 function symbolOf(currency: Address): string {
-  return esNativa(currency) ? 'MON' : '$PANAL';
+  return esNativa(currency) ? 'MON' : (x402Currency(currency)?.symbol ?? currency);
+}
+
+/**
+ * Un importe en unidades mínimas, con los decimales de SU moneda: 18 en MON,
+ * $PANAL y GHO, 6 en USDC y AUSD. Con `formatEther` para todo, un millón de
+ * unidades de USDC —un dólar— salía como 0,000000000001.
+ */
+function fmt(amount: bigint, currency: Address): string {
+  return formatUnits(amount, esNativa(currency) ? 18 : (x402Currency(currency)?.decimals ?? 18));
 }
 
 /** Las monedas que este servidor sabe manejar: las que tienen presupuesto. */
@@ -206,20 +222,20 @@ function revisarPresupuesto(currency: Address, amount: bigint, symbol: string): 
   if (!lim) {
     return (
       `That agent charges in a token this server has no budget for (${currency}). ` +
-      'Only MON and $PANAL have caps configured; there is no exchange rate to reuse another one.'
+      `Caps are configured for ${monedasConocidas().map(symbolOf).join(', ')}; there is no exchange rate to reuse another one.`
     );
   }
   if (amount > lim.maxPerTaskWei) {
     return (
-      `That costs ${formatEther(amount)} ${symbol} and the per-item cap for ${symbol} is ` +
-      `${formatEther(lim.maxPerTaskWei)}. Raise ${lim.envMaxPerTask} if that is intended.`
+      `That costs ${fmt(amount, currency)} ${symbol} and the per-item cap for ${symbol} is ` +
+      `${fmt(lim.maxPerTaskWei, currency)}. Raise ${lim.envMaxPerTask} if that is intended.`
     );
   }
   const spent = ledger.spentToday(currency);
   if (spent + amount > lim.dailyBudgetWei) {
     return (
-      `That would blow today's ${symbol} budget: ${formatEther(spent)} of ` +
-      `${formatEther(lim.dailyBudgetWei)} spent and this costs ${formatEther(amount)} ${symbol}. ` +
+      `That would blow today's ${symbol} budget: ${fmt(spent, currency)} of ` +
+      `${fmt(lim.dailyBudgetWei, currency)} spent and this costs ${fmt(amount, currency)} ${symbol}. ` +
       `Raise ${lim.envDailyBudget} if that is intended.`
     );
   }
@@ -463,7 +479,7 @@ const READ_TOOLS: Tool[] = [
           : Promise.resolve(null),
       ]);
       const porLlamada = q
-        ? `  Per question: ${formatEther(BigInt(q.amount))} ${q.assetSymbol ?? symbolOf(q.asset)} (x402, answered on the spot)`
+        ? `  Per question: ${fmt(BigInt(q.amount), q.asset)} ${symbolOf(q.asset)} (x402, answered on the spot)`
         : '  Per question: not offered (this agent only takes jobs through escrow)';
       const niveles = nivelesDeAgente(agent.metadataURI, ficha?.niveles ?? []);
       return `${renderAgent(agent, niveles, true)}\n${porLlamada}`;
@@ -523,7 +539,7 @@ const READ_TOOLS: Tool[] = [
       }
 
       const amount = BigInt(quote.amount);
-      const symbol = quote.assetSymbol ?? symbolOf(quote.asset);
+      const symbol = symbolOf(quote.asset);
       const saved = quotes.issue({
         kind: 'ask',
         worker: agent.address,
@@ -543,7 +559,7 @@ const READ_TOOLS: Tool[] = [
 
       return [
         `${name} charges per question:`,
-        `  Price: ${formatEther(amount)} ${symbol} for this one question`,
+        `  Price: ${fmt(amount, quote.asset)} ${symbol} for this one question`,
         `  Paid to: ${quote.payTo}`,
         quote.description ? `  Covers: ${quote.description}` : null,
         '',
@@ -641,9 +657,9 @@ const WRITE_TOOLS: Tool[] = [
         Promise.all(monedas.map((m) => panal.getPendingWithdrawal(address, m).catch(() => null))),
       ]);
 
-      const importe = (v: bigint | null): string => (v === null ? 'could not be read' : formatEther(v));
+      const importe = (v: bigint | null, m: Address): string => (v === null ? 'could not be read' : fmt(v, m));
 
-      const balances = monedas.map((m, i) => `  ${symbolOf(m)}: ${importe(saldos[i] ?? null)}`);
+      const balances = monedas.map((m, i) => `  ${symbolOf(m)}: ${importe(saldos[i] ?? null, m)}`);
 
       // Un presupuesto por moneda: MON y $PANAL no valen lo mismo y no hay
       // tipo de cambio, así que se enseñan por separado o no se entienden.
@@ -652,17 +668,17 @@ const WRITE_TOOLS: Tool[] = [
         const spent = ledger.spentToday(moneda);
         const left = lim.dailyBudgetWei > spent ? lim.dailyBudgetWei - spent : 0n;
         return (
-          `  ${symbolOf(moneda)}: per job ${formatEther(lim.maxPerTaskWei)} · today ${formatEther(spent)} of ` +
-          `${formatEther(lim.dailyBudgetWei)} spent · ${formatEther(left)} left`
+          `  ${symbolOf(moneda)}: per job ${fmt(lim.maxPerTaskWei, moneda)} · today ${fmt(spent, moneda)} of ` +
+          `${fmt(lim.dailyBudgetWei, moneda)} spent · ${fmt(left, moneda)} left`
         );
       });
 
       // Solo se nombra lo que hay que cobrar, o lo que no se pudo comprobar. Un
       // «0» por cada moneda sería ruido en la respuesta más leída del servidor.
       const enEscrow = monedas
-        .map((m, i) => ({ sym: symbolOf(m), v: pendientes[i] ?? null }))
+        .map((m, i) => ({ m, sym: symbolOf(m), v: pendientes[i] ?? null }))
         .filter(({ v }) => v === null || v > 0n)
-        .map(({ sym, v }) => `  ${sym}: ${importe(v)}`);
+        .map(({ m, sym, v }) => `  ${sym}: ${importe(v, m)}`);
 
       return [
         `Wallet: ${address}`,
@@ -957,7 +973,7 @@ const WRITE_TOOLS: Tool[] = [
         // Se registra lo REALMENTE pagado, y en SU moneda: un gasto anotado en
         // el contador equivocado agota un presupuesto que nadie tocó.
         ledger.record(quote.currency, res.paid);
-        log(`consulta pagada a ${quote.worker}: ${formatEther(res.paid)} ${quote.symbol}`);
+        log(`consulta pagada a ${quote.worker}: ${fmt(res.paid, quote.currency)} ${quote.symbol}`);
 
         return [
           `Paid ${formatEther(res.paid)} ${quote.symbol} to ${quote.agentName}.`,

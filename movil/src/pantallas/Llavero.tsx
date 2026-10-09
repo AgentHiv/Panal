@@ -81,7 +81,10 @@ type Paso =
   | { que: 'abierto' }
   | { que: 'secreto'; wallet: WalletGuardada; secreto: Secreto; recien: boolean };
 
-const SIN_SALDO: Par = { mon: 0n, panal: 0n };
+const SIN_SALDO: Par = { mon: 0n, panal: 0n, estables: [] };
+
+/** Un color para las tres estables: no son de Panal ni de Monad, y no compiten con esos dos. */
+const COLOR_ESTABLE = '#7FC8A9';
 
 export default function Llavero(): React.ReactElement {
   const navegar = useNavigate();
@@ -343,6 +346,19 @@ export default function Llavero(): React.ReactElement {
                 cargando={saldos.cargando}
                 fallo={saldos.fallo}
               />
+              {(saldos.por[w.direccion.toLowerCase()]?.estables ?? [])
+                .filter((e) => e.valor > 0n)
+                .map((e) => (
+                  <Cifra
+                    key={e.simbolo}
+                    simbolo={e.simbolo}
+                    color={COLOR_ESTABLE}
+                    valor={e.valor}
+                    decimales={e.decimales}
+                    cargando={saldos.cargando}
+                    fallo={saldos.fallo}
+                  />
+                ))}
             </div>
 
             {!w.copiada && (
@@ -491,12 +507,15 @@ function Cifra({
   valor,
   cargando,
   fallo,
+  decimales = 18,
 }: {
   simbolo: string;
   color: string;
   valor: bigint | undefined;
   cargando: boolean;
   fallo: boolean;
+  /** 18 salvo en USDC y AUSD, que van con 6. */
+  decimales?: number;
 }): React.ReactElement {
   return (
     <div className="min-w-0">
@@ -508,7 +527,7 @@ function Cifra({
         )
       ) : (
         <span className="font-mono text-[15px] font-medium" style={{ color }}>
-          {conDecimales(valor, 18)}
+          {conDecimales(valor, decimales)}
         </span>
       )}
       <p className="text-[10.5px] uppercase tracking-[0.06em] text-ink-3">{simbolo}</p>
@@ -644,6 +663,22 @@ function Detalle({
         <Saldo simbolo="MON" color="#B7A8FC" valor={saldo.mon} sinLeer={sinLeer} />
         <Saldo simbolo="$PANAL" color="#E29A2E" valor={saldo.panal} sinLeer={sinLeer} />
       </div>
+      {saldo.estables.some((e) => e.valor > 0n) && (
+        <div className="mt-2.5 flex gap-2.5">
+          {saldo.estables
+            .filter((e) => e.valor > 0n)
+            .map((e) => (
+              <Saldo
+                key={e.simbolo}
+                simbolo={e.simbolo}
+                color={COLOR_ESTABLE}
+                valor={e.valor}
+                decimales={e.decimales}
+                sinLeer={sinLeer}
+              />
+            ))}
+        </div>
+      )}
 
       <div className="mt-3 flex gap-2.5">
         <button
@@ -821,11 +856,14 @@ function Saldo({
   color,
   valor,
   sinLeer,
+  decimales = 18,
 }: {
   simbolo: string;
   color: string;
   valor: bigint;
   sinLeer: boolean;
+  /** 18 salvo en USDC y AUSD, que van con 6. */
+  decimales?: number;
 }): React.ReactElement {
   return (
     <div className="grow basis-0 rounded-[14px] border border-line bg-cream p-3.5">
@@ -833,7 +871,7 @@ function Saldo({
         <span className="my-1 block h-6 w-20 animate-pulse rounded bg-sand" />
       ) : (
         <span className="block font-mono text-[22px] font-medium leading-none" style={{ color }}>
-          {conDecimales(valor, 18)}
+          {conDecimales(valor, decimales)}
         </span>
       )}
       <p className="mt-2 text-[11px] uppercase tracking-[0.06em] text-ink-3">{simbolo}</p>

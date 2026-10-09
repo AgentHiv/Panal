@@ -138,7 +138,7 @@ await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
 const puerto = servidor.address().port;
 
 const cotizacion = {
-  scheme: 'panal-permit-v1',
+  scheme: 'eip2612-permit',
   chainId: 143,
   asset: TOKEN,
   amount: '500000000000000000',

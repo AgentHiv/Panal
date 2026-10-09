@@ -23,8 +23,9 @@
  *     desconocido le bloquearía el saldo, y si nadie disputa, a los tres días
  *     de «entregar» lo cobra.
  *   - Mensajes, solo los de Panal: `Panal brief #12`, `Panal resultado #12 · …`.
- *   - Datos tipados, solo el permit de x402 en $PANAL, al agente y por el
- *     importe que enseñó la hoja del chat, y que caduque pronto.
+ *   - Datos tipados, solo el permit de x402 en una moneda que Panal acepta
+ *     ($PANAL, GHO, USDC o AUSD), al agente, por el importe y EN LA MONEDA que
+ *     enseñó la hoja del chat, y que caduque pronto.
  *
  * Lo que una hoja confirma se ARMA aquí justo antes de firmar y se GASTA al
  * firmar: vale para una firma y caduca a los pocos minutos.
@@ -43,6 +44,7 @@ import {
   PANAL_TOKEN_ADDRESS,
   activeChain,
 } from '@/contracts/config';
+import { x402Currency } from '@panal/sdk';
 import { textos } from '~/i18n/idiomas';
 
 /** Cuánto vale lo armado por una hoja. Da para minar un `approve` y volver. */
@@ -96,6 +98,8 @@ interface EncargoArmado {
 interface PagoArmado {
   spender: Address;
   value: bigint;
+  /** El token que enseñó la hoja: un permit en otro, aunque sea por lo mismo, no es lo confirmado. */
+  token: Address;
   vence: number;
 }
 
@@ -108,7 +112,7 @@ export function permitirEncargo(e: { worker: Address; amount: bigint; currency: 
 }
 
 /** La hoja del chat, justo antes de firmar el permit de x402. */
-export function permitirPago(p: { spender: Address; value: bigint }, ahora = Date.now()): void {
+export function permitirPago(p: { spender: Address; value: bigint; token: Address }, ahora = Date.now()): void {
   pago = { ...p, vence: ahora + VIDA_PERMISO_MS };
 }
 
@@ -182,8 +186,8 @@ export function revisarTipado(tipado: TypedDataDefinition, dueno: Address, ahora
   if (tipado.primaryType !== 'Permit') bloquear(`datos tipados de tipo ${String(tipado.primaryType)}`);
 
   const dominio = tipado.domain ?? {};
-  if (!dominio.verifyingContract || !isAddressEqual(dominio.verifyingContract, PANAL_TOKEN_ADDRESS)) {
-    bloquear(`un permit de ${String(dominio.verifyingContract)}, que no es $PANAL`);
+  if (!dominio.verifyingContract || !x402Currency(dominio.verifyingContract)) {
+    bloquear(`un permit de ${String(dominio.verifyingContract)}, que no es una moneda que Panal acepte`);
   }
   if (Number(dominio.chainId) !== activeChain.id) bloquear(`un permit para la cadena ${String(dominio.chainId)}`);
 
@@ -203,6 +207,9 @@ export function revisarTipado(tipado: TypedDataDefinition, dueno: Address, ahora
 
   const p = pago;
   if (!p || p.vence < ahora) bloquear('un permit que ninguna hoja ha confirmado');
+  if (!isAddressEqual(dominio.verifyingContract, p.token)) {
+    bloquear(`un permit en ${String(dominio.verifyingContract)}, y la hoja confirmó un pago en ${p.token}`);
+  }
   if (!isAddressEqual(m.spender as Address, p.spender) || BigInt(m.value) !== p.value) {
     bloquear(`un permit a ${String(m.spender)} por ${String(m.value)}, y la hoja confirmó ${p.spender} por ${p.value}`);
   }

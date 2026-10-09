@@ -156,7 +156,11 @@ export default function Hilo(): React.ReactElement {
     try {
       // El permit que esta hoja enseña: a quién y cuánto. Con la wallet del
       // teléfono, es lo único que el conector acepta firmar como pago.
-      permitirPago({ spender: getAddress(cotizacion.payTo), value: BigInt(cotizacion.amount) });
+      permitirPago({
+        spender: getAddress(cotizacion.payTo),
+        value: BigInt(cotizacion.amount),
+        token: getAddress(cotizacion.asset),
+      });
       const res = await enviarMensaje({
         cobro: datos.cobro,
         mensaje: texto,
@@ -252,7 +256,7 @@ export default function Hilo(): React.ReactElement {
               ) : datos?.cobro ? (
                 <>
                   <span className="font-mono text-ink-2">
-                    {monto(datos.cobro.amount)} {datos.cobro.simbolo}
+                    {monto(datos.cobro.amount, datos.cobro.decimales)} {datos.cobro.simbolo}
                   </span>{' '}
                   {T.hilo.porMensaje}
                 </>
@@ -333,7 +337,7 @@ export default function Hilo(): React.ReactElement {
           {cargandoFicha
             ? '…'
             : datos?.cobro
-              ? T.hilo.piePrecio(monto(datos.cobro.amount), datos.cobro.simbolo)
+              ? T.hilo.piePrecio(monto(datos.cobro.amount, datos.cobro.decimales), datos.cobro.simbolo)
               : T.hilo.sinCobroPie}
         </p>
       </div>

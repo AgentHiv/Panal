@@ -20,6 +20,7 @@ import { isAddress, getAddress } from 'viem';
 import type { Account, Address, Hex, WalletClient } from 'viem';
 import { assertPublicUrl, fetchLimited, type UrlGuardOptions } from './net.js';
 import { envelopeHeaders, type CallEnvelope } from './envelope.js';
+import { networkOfChain, x402Currency, type X402Currency } from './currencies.js';
 
 /** El único esquema que entiende este cliente. Debe coincidir con el servidor. */
 export const X402_SCHEME = 'eip2612-permit';
@@ -149,6 +150,8 @@ export interface AskResult {
   answer: string;
   /** Lo que se ha pagado de verdad, en unidades mínimas. */
   paid: bigint;
+  /** En qué, con su nombre y decimales de la lista de Panal (no de la cotización). */
+  currency: X402Currency;
   /** Quién ha cobrado. */
   payee: Address;
   /** Transacción del cobro, si el servidor la reporta. */
@@ -196,6 +199,16 @@ export async function payAndAsk(
   }
   if (options.asset && getAddress(accept.asset) !== getAddress(options.asset)) {
     throw new X402Error(`La cotización pide pagar en ${accept.asset} y esperabas ${options.asset}.`);
+  }
+  // Solo en las monedas de la lista de Panal. El nombre y los decimales que
+  // trae la cotización los escribe el agente, y fiarse de ellos permitía
+  // cobrar 1.000 USDC enseñando «0,000000001 $PANAL». Ver currencies.ts.
+  const moneda = x402Currency(accept.asset, networkOfChain(accept.chainId) ?? 'mainnet');
+  if (!moneda) {
+    throw new X402Error(`La cotización pide pagar en ${accept.asset}, que no es una moneda que Panal acepte: no se firma.`);
+  }
+  if (accept.scheme !== moneda.scheme) {
+    throw new X402Error(`${moneda.symbol} se paga con "${moneda.scheme}" y la cotización pide "${accept.scheme}".`);
   }
   if (getAddress(accept.domain.verifyingContract) !== getAddress(accept.asset)) {
     // El dominio EIP-712 tiene que ser el del propio token: si apunta a otro
@@ -282,6 +295,7 @@ export async function payAndAsk(
   return {
     answer: body.answer,
     paid: amount,
+    currency: moneda,
     payee: getAddress(accept.payTo),
     txHash: body.payment?.txHash,
     endpoint: url.toString(),

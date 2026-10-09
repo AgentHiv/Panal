@@ -25,7 +25,7 @@
  * en dos sitios es garantizar que un día se validen distinto.
  */
 
-import { payAndAsk, quoteAsk, X402Error, type X402Accept } from '@panal/sdk';
+import { payAndAsk, quoteAsk, x402Currency, X402Error, type X402Accept, type X402Currency } from '@panal/sdk';
 import type { Account, Address, WalletClient } from 'viem';
 
 /** Lo que el agente publica en su tarjeta sobre el cobro por llamada. */
@@ -36,8 +36,16 @@ export interface CobroPorLlamada {
   amount: bigint;
   /** El token en el que cobra. */
   asset: Address;
-  /** Cómo llamarlo en la interfaz: `$PANAL`. */
+  /**
+   * Cómo llamarlo en la interfaz: `$PANAL`, `GHO`, `USDC`, `AUSD`. Sale de la
+   * lista de Panal, NUNCA de la tarjeta: la tarjeta la escribe el agente, y
+   * con un nombre y unos decimales a su gusto 1.000 USDC se pintaban
+   * «0,000000001 $PANAL».
+   */
   simbolo: string;
+  /** Sus decimales, de la misma lista: 18 en $PANAL y GHO, 6 en USDC y AUSD. */
+  decimales: number;
+  moneda: X402Currency;
   /** Quién cobra. Se compara con la cotización antes de firmar. */
   payTo: Address;
 }
@@ -76,11 +84,18 @@ export async function leerCobroPorLlamada(
     const amount = BigInt(x.amount);
     if (amount <= 0n) return null;
 
+    // Solo en una moneda que Panal acepta. Un token que no está en la lista no
+    // se ofrece: no hay forma honrada de enseñar su precio.
+    const moneda = x402Currency(x.asset);
+    if (!moneda) return null;
+
     return {
       endpoint,
       amount,
-      asset: x.asset as Address,
-      simbolo: x.assetSymbol ?? '$PANAL',
+      asset: moneda.address,
+      simbolo: moneda.symbol,
+      decimales: moneda.decimals,
+      moneda,
       payTo: x.payTo as Address,
     };
   } catch {

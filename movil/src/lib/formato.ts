@@ -40,8 +40,10 @@ function escribir(n: number): string {
  * escribir dice «menos de», porque un cero delante de alguien que está a punto
  * de firmar es peor que un número largo.
  */
-export function monto(wei: bigint | string): string {
-  const n = Number(formatEther(typeof wei === 'string' ? BigInt(wei) : wei));
+export function monto(wei: bigint | string, decimales = 18): string {
+  // 18 en MON, $PANAL y GHO; 6 en USDC y AUSD. Por defecto 18, que es lo de
+  // siempre: solo el pago por mensaje puede ir en otra.
+  const n = Number(formatUnits(typeof wei === 'string' ? BigInt(wei) : wei, decimales));
   if (n === 0) return '0';
   if (n < 0.0001) return `<${separar('0', '0001')}`;
   return escribir(n);
