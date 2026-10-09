@@ -202,11 +202,11 @@ export const zh: Textos = {
 
   recibir: {
     titulo: (nombre: string) => `给 ${nombre} 充值`,
-    texto: '从你已经有的地方把 MON 或 $PANAL 转到这个地址：你的另一个钱包、交易所，或者别人。',
+    texto: '从你已经有的地方把 MON、$PANAL 或稳定币 GHO、USDC、AUSD 转到这个地址：你的另一个钱包、交易所，或者别人。所有币用的都是同一个地址。',
     compartir: '分享',
     redAviso: (red: string, id: number) =>
       `必须走 ${red}（${id}）。同一个地址在别的网络上也存在，从别的网络转过来的不会显示在这里，也无法从应用里找回。`,
-    gasAviso: '就算你只打算转 $PANAL，也留一点 MON：网络手续费用 MON 支付，只有 $PANAL 而没有 MON 的钱包什么都转不出去。',
+    gasAviso: '就算你只打算转 $PANAL 或稳定币，也留一点 MON：网络手续费用 MON 支付，只有 $PANAL 而没有 MON 的钱包什么都转不出去。',
   },
 
   importar: {

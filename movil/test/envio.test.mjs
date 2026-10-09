@@ -46,7 +46,7 @@ dice('en $PANAL es el saldo entero', e.maximo('$PANAL', 0n, 7n * UNO) === 7n * U
 console.log('\nrevisar antes de firmar');
 const YO = '0x58A57ed9d8d624cBD12e2C467D34787555bB1b25';
 const OTRO = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
-const base = { moneda: 'MON', importe: '1', destino: OTRO, mio: YO, saldoMon: 2n * UNO, saldoPanal: 0n };
+const base = { moneda: 'MON', importe: '1', destino: OTRO, mio: YO, saldoMon: 2n * UNO, saldo: 2n * UNO };
 
 dice('un envío normal pasa', e.revisar(base).ok === true);
 dice('y trae la cantidad ya en wei', e.revisar(base).wei === UNO);
@@ -65,7 +65,7 @@ dice(
   e.revisar({ ...base, importe: (Number(e.maximo('MON', 2n * UNO, 0n)) / 1e18).toString() }).ok === true,
 );
 
-const conPanal = { ...base, moneda: '$PANAL', saldoPanal: 10n * UNO };
+const conPanal = { ...base, moneda: '$PANAL', saldo: 10n * UNO };
 dice('$PANAL con MON de sobra pasa', e.revisar(conPanal).ok === true);
 dice(
   '$PANAL sin nada de MON no pasa',
@@ -132,6 +132,22 @@ dice(
   e.validarPalabras(`${'abandon '.repeat(23)}art`) === true,
 );
 dice('once palabras no', e.validarPalabras(FRASE.split(' ').slice(0, 11).join(' ')) === false);
+
+console.log('\nlas estables, con SUS decimales');
+{
+  // USDC y AUSD van con 6: «1» son 1.000.000 unidades, no 10¹⁸.
+  const usdc = { ...base, moneda: 'USDC', importe: '1,5', saldo: 2_000_000n };
+  const r = e.revisar(usdc);
+  dice('1,5 USDC con 2 en la wallet pasa', r.ok === true);
+  dice('y son 1.500.000 unidades', r.wei === 1_500_000n);
+  dice('3 USDC con 2 no hay tanto', e.revisar({ ...usdc, importe: '3' }).pega === 'no-hay-tanto');
+  dice('sin MON para el gas, no sale', e.revisar({ ...usdc, saldoMon: 0n }).pega === 'sin-mon-para-gas');
+  dice('«Todo» en USDC es el saldo entero', e.maximo('USDC', UNO, 2_000_000n) === 2_000_000n);
+  const gho = e.revisar({ ...base, moneda: 'GHO', importe: '0,5', saldo: UNO });
+  dice('GHO va con 18', gho.ok && gho.wei === UNO / 2n);
+  dice('las cinco monedas, en orden', e.MONEDAS_ENVIO.map((m) => m.simbolo).join() === 'MON,$PANAL,GHO,USDC,AUSD');
+  dice('MON es la nativa', e.monedaEnvio('MON').token === null);
+}
 
 console.log(`\n${bien} bien · ${mal} mal\n`);
 process.exit(mal === 0 ? 0 : 1);

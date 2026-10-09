@@ -6,7 +6,7 @@ import Icono from '~/componentes/Icono';
 import { pegar } from '~/lib/wallets';
 import { cuentaDe } from '~/lib/llavero';
 import type { Llave, WalletGuardada } from '~/lib/llavero';
-import { maximo, revisar } from '@/lib/envio';
+import { MONEDAS_ENVIO, maximo, monedaEnvio, revisar } from '@/lib/envio';
 import type { Moneda } from '@/lib/envio';
 import { enviar, esperar } from '~/lib/enviar';
 import type { Par } from '~/lib/usarSaldos';
@@ -49,16 +49,21 @@ export default function HojaEnviar({
   const [hash, setHash] = useState<`0x${string}` | null>(null);
   const [pega, setPega] = useState<string | null>(null);
 
+  /** El saldo de cada moneda, y las que se ofrecen: MON y $PANAL siempre, las estables si hay. */
+  const saldoDe = (m: Moneda): bigint =>
+    m === 'MON' ? saldos.mon : m === '$PANAL' ? saldos.panal : (saldos.estables.find((e) => e.simbolo === m)?.valor ?? 0n);
+  const ofrecidas = MONEDAS_ENVIO.map((m) => m.simbolo).filter((m) => m === 'MON' || m === '$PANAL' || saldoDe(m) > 0n);
+  const saldo = saldoDe(moneda);
+  const { decimales } = monedaEnvio(moneda);
+
   const chequeo = revisar({
     moneda,
     importe,
     destino,
     mio: wallet.direccion,
     saldoMon: saldos.mon,
-    saldoPanal: saldos.panal,
+    saldo,
   });
-
-  const saldo = moneda === '$PANAL' ? saldos.panal : saldos.mon;
 
   const alPegar = async (): Promise<void> => {
     const texto = await pegar();
@@ -74,9 +79,9 @@ export default function HojaEnviar({
   };
 
   const alTodo = (): void => {
-    const m = maximo(moneda, saldos.mon, saldos.panal);
+    const m = maximo(moneda, saldos.mon, saldo);
     // Con la coma, que es lo que la casilla acepta y lo que se lee en español.
-    setImporte(formatUnits(m, 18).replace('.', ','));
+    setImporte(formatUnits(m, decimales).replace('.', ','));
   };
 
   const alFirmar = async (): Promise<void> => {
@@ -130,7 +135,7 @@ export default function HojaEnviar({
             <span className="h-14 w-14 animate-pulse rounded-full bg-sand" />
           )}
           <p className="mt-4 font-mono text-[22px] font-medium">
-            {exacto(chequeo.wei)} {moneda}
+            {exacto(chequeo.wei, decimales)} {moneda}
           </p>
           <p className="mt-1.5 text-[12.5px] text-ink-3">{T.enviar.a(corta(destino.trim()))}</p>
         </div>
@@ -177,7 +182,7 @@ export default function HojaEnviar({
 
         <Tarjeta>
           {/* Sin redondear: lo que se lee aquí es exactamente lo que se firma. */}
-          <Fila etiqueta={T.enviar.cantidad} valor={`${exacto(chequeo.wei)} ${moneda}`} destacada />
+          <Fila etiqueta={T.enviar.cantidad} valor={`${exacto(chequeo.wei, decimales)} ${moneda}`} destacada />
           <Fila etiqueta={T.enviar.desde} pie={wallet.nombre} valor={corta(wallet.direccion)} />
           <Fila etiqueta={T.enviar.red} valor={activeChain.name} />
           <Fila etiqueta={T.enviar.comision} pie={T.enviar.comisionPie} valor={T.enviar.enMon} />
@@ -205,8 +210,8 @@ export default function HojaEnviar({
 
   return (
     <Hoja abierta titulo={T.enviar.titulo(wallet.nombre)} onCerrar={onCerrar}>
-      <div className="mt-3.5 flex gap-2">
-        {(['MON', '$PANAL'] as const).map((m) => (
+      <div className="mt-3.5 flex flex-wrap gap-2">
+        {ofrecidas.map((m) => (
           <button
             key={m}
             type="button"
@@ -220,7 +225,7 @@ export default function HojaEnviar({
         ))}
       </div>
       <p className="mt-2 text-[11.5px] text-ink-3">
-        {T.enviar.tienes(conDecimales(saldo, 18), moneda)}
+        {T.enviar.tienes(conDecimales(saldo, decimales), moneda)}
       </p>
 
       <label className="mt-4 block text-[11.5px] uppercase tracking-[0.06em] text-ink-3">

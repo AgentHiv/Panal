@@ -16,9 +16,34 @@
  * clave del teléfono, y `WalletCard` de la web con la wallet de fuera.
  */
 
-import { isAddress, parseUnits } from 'viem';
+import { isAddress, parseUnits, type Address } from 'viem';
+import { x402Currencies } from '@panal/sdk';
 
-export type Moneda = 'MON' | '$PANAL';
+/** Lo que se puede mandar: MON y las monedas de token de la lista de Panal. */
+export type Moneda = 'MON' | '$PANAL' | 'GHO' | 'USDC' | 'AUSD';
+
+/** Una moneda que se puede mandar: su token (`null` = MON, la nativa) y sus decimales. */
+export interface MonedaEnvio {
+  simbolo: Moneda;
+  token: Address | null;
+  decimales: number;
+}
+
+/**
+ * MON y las cuatro de token de la lista de x402: $PANAL, GHO, USDC y AUSD.
+ * La misma lista con la que se paga por mensaje, con sus decimales de verdad
+ * (6 en USDC y AUSD): mandar «1» USDC con 18 decimales serían un billón.
+ */
+export const MONEDAS_ENVIO: readonly MonedaEnvio[] = [
+  { simbolo: 'MON', token: null, decimales: 18 },
+  ...x402Currencies()
+    .filter((c) => c.scheme === 'eip2612-permit')
+    .map((c) => ({ simbolo: c.symbol as Moneda, token: c.address, decimales: c.decimals })),
+];
+
+export function monedaEnvio(m: Moneda): MonedaEnvio {
+  return MONEDAS_ENVIO.find((x) => x.simbolo === m) ?? MONEDAS_ENVIO[0]!;
+}
 
 /**
  * Lo que se deja quieto al mandar «todo» el MON.
@@ -53,9 +78,13 @@ export function aWei(texto: string, decimales = 18): bigint | null {
   }
 }
 
-/** Cuánto se puede mandar como mucho, dejando el gas si hace falta. */
-export function maximo(moneda: Moneda, saldoMon: bigint, saldoPanal: bigint): bigint {
-  if (moneda === '$PANAL') return saldoPanal;
+/**
+ * Cuánto se puede mandar como mucho, dejando el gas si hace falta.
+ *
+ * @param saldo El de la moneda que se manda. En MON es el mismo `saldoMon`.
+ */
+export function maximo(moneda: Moneda, saldoMon: bigint, saldo: bigint): bigint {
+  if (moneda !== 'MON') return saldo;
   return saldoMon > RESERVA_GAS ? saldoMon - RESERVA_GAS : 0n;
 }
 
@@ -68,8 +97,10 @@ export interface Envio {
   destino: string;
   /** La wallet que manda. */
   mio: string;
+  /** El MON, que paga el gas se mande lo que se mande. */
   saldoMon: bigint;
-  saldoPanal: bigint;
+  /** El saldo de la moneda que se manda. En MON es el mismo `saldoMon`. */
+  saldo: bigint;
 }
 
 /**
@@ -113,8 +144,9 @@ export interface Revision {
  * el nodo.
  */
 export function revisar(e: Envio): Revision {
-  const wei = aWei(e.importe) ?? 0n;
-  const saldo = e.moneda === '$PANAL' ? e.saldoPanal : e.saldoMon;
+  const { decimales } = monedaEnvio(e.moneda);
+  const wei = aWei(e.importe, decimales) ?? 0n;
+  const saldo = e.moneda === 'MON' ? e.saldoMon : e.saldo;
   const no = (pega: Pega): Revision => ({ ok: false, wei, pega, aviso: null });
 
   const destino = e.destino.trim();
@@ -123,16 +155,16 @@ export function revisar(e: Envio): Revision {
   if (destino.toLowerCase() === e.mio.trim().toLowerCase()) return no('destino-soy-yo');
 
   if (!e.importe.trim()) return no('sin-cantidad');
-  if (aWei(e.importe) === null) return no('cantidad-mala');
+  if (aWei(e.importe, decimales) === null) return no('cantidad-mala');
   if (wei === 0n) return no('cantidad-cero');
   if (wei > saldo) return no('no-hay-tanto');
 
   // El gas se paga en MON siempre, se mande lo que se mande.
-  if (e.moneda === 'MON' && wei > maximo('MON', e.saldoMon, e.saldoPanal)) return no('deja-gas');
-  if (e.moneda === '$PANAL' && e.saldoMon === 0n) return no('sin-mon-para-gas');
+  if (e.moneda === 'MON' && wei > maximo('MON', e.saldoMon, e.saldoMon)) return no('deja-gas');
+  if (e.moneda !== 'MON' && e.saldoMon === 0n) return no('sin-mon-para-gas');
 
   const aviso: AvisoEnvio | null =
-    e.moneda === '$PANAL' && e.saldoMon < RESERVA_GAS ? 'poco-mon' : null;
+    e.moneda !== 'MON' && e.saldoMon < RESERVA_GAS ? 'poco-mon' : null;
 
   return { ok: true, wei, pega: null, aviso };
 }

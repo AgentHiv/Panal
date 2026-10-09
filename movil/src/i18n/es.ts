@@ -225,12 +225,12 @@ export const es = {
   recibir: {
     titulo: (nombre: string) => `Meterle a ${nombre}`,
     texto:
-      'Manda MON o $PANAL a esta dirección desde donde ya los tengas: tu otra wallet, un exchange, otra persona.',
+      'Manda MON, $PANAL o las estables GHO, USDC y AUSD a esta dirección desde donde ya las tengas: tu otra wallet, un exchange, otra persona. Es la misma dirección para todas.',
     compartir: 'Compartir',
     redAviso: (red: string, id: number) =>
       `Tiene que salir por ${red} (${id}). La misma dirección existe en otras redes, y lo que llegue por otra no aparece aquí ni se puede recuperar desde la app.`,
     gasAviso:
-      'Deja algo de MON aunque solo vayas a mover $PANAL: la comisión de red se paga en MON, y una wallet con $PANAL y cero MON no puede mandar nada.',
+      'Deja algo de MON aunque solo vayas a mover $PANAL o estables: la comisión de red se paga en MON, y una wallet con $PANAL y cero MON no puede mandar nada.',
   },
 
   importar: {

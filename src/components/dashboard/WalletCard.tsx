@@ -21,7 +21,8 @@ import { useQuery } from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import { ArrowDownLeft, ArrowUpRight, Check, Copy, ExternalLink, Loader2, TriangleAlert, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
-import { useBalance, useReadContract, useSendTransaction, useSwitchChain, useWriteContract } from 'wagmi';
+import { useBalance, useReadContract, useReadContracts, useSendTransaction, useSwitchChain, useWriteContract } from 'wagmi';
+import { erc20Abi } from 'viem';
 import { panalEscrowV2Abi, panalTokenAbi } from '@/contracts/abis';
 import { formatEther, formatUnits, parseAbiItem } from 'viem';
 import {
@@ -40,10 +41,13 @@ import { useWallet } from '@/hooks/useWallet';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { EXPLORER_TX, NATIVE_CURRENCY, PANAL_ESCROW_ADDRESS, PANAL_ESCROW_V2_ADDRESS, activeChain, publicClient , IS_MAINNET, PANAL_TOKEN_ADDRESS, V2_ENABLED } from '@/contracts/config';
 import { panalEscrowAbi } from '@/contracts/abis';
-import { maximo, revisar } from '@/lib/envio';
+import { MONEDAS_ENVIO, maximo, monedaEnvio, revisar } from '@/lib/envio';
 import type { Moneda, Pega } from '@/lib/envio';
 import { WalletSparkline } from './charts';
 import { formatMonEs } from './data';
+
+/** Las estables de la lista de Panal: las de token, menos $PANAL, que tiene su propio bloque. */
+const ESTABLES = MONEDAS_ENVIO.filter((m) => m.token !== null && m.simbolo !== '$PANAL');
 
 /** 12.345678 → "12,3457" (es-ES, 4 decimales máx — saldo disponible). */
 const nfES4 = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
@@ -230,6 +234,28 @@ export default function WalletCard() {
     query: { enabled: IS_MAINNET && !!addr, refetchInterval: 15_000, retry: 1 },
   });
 
+  /**
+   * GHO, USDC y AUSD: las estables con las que se paga por mensaje. Se leen
+   * todas y se enseñan las que tienen algo, con SUS decimales (6 en USDC y
+   * AUSD). Sin esto, quien cobraba o tenía estables no las veía aquí.
+   */
+  const { data: establesLeidas } = useReadContracts({
+    contracts: addr
+      ? ESTABLES.map((m) => ({
+          address: m.token!,
+          abi: erc20Abi,
+          functionName: 'balanceOf' as const,
+          args: [addr] as const,
+          chainId: activeChain.id,
+        }))
+      : [],
+    query: { enabled: IS_MAINNET && !!addr, refetchInterval: 15_000, retry: 1 },
+  });
+  const saldosEstables = ESTABLES.map((m, i) => ({
+    ...m,
+    valor: establesLeidas?.[i]?.result as bigint | undefined,
+  }));
+
   const { data: withdrawals, isLoading: withdrawalsLoading, isError: withdrawalsError } = useQuery({
     queryKey: ['panal-withdrawals', activeChain.id, V2_ENABLED, addr],
     enabled: !!addr,
@@ -363,16 +389,25 @@ export default function WalletCard() {
    * MON, así que `revisar` los da por buenos sin preguntar.
    */
   const monBal = balance?.value;
+  const saldoDe = (m: Moneda): bigint | undefined =>
+    m === 'MON' ? monBal : m === '$PANAL' ? panalBal : saldosEstables.find((e) => e.simbolo === m)?.valor;
+  /** MON y $PANAL siempre; las estables, si hay algo que mandar. */
+  const ofrecidas: Moneda[] = [
+    'MON',
+    '$PANAL',
+    ...saldosEstables.filter((e) => (e.valor ?? 0n) > 0n).map((e) => e.simbolo),
+  ];
+  const { decimales } = monedaEnvio(moneda);
   /* Con el saldo sin llegar todavía no se puede decir «no tienes tanto»: sería
      acusar de no tener a quien puede que tenga. Se calla y no deja firmar. */
-  const saldosListos = monBal !== undefined && (moneda === 'MON' || panalBal !== undefined);
+  const saldosListos = monBal !== undefined && (moneda === 'MON' || saldoDe(moneda) !== undefined);
   const revision = revisar({
     moneda,
     importe: amount,
     destino: dest,
     mio: addr ?? '',
     saldoMon: monBal ?? 0n,
-    saldoPanal: panalBal ?? 0n,
+    saldo: saldoDe(moneda) ?? 0n,
   });
 
   const pegaTexto = (p: Pega): string | null => {
@@ -432,8 +467,8 @@ export default function WalletCard() {
     }
     writeContract(
       {
-        address: PANAL_TOKEN_ADDRESS,
-        abi: panalTokenAbi,
+        address: monedaEnvio(moneda).token!,
+        abi: erc20Abi,
         functionName: 'transfer',
         args: [destTrim as `0x${string}`, revision.wei],
         chainId: activeChain.id,
@@ -481,6 +516,16 @@ export default function WalletCard() {
             {IS_MAINNET && (
               <WalletBlock label="$PANAL" value={panalStr} hint={t('wallet.tokenOfficial')} suffix="PANAL" />
             )}
+            {saldosEstables
+              .filter((e) => (e.valor ?? 0n) > 0n)
+              .map((e) => (
+                <WalletBlock
+                  key={e.simbolo}
+                  label={e.simbolo}
+                  value={formatCompact(Number(formatUnits(e.valor!, e.decimales)))}
+                  suffix={e.simbolo}
+                />
+              ))}
           </div>
 
           {/* Sparkline (solo con datos reales suficientes) + acciones */}
@@ -582,8 +627,8 @@ export default function WalletCard() {
                       {IS_MAINNET && (
                         <div className="flex flex-col gap-1.5">
                           <span className="text-[0.8125rem] font-medium text-ink-2">{t('wallet.coin')}</span>
-                          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('wallet.coin')}>
-                            {(['MON', '$PANAL'] as const).map((c) => (
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label={t('wallet.coin')}>
+                            {ofrecidas.map((c) => (
                               <button
                                 key={c}
                                 type="button"
@@ -631,7 +676,7 @@ export default function WalletCard() {
                             <button
                               type="button"
                               onClick={() =>
-                                setAmount(formatUnits(maximo(moneda, monBal ?? 0n, panalBal ?? 0n), 18))
+                                setAmount(formatUnits(maximo(moneda, monBal ?? 0n, saldoDe(moneda) ?? 0n), decimales))
                               }
                               className="text-[0.75rem] font-medium text-honey-deep underline-offset-2 hover:underline"
                             >
