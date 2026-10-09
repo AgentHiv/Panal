@@ -70,6 +70,30 @@ function exigirCuenta() {
 }
 
 /**
+ * El gas con el que firma la wallet del teléfono: `eth_estimateGas` + 10 %.
+ *
+ * Monad cobra el límite de gas ENTERO, no el gastado. Si no se fija, viem lo
+ * rellena con `eth_fillTransaction`, y el nodo de Monad a veces devuelve un
+ * límite absurdo: así se perdió una retirada de 1,092 MON entera en gas. Con
+ * una wallet de fuera no pasa —estima ella—, pero aquí la wallet es esta.
+ *
+ * Si quien llama ya trae un gas —una retirada lo calcula con su tope—, se
+ * respeta mientras no pase del doble de lo estimado. Y si la estimación falla,
+ * es que la transacción revertiría: se para aquí en vez de pagar el intento.
+ */
+async function gasFijado(de: Address, t: TxCruda, propuesto?: bigint): Promise<bigint> {
+  const estimado = await publicClient.estimateGas({
+    account: de,
+    to: t.to,
+    data: t.data,
+    value: aBigInt(t.value),
+  });
+  const justo = (estimado * 11n + 9n) / 10n;
+  if (propuesto !== undefined && propuesto <= justo * 2n) return propuesto;
+  return justo;
+}
+
+/**
  * El proveedor.
  *
  * El `default` reenvía al nodo en vez de fallar: wagmi y viem piden por aquí
@@ -113,6 +137,7 @@ function proveedor() {
           const cuenta = exigirCuenta();
           const [t] = params as [TxCruda];
           revisarTransaccion({ to: t.to, data: t.data, value: aBigInt(t.value) });
+          const gas = await gasFijado(cuenta.address, t, aBigInt(t.gas));
           const cliente = createWalletClient({
             account: cuenta,
             chain: activeChain,
@@ -122,7 +147,7 @@ function proveedor() {
             to: t.to,
             data: t.data,
             value: aBigInt(t.value),
-            gas: aBigInt(t.gas),
+            gas,
             nonce: t.nonce === undefined ? undefined : Number(BigInt(t.nonce)),
             gasPrice: aBigInt(t.gasPrice),
             maxFeePerGas: aBigInt(t.maxFeePerGas),

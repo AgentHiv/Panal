@@ -39,6 +39,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
 import FirmarMensajeDialog from '@/components/chat/FirmarMensajeDialog';
 import TarjetaEncargo from '@/components/chat/TarjetaEncargo';
+import type { Address } from 'viem';
 
 export interface HiloChatProps {
   /** Dirección on-chain del agente. Es la mitad de la clave del hilo. */
@@ -116,13 +117,13 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
   useEffect(() => {
     if (!botUrl) return;
     let vigente = true;
-    void leerCobroPorLlamada(botUrl).then((c) => {
+    void leerCobroPorLlamada(botUrl, agente as Address).then((c) => {
       if (vigente) setCobro(c);
     });
     return () => {
       vigente = false;
     };
-  }, [botUrl]);
+  }, [botUrl, agente]);
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });

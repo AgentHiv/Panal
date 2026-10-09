@@ -59,8 +59,17 @@ import { english, generateMnemonic, mnemonicToAccount, privateKeyToAccount } fro
 import type { HDAccount, PrivateKeyAccount } from 'viem';
 import { claseDeSecreto, limpiarClave, limpiarFrase, validarPalabras } from '~/lib/envio';
 import { textos } from '~/i18n/idiomas';
+import { capaDelChip, type CapaSegura, type Sobre } from '~/lib/secureKey';
 
 const CLAVE = 'panal:llavero:v1';
+
+/**
+ * El mismo llavero, vuelto a cifrar con la clave del chip seguro de Android.
+ * Ver `prepararLlavero` y `lib/secureKey.ts`.
+ */
+const CLAVE_CHIP = 'panal:llavero:v2';
+/** Donde se aparta uno que el chip no supo descifrar: no se pisa nunca. */
+const CLAVE_ILEGIBLE = 'panal:llavero:v2:ilegible';
 
 /** 310.000 es lo que recomienda OWASP para PBKDF2-SHA256. */
 const VUELTAS = 310_000;
@@ -149,11 +158,76 @@ function deBase64(texto: string): Uint8Array {
 
 /* ── el disco ────────────────────────────────────────────────────────────── */
 
+/**
+ * La capa del chip, si la hay. `null` —en el navegador, en las pruebas, o si
+ * el chip falló al migrar— es guardar como siempre, solo con el PIN.
+ */
+let capa: CapaSegura | null = null;
+/**
+ * Con chip, el llavero tal y como se guardaba antes —cifrado con el PIN—, ya
+ * sacado de la capa del chip. La pantalla lee de forma síncrona y el chip
+ * contesta tarde, así que se saca una vez al arrancar y se lee de aquí.
+ */
+let enMemoria: string | null = null;
+/** Las escrituras al chip, en fila: la última siempre gana. */
+let cola: Promise<void> = Promise.resolve();
+
+/**
+ * Prepara el llavero antes de pintar nada. Va en `main.tsx`.
+ *
+ * Con chip: si ya está la versión del chip, se descifra; si solo está la de
+ * antes, se MIGRA —se cifra con el chip, se comprueba que vuelve idéntica y
+ * solo entonces se quita la de antes—. Un fallo en cualquier paso deja las
+ * cosas como estaban: nada de lo guardado se pierde por intentarlo.
+ *
+ * `capaParaPruebas` es para las pruebas en Node, donde no hay chip.
+ */
+export async function prepararLlavero(capaParaPruebas?: CapaSegura | null): Promise<void> {
+  const c = capaParaPruebas === undefined ? capaDelChip() : capaParaPruebas;
+  capa = null;
+  enMemoria = null;
+  if (!c) return;
+
+  const sobre = localStorage.getItem(CLAVE_CHIP);
+  if (sobre) {
+    try {
+      enMemoria = await c.descifrar(JSON.parse(sobre) as Sobre);
+      capa = c;
+    } catch {
+      // El chip ya no sabe abrirlo: no se borra ni se pisa, se aparta, y se
+      // sigue como si no hubiera llavero. Las doce palabras siguen sirviendo.
+      localStorage.setItem(CLAVE_ILEGIBLE, sobre);
+      localStorage.removeItem(CLAVE_CHIP);
+      capa = c;
+    }
+    return;
+  }
+
+  const antes = localStorage.getItem(CLAVE);
+  try {
+    if (antes) {
+      const nuevo = await c.cifrar(antes);
+      if ((await c.descifrar(nuevo)) !== antes) throw new Error('el chip no lo devuelve igual');
+      localStorage.setItem(CLAVE_CHIP, JSON.stringify(nuevo));
+      localStorage.removeItem(CLAVE);
+      enMemoria = antes;
+    }
+    capa = c;
+  } catch {
+    // Sin chip esta vez: el llavero de antes sigue donde estaba y se usa.
+    capa = null;
+  }
+}
+
+function textoGuardado(): string | null {
+  return capa ? enMemoria : localStorage.getItem(CLAVE);
+}
+
 function leer(): Guardado | null {
   try {
-    const crudo = localStorage.getItem(CLAVE);
-    if (!crudo) return null;
-    const g = JSON.parse(crudo) as Guardado;
+    const texto = textoGuardado();
+    if (!texto) return null;
+    const g = JSON.parse(texto) as Guardado;
     // Un llavero de otra versión o a medias es mejor tratarlo como que no
     // está: sobrescribirlo perdería claves de verdad.
     if (g.version !== 1 || !g.sal || !Array.isArray(g.wallets)) return null;
@@ -163,10 +237,34 @@ function leer(): Guardado | null {
   }
 }
 
-function escribir(g: Guardado): void {
+/**
+ * Guarda el llavero. Con chip, la promesa se cumple cuando ya está cifrado y en
+ * el disco: crear o importar una wallet la ESPERA, porque una wallet que solo
+ * está en memoria se pierde al cerrar la app. Cambiar un nombre no espera.
+ */
+function escribir(g: Guardado): Promise<void> {
+  const texto = JSON.stringify(g);
   // Sin try/catch: si esto falla, la wallet que se acaba de crear NO está
   // guardada, y quien llama tiene que enterarse en vez de creer que sí.
-  localStorage.setItem(CLAVE, JSON.stringify(g));
+  if (!capa) {
+    localStorage.setItem(CLAVE, texto);
+    return Promise.resolve();
+  }
+  const c = capa;
+  const previo = enMemoria;
+  enMemoria = texto;
+  const hecho = cola.then(async () => {
+    // Lo que haya en memoria AHORA, no lo de esta llamada: si llegan dos
+    // escrituras seguidas, la segunda lleva ya las dos.
+    const actual = enMemoria;
+    if (actual === null) return;
+    localStorage.setItem(CLAVE_CHIP, JSON.stringify(await c.cifrar(actual)));
+  });
+  cola = hecho.catch(() => undefined);
+  return hecho.catch((err) => {
+    if (enMemoria === texto) enMemoria = previo;
+    throw err;
+  });
 }
 
 /* ── cifrar y descifrar ──────────────────────────────────────────────────── */
@@ -253,7 +351,7 @@ export async function crearLlavero(pin: string): Promise<Llave> {
   if (leer()) throw new Error('Ya hay un llavero en este teléfono');
   const sal = crypto.getRandomValues(new Uint8Array(16));
   const llave = await derivar(pin, sal);
-  escribir({
+  await escribir({
     version: 1,
     sal: aBase64(sal),
     testigo: await cifrar(llave, TESTIGO),
@@ -307,7 +405,7 @@ export async function crearWallet(llave: Llave, nombre: string): Promise<WalletN
   };
 
   g.wallets.push({ ...wallet, semilla: await cifrar(llave, frase) });
-  escribir(g);
+  await escribir(g);
 
   return { wallet, palabras: frase.split(' ') };
 }
@@ -412,7 +510,7 @@ export async function importarWallet(
   };
 
   g.wallets.push({ ...wallet, semilla: await cifrar(llave, texto) });
-  escribir(g);
+  await escribir(g);
 
   return { ok: true, wallet };
 }
@@ -424,7 +522,7 @@ export function marcarCopiada(id: string): void {
   const w = g.wallets.find((x) => x.id === id);
   if (!w) return;
   w.copiada = true;
-  escribir(g);
+  void escribir(g);
 }
 
 /**
@@ -441,7 +539,7 @@ export function renombrar(id: string, nombre: string): string | null {
   const w = g.wallets.find((x) => x.id === id);
   if (!w) return null;
   w.nombre = limpiarNombre(nombre, textos().comun.sinNombre);
-  escribir(g);
+  void escribir(g);
   return w.nombre;
 }
 
@@ -455,7 +553,7 @@ export function borrar(id: string): void {
   const g = leer();
   if (!g) return;
   g.wallets = g.wallets.filter((x) => x.id !== id);
-  escribir(g);
+  void escribir(g);
 }
 
 /**
@@ -474,8 +572,10 @@ export function borrar(id: string): void {
  * palabras antes de preguntar.
  */
 export function borrarLlavero(): void {
+  enMemoria = null;
   try {
     localStorage.removeItem(CLAVE);
+    localStorage.removeItem(CLAVE_CHIP);
   } catch {
     /* si no se puede escribir, tampoco se pudo guardar nada */
   }

@@ -51,7 +51,7 @@ export function useAgente(direccion: string | undefined) {
       })) as { metadataURI?: string; pricePerTask?: bigint; currency?: Address };
 
       const botUrl = extractBotUrl(ficha.metadataURI);
-      const cobro = botUrl ? await leerCobroPorLlamada(botUrl) : null;
+      const cobro = botUrl ? await leerCobroPorLlamada(botUrl, direccion as Address) : null;
 
       /*
        * El nombre sale del MISMO lector que usa el resto de la app.

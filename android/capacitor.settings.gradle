@@ -6,10 +6,10 @@ include ':capacitor-clipboard'
 project(':capacitor-clipboard').projectDir = new File('../node_modules/.pnpm/@capacitor+clipboard@8.0.1_@capacitor+core@8.5.3/node_modules/@capacitor/clipboard/android')
 
 include ':capacitor-filesystem'
-project(':capacitor-filesystem').projectDir = new File('../node_modules/.pnpm/@capacitor+filesystem@8.1.3_@capacitor+core@8.5.3/node_modules/@capacitor/filesystem/android')
+project(':capacitor-filesystem').projectDir = new File('../node_modules/.pnpm/@capacitor+filesystem@8.1.4_@capacitor+core@8.5.3/node_modules/@capacitor/filesystem/android')
 
 include ':capacitor-local-notifications'
 project(':capacitor-local-notifications').projectDir = new File('../node_modules/.pnpm/@capacitor+local-notifications@8.3.1_@capacitor+core@8.5.3/node_modules/@capacitor/local-notifications/android')
 
 include ':capacitor-share'
-project(':capacitor-share').projectDir = new File('../node_modules/.pnpm/@capacitor+share@8.0.1_@capacitor+core@8.5.3/node_modules/@capacitor/share/android')
+project(':capacitor-share').projectDir = new File('../node_modules/.pnpm/@capacitor+share@8.0.3_@capacitor+core@8.5.3/node_modules/@capacitor/share/android')

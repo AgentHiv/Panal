@@ -10,7 +10,9 @@ import {
   PANAL_ESCROW_V2_ADDRESS,
   PANAL_TOKEN_ADDRESS,
   currencySymbol,
+  publicClient,
 } from '@/contracts/config';
+import { gasDeRetirada } from '@/lib/reservaDeGas';
 import Icono from '~/componentes/Icono';
 import type { NombreIcono } from '~/componentes/Icono';
 import { useFicha, usePendiente, useTareasDe } from '~/lib/agentes';
@@ -168,11 +170,35 @@ function FilaGuardia({
   const { writeContract, data: hash, isPending } = useWriteContract();
   const recibo = useWaitForTransactionReceipt({ hash });
   const trabajando = isPending || recibo.isLoading;
+  const { address } = useWallet();
 
   useEffect(() => {
     if (recibo.isSuccess) onCobrado();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo.isSuccess]);
+
+  /**
+   * Con el gas fijado a mano, como en Panel. Sin él, la wallet del teléfono le
+   * dejaba el gas al nodo (`eth_fillTransaction`), que al retirar MON lo infla,
+   * y Monad cobra el límite entero: es el fallo que se comió 1,096 MON de una
+   * retirada de 1,092. Esta pantalla se quedó sin el arreglo de Panal.
+   */
+  const [sinFirmar, setSinFirmar] = useState(false);
+  const cobrar = async (): Promise<void> => {
+    const llamada = {
+      address: PANAL_ESCROW_V2_ADDRESS,
+      abi: panalEscrowV2Abi,
+      functionName: 'withdraw',
+      args: [(fila.simbolo === '$PANAL' ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY) as Address],
+    } as const;
+    setSinFirmar(false);
+    try {
+      const gas = await gasDeRetirada(publicClient as never, { ...llamada, account: address as Address });
+      writeContract({ ...llamada, gas });
+    } catch {
+      setSinFirmar(true);
+    }
+  };
 
   const vencida = fila.vence !== null && fila.vence < ahora;
 
@@ -204,22 +230,14 @@ function FilaGuardia({
       {fila.motivo === 'sin-cobrar' && mando && (
         <button
           type="button"
-          onClick={() =>
-            writeContract({
-              address: PANAL_ESCROW_V2_ADDRESS,
-              abi: panalEscrowV2Abi,
-              functionName: 'withdraw',
-              args: [
-                (fila.simbolo === '$PANAL' ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY) as Address,
-              ],
-            })
-          }
+          onClick={() => void cobrar()}
           disabled={trabajando}
           className="pulsable tocable mt-3 w-full rounded-full bg-monad py-2.5 text-[14px] font-semibold text-white shadow-monad disabled:opacity-50"
         >
           {trabajando ? T.guardia.firmando : T.guardia.cobrar(monto(fila.importe), fila.simbolo)}
         </button>
       )}
+      {sinFirmar && <p className="mt-2 text-[12px] leading-[1.5] text-terra">{T.panel.retiradaNoSeFirmo}</p>}
 
       {fila.motivo === 'sin-entregar' && (
         <p className="mt-2.5 border-t pt-2.5 text-[11.5px] leading-[1.5] text-ink-3" style={{ borderColor: `${p.color}33` }}>

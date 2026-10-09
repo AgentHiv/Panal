@@ -26,6 +26,7 @@
  */
 
 import { payAndAsk, quoteAsk, x402Currency, X402Error, type X402Accept, type X402Currency } from '@panal/sdk';
+import { isAddress, isAddressEqual } from 'viem';
 import type { Account, Address, WalletClient } from 'viem';
 
 /** Lo que el agente publica en su tarjeta sobre el cobro por llamada. */
@@ -60,6 +61,12 @@ export interface CobroPorLlamada {
  */
 export async function leerCobroPorLlamada(
   botUrl: string,
+  /**
+   * La dirección del agente EN LA CADENA. Quien cobra tiene que ser él: la
+   * tarjeta la sirve su servidor, y quien tomara ese servidor podía poner su
+   * propia wallet en `payTo` y cobrar en nombre —y con la reputación— de otro.
+   */
+  agente: Address,
   timeoutMs = 6_000,
 ): Promise<CobroPorLlamada | null> {
   try {
@@ -88,6 +95,9 @@ export async function leerCobroPorLlamada(
     // se ofrece: no hay forma honrada de enseñar su precio.
     const moneda = x402Currency(x.asset);
     if (!moneda) return null;
+
+    // Se cobra a la dirección del agente registrado o no se ofrece el chat.
+    if (!isAddress(x.payTo) || !isAddressEqual(x.payTo, agente)) return null;
 
     return {
       endpoint,

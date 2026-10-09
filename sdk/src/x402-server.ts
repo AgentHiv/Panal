@@ -445,29 +445,35 @@ export async function verifyAndSettle(
 
     // permit + transferFrom. Se simula antes para no quemar gas en una
     // transacción condenada (firma consumida, deadline pasado, saldo movido).
-    await deps.publicClient.simulateContract({
+    const permitCall = {
       address: deps.token,
       abi: permitAbi,
       functionName: 'permit',
       args: [payment.payer, deps.payee, payment.value, payment.deadline, v, r, s],
       account: wallet.account!,
-    });
+    } as const;
+    await deps.publicClient.simulateContract(permitCall);
+    // Con el gas FIJADO: Monad cobra el límite entero, y si se deja a viem lo
+    // rellena con `eth_fillTransaction`, que el nodo a veces infla. Así se
+    // perdieron retiradas enteras; aquí sería el agente pagando de más en
+    // cada cobro.
     const permitTx = await wallet.writeContract({
-      address: deps.token,
-      abi: permitAbi,
-      functionName: 'permit',
-      args: [payment.payer, deps.payee, payment.value, payment.deadline, v, r, s],
-      account: wallet.account!,
+      ...permitCall,
+      gas: await gasDeCobro(deps.publicClient, permitCall),
       chain,
     });
     await deps.publicClient.waitForTransactionReceipt({ hash: permitTx });
 
-    const transferTx = await wallet.writeContract({
+    const transferCall = {
       address: deps.token,
       abi: tokenExtraAbi,
       functionName: 'transferFrom',
       args: [payment.payer, deps.payee, payment.value],
       account: wallet.account!,
+    } as const;
+    const transferTx = await wallet.writeContract({
+      ...transferCall,
+      gas: await gasDeCobro(deps.publicClient, transferCall),
       chain,
     });
     const receipt = await deps.publicClient.waitForTransactionReceipt({ hash: transferTx });
@@ -477,6 +483,18 @@ export async function verifyAndSettle(
 
     return { ok: true as const, txHash: transferTx, amount: payment.value };
   });
+}
+
+/**
+ * El gas de un paso del cobro: `eth_estimateGas` + 10 %. Un permit o un
+ * transferFrom gastan unos 50.000–90.000; por encima de 300.000 algo va mal y
+ * no se manda, en vez de pagarlo entero.
+ */
+async function gasDeCobro(publicClient: PublicClient, llamada: Parameters<PublicClient['estimateContractGas']>[0]): Promise<bigint> {
+  const estimado = await publicClient.estimateContractGas(llamada);
+  const gas = (estimado * 11n + 9n) / 10n;
+  if (gas > 300_000n) throw new Error(`el gas estimado para cobrar (${estimado}) es anormal: no se manda`);
+  return gas;
 }
 
 /** Trozos del ERC-20 que no están en el `erc20Abi` del SDK. */

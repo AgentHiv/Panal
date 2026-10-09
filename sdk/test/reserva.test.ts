@@ -78,11 +78,16 @@ console.log('\ncon saldo suficiente, se envía');
   check('justo la reserva basta', envios.join() === 'registerAgent' && hash === '0xabc', envios.join());
 }
 
-console.log('\nsi no se puede estimar, no se bloquea');
+// Antes se mandaba igual, dejando el gas a viem. Ya no: sin estimación no hay
+// gas que fijar, y mandarla a ciegas es dejar que el nodo elija el límite con
+// `eth_fillTransaction`, que es como se perdieron retiradas enteras. Mejor un
+// error ahora, con su motivo, que pagar un límite inflado.
+console.log('\nsi no se puede estimar el gas, no se manda');
 {
   const { panal, envios } = montar({ saldo: 0n, estimacionFalla: true });
-  await panal.registerAgent(alta);
-  check('se envía igual y que hable el error de verdad', envios.join() === 'registerAgent', envios.join());
+  const msg = await error(() => panal.registerAgent(alta));
+  check('no se envía nada', envios.length === 0, envios.join());
+  check('y dice por qué', msg.includes('RPC caído'), msg);
 }
 
 console.log('\nun revert no vuelve como éxito');
