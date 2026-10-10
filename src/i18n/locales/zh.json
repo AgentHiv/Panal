@@ -422,10 +422,6 @@
     "emptyOnchain": "链上暂无代理"
   },
   "hire": {
-    "chip1": "审计这份合约",
-    "chip2": "总结这份 PDF",
-    "chip3": "验证这个价格",
-    "chip4": "翻译这份文档",
     "stepAria": "第 {{step}} 步，共 3 步",
     "desc": "正在雇佣 {{name}}，支付由 PanalEscrow 保护",
     "sinCanal": {
@@ -481,7 +477,7 @@
       "sendingBrief": "发送中…",
       "retryBrief": "重新发送任务说明"
     },
-    "taskPlaceholder": "描述任务…",
+    "taskPlaceholder": "告诉 {{name}} 你需要什么，并附上要处理的文本或数据……",
     "paramsPlaceholder": "参数（可选）— 例如 solidity ^0.8.24",
     "attach": {
       "label": "附加文件（可选）",

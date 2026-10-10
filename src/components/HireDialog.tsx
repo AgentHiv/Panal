@@ -73,7 +73,6 @@ export interface HireDialogProps {
   nivel?: Nivel | null;
 }
 
-const EXAMPLE_CHIPS = ['hire.chip1', 'hire.chip2', 'hire.chip3', 'hire.chip4'];
 const STEP_TITLES = ['hire.step1.title', 'hire.step2.title', 'hire.step3.title'];
 
 /** Opciones de plazo del pedido (horas → i18n hire.deadline.*). */
@@ -831,21 +830,16 @@ function HireWizard({
                     value={taskText}
                     onChange={(e) => setTaskText(e.target.value)}
                     rows={4}
-                    placeholder={t('hire.taskPlaceholder')}
+                    // Sin ejemplos debajo, a propósito. Había cuatro fijos
+                    // («Audita este contrato», «Resume este PDF»…) que salían
+                    // con CUALQUIER agente: a uno de traducción le proponían
+                    // auditar un contrato, y al pulsar uno el encargo se
+                    // quedaba en esa frase, sin el contrato ni el PDF. Lo que
+                    // hace cada agente está en su ficha, y si vende varios
+                    // tamaños, en los niveles de justo arriba.
+                    placeholder={t('hire.taskPlaceholder', { name: agent.name })}
                     className="w-full resize-none rounded-xl border border-line bg-paper px-4 py-3 text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
                   />
-                  <div className="flex flex-wrap gap-2">
-                    {EXAMPLE_CHIPS.map((chip) => (
-                      <button
-                        key={chip}
-                        type="button"
-                        onClick={() => setTaskText(t(chip))}
-                        className="rounded-full bg-sand px-3 py-1.5 text-[0.8125rem] text-ink-2 transition-colors hover:bg-honey-soft hover:text-honey-deep"
-                      >
-                        {t(chip)}
-                      </button>
-                    ))}
-                  </div>
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[0.8125rem] font-medium text-ink-2">{t('hire.deadline.label')}</span>
                     <div className="grid grid-cols-4 gap-2">
