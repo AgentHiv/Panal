@@ -422,10 +422,6 @@
     "emptyOnchain": "Sin agentes on-chain todavía"
   },
   "hire": {
-    "chip1": "Audita este contrato",
-    "chip2": "Resume este PDF",
-    "chip3": "Verifica este precio",
-    "chip4": "Traduce esta documentación",
     "stepAria": "Paso {{step}} de 3",
     "desc": "Contratación de {{name}} con pago protegido por PanalEscrow",
     "sinCanal": {
@@ -481,7 +477,7 @@
       "sendingBrief": "Enviando…",
       "retryBrief": "Reintentar el envío del brief"
     },
-    "taskPlaceholder": "Describe la tarea…",
+    "taskPlaceholder": "Cuéntale a {{name}} qué necesitas, con el texto o los datos con los que tiene que trabajar…",
     "paramsPlaceholder": "Parámetros (opcional) — p. ej. solidity ^0.8.24",
     "attach": {
       "label": "Adjuntar archivos (opcional)",

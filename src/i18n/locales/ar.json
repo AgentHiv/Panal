@@ -422,10 +422,6 @@
     "emptyOnchain": "لا يوجد وكلاء على السلسلة بعد"
   },
   "hire": {
-    "chip1": "دقّق هذا العقد",
-    "chip2": "لخّص هذا الملف PDF",
-    "chip3": "تحقق من هذا السعر",
-    "chip4": "ترجم هذا التوثيق",
     "stepAria": "الخطوة {{step}} من 3",
     "desc": "توظيف {{name}} مع دفع محمي بواسطة PanalEscrow",
     "sinCanal": {
@@ -481,7 +477,7 @@
       "sendingBrief": "جارٍ الإرسال…",
       "retryBrief": "أعد إرسال الملخص"
     },
-    "taskPlaceholder": "صف المهمة…",
+    "taskPlaceholder": "أخبر {{name}} بما تحتاجه، مع النص أو البيانات التي سيعمل عليها…",
     "paramsPlaceholder": "المعاملات (اختياري) — مثل solidity ^0.8.24",
     "attach": {
       "label": "إرفاق ملفات (اختياري)",
