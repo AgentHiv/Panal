@@ -23,32 +23,94 @@ import * as THREE from 'three';
  * Fuera de la pantalla no se dibuja nada (IntersectionObserver).
  */
 
-const IS_MOBILE = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
 const REDUCED =
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ── geometría del logo, en unidades del mundo (cámara en z=10, fov 50) ── */
+/* ── el aparato: cuánto se puede dibujar ── */
 
-/** Centro y radio del hexágono exterior. A la derecha: el texto va a la izquierda. */
-const LX = IS_MOBILE ? -0.35 : 3.05;
-const LY = IS_MOBILE ? 1.9 : 0.05;
-const R = IS_MOBILE ? 1.35 : 2.05;
-/** El de miel: 37,5 % del exterior, desplazado como en logo.svg (allí la y crece hacia abajo). */
-const IX = LX + 0.089 * R;
-const IY = LY - 0.054 * R;
-const IR = 0.375 * R;
-/** El grosor del trazo exterior, también el del logo. */
-const BANDA = 0.125 * R;
 /**
- * En el móvil el logo queda detrás del título: sólido y a plena luz se comía
- * las letras. Ahí se queda a media opacidad, como marca de agua.
+ * ¿Es un teléfono, una tableta o un equipo modesto?
+ *
+ * No se mira el ancho de la ventana: en «modo escritorio» el navegador del
+ * móvil dice medir unos 980 px y se presenta como un ordenador, y con eso se
+ * le servía la versión completa —miles de partículas más, antialiasing y
+ * resolución alta— a una gráfica de teléfono. Lo que el modo escritorio no
+ * cambia es que la pantalla se toca en vez de usarse con un ratón, y eso sí se
+ * pregunta. Se suma la marca de móvil del navegador cuando la da, y los
+ * equipos con pocos núcleos o poca memoria, que también agradecen la versión
+ * ligera.
  */
-const OPACIDAD_LOGO = IS_MOBILE ? 0.45 : 1;
+function equipoModesto(): boolean {
+  if (typeof window === 'undefined') return false;
+  const nav = navigator as Navigator & { userAgentData?: { mobile?: boolean }; deviceMemory?: number };
+  const tactil = window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(hover: none)').matches;
+  const movil = nav.userAgentData?.mobile === true || /Android|iPhone|iPad|iPod|Mobile/i.test(nav.userAgent);
+  const pocoHierro = (nav.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) <= 4;
+  return tactil || movil || pocoHierro;
+}
 
-const N_BORDE = IS_MOBILE ? 1600 : 3400;
-const N_NUCLEO = IS_MOBILE ? 700 : 1400;
-const N_PANAL = IS_MOBILE ? 1300 : 3000;
-const N_POLVO = IS_MOBILE ? 250 : 600;
+interface Potencia {
+  borde: number;
+  nucleo: number;
+  panal: number;
+  polvo: number;
+  /** Resolución mínima y máxima del lienzo. */
+  dpr: [number, number];
+  antialias: boolean;
+}
+
+const POTENCIA: Potencia = equipoModesto()
+  ? { borde: 1600, nucleo: 700, panal: 1300, polvo: 250, dpr: [1, 1.5], antialias: false }
+  : { borde: 3400, nucleo: 1400, panal: 3000, polvo: 600, dpr: [1, 1.75], antialias: true };
+
+/* ── la pantalla: dónde va el logo (cámara en z=10, fov 50) ── */
+
+/**
+ * Pantalla en vertical o estrecha: el logo va arriba, detrás del título.
+ *
+ * Por la FORMA de la pantalla y no por su ancho, por lo mismo: un teléfono en
+ * modo escritorio mide 980 px de ancho pero sigue siendo más alto que ancho, y
+ * con el logo colocado como en un ordenador se salía por la derecha.
+ */
+function enRetrato(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth <= 768 || window.innerHeight > window.innerWidth;
+}
+
+interface Disposicion {
+  /** Centro y radio del hexágono exterior. */
+  lx: number;
+  ly: number;
+  r: number;
+  /** El de miel: 37,5 % del exterior, desplazado como en logo.svg (allí la y crece hacia abajo). */
+  ix: number;
+  iy: number;
+  ir: number;
+  /** El grosor del trazo exterior, también el del logo. */
+  banda: number;
+  /**
+   * En vertical el logo queda detrás del título: sólido y a plena luz se
+   * comía las letras. Ahí se queda a media opacidad, como marca de agua.
+   */
+  opacidad: number;
+}
+
+function disposicion(retrato: boolean): Disposicion {
+  // En horizontal, a la derecha: el texto va a la izquierda.
+  const lx = retrato ? -0.35 : 3.05;
+  const ly = retrato ? 1.9 : 0.05;
+  const r = retrato ? 1.35 : 2.05;
+  return {
+    lx,
+    ly,
+    r,
+    ix: lx + 0.089 * r,
+    iy: ly - 0.054 * r,
+    ir: 0.375 * r,
+    banda: 0.125 * r,
+    opacidad: retrato ? 0.45 : 1,
+  };
+}
 
 /* ── la secuencia, en segundos ── */
 
@@ -125,7 +187,11 @@ interface Grupo {
   dist: Float32Array;
 }
 
-function grupo(n: number, colocar: (i: number) => [number, number, number, THREE.Color, number]): Grupo {
+function grupo(
+  d: Disposicion,
+  n: number,
+  colocar: (i: number) => [number, number, number, THREE.Color, number],
+): Grupo {
   const g: Grupo = {
     n,
     base: new Float32Array(n * 3),
@@ -140,53 +206,53 @@ function grupo(n: number, colocar: (i: number) => [number, number, number, THREE
     const a = Math.random() * Math.PI * 2;
     const b = Math.acos(2 * Math.random() - 1);
     const rr = 5 + Math.random() * 6;
-    g.desde.set([LX + rr * Math.sin(b) * Math.cos(a), LY + rr * Math.sin(b) * Math.sin(a), rr * Math.cos(b)], i * 3);
+    g.desde.set([d.lx + rr * Math.sin(b) * Math.cos(a), d.ly + rr * Math.sin(b) * Math.sin(a), rr * Math.cos(b)], i * 3);
     g.color.set([col.r * brillo, col.g * brillo, col.b * brillo], i * 3);
     g.fase[i] = Math.random() * Math.PI * 2;
-    g.dist[i] = Math.hypot(x - LX, y - LY);
+    g.dist[i] = Math.hypot(x - d.lx, y - d.ly);
   }
   return g;
 }
 
-function crearGrupos() {
-  const exterior = vertices(LX, LY, R);
+function crearGrupos(d: Disposicion, pot: Potencia) {
+  const exterior = vertices(d.lx, d.ly, d.r);
 
-  const borde = grupo(N_BORDE, () => {
+  const borde = grupo(d, pot.borde, () => {
     const [x, y] = enPerimetro(exterior, Math.random() * 6);
-    const dx = x - LX;
-    const dy = y - LY;
+    const dx = x - d.lx;
+    const dy = y - d.ly;
     const len = Math.hypot(dx, dy) || 1;
-    const off = ((Math.random() + Math.random()) / 2 - 0.5) * BANDA;
+    const off = ((Math.random() + Math.random()) / 2 - 0.5) * d.banda;
     const col = Math.random() < 0.82 ? C.blanco : C.niebla;
     return [x + (dx / len) * off, y + (dy / len) * off, (Math.random() - 0.5) * 0.35, col, 0.6 + Math.random() * 0.4];
   });
 
-  const nucleo = grupo(N_NUCLEO, () => {
+  const nucleo = grupo(d, pot.nucleo, () => {
     let x = 0;
     let y = 0;
     do {
-      x = IX + (Math.random() * 2 - 1) * IR;
-      y = IY + (Math.random() * 2 - 1) * IR;
-    } while (!dentro(x, y, IX, IY, IR));
-    const d = Math.hypot(x - IX, y - IY) / IR;
-    const col = d < 0.35 ? C.caliente : d < 0.7 ? C.mielClara : C.miel;
+      x = d.ix + (Math.random() * 2 - 1) * d.ir;
+      y = d.iy + (Math.random() * 2 - 1) * d.ir;
+    } while (!dentro(x, y, d.ix, d.iy, d.ir));
+    const rel = Math.hypot(x - d.ix, y - d.iy) / d.ir;
+    const col = rel < 0.35 ? C.caliente : rel < 0.7 ? C.mielClara : C.miel;
     return [x, y, (Math.random() - 0.5) * 0.25, col, 0.7 + Math.random() * 0.3];
   });
 
   // El panal de alrededor: celdas de la misma forma, del logo hacia fuera.
-  const celda = R * 0.42;
+  const celda = d.r * 0.42;
   const centros: [number, number][] = [];
   const dxc = 1.5 * celda;
   const dyc = Math.sqrt(3) * celda;
   for (let i = -12; i <= 12; i++) {
     for (let j = -12; j <= 12; j++) {
-      const x = LX + i * dxc;
-      const y = LY + j * dyc + (i % 2 ? dyc / 2 : 0);
-      const d = Math.hypot(x - LX, y - LY);
-      if (d > R * 1.22 && d < R * 3.4) centros.push([x, y]);
+      const x = d.lx + i * dxc;
+      const y = d.ly + j * dyc + (i % 2 ? dyc / 2 : 0);
+      const dist = Math.hypot(x - d.lx, y - d.ly);
+      if (dist > d.r * 1.22 && dist < d.r * 3.4) centros.push([x, y]);
     }
   }
-  const panal = grupo(N_PANAL, () => {
+  const panal = grupo(d, pot.panal, () => {
     const [cx, cy] = centros[Math.floor(Math.random() * centros.length)];
     const [x, y] = enPerimetro(vertices(cx, cy, celda * 0.94), Math.random() * 6);
     const r = Math.random();
@@ -194,9 +260,9 @@ function crearGrupos() {
     return [x + (Math.random() - 0.5) * 0.03, y + (Math.random() - 0.5) * 0.03, -0.4 + (Math.random() - 0.5) * 0.5, col, 1];
   });
 
-  const polvo = grupo(N_POLVO, () => {
+  const polvo = grupo(d, pot.polvo, () => {
     const col = Math.random() < 0.6 ? C.niebla : C.mielClara;
-    return [LX + (Math.random() - 0.5) * 20, LY + (Math.random() - 0.5) * 12, -2 - Math.random() * 3, col, 0.25 + Math.random() * 0.35];
+    return [d.lx + (Math.random() - 0.5) * 20, d.ly + (Math.random() - 0.5) * 12, -2 - Math.random() * 3, col, 0.25 + Math.random() * 0.35];
   });
 
   // Las líneas de las celdas, que se quedan al final: las ondas las encienden.
@@ -209,8 +275,8 @@ function crearGrupos() {
       const [x2, y2] = v[(k + 1) % 6];
       const i = (c * 6 + k) * 2;
       lineas.set([x1, y1, -0.45, x2, y2, -0.45], i * 3);
-      distLinea[i] = Math.hypot(x1 - LX, y1 - LY);
-      distLinea[i + 1] = Math.hypot(x2 - LX, y2 - LY);
+      distLinea[i] = Math.hypot(x1 - d.lx, y1 - d.ly);
+      distLinea[i + 1] = Math.hypot(x2 - d.lx, y2 - d.ly);
     }
   });
 
@@ -219,19 +285,19 @@ function crearGrupos() {
 
 /* ── el logo sólido ── */
 
-function crearLogoSolido() {
+function crearLogoSolido(d: Disposicion) {
   // El aro: el hexágono exterior menos el interior, con relieve y bisel.
   const aro = new THREE.Shape();
-  trazarHex(aro, R + BANDA / 2, BANDA * 0.55);
+  trazarHex(aro, d.r + d.banda / 2, d.banda * 0.55);
   const hueco = new THREE.Path();
-  trazarHex(hueco, R - BANDA / 2, BANDA * 0.2);
+  trazarHex(hueco, d.r - d.banda / 2, d.banda * 0.2);
   aro.holes.push(hueco);
-  const fondoAro = BANDA * 0.55;
+  const fondoAro = d.banda * 0.55;
   const geoAro = new THREE.ExtrudeGeometry(aro, {
     depth: fondoAro,
     bevelEnabled: true,
-    bevelThickness: BANDA * 0.22,
-    bevelSize: BANDA * 0.16,
+    bevelThickness: d.banda * 0.22,
+    bevelSize: d.banda * 0.16,
     bevelSegments: 4,
     curveSegments: 6,
   });
@@ -239,13 +305,13 @@ function crearLogoSolido() {
 
   // El núcleo de miel, también con relieve.
   const nucleo = new THREE.Shape();
-  trazarHex(nucleo, IR, IR * 0.1);
-  const fondoNucleo = BANDA * 0.8;
+  trazarHex(nucleo, d.ir, d.ir * 0.1);
+  const fondoNucleo = d.banda * 0.8;
   const geoNucleo = new THREE.ExtrudeGeometry(nucleo, {
     depth: fondoNucleo,
     bevelEnabled: true,
-    bevelThickness: BANDA * 0.25,
-    bevelSize: BANDA * 0.18,
+    bevelThickness: d.banda * 0.25,
+    bevelSize: d.banda * 0.18,
     bevelSegments: 5,
     curveSegments: 6,
   });
@@ -280,10 +346,10 @@ function geometria(g: Grupo): THREE.BufferGeometry {
   return geo;
 }
 
-function Logo() {
+function Logo({ d, pot, entrada }: { d: Disposicion; pot: Potencia; entrada: boolean }) {
   const raiz = useRef<THREE.Group>(null);
-  const grupos = useMemo(() => crearGrupos(), []);
-  const solido = useMemo(() => crearLogoSolido(), []);
+  const grupos = useMemo(() => crearGrupos(d, pot), [d, pot]);
+  const solido = useMemo(() => crearLogoSolido(d), [d]);
   const tex = useMemo(() => sprite(), []);
   const geos = useMemo(
     () => ({
@@ -302,10 +368,10 @@ function Logo() {
   }, [grupos]);
   const geoAnillo = useMemo(() => {
     const geo = new THREE.BufferGeometry();
-    const v = vertices(0, 0, R);
+    const v = vertices(0, 0, d.r);
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(v.flatMap(([x, y]) => [x, y, 0])), 3));
     return geo;
-  }, []);
+  }, [d]);
 
   // Lo que se anima por referencia.
   const particulas = useRef<THREE.Group>(null);
@@ -321,11 +387,13 @@ function Logo() {
   const haloMiel = useRef<THREE.Sprite>(null);
   const haloMonad = useRef<THREE.Sprite>(null);
   const desp = useRef({
-    borde: new Float32Array(N_BORDE * 3),
-    nucleo: new Float32Array(N_NUCLEO * 3),
-    panal: new Float32Array(N_PANAL * 3),
+    borde: new Float32Array(pot.borde * 3),
+    nucleo: new Float32Array(pot.nucleo * 3),
+    panal: new Float32Array(pot.panal * 3),
   });
   const inicio = useRef<number | null>(null);
+  /** Lo que se va midiendo para bajar la resolución si el aparato no llega. */
+  const ritmo = useRef({ tiempo: 0, fotogramas: 0, bajadas: 0 });
 
   useEffect(
     () => () => {
@@ -339,8 +407,33 @@ function Logo() {
     [geos, geoLineas, geoAnillo, solido, tex],
   );
 
-  useFrame(({ camera, pointer, clock, size }) => {
-    if (inicio.current === null) inicio.current = clock.elapsedTime;
+  useFrame((state, delta) => {
+    const { camera, pointer, clock, size } = state;
+    // Al girar el teléfono se rehace el logo en su sitio nuevo, pero sin repetir
+    // la entrada: se empieza ya en el final.
+    if (inicio.current === null) inicio.current = clock.elapsedTime - (entrada ? 0 : SIN_PARTICULAS + 0.5);
+
+    /*
+     * La red de seguridad: si va lento, menos resolución.
+     *
+     * Cada 90 fotogramas se mira la media. Por debajo de ~38 por segundo se
+     * baja a resolución 1 y, si sigue sin llegar, a 0,75. Es lo que salva a un
+     * aparato que la detección no ha sabido reconocer como modesto.
+     */
+    const rm = ritmo.current;
+    if (!REDUCED && rm.bajadas < 2 && clock.elapsedTime - inicio.current > 1) {
+      rm.tiempo += delta;
+      rm.fotogramas++;
+      if (rm.fotogramas >= 90) {
+        if (rm.tiempo / rm.fotogramas > 1 / 38) {
+          state.setDpr(rm.bajadas === 0 ? 1 : 0.75);
+          rm.bajadas++;
+        }
+        rm.tiempo = 0;
+        rm.fotogramas = 0;
+      }
+    }
+
     // Con movimiento reducido, directamente el final, quieto.
     const t = REDUCED ? SIN_PARTICULAS + 1 : clock.elapsedTime - inicio.current;
     const mov = REDUCED ? 0 : 1;
@@ -415,11 +508,11 @@ function Logo() {
       logo.current.scale.setScalar(s);
       logo.current.rotation.y = Math.sin(t * 0.45) * 0.22 * flota;
       logo.current.rotation.x = Math.sin(t * 0.33 + 1) * 0.1 * flota;
-      logo.current.position.y = LY + Math.sin(t * 0.8) * 0.05 * flota;
+      logo.current.position.y = d.ly + Math.sin(t * 0.8) * 0.05 * flota;
     }
-    if (matAro.current) matAro.current.opacity = aparece * OPACIDAD_LOGO;
+    if (matAro.current) matAro.current.opacity = aparece * d.opacidad;
     if (matNucleo.current) {
-      matNucleo.current.opacity = aparece * OPACIDAD_LOGO;
+      matNucleo.current.opacity = aparece * d.opacidad;
       // El núcleo late, más fuerte justo al encenderse.
       const late = 0.85 + 0.08 * Math.sin(t * 1.7) * mov;
       matNucleo.current.emissiveIntensity = late + 1.6 * Math.exp(-((t - IGNICION - 0.2) ** 2) / 0.08) * mov;
@@ -431,7 +524,7 @@ function Logo() {
       const p = tramo(t, IGNICION - 0.05, 0.9);
       const m = destello.current.material as THREE.SpriteMaterial;
       m.opacity = REDUCED || p <= 0 || p >= 1 ? 0 : Math.sin(Math.PI * Math.min(1, p * 1.4)) * 0.9;
-      destello.current.scale.setScalar(R * (0.6 + 5 * easeInOut(p)));
+      destello.current.scale.setScalar(d.r * (0.6 + 5 * easeInOut(p)));
     }
     if (choque.current) {
       const p = tramo(t, IGNICION, 1.1);
@@ -443,7 +536,7 @@ function Logo() {
 
     if (luzQueGira.current) {
       const a = t * 0.9;
-      luzQueGira.current.position.set(LX + Math.cos(a) * R * 1.3, LY + Math.sin(a) * R * 1.05, 2.2);
+      luzQueGira.current.position.set(d.lx + Math.cos(a) * d.r * 1.3, d.ly + Math.sin(a) * d.r * 1.05, 2.2);
       luzQueGira.current.intensity = 26 * aparece;
     }
     const encendido = tramo(t, IGNICION, 1.2);
@@ -461,16 +554,16 @@ function Logo() {
     });
     {
       const fase = (t % ONDA_S) / ONDA_S;
-      const onda = R * 1.15 + fase * R * 2.5;
-      const onda2 = R * 1.15 + (((t + ONDA_S / 2) % ONDA_S) / ONDA_S) * R * 2.5;
+      const onda = d.r * 1.15 + fase * d.r * 2.5;
+      const onda2 = d.r * 1.15 + (((t + ONDA_S / 2) % ONDA_S) / ONDA_S) * d.r * 2.5;
       const lc = (geoLineas.getAttribute('color') as THREE.BufferAttribute).array as Float32Array;
       const aparecePanal = tramo(t, 0.8, 1.6);
       for (let i = 0; i < grupos.distLinea.length; i++) {
-        const d = grupos.distLinea[i];
-        const a = (d - onda) / 0.38;
-        const b = (d - onda2) / 0.38;
+        const dist = grupos.distLinea[i];
+        const a = (dist - onda) / 0.38;
+        const b = (dist - onda2) / 0.38;
         const ola = REDUCED ? 0 : Math.exp(-a * a) + 0.45 * Math.exp(-b * b);
-        const lejos = Math.max(0, 1 - (d - R * 1.2) / (R * 2.4));
+        const lejos = Math.max(0, 1 - (dist - d.r * 1.2) / (d.r * 2.4));
         const base = 0.16 * lejos * aparecePanal;
         const i3 = i * 3;
         lc[i3] = (C.ocaso.r * base + C.miel.r * ola * 0.85 * lejos) * aparecePanal;
@@ -516,11 +609,11 @@ function Logo() {
     <group ref={raiz}>
       {/* Luces: las justas para que el relieve del logo se lea. */}
       <ambientLight intensity={0.6} />
-      <directionalLight position={[LX - 4, LY + 5, 8]} intensity={1.4} color="#FFFFFF" />
-      <pointLight position={[LX + 4, LY - 2, 3]} intensity={18} distance={12} decay={1} color="#836EF9" />
-      <pointLight ref={luzQueGira} position={[LX, LY, 2.2]} intensity={0} distance={7} decay={1} color="#FFF3D6" />
+      <directionalLight position={[d.lx - 4, d.ly + 5, 8]} intensity={1.4} color="#FFFFFF" />
+      <pointLight position={[d.lx + 4, d.ly - 2, 3]} intensity={18} distance={12} decay={1} color="#836EF9" />
+      <pointLight ref={luzQueGira} position={[d.lx, d.ly, 2.2]} intensity={0} distance={7} decay={1} color="#FFF3D6" />
 
-      <sprite ref={haloMonad} position={[LX, LY, -0.8]} scale={[R * 4.6, R * 4.6, 1]}>
+      <sprite ref={haloMonad} position={[d.lx, d.ly, -0.8]} scale={[d.r * 4.6, d.r * 4.6, 1]}>
         <spriteMaterial map={tex} color="#836EF9" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
       </sprite>
 
@@ -534,16 +627,16 @@ function Logo() {
             anillos.current[k] = el;
           }}
           geometry={geoAnillo}
-          position={[LX, LY, -0.1]}
+          position={[d.lx, d.ly, -0.1]}
         >
           <lineBasicMaterial color="#E29A2E" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
         </lineLoop>
       ))}
-      <lineLoop ref={choque} geometry={geoAnillo} position={[LX, LY, 0.2]}>
+      <lineLoop ref={choque} geometry={geoAnillo} position={[d.lx, d.ly, 0.2]}>
         <lineBasicMaterial color="#FFF3D6" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
       </lineLoop>
 
-      <sprite ref={haloMiel} position={[IX, IY, -0.3]} scale={[IR * 5.4, IR * 5.4, 1]}>
+      <sprite ref={haloMiel} position={[d.ix, d.iy, -0.3]} scale={[d.ir * 5.4, d.ir * 5.4, 1]}>
         <spriteMaterial map={tex} color="#E29A2E" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
       </sprite>
 
@@ -556,7 +649,7 @@ function Logo() {
       </group>
 
       {/* El logo sólido. */}
-      <group ref={logo} position={[LX, LY, 0]} visible={false}>
+      <group ref={logo} position={[d.lx, d.ly, 0]} visible={false}>
         <mesh geometry={solido.geoAro}>
           {/* Blanco con barniz: sin entorno que reflejar, el metal salía gris.
               El barniz es lo que deja el brillo de la luz que gira. */}
@@ -573,7 +666,7 @@ function Logo() {
             opacity={0}
           />
         </mesh>
-        <mesh ref={nucleoMesh} geometry={solido.geoNucleo} position={[IX - LX, IY - LY, 0.05]}>
+        <mesh ref={nucleoMesh} geometry={solido.geoNucleo} position={[d.ix - d.lx, d.iy - d.ly, 0.05]}>
           <meshPhysicalMaterial
             ref={matNucleo}
             // Sin la curva de tono de la escena: con ella el miel, al brillar,
@@ -594,7 +687,7 @@ function Logo() {
         </mesh>
       </group>
 
-      <sprite ref={destello} position={[IX, IY, 0.6]} scale={[R, R, 1]}>
+      <sprite ref={destello} position={[d.ix, d.iy, 0.6]} scale={[d.r, d.r, 1]}>
         <spriteMaterial map={tex} color="#FFF3D6" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
       </sprite>
     </group>
@@ -614,6 +707,32 @@ export default function HeroSwarm({ onReady }: { onReady?: () => void }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
   const [supported] = useState(webglAvailable);
+  const [retrato, setRetrato] = useState(enRetrato);
+  /** Cuántas veces se ha recolocado: la primera hace la entrada, las demás no. */
+  const [recolocado, setRecolocado] = useState(false);
+  const d = useMemo(() => disposicion(retrato), [retrato]);
+  /** La orientación vigente, para comparar sin depender del estado. */
+  const vigente = useRef(retrato);
+
+  // Girar el teléfono (o estrechar la ventana) cambia dónde va el logo.
+  useEffect(() => {
+    let raf = 0;
+    const mirar = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const ahora = enRetrato();
+        if (ahora === vigente.current) return;
+        vigente.current = ahora;
+        setRecolocado(true);
+        setRetrato(ahora);
+      });
+    };
+    window.addEventListener('resize', mirar);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', mirar);
+    };
+  }, []);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -628,14 +747,16 @@ export default function HeroSwarm({ onReady }: { onReady?: () => void }) {
   return (
     <div ref={wrapRef} className="absolute inset-0" aria-hidden>
       <Canvas
-        dpr={IS_MOBILE ? [1, 1.5] : [1, 1.75]}
+        dpr={POTENCIA.dpr}
         camera={{ position: [0, 0, 10], fov: 50 }}
         // Con movimiento reducido basta un fotograma: el logo ya formado.
         frameloop={REDUCED ? 'demand' : inView ? 'always' : 'never'}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        // Sin antialias en el aparato modesto: es de lo más caro y en una
+        // pantalla de teléfono, con su densidad de píxeles, apenas se nota.
+        gl={{ antialias: POTENCIA.antialias, alpha: true, powerPreference: 'high-performance' }}
         onCreated={onReady}
       >
-        <Logo />
+        <Logo key={retrato ? 'vertical' : 'horizontal'} d={d} pot={POTENCIA} entrada={!recolocado} />
       </Canvas>
     </div>
   );
