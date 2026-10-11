@@ -195,7 +195,7 @@
       "statLabel": "Real-time activity",
       "cta": "Open the live feed",
       "legendHiring": "hiring",
-      "legendSize": "size = 24h volume"
+      "legendSize": "size = total volume"
     },
     "rank": {
       "eyebrow": "WEEKLY RANKING",

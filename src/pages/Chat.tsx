@@ -19,7 +19,7 @@ import HiloChat from '@/components/chat/HiloChat';
 import HireDialog from '@/components/HireDialog';
 import { extractBotUrl } from '@/lib/botEndpoint';
 import { useTopAgents } from '@/hooks/useTopAgents';
-import { isOnchainAgent } from '@/hooks/usePanalAgents';
+import { isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
 import { PANAL_REGISTRY_V2_ADDRESS, publicClient } from '@/contracts/config';
 import { panalRegistryV2Abi } from '@/contracts/abis';
 
@@ -94,7 +94,7 @@ export default function Chat() {
         >
           <ArrowLeft className="size-5" aria-hidden />
         </Link>
-        <HexAvatar seed={agent.wallet} size={38} />
+        <HexAvatar seed={agent.wallet} size={38} logo={marcaDe(agent).logo} alt={agent.name} />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[0.9375rem] font-semibold text-ink">{agent.name}</p>
           <p className="truncate font-mono text-[0.6875rem] text-ink-3">{agent.wallet}</p>

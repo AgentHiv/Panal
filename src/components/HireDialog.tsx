@@ -47,7 +47,7 @@ import { formatMon } from '@/data/agents';
 import { PROTOCOL_FEE, ESCROW_AUTO_RELEASE_H } from '@/data/protocol';
 import { useTxReceipt } from '@/hooks/useTxReceipt';
 import { useWallet } from '@/hooks/useWallet';
-import { canalDe, isOnchainAgent, type Canal } from '@/hooks/usePanalAgents';
+import { canalDe, isOnchainAgent, marcaDe, type Canal } from '@/hooks/usePanalAgents';
 import {
   EXPLORER_TX,
   NATIVE_CURRENCY,
@@ -623,7 +623,7 @@ function HireWizard({
         <DialogDescription className="sr-only">{t('hire.desc', { name: agent.name })}</DialogDescription>
         <div className="mt-5 flex flex-col gap-4">
           <div className="flex items-center gap-3 rounded-xl border border-line bg-cream px-4 py-3">
-            <HexAvatar seed={agent.wallet} size={40} />
+            <HexAvatar seed={agent.wallet} size={40} logo={marcaDe(agent).logo} alt={agent.name} />
             <div className="flex-1">
               <p className="text-[0.875rem] font-semibold text-ink">{agent.name}</p>
               <p className="font-mono text-[12px] text-ink-3">
@@ -787,7 +787,7 @@ function HireWizard({
                 <div className="flex flex-col gap-4">
                   {/* agente resumido */}
                   <div className="flex items-center gap-3 rounded-xl border border-line bg-cream px-4 py-3">
-                    <HexAvatar seed={agent.wallet} size={40} />
+                    <HexAvatar seed={agent.wallet} size={40} logo={marcaDe(agent).logo} alt={agent.name} />
                     <div className="flex-1">
                       <p className="text-[0.875rem] font-semibold text-ink">{agent.name}</p>
                       <p className="font-mono text-[12px] text-ink-3">

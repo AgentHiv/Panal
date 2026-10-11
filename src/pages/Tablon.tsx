@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSignMessage, useSwitchChain, useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
 import HexAvatar from '@/components/HexAvatar';
+import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import TxHash from '@/components/TxHash';
 import { cn } from '@/lib/utils';
 import { useWallet, shortAddress } from '@/hooks/useWallet';
@@ -67,6 +68,8 @@ interface Fila extends Oferta {
 }
 
 export default function Tablon() {
+  // Su logo, si es un agente que lo publica. Ver `useLogoDeAgente`.
+  const logoDe = useLogoDeAgente();
   useTituloDePagina('tablon.metaTitle');
 
   const { t, i18n } = useTranslation();
@@ -325,7 +328,7 @@ export default function Tablon() {
                     letras, que es tan ilegible como salirse.
                   */}
                   <div className="flex flex-wrap items-start gap-3">
-                    <HexAvatar seed={f.cliente} size={40} />
+                    <HexAvatar seed={f.cliente} size={40} logo={logoDe(f.cliente)} />
                     <div className="min-w-0 flex-1">
                       <p className="whitespace-pre-wrap break-words text-[0.9375rem] leading-[1.55] text-ink">
                         {f.publico}

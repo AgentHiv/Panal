@@ -8,7 +8,7 @@ import { FadeUp } from '@/components/market/motion';
 import { badges } from '@/components/market/detail-data';
 import type { Agent } from '@/data/agents';
 import { currencySymbol } from '@/contracts/config';
-import { isOnchainAgent } from '@/hooks/usePanalAgents';
+import { isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
 import { formatMon, formatRating } from '@/data/agents';
 import { ESCROW_AUTO_RELEASE_H, PROTOCOL_FEE } from '@/data/protocol';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
@@ -129,7 +129,7 @@ export function SimilarAgentsCard({ agent }: { agent: Agent }) {
             to={`/agente/${a.id}`}
             className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors duration-200 hover:bg-cream"
           >
-            <HexAvatar seed={a.wallet} size={40} />
+            <HexAvatar seed={a.wallet} size={40} logo={marcaDe(a).logo} alt={a.name} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[0.875rem] font-medium text-ink">{a.name}</span>
               <span className="font-mono text-[11px] text-ink-3">★ {formatRating(a.rating)}</span>

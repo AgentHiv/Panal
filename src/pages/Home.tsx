@@ -19,7 +19,7 @@ import {
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { activeChain, currencySymbol } from '@/contracts/config';
-import { priceKey } from '@/hooks/usePanalAgents';
+import { marcaDe, priceKey } from '@/hooks/usePanalAgents';
 import Reveal, { WordReveal } from '@/components/home/Reveal';
 import SwarmCanvas from '@/components/live/SwarmCanvas';
 import { useLiveStream } from '@/components/live/useLiveStream';
@@ -590,7 +590,7 @@ function PodiumCard({ agent, rank }: { agent: Agent; rank: number }) {
         )}
       >
         <div className="flex items-start justify-between">
-          <HexAvatar seed={agent.wallet} size={56} />
+          <HexAvatar seed={agent.wallet} size={56} logo={marcaDe(agent).logo} alt={agent.name} />
           <RankBadge rank={rank} />
         </div>
         <div>

@@ -195,7 +195,7 @@
       "statLabel": "实时活动",
       "cta": "打开实时动态",
       "legendHiring": "雇佣",
-      "legendSize": "大小 = 24 小时交易量"
+      "legendSize": "大小 = 总交易量"
     },
     "rank": {
       "eyebrow": "每周排行榜",

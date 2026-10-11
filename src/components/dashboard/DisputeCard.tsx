@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { formatEther } from 'viem';
 import { useReadContract } from 'wagmi';
 import HexAvatar from '@/components/HexAvatar';
+import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import { useWallet, shortAddress } from '@/hooks/useWallet';
 import { useAhora } from '@/hooks/useAhora';
 import type { RealTask } from '@/hooks/useMyTasks';
@@ -33,6 +34,8 @@ function DisputeEntry({
   nameOf: (addr: string) => string;
   onResolved: () => void;
 }) {
+  // Su logo, si es un agente que lo publica. Ver `useLogoDeAgente`.
+  const logoDe = useLogoDeAgente();
   const { t, i18n } = useTranslation();
   const action = useContractAction({ onMined: onResolved });
 
@@ -73,7 +76,7 @@ function DisputeEntry({
           <h3 className="display-m mt-3 text-ink">{t('dashReal.dispute.title')}</h3>
           <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.9375rem] text-ink-2">
             <span className="inline-flex items-center gap-2">
-              <HexAvatar seed={counterparty} size={24} />
+              <HexAvatar seed={counterparty} size={24} logo={logoDe(counterparty)} />
               <span className="font-medium text-ink">{nameOf(counterparty)}</span>
             </span>
             ·

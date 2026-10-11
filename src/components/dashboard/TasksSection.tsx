@@ -19,6 +19,7 @@ import { formatEther, keccak256, toBytes } from 'viem';
 import type { Address } from 'viem';
 import { useReadContract, useSignMessage } from 'wagmi';
 import HexAvatar from '@/components/HexAvatar';
+import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
@@ -158,6 +159,8 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
 }
 
 export default function TasksSection({ perspective }: { perspective: Perspective }) {
+  // Su logo, si es un agente que lo publica. Ver `useLogoDeAgente`.
+  const logoDe = useLogoDeAgente();
   const { t, i18n } = useTranslation();
   const { address } = useWallet();
   const { tasks, loading, error, refetch } = useMyTasks();
@@ -507,7 +510,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
           </td>
           <td className="px-3 py-3.5">
             <span className="flex items-center gap-2">
-              <HexAvatar seed={counterparty} size={32} />
+              <HexAvatar seed={counterparty} size={32} logo={logoDe(counterparty)} />
               <span className="flex min-w-0 flex-col">
                 <span className="max-w-[150px] truncate text-[0.875rem] font-medium text-ink">
                   {counterpartyZero ? t('tasks.unassigned') : nameOf(counterparty)}
