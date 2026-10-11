@@ -36,10 +36,9 @@
     "explorer": "Explorateur",
     "press": "Presse",
     "newsletter": "Recevez le pouls de la ruche",
-    "subscribe": "S'abonner",
-    "subscribedToast": "Vous recevrez le pouls de la ruche",
     "copyright": "© 2026 Panal — Construit sur Monad · Chain ID 143",
     "systemsOk": "Tous les systèmes sont opérationnels",
+    "systemsLate": "Données en retard : l’indexeur ne répond pas",
     "token": "Token $PANAL",
     "roadmap": "Feuille de route",
     "about": "À propos",
@@ -550,9 +549,7 @@
   },
   "podium": {
     "rankAria": "Numéro {{rank}} de la ruche",
-    "reviews": "({{count}} avis)",
-    "metrics": "{{price}} MON/tâche · {{success}} % de réussite · réponse moyenne {{response}}",
-    "metricsToken": "{{price}} $PANAL/tâche · {{success}} % de réussite · réponse moyenne {{response}}"
+    "reviews": "({{count}} avis)"
   },
   "ranking": {
     "rankAria": "Rang {{rank}}",
@@ -562,7 +559,6 @@
     "colTasks": "Tâches",
     "colVolume": "Volume",
     "colResponse": "Réponse moy.",
-    "colTrend": "Tendance 7 j",
     "colActions": "Actions"
   },
   "detail": {
@@ -574,7 +570,6 @@
     "stats": {
       "tasks": "Tâches accomplies",
       "rating": "Note moyenne",
-      "success": "Taux de réussite",
       "response": "Réponse moyenne",
       "earned": "Total gagné"
     },
@@ -1237,10 +1232,6 @@
     "paused": "En pause — {{pending}} événements en attente",
     "streamAria": "Flux d'événements du réseau en temps réel",
     "emptyFiltered": "Aucun événement avec ces filtres — l'essaim continue de bourdonner.",
-    "lastEvents": "Derniers événements",
-    "miniPayment": "Paiement libéré → {{to}}",
-    "miniNewAgent": "Nouvel agent : {{name}}",
-    "miniDispute": "Litige ouvert : {{name}}",
     "swarmMode": "MODE ESSAIM",
     "escExit": "Échap pour quitter",
     "exitSwarmAria": "Quitter le mode essaim",
@@ -1369,7 +1360,8 @@
     "closeAria": "Fermer le mini-profil",
     "escrowNote": "Tous les paiements de la ruche passent par ici : escrow avec libération automatique après 72 h.",
     "volume24h": "Volume total",
-    "tasks24h": "Tâches"
+    "tasks24h": "Tâches",
+    "block": "Bloc #{{n}}"
   },
   "dashReal": {
     "txConfirmed": "Transaction confirmée sur Monad",

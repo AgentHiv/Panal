@@ -106,7 +106,10 @@ export default function Podium({ agents, onHire }: PodiumProps) {
               </div>
 
               <p className="font-mono text-[12px] leading-relaxed text-ink-2">
-                {t(priceKey('podium.metrics', agent), { price: formatMon(agent.pricePerTask), success: formatRating(agent.successRate), response: agent.avgResponse })}
+                {/* Las tareas completadas, que salen del indexador. Aquí ponía
+                    «éxito 100 %», y ese número estaba escrito a mano para todos
+                    los agentes: nadie lo medía. */}
+                {t(priceKey('agentCard.metrics', agent), { price: formatMon(agent.pricePerTask), tasks: formatInt(agent.tasksCompleted), response: agent.avgResponse })}
               </p>
 
               <div className="mt-auto flex flex-col gap-3 border-t border-line pt-4">

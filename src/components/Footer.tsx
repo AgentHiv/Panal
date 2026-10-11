@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { Check } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import LiveDot from '@/components/LiveDot';
+import { useIndexStats } from '@/lib/indexer';
+import { useAhora } from '@/hooks/useAhora';
 import TxHash from '@/components/TxHash';
 import { CONTRACTS } from '@/data/protocol';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -57,12 +58,16 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string;
 /** Footer global (design.md §5): fondo coal, honeycomb sutil, contratos, status. */
 export default function Footer() {
   const { t } = useTranslation();
-  const onSubscribe = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    form.reset();
-    toast(t('footer.subscribedToast'), { icon: <Check size={14} className="text-olive" /> });
-  };
+  /*
+   * El estado de la red, MEDIDO. Decía «Todos los sistemas operativos» siempre,
+   * con el punto verde, aunque el indexador llevara horas caído. Ahora sale
+   * verde solo si el indexador ha contestado con datos de hace menos de cinco
+   * minutos, y si no, se dice que los datos pueden ir con retraso. Mientras se
+   * pregunta no se afirma nada.
+   */
+  const { stats, loading } = useIndexStats();
+  const ahora = useAhora();
+  const alDia = stats !== null && ahora - Date.parse(stats.updatedAt) < 5 * 60_000;
 
   return (
     <footer className="relative overflow-hidden border-t border-coal-line bg-coal text-coal-text">
@@ -75,10 +80,10 @@ export default function Footer() {
         <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-col gap-5">
             <Link to="/" className="flex items-center gap-4" aria-label="Panal — inicio">
-              <svg viewBox="0 0 64 64" className="h-11 w-11" aria-hidden>
-                <polygon points="60,32 46,56.25 18,56.25 4,32 18,7.75 46,7.75" fill="none" stroke="#E29A2E" strokeWidth="3.5" strokeLinejoin="round" />
-                <polygon points="44.5,33.5 39.75,41.72 24.25,41.72 19.5,33.5 24.25,25.28 39.75,25.28" fill="#E29A2E" />
-              </svg>
+              {/* El logo de verdad, el mismo archivo que la barra de arriba: aquí
+                  había otro dibujado a mano, con el borde de miel y el hexágono
+                  de dentro centrado y más grande, que no es el de Panal. */}
+              <img src="/logo.svg" alt="" className="h-11 w-11" />
               <span className="font-display font-bold tracking-[-0.02em] text-coal-text" style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', lineHeight: 1 }}>
                 Panal
               </span>
@@ -96,26 +101,20 @@ export default function Footer() {
               </a>
             )}
           </div>
-          <form onSubmit={onSubscribe} className="flex w-full max-w-md flex-col gap-3">
-            <label htmlFor="footer-newsletter" className="text-[0.875rem] font-medium text-coal-mute">
-              {t('footer.newsletter')}
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="footer-newsletter"
-                type="email"
-                required
-                placeholder="tu@correo.eth"
-                className="h-11 w-full rounded-full border border-coal-line bg-coal-2 px-5 text-[0.875rem] text-coal-text placeholder:text-coal-mute/60 focus:border-honey focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="h-11 shrink-0 rounded-full bg-honey px-5 text-[0.875rem] font-semibold text-[#1B1814] transition-colors hover:bg-honey-deep"
-              >
-                {t('footer.subscribe')}
-              </button>
-            </div>
-          </form>
+          {/* Aquí había un boletín que no existía: el formulario borraba el
+              correo y decía «Recibirás el pulso del panal» sin guardarlo en
+              ninguna parte. El pulso del panal es el feed en vivo, y ese sí
+              existe. */}
+          <div className="flex w-full max-w-md flex-col gap-3">
+            <p className="text-[0.875rem] font-medium text-coal-mute">{t('footer.newsletter')}</p>
+            <Link
+              to="/en-vivo"
+              className="group inline-flex h-11 w-fit items-center gap-2 rounded-full bg-honey px-5 text-[0.875rem] font-semibold text-[#1B1814] transition-colors hover:bg-honey-deep"
+            >
+              {t('home.live.cta')}
+              <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-1" />
+            </Link>
+          </div>
         </div>
 
         {/* 4 columnas de links */}
@@ -181,10 +180,12 @@ export default function Footer() {
           </p>
           <div className="flex items-center gap-6">
             <LanguageSwitcher className="border-coal-line bg-coal-2 text-coal-text hover:border-honey" />
-            <span className="flex items-center gap-2 text-[0.8125rem] text-coal-mute">
-              <LiveDot variant="olive" />
-              {t('footer.systemsOk')}
-            </span>
+            {!loading && (
+              <span className="flex items-center gap-2 text-[0.8125rem] text-coal-mute">
+                <LiveDot variant={alDia ? 'olive' : 'honey'} ping={alDia} />
+                {t(alDia ? 'footer.systemsOk' : 'footer.systemsLate')}
+              </span>
+            )}
           </div>
         </div>
       </div>

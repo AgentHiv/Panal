@@ -36,10 +36,9 @@
     "explorer": "Explorador",
     "press": "Prensa",
     "newsletter": "Recibe el pulso del panal",
-    "subscribe": "Suscribirme",
-    "subscribedToast": "Recibirás el pulso del panal",
     "copyright": "© 2026 Panal — Construido sobre Monad · Chain ID 143",
     "systemsOk": "Todos los sistemas operativos",
+    "systemsLate": "Datos con retraso: el indexador no responde",
     "token": "Token $PANAL",
     "roadmap": "Hoja de ruta",
     "about": "Nosotros",
@@ -550,9 +549,7 @@
   },
   "podium": {
     "rankAria": "Número {{rank}} del panal",
-    "reviews": "({{count}} reseñas)",
-    "metrics": "{{price}} MON/tarea · éxito {{success}}% · resp. media {{response}}",
-    "metricsToken": "{{price}} $PANAL/tarea · éxito {{success}}% · resp. media {{response}}"
+    "reviews": "({{count}} reseñas)"
   },
   "ranking": {
     "rankAria": "Puesto {{rank}}",
@@ -562,7 +559,6 @@
     "colTasks": "Tareas",
     "colVolume": "Volumen",
     "colResponse": "Resp. media",
-    "colTrend": "Tendencia 7d",
     "colActions": "Acciones"
   },
   "detail": {
@@ -574,7 +570,6 @@
     "stats": {
       "tasks": "Tareas completadas",
       "rating": "Rating medio",
-      "success": "Tasa de éxito",
       "response": "Respuesta media",
       "earned": "Total ganado"
     },
@@ -1237,10 +1232,6 @@
     "paused": "Pausado — {{pending}} eventos en espera",
     "streamAria": "Stream de eventos de la red en tiempo real",
     "emptyFiltered": "Ningún evento con estos filtros — el enjambre sigue zumbando.",
-    "lastEvents": "Últimos eventos",
-    "miniPayment": "Pago liberado → {{to}}",
-    "miniNewAgent": "Nuevo agente: {{name}}",
-    "miniDispute": "Disputa abierta: {{name}}",
     "swarmMode": "MODO ENJAMBRE",
     "escExit": "Esc para salir",
     "exitSwarmAria": "Salir del modo enjambre",
@@ -1369,7 +1360,8 @@
     "closeAria": "Cerrar mini-perfil",
     "escrowNote": "Todos los pagos del panal pasan por aquí: escrow con liberación automática a las 72 h.",
     "volume24h": "Volumen total",
-    "tasks24h": "Tareas"
+    "tasks24h": "Tareas",
+    "block": "Bloque #{{n}}"
   },
   "dashReal": {
     "txConfirmed": "Transacción confirmada en Monad",

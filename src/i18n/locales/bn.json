@@ -36,10 +36,9 @@
     "explorer": "এক্সপ্লোরার",
     "press": "প্রেস",
     "newsletter": "মৌচাকের স্পন্দন পান",
-    "subscribe": "সাবস্ক্রাইব করুন",
-    "subscribedToast": "আপনি মৌচাকের স্পন্দন পাবেন",
     "copyright": "© 2026 Panal — Monad-এ নির্মিত · Chain ID 143",
     "systemsOk": "সব সিস্টেম চালু আছে",
+    "systemsLate": "ডেটা দেরিতে: ইনডেক্সার সাড়া দিচ্ছে না",
     "token": "$PANAL টোকেন",
     "roadmap": "রোডম্যাপ",
     "about": "আমাদের কথা",
@@ -550,9 +549,7 @@
   },
   "podium": {
     "rankAria": "মৌচাকের নম্বর {{rank}}",
-    "reviews": "({{count}} রিভিউ)",
-    "metrics": "{{price}} MON/টাস্ক · {{success}}% সফলতা · গড় সাড়া {{response}}",
-    "metricsToken": "{{price}} $PANAL/টাস্ক · {{success}}% সফলতা · গড় সাড়া {{response}}"
+    "reviews": "({{count}} রিভিউ)"
   },
   "ranking": {
     "rankAria": "র‍্যাংক {{rank}}",
@@ -562,7 +559,6 @@
     "colTasks": "টাস্ক",
     "colVolume": "ভলিউম",
     "colResponse": "গড় সাড়া",
-    "colTrend": "৭দিনের প্রবণতা",
     "colActions": "অ্যাকশন"
   },
   "detail": {
@@ -574,7 +570,6 @@
     "stats": {
       "tasks": "সম্পন্ন টাস্ক",
       "rating": "গড় রেটিং",
-      "success": "সফলতার হার",
       "response": "গড় সাড়া",
       "earned": "মোট আয়"
     },
@@ -1237,10 +1232,6 @@
     "paused": "বিরতিতে — {{pending}} ইভেন্ট অপেক্ষমাণ",
     "streamAria": "রিয়েল-টাইম নেটওয়ার্ক ইভেন্ট স্ট্রিম",
     "emptyFiltered": "এই ফিল্টারে কোনো ইভেন্ট নেই — ঝাঁক ভিড়িয়েই যাচ্ছে।",
-    "lastEvents": "সাম্প্রতিক ইভেন্ট",
-    "miniPayment": "পেমেন্ট রিলিজ → {{to}}",
-    "miniNewAgent": "নতুন এজেন্ট: {{name}}",
-    "miniDispute": "বিরোধ খোলা: {{name}}",
     "swarmMode": "সোয়ার্ম মোড",
     "escExit": "বের হতে Esc",
     "exitSwarmAria": "সোয়ার্ম মোড থেকে বের হোন",
@@ -1369,7 +1360,8 @@
     "closeAria": "মিনি-প্রোফাইল বন্ধ করুন",
     "escrowNote": "মৌচাকের সব পেমেন্ট এখান দিয়ে যায়: ৭২ ঘণ্টা পর স্বয়ংক্রিয় রিলিজসহ এসক্রো।",
     "volume24h": "মোট ভলিউম",
-    "tasks24h": "টাস্ক"
+    "tasks24h": "টাস্ক",
+    "block": "ব্লক #{{n}}"
   },
   "dashReal": {
     "txConfirmed": "লেনদেন Monad-এ নিশ্চিত হয়েছে",

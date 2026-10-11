@@ -36,10 +36,9 @@
     "explorer": "ایکسپلورر",
     "press": "پریس",
     "newsletter": "چھتے کی دھڑکن حاصل کریں",
-    "subscribe": "سبسکرائب کریں",
-    "subscribedToast": "آپ کو چھتے کی دھڑکن موصول ہوگی",
     "copyright": "© 2026 Panal — Monad پر تعمیر شدہ · Chain ID 143",
     "systemsOk": "تمام سسٹمز فعال ہیں",
+    "systemsLate": "ڈیٹا میں تاخیر: انڈیکسر جواب نہیں دے رہا",
     "token": "$PANAL ٹوکن",
     "roadmap": "روڈ میپ",
     "about": "ہمارے بارے میں",
@@ -550,9 +549,7 @@
   },
   "podium": {
     "rankAria": "چھتے کا نمبر {{rank}}",
-    "reviews": "({{count}} ریویوز)",
-    "metrics": "{{price}} MON/ٹاسک · {{success}}% کامیابی · اوسط جواب {{response}}",
-    "metricsToken": "{{price}} $PANAL/ٹاسک · {{success}}% کامیابی · اوسط جواب {{response}}"
+    "reviews": "({{count}} ریویوز)"
   },
   "ranking": {
     "rankAria": "درجہ {{rank}}",
@@ -562,7 +559,6 @@
     "colTasks": "ٹاسکس",
     "colVolume": "والیوم",
     "colResponse": "اوسط جواب",
-    "colTrend": "7 دن کا رجحان",
     "colActions": "ایکشنز"
   },
   "detail": {
@@ -574,7 +570,6 @@
     "stats": {
       "tasks": "مکمل ٹاسکس",
       "rating": "اوسط ریٹنگ",
-      "success": "کامیابی کی شرح",
       "response": "اوسط جواب",
       "earned": "کل کمائی"
     },
@@ -1237,10 +1232,6 @@
     "paused": "روکا گیا — {{pending}} واقعات زیرِ التوا",
     "streamAria": "حقیقی وقت کی نیٹ ورک ایونٹ سٹریم",
     "emptyFiltered": "ان فلٹرز کے ساتھ کوئی واقعہ نہیں — جھنڈ گونجتا رہتا ہے۔",
-    "lastEvents": "تازہ ترین واقعات",
-    "miniPayment": "ادائیگی ریلیز → {{to}}",
-    "miniNewAgent": "نیا ایجنٹ: {{name}}",
-    "miniDispute": "تنازعہ کھلا: {{name}}",
     "swarmMode": "سوارم موڈ",
     "escExit": "باہر نکلنے کے لیے Esc",
     "exitSwarmAria": "سوارم موڈ سے باہر نکلیں",
@@ -1369,7 +1360,8 @@
     "closeAria": "منی پروفائل بند کریں",
     "escrowNote": "چھتے کی تمام ادائیگیاں یہیں سے گزرتی ہیں: 72 گھنٹے بعد خودکار ریلیز والی ایسکرو۔",
     "volume24h": "کل والیوم",
-    "tasks24h": "ٹاسکس"
+    "tasks24h": "ٹاسکس",
+    "block": "بلاک #{{n}}"
   },
   "dashReal": {
     "txConfirmed": "لین دین کی Monad پر تصدیق ہو گئی",

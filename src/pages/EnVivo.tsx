@@ -4,12 +4,12 @@ import { AnimatePresence, motion, useAnimationControls } from 'framer-motion';
 import { ArrowRight, Hexagon, Play, X } from 'lucide-react';
 import LiveDot from '@/components/LiveDot';
 import EventCard from '@/components/live/EventCard';
-import { EVENT_META } from '@/components/live/meta';
 import StreamControls from '@/components/live/StreamControls';
 import type { StreamFilter } from '@/components/live/StreamControls';
 import SwarmCanvas from '@/components/live/SwarmCanvas';
 import { useLiveStream } from '@/components/live/useLiveStream';
 import { useNetworkStats } from '@/hooks/useNetworkStats';
+import { usePanalAgents } from '@/hooks/usePanalAgents';
 import { useAhora } from '@/hooks/useAhora';
 import type { StreamEntry } from '@/components/live/useLiveStream';
 import { formatMon } from '@/data/agents';
@@ -78,19 +78,25 @@ function WordReveal({
   );
 }
 
-/** StatBlock oscuro que fluctúa ±2% cada 2s con transición numérica de .4s (S1). */
+/**
+ * Una cifra de la cabecera, con el dato real y nada más: sin fluctuación
+ * simulada. La transición de .4 s solo suaviza el cambio cuando llega un dato
+ * nuevo. `null` es «todavía no se sabe» y se enseña como «—», no como un cero
+ * que parecería un dato.
+ */
 function LiveStat({
-  base,
+  base: dato,
   decimals = 0,
   suffix,
   label,
 }: {
-  base: number;
+  base: number | null;
   decimals?: number;
   suffix?: string;
   label: string;
 }) {
   const reduced = usePrefersReduced();
+  const base = dato ?? 0;
   const [display, setDisplay] = useState(base);
   const prevRef = useRef(base);
 
@@ -125,8 +131,8 @@ function LiveStat({
   return (
     <div className="flex flex-col gap-2">
       <span className="stat-number text-coal-text">
-        {text}
-        {suffix && <span className="ml-1 text-[0.45em] font-semibold text-honey">{suffix}</span>}
+        {dato === null ? '—' : text}
+        {suffix && dato !== null && <span className="ml-1 text-[0.45em] font-semibold text-honey">{suffix}</span>}
       </span>
       <span className="eyebrow text-coal-mute">{label}</span>
     </div>
@@ -263,63 +269,6 @@ function StreamList({
 }
 
 /* ------------------------------------------------------------------ */
-/* S2d · Columna flotante del modo enjambre                            */
-/* ------------------------------------------------------------------ */
-
-function shortText(ev: LiveEvent, t: (k: string, o?: Record<string, unknown>) => string): string {
-  switch (ev.type) {
-    case 'contratacion':
-      return `${ev.from} → ${ev.to}`;
-    case 'pago':
-      return t('livePage.miniPayment', { to: ev.to });
-    case 'registro':
-      return t('livePage.miniNewAgent', { name: ev.from });
-    case 'entrega':
-      return t('live.delivered', { name: ev.from });
-    case 'disputa':
-      return t('livePage.miniDispute', { name: ev.from });
-  }
-}
-
-function MiniStream({ entries }: { entries: StreamEntry[] }) {
-  const { t } = useTranslation();
-  return (
-    <div className="pointer-events-none absolute bottom-4 right-4 top-20 z-10 hidden w-80 flex-col overflow-hidden rounded-xl border border-coal-line bg-coal-2/70 p-3 backdrop-blur md:flex">
-      <p className="eyebrow mb-3 text-coal-mute">{t('livePage.lastEvents')}</p>
-      <div className="flex flex-col gap-2">
-        <AnimatePresence initial={false}>
-          {entries.slice(0, 8).map((entry) => (
-            <motion.div
-              key={entry.ev.id}
-              layout="position"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="flex items-center gap-2 rounded-lg bg-coal/50 px-2.5 py-2"
-            >
-              <span
-                className="h-1.5 w-1.5 shrink-0 rounded-full"
-                style={{ backgroundColor: EVENT_META[entry.ev.type].hex }}
-                aria-hidden
-              />
-              <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-coal-text">
-                {shortText(entry.ev, t)}
-              </span>
-              {entry.ev.amount !== undefined && (
-                <span className="shrink-0 font-mono text-[11px] text-honey">
-                  {formatMon(entry.ev.amount, 5)}
-                </span>
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* S3 · Mayores contratos de la última hora                            */
 /* ------------------------------------------------------------------ */
 
@@ -422,6 +371,17 @@ export default function EnVivo() {
   const tabHidden = useDocumentHidden();
   const stream = useLiveStream();
   const netStats = useNetworkStats();
+  /*
+   * «Agentes activos ahora» son los que están EN LÍNEA: activos en la cadena y
+   * contestando, que es lo mismo que el mercado enseña como «En línea».
+   *
+   * Antes salía de `getAgentCount()`, que cuenta todos los que se han
+   * registrado alguna vez: los dados de baja, el de pruebas y los que llevan
+   * días sin contestar. El mismo número que la portada rotula, con razón,
+   * «agentes registrados», aquí se vendía como actividad de este momento.
+   */
+  const { agents: agentes, loading: cargandoAgentes } = usePanalAgents();
+  const enLinea = cargandoAgentes ? null : agentes.filter((a) => a.status === 'en-linea').length;
   const [filter, setFilter] = useState<StreamFilter>('todo');
   const [onlyA2A, setOnlyA2A] = useState(false);
   const [hoverEvent, setHoverEvent] = useState<LiveEvent | null>(null);
@@ -501,7 +461,7 @@ export default function EnVivo() {
           <div className="flex shrink-0 flex-wrap gap-8 md:gap-10">
             <LiveStat base={netStats.eventsPerMin} decimals={1} label={t('livePage.statEvents')} />
             <LiveStat base={netStats.movedPerMin} decimals={2} suffix="MON" label={t('livePage.statMoved')} />
-            <LiveStat base={netStats.agentCount ?? 0} label={t('livePage.statAgents')} />
+            <LiveStat base={enLinea} label={t('livePage.statAgents')} />
           </div>
         </div>
       </section>
@@ -547,7 +507,6 @@ export default function EnVivo() {
                   >
                     <X size={16} />
                   </button>
-                  <MiniStream entries={stream.entries} />
                 </>
               )}
             </div>

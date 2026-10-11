@@ -550,6 +550,10 @@ export function usePanalAgents() {
     queryKey: ['panal-agents', V2_ENABLED, idioma],
     queryFn: () => fetchAgents(idioma),
     staleTime: 30_000,
+    // Quién está en línea cambia sin que nadie recargue la página: un agente
+    // que se apaga, otro que se da de alta. «En vivo» lo cuenta, y una cifra
+    // que solo se refresca al volver a entrar no es en vivo.
+    refetchInterval: 60_000,
     retry: 3,
     retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 10_000),
   });

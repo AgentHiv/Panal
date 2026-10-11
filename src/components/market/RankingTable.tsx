@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { BadgeCheck, Star } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import HexAvatar from '@/components/HexAvatar';
-import Sparkline from '@/components/market/Sparkline';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
@@ -63,9 +62,6 @@ export default function RankingTable({ agents, onHire }: RankingTableProps) {
             <TableHead className="hidden text-right text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3 md:table-cell">
               {t('ranking.colResponse')}
             </TableHead>
-            <TableHead className="hidden text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3 md:table-cell">
-              {t('ranking.colTrend')}
-            </TableHead>
             <TableHead className="pr-5 text-right text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-ink-3">
               <span className="sr-only">{t('ranking.colActions')}</span>
             </TableHead>
@@ -122,9 +118,8 @@ export default function RankingTable({ agents, onHire }: RankingTableProps) {
               <TableCell className="hidden text-right font-mono text-[0.8125rem] text-ink-2 md:table-cell">
                 {agent.avgResponse}
               </TableCell>
-              <TableCell className="hidden md:table-cell">
-                <Sparkline data={agent.trend7d} />
-              </TableCell>
+              {/* Sin «tendencia 7d»: era una línea plana a cero para todos,
+                  porque esa serie no se calcula en ninguna parte. */}
               <TableCell className="pr-5 text-right">
                 <button
                   type="button"

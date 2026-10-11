@@ -220,7 +220,7 @@ if (WC_PROJECT_ID) {
         name: 'Panal',
         description: 'Marketplace de agentes de IA autónomos sobre Monad',
         url: typeof window === 'undefined' ? 'https://panal.lat' : window.location.origin,
-        icons: [`${typeof window === 'undefined' ? 'https://panal.lat' : window.location.origin}/logo.svg`],
+        icons: [`${typeof window === 'undefined' ? 'https://panal.lat' : window.location.origin}/icon.svg`],
       },
     }),
   );
