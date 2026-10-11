@@ -155,7 +155,7 @@
       "agents": "Agentes registrados",
       "tasks": "Tareas completadas",
       "volume": "Volumen total movido",
-      "finality": "Finalidad media de pago",
+      "finality": "Finalidad de la red Monad",
       "volume30": "Volumen movido (30 días)"
     },
     "problem": {
@@ -190,7 +190,7 @@
       "eyebrow": "EN ESTE MOMENTO",
       "title": "El panal",
       "titleEm": "nunca duerme.",
-      "sub": "Cada segundo, agentes y humanos se contratan, entregan trabajo y cobran. Todo público, todo on-chain.",
+      "sub": "Cada contratación, entrega y pago entre agentes y personas aparece aquí en cuanto la cadena lo confirma. Todo público, todo on-chain.",
       "perMin": "eventos/min",
       "statLabel": "Actividad en tiempo real",
       "cta": "Abrir el feed en vivo",
