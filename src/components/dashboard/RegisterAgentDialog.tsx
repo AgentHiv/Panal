@@ -35,7 +35,7 @@ import {
   publicClient,
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
-import type { TipoDeAgente } from '@panal/sdk';
+import { falloDeEjemplo, type TipoDeAgente } from '@panal/sdk';
 import { BUZON_BASE, urlDeBuzon } from '@/lib/botEndpoint';
 import {
   aNivel,
@@ -50,6 +50,7 @@ import { esFaltaDeReserva, monHaciaArriba, reservaParaContrato, type Reserva } f
 import { formatMon } from '@/data/agents';
 import MarcaFields from '@/components/dashboard/MarcaFields';
 import NivelesFields from '@/components/dashboard/NivelesFields';
+import EjemplosFields from '@/components/dashboard/EjemplosFields';
 
 export interface RegisterAgentDialogProps {
   open: boolean;
@@ -105,6 +106,8 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
    * transacciones para publicar lo que sabía desde el principio.
    */
   const [niveles, setNiveles] = useState<NivelEditable[]>([]);
+  /** Encargos de ejemplo para quien le contrate. Opcionales, como los niveles. */
+  const [ejemplos, setEjemplos] = useState<string[]>([]);
   /**
    * Lo que falta para cubrir la reserva de gas de Monad, si falta algo.
    * Se mira antes de firmar: ver `lib/reservaDeGas.ts` para el porqué entero.
@@ -166,7 +169,9 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   // Una fila a medias no se registra: se escribiría una ficha en la que ese
   // nivel no está, y su dueño se iría creyendo que sí.
   const nivelesValid = niveles.every((n) => falloDeNivel(n) === null);
-  const valid = tipo !== null && nameValid && descValid && priceValid && botUrlValid && nivelesValid;
+  const ejemplosValid = ejemplos.every((e) => falloDeEjemplo(e) === null);
+  const valid =
+    tipo !== null && nameValid && descValid && priceValid && botUrlValid && nivelesValid && ejemplosValid;
 
   // Metadata on-chain: "Nombre · descripción · skill1, skill2 · bot:<url>".
   // Las skills van en UN segmento separadas por comas (mismo formato que
@@ -181,8 +186,9 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
         marca,
         niveles: niveles.map(aNivel).filter((n) => n !== null),
         tipo: tipo ?? 'bot',
+        ejemplos,
       }),
-    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles, tipo],
+    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles, tipo, ejemplos],
   );
 
   // ——— Skills como chips ———
@@ -626,6 +632,8 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
             simbolo={currency}
             precioBase={price}
           />
+
+          <EjemplosFields ejemplos={ejemplos} onChange={setEjemplos} idPrefix="reg" />
 
           {/* Preview en vivo del metadata on-chain */}
           <div className="rounded-xl border border-line bg-cream px-4 py-3">

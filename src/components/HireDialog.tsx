@@ -6,7 +6,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ExternalLink, Loader2, Paperclip, Timer, TriangleAlert, X } from 'lucide-react';
 import { useSignMessage, useSwitchChain, useWriteContract } from 'wagmi';
 import { formatEther, keccak256, parseEventLogs, toBytes } from 'viem';
-import { conTextoDeLaFicha, leerNivelesDeMetadata, type Nivel } from '@panal/sdk';
+import {
+  conEjemplosDeLaFicha,
+  conTextoDeLaFicha,
+  leerEjemplosDeMetadata,
+  leerNivelesDeMetadata,
+  type Nivel,
+} from '@panal/sdk';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { saveTaskBrief } from '@/lib/taskBriefs';
 import {
@@ -108,6 +114,14 @@ function HireWizard({
   const [step, setStep] = useState(0);
   /** Los niveles que vende, leídos de su tarjeta. Vacío es lo normal. */
   const [niveles, setNiveles] = useState<Nivel[]>([]);
+  /**
+   * Los encargos de ejemplo que propone el propio agente. Vacío es lo normal.
+   *
+   * De la cadena, con el texto traducido de su ficha si cuadra. Sustituyen a
+   * los cuatro fijos que salían con cualquier agente: estos los escribe quien
+   * sabe qué hace.
+   */
+  const [ejemplos, setEjemplos] = useState<string[]>([]);
   /**
    * El nivel que se va a comprar.
    *
@@ -256,7 +270,7 @@ function HireWizard({
         // Sin endpoint publicado no hay a quién subirle nada.
         const caps: CapacidadesAgente = botUrl
           ? await leerCapacidades(botUrl, 6_000, i18n.language)
-          : { adjuntos: false, niveles: [] };
+          : { adjuntos: false, niveles: [], ejemplos: [] };
         if (!vigente) return;
         setAceptaAdjuntos(caps.adjuntos ? 'si' : 'no');
         if (caps.maxAdjuntoBytes) setTopeAdjunto(Math.min(caps.maxAdjuntoBytes, MAX_ADJUNTO_BYTES));
@@ -264,6 +278,8 @@ function HireWizard({
         const suyos =
           enCadena.length > 0 ? conTextoDeLaFicha(enCadena, caps.niveles) : caps.niveles;
         setNiveles(suyos);
+        // Los ejemplos, con la misma regla: la cadena manda, la ficha traduce.
+        setEjemplos(conEjemplosDeLaFicha(leerEjemplosDeMetadata(meta.metadataURI), caps.ejemplos));
         // Si se entró por el botón grande no hay nivel elegido, y el que toca
         // por defecto es el más barato: debería costar lo que el agente tiene
         // registrado, así que quien no toque nada bloquea lo de siempre.
@@ -830,16 +846,32 @@ function HireWizard({
                     value={taskText}
                     onChange={(e) => setTaskText(e.target.value)}
                     rows={4}
-                    // Sin ejemplos debajo, a propósito. Había cuatro fijos
-                    // («Audita este contrato», «Resume este PDF»…) que salían
-                    // con CUALQUIER agente: a uno de traducción le proponían
-                    // auditar un contrato, y al pulsar uno el encargo se
-                    // quedaba en esa frase, sin el contrato ni el PDF. Lo que
-                    // hace cada agente está en su ficha, y si vende varios
-                    // tamaños, en los niveles de justo arriba.
                     placeholder={t('hire.taskPlaceholder', { name: agent.name })}
                     className="w-full resize-none rounded-xl border border-line bg-paper px-4 py-3 text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
                   />
+                  {/* Los ejemplos del PROPIO agente, solo con la caja vacía.
+                      Había cuatro fijos que salían con cualquiera —a uno de
+                      traducción le proponían auditar un contrato—; estos los
+                      escribe su dueño en la ficha. Al pulsar uno se copia para
+                      completarlo: no es un encargo listo, le falta lo tuyo. Y
+                      con algo ya escrito se esconden, para no pisarlo. */}
+                  {ejemplos.length > 0 && !taskText.trim() && (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-[0.75rem] text-ink-3">{t('hire.ejemplos', { name: agent.name })}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {ejemplos.map((ejemplo) => (
+                          <button
+                            key={ejemplo}
+                            type="button"
+                            onClick={() => setTaskText(ejemplo)}
+                            className="rounded-full bg-sand px-3 py-1.5 text-left text-[0.8125rem] text-ink-2 transition-colors hover:bg-honey-soft hover:text-honey-deep"
+                          >
+                            {ejemplo}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[0.8125rem] font-medium text-ink-2">{t('hire.deadline.label')}</span>
                     <div className="grid grid-cols-4 gap-2">

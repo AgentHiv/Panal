@@ -478,6 +478,7 @@
       "retryBrief": "Retry sending the brief"
     },
     "taskPlaceholder": "Tell {{name}} what you need, with the text or data to work on…",
+    "ejemplos": "Ideas from {{name}}:",
     "paramsPlaceholder": "Parameters (optional) — e.g. solidity ^0.8.24",
     "attach": {
       "label": "Attach files (optional)",
@@ -1643,6 +1644,22 @@
       "separador": "No «·» or «|»: they separate the fields of your profile and would split the tier in two."
     },
     "mismatch": "Your cheapest tier is {{barato}} {{simbolo}} but your profile price is {{base}}. The market shows the profile price, so people will read a price they cannot buy anything with."
+  },
+  "ejemplos": {
+    "title": "Example jobs (optional)",
+    "optional": "What people hiring you are offered to write.",
+    "filled": "{{n}} of 3 filled",
+    "hint": "They appear under the task box while it is empty, and clicking one copies it so the client can complete it with their own material. Write what people really ask you for, in one sentence. It is stored in your on-chain profile, so changing it costs a transaction.",
+    "nth": "Example {{n}}",
+    "placeholders": {
+      "p1": "e.g. Review this contract and tell me if it has reentrancy",
+      "p2": "e.g. Translate this product sheet into English",
+      "p3": "e.g. Summarize this report in five points"
+    },
+    "errors": {
+      "separador": "No «·»: it separates the fields of your profile and would split the example in two.",
+      "largo": "At most {{n}} characters: it is one sentence, not the whole job."
+    }
   },
   "guia": {
     "metaTitle": "Publish your agent — Panal",

@@ -31,6 +31,7 @@ import {
   assertCanServe,
   buildQuote,
   createPanalClient,
+  leerEjemplosDeMetadata,
   leerNiveles,
   leerNivelesDeMetadata,
   normalizarIdioma,
@@ -269,6 +270,15 @@ const NIVELES_DEL_CODIGO = NIVELES_OK;
  */
 let FICHA_TEXTO: { name: string; description: string } = { name: '', description: '' };
 
+/**
+ * Los encargos de ejemplo que este agente propone al contratarle.
+ *
+ * Viven en la cadena (`ejemplo:` en la ficha) y se editan desde el panel de la
+ * web o desde la app, sin tocar este código. Se releen con los niveles, cada
+ * cinco minutos, y se sirven en `/agent.json` traducidos como la descripción.
+ */
+let EJEMPLOS_OK: string[] = [];
+
 async function refrescarNiveles(): Promise<void> {
   try {
     const ficha = await panal.getAgent(account.address);
@@ -276,6 +286,7 @@ async function refrescarNiveles(): Promise<void> {
       name: ficha.metadata.name,
       description: ficha.metadata.description,
     };
+    EJEMPLOS_OK = leerEjemplosDeMetadata(ficha.metadataURI);
     const enCadena = leerNivelesDeMetadata(ficha.metadataURI);
     const antes = NIVELES_OK.map((n) => `${n.wei}:${n.name ?? ''}`).join('|');
     NIVELES_OK = enCadena.length > 0 ? enCadena : NIVELES_DEL_CODIGO;
@@ -1318,6 +1329,7 @@ const server = createServer((req, res) => {
        */
       const idioma = normalizarIdioma(url.searchParams.get('lang'));
       const nivelesFicha = NIVELES_OK.map(comoFicha);
+      let ejemplos = EJEMPLOS_OK;
       let descripcion = FICHA_TEXTO.description;
       /**
        * En qué idioma va lo que se sirve, y `null` si va en el original.
@@ -1335,6 +1347,9 @@ const server = createServer((req, res) => {
         const frases = {
           description: descripcion,
           tiers: NIVELES_OK.map((n) => ({ name: n.name ?? '', description: n.description ?? '' })),
+          // Sin campo si no hay: la huella de la ficha no cambia y lo que ya
+          // estaba traducido sigue valiendo.
+          ...(EJEMPLOS_OK.length > 0 ? { examples: EJEMPLOS_OK } : {}),
         };
         const traducido = frasesGuardadas(frases, idioma, DATA_DIR);
         if (!traducido) pedirTraduccion(frases, idioma, LLM_FICHA, DATA_DIR);
@@ -1349,6 +1364,7 @@ const server = createServer((req, res) => {
             if (destino.name && t.name) destino.name = t.name;
             if (destino.description && t.description) destino.description = t.description;
           });
+          if (traducido.examples?.length === EJEMPLOS_OK.length) ejemplos = traducido.examples;
         }
       }
       const x402 =
@@ -1418,6 +1434,9 @@ const server = createServer((req, res) => {
         // Los niveles, sólo si este agente vende alguno. Ausente significa que
         // no los ofrece, y quien lee NO debe inventárselos a partir del precio.
         ...(nivelesFicha.length > 0 ? { tiers: nivelesFicha } : {}),
+        // Los encargos de ejemplo, en el mismo idioma que la descripción. Los
+        // escribe su dueño en la ficha de la cadena; ausente es que no hay.
+        ...(ejemplos.length > 0 ? { examples: ejemplos } : {}),
         // ALIAS ANTIGUO, en la raíz. Aquí es donde esta plantilla lo publicaba
         // antes, y hay clientes ahí fuera que solo miran este sitio. Se sirve
         // por compatibilidad y desaparecerá; lo que se lee es `endpoints`.

@@ -132,6 +132,14 @@ jobs:
       - name: Persona o programa, leido igual por las cuatro capas
         run: pnpm exec tsx scripts/test-tipo.ts
 
+      # Los encargos de ejemplo que propone cada agente viven en la misma
+      # cadena. Un `ejemplo:` que una capa no aparte sale como skill en el
+      # mercado, y una descripcion que empiece por «Ejemplo:» no puede
+      # convertirse en un boton. Y los dos formularios que los escriben no
+      # pueden llevarse por delante los niveles ni el tipo.
+      - name: Los ejemplos de encargo se leen y se escriben igual en las cuatro capas
+        run: pnpm exec tsx scripts/test-ejemplos.ts
+
       # Un agente puede vivir en la raiz de su dominio o en un subcamino (el
       # buzon), y `new URL('/brief/12', base)` se come el camino de la base.
       # Eso mandaba el encargo a una ruta de nadie: 404 leido como «no

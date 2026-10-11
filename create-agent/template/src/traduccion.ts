@@ -12,7 +12,7 @@
  *
  * Aquí `GET /agent.json?lang=fr` devuelve tu MISMA ficha con las frases en
  * francés. Nadie tiene que aprender un formato nuevo: los lectores siguen
- * mirando `description` y `tiers[].name`, solo que traducidos.
+ * mirando `description`, `tiers[].name` y `examples`, solo que traducidos.
  *
  * QUÉ CUESTA, QUE ES LA PREGUNTA DE VERDAD
  *
@@ -65,6 +65,12 @@ export interface Frases {
   description: string;
   /** Nombre y descripción de cada nivel, en el orden en que van en la ficha. */
   tiers: { name: string; description: string }[];
+  /**
+   * Los encargos de ejemplo, en su orden. Sin campo cuando no hay ninguno, y
+   * a propósito: así la huella de una ficha sin ejemplos es la de siempre y
+   * sus traducciones ya guardadas siguen valiendo.
+   */
+  examples?: string[];
 }
 
 /** Tope de la respuesta que se acepta del modelo, por frase. */
@@ -144,7 +150,20 @@ function validar(v: unknown, original: Frases | null): Frases | null {
     if (typeof name !== 'string' || typeof d !== 'string') return null;
     salida.push({ name: name.trim().slice(0, MAX_FRASE), description: d.trim().slice(0, MAX_FRASE) });
   }
-  return { description: description.trim().slice(0, MAX_FRASE), tiers: salida };
+  // Los ejemplos, con la misma regla que los niveles: los mismos en número o
+  // se descarta todo. Si el original no tiene, no se esperan.
+  const crudos = (v as Record<string, unknown>).examples;
+  let examples: string[] = [];
+  if ((original?.examples?.length ?? 0) > 0 || crudos !== undefined) {
+    if (!Array.isArray(crudos) || crudos.some((e) => typeof e !== 'string')) return null;
+    if (original && crudos.length !== (original.examples?.length ?? 0)) return null;
+    examples = (crudos as string[]).map((e) => e.trim().slice(0, MAX_FRASE));
+  }
+  return {
+    description: description.trim().slice(0, MAX_FRASE),
+    tiers: salida,
+    ...(examples.length > 0 ? { examples } : {}),
+  };
 }
 
 /** El JSON que venga, aunque llegue envuelto en un bloque de markdown. */

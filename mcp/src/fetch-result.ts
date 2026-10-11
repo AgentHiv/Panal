@@ -15,7 +15,7 @@
 // implementaciones equivalentes de lo mismo —la del SDK y una aquí—, y dos
 // copias de un control de seguridad son una que se queda atrás sin que nadie
 // se entere el día que la otra mejora.
-import { assertPublicUrl, leerMaxBriefChars, leerNiveles, rutaDeAgente } from '@panal/sdk';
+import { assertPublicUrl, leerEjemplos, leerMaxBriefChars, leerNiveles, rutaDeAgente } from '@panal/sdk';
 import type { Nivel } from '@panal/sdk';
 
 /** Tope de la respuesta. Sin esto, un endpoint hostil tumba el proceso. */
@@ -147,6 +147,11 @@ export interface LimitesDelAgente {
    * el agente caído y el único que nadie puede cambiar entre mirar y pagar.
    */
   niveles: Nivel[];
+  /**
+   * Los encargos de ejemplo de la ficha, si trae. Salen de la misma lectura,
+   * por lo mismo. La fuente es la cadena: ver `conEjemplosDeLaFicha`.
+   */
+  ejemplos?: string[];
 }
 
 export async function fetchAgentLimits(botUrl: string): Promise<LimitesDelAgente> {
@@ -171,7 +176,12 @@ export async function fetchAgentLimits(botUrl: string): Promise<LimitesDelAgente
     if (!res.ok) return { alcanzable: true, maxBriefChars: null, niveles: [] };
     try {
       const card = await res.json();
-      return { alcanzable: true, maxBriefChars: parseMaxBriefChars(card), niveles: leerNiveles(card) };
+      return {
+        alcanzable: true,
+        maxBriefChars: parseMaxBriefChars(card),
+        niveles: leerNiveles(card),
+        ejemplos: leerEjemplos(card),
+      };
     } catch {
       return { alcanzable: true, maxBriefChars: null, niveles: [] };
     }

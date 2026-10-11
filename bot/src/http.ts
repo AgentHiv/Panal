@@ -43,6 +43,7 @@
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { esTokenDeMarca, leerMarca } from './marca.js';
+import { esTokenDeEjemplo, leerEjemplosDeMetadata } from './ejemplos.js';
 import { esTokenDeNivel, leerNivelesDeMetadata } from './niveles.js';
 import { esTokenDeTipo } from './tipo.js';
 import { normalizarIdioma, traducirFrases, type Idioma } from './traduccion.js';
@@ -193,7 +194,7 @@ export interface AgentJson {
   name: string;
   description: string;
   /**
-   * El idioma de `description` y `tiers`, si se pidió con `?lang=` y se pudo
+   * El idioma de `description`, `tiers` y `examples`, si se pidió con `?lang=` y se pudo
    * traducir. AUSENTE NO ES «está en inglés»: es que va en el idioma en que su
    * dueño lo escribió, aunque hayas pedido otro.
    */
@@ -210,6 +211,11 @@ export interface AgentJson {
     maxAttachChars?: number;
     maxAttachCharsTotal?: number;
   }[];
+  /**
+   * Encargos de ejemplo, para proponerlos al contratar. Hasta tres, leídos de
+   * los `ejemplo:` de la ficha on-chain. Ausente = no propone ninguno.
+   */
+  examples?: string[];
   /**
    * La dirección del agente, con el nombre que usa todo el mundo menos este
    * bot. Los agentes de la plantilla publican `agent`, este publicaba solo
@@ -317,7 +323,8 @@ export function parseMetadataURI(uri: string): {
         !p.toLowerCase().startsWith('bot:') &&
         !esTokenDeMarca(p) &&
         !esTokenDeNivel(p) &&
-        !esTokenDeTipo(p),
+        !esTokenDeTipo(p) &&
+        !esTokenDeEjemplo(p),
     );
   const links = leerMarca(uri);
   return {
@@ -385,6 +392,10 @@ export async function buildAgentJson(
   // partir del precio. Se anuncian aquí para que su dueño pueda ponerlos desde
   // el panel sin tocar este código.
   const niveles = leerNivelesDeMetadata(agent?.metadataURI ?? '');
+  // Los encargos de ejemplo, también de la cadena: los pone su dueño desde el
+  // panel. Se sirven traducidos como la descripción.
+  const ejemplosEnCadena = leerEjemplosDeMetadata(agent?.metadataURI ?? '');
+  let ejemplos = ejemplosEnCadena;
 
   /**
    * En qué idioma va lo que se sirve, y `null` si va en el original.
@@ -402,6 +413,8 @@ export async function buildAgentJson(
       {
         description: descripcion,
         tiers: niveles.map((n) => ({ name: n.name, description: n.description ?? '' })),
+        // Sin campo si no hay, para que la huella de siempre siga valiendo.
+        ...(ejemplosEnCadena.length > 0 ? { examples: ejemplosEnCadena } : {}),
       },
       idioma,
       cfg,
@@ -416,6 +429,7 @@ export async function buildAgentJson(
         name: t.name || (niveles[i]?.name ?? ''),
         description: t.description || (niveles[i]?.description ?? null),
       }));
+      if (traducido.examples?.length === ejemplosEnCadena.length) ejemplos = traducido.examples;
     }
   }
 
@@ -437,6 +451,7 @@ export async function buildAgentJson(
           })),
         }
       : {}),
+    ...(ejemplos.length > 0 ? { examples: ejemplos } : {}),
     agent: cfg.agentAddress,
     agentAddress: cfg.agentAddress,
     // `protocol` y `network` los servía solo la plantilla, y son lo que deja

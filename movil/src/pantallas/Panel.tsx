@@ -21,6 +21,7 @@ import Icono from '~/componentes/Icono';
 import CamposMarca from '~/componentes/CamposMarca';
 import type { Marca } from '@/lib/marca';
 import { resumirFicha } from '@/lib/agentMetadata';
+import { EJEMPLOS_EDITABLES, falloDeEjemplo, MAX_EJEMPLO } from '@panal/sdk';
 import { armarFicha, partirFicha, useFicha, usePendiente, useTareasDe } from '~/lib/agentes';
 import { revisar, cuantasUrgentes } from '~/lib/guardia';
 import { monto } from '~/lib/formato';
@@ -616,6 +617,14 @@ function HojaFicha({
    * cambia se vuelve a escribir igual.
    */
   const [marca, setMarca] = useState<Marca>(inicial.marca);
+  /**
+   * Los encargos de ejemplo: los que se le proponen a quien contrata, debajo de
+   * la caja. Tres huecos, con lo que ya hubiera escrito.
+   */
+  const [ejemplos, setEjemplos] = useState<string[]>(() =>
+    Array.from({ length: EJEMPLOS_EDITABLES }, (_, i) => inicial.ejemplos[i] ?? ''),
+  );
+  const fallosEjemplos = ejemplos.map((e) => falloDeEjemplo(e));
   const [bot, setBot] = useState(() => {
     const parte = uri.split('·').find((p) => p.trim().toLowerCase().startsWith('bot:'));
     return parte ? parte.trim().slice(4) : '';
@@ -634,7 +643,7 @@ function HojaFicha({
   // ninguno de los dos, y sin volver a escribirlos editar la descripción desde
   // el teléfono los borraría — los niveles dejarían de cobrarse y quien se
   // registró como persona aparecería de golpe en el mercado de programas.
-  const nueva = armarFicha(nombre, descripcion, bot, marca, inicial.niveles, inicial.tipo);
+  const nueva = armarFicha(nombre, descripcion, bot, marca, inicial.niveles, inicial.tipo, ejemplos);
   const trabajando = isPending || recibo.isLoading;
   const T = useTextos();
 
@@ -659,6 +668,28 @@ function HojaFicha({
 
       <CamposMarca marca={marca} onCambio={setMarca} semilla={direccion} />
 
+      <p className="mt-3.5 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">{T.panel.ejemplos}</p>
+      <p className="mt-1 text-[12px] leading-[1.45] text-ink-3">{T.panel.ejemplosNota}</p>
+      {ejemplos.map((ejemplo, i) => (
+        <div key={i} className="mt-2">
+          <input
+            value={ejemplo}
+            onChange={(e) => setEjemplos((v) => v.map((x, j) => (j === i ? e.target.value : x)))}
+            placeholder={T.panel.ejemploHueco(i + 1)}
+            maxLength={MAX_EJEMPLO + 1}
+            className={`w-full rounded-[11px] border bg-sand px-3 py-2.5 text-[13.5px] text-ink outline-none placeholder:text-ink-3 focus:border-honey ${
+              fallosEjemplos[i] ? 'border-terra' : 'border-line'
+            }`}
+          />
+          {fallosEjemplos[i] === 'separador' && (
+            <p className="mt-1 text-[11.5px] text-terra">{T.panel.ejemploSeparador}</p>
+          )}
+          {fallosEjemplos[i] === 'largo' && (
+            <p className="mt-1 text-[11.5px] text-terra">{T.panel.ejemploLargo(MAX_EJEMPLO)}</p>
+          )}
+        </div>
+      ))}
+
       <p className="mt-3.5 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
         {T.panel.loQueSeEscribe}
       </p>
@@ -681,7 +712,7 @@ function HojaFicha({
               args: [nueva],
             })
           }
-          disabled={!nueva || trabajando}
+          disabled={!nueva || trabajando || fallosEjemplos.some((f) => f !== null)}
         >
           {trabajando ? T.panel.firmando : T.panel.firmar}
         </Boton>

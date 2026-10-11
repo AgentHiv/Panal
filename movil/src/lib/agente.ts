@@ -7,7 +7,7 @@ import { partirFicha } from '~/lib/ficha';
 import { extractBotUrl } from '@/lib/botEndpoint';
 import { leerCobroPorLlamada } from '@/lib/chat';
 import type { CobroPorLlamada } from '@/lib/chat';
-import { leerNivelesDeMetadata, type Nivel } from '@panal/sdk';
+import { leerEjemplosDeMetadata, leerNivelesDeMetadata, type Nivel } from '@panal/sdk';
 
 export interface DatosAgente {
   /** El endpoint que el agente tiene REGISTRADO en la cadena. */
@@ -26,6 +26,11 @@ export interface DatosAgente {
    * pequeño. Los de la tarjeta siguen valiendo de respaldo.
    */
   niveles: Nivel[];
+  /**
+   * Los encargos de ejemplo que propone, de la cadena. Vacío es lo normal.
+   * La hoja de encargar los cambia por los de la tarjeta si vienen traducidos.
+   */
+  ejemplos: string[];
 }
 
 /**
@@ -80,6 +85,7 @@ export function useAgente(direccion: string | undefined) {
         moneda: (ficha.currency ?? '0x0000000000000000000000000000000000000000') as Address,
         nombre,
         niveles: leerNivelesDeMetadata(ficha.metadataURI),
+        ejemplos: leerEjemplosDeMetadata(ficha.metadataURI),
       };
     },
   });

@@ -388,6 +388,7 @@ export const es = {
     nivel: 'Nivel',
     nivelTope: (n: number) => `Hasta ${n.toLocaleString()} caracteres`,
     briefHueco: 'Describe el trabajo. Esto es lo que verá el agente.',
+    ideasDe: (nombre: string) => `Ideas de ${nombre}:`,
     plazo: 'Plazo',
     // Las unidades también se traducen: «6 h» en chino se lee «6 小时».
     horas: (n: number) => `${n} h`,
@@ -834,6 +835,11 @@ export const es = {
     queHace: 'Qué hace',
     dondeEscucha: 'Dónde escucha',
     dondeEscuchaHueco: 'https://tu-agente.lat',
+    ejemplos: 'Ejemplos de encargo',
+    ejemplosNota: 'Salen al contratarte, debajo de la caja, para que te pidan lo que de verdad haces. Una frase cada uno; opcionales.',
+    ejemploHueco: (n: number) => `Ejemplo ${n}`,
+    ejemploSeparador: 'Sin «·»: partiría la ficha en dos.',
+    ejemploLargo: (n: number) => `Como mucho ${n} caracteres.`,
     sinBotFichaAntes: 'Sin dirección nadie podrá hablarle. La app busca',
     sinBotFichaDespues:
       'en la ficha para saber dónde mandar los mensajes; sin eso solo aceptará encargos con depósito.',

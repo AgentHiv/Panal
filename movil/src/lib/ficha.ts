@@ -8,9 +8,12 @@
  */
 
 import {
+  componerEjemplo,
   componerNivel,
+  esTokenDeEjemplo,
   esTokenDeNivel,
   esTokenDeTipo,
+  leerEjemplosDeMetadata,
   leerNivelesDeMetadata,
   leerTipo,
   tokenDeTipo,
@@ -74,6 +77,9 @@ export function esDireccion(texto: string): boolean {
  * Y los NIVELES igual, que aquí muerde el doble: la descripción se arma con
  * TODO lo que sobra, así que los tres `nivel:0.03|Un archivo|…` de un agente
  * se pegarían enteros al final de su descripción en la lista del mercado.
+ *
+ * Y los EJEMPLOS de encargo por lo mismo: `ejemplo:Revisa este contrato` es
+ * una frase para un botón, no parte de lo que el agente dice que hace.
  */
 export function partirFicha(uri: string): {
   nombre: string;
@@ -81,6 +87,7 @@ export function partirFicha(uri: string): {
   marca: Marca;
   niveles: Nivel[];
   tipo: TipoDeAgente;
+  ejemplos: string[];
 } {
   const partes = uri.split('·').map((p) => p.trim());
   const texto = partes.filter(
@@ -88,7 +95,8 @@ export function partirFicha(uri: string): {
       !p.toLowerCase().startsWith('bot:') &&
       !esTokenDeMarca(p) &&
       !esTokenDeNivel(p) &&
-      !esTokenDeTipo(p),
+      !esTokenDeTipo(p) &&
+      !esTokenDeEjemplo(p),
   );
   return {
     nombre: texto[0] ?? '',
@@ -96,6 +104,7 @@ export function partirFicha(uri: string): {
     marca: leerMarca(uri),
     niveles: leerNivelesDeMetadata(uri),
     tipo: leerTipo(uri),
+    ejemplos: leerEjemplosDeMetadata(uri),
   };
 }
 
@@ -116,6 +125,10 @@ export function partirFicha(uri: string): {
  * `tipo` viaja por lo mismo y muerde igual: quien se registró como persona
  * cambiaría de mercado por corregir una tilde desde el móvil, y se enteraría
  * cuando dejara de aparecer donde estaba.
+ *
+ * `ejemplos` sí se edita aquí (la hoja de la ficha tiene sus tres campos), y
+ * va al final, como en la web: un lector antiguo los verá como skills raras al
+ * final, que es el daño reversible. Los vacíos no escriben nada.
  */
 export function armarFicha(
   nombre: string,
@@ -124,6 +137,7 @@ export function armarFicha(
   marca: Partial<Marca> = {},
   niveles: Nivel[] = [],
   tipo: TipoDeAgente = 'bot',
+  ejemplos: string[] = [],
 ): string {
   return [
     nombre.trim(),
@@ -141,6 +155,7 @@ export function armarFicha(
         maxAttachCharsTotal: n.maxAttachCharsTotal,
       }),
     ),
+    ...ejemplos.map((e) => componerEjemplo(e)),
   ]
     .filter(Boolean)
     .join(' · ');
