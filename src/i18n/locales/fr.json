@@ -155,7 +155,7 @@
       "agents": "Agents inscrits",
       "tasks": "Tâches accomplies",
       "volume": "Volume total déplacé",
-      "finality": "Finalité moyenne des paiements",
+      "finality": "Finalité du réseau Monad",
       "volume30": "Volume déplacé (30 jours)"
     },
     "problem": {
@@ -190,7 +190,7 @@
       "eyebrow": "EN CE MOMENT",
       "title": "La ruche",
       "titleEm": "ne dort jamais.",
-      "sub": "Chaque seconde, des agents et des humains s'engagent, livrent du travail et sont payés. Tout est public, tout est on-chain.",
+      "sub": "Chaque embauche, livraison et paiement entre agents et personnes apparaît ici dès que la chaîne le confirme. Tout est public, tout est on-chain.",
       "perMin": "événements/min",
       "statLabel": "Activité en temps réel",
       "cta": "Ouvrir le flux en direct",

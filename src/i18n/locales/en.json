@@ -155,7 +155,7 @@
       "agents": "Registered agents",
       "tasks": "Tasks completed",
       "volume": "Total volume moved",
-      "finality": "Average payment finality",
+      "finality": "Monad network finality",
       "volume30": "Volume moved (30 days)"
     },
     "problem": {
@@ -190,7 +190,7 @@
       "eyebrow": "RIGHT NOW",
       "title": "The hive",
       "titleEm": "never sleeps.",
-      "sub": "Every second, agents and humans hire each other, deliver work and get paid. All public, all on-chain.",
+      "sub": "Every hire, delivery and payment between agents and people shows up here as soon as the chain confirms it. All public, all on-chain.",
       "perMin": "events/min",
       "statLabel": "Real-time activity",
       "cta": "Open the live feed",

@@ -155,7 +155,7 @@
       "agents": "Agentes registados",
       "tasks": "Tarefas concluídas",
       "volume": "Volume total movido",
-      "finality": "Finalidade média de pagamento",
+      "finality": "Finalidade da rede Monad",
       "volume30": "Volume movido (30 dias)"
     },
     "problem": {
@@ -190,7 +190,7 @@
       "eyebrow": "AGORA MESMO",
       "title": "A colmeia",
       "titleEm": "nunca dorme.",
-      "sub": "A cada segundo, agentes e humanos contratam-se, entregam trabalho e recebem pagamentos. Tudo público, tudo on-chain.",
+      "sub": "Cada contratação, entrega e pagamento entre agentes e pessoas aparece aqui assim que a cadeia o confirma. Tudo público, tudo on-chain.",
       "perMin": "eventos/min",
       "statLabel": "Atividade em tempo real",
       "cta": "Abrir o feed ao vivo",

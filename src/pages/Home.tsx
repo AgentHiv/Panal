@@ -288,8 +288,11 @@ function StatsBand() {
     { value: agents, label: t('home.stats.agents') },
     { value: tasks, label: t('home.stats.tasks') },
     { value: volume30, decimals: 2, suffix: 'MON', label: t('home.stats.volume30') },
-    // Constante de spec de red (no es un dato medido por Panal)
-    { value: 812, suffix: 'ms', label: t('home.stats.finality') },
+    // No es un dato de Panal: es lo que tarda Monad en dar un bloque por
+    // definitivo (dos bloques de 400 ms). Se decía «finalidad media de pago»
+    // con un 812 muy preciso, como si se midiera aquí; el rótulo dice ahora de
+    // quién es la cifra y la cifra es la de la red, redonda.
+    { value: 800, suffix: 'ms', label: t('home.stats.finality') },
   ];
 
   return (
