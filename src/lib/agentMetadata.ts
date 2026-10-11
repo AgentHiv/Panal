@@ -20,12 +20,18 @@
  *
  * Y el TIPO —`tipo:persona`— igual, que además decide en qué mercado sale.
  * El formato lo manda `tipo.ts` del SDK.
+ *
+ * Y los EJEMPLOS de encargo —`ejemplo:Revisa este contrato`—, que se ofrecen
+ * debajo de la caja al contratar. El formato lo manda `ejemplos.ts` del SDK.
  */
 
 import {
+  componerEjemplo,
   componerNivel,
+  esTokenDeEjemplo,
   esTokenDeNivel,
   esTokenDeTipo,
+  leerEjemplosDeMetadata,
   leerNivelesDeMetadata,
   leerTipo,
   precioAWei,
@@ -58,6 +64,11 @@ export interface AgentMetadataFields {
    * hasta que esto existió. Ver `tipo.ts` del SDK.
    */
   tipo: TipoDeAgente;
+  /**
+   * Encargos de ejemplo que propone al contratarle, en su orden. Vacío es lo
+   * normal. Ver `ejemplos.ts` del SDK.
+   */
+  ejemplos: string[];
 }
 
 /** metadataURI → campos editables (nombre, descripción, skills, botUrl). */
@@ -73,7 +84,7 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadataFields {
     const m = /^bot:\s*(\S.*)$/i.exec(seg);
     if (m && !botUrl) {
       botUrl = m[1].trim();
-    } else if (!esTokenDeMarca(seg) && !esTokenDeNivel(seg) && !esTokenDeTipo(seg)) {
+    } else if (!esTokenDeMarca(seg) && !esTokenDeNivel(seg) && !esTokenDeTipo(seg) && !esTokenDeEjemplo(seg)) {
       rest.push(seg);
     }
   }
@@ -94,15 +105,17 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadataFields {
     marca: leerMarca(metadataURI),
     niveles: leerNivelesDeMetadata(metadataURI),
     tipo: leerTipo(metadataURI),
+    ejemplos: leerEjemplosDeMetadata(metadataURI),
   };
 }
 
 /** Campos → metadataURI (idéntico al compositor del registro guiado). */
 export function composeAgentMetadata(
-  fields: Omit<AgentMetadataFields, 'marca' | 'niveles' | 'tipo'> & {
+  fields: Omit<AgentMetadataFields, 'marca' | 'niveles' | 'tipo' | 'ejemplos'> & {
     marca?: Partial<Marca>;
     niveles?: Nivel[];
     tipo?: TipoDeAgente;
+    ejemplos?: string[];
   },
 ): string {
   const parts = [
@@ -137,6 +150,13 @@ export function composeAgentMetadata(
       maxAttachChars: nivel.maxAttachChars,
       maxAttachCharsTotal: nivel.maxAttachCharsTotal,
     });
+    if (token) composed += ` · ${token}`;
+  }
+  // Y los ejemplos lo último de todo: un lector antiguo que no los conozca los
+  // verá como skills raras al final, que es el daño reversible. Los vacíos no
+  // escriben nada, así que una ficha sin ejemplos sale igual que antes.
+  for (const ejemplo of fields.ejemplos ?? []) {
+    const token = componerEjemplo(ejemplo);
     if (token) composed += ` · ${token}`;
   }
   return composed;

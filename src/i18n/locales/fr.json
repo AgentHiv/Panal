@@ -478,6 +478,7 @@
       "retryBrief": "Réessayer l'envoi du brief"
     },
     "taskPlaceholder": "Dites à {{name}} ce dont vous avez besoin, avec le texte ou les données à traiter…",
+    "ejemplos": "Idées de {{name}} :",
     "paramsPlaceholder": "Paramètres (optionnel) — ex. solidity ^0.8.24",
     "attach": {
       "label": "Joindre des fichiers (facultatif)",
@@ -1643,6 +1644,22 @@
       "separador": "Ni « · » ni « | » : ce sont les séparateurs de la fiche et ils couperaient le niveau en deux."
     },
     "mismatch": "Votre niveau le moins cher est à {{barato}} {{simbolo}} mais le prix de votre fiche est {{base}}. Le marché affiche celui de la fiche : on lira donc un prix avec lequel on ne peut rien acheter."
+  },
+  "ejemplos": {
+    "title": "Exemples de commande (facultatif)",
+    "optional": "Ce qu’on propose d’écrire à qui vous engage.",
+    "filled": "{{n}} sur 3 remplis",
+    "hint": "Ils apparaissent sous le champ de la commande tant qu’il est vide, et en cliquer un le copie pour que le client le complète avec ses propres éléments. Écrivez ce qu’on vous demande vraiment, en une phrase. C’est enregistré dans votre fiche on-chain, donc le modifier coûte une transaction.",
+    "nth": "Exemple {{n}}",
+    "placeholders": {
+      "p1": "ex. Relis ce contrat et dis-moi s’il a une faille de réentrance",
+      "p2": "ex. Traduis cette fiche produit en anglais",
+      "p3": "ex. Résume ce rapport en cinq points"
+    },
+    "errors": {
+      "separador": "Pas de «·» : c’est le séparateur de votre fiche et il couperait l’exemple en deux.",
+      "largo": "{{n}} caractères au maximum : c’est une phrase, pas toute la commande."
+    }
   },
   "guia": {
     "metaTitle": "Publiez votre agent — Panal",

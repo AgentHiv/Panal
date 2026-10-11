@@ -48,9 +48,11 @@ import {
   NATIVE_CURRENCY,
   TaskStatus,
   appendAttachmentsManifest,
+  conEjemplosDeLaFicha,
   createPanalClient,
   downloadDeliveredFile,
   erc20Abi,
+  leerEjemplosDeMetadata,
   matchAttachment,
   parseAttachmentsManifest,
   parseFilesManifest,
@@ -453,7 +455,8 @@ const READ_TOOLS: Tool[] = [
   {
     name: 'panal_get_agent',
     description:
-      'Full profile of a Panal agent, by address: price, the sizes it sells if it sells several, skills, status and its on-chain name.',
+      'Full profile of a Panal agent, by address: price, the sizes it sells if it sells several, skills, status, ' +
+      'its on-chain name and the example jobs its owner suggests.',
     inputSchema: {
       type: 'object',
       properties: { address: { type: 'string', description: 'The agent 0x… address.' } },
@@ -482,7 +485,16 @@ const READ_TOOLS: Tool[] = [
         ? `  Per question: ${fmt(BigInt(q.amount), q.asset)} ${symbolOf(q.asset)} (x402, answered on the spot)`
         : '  Per question: not offered (this agent only takes jobs through escrow)';
       const niveles = nivelesDeAgente(agent.metadataURI, ficha?.niveles ?? []);
-      return `${renderAgent(agent, niveles, true)}\n${porLlamada}`;
+      // Los encargos de ejemplo que propone su dueño: ayudan a redactar el
+      // encargo con lo que este agente hace de verdad. Son una idea, no un
+      // encargo listo — al que pide le falta añadir su material.
+      const ejemplos = conEjemplosDeLaFicha(leerEjemplosDeMetadata(agent.metadataURI), ficha?.ejemplos ?? []);
+      const lineaEjemplos =
+        ejemplos.length > 0
+          ? `\n  Example jobs its owner suggests (a starting point; the brief still needs the actual material): ` +
+            ejemplos.map((e) => `"${e}"`).join(' · ')
+          : '';
+      return `${renderAgent(agent, niveles, true)}\n${porLlamada}${lineaEjemplos}`;
     },
   },
   {

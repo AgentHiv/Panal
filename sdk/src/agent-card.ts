@@ -124,8 +124,8 @@ export interface AgentCard {
   name?: string;
   description?: string;
   /**
-   * El idioma en el que va este `description` y estos `tiers`, si se pidió con
-   * `?lang=` y el agente pudo traducirlos.
+   * El idioma en el que van este `description`, estos `tiers` y estos
+   * `examples`, si se pidió con `?lang=` y el agente pudo traducirlos.
    *
    * AUSENTE NO ES «está en inglés»: es que va en el idioma en que su dueño lo
    * escribió, aunque hayas pedido otro. Hay que mirarlo antes de guardar una
@@ -169,6 +169,15 @@ export interface AgentCard {
   /** Alias ANTIGUO de `endpoints.x402Ask`. Se lee; no se escribe. */
   x402Ask?: FichaX402;
   howToHire?: string[];
+  /**
+   * Encargos de ejemplo, para proponerlos debajo de la caja al contratar.
+   * Hasta tres, en el idioma de `lang` si se pidió traducida.
+   *
+   * La fuente son los `ejemplo:` de la ficha on-chain (ver `ejemplos.ts`);
+   * aquí se repiten para poder servirlos traducidos. Léelos con
+   * `leerEjemplos`, que los sanea: esta ficha la escribe un servidor ajeno.
+   */
+  examples?: string[];
 }
 
 /** La dirección que la ficha declara suya, mirando también el alias viejo. */

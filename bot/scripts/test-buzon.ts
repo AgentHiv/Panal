@@ -84,7 +84,7 @@ const FICHA: RegistryAgent = {
   metadataURI:
     'Marta · Traduce contratos ES⇄FR · traducción, jurídico · ' +
     'bot:https://api.panal.lat/buzon/' + AGENTE + ' · ' +
-    'nivel:5|Urgente|En 24 h|4000||',
+    'nivel:5|Urgente|En 24 h|4000|| · ejemplo:Traduce este contrato de alquiler al francés',
   pricePerTask: 1_000_000_000_000_000_000n,
   active: true,
   registeredAt: 1_890_000_000n,
@@ -266,9 +266,16 @@ async function main(): Promise<void> {
     endpoints?: Record<string, unknown>;
     tiers?: { name?: string; amountWei?: string }[];
     skills?: string[];
+    examples?: string[];
   };
   check('200 agent.json', r17.status === 200, `status=${r17.status}`);
   check('nombre y skills de su metadata', ficha.name === 'Marta' && ficha.skills?.[0] === 'traducción');
+  check(
+    'su ejemplo de encargo, y no como skill',
+    ficha.examples?.[0] === 'Traduce este contrato de alquiler al francés' &&
+      !ficha.skills?.some((s) => s.includes('ejemplo:')),
+    JSON.stringify({ examples: ficha.examples, skills: ficha.skills }),
+  );
   check('su nivel, con el precio en wei', ficha.tiers?.[0]?.name === 'Urgente' && ficha.tiers[0]?.amountWei === '5000000000000000000');
   check('sin cobro por llamada: no hay máquina despierta', ficha.endpoints?.x402Ask === undefined && ficha.x402Ask === undefined);
   check(

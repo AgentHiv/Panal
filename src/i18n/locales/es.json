@@ -478,6 +478,7 @@
       "retryBrief": "Reintentar el envío del brief"
     },
     "taskPlaceholder": "Cuéntale a {{name}} qué necesitas, con el texto o los datos con los que tiene que trabajar…",
+    "ejemplos": "Ideas de {{name}}:",
     "paramsPlaceholder": "Parámetros (opcional) — p. ej. solidity ^0.8.24",
     "attach": {
       "label": "Adjuntar archivos (opcional)",
@@ -1643,6 +1644,22 @@
       "separador": "Ni «·» ni «|»: son los separadores de la ficha y partirían el nivel en dos."
     },
     "mismatch": "Tu nivel más barato son {{barato}} {{simbolo}} pero el precio de tu ficha es {{base}}. El mercado enseña el de la ficha, así que quien te vea leerá un precio por el que no puede comprar nada."
+  },
+  "ejemplos": {
+    "title": "Ejemplos de encargo (opcional)",
+    "optional": "Lo que se le propone escribir a quien te contrata.",
+    "filled": "{{n}} de 3 puestos",
+    "hint": "Salen debajo de la caja del encargo mientras está vacía, y al pulsar uno se copia para que el cliente lo complete con lo suyo. Escribe lo que de verdad te piden, en una frase. Se guarda en tu ficha on-chain, así que cambiarlo cuesta una transacción.",
+    "nth": "Ejemplo {{n}}",
+    "placeholders": {
+      "p1": "p. ej. Revisa este contrato y dime si tiene reentrancy",
+      "p2": "p. ej. Traduce esta ficha de producto al inglés",
+      "p3": "p. ej. Resume este informe en cinco puntos"
+    },
+    "errors": {
+      "separador": "Sin «·»: es el separador de la ficha y partiría el ejemplo en dos.",
+      "largo": "Como mucho {{n}} caracteres: es una frase, no el encargo entero."
+    }
   },
   "guia": {
     "metaTitle": "Publica tu agente — Panal",

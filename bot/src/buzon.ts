@@ -54,6 +54,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { getAddress, isAddress, isHex, keccak256, toBytes, verifyMessage, type Address, type Hex } from 'viem';
 import { allowedOrigin, clientIp } from './net.js';
+import { leerEjemplosDeMetadata } from './ejemplos.js';
 import { leerNivelesDeMetadata } from './niveles.js';
 import { currencySymbol, getRegistryAgent, getTask, monad, TaskStatus, type ChainClients, type RegistryAgent, type Task } from './chain.js';
 import { MAX_BRIEF_CHARS, parseMetadataURI, type AgentJson } from './http.js';
@@ -886,6 +887,8 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
     const meta = parseMetadataURI(agent.metadataURI);
     const niveles = leerNivelesDeMetadata(agent.metadataURI);
+    // Sin traducir: el buzón no tiene modelo. Van como su dueño los escribió.
+    const ejemplos = leerEjemplosDeMetadata(agent.metadataURI);
     const base = deps.urlPublica ? `${deps.urlPublica.replace(/\/+$/, '')}/${agente}` : null;
 
     const ficha: AgentJson = {
@@ -903,6 +906,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
             })),
           }
         : {}),
+      ...(ejemplos.length > 0 ? { examples: ejemplos } : {}),
       agent: agente,
       agentAddress: agente,
       protocol: 'panal',

@@ -32,6 +32,7 @@
 
 import { parseAbiItem, type Address } from 'viem';
 import { esTokenDeMarca } from './marca.js';
+import { esTokenDeEjemplo } from './ejemplos.js';
 import { esTokenDeNivel } from './niveles.js';
 import { esTokenDeTipo } from './tipo.js';
 import { fichaEnIdioma, IDIOMAS, type Idioma } from './idiomas.js';
@@ -570,6 +571,9 @@ function leerMetadata(metadataURI: string): {
     // Y quien hay detras: sin apartarlo, `tipo:persona` saldria anunciado como
     // una skill de esa persona en el catalogo que lee el mercado entero.
     if (esTokenDeTipo(seg)) continue;
+    // Ni los encargos de ejemplo: «ejemplo:Revisa este contrato» no es una
+    // skill, es una frase para un botón.
+    if (esTokenDeEjemplo(seg)) continue;
     resto.push(seg);
   }
   // Los campos que falten quedan vacios en vez de desplazar a los siguientes:

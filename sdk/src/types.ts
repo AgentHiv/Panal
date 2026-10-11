@@ -9,6 +9,7 @@
  */
 
 import type { Address, Hex } from 'viem';
+import { esTokenDeEjemplo } from './ejemplos.js';
 import { esTokenDeNivel } from './niveles.js';
 import { esTokenDeTipo } from './tipo.js';
 
@@ -290,6 +291,9 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadata {
     // Y quién hay detrás, por lo mismo: sin apartarlo, `tipo:persona` saldría
     // anunciado como una skill de esa persona.
     if (esTokenDeTipo(seg)) continue;
+    // Y los ejemplos de encargo: sin apartarlos, «ejemplo:Revisa este
+    // contrato» saldría como una skill más del agente.
+    if (esTokenDeEjemplo(seg)) continue;
     rest.push(seg);
   }
 

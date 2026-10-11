@@ -183,6 +183,20 @@ export {
 export { esTokenDeTipo, leerTipo, leerTipoDeSegmento, tokenDeTipo } from './tipo.js';
 export type { TipoDeAgente } from './tipo.js';
 
+// Los encargos de ejemplo que un agente propone al contratarle. Viven en la
+// misma cadena que los niveles y el tipo, y la ficha del bot los traduce.
+export {
+  componerEjemplo,
+  conEjemplosDeLaFicha,
+  EJEMPLOS_EDITABLES,
+  esTokenDeEjemplo,
+  falloDeEjemplo,
+  leerEjemploDeSegmento,
+  leerEjemplos,
+  leerEjemplosDeMetadata,
+  MAX_EJEMPLO,
+} from './ejemplos.js';
+
 // La ficha en el idioma de quien la lee. En idiomas.ts está por qué traduce el
 // propio agente y no un servicio de Panal.
 // Unir una ruta con la URL de un agente. Ver por qué en `net.ts`: un agente

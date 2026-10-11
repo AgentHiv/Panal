@@ -29,7 +29,7 @@ import {
   tamanoLegible,
   type Adjunto,
 } from '@/lib/adjuntos';
-import { conTextoDeLaFicha, type Nivel } from '@panal/sdk';
+import { conEjemplosDeLaFicha, conTextoDeLaFicha, type Nivel } from '@panal/sdk';
 import { useWallet } from '@/hooks/useWallet';
 import type { DatosAgente } from '~/lib/agente';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
@@ -146,6 +146,11 @@ export default function HojaEncargar({
   const niveles = datos?.niveles?.length
     ? conTextoDeLaFicha(datos.niveles, capacidades?.niveles ?? [])
     : (capacidades?.niveles ?? []);
+  /**
+   * Los encargos de ejemplo del PROPIO agente, con la misma regla: los de la
+   * cadena, con el texto de la tarjeta si viene traducido y cuadra.
+   */
+  const ejemplos = conEjemplosDeLaFicha(datos?.ejemplos ?? [], capacidades?.ejemplos ?? []);
   /**
    * El elegido. Sin tocar nada es el más barato, que debería costar lo mismo
    * que su precio registrado: quien no elija bloquea lo de siempre.
@@ -617,6 +622,27 @@ export default function HojaEncargar({
             disabled={trabajando}
             className="seleccionable mt-2 w-full resize-none rounded-[14px] border border-line bg-sand px-3.5 py-3 text-[14px] leading-[1.5] text-ink outline-none placeholder:text-ink-3"
           />
+
+          {/* Ideas del propio agente, solo con la caja vacía: al tocar una se
+              copia para completarla con lo tuyo, y con algo escrito se
+              esconden para no pisarlo. */}
+          {ejemplos.length > 0 && !brief.trim() && !trabajando && (
+            <>
+              <p className="mt-2.5 text-[11.5px] text-ink-3">{T.encargar.ideasDe(datos?.nombre ?? '')}</p>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {ejemplos.map((ejemplo) => (
+                  <button
+                    key={ejemplo}
+                    type="button"
+                    onClick={() => setBrief(ejemplo)}
+                    className="pulsable rounded-full border border-line bg-sand px-3 py-1.5 text-left text-[12.5px] text-ink-2"
+                  >
+                    {ejemplo}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Archivos. Solo si el agente sabe recibirlos. */}
           {aceptaArchivos === 'si' && (

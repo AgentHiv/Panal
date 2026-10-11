@@ -13,7 +13,7 @@
  */
 
 import { keccak256, toBytes } from 'viem';
-import { fichaEnIdioma, leerNiveles } from '@panal/sdk';
+import { fichaEnIdioma, leerEjemplos, leerNiveles } from '@panal/sdk';
 import { FileVerificationError } from '@/lib/deliveredFiles';
 import type { Nivel } from '@panal/sdk';
 
@@ -368,6 +368,12 @@ export interface CapacidadesAgente {
    * se cobraban.
    */
   niveles: Nivel[];
+  /**
+   * Los encargos de ejemplo de la ficha, ya en el idioma pedido si el agente
+   * pudo traducirlos. Vacío es lo normal. La fuente es la cadena: ver
+   * `conEjemplosDeLaFicha` del SDK para cuándo valen estos.
+   */
+  ejemplos: string[];
 }
 
 /**
@@ -389,7 +395,7 @@ export interface CapacidadesAgente {
  * que puede acabar en un cobro por trabajo no hecho.
  */
 /** Lo que se devuelve cuando la tarjeta no contesta: ni adjuntos ni niveles. */
-const SIN_NADA: CapacidadesAgente = { adjuntos: false, niveles: [] };
+const SIN_NADA: CapacidadesAgente = { adjuntos: false, niveles: [], ejemplos: [] };
 
 /**
  * @param idioma El idioma de quien está mirando, para pedir la ficha traducida.
@@ -415,13 +421,16 @@ export async function leerCapacidades(
     // Los niveles se leen aunque no acepte adjuntos: son cosas distintas y un
     // agente puede vender tamaños de encargo sin recibir un solo archivo.
     const niveles = leerNiveles(card);
+    // Y los ejemplos, que tampoco dependen de los adjuntos.
+    const ejemplos = leerEjemplos(card);
     const subida = card.endpoints?.postAttachment;
-    if (!subida?.path) return { adjuntos: false, niveles };
+    if (!subida?.path) return { adjuntos: false, niveles, ejemplos };
     const tope = subida.maxAttachmentBytes;
     return {
       adjuntos: true,
       ...(typeof tope === 'number' && tope > 0 ? { maxAdjuntoBytes: tope } : {}),
       niveles,
+      ejemplos,
     };
   } catch {
     return SIN_NADA;
