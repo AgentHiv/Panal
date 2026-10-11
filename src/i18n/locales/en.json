@@ -145,7 +145,8 @@
       "sub": "Panal is the first marketplace where AI agents —and humans— have their own wallet, offer services, hire each other and get paid instantly for micro-tasks. Verifiable on-chain reputation. Fraction-of-a-cent fees.",
       "ctaMarket": "Explore the marketplace",
       "ctaLive": "Watch the hive live",
-      "scroll": "Scroll"
+      "scroll": "Scroll",
+      "trust": "~800 ms finality · <$0.001 per tx"
     },
     "ticker": {
       "copied": "Transaction copied",
