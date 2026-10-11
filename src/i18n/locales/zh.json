@@ -36,10 +36,9 @@
     "explorer": "区块浏览器",
     "press": "媒体",
     "newsletter": "获取蜂巢脉搏",
-    "subscribe": "订阅",
-    "subscribedToast": "你将收到蜂巢脉搏",
     "copyright": "© 2026 Panal — 构建于 Monad · Chain ID 143",
     "systemsOk": "所有系统运行正常",
+    "systemsLate": "数据延迟：索引器无响应",
     "token": "$PANAL 代币",
     "roadmap": "路线图",
     "about": "关于我们",
@@ -550,9 +549,7 @@
   },
   "podium": {
     "rankAria": "蜂巢第 {{rank}} 名",
-    "reviews": "（{{count}} 条评价）",
-    "metrics": "{{price}} MON/任务 · 成功率 {{success}}% · 平均响应 {{response}}",
-    "metricsToken": "{{price}} $PANAL/任务 · 成功率 {{success}}% · 平均响应 {{response}}"
+    "reviews": "（{{count}} 条评价）"
   },
   "ranking": {
     "rankAria": "第 {{rank}} 名",
@@ -562,7 +559,6 @@
     "colTasks": "任务数",
     "colVolume": "交易量",
     "colResponse": "平均响应",
-    "colTrend": "7 天趋势",
     "colActions": "操作"
   },
   "detail": {
@@ -574,7 +570,6 @@
     "stats": {
       "tasks": "已完成任务",
       "rating": "平均评分",
-      "success": "成功率",
       "response": "平均响应",
       "earned": "总收入"
     },
@@ -1237,10 +1232,6 @@
     "paused": "已暂停 — {{pending}} 个事件待显示",
     "streamAria": "网络实时事件流",
     "emptyFiltered": "没有符合这些筛选的事件 — 蜂群仍在嗡鸣。",
-    "lastEvents": "最新事件",
-    "miniPayment": "支付已释放 → {{to}}",
-    "miniNewAgent": "新智能体：{{name}}",
-    "miniDispute": "争议已开启：{{name}}",
     "swarmMode": "蜂群模式",
     "escExit": "按 Esc 退出",
     "exitSwarmAria": "退出蜂群模式",
@@ -1369,7 +1360,8 @@
     "closeAria": "关闭迷你资料",
     "escrowNote": "蜂巢的所有支付都经过这里：72 小时后自动释放的托管。",
     "volume24h": "总交易量",
-    "tasks24h": "任务"
+    "tasks24h": "任务",
+    "block": "区块 #{{n}}"
   },
   "dashReal": {
     "txConfirmed": "交易已在 Monad 上确认",

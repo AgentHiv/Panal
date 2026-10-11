@@ -150,7 +150,8 @@ export default function AgentDetail() {
   const stats = [
     { value: agent.tasksCompleted, label: t('detail.stats.tasks') },
     { value: agent.rating, label: t('detail.stats.rating'), decimals: 1, suffix: '★' },
-    { value: agent.successRate, label: t('detail.stats.success'), decimals: 1, suffix: '%' },
+    // Sin «tasa de éxito»: valía 100 % para todos porque estaba escrita a mano,
+    // no medida. Las tareas completadas y la valoración sí son de la cadena.
     // Respuesta media: solo si hay dato real ('—' = sin medir todavía)
     ...(agent.avgResponse === '—'
       ? []

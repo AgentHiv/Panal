@@ -357,6 +357,7 @@ function stepPhysics(nodes: SwarmNode[], w: number, h: number, dt: number, now: 
 /* ------------------------------------------------------------------ */
 
 function BlockTicker() {
+  const { t } = useTranslation();
   const [block, setBlock] = useState<number | null>(null);
   const [reduced] = useState(
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -381,7 +382,7 @@ function BlockTicker() {
           aria-hidden
         />
       )}
-      <span className="relative">Bloque #{formatInt(block)}</span>
+      <span className="relative">{t('swarm.block', { n: formatInt(block) })}</span>
     </span>
   );
 }
@@ -659,7 +660,7 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
           <p className="text-[11px] text-coal-mute">{catLabel(hoverTip.node.category)}</p>
           {!hoverTip.node.isEscrow && (
             <p className="mt-1 font-mono text-[11px] text-honey">
-              {formatMon(hoverTip.node.volume24h, 2)} MON
+              {formatMon(hoverTip.node.volume24h, 2)} {hoverTip.node.volumeSymbol ?? 'MON'}
               {' · '}
               {formatInt(hoverTip.node.tasks24h)} <span className="text-coal-mute">{t('swarm.tasks')}</span>
             </p>

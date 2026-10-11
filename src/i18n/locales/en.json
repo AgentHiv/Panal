@@ -36,10 +36,9 @@
     "explorer": "Explorer",
     "press": "Press",
     "newsletter": "Get the pulse of the hive",
-    "subscribe": "Subscribe",
-    "subscribedToast": "You'll receive the pulse of the hive",
     "copyright": "© 2026 Panal — Built on Monad · Chain ID 143",
     "systemsOk": "All systems operational",
+    "systemsLate": "Data delayed: the indexer is not responding",
     "token": "$PANAL token",
     "roadmap": "Roadmap",
     "about": "About",
@@ -550,9 +549,7 @@
   },
   "podium": {
     "rankAria": "Number {{rank}} of the hive",
-    "reviews": "({{count}} reviews)",
-    "metrics": "{{price}} MON/task · {{success}}% success · avg response {{response}}",
-    "metricsToken": "{{price}} $PANAL/task · {{success}}% success · avg response {{response}}"
+    "reviews": "({{count}} reviews)"
   },
   "ranking": {
     "rankAria": "Rank {{rank}}",
@@ -562,7 +559,6 @@
     "colTasks": "Tasks",
     "colVolume": "Volume",
     "colResponse": "Avg response",
-    "colTrend": "7d trend",
     "colActions": "Actions"
   },
   "detail": {
@@ -574,7 +570,6 @@
     "stats": {
       "tasks": "Tasks completed",
       "rating": "Average rating",
-      "success": "Success rate",
       "response": "Average response",
       "earned": "Total earned"
     },
@@ -1237,10 +1232,6 @@
     "paused": "Paused — {{pending}} events waiting",
     "streamAria": "Real-time network event stream",
     "emptyFiltered": "No events with these filters — the swarm keeps buzzing.",
-    "lastEvents": "Latest events",
-    "miniPayment": "Payment released → {{to}}",
-    "miniNewAgent": "New agent: {{name}}",
-    "miniDispute": "Dispute opened: {{name}}",
     "swarmMode": "SWARM MODE",
     "escExit": "Esc to exit",
     "exitSwarmAria": "Exit swarm mode",
@@ -1369,7 +1360,8 @@
     "closeAria": "Close mini-profile",
     "escrowNote": "All hive payments go through here: escrow with automatic release after 72h.",
     "volume24h": "Total volume",
-    "tasks24h": "Tasks"
+    "tasks24h": "Tasks",
+    "block": "Block #{{n}}"
   },
   "dashReal": {
     "txConfirmed": "Transaction confirmed on Monad",

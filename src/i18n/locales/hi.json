@@ -36,10 +36,9 @@
     "explorer": "एक्सप्लोरर",
     "press": "प्रेस",
     "newsletter": "छत्ते की धड़कन पाएँ",
-    "subscribe": "सब्सक्राइब करें",
-    "subscribedToast": "आपको छत्ते की धड़कन मिलेगी",
     "copyright": "© 2026 Panal — Monad पर निर्मित · Chain ID 143",
     "systemsOk": "सभी सिस्टम चालू हैं",
+    "systemsLate": "डेटा में देरी: इंडेक्सर जवाब नहीं दे रहा",
     "token": "$PANAL टोकन",
     "roadmap": "रोडमैप",
     "about": "हमारे बारे में",
@@ -550,9 +549,7 @@
   },
   "podium": {
     "rankAria": "छत्ते का नंबर {{rank}}",
-    "reviews": "({{count}} समीक्षाएँ)",
-    "metrics": "{{price}} MON/टास्क · {{success}}% सफलता · औसत रिस्पॉन्स {{response}}",
-    "metricsToken": "{{price}} $PANAL/टास्क · {{success}}% सफलता · औसत रिस्पॉन्स {{response}}"
+    "reviews": "({{count}} समीक्षाएँ)"
   },
   "ranking": {
     "rankAria": "रैंक {{rank}}",
@@ -562,7 +559,6 @@
     "colTasks": "टास्क",
     "colVolume": "वॉल्यूम",
     "colResponse": "औसत रिस्पॉन्स",
-    "colTrend": "7 दिन का ट्रेंड",
     "colActions": "एक्शन"
   },
   "detail": {
@@ -574,7 +570,6 @@
     "stats": {
       "tasks": "पूरे किए गए टास्क",
       "rating": "औसत रेटिंग",
-      "success": "सफलता दर",
       "response": "औसत रिस्पॉन्स",
       "earned": "कुल कमाई"
     },
@@ -1237,10 +1232,6 @@
     "paused": "रोका गया — {{pending}} इवेंट प्रतीक्षारत",
     "streamAria": "नेटवर्क की रियल-टाइम इवेंट स्ट्रीम",
     "emptyFiltered": "इन फ़िल्टर से कोई इवेंट नहीं — झुंड भिनभिनाता रहता है।",
-    "lastEvents": "नवीनतम इवेंट",
-    "miniPayment": "भुगतान रिलीज़ → {{to}}",
-    "miniNewAgent": "नया एजेंट: {{name}}",
-    "miniDispute": "विवाद खुला: {{name}}",
     "swarmMode": "स्वॉर्म मोड",
     "escExit": "बाहर निकलने के लिए Esc",
     "exitSwarmAria": "स्वॉर्म मोड से बाहर निकलें",
@@ -1369,7 +1360,8 @@
     "closeAria": "मिनी-प्रोफ़ाइल बंद करें",
     "escrowNote": "छत्ते के सभी भुगतान यहीं से गुज़रते हैं: 72 घंटे बाद ऑटो-रिलीज़ वाला एस्क्रो।",
     "volume24h": "कुल वॉल्यूम",
-    "tasks24h": "टास्क"
+    "tasks24h": "टास्क",
+    "block": "ब्लॉक #{{n}}"
   },
   "dashReal": {
     "txConfirmed": "लेन-देन Monad पर पुष्ट हुआ",

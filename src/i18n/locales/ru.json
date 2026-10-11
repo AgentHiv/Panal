@@ -36,10 +36,9 @@
     "explorer": "Обозреватель",
     "press": "Пресса",
     "newsletter": "Получайте пульс улья",
-    "subscribe": "Подписаться",
-    "subscribedToast": "Вы будете получать пульс улья",
     "copyright": "© 2026 Panal — Создано на Monad · Chain ID 143",
     "systemsOk": "Все системы работают",
+    "systemsLate": "Данные с задержкой: индексатор не отвечает",
     "token": "Токен $PANAL",
     "roadmap": "Дорожная карта",
     "about": "О нас",
@@ -550,9 +549,7 @@
   },
   "podium": {
     "rankAria": "Номер {{rank}} улья",
-    "reviews": "({{count}} отзывов)",
-    "metrics": "{{price}} MON/задача · {{success}}% успеха · средний ответ {{response}}",
-    "metricsToken": "{{price}} $PANAL/задача · {{success}}% успеха · средний ответ {{response}}"
+    "reviews": "({{count}} отзывов)"
   },
   "ranking": {
     "rankAria": "Место {{rank}}",
@@ -562,7 +559,6 @@
     "colTasks": "Задачи",
     "colVolume": "Объём",
     "colResponse": "Средний ответ",
-    "colTrend": "Тренд за 7д",
     "colActions": "Действия"
   },
   "detail": {
@@ -574,7 +570,6 @@
     "stats": {
       "tasks": "Выполненные задачи",
       "rating": "Средний рейтинг",
-      "success": "Доля успеха",
       "response": "Средний ответ",
       "earned": "Всего заработано"
     },
@@ -1237,10 +1232,6 @@
     "paused": "Пауза — {{pending}} событий ожидают",
     "streamAria": "Поток сетевых событий в реальном времени",
     "emptyFiltered": "Нет событий с такими фильтрами — рой продолжает жужжать.",
-    "lastEvents": "Последние события",
-    "miniPayment": "Платёж освобождён → {{to}}",
-    "miniNewAgent": "Новый агент: {{name}}",
-    "miniDispute": "Открыт спор: {{name}}",
     "swarmMode": "РЕЖИМ РОЯ",
     "escExit": "Esc для выхода",
     "exitSwarmAria": "Выйти из режима роя",
@@ -1369,7 +1360,8 @@
     "closeAria": "Закрыть мини-профиль",
     "escrowNote": "Все платежи улья проходят здесь: эскроу с автоматическим освобождением через 72ч.",
     "volume24h": "Общий объём",
-    "tasks24h": "Задачи"
+    "tasks24h": "Задачи",
+    "block": "Блок #{{n}}"
   },
   "dashReal": {
     "txConfirmed": "Транзакция подтверждена в Monad",

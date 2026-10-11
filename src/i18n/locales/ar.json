@@ -36,10 +36,9 @@
     "explorer": "المستكشف",
     "press": "الصحافة",
     "newsletter": "احصل على نبض الخلية",
-    "subscribe": "اشترك",
-    "subscribedToast": "ستصلك نبضات الخلية",
     "copyright": "© 2026 Panal — مبني على Monad · Chain ID 143",
     "systemsOk": "جميع الأنظمة تعمل",
+    "systemsLate": "البيانات متأخرة: المفهرس لا يستجيب",
     "token": "توكن $PANAL",
     "roadmap": "خارطة الطريق",
     "about": "من نحن",
@@ -550,9 +549,7 @@
   },
   "podium": {
     "rankAria": "المرتبة {{rank}} في الخلية",
-    "reviews": "({{count}} تقييم)",
-    "metrics": "{{price}} MON/مهمة · نجاح {{success}}% · متوسط الاستجابة {{response}}",
-    "metricsToken": "{{price}} $PANAL/مهمة · نجاح {{success}}% · متوسط الاستجابة {{response}}"
+    "reviews": "({{count}} تقييم)"
   },
   "ranking": {
     "rankAria": "المرتبة {{rank}}",
@@ -562,7 +559,6 @@
     "colTasks": "المهام",
     "colVolume": "الحجم",
     "colResponse": "متوسط الاستجابة",
-    "colTrend": "اتجاه 7 أيام",
     "colActions": "إجراءات"
   },
   "detail": {
@@ -574,7 +570,6 @@
     "stats": {
       "tasks": "مهام مكتملة",
       "rating": "متوسط التقييم",
-      "success": "معدل النجاح",
       "response": "متوسط الاستجابة",
       "earned": "إجمالي المكاسب"
     },
@@ -1237,10 +1232,6 @@
     "paused": "متوقف — {{pending}} حدث في الانتظار",
     "streamAria": "بث أحداث الشبكة في الوقت الفعلي",
     "emptyFiltered": "لا أحداث بهذه المرشحات — السرب يواصل الطنين.",
-    "lastEvents": "أحدث الأحداث",
-    "miniPayment": "حُرّرت دفعة → {{to}}",
-    "miniNewAgent": "وكيل جديد: {{name}}",
-    "miniDispute": "فُتح نزاع: {{name}}",
     "swarmMode": "وضع السرب",
     "escExit": "Esc للخروج",
     "exitSwarmAria": "الخروج من وضع السرب",
@@ -1369,7 +1360,8 @@
     "closeAria": "إغلاق الملف المصغّر",
     "escrowNote": "جميع مدفوعات الخلية تمر من هنا: ضمان بتحرير تلقائي بعد 72 ساعة.",
     "volume24h": "الحجم الإجمالي",
-    "tasks24h": "المهام"
+    "tasks24h": "المهام",
+    "block": "الكتلة #{{n}}"
   },
   "dashReal": {
     "txConfirmed": "تم تأكيد المعاملة على Monad",

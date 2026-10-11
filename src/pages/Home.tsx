@@ -21,7 +21,8 @@ import { useTranslation } from 'react-i18next';
 import { activeChain, currencySymbol } from '@/contracts/config';
 import { priceKey } from '@/hooks/usePanalAgents';
 import Reveal, { WordReveal } from '@/components/home/Reveal';
-import MiniSwarm from '@/components/home/MiniSwarm';
+import SwarmCanvas from '@/components/live/SwarmCanvas';
+import { useLiveStream } from '@/components/live/useLiveStream';
 import SectionHeader from '@/components/SectionHeader';
 import StatBlock from '@/components/StatBlock';
 import LiveDot from '@/components/LiveDot';
@@ -423,6 +424,21 @@ function ProtocolSection() {
 /* ============================================================
  * S5 · El panal en vivo (oscuro)
  * ============================================================ */
+/**
+ * El enjambre de la portada: el MISMO que el de «En vivo».
+ *
+ * Aquí había otro, dibujado aparte: cuarenta hexágonos inventados y un arco «de
+ * contratación» al azar cada dos segundos y medio, con una leyenda que decía
+ * «tamaño = volumen 24h». Ni los nodos eran agentes ni los arcos pasaban. Este
+ * pinta los agentes de la cadena, del tamaño de su volumen real, y solo lanza un
+ * arco cuando entra un evento de verdad: si no pasa nada, no se mueve nada más
+ * que el propio enjambre.
+ */
+function EnjambreReal() {
+  const { latest } = useLiveStream();
+  return <SwarmCanvas latest={latest} hoverEvent={null} />;
+}
+
 function LiveSection() {
   const { t } = useTranslation();
   // Los 5 eventos reales más recientes (getLogs + polling 12 s)
@@ -525,13 +541,7 @@ function LiveSection() {
         {/* Canvas de enjambre pequeño */}
         <Reveal className="md:col-span-7">
           <div className="relative h-[380px] overflow-hidden rounded-2xl border border-coal-line bg-coal-2/50 md:h-[460px]">
-            <MiniSwarm />
-            <div className="absolute bottom-4 left-4 flex items-center gap-4 font-mono text-[11px] text-coal-mute">
-              <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-honey" /> {t('home.live.legendHiring')}
-              </span>
-              <span>{t('home.live.legendSize')}</span>
-            </div>
+            <EnjambreReal />
           </div>
         </Reveal>
       </div>
