@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { formatUnits } from 'viem';
 import { Loader2, MessageCircle, Wallet } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
+import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import { listarHilos } from '@/lib/historial';
 import {
   encargosDelCliente,
@@ -144,6 +145,8 @@ function Fila({
   nombre: string | null;
   ruta: string | null;
 }) {
+  // Su logo, si es un agente que lo publica. Ver `useLogoDeAgente`.
+  const logoDe = useLogoDeAgente();
   const { t } = useTranslation();
 
   /** El adelanto: la última línea, venga del chat o del escrow. */
@@ -157,7 +160,7 @@ function Fila({
 
   const fila = (
     <div className="flex items-start gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-cream">
-      <HexAvatar seed={c.agente} size={42} />
+      <HexAvatar seed={c.agente} size={42} logo={logoDe(c.agente)} />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">
           <p className="truncate text-[0.9375rem] font-semibold text-ink">

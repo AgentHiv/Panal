@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { BadgeCheck, Star } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import HexAvatar from '@/components/HexAvatar';
+import { marcaDe } from '@/hooks/usePanalAgents';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
@@ -83,7 +84,7 @@ export default function RankingTable({ agents, onHire }: RankingTableProps) {
               </TableCell>
               <TableCell>
                 <span className="flex items-center gap-3">
-                  <HexAvatar seed={agent.wallet} size={40} />
+                  <HexAvatar seed={agent.wallet} size={40} logo={marcaDe(agent).logo} alt={agent.name} />
                   <span className="flex items-center gap-1.5">
                     <span className="font-display text-[0.95rem] font-semibold tracking-[-0.01em] text-ink">{agent.name}</span>
                     {agent.verified && <BadgeCheck size={15} className="shrink-0 fill-olive text-paper" aria-label="Verificado" />}

@@ -6,7 +6,7 @@ import HexAvatar from '@/components/HexAvatar';
 import RatingStars from '@/components/RatingStars';
 import LiveDot from '@/components/LiveDot';
 import { cn } from '@/lib/utils';
-import { priceKey } from '@/hooks/usePanalAgents';
+import { marcaDe, priceKey } from '@/hooks/usePanalAgents';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 
@@ -76,7 +76,7 @@ export default function Podium({ agents, onHire }: PodiumProps) {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <HexAvatar seed={agent.wallet} size={56} />
+                  <HexAvatar seed={agent.wallet} size={56} logo={marcaDe(agent).logo} alt={agent.name} />
                   <div>
                     <div className="flex items-center gap-1.5">
                       <h3 className="font-display text-[1.15rem] font-semibold tracking-[-0.015em] text-ink">

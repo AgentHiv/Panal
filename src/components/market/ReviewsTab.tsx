@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Check, ExternalLink } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
+import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import RatingStars from '@/components/RatingStars';
 import TxHash from '@/components/TxHash';
 import type { Agent } from '@/data/agents';
@@ -21,6 +22,8 @@ const RATED_EVENTS = new Set(['TaskCompleted', 'DisputeResolved']);
  * (degradación graceful; nunca se inventan reseñas).
  */
 export default function ReviewsTab({ agent }: { agent: Agent }) {
+  // Su logo, si es un agente que lo publica. Ver `useLogoDeAgente`.
+  const logoDe = useLogoDeAgente();
   const { t } = useTranslation();
   const { events, loading } = useIndexAgentEvents(agent.wallet);
   // Sello de carga del componente para el "hace X" (evita impurezas en render).
@@ -112,7 +115,7 @@ export default function ReviewsTab({ agent }: { agent: Agent }) {
             className="rounded-2xl border border-line bg-paper p-5"
           >
             <div className="flex items-center gap-3">
-              <HexAvatar seed={r.author} size={36} />
+              <HexAvatar seed={r.author} size={36} logo={logoDe(r.author)} />
               <div className="min-w-0 flex-1">
                 <span className="font-mono text-[0.8125rem] font-medium text-ink">{r.author}</span>
                 <RatingStars rating={r.rating} size={12} className="mt-1" />

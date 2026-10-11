@@ -12,8 +12,11 @@ export interface LiveEvent {
   type: LiveEventType;
   from: string;
   fromKind: PartyKind;
+  /** La dirección entera de `from`: con la recortada no se sabe quién es. */
+  fromAddress?: string;
   to?: string;
   toKind?: PartyKind;
+  toAddress?: string;
   task?: string;
   amount?: number; // en la unidad de `currency`
   /** v2: moneda del monto (token address). undefined = MON nativo */

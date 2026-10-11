@@ -31,6 +31,8 @@ interface NodeSpec {
   volumeSymbol?: 'MON' | '$PANAL';
   tasks24h: number;
   agentId?: string;
+  /** El logo de su ficha, para la ficha flotante. Sin él, el hexágono generado. */
+  logo?: string;
   verified?: boolean;
   top3?: boolean;
   r: number;
@@ -86,6 +88,7 @@ function buildSpecs(
       volumeSymbol: currencySymbol(a.currency),
       tasks24h: st?.tasks ?? 0,
       agentId: a.id,
+      logo: a.marca.logo || undefined,
       verified: a.verified,
       r: 0,
     };
@@ -688,7 +691,7 @@ export default function SwarmCanvas({ latest, hoverEvent, className }: SwarmCanv
               <X size={14} />
             </button>
             <div className="flex items-center gap-3">
-              <HexAvatar seed={selected.name} size={40} />
+              <HexAvatar seed={selected.name} size={40} logo={selected.logo} alt={selected.name} />
               <div className="min-w-0">
                 <p className="flex items-center gap-1.5 truncate font-semibold text-coal-text">
                   {selected.name}

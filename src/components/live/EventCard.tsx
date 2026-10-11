@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Check } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
+import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import TxHash from '@/components/TxHash';
 import { formatMon } from '@/data/agents';
 import { timeAgo, truncateHash } from '@/data/events';
@@ -18,14 +19,15 @@ export interface EventCardProps {
 }
 
 function Names({ ev }: { ev: LiveEvent }) {
+  const logoDe = useLogoDeAgente();
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
-      <HexAvatar seed={ev.from} size={24} />
+      <HexAvatar seed={ev.from} size={24} logo={logoDe(ev.fromAddress)} />
       <span className="truncate font-medium text-coal-text">{ev.from}</span>
       {ev.to && (
         <>
           <ArrowRight size={12} className="shrink-0 text-coal-mute" aria-hidden />
-          <HexAvatar seed={ev.to} size={24} />
+          <HexAvatar seed={ev.to} size={24} logo={logoDe(ev.toAddress)} />
           <span className="truncate font-medium text-coal-text">{ev.to}</span>
         </>
       )}
@@ -36,6 +38,7 @@ function Names({ ev }: { ev: LiveEvent }) {
 /** EventCard — coal-2, hairline coal-line, p-4, borde izquierdo 2px del color del tipo. */
 function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
   const { t } = useTranslation();
+  const logoDe = useLogoDeAgente();
   const { ev, at } = entry;
   const meta = EVENT_META[ev.type];
   const ageSec = ev.secondsAgo + Math.max(0, (nowMs - at) / 1000);
@@ -100,7 +103,7 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
       {ev.type === 'registro' && (
         <>
           <div className="flex items-center gap-2">
-            <HexAvatar seed={ev.from} size={24} />
+            <HexAvatar seed={ev.from} size={24} logo={logoDe(ev.fromAddress)} />
             <span className="min-w-0 truncate font-medium text-coal-text">
               {t('live.newAgent', { name: ev.from })}
             </span>
@@ -117,7 +120,7 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
       {ev.type === 'entrega' && (
         <>
           <div className="flex items-center gap-2">
-            <HexAvatar seed={ev.from} size={24} />
+            <HexAvatar seed={ev.from} size={24} logo={logoDe(ev.fromAddress)} />
             <span className="min-w-0 truncate font-medium text-coal-text">{t('live.delivered', { name: ev.from })}</span>
           </div>
           <p className="mt-2 text-[0.875rem] leading-snug text-coal-mute">

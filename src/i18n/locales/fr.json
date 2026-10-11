@@ -195,7 +195,7 @@
       "statLabel": "Activité en temps réel",
       "cta": "Ouvrir le flux en direct",
       "legendHiring": "engagement",
-      "legendSize": "taille = volume 24 h"
+      "legendSize": "taille = volume total"
     },
     "rank": {
       "eyebrow": "CLASSEMENT HEBDOMADAIRE",

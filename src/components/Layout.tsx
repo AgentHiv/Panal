@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Lenis from 'lenis';
 import gsap from 'gsap';
@@ -48,6 +48,8 @@ function CargandoPagina() {
 
 export default function Layout() {
   const location = useLocation();
+  /** El Lenis vivo, para poder llevarlo arriba al cambiar de página. */
+  const lenisRef = useRef<Lenis | null>(null);
 
   // Lenis en toda la app, sincronizado con ScrollTrigger
   useEffect(() => {
@@ -55,6 +57,7 @@ export default function Layout() {
     if (reduced) return;
 
     const lenis = new Lenis({ lerp: 0.09, smoothWheel: true });
+    lenisRef.current = lenis;
     lenis.on('scroll', ScrollTrigger.update);
 
     let raf = 0;
@@ -67,14 +70,35 @@ export default function Layout() {
     return () => {
       cancelAnimationFrame(raf);
       lenis.destroy();
+      lenisRef.current = null;
     };
   }, []);
 
-  // scroll-to-top instantáneo al cambiar de ruta
+  /*
+   * Arriba del todo al cambiar de página, y al pulsar un enlace a la misma.
+   *
+   * Solo con `window.scrollTo` no bastaba: Lenis guarda su propia posición y
+   * sigue el movimiento que traía, así que al pulsar un enlace del pie la
+   * página nueva se abría casi 2000 px más abajo, otra vez en el pie, y parecía
+   * que el enlace no hacía nada. A Lenis hay que decírselo a él, sin animación.
+   *
+   * Y un enlace a la página en la que ya estás no cambia la ruta, solo la
+   * `key`: sin mirarla, «Abrir el feed en vivo» desde el pie de «En vivo» no
+   * hacía nada. Los cambios de `?filtro=` dentro de una página no suben: esos
+   * cambian la búsqueda, y quien filtra el mercado no quiere perder su sitio.
+   */
+  // Arranca vacía para que la primera carga también empiece arriba, como antes.
+  const anterior = useRef({ ruta: '', busqueda: '', clave: '' });
   useEffect(() => {
+    const a = anterior.current;
+    anterior.current = { ruta: location.pathname, busqueda: location.search, clave: location.key };
+    const otraPagina = a.ruta !== location.pathname;
+    const mismaOtraVez = !otraPagina && a.busqueda === location.search && a.clave !== location.key;
+    if (!otraPagina && !mismaOtraVez) return;
+    lenisRef.current?.scrollTo(0, { immediate: true, force: true });
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
     ScrollTrigger.refresh();
-  }, [location.pathname]);
+  }, [location.pathname, location.search, location.key]);
 
   /*
    * La canónica y `og:url`, apuntando a la ruta que se está viendo.

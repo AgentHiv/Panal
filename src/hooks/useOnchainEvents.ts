@@ -240,6 +240,9 @@ function mapLog(log: DecodedLog, agents: Set<string>, nowSec: number): LiveEvent
     typeof addr === 'string' && agents.has(addr.toLowerCase()) ? 'agente' : 'humano';
   const short = (addr: unknown): string =>
     typeof addr === 'string' ? truncateHash(addr) : '';
+  // La dirección entera, además de la recortada: con `0x12…ab` no se puede
+  // buscar quién es, y hace falta para enseñar el logo de cada agente.
+  const completa = (addr: unknown): string | undefined => (typeof addr === 'string' ? addr : undefined);
   const secondsAgo = Math.max(0, nowSec - (blockTsCache.get(log.blockNumber.toString()) ?? nowSec));
   const base = {
     id: `${log.transactionHash}-${log.logIndex}`,
@@ -255,6 +258,7 @@ function mapLog(log: DecodedLog, agents: Set<string>, nowSec: number): LiveEvent
         ...base,
         type: 'registro',
         from: short(args.agent),
+        fromAddress: completa(args.agent),
         fromKind: 'agente',
         // El registry v2 emite la moneda en el propio evento; el v1 no la trae
         // y siempre fue MON, así que ausente equivale a nativo.
@@ -270,8 +274,10 @@ function mapLog(log: DecodedLog, agents: Set<string>, nowSec: number): LiveEvent
         ...base,
         type: 'contratacion',
         from: short(args.client),
+        fromAddress: completa(args.client),
         fromKind,
         to: short(args.worker),
+        toAddress: completa(args.worker),
         toKind,
         task: taskId ? t('live.taskNum', { id: taskId }) : undefined,
         amount: typeof args.amount === 'bigint' ? Number(formatEther(args.amount)) : undefined,
@@ -284,6 +290,7 @@ function mapLog(log: DecodedLog, agents: Set<string>, nowSec: number): LiveEvent
         ...base,
         type: 'contratacion',
         from: short(args.worker),
+        fromAddress: completa(args.worker),
         fromKind: kindOf(args.worker),
         task: taskId ? t('live.taskClaimed', { id: taskId }) : undefined,
       };
@@ -299,8 +306,10 @@ function mapLog(log: DecodedLog, agents: Set<string>, nowSec: number): LiveEvent
         ...base,
         type: 'pago',
         from: short(args.worker),
+        fromAddress: completa(args.worker),
         fromKind: kindOf(args.worker),
         to: short(args.worker),
+        toAddress: completa(args.worker),
         toKind: kindOf(args.worker),
         task: taskId ? t('live.taskCompleted', { id: taskId }) : undefined,
         amount: typeof args.workerPaid === 'bigint' ? Number(formatEther(args.workerPaid)) : undefined,
@@ -310,6 +319,7 @@ function mapLog(log: DecodedLog, agents: Set<string>, nowSec: number): LiveEvent
         ...base,
         type: 'disputa',
         from: short(args.openedBy),
+        fromAddress: completa(args.openedBy),
         fromKind: kindOf(args.openedBy),
         to: taskId ? t('live.taskLabel', { id: taskId }) : undefined,
         task: taskId ? t('live.disputeTask', { id: taskId }) : t('live.disputeOpened'),
@@ -319,8 +329,10 @@ function mapLog(log: DecodedLog, agents: Set<string>, nowSec: number): LiveEvent
         ...base,
         type: 'pago',
         from: short(args.to),
+        fromAddress: completa(args.to),
         fromKind: kindOf(args.to),
         to: short(args.to),
+        toAddress: completa(args.to),
         toKind: kindOf(args.to),
         task: t('live.withdrawal'),
         amount: typeof args.amount === 'bigint' ? Number(formatEther(args.amount)) : undefined,

@@ -36,6 +36,7 @@ import { useTranslation } from 'react-i18next';
 import { formatEther } from 'viem';
 import { Archive, FileText, Loader2, Wallet } from 'lucide-react';
 import HexAvatar from '@/components/HexAvatar';
+import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import {
   Dialog,
   DialogContent,
@@ -72,6 +73,8 @@ const ETIQUETA: Record<number, { clave: string; clase: string }> = {
 };
 
 export default function Archivo() {
+  // Su logo, si es un agente que lo publica. Ver `useLogoDeAgente`.
+  const logoDe = useLogoDeAgente();
   useTituloDePagina('archivo.metaTitle');
 
   const { t, i18n } = useTranslation();
@@ -168,7 +171,7 @@ export default function Archivo() {
                 key={task.id.toString()}
                 className="flex items-start gap-3 rounded-2xl border border-line bg-paper px-4 py-4 transition-colors hover:border-honey/40"
               >
-                <HexAvatar seed={task.worker} size={40} />
+                <HexAvatar seed={task.worker} size={40} logo={logoDe(task.worker)} />
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
