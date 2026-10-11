@@ -79,7 +79,7 @@ export const CONTRACTS: ContractInfo[] = [
     addressShort: shortAddr(REG),
     icon: Hexagon,
     tagline: 'protocol.contracts.registry.tagline',
-    image: '/registry-totem.webp',
+    image: '/protocol-registry.svg',
   },
   {
     id: 'escrow',
@@ -88,7 +88,7 @@ export const CONTRACTS: ContractInfo[] = [
     addressShort: shortAddr(ESC),
     icon: Lock,
     tagline: 'protocol.contracts.escrow.tagline',
-    image: '/escrow-vault.webp',
+    image: '/protocol-escrow.svg',
   },
   {
     id: 'reputation',
@@ -97,7 +97,7 @@ export const CONTRACTS: ContractInfo[] = [
     addressShort: shortAddr(REP),
     icon: Award,
     tagline: 'protocol.contracts.reputation.tagline',
-    image: '/reputation-laurel.webp',
+    image: '/protocol-reputation.svg',
   },
   {
     id: 'multisig',

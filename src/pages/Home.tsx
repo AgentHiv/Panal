@@ -110,7 +110,7 @@ function Hero() {
       {/* Canvas 3D + fallback */}
       <div ref={canvasRef} className="absolute inset-0">
         <img
-          src="/hero-swarm-fallback.webp"
+          src="/hero-fallback.svg"
           alt=""
           decoding="async"
           className={cn(
@@ -165,7 +165,7 @@ function Hero() {
             </Magnetic>
           </div>
           <p className="hero-trust mt-10 font-mono text-[12px] text-coal-mute">
-            <span className="text-monad-mist">{activeChain.name}</span> · Chain ID {activeChain.id} · Finalidad ~800ms · &lt;$0.001 por tx
+            <span className="text-monad-mist">{activeChain.name}</span> · Chain ID {activeChain.id} · {t('home.hero.trust')}
           </p>
         </div>
       </div>
