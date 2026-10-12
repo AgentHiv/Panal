@@ -252,6 +252,9 @@ export {
   ofertaDeLaCadena,
   problemaAlPublicar,
   situacionDe,
+  tablonEncargoSignMessage,
+  tablonEntregaSignMessage,
+  tablonResultadoSignMessage,
 } from './tablon-reglas.js';
 export type {
   EncargoConReglas,

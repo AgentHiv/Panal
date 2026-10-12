@@ -20,6 +20,7 @@ import {
   http,
   getAddress,
   type Address,
+  type Hex,
   type PublicClient,
   type WalletClient,
 } from 'viem';
@@ -727,3 +728,77 @@ export async function scanAgentTasks(
   }
   return mine;
 }
+
+/* ── PanalTablon, el tablón con reglas ──────────────────────────────────── */
+
+/** Lo que el buzón necesita de un encargo de PanalTablon. */
+export interface TrabajoTablon {
+  client: Address;
+  /** 0 publicado, 1 asignado, 2 cerrado, 3 retirado, 4 caducado. */
+  state: number;
+  agent: Address;
+  taskHash: Hex;
+  advertHash: Hex;
+  escrowTaskId: bigint;
+}
+
+/**
+ * Solo `getJob`, con la forma entera del struct: viem decodifica por
+ * posición y una tupla incompleta leería los campos corridos.
+ */
+const tablonAbi = [
+  {
+    type: 'function',
+    name: 'getJob',
+    stateMutability: 'view',
+    inputs: [{ name: 'jobId', type: 'uint256' }],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          { name: 'client', type: 'address' },
+          { name: 'mode', type: 'uint8' },
+          { name: 'state', type: 'uint8' },
+          { name: 'category', type: 'uint8' },
+          { name: 'experiencedOnly', type: 'bool' },
+          { name: 'relist', type: 'bool' },
+          { name: 'attested', type: 'bool' },
+          { name: 'refundPending', type: 'bool' },
+          { name: 'currency', type: 'address' },
+          { name: 'amount', type: 'uint256' },
+          { name: 'taskHash', type: 'bytes32' },
+          { name: 'advertHash', type: 'bytes32' },
+          { name: 'campaignId', type: 'bytes32' },
+          { name: 'postedAt', type: 'uint64' },
+          { name: 'expiresAt', type: 'uint64' },
+          { name: 'workDuration', type: 'uint64' },
+          { name: 'applyWindow', type: 'uint64' },
+          { name: 'chooseWindow', type: 'uint64' },
+          { name: 'workerShareBps', type: 'uint16' },
+          { name: 'agent', type: 'address' },
+          { name: 'escrowTaskId', type: 'uint256' },
+        ],
+      },
+    ],
+  },
+] as const;
+
+export async function getTablonJob(
+  clients: ChainClients,
+  tablon: Address,
+  jobId: bigint,
+): Promise<TrabajoTablon> {
+  const j = await withRetry(`getJob(${jobId})`, () =>
+    clients.publicClient.readContract({ address: tablon, abi: tablonAbi, functionName: 'getJob', args: [jobId] }),
+  );
+  return {
+    client: j.client,
+    state: Number(j.state),
+    agent: j.agent,
+    taskHash: j.taskHash,
+    advertHash: j.advertHash,
+    escrowTaskId: j.escrowTaskId,
+  };
+}
+

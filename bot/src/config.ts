@@ -54,6 +54,11 @@ export interface BotConfig {
    * indexador ni lo mira: no hay contrato al que pedirle logs.
    */
   namesAddress: Address | null;
+  /**
+   * PanalTablon, el tablón con reglas (contracts/BOARD.md). `null` mientras no
+   * esté desplegado: el buzón no abre sus rutas y nada lo lee.
+   */
+  tablonAddress: Address | null;
   dashboardUrl: string;
   /**
    * Idioma de los avisos de Telegram (BOT_LANG). El bot habla con UNA persona
@@ -312,6 +317,7 @@ export function loadConfig(): BotConfig {
     // direccion inventada haria que el indexador pidiera logs a la nada en
     // cada vuelta.
     namesAddress: envAddress('PANAL_NAMES_ADDRESS', false) ?? null,
+    tablonAddress: envAddress('PANAL_TABLON_ADDRESS', false) ?? null,
     dashboardUrl: env('DASHBOARD_URL') ?? 'https://panal.lat/dashboard',
     lang: resolveLang(env('BOT_LANG')),
     pollIntervalMs: envInt('POLL_INTERVAL_MS', 20_000, 5_000),

@@ -34,9 +34,12 @@ import {
   entregaSignMessage,
   ofertaSignMessage,
   resultSignMessageConCaducidad,
+  tablonEncargoSignMessage,
+  tablonEntregaSignMessage,
+  tablonResultadoSignMessage,
 } from '../src/buzon.js';
 import { BuzonStore } from '../src/buzon-store.js';
-import { NATIVE_CURRENCY, TaskStatus, type RegistryAgent, type Task } from '../src/chain.js';
+import { NATIVE_CURRENCY, TaskStatus, type RegistryAgent, type Task, type TrabajoTablon } from '../src/chain.js';
 
 // Cuentas bien conocidas (Anvil/Hardhat), solo para este test.
 const cliente = privateKeyToAccount('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
@@ -64,6 +67,32 @@ const TAREAS: Record<string, Task> = {
   '4': { ...tarea(TaskStatus.Open, ('0x' + '00'.repeat(32)) as Hex), worker: CERO },
   '5': tarea(TaskStatus.Open, ('0x' + '00'.repeat(32)) as Hex),
 };
+
+/**
+ * El tablón con reglas (PanalTablon): sus encargos van por número de encargo.
+ * #0 publicado. #1 asignado a la persona (tarea #1 del escrow, sin entregar).
+ * #2 asignado a la persona (tarea #2, con la entrega ya anclada). #3 retirado.
+ */
+const TABLON_V2 = getAddress('0x00000000000000000000000000000000000000ab');
+const ANUNCIO_V2 = 'Traducción ES→FR, 12 páginas, jurídica';
+const BRIEF_V2 = 'El contrato entero, para el martes.';
+const TRABAJOS: Record<string, TrabajoTablon> = {
+  '0': trabajo(0, CERO, 0n),
+  '1': trabajo(1, AGENTE, 1n),
+  '2': trabajo(1, AGENTE, 2n),
+  '3': trabajo(3, CERO, 0n),
+};
+
+function trabajo(state: number, agent: `0x${string}`, escrowTaskId: bigint): TrabajoTablon {
+  return {
+    client: cliente.address,
+    state,
+    agent,
+    taskHash: keccak256(toBytes(BRIEF_V2)),
+    advertHash: keccak256(toBytes(ANUNCIO_V2)),
+    escrowTaskId,
+  };
+}
 
 function tarea(status: TaskStatus, resultHash: Hex): Task {
   return {
@@ -115,6 +144,12 @@ async function main(): Promise<void> {
     simboloDe: () => 'MON',
     indexer: 'https://api.panal.lat',
     allowLocalhostOrigin: true,
+    tablon: TABLON_V2,
+    fetchJob: async (jobId) => {
+      const j = TRABAJOS[jobId.toString()];
+      if (!j) throw new Error('execution reverted: InvalidJob()');
+      return j;
+    },
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const dir_ = server.address();
@@ -505,6 +540,103 @@ async function main(): Promise<void> {
     },
   });
   check('200 su cliente sí, que es quien lo escribió', r40.status === 200, `status=${r40.status}`);
+
+  /* ── el tablón con reglas ─────────────────────────────────────────────── */
+  console.log('\n── El tablón con reglas: lo que el contrato ancla, y quién lee qué ──\n');
+
+  // Los mismos bytes que firma el SDK (sdk/test/tablon-reglas.test.ts).
+  check(
+    'los mensajes de firma, idénticos a los del SDK',
+    tablonEncargoSignMessage(7n, 1700000000) === 'Panal tablón con reglas · encargo #7 · 1700000000' &&
+      tablonEntregaSignMessage(7n, 1700000000) === 'Panal tablón con reglas · entrega #7 · 1700000000' &&
+      tablonResultadoSignMessage(7n, 1700000000) === 'Panal tablón con reglas · resultado #7 · 1700000000',
+  );
+
+  const v2 = `http://127.0.0.1:${dir_.port}/buzon/${TABLON_V2}`;
+  // Otro cliente detrás del proxy: el límite es de 60 por minuto y por IP, y
+  // las secciones de antes ya han gastado casi todo el de 127.0.0.1.
+  const OTRA_IP = { 'x-forwarded-for': '10.0.0.2' };
+  const postV2 = (ruta: string, body: unknown) =>
+    fetch(`${v2}/${ruta}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'https://panal.lat', ...OTRA_IP },
+      body: JSON.stringify(body),
+    });
+  const getV2 = async (ruta: string, quien: typeof cliente, mensaje: (e: number) => string) => {
+    const e = enUnMinuto();
+    return fetch(`${v2}/${ruta}`, {
+      headers: {
+        ...OTRA_IP,
+        'x-panal-address': quien.address,
+        'x-panal-signature': await quien.signMessage({ message: mensaje(e) }),
+        'x-panal-expira': String(e),
+      },
+    });
+  };
+
+  const v1 = await postV2('anuncio/0', { anuncio: 'Otra cosa que nadie publicó' });
+  check('400 un anuncio que no da el advertHash no entra', v1.status === 400, `status=${v1.status}`);
+  const v2a = await postV2('anuncio/0', { anuncio: ANUNCIO_V2 });
+  check('200 el que lo da, sin firma: lo prueba la cadena', v2a.status === 200, `status=${v2a.status}`);
+  const lista = (await (await fetch(`${v2}/lista`, { headers: OTRA_IP })).json()) as { anuncios?: { jobId: string; anuncio: string; cliente: string }[] };
+  check(
+    'y la lista lo enseña, con su cliente',
+    lista.anuncios?.[0]?.anuncio === ANUNCIO_V2 && lista.anuncios[0].cliente === cliente.address,
+    JSON.stringify(lista),
+  );
+  const v3 = await postV2('anuncio/3', { anuncio: ANUNCIO_V2 });
+  check('409 ni el de un encargo retirado', v3.status === 409, `status=${v3.status}`);
+  const v4 = await postV2('anuncio/99', { anuncio: ANUNCIO_V2 });
+  check('404 ni el de un encargo que no existe', v4.status === 404, `status=${v4.status}`);
+
+  const v5 = await postV2('brief/0', { brief: 'Un encargo distinto del pagado' });
+  check('400 un encargo que no da el taskHash no entra', v5.status === 400, `status=${v5.status}`);
+  for (const id of ['0', '1']) await postV2(`brief/${id}`, { brief: BRIEF_V2 });
+  check('200 el que lo da', store.leer(TABLON_V2, 0n)?.brief === BRIEF_V2 && store.leer(TABLON_V2, 1n)?.brief === BRIEF_V2);
+
+  const v6 = await getV2('encargo/0', persona, (e) => tablonEncargoSignMessage(0n, e));
+  check('403 sin coger el encargo, un agente no lo lee', v6.status === 403, `status=${v6.status}`);
+  const v7 = await getV2('encargo/0', cliente, (e) => tablonEncargoSignMessage(0n, e));
+  check('200 su cliente sí', v7.status === 200, `status=${v7.status}`);
+  const v8 = await getV2('encargo/1', persona, (e) => tablonEncargoSignMessage(1n, e));
+  const b8 = (await v8.json()) as { brief?: string };
+  check('200 y su agente, en cuanto lo tiene asignado', v8.status === 200 && b8.brief === BRIEF_V2, `status=${v8.status}`);
+  const v9 = await getV2('encargo/1', intruso, (e) => tablonEncargoSignMessage(1n, e));
+  check('403 un tercero no', v9.status === 403, `status=${v9.status}`);
+  const v10 = await getV2('encargo/1', persona, (e) => encargoSignMessage(1n, e));
+  check('403 la firma de una TAREA #1 no abre el ENCARGO #1', v10.status === 403, `status=${v10.status}`);
+
+  const entregaV2 = async (id: bigint, texto: string, quien: typeof cliente) => {
+    const e = enUnMinuto();
+    return postV2(`entrega/${id}`, {
+      entrega: texto,
+      address: quien.address,
+      signature: await quien.signMessage({ message: tablonEntregaSignMessage(id, e) }),
+      expira: e,
+    });
+  };
+  const v11 = await entregaV2(1n, ENTREGA, intruso);
+  check('403 solo su agente deja la entrega', v11.status === 403, `status=${v11.status}`);
+  const v12 = await entregaV2(0n, ENTREGA, persona);
+  check('403 y no en un encargo que nadie tiene', v12.status === 403, `status=${v12.status}`);
+  const v13 = await entregaV2(1n, ENTREGA, persona);
+  check('200 su agente sí', v13.status === 200, `status=${v13.status}`);
+  const v14 = await entregaV2(2n, OTRA_ENTREGA, persona);
+  check('409 con la entrega anclada, otra no entra', v14.status === 409, `status=${v14.status}`);
+  const v15 = await entregaV2(2n, ENTREGA, persona);
+  check('200 la anclada sí', v15.status === 200, `status=${v15.status}`);
+
+  const v16 = await getV2('result/1', persona, (e) => tablonResultadoSignMessage(1n, e));
+  check('403 la entrega no la descarga su agente', v16.status === 403, `status=${v16.status}`);
+  const v17 = await getV2('result/1', cliente, (e) => tablonResultadoSignMessage(1n, e));
+  const b17 = (await v17.json()) as { resultText?: string; resultHash?: string };
+  check(
+    '200 su cliente de verdad sí, aunque en el escrow el cliente sea el contrato',
+    v17.status === 200 && b17.resultText === ENTREGA && b17.resultHash === keccak256(toBytes(ENTREGA)),
+    `status=${v17.status}`,
+  );
+  const v18 = await getV2('result/1', cliente, (e) => resultSignMessageConCaducidad(1n, e));
+  check('403 con la firma de una tarea, no', v18.status === 403, `status=${v18.status}`);
 
   /* ── la retención ─────────────────────────────────────────────────────── */
   console.log('\n── Es un relevo, no un archivo ──\n');

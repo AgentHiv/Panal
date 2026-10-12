@@ -28,6 +28,15 @@
  *   Los dos:
  *     GET  /buzon/:agente/archivo/:taskId/:nombre  se lleva un archivo
  *
+ *   El tablón con reglas (PanalTablon), bajo SU dirección y por número de
+ *   encargo, no de tarea (ver `tablonConReglas` más abajo):
+ *     POST /buzon/:tablon/anuncio/:jobId    el anuncio, si da el advertHash
+ *     GET  /buzon/:tablon/lista             los anuncios
+ *     POST /buzon/:tablon/brief/:jobId      el encargo, si da el taskHash
+ *     GET  /buzon/:tablon/encargo/:jobId    lo leen su cliente y su agente
+ *     POST /buzon/:tablon/entrega/:jobId    la deja su agente
+ *     GET  /buzon/:tablon/result/:jobId     se la lleva su cliente
+ *
  * QUÉ NO PUEDE HACER
  *
  * Ni cobrar, ni entregar, ni mover un encargo: todo eso lo firma una wallet, y
@@ -56,7 +65,18 @@ import { getAddress, isAddress, isHex, keccak256, toBytes, verifyMessage, type A
 import { allowedOrigin, clientIp } from './net.js';
 import { leerEjemplosDeMetadata } from './ejemplos.js';
 import { leerNivelesDeMetadata } from './niveles.js';
-import { currencySymbol, getRegistryAgent, getTask, monad, TaskStatus, type ChainClients, type RegistryAgent, type Task } from './chain.js';
+import {
+  currencySymbol,
+  getRegistryAgent,
+  getTablonJob,
+  getTask,
+  monad,
+  TaskStatus,
+  type ChainClients,
+  type RegistryAgent,
+  type Task,
+  type TrabajoTablon,
+} from './chain.js';
 import { MAX_BRIEF_CHARS, parseMetadataURI, type AgentJson } from './http.js';
 import type { BotConfig } from './config.js';
 import { MAX_ARCHIVO_BYTES, type BuzonStore } from './buzon-store.js';
@@ -96,6 +116,28 @@ export function encargoSignMessage(taskId: bigint, expira: number): string {
 /** La firma con la que el TRABAJADOR deja su entrega en el buzón. */
 export function entregaSignMessage(taskId: bigint, expira: number): string {
   return `Panal entrega #${taskId.toString()} · ${expira}`;
+}
+
+/*
+ * Las del tablón con reglas. Van por número de ENCARGO de PanalTablon, no de
+ * tarea del escrow, y dicen de qué tablón son: una firma para la tarea #7 no
+ * puede valer para el encargo #7. Deben coincidir con las de
+ * sdk/src/tablon-reglas.ts.
+ */
+
+/** Su cliente o su agente leen el encargo. */
+export function tablonEncargoSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · encargo #${jobId.toString()} · ${expira}`;
+}
+
+/** Su agente deja la entrega. */
+export function tablonEntregaSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · entrega #${jobId.toString()} · ${expira}`;
+}
+
+/** Su cliente se lleva la entrega. */
+export function tablonResultadoSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · resultado #${jobId.toString()} · ${expira}`;
 }
 
 /** Lo máximo que puede durar una firma. Abre un encargo entero. */
@@ -288,6 +330,12 @@ export interface BuzonDeps {
   indexer: string;
   allowLocalhostOrigin: boolean;
   maxUrlLength?: number;
+  /**
+   * PanalTablon, si está desplegado. Sus encargos se guardan bajo su
+   * dirección y se comprueban con `fetchJob`. Sin él, sus rutas no existen.
+   */
+  tablon?: Address | null;
+  fetchJob?: (jobId: bigint) => Promise<TrabajoTablon>;
 }
 
 /**
@@ -956,6 +1004,208 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     json(res, 200, ficha);
   };
 
+  /* ── el tablón con reglas ─────────────────────────────────────────────────
+   *
+   * PanalTablon guarda en la cadena el keccak256 del ANUNCIO (`advertHash`) y
+   * del ENCARGO (`taskHash`). Así que aquí no hace falta firma para dejarlos:
+   * un texto que no da su hash no entra, y el que lo da es justo el que el
+   * cliente publicó. Lo que sí lleva firma es LEER el encargo y la entrega, y
+   * dejar la entrega.
+   *
+   * POR QUÉ NO VALEN LAS RUTAS DE SIEMPRE. En el escrow, el cliente de estas
+   * tareas es el contrato, y un contrato no firma: ni podría mandar el encargo
+   * al servidor del agente ni descargarse la entrega. El cliente de verdad es
+   * `getJob(jobId).client`, y por eso todo va por número de encargo.
+   */
+  const trabajoDe = async (jobId: bigint, res: ServerResponse): Promise<TrabajoTablon | null> => {
+    try {
+      return await deps.fetchJob!(jobId);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('InvalidJob')) {
+        json(res, 404, { error: 'no such job' });
+      } else {
+        console.warn(`[buzon] no se pudo leer getJob(${jobId}): ${msg.split('\n')[0]}`);
+        json(res, 502, { error: 'rpc error' });
+      }
+      return null;
+    }
+  };
+
+  /** El texto de un POST del tablón, con su tope. */
+  const textoDe = async (req: IncomingMessage, campo: string, max: number, res: ServerResponse) => {
+    const raw = await readBody(req, max * 4 + 4_096);
+    if (raw === null) {
+      json(res, 413, { error: 'body too large' });
+      return null;
+    }
+    try {
+      const body = JSON.parse(raw || '{}') as Record<string, unknown>;
+      const texto = typeof body[campo] === 'string' ? (body[campo] as string) : '';
+      if (texto.trim().length === 0 || texto.length > max) {
+        json(res, 400, { error: `${campo} requerido, máx. ${max} caracteres` });
+        return null;
+      }
+      return { texto, body };
+    } catch {
+      json(res, 400, { error: 'bad json' });
+      return null;
+    }
+  };
+
+  const tablonConReglas = async (
+    tablon: Address,
+    resto: string,
+    url: URL,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> => {
+    if (resto === 'lista' && req.method === 'GET') {
+      // Sin firma: es lo que su cliente escribió para que se lea. Quien lo lea
+      // puede comprobar cada uno contra el advertHash de la cadena.
+      json(res, 200, {
+        anuncios: deps.store.ofertas(tablon).map((o) => ({
+          jobId: o.taskId,
+          anuncio: o.oferta.publico,
+          cliente: o.oferta.cliente,
+          publicado: o.oferta.ts,
+        })),
+        comprobacion: 'keccak256(anuncio) == getJob(jobId).advertHash',
+      });
+      return;
+    }
+    const m = /^(anuncio|brief|encargo|entrega|result)\/(\d{1,20})$/.exec(resto);
+    if (!m) {
+      json(res, 404, { error: 'not found' });
+      return;
+    }
+    const jobId = BigInt(m[2]!);
+    const que = `${req.method} ${m[1]}`;
+
+    if (que === 'POST anuncio' || que === 'POST brief') {
+      const esAnuncio = que === 'POST anuncio';
+      const leido = await textoDe(req, esAnuncio ? 'anuncio' : 'brief', esAnuncio ? MAX_OFERTA_CHARS : MAX_BRIEF_CHARS, res);
+      if (!leido) return;
+      const job = await trabajoDe(jobId, res);
+      if (!job) return;
+      const esperado = esAnuncio ? job.advertHash : job.taskHash;
+      if (keccak256(toBytes(leido.texto)).toLowerCase() !== esperado.toLowerCase()) {
+        json(res, 400, { error: 'hash mismatch', esperado });
+        return;
+      }
+      // Retirado o caducado: ya no hay a quién servírselo.
+      if (job.state === 3 || job.state === 4) {
+        json(res, 409, { error: 'job closed' });
+        return;
+      }
+      const ok = esAnuncio
+        ? deps.store.guardarOferta(tablon, jobId, { publico: leido.texto, firma: '', cliente: job.client })
+        : deps.store.guardarBrief(tablon, jobId, leido.texto);
+      if (!ok) {
+        json(res, 400, { error: 'bad key' });
+        return;
+      }
+      console.log(`[buzon] tablón con reglas: ${esAnuncio ? 'anuncio' : 'encargo'} del #${jobId}`);
+      json(res, 200, { ok: true });
+      return;
+    }
+
+    if (que === 'GET encargo' || que === 'GET result') {
+      const esEncargo = que === 'GET encargo';
+      const { address: addressParam, signature, expira } = credenciales(req, url);
+      if (!isAddress(addressParam) || !isHex(signature)) {
+        json(res, 400, { error: 'bad credentials' });
+        return;
+      }
+      const address = getAddress(addressParam);
+      const job = await trabajoDe(jobId, res);
+      if (!job) return;
+      const firmaOk = await firmaVigente(address, signature as Hex, expira, (e) =>
+        esEncargo ? tablonEncargoSignMessage(jobId, e) : tablonResultadoSignMessage(jobId, e),
+      );
+      // El encargo lo leen su cliente y, en cuanto lo tiene, su agente. La
+      // entrega, solo su cliente.
+      const esCliente = address.toLowerCase() === job.client.toLowerCase();
+      const esAgente = job.agent.toLowerCase() !== TABLON.toLowerCase() && address.toLowerCase() === job.agent.toLowerCase();
+      if (!firmaOk || !(esCliente || (esEncargo && esAgente))) {
+        json(res, 403, { error: esEncargo ? 'not client nor agent' : 'not client' });
+        return;
+      }
+      const guardado = deps.store.leer(tablon, jobId);
+      if (esEncargo) {
+        if (!guardado?.brief) {
+          json(res, 404, { error: 'brief not here', taskHash: job.taskHash });
+          return;
+        }
+        json(res, 200, { jobId: jobId.toString(), brief: guardado.brief, taskHash: job.taskHash });
+        return;
+      }
+      if (!guardado?.entrega) {
+        json(res, 404, { error: 'not delivered yet' });
+        return;
+      }
+      json(res, 200, {
+        jobId: jobId.toString(),
+        escrowTaskId: job.escrowTaskId.toString(),
+        resultText: guardado.entrega,
+        resultHash: keccak256(toBytes(guardado.entrega)),
+      });
+      return;
+    }
+
+    if (que === 'POST entrega') {
+      const leido = await textoDe(req, 'entrega', MAX_ENTREGA_CHARS, res);
+      if (!leido) return;
+      const { address: addressParam, signature, expira: expiraCabecera } = credenciales(req, url);
+      const a = typeof leido.body.address === 'string' ? leido.body.address : addressParam;
+      const firma = typeof leido.body.signature === 'string' ? leido.body.signature : signature;
+      const expira =
+        typeof leido.body.expira === 'number' || typeof leido.body.expira === 'string'
+          ? String(leido.body.expira)
+          : expiraCabecera;
+      if (!isAddress(a) || !isHex(firma)) {
+        json(res, 400, { error: 'bad credentials' });
+        return;
+      }
+      const address = getAddress(a);
+      const job = await trabajoDe(jobId, res);
+      if (!job) return;
+      const firmaOk = await firmaVigente(address, firma as Hex, expira, (e) => tablonEntregaSignMessage(jobId, e));
+      if (!firmaOk || job.agent.toLowerCase() === TABLON.toLowerCase() || address.toLowerCase() !== job.agent.toLowerCase()) {
+        json(res, 403, { error: 'not agent' });
+        return;
+      }
+      if (job.state !== 1 && job.state !== 2) {
+        json(res, 409, { error: 'job not assigned' });
+        return;
+      }
+      // Como en las tareas de siempre: si ya hay entrega anclada en el escrow,
+      // los bytes tienen que dar ESE hash.
+      let task: Task;
+      try {
+        task = await deps.fetchTask(job.escrowTaskId);
+      } catch {
+        json(res, 502, { error: 'rpc error' });
+        return;
+      }
+      if (task.resultHash.toLowerCase() !== SIN_HASH) {
+        if (keccak256(toBytes(leido.texto)).toLowerCase() !== task.resultHash.toLowerCase()) {
+          json(res, 409, { error: 'delivery hash mismatch', resultHash: task.resultHash });
+          return;
+        }
+      }
+      if (!deps.store.guardarEntrega(tablon, jobId, leido.texto)) {
+        json(res, 400, { error: 'bad key' });
+        return;
+      }
+      console.log(`[buzon] tablón con reglas: entrega del #${jobId} (${leido.texto.length} chars)`);
+      json(res, 200, { ok: true, resultHash: keccak256(toBytes(leido.texto)) });
+      return;
+    }
+
+    json(res, 405, { error: 'method not allowed' });
+  };
+
   // ---- Enrutado -------------------------------------------------------------
   const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const origin = allowedOrigin(req.headers.origin, deps.allowLocalhostOrigin);
@@ -996,6 +1246,11 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
     const { agente, resto } = p;
 
+    // El tablón con reglas, antes que nada: su dirección no es un agente.
+    if (deps.tablon && deps.fetchJob && agente === getAddress(deps.tablon)) {
+      await tablonConReglas(agente, resto, url, req, res);
+      return;
+    }
     if (resto === 'agent.json' && req.method === 'GET') {
       await darFicha(agente, res);
       return;
@@ -1084,6 +1339,8 @@ export function startBuzonServer(cfg: BotConfig, clients: ChainClients, store: B
     simboloDe: (currency) => currencySymbol(currency, cfg),
     indexer: cfg.indexerPublicUrl,
     allowLocalhostOrigin: process.env.NODE_ENV !== 'production',
+    tablon: cfg.tablonAddress,
+    fetchJob: cfg.tablonAddress ? (jobId) => getTablonJob(clients, cfg.tablonAddress!, jobId) : undefined,
   });
   server.listen(cfg.buzonHttpPort, () => {
     console.log(`   Buzón: http://localhost:${cfg.buzonHttpPort}/buzon/<agente>/{agent.json,brief,result,encargo,entrega}`);
