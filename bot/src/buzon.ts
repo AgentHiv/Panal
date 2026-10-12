@@ -130,9 +130,13 @@ export function tablonEncargoSignMessage(jobId: bigint, expira: number): string 
   return `Panal tablón con reglas · encargo #${jobId.toString()} · ${expira}`;
 }
 
-/** Su agente deja la entrega. */
-export function tablonEntregaSignMessage(jobId: bigint, expira: number): string {
-  return `Panal tablón con reglas · entrega #${jobId.toString()} · ${expira}`;
+/**
+ * Su agente deja la entrega. Lleva el keccak256 del texto dentro: una firma
+ * vale para ESA entrega y no para otra, así que quien la viera pasar no podría
+ * usarla para dejar un texto distinto en su nombre antes de que lo ancle.
+ */
+export function tablonEntregaSignMessage(jobId: bigint, resultHash: Hex, expira: number): string {
+  return `Panal tablón con reglas · entrega #${jobId.toString()} · ${resultHash.toLowerCase()} · ${expira}`;
 }
 
 /** Su cliente se lleva la entrega. */
@@ -488,11 +492,9 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     const address = getAddress(addressParam);
     const signature = signatureParam as Hex;
 
-    const task = await tareaDe(agente, taskId, res);
-    if (!task) return;
-
     // Los dos formatos, igual que el bot: con caducidad (lo que manda la web)
-    // y sin ella (clientes ya publicados que firman así).
+    // y sin ella (clientes ya publicados que firman así). La firma, antes que
+    // la cadena: si no vale, no se gasta ni una llamada.
     let firmaOk = false;
     if (expira !== null) {
       firmaOk = await firmaVigente(address, signature, expira, (e) =>
@@ -505,7 +507,13 @@ export function createBuzonServer(deps: BuzonDeps): Server {
         firmaOk = false;
       }
     }
-    if (!firmaOk || address.toLowerCase() !== task.client.toLowerCase()) {
+    if (!firmaOk) {
+      json(res, 403, { error: 'not client' });
+      return;
+    }
+    const task = await tareaDe(agente, taskId, res);
+    if (!task) return;
+    if (address.toLowerCase() !== task.client.toLowerCase()) {
       json(res, 403, { error: 'not client' });
       return;
     }
@@ -539,12 +547,17 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
     const address = getAddress(addressParam);
 
-    const task = await tareaDe(agente, taskId, res);
-    if (!task) return;
-
+    // La firma primero: es local y no cuesta nada. Una petición con una firma
+    // que no vale no llega a preguntar a la cadena.
     const firmaOk = await firmaVigente(address, signatureParam as Hex, expira, (e) =>
       encargoSignMessage(taskId, e),
     );
+    if (!firmaOk) {
+      json(res, 403, { error: 'not worker' });
+      return;
+    }
+    const task = await tareaDe(agente, taskId, res);
+    if (!task) return;
     /**
      * En un buzón normal lo lee su trabajador y nadie más.
      *
@@ -619,13 +632,16 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
     const address = getAddress(addressParam);
 
-    const task = await tareaDe(agente, taskId, res);
-    if (!task) return;
-
     const firmaOk = await firmaVigente(address, signatureParam as Hex, expira, (e) =>
       entregaSignMessage(taskId, e),
     );
-    if (!firmaOk || address.toLowerCase() !== task.worker.toLowerCase()) {
+    if (!firmaOk) {
+      json(res, 403, { error: 'not worker' });
+      return;
+    }
+    const task = await tareaDe(agente, taskId, res);
+    if (!task) return;
+    if (address.toLowerCase() !== task.worker.toLowerCase()) {
       json(res, 403, { error: 'not worker' });
       return;
     }
@@ -1118,16 +1134,21 @@ export function createBuzonServer(deps: BuzonDeps): Server {
         return;
       }
       const address = getAddress(addressParam);
-      const job = await trabajoDe(jobId, res);
-      if (!job) return;
+      // La firma primero: es local. Si no vale, no se pregunta a la cadena.
       const firmaOk = await firmaVigente(address, signature as Hex, expira, (e) =>
         esEncargo ? tablonEncargoSignMessage(jobId, e) : tablonResultadoSignMessage(jobId, e),
       );
+      if (!firmaOk) {
+        json(res, 403, { error: esEncargo ? 'not client nor agent' : 'not client' });
+        return;
+      }
+      const job = await trabajoDe(jobId, res);
+      if (!job) return;
       // El encargo lo leen su cliente y, en cuanto lo tiene, su agente. La
       // entrega, solo su cliente.
       const esCliente = address.toLowerCase() === job.client.toLowerCase();
       const esAgente = job.agent.toLowerCase() !== TABLON.toLowerCase() && address.toLowerCase() === job.agent.toLowerCase();
-      if (!firmaOk || !(esCliente || (esEncargo && esAgente))) {
+      if (!(esCliente || (esEncargo && esAgente))) {
         json(res, 403, { error: esEncargo ? 'not client nor agent' : 'not client' });
         return;
       }
@@ -1168,10 +1189,17 @@ export function createBuzonServer(deps: BuzonDeps): Server {
         return;
       }
       const address = getAddress(a);
+      const hashEntrega = keccak256(toBytes(leido.texto));
+      const firmaOk = await firmaVigente(address, firma as Hex, expira, (e) =>
+        tablonEntregaSignMessage(jobId, hashEntrega, e),
+      );
+      if (!firmaOk) {
+        json(res, 403, { error: 'not agent' });
+        return;
+      }
       const job = await trabajoDe(jobId, res);
       if (!job) return;
-      const firmaOk = await firmaVigente(address, firma as Hex, expira, (e) => tablonEntregaSignMessage(jobId, e));
-      if (!firmaOk || job.agent.toLowerCase() === TABLON.toLowerCase() || address.toLowerCase() !== job.agent.toLowerCase()) {
+      if (job.agent.toLowerCase() === TABLON.toLowerCase() || address.toLowerCase() !== job.agent.toLowerCase()) {
         json(res, 403, { error: 'not agent' });
         return;
       }

@@ -57,7 +57,11 @@ console.log('\nla clave de una campaña, la del contrato');
 
 console.log('\nlos mensajes del buzón, idénticos a los de bot/src/buzon.ts');
 check('encargo', tablonEncargoSignMessage(7n, 1700000000) === 'Panal tablón con reglas · encargo #7 · 1700000000');
-check('entrega', tablonEntregaSignMessage(7n, 1700000000) === 'Panal tablón con reglas · entrega #7 · 1700000000');
+check(
+  'entrega, con el hash del texto dentro',
+  tablonEntregaSignMessage(7n, `0x${'AB'.repeat(32)}`, 1700000000) ===
+    `Panal tablón con reglas · entrega #7 · 0x${'ab'.repeat(32)} · 1700000000`,
+);
 check('resultado', tablonResultadoSignMessage(7n, 1700000000) === 'Panal tablón con reglas · resultado #7 · 1700000000');
 
 console.log('\nlas categorías de la máscara');
