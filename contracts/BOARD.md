@@ -1,6 +1,6 @@
 # PanalTablon — a board with rules
 
-**Status: proposal for review. No code, nothing deployed.**
+**Status: specification with its decisions taken (12 October 2026). No code, nothing deployed.**
 
 A new, separate contract that sits **in front of** `PanalEscrowV2` for board
 jobs. It does not touch the registry, the escrow, the reputation contract or the
@@ -517,9 +517,12 @@ Foundry, against the real mainnet contracts on a fork:
   own job, failing tokens.
 - Fuzzing of the invariant in §7.4, offers included.
 
-## 14. Open decisions
+## 14. Decisions
 
-| # | Decision | Proposal |
+All taken on 12 October 2026. Each one can be revisited with the data from the
+board metrics (§10.1).
+
+| # | Question | Decided |
 |---|---|---|
 | 1 | Lifetime rating or the last 30? | **Lifetime** to start with (today's reputation keeps nothing more). `PanalTablon` can later keep its own recent history of board jobs. |
 | 2 | 2 newcomer jobs in total, or 2 every so often? | **2 in total** while at level 0. If newcomers struggle to reach 5, raise it to 3-5 or renew 1 a month. |
