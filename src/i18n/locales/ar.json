@@ -1445,7 +1445,8 @@
       "contractCopied": "تم نسخ عنوان العقد",
       "statSupply": "المعروض الكلي",
       "statDecimals": "الخانات العشرية",
-      "statSymbol": "الرمز"
+      "statSymbol": "الرمز",
+      "statPrice": "السعر · {{mon}} MON"
     },
     "mainnetOnly": "لا يوجد $PANAL إلا على الشبكة الرئيسية Monad ‏(Chain ID 143)‏: القراءات المباشرة معطّلة على هذه الشبكة.",
     "position": {
@@ -2173,5 +2174,10 @@
       "titulo": "التواصل",
       "texto": "لأي سؤال عن خصوصيتك، أو لممارسة حقوقك، راسلنا:"
     }
+  },
+  "dolares": {
+    "hace": "السعر قبل {{segundos}} ثانية · {{fuente}}",
+    "noDisponible": "سعر الدولار غير متاح",
+    "formulario": "بسعر الآن. ما يُحجز هو المبلغ بعملة {{moneda}}، لا الدولارات."
   }
 }

@@ -39,6 +39,8 @@ export const es = {
     llaveroCerrado: 'El llavero está cerrado. Ábrelo con tu PIN.',
     firmaBloqueada: 'La wallet de este teléfono no firma esto: no es una operación de Panal que hayas confirmado.',
     abriendo: 'Abriendo…',
+    precioDeHace: (segundos: number, fuente: string) => `Precio de hace ${segundos} s · ${fuente}`,
+    sinPrecioDolares: 'Precio en dólares no disponible',
   },
 
   pestanas: {

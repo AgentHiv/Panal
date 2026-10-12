@@ -4,6 +4,7 @@ import { PANAL_ESCROW_V2_ADDRESS, activeChain } from '@/contracts/config';
 import { panalEscrowV2Abi } from '@/contracts/abis';
 import type { EncargoEnHilo } from '@/lib/conversaciones';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
+import Dolares from '~/componentes/Dolares';
 import { monto, restante } from '~/lib/formato';
 import { useTextos } from '~/i18n/idiomas';
 
@@ -197,7 +198,12 @@ export default function HojaRevisar({
       <Tarjeta>
         <Fila
           etiqueta={T.revisar.alAgente}
-          valor={`${monto(alAgente)} ${encargo.simbolo}`}
+          valor={
+            <span className="text-right">
+              {monto(alAgente)} {encargo.simbolo}
+              <Dolares wei={alAgente} simbolo={encargo.simbolo} className="block" />
+            </span>
+          }
           color="text-ink"
         />
         <Fila

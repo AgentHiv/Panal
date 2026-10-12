@@ -9,6 +9,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
 import { formatInt, formatMon } from '@/data/agents';
+import Dolares from '@/components/Dolares';
 import { useIndexAgents } from '@/lib/indexer';
 import { canalDe, isOnchainAgent, priceKey } from '@/hooks/usePanalAgents';
 import { currencySymbol } from '@/contracts/config';
@@ -58,6 +59,9 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
           {formatMon(agent.pricePerTask)} {isOnchainAgent(agent) ? currencySymbol(agent.currency) : 'MON'}
         </span>
       </div>
+      {isOnchainAgent(agent) && (
+        <Dolares cantidad={agent.priceWei} moneda={currencySymbol(agent.currency)} className="mt-1.5 block text-[0.8125rem]" />
+      )}
 
       {stats && (
         <p className="mt-4 font-mono text-[12px] leading-relaxed text-ink-2">
@@ -174,6 +178,7 @@ export function MobileHireBar({ agent, onHire }: HireCardProps) {
             <span className="text-[0.75rem] text-ink-3">
               {t(isOnchainAgent(agent) && currencySymbol(agent.currency) === '$PANAL' ? 'common.tokenTask' : 'common.monTask')}
             </span>
+            {isOnchainAgent(agent) && <Dolares cantidad={agent.priceWei} moneda={currencySymbol(agent.currency)} />}
           </div>
           <div className="flex items-center gap-2">
             {!sinCanal && (

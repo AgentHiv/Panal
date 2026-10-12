@@ -2,7 +2,10 @@
  * Panal — Página /token: tokenomics del token oficial $PANAL.
  * Regla de oro: TODOS los datos numéricos se leen on-chain en tiempo real
  * (totalSupply, name, symbol, decimals, balanceOf) vía wagmi useReadContract.
- * Sin precio ni market cap (no hay oráculo): no se muestran.
+ * El precio sale de la curva de nad.fun y de Pyth, leídos en la cadena (ver
+ * sdk/src/precios.ts), y solo se enseña si tiene menos de cinco minutos. Sin
+ * market cap: con casi todo el suministro en la curva, sería un número que no
+ * significa nada.
  * La distribución inicial NO es verificable on-chain sin indexador: se muestra
  * solo el supply y una nota honesta (sin gráfico inventado).
  */
@@ -27,6 +30,9 @@ import {
 import { toast } from 'sonner';
 import { useReadContract, useWatchAsset } from 'wagmi';
 import { formatUnits } from 'viem';
+import { esFresco, formatearDolares } from '@panal/sdk';
+import { useAhora } from '@/hooks/useAhora';
+import { usePrecios } from '@/hooks/usePrecios';
 import Reveal, { WordReveal } from '@/components/home/Reveal';
 import StatBlock from '@/components/StatBlock';
 import { panalTokenAbi } from '@/contracts/abis';
@@ -196,6 +202,7 @@ function TokenHero({ token }: { token: ReturnType<typeof usePanalToken> }) {
             </span>
             <span className="eyebrow text-ink-3">{t('tokenPage.hero.statSymbol')}</span>
           </div>
+          <PrecioDelToken />
         </Reveal>
       </div>
     </section>
@@ -477,6 +484,27 @@ function FinalCta() {
         </Reveal>
       </div>
     </section>
+  );
+}
+
+/** El precio de un $PANAL, en dólares y en MON. Nada si no hay precio fresco. */
+function PrecioDelToken() {
+  const { t } = useTranslation();
+  const precios = usePrecios();
+  const ahora = useAhora(10_000);
+  if (!esFresco(precios?.panal, ahora) || !precios?.panalEnMon) return null;
+  return (
+    <div
+      className="flex flex-col items-center gap-1"
+      title={t('dolares.hace', { segundos: Math.max(0, ahora - precios.panal.actualizado), fuente: 'nad.fun · Pyth' })}
+    >
+      <span className="font-display text-[2rem] font-bold leading-none tracking-[-0.02em] text-ink">
+        {formatearDolares(precios.panal.valor)}
+      </span>
+      <span className="eyebrow text-ink-3">
+        {t('tokenPage.hero.statPrice', { mon: precios.panalEnMon.valor.toPrecision(3) })}
+      </span>
+    </div>
   );
 }
 

@@ -1445,7 +1445,8 @@
       "contractCopied": "Adresse du contrat copiée",
       "statSupply": "Supply totale",
       "statDecimals": "Décimales",
-      "statSymbol": "Symbole"
+      "statSymbol": "Symbole",
+      "statPrice": "Prix · {{mon}} MON"
     },
     "mainnetOnly": "$PANAL n'existe que sur la mainnet Monad (Chain ID 143) : les lectures en direct sont désactivées sur ce réseau.",
     "position": {
@@ -2173,5 +2174,10 @@
       "titulo": "Contact",
       "texto": "Pour toute question sur votre vie privée, ou pour exercer vos droits, écrivez-nous :"
     }
+  },
+  "dolares": {
+    "hace": "Prix d'il y a {{segundos}} s · {{fuente}}",
+    "noDisponible": "Prix en dollars indisponible",
+    "formulario": "Au prix actuel. Ce qui est bloqué, c'est le montant en {{moneda}}, pas les dollars."
   }
 }

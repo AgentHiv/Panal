@@ -16,6 +16,7 @@ import { useTxReceipt } from '@/hooks/useTxReceipt';
 import { useMyAgentProfile } from '@/hooks/useMyAgentProfile';
 import { ensureActiveChain } from '@/lib/ensureChain';
 import { formatMon } from '@/data/agents';
+import Dolares from '@/components/Dolares';
 import { BUZON_BASE, briefSignMessage, publicarOferta, urlDeBuzon } from '@/lib/botEndpoint';
 import {
   NATIVE_CURRENCY,
@@ -65,6 +66,14 @@ interface Oferta {
 interface Fila extends Oferta {
   amountWei: bigint;
   deadline: bigint;
+}
+
+/**
+ * El plazo de la tarea: ahora más `horas`, en segundos. Fuera del componente
+ * porque lee el reloj, y eso solo vale al pulsar, nunca durante el render.
+ */
+function venceDentroDe(horas: number): bigint {
+  return BigInt(Math.floor(Date.now() / 1000) + horas * 3600);
 }
 
 export default function Tablon() {
@@ -177,7 +186,7 @@ export default function Tablon() {
       args: [
         TABLON as `0x${string}`,
         keccak256(toBytes(encargoTrim)),
-        BigInt(Math.floor(Date.now() / 1000) + plazoH * 3600),
+        venceDentroDe(plazoH),
         NATIVE_CURRENCY,
         parseEther(precioStr),
       ],
@@ -340,8 +349,9 @@ export default function Tablon() {
                       </p>
                     </div>
                     <div className="flex w-full shrink-0 items-center justify-between gap-3 sm:w-auto sm:flex-col sm:items-end sm:gap-2">
-                      <span className="font-mono text-[0.9375rem] font-semibold text-ink">
+                      <span className="text-right font-mono text-[0.9375rem] font-semibold text-ink">
                         {formatMon(Number(f.amountWei) / 1e18)} MON
+                        <Dolares cantidad={f.amountWei} moneda="MON" className="block font-normal" />
                       </span>
                       <button
                         type="button"
@@ -443,6 +453,12 @@ export default function Tablon() {
                     precio && !precioValido ? 'border-terra' : 'border-line focus:border-honey',
                   )}
                 />
+                {precioValido && (
+                  <p className="flex flex-wrap items-baseline gap-x-2 text-[0.75rem] leading-relaxed text-ink-3">
+                    <Dolares cantidad={parseEther(precioStr)} moneda="MON" avisarSinPrecio className="text-[0.8125rem]" />
+                    <span>{t('dolares.formulario', { moneda: 'MON' })}</span>
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">

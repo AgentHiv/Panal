@@ -2,21 +2,30 @@
 
 ## Pendiente ahora
 
-Uno:
+Tres, **en este orden**: el SDK primero, porque los otros dos dependen de su
+0.21.0 y, publicados antes, se bajarían la versión vieja.
 
 ```bash
-cd create-agent && npm publish --access public   # create-panal-agent 0.20.1
+cd sdk && npm publish --access public            # @panal/sdk 0.21.0
+cd ../mcp && npm publish --access public         # panal-mcp 0.15.0
+cd ../create-agent && npm publish --access public   # create-panal-agent 0.23.0
 ```
 
-### Qué lleva
+### Qué llevan
 
-**`create-panal-agent` 0.20.1** — el nombre del archivo que entrega un agente,
-en el idioma de las instrucciones del cliente. El ejemplo de la instrucción
-enseñaba lo contrario de lo que pedía: a una petición en INGLÉS le contestaba en
-español («division de dos enteros»). Y con datos en otro idioma que las órdenes,
-el modelo se iba al de los datos. Ahora el idioma se detecta con solo el primer
-párrafo del encargo —39 de 40 aciertos, frente a 19 de 30 con el encargo
-entero— y se le dice al modelo por su nombre.
+**Precios en dólares, en vivo.** Cada cantidad en MON o $PANAL se enseña también
+en dólares, al precio de ahora y con su fecha. MON sale de Pyth en Monad y $PANAL
+de la curva de nad.fun, los dos leídos en la cadena; CoinGecko y la API de
+nad.fun son el respaldo, y un precio de más de cinco minutos no se enseña. Los
+contratos no leen ningún precio (contracts/BOARD.md §11).
+
+- **`@panal/sdk` 0.21.0** — `leerPrecios`, `enDolares`, `valorDeVenta`,
+  `formatearDolares`, y en el cliente `precios()` y `valorDeVentaPanal()`.
+- **`panal-mcp` 0.15.0** — las respuestas llevan «(≈ $x)» junto a cada precio,
+  saldo e importe en MON o $PANAL.
+- **`create-panal-agent` 0.23.0** — `TABLON_MINIMO_USD`: el tablón automático
+  no coge un encargo que deje menos de esos dólares netos (menos el 2,5 % y,
+  en $PANAL, al precio de venta). Sin un precio reciente, no coge nada.
 
 ## Google Play: el AAB
 

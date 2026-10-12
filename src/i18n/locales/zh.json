@@ -1445,7 +1445,8 @@
       "contractCopied": "合约地址已复制",
       "statSupply": "总供应量",
       "statDecimals": "小数位数",
-      "statSymbol": "符号"
+      "statSymbol": "符号",
+      "statPrice": "价格 · {{mon}} MON"
     },
     "mainnetOnly": "$PANAL 仅存在于 Monad 主网(Chain ID 143):此网络上的实时读取已停用。",
     "position": {
@@ -2173,5 +2174,10 @@
       "titulo": "联系方式",
       "texto": "如有任何隐私方面的问题，或想行使你的权利，请写信给我们："
     }
+  },
+  "dolares": {
+    "hace": "{{segundos}} 秒前的价格 · {{fuente}}",
+    "noDisponible": "暂无美元价格",
+    "formulario": "按当前价格。锁定的是 {{moneda}} 数量，而不是美元。"
   }
 }

@@ -5,6 +5,7 @@ import { formatEther, formatUnits } from 'viem';
 import type { Nivel } from '@panal/sdk';
 import type { Agent } from '@/data/agents';
 import { formatMon } from '@/data/agents';
+import Dolares from '@/components/Dolares';
 import { currencySymbol } from '@/contracts/config';
 import { canalDe, isOnchainAgent } from '@/hooks/usePanalAgents';
 import { useNiveles } from '@/hooks/useNiveles';
@@ -23,6 +24,8 @@ interface Tarjeta {
   descripcion: string;
   precio: string;
   simbolo: string;
+  /** El precio en unidades mínimas, para enseñarlo también en dólares. */
+  wei?: bigint;
   /** El pie del tamaño que admite, si el nivel lo dice. */
   tope?: string;
   /** Contratar, o irse al chat. Una de las dos, nunca las dos. */
@@ -99,6 +102,7 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
           descripcion: n.description ?? t('detail.services.escrow.desc'),
           precio: formatMon(Number(formatEther(n.wei))),
           simbolo,
+          wei: n.wei,
           ...(n.maxBriefChars
             ? { tope: t('detail.services.upTo', { n: n.maxBriefChars.toLocaleString() }) }
             : {}),
@@ -113,6 +117,7 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
             descripcion: t('detail.services.escrow.desc'),
             precio: formatMon(agent.pricePerTask),
             simbolo,
+            ...(isOnchainAgent(agent) ? { wei: agent.priceWei } : {}),
             contratar: () => onHire(),
           },
           // El precio por mensaje sólo si cobra por llamada. Estaba en su
@@ -126,6 +131,8 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
                   descripcion: t('detail.services.ask.desc'),
                   precio: formatMon(Number(formatUnits(cobro.amount, cobro.decimales))),
                   simbolo: cobro.simbolo,
+                  // Solo si tiene 18 decimales: las estables ya son dólares.
+                  ...(cobro.decimales === 18 ? { wei: cobro.amount } : {}),
                   chat: `/chat/${agent.id}`,
                 },
               ]
@@ -161,8 +168,9 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
             )}
           </div>
           <div className="flex shrink-0 items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center">
-            <span className="font-mono text-[0.9375rem] font-semibold text-ink">
+            <span className="text-right font-mono text-[0.9375rem] font-semibold text-ink">
               {c.precio} {c.simbolo}
+              {c.wei !== undefined && <Dolares cantidad={c.wei} moneda={c.simbolo} className="block font-normal" />}
             </span>
             {c.chat ? (
               <Link

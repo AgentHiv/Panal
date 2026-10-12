@@ -36,6 +36,8 @@ export const pt: Textos = {
     llaveroCerrado: 'O porta-chaves está bloqueado. Abre-o com o teu PIN.',
     firmaBloqueada: 'A carteira deste telefone não assina isto: não é uma operação do Panal que tenhas confirmado.',
     abriendo: 'A abrir…',
+    precioDeHace: (segundos: number, fuente: string) => `Preço de há ${segundos} s · ${fuente}`,
+    sinPrecioDolares: 'Preço em dólares indisponível',
   },
 
   pestanas: {

@@ -25,6 +25,13 @@
  *     uno listo que nadie sabe explicar.
  * Y de lo que encaja, uno por ronda: el que más paga.
  *
+ * UN MÍNIMO EN DÓLARES, SI SE QUIERE. Con `TABLON_MINIMO_USD`, el agente no
+ * coge un encargo que le pague menos de eso: lo que cobraría de verdad, el
+ * importe menos el 2,5 % del escrow y, en $PANAL, lo que daría venderlos en la
+ * curva. Es para el que tiene costes en dólares —un vídeo que cuesta $1-2 de
+ * generar no se hace por $0,60—. Sin un precio de menos de cinco minutos no se
+ * coge nada: mejor perder un encargo que hacerlo a pérdida.
+ *
  * CÓMO LO TRABAJA. Con el mismo `work()` que un encargo normal: guarda el
  * encargo en disco, lo trabaja, SIRVE la entrega desde este servidor y ancla su
  * hash. El cliente recoge la entrega del `bot:` que el trabajador publica, como
@@ -41,6 +48,7 @@
 
 import type { Address } from 'viem';
 import { formatEther } from 'viem';
+import { FEE_BPS, NATIVE_CURRENCY, esFresco, formatearDolares } from '@panal/sdk';
 import type { EncargoDelTablon, PanalClient } from '@panal/sdk';
 
 export interface OpcionesTablon {
@@ -50,12 +58,15 @@ export interface OpcionesTablon {
   margenMinutos: number;
   /** Palabras que cuentan como encaje, además de las habilidades de la ficha. */
   palabras: string[];
+  /** Lo mínimo que tiene que dejar un encargo, en dólares netos. `null`: sin mínimo. */
+  minimoUsd: number | null;
 }
 
 export const TABLON_POR_DEFECTO: OpcionesTablon = {
   minutos: 5,
   margenMinutos: 30,
   palabras: [],
+  minimoUsd: null,
 };
 
 /**
@@ -84,7 +95,30 @@ export function opcionesDelEntorno(
   if (env.TABLON_PALABRAS?.trim()) {
     o.palabras = env.TABLON_PALABRAS.split(',').map((p) => p.trim()).filter(Boolean);
   }
+  if (env.TABLON_MINIMO_USD?.trim()) {
+    const n = Number(env.TABLON_MINIMO_USD.replace(',', '.'));
+    if (Number.isFinite(n) && n > 0) o.minimoUsd = n;
+    else avisar(`[tablon] TABLON_MINIMO_USD="${env.TABLON_MINIMO_USD}" no vale (un número mayor que 0): sin mínimo.`);
+  }
   return o;
+}
+
+/**
+ * Lo que este agente cobraría de verdad por un encargo, en dólares: el importe
+ * menos el 2,5 % del escrow y, en $PANAL, lo que daría venderlos en la curva.
+ * `null` si no hay un precio de menos de cinco minutos.
+ */
+export async function dolaresNetos(
+  panal: Pick<PanalClient, 'precios' | 'valorDeVentaPanal'>,
+  e: { amount: bigint; currency: Address },
+): Promise<number | null> {
+  const neto = (e.amount * (10_000n - FEE_BPS)) / 10_000n;
+  const precios = await panal.precios().catch(() => null);
+  if (!esFresco(precios?.mon)) return null;
+  // El escrow solo acepta MON y $PANAL: lo que no es MON es $PANAL.
+  const enMon = e.currency.toLowerCase() === NATIVE_CURRENCY ? neto : await panal.valorDeVentaPanal(neto).catch(() => null);
+  if (enMon === null) return null;
+  return Number(formatEther(enMon)) * precios.mon.valor;
 }
 
 /** Sin tildes, en minúsculas, y con guiones y barras como espacios. */
@@ -173,6 +207,23 @@ export async function repasarTablon(deps: DepsTablon): Promise<string[]> {
   const elegido = candidatos(lista, deps, Math.floor(Date.now() / 1000))[0];
   if (!elegido) return hecho;
 
+  // El que más paga va primero y todos son de la misma moneda: si ese no llega
+  // al mínimo, ninguno llega.
+  const minimo = deps.opciones.minimoUsd;
+  if (minimo !== null) {
+    const usd = await dolaresNetos(deps.panal, elegido);
+    if (usd === null) {
+      anotar(`[tablon] #${elegido.taskId} sin precio fresco en dólares: no se coge nada.`);
+      return hecho;
+    }
+    if (usd < minimo) {
+      anotar(
+        `[tablon] #${elegido.taskId} deja ${formatearDolares(usd)} y el mínimo es ${formatearDolares(minimo)}: no se coge.`,
+      );
+      return hecho;
+    }
+  }
+
   deps.marcar(true);
   try {
     try {
@@ -239,7 +290,8 @@ export async function arrancarTablon(
 
   const completas: DepsTablon = { ...deps, precio, habilidades };
   console.log(
-    `Tablón: cada ${deps.opciones.minutos} min · desde ${formatEther(precio.amount)} en su moneda · ` +
+    `Tablón: cada ${deps.opciones.minutos} min · desde ${formatEther(precio.amount)} en su moneda` +
+      `${deps.opciones.minimoUsd !== null ? ` y ${formatearDolares(deps.opciones.minimoUsd)} netos` : ''} · ` +
       `con ${deps.opciones.margenMinutos} min de plazo como mínimo · ${habilidades.length + deps.opciones.palabras.length} palabras.`,
   );
   let enMarcha = false;

@@ -51,6 +51,8 @@ import {
   conEjemplosDeLaFicha,
   createPanalClient,
   downloadDeliveredFile,
+  enDolares,
+  formatearDolares,
   erc20Abi,
   leerEjemplosDeMetadata,
   matchAttachment,
@@ -62,6 +64,7 @@ import {
   type DeliveredFile,
   type Nivel,
   type PanalClient,
+  type Precios,
 } from '@panal/sdk';
 import {
   MAX_ADJUNTOS,
@@ -180,6 +183,32 @@ function symbolOf(currency: Address): string {
  */
 function fmt(amount: bigint, currency: Address): string {
   return formatUnits(amount, esNativa(currency) ? 18 : (x402Currency(currency)?.decimals ?? 18));
+}
+
+/**
+ * Los precios en dólares, leídos como mucho cada 30 s.
+ *
+ * Solo para enseñar: lo que se firma y se bloquea sigue siendo la cantidad en
+ * su moneda. MON sale de Pyth y $PANAL de la curva de nad.fun, los dos en la
+ * cadena (ver precios.ts del SDK). Si no se pueden leer, las respuestas salen
+ * sin dólares, igual que antes.
+ */
+let preciosCache: { leidos: number; valor: Precios | null } = { leidos: 0, valor: null };
+
+async function refrescarPrecios(): Promise<void> {
+  if (Date.now() - preciosCache.leidos < 30_000) return;
+  preciosCache = { leidos: Date.now(), valor: await panal.precios().catch(() => null) };
+}
+
+/**
+ * « (≈ $0.60)» si hay un precio de menos de cinco minutos para esa moneda;
+ * nada si no. Las estables ya son dólares y no llevan nada.
+ */
+function usd(amount: bigint, currency: Address): string {
+  const sym = symbolOf(currency);
+  if (sym !== 'MON' && sym !== '$PANAL') return '';
+  const d = enDolares(amount, sym, preciosCache.valor);
+  return d ? ` (≈ ${formatearDolares(d.usd)})` : '';
 }
 
 /** Las monedas que este servidor sabe manejar: las que tienen presupuesto. */
@@ -306,7 +335,7 @@ function trustLine(agent: Agent): string | null {
 }
 
 function renderAgent(agent: Agent, niveles: Nivel[] = [], detallado = false): string {
-  const price = `${formatEther(agent.pricePerTask)} ${symbolOf(agent.currency)}`;
+  const price = `${formatEther(agent.pricePerTask)} ${symbolOf(agent.currency)}${usd(agent.pricePerTask, agent.currency)}`;
   const skills = agent.metadata.skills.length ? agent.metadata.skills.join(', ') : '(no skills declared)';
   return [
     `${agent.metadata.name || '(no name)'} — ${agent.address}`,
@@ -319,7 +348,9 @@ function renderAgent(agent: Agent, niveles: Nivel[] = [], detallado = false): st
     // Los niveles van DEBAJO del precio de tarea y no en su lugar: ese precio
     // sigue siendo el que se bloquea si nadie elige tamaño, y el que cobran
     // los agentes —casi todos— que no venden ninguno.
-    ...(detallado ? renderNiveles(niveles, symbolOf(agent.currency)) : [lineaDeNiveles(niveles, symbolOf(agent.currency))]),
+    ...(detallado
+      ? renderNiveles(niveles, symbolOf(agent.currency), (wei) => usd(wei, agent.currency))
+      : [lineaDeNiveles(niveles, symbolOf(agent.currency))]),
     `  Skills: ${skills}`,
     agent.metadata.description ? `  Description: ${agent.metadata.description}` : null,
     agent.metadata.botUrl ? `  Endpoint: ${agent.metadata.botUrl}` : null,
@@ -335,7 +366,7 @@ function renderTask(task: Awaited<ReturnType<PanalClient['getTask']>>): string {
     `Task #${task.id} — ${TaskStatus[task.status] ?? task.status}`,
     `  Client: ${task.client}`,
     `  Agent:   ${task.worker}`,
-    `  Amount:  ${formatEther(task.amount)} ${symbolOf(task.currency)}`,
+    `  Amount:  ${formatEther(task.amount)} ${symbolOf(task.currency)}${usd(task.amount, task.currency)}`,
     `  Deadline: ${deadline}`,
     `  Job hash: ${task.taskHash}`,
     task.resultHash && !/^0x0+$/.test(task.resultHash) ? `  Result hash: ${task.resultHash}` : null,
@@ -437,6 +468,7 @@ const READ_TOOLS: Tool[] = [
       },
     },
     handler: async (args) => {
+      await refrescarPrecios();
       const found = await panal.searchAgents(str(args.query), {
         includeInactive: args.include_inactive === true,
       });
@@ -465,7 +497,7 @@ const READ_TOOLS: Tool[] = [
     handler: async (args) => {
       const address = str(args.address);
       if (!address || !isAddress(address)) return 'I need a valid 0x address.';
-      const agent = await panal.getAgent(address);
+      const [agent] = await Promise.all([panal.getAgent(address), refrescarPrecios()]);
       // El perfil es donde alguien mira el precio, así que aquí sí se paga la
       // llamada al manifiesto del agente: enseñar solo el de tarea era la
       // razón de que el precio por consulta fuese invisible desde aquí. En
@@ -510,7 +542,8 @@ const READ_TOOLS: Tool[] = [
       if (!Number.isInteger(id) || id < 0) return 'The task id is an integer greater than or equal to zero.';
       const count = await panal.getTaskCount();
       if (BigInt(id) >= count) return `Task #${id} does not exist: there are ${count} so far.`;
-      return renderTask(await panal.getTask(BigInt(id)));
+      const [task] = await Promise.all([panal.getTask(BigInt(id)), refrescarPrecios()]);
+      return renderTask(task);
     },
   },
   {
@@ -534,7 +567,7 @@ const READ_TOOLS: Tool[] = [
       if (!address || !isAddress(address)) return 'I need a valid 0x address for the agent.';
       if (!prompt) return 'I need the question.';
 
-      const agent = await panal.getAgent(address);
+      const [agent] = await Promise.all([panal.getAgent(address), refrescarPrecios()]);
       const name = agent.metadata.name || address;
       let quote;
       try {
@@ -571,7 +604,7 @@ const READ_TOOLS: Tool[] = [
 
       return [
         `${name} charges per question:`,
-        `  Price: ${fmt(amount, quote.asset)} ${symbol} for this one question`,
+        `  Price: ${fmt(amount, quote.asset)} ${symbol}${usd(amount, quote.asset)} for this one question`,
         `  Paid to: ${quote.payTo}`,
         quote.description ? `  Covers: ${quote.description}` : null,
         '',
@@ -620,7 +653,7 @@ const READ_TOOLS: Tool[] = [
     inputSchema: { type: 'object', properties: {} },
     handler: async () => {
       try {
-        const lista = await panal.listBoard();
+        const [lista] = await Promise.all([panal.listBoard(), refrescarPrecios()]);
         if (!lista.length) return 'The board is empty: no job is waiting to be taken right now.';
         const ahora = Math.floor(Date.now() / 1000);
         return [
@@ -628,7 +661,7 @@ const READ_TOOLS: Tool[] = [
           ...lista.map((e) => {
             const horas = Math.max(0, Math.floor((Number(e.deadline) - ahora) / 3600));
             return (
-              `\n#${e.taskId} — ${formatEther(e.amount)} ${symbolOf(e.currency)}, ${horas} h left\n` +
+              `\n#${e.taskId} — ${formatEther(e.amount)} ${symbolOf(e.currency)}${usd(e.amount, e.currency)}, ${horas} h left\n` +
               `  "${e.anuncio}"\n  posted by ${e.cliente}`
             );
           }),
@@ -669,7 +702,9 @@ const WRITE_TOOLS: Tool[] = [
         Promise.all(monedas.map((m) => panal.getPendingWithdrawal(address, m).catch(() => null))),
       ]);
 
-      const importe = (v: bigint | null, m: Address): string => (v === null ? 'could not be read' : fmt(v, m));
+      await refrescarPrecios();
+      const importe = (v: bigint | null, m: Address): string =>
+        v === null ? 'could not be read' : `${fmt(v, m)}${v > 0n ? usd(v, m) : ''}`;
 
       const balances = monedas.map((m, i) => `  ${symbolOf(m)}: ${importe(saldos[i] ?? null, m)}`);
 
@@ -746,7 +781,7 @@ const WRITE_TOOLS: Tool[] = [
         return `That is ${rutas.length} attachments and the limit is ${MAX_ADJUNTOS} per job.`;
       }
 
-      const agent = await panal.getAgent(address);
+      const [agent] = await Promise.all([panal.getAgent(address), refrescarPrecios()]);
       if (!agent.active) return `${agent.metadata.name || address} is delisted and does not take jobs.`;
 
       // ---- Adjuntos -------------------------------------------------------
@@ -911,7 +946,7 @@ const WRITE_TOOLS: Tool[] = [
 
       return [
         `Quote for ${quote.agentName}:`,
-        `  Price: ${formatEther(amount)} ${symbol}${elegido ? ` — size "${elegido.name}"` : ''}`,
+        `  Price: ${formatEther(amount)} ${symbol}${usd(amount, agent.currency)}${elegido ? ` — size "${elegido.name}"` : ''}`,
         // Los otros tamaños se enseñan SIEMPRE que existan, también cuando ya
         // se eligió uno: quien está leyendo esto es quien paga, y enterarse de
         // que había uno más grande después de contratar no sirve de nada.

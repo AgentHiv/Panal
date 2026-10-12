@@ -45,6 +45,7 @@ import { MONEDAS_ENVIO, maximo, monedaEnvio, revisar } from '@/lib/envio';
 import type { Moneda, Pega } from '@/lib/envio';
 import { WalletSparkline } from './charts';
 import { formatMonEs } from './data';
+import Dolares from '@/components/Dolares';
 
 /** Las estables de la lista de Panal: las de token, menos $PANAL, que tiene su propio bloque. */
 const ESTABLES = MONEDAS_ENVIO.filter((m) => m.token !== null && m.simbolo !== '$PANAL');
@@ -165,7 +166,20 @@ function buildSparkline30d(events: WithdrawalEvent[]): number[] {
   return out;
 }
 
-function WalletBlock({ label, value, hint, suffix = 'MON' }: { label: string; value: string; hint?: string; suffix?: string }) {
+function WalletBlock({
+  label,
+  value,
+  hint,
+  suffix = 'MON',
+  wei,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  suffix?: string;
+  /** El saldo en unidades mínimas, para enseñarlo también en dólares. */
+  wei?: bigint;
+}) {
   return (
     <div className="flex flex-col gap-1">
       <span className="eyebrow text-ink-3">{label}</span>
@@ -173,6 +187,9 @@ function WalletBlock({ label, value, hint, suffix = 'MON' }: { label: string; va
         {value}
         <span className="ml-1.5 text-[0.6em] text-ink-3">{suffix}</span>
       </span>
+      {wei !== undefined && wei > 0n && (
+        <Dolares cantidad={wei} moneda={suffix === 'PANAL' ? '$PANAL' : suffix} className="text-[0.8125rem]" />
+      )}
       {hint && <span className="text-[0.8125rem] text-ink-3">{hint}</span>}
     </div>
   );
@@ -506,15 +523,16 @@ export default function WalletCard() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
           {/* 3 bloques mono (columna en móvil) */}
           <div className={`grid flex-1 grid-cols-1 gap-5 sm:gap-8 ${IS_MAINNET ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
-            <WalletBlock label={t('wallet.available')} value={availableStr} />
-            <WalletBlock label={t('wallet.inEscrow')} value={escrowStr} hint={escrowHint} />
+            <WalletBlock label={t('wallet.available')} value={availableStr} wei={balance?.value} />
+            <WalletBlock label={t('wallet.inEscrow')} value={escrowStr} hint={escrowHint} wei={pendingEscrow} />
             <WalletBlock
               label={t('wallet.totalEarned')}
               value={totalStr}
               hint={withdrawals && totalEarned === 0n ? t('wallet.noWithdrawals') : undefined}
+              wei={withdrawals?.total}
             />
             {IS_MAINNET && (
-              <WalletBlock label="$PANAL" value={panalStr} hint={t('wallet.tokenOfficial')} suffix="PANAL" />
+              <WalletBlock label="$PANAL" value={panalStr} hint={t('wallet.tokenOfficial')} suffix="PANAL" wei={panalBal} />
             )}
             {saldosEstables
               .filter((e) => (e.valor ?? 0n) > 0n)
