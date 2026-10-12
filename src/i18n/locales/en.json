@@ -1445,7 +1445,8 @@
       "contractCopied": "Contract address copied",
       "statSupply": "Total supply",
       "statDecimals": "Decimals",
-      "statSymbol": "Symbol"
+      "statSymbol": "Symbol",
+      "statPrice": "Price · {{mon}} MON"
     },
     "mainnetOnly": "$PANAL only exists on Monad mainnet (Chain ID 143): live reads are disabled on this network.",
     "position": {
@@ -2173,5 +2174,10 @@
       "titulo": "Contact",
       "texto": "For any question about your privacy, or to exercise your rights, write to us:"
     }
+  },
+  "dolares": {
+    "hace": "Price from {{segundos}} s ago · {{fuente}}",
+    "noDisponible": "Dollar price unavailable",
+    "formulario": "At today's price. What gets locked is the amount in {{moneda}}, not the dollars."
   }
 }

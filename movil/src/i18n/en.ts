@@ -36,6 +36,8 @@ export const en: Textos = {
     llaveroCerrado: 'The keyring is locked. Open it with your PIN.',
     firmaBloqueada: 'The wallet on this phone will not sign this: it is not a Panal operation you confirmed.',
     abriendo: 'Opening…',
+    precioDeHace: (segundos: number, fuente: string) => `Price from ${segundos} s ago · ${fuente}`,
+    sinPrecioDolares: 'Dollar price unavailable',
   },
 
   pestanas: {

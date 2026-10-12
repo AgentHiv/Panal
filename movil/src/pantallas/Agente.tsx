@@ -11,6 +11,7 @@ import { useAgente } from '~/lib/agente';
 import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
 import { monto, precio } from '~/lib/formato';
+import Dolares from '~/componentes/Dolares';
 import { useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 import { SIN_PAGOS } from '~/lib/canal';
@@ -175,6 +176,7 @@ export default function Agente(): React.ReactElement {
                   : T.agente.sinPrecio
             }
             color={agente && precio(agente.pricePerTask) ? 'text-monad-mist' : 'text-ink-3'}
+            dolares={agente ? { wei: agente.priceWei, simbolo: currencySymbol(agente.currency) } : undefined}
           />
         </div>
 
@@ -384,11 +386,14 @@ function Precio({
   pie,
   valor,
   color,
+  dolares,
 }: {
   titulo: string;
   pie: string;
   valor: string;
   color: string;
+  /** Si el precio está en MON o $PANAL, también en dólares. */
+  dolares?: { wei: bigint; simbolo: string };
 }): React.ReactElement {
   return (
     <div className="flex items-center gap-3 px-3.5 py-3">
@@ -396,7 +401,10 @@ function Precio({
         <p className="text-[13.5px] font-medium">{titulo}</p>
         <p className="mt-0.5 text-[11.5px] text-ink-3">{pie}</p>
       </div>
-      <p className={`shrink-0 font-mono text-[13.5px] ${color}`}>{valor}</p>
+      <p className={`shrink-0 text-right font-mono text-[13.5px] ${color}`}>
+        {valor}
+        {dolares && <Dolares wei={dolares.wei} simbolo={dolares.simbolo} className="block" />}
+      </p>
     </div>
   );
 }

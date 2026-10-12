@@ -13,6 +13,7 @@ import { useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 import { usePendiente } from '~/lib/agentes';
 import { monto } from '~/lib/formato';
+import Dolares from '~/componentes/Dolares';
 
 /**
  * El saldo.
@@ -84,6 +85,7 @@ export default function Saldo(): React.ReactElement {
             simbolo="$PANAL"
             color="#E29A2E"
             valor={panal?.texto ?? null}
+            wei={panal?.valor}
             cargando={cargando}
             paraQue={T.saldo.panalParaQue}
             pie={T.saldo.panalPie}
@@ -93,6 +95,7 @@ export default function Saldo(): React.ReactElement {
             simbolo="MON"
             color="#B7A8FC"
             valor={mon?.texto ?? null}
+            wei={mon?.valor}
             cargando={cargando}
             paraQue={T.saldo.monParaQue}
             pie={T.saldo.monPie}
@@ -275,6 +278,7 @@ function Moneda({
   simbolo,
   color,
   valor,
+  wei,
   cargando,
   paraQue,
   pie,
@@ -282,6 +286,7 @@ function Moneda({
   simbolo: string;
   color: string;
   valor: string | null;
+  wei?: bigint;
   cargando: boolean;
   paraQue: string;
   pie: string;
@@ -300,6 +305,7 @@ function Moneda({
           {simbolo}
         </span>
       </div>
+      {wei !== undefined && wei > 0n && <Dolares wei={wei} simbolo={simbolo} className="mt-1.5 block text-[12.5px]" />}
       <p className="mt-2.5 text-[13px] leading-[1.5] text-ink-2">{paraQue}</p>
       <p className="mt-1 text-[11.5px] leading-[1.5] text-ink-3">{pie}</p>
     </div>

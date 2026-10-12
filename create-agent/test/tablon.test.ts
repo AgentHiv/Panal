@@ -13,10 +13,12 @@
  *      todo ese rato, y libre al acabar, pase lo que pase.
  *   4. Que no toque nada con un encargo en marcha, y que nada lance.
  *   5. Que esté apagado salvo TABLON=on.
+ *   6. El mínimo en dólares: neto de comisión, $PANAL al precio de venta, y
+ *      sin precio reciente no se coge nada.
  */
 
 import type { Address } from 'viem';
-import { candidatos, encaja, opcionesDelEntorno, repasarTablon, TABLON_POR_DEFECTO } from '../template/src/tablon.js';
+import { candidatos, dolaresNetos, encaja, opcionesDelEntorno, repasarTablon, TABLON_POR_DEFECTO } from '../template/src/tablon.js';
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -71,7 +73,24 @@ console.log('\nsolo coge lo que encaja');
   check('TABLON_PALABRAS amplía el encaje', c.length === 1);
 }
 
-function montar(o: { lista?: ReturnType<typeof anuncio>[]; ocupado?: boolean; claimFalla?: boolean; briefFalla?: boolean; resultado?: string } = {}) {
+/** MON a $0,025 hace 20 s; vender $PANAL da 0,000237 MON cada uno. */
+const preciosFrescos = () => ({
+  mon: { valor: 0.025, actualizado: Math.floor(Date.now() / 1000) - 20, fuente: 'pyth' as const },
+  panalEnMon: null,
+  panal: null,
+});
+
+function montar(
+  o: {
+    lista?: ReturnType<typeof anuncio>[];
+    ocupado?: boolean;
+    claimFalla?: boolean;
+    briefFalla?: boolean;
+    resultado?: string;
+    minimoUsd?: number | null;
+    sinPrecio?: boolean;
+  } = {},
+) {
   const pasos: string[] = [];
   const marcas: boolean[] = [];
   const panal = {
@@ -86,10 +105,16 @@ function montar(o: { lista?: ReturnType<typeof anuncio>[]; ocupado?: boolean; cl
       if (o.briefFalla) throw new Error('El buzón no tiene el encargo');
       return 'el encargo';
     },
+    precios: async () =>
+      o.sinPrecio
+        ? { mon: { valor: 0.025, actualizado: 1, fuente: 'pyth' as const }, panalEnMon: null, panal: null }
+        : preciosFrescos(),
+    valorDeVentaPanal: async (cantidad: bigint) => (cantidad * 237n) / 1_000_000n,
   };
   const correr = () =>
     repasarTablon({
       ...base,
+      opciones: { ...TABLON_POR_DEFECTO, minimoUsd: o.minimoUsd ?? null },
       panal: panal as never,
       ocupado: () => o.ocupado ?? false,
       marcar: (b) => marcas.push(b),
@@ -149,6 +174,37 @@ console.log('\nlo que no debe hacer');
   check('  y la wallet vuelve a quedar libre', marcas.join() === 'true,false', marcas.join());
 }
 
+console.log('\nel mínimo en dólares');
+{
+  const panal = { precios: async () => preciosFrescos(), valorDeVentaPanal: async (c: bigint) => (c * 237n) / 1_000_000n };
+  const enMon = await dolaresNetos(panal as never, { amount: 40n * UNO, currency: MON });
+  check('40 MON dejan 39 netos: $0,975', enMon !== null && Math.abs(enMon - 0.975) < 1e-9, String(enMon));
+  const enPanal = await dolaresNetos(panal as never, { amount: 100_000n * UNO, currency: PANAL });
+  // 97.500 $PANAL netos × 0,000237 MON al venderlos × $0,025
+  check('100.000 $PANAL, netos y al precio de venta: $0,58', enPanal !== null && Math.abs(enPanal - 0.5776875) < 1e-6, String(enPanal));
+}
+{
+  // 3 MON netos son 2,925 MON: $0,073. Con un mínimo de $1 no llega.
+  const { pasos, correr } = montar({ minimoUsd: 1 });
+  const hecho = await correr();
+  check('por debajo del mínimo no se coge', pasos.length === 0 && hecho.some((l) => l.includes('el mínimo es $1.00')), hecho.join(' | '));
+}
+{
+  const { pasos, correr } = montar({ minimoUsd: 0.05 });
+  await correr();
+  check('por encima del mínimo, sí', pasos[0] === 'claim #7', pasos.join(' → '));
+}
+{
+  const { pasos, correr } = montar({ minimoUsd: 0.05, sinPrecio: true });
+  const hecho = await correr();
+  check('con un precio viejo no se coge nada', pasos.length === 0 && hecho.some((l) => l.includes('sin precio fresco')), hecho.join(' | '));
+}
+{
+  const { pasos, correr } = montar({ sinPrecio: true });
+  await correr();
+  check('sin mínimo, el precio da igual', pasos[0] === 'claim #7', pasos.join(' → '));
+}
+
 console.log('\napagado salvo TABLON=on');
 {
   const avisos: string[] = [];
@@ -161,6 +217,13 @@ console.log('\napagado salvo TABLON=on');
   check('se pueden cambiar', propias.minutos === 2 && propias.margenMinutos === 60 && propias.palabras.join() === 'cat,dog');
   const malas = opcionesDelEntorno({ TABLON: 'on', TABLON_MINUTOS: '0', TABLON_MARGEN_MINUTOS: 'ya' }, avisar)!;
   check('una errata vuelve al defecto y lo avisa', malas.minutos === 5 && malas.margenMinutos === 30 && avisos.length === 2, avisos.join(' | '));
+  check('sin TABLON_MINIMO_USD, sin mínimo', on.minimoUsd === null);
+  check('TABLON_MINIMO_USD=1,5 se entiende', opcionesDelEntorno({ TABLON: 'on', TABLON_MINIMO_USD: '1,5' }, avisar)!.minimoUsd === 1.5);
+  const antes = avisos.length;
+  check(
+    'TABLON_MINIMO_USD que no es un número: sin mínimo, y lo avisa',
+    opcionesDelEntorno({ TABLON: 'on', TABLON_MINIMO_USD: 'mucho' }, avisar)!.minimoUsd === null && avisos.length === antes + 1,
+  );
 }
 
 console.log(fallos === 0 ? '\n✅ tablón: todo bien' : `\n❌ tablón: ${fallos} fallo(s)`);

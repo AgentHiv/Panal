@@ -51,12 +51,12 @@ export function precioDeNivel(nivel: Nivel, symbol: string): string {
  * agente que vende tres tamaños se veía con un precio suelto —el más barato— y
  * el encargo grande se contrataba al precio del pequeño.
  */
-export function renderNiveles(niveles: Nivel[], symbol: string): string[] {
+export function renderNiveles(niveles: Nivel[], symbol: string, enUsd: (wei: bigint) => string = () => ''): string[] {
   if (niveles.length === 0) return [];
   return [
     `  Sizes (${niveles.length}) — pass the one the person picks as \`tier\` to panal_quote_hire:`,
     ...niveles.map((n) => {
-      const partes = [`    · ${n.name ?? '(unnamed)'} — ${precioDeNivel(n, symbol)}`];
+      const partes = [`    · ${n.name ?? '(unnamed)'} — ${precioDeNivel(n, symbol)}${enUsd(n.wei)}`];
       if (n.description) partes.push(n.description);
       if (n.maxBriefChars) partes.push(`up to ${n.maxBriefChars} chars`);
       return partes.join(' — ');

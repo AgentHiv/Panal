@@ -34,6 +34,8 @@ export const zh: Textos = {
     llaveroCerrado: '钥匙串是锁着的。用你的 PIN 打开它。',
     firmaBloqueada: '这部手机上的钱包不会签署此操作：这不是你确认过的 Panal 操作。',
     abriendo: '正在打开…',
+    precioDeHace: (segundos: number, fuente: string) => `${segundos} 秒前的价格 · ${fuente}`,
+    sinPrecioDolares: '暂无美元价格',
   },
 
   pestanas: {

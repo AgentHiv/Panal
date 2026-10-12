@@ -33,6 +33,7 @@ import { conEjemplosDeLaFicha, conTextoDeLaFicha, type Nivel } from '@panal/sdk'
 import { useWallet } from '@/hooks/useWallet';
 import type { DatosAgente } from '~/lib/agente';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
+import Dolares from '~/componentes/Dolares';
 import Icono from '~/componentes/Icono';
 import { monto } from '~/lib/formato';
 import { useIdioma, useTextos } from '~/i18n/idiomas';
@@ -600,8 +601,9 @@ export default function HojaEncargar({
                             </>
                           )}
                         </span>
-                        <span className="shrink-0 font-mono text-[12.5px] text-ink">
+                        <span className="shrink-0 text-right font-mono text-[12.5px] text-ink">
                           {monto(n.wei)} {simbolo}
+                          <Dolares wei={n.wei} simbolo={simbolo} className="block" />
                         </span>
                       </button>
                     </li>
@@ -750,7 +752,12 @@ export default function HojaEncargar({
             />
             <Fila
               etiqueta={T.encargar.bloqueasAhora}
-              valor={`${monto(precio)} ${simbolo}`}
+              valor={
+                <span className="text-right">
+                  {monto(precio)} {simbolo}
+                  <Dolares wei={precio} simbolo={simbolo} avisarSinPrecio className="block" />
+                </span>
+              }
               destacada
               color="text-ink"
             />

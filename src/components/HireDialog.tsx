@@ -44,6 +44,7 @@ import TxHash from '@/components/TxHash';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
 import { formatMon } from '@/data/agents';
+import Dolares from '@/components/Dolares';
 import { PROTOCOL_FEE, ESCROW_AUTO_RELEASE_H } from '@/data/protocol';
 import { useTxReceipt } from '@/hooks/useTxReceipt';
 import { useWallet } from '@/hooks/useWallet';
@@ -607,6 +608,8 @@ function HireWizard({
   }, [mined, receipt, realTxHash, address, agent, enviarBrief]);
 
   const price = elegido ? Number(formatEther(elegido.wei)) : agent.pricePerTask;
+  // Sin agente on-chain no se llega a los pasos que lo enseñan; 0 no pinta nada.
+  const precioWei = elegido?.wei ?? (isOnchainAgent(agent) ? agent.priceWei : 0n);
   const fee = price * PROTOCOL_FEE;
   // Lo que bloquea/firma el cliente es exactamente `price`; el fee del 2,5 %
   // se descuenta del pago al agente al liberar el escrow (ver contrato).
@@ -793,7 +796,8 @@ function HireWizard({
                       <p className="font-mono text-[12px] text-ink-3">
                         {symbol === '$PANAL'
                           ? t('common.tokenPerTask', { price: formatMon(price) })
-                          : t('common.monPerTask', { price: formatMon(price) })}
+                          : t('common.monPerTask', { price: formatMon(price) })}{' '}
+                        <Dolares cantidad={precioWei} moneda={symbol} />
                       </p>
                     </div>
                   </div>
@@ -834,8 +838,9 @@ function HireWizard({
                                 </span>
                               )}
                             </span>
-                            <span className="shrink-0 font-mono text-[0.875rem] font-semibold text-ink">
+                            <span className="shrink-0 text-right font-mono text-[0.875rem] font-semibold text-ink">
                               {formatMon(Number(formatEther(n.wei)))} {symbol}
+                              <Dolares cantidad={n.wei} moneda={symbol} className="block font-normal" />
                             </span>
                           </button>
                         );
@@ -986,6 +991,9 @@ function HireWizard({
                     <div className="mt-1 flex justify-between border-t border-line pt-2 font-semibold">
                       <span className="text-ink">{t('hire.step2.totalLock')}</span>
                       <span className="text-honey-deep">{formatMon(total, 5)} {symbol}</span>
+                    </div>
+                    <div className="flex justify-end">
+                      <Dolares cantidad={precioWei} moneda={symbol} avisarSinPrecio />
                     </div>
                   </div>
                   <p className="flex items-start gap-2 text-[0.8125rem] text-ink-2">

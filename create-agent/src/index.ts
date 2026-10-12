@@ -291,6 +291,7 @@ function writeEnvExample(dest: string, t: Catalog): string {
     'TABLON_MINUTOS=5',
     'TABLON_MARGEN_MINUTOS=30',
     'TABLON_PALABRAS=',
+    'TABLON_MINIMO_USD=',
     '',
     bloque(t.env.memoria),
     'MEMORIA_TURNOS=6',

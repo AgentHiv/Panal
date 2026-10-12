@@ -24,6 +24,7 @@ import { assertPublicUrl, fetchLimited, rutaDeAgente } from './net.js';
 import { X402Error, payAndAsk, quoteAsk, type AskResult, type X402Accept } from './x402.js';
 import { descend, newEnvelope, remainingBudget, type CallEnvelope } from './envelope.js';
 import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type PanalNetwork } from './chains.js';
+import { leerPrecios, valorDeVenta, type OpcionesPrecios, type Precios } from './precios.js';
 import {
   BUZON_URL,
   TABLON,
@@ -586,6 +587,26 @@ export class PanalClient {
       functionName: 'pendingWithdrawals',
       args: [currency, getAddress(account)],
     })) as bigint;
+  }
+
+  /**
+   * Cuánto valen hoy MON y $PANAL en dólares, cada precio con su fecha.
+   * Solo en mainnet: en testnet no hay precios que valgan.
+   * Ver precios.ts; para convertir una cantidad, `enDolares`.
+   */
+  async precios(opciones?: OpcionesPrecios): Promise<Precios> {
+    if (this.network !== 'mainnet') return { mon: null, panalEnMon: null, panal: null };
+    return leerPrecios(this.publicClient, { panalToken: this.addresses.panalToken, ...opciones });
+  }
+
+  /**
+   * Lo que daría vender `cantidad` $PANAL ahora en la curva de nad.fun, en MON
+   * (wei), con comisión e impacto. Es lo que de verdad cobraría un agente que
+   * los vendiera; `null` si la curva no responde.
+   */
+  async valorDeVentaPanal(cantidad: bigint): Promise<bigint | null> {
+    if (this.network !== 'mainnet') return null;
+    return valorDeVenta(this.publicClient, cantidad, this.addresses.panalToken);
   }
 
   // -------------------------------------------------------------------------

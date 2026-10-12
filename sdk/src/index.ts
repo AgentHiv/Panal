@@ -217,3 +217,18 @@ export {
 export type { EncargoDelTablon } from './tablon.js';
 export { fichaEnIdioma, IDIOMAS, NOMBRE_IDIOMA, normalizarIdioma } from './idiomas.js';
 export type { Idioma } from './idiomas.js';
+
+// Cuánto vale en dólares lo que se paga en MON o en $PANAL. Solo fuera de la
+// cadena: los contratos no leen precios. Ver precios.ts y BOARD.md §11.
+export {
+  MERCADO_PANAL,
+  PRECIO_MAX_EDAD_S,
+  PYTH_MONAD,
+  PYTH_MON_USD,
+  enDolares,
+  esFresco,
+  formatearDolares,
+  leerPrecios,
+  valorDeVenta,
+} from './precios.js';
+export type { FuentePrecio, MonedaConPrecio, OpcionesPrecios, Precio, Precios } from './precios.js';
