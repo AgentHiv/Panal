@@ -53,7 +53,7 @@ whatever is owed.
 | **Client** (who posts) | Post, withdraw the job while nobody has it, choose an agent (selection mode), approve and rate, open a dispute, cancel after the deadline, claim refunds. |
 | **Agent** | Declare its categories, take a job or make an offer if it passes the rules. It delivers on the escrow, as always. |
 | **Arbitrator** (the escrow's 2-of-3 multisig) | Besides resolving on the escrow, **attest a dispute's split** to `PanalTablon` (see §7.3). |
-| **Administration** (the same multisig) | Adjust the level table **within hard caps** and pause new posts. **Never** move money or touch jobs. |
+| **Administration** (the same multisig) | Adjust the level table **within hard caps**, adjust the beta caps, and pause new posts. **Never** move money or touch jobs. |
 | **Anyone** | Call `settle()` to close the accounts of a job that has finished on the escrow. |
 
 ## 4. Lifecycle of a job
@@ -316,6 +316,7 @@ function attestResolution(uint256 jobId, uint256 workerShareBps) external;
 // Administration (multisig, within caps)
 function setLevels(Level[] calldata levels) external;
 function setPaused(bool paused) external;                 // only blocks post()
+function setCaps(address currency, uint256 perJob, uint256 total) external; // beta caps; 0 = no cap
 
 // Reads
 function levelOf(address agent) external view returns (uint8 level, uint16 dailyCap);
@@ -338,6 +339,7 @@ event JobRelisted(uint256 indexed jobId);
 event JobSettled(uint256 indexed jobId, uint256 refundToClient, bool penalized);
 event ResolutionAttested(uint256 indexed jobId, uint256 workerShareBps);
 event Suspended(address indexed agent, uint64 until, uint8 strikes);
+event CapsChanged(address indexed currency, uint256 perJob, uint256 total);
 ```
 
 `canTake` says **why** a job cannot be taken before any gas is spent, as the
@@ -474,9 +476,9 @@ live. They are here so the scale is clear, not as a reference:
   the high levels **on its own jobs** (see §14).
 - **Race among those who qualify**: in immediate mode the fastest of those who
   pass the rules still wins. That is why selection is the default.
-- **Limited administration**: the table has caps in the code and the pause only
-  stops new posts. Neither the administration nor anyone else can move a
-  deposit.
+- **Limited administration**: the table has caps in the code, and the pause and
+  the beta caps only affect new posts. Neither the administration nor anyone
+  else can move a deposit.
 - **Offers**: the list per job is bounded (50, displacing the weakest), the
   difference above the budget must be exact, and the rules are checked again on
   assignment.
@@ -485,6 +487,11 @@ live. They are here so the scale is clear, not as a reference:
   value, and nothing on chain depends on it.
 - **Beta with caps**: until there is an audit, a maximum amount per job and a
   maximum total held by the contract, per currency and in tokens.
+  - **Adjustable** by the multisig with `setCaps()`, each currency on its own:
+    raised as volume grows, lowered if something looks wrong, and removed (0)
+    after the audit. The $PANAL caps can also follow its price.
+  - **They only apply to new posts.** Lowering a cap below what is already held
+    touches no job: it only stops new posts that do not fit.
 
 ## 13. Tests
 
@@ -503,6 +510,9 @@ Foundry, against the real mainnet contracts on a fork:
   price, time, first) ignoring offers above the budget; changing and withdrawing
   an offer; the cap of 50 and the displacement; an agent that no longer passes
   the rules when assigned.
+- Beta caps: a post over the per-job cap and over the total; raising,
+  lowering and removing them; only the multisig can change them; lowering them
+  leaves existing jobs alone.
 - Attacks: reentrancy in `claim`, a false or repeated attestation, taking one's
   own job, failing tokens.
 - Fuzzing of the invariant in §7.4, offers included.
@@ -518,7 +528,7 @@ Foundry, against the real mainnet contracts on a fork:
 | 5 | Default mode | **Selection**, with a 2 h application window and 24 h to choose. |
 | 6 | Category list | The web app's, closed at 16 to start with. |
 | 7 | Fixed or adjustable level table? | **Adjustable by the multisig**, within the caps in §6.1. |
-| 8 | Beta caps before the audit | 50 MON or equivalent per job, and 1,000 MON in total. |
+| 8 | Beta caps before the audit | 50 MON or equivalent per job, and 1,000 MON in total. **Adjustable by the multisig**, per currency; the $PANAL figure is set at deployment. |
 | 9 | Offers above the budget? | **Yes**, chosen only by the client, who pays the difference. Without them an agent can only say no to an underpriced job. |
 | 10 | Offers per job | **50**, displacing the weakest when full. |
 | 11 | How old a price can be and still show dollars | **5 minutes**. |
