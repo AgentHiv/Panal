@@ -162,11 +162,6 @@ contract PanalTablon {
         uint64[3] strikes;   // las tres ultimas faltas; [2] la mas reciente
     }
 
-    struct Campaign {
-        address owner;
-        uint8 capPerAgent;
-    }
-
     /// @notice Las cuentas de cada moneda.
     struct Books {
         uint256 posted;      // depositos de encargos sin asignar
@@ -219,16 +214,25 @@ contract PanalTablon {
 
     // ─────────────────────────────────────────────────────────── constantes
 
-    uint256 public constant MAX_CATEGORIES = 3;
-    uint256 public constant MAX_OFFERS = 50;
-    uint16 public constant MAX_DAILY_CAP = 100;
-    uint16 public constant MIN_RATING_FLOOR = 350;
-    uint8 public constant MAX_NEWCOMER_JOBS = 5;
-    uint256 public constant SUSPENSION = 7 days;
-    uint256 public constant LONG_SUSPENSION = 30 days;
-    uint256 public constant STRIKE_WINDOW = 90 days;
+    /// @notice Nadie puede pedir entregar en menos de esto: con un plazo de un
+    ///         segundo, cualquiera haria sancionar a un agente honrado.
+    uint64 public constant MIN_WORK_DURATION = 1 hours;
+    /// @notice Lo mas que el cliente puede tardar en elegir, y el margen que
+    ///         tiene despues `autoAssign()`. Una oferta no ata para siempre.
+    uint64 public constant MAX_CHOOSE_WINDOW = 7 days;
+    uint64 public constant AUTO_ASSIGN_GRACE = 1 days;
+    // Los limites de abajo estan en BOARD.md; son internos para que el contrato
+    // quepa en 24.576 bytes.
+    uint256 internal constant MAX_CATEGORIES = 3;
+    uint256 internal constant MAX_OFFERS = 50;
+    uint16 internal constant MAX_DAILY_CAP = 100;
+    uint16 internal constant MIN_RATING_FLOOR = 350;
+    uint8 internal constant MAX_NEWCOMER_JOBS = 5;
+    uint256 internal constant SUSPENSION = 7 days;
+    uint256 internal constant LONG_SUSPENSION = 30 days;
+    uint256 internal constant STRIKE_WINDOW = 90 days;
     /// @notice Por debajo de esta parte, el agente ha perdido la disputa.
-    uint256 public constant LOST_DISPUTE_BPS = 5_000;
+    uint256 internal constant LOST_DISPUTE_BPS = 5_000;
 
     // Estados del escrow (PanalEscrowV2.Status)
     uint8 private constant ESCROW_OPEN = 0;
@@ -270,7 +274,10 @@ contract PanalTablon {
     ///         es la categoria c.
     mapping(address => uint256) public categoryMask;
 
-    mapping(bytes32 => Campaign) public campaigns;
+    /// @notice Tope por agente y encargos cogidos de cada campaña, por
+    ///         `keccak256(abi.encode(publicador, campaignId))`: cada campaña es
+    ///         de quien la publica.
+    mapping(bytes32 => uint8) public campaignCap;
     mapping(bytes32 => mapping(address => uint8)) public campaignTaken;
 
     uint256 private _locked = 1;
@@ -367,14 +374,12 @@ contract PanalTablon {
         if (p.amount < _minAmount(p.currency)) revert BelowMinimum();
         _requirePerJobCap(p.currency, p.amount);
         _requireTotalCap(p.currency, p.amount);
-        if (p.workDuration == 0 || p.expiresAt <= block.timestamp) revert InvalidTimes();
+        if (p.workDuration < MIN_WORK_DURATION || p.expiresAt <= block.timestamp) revert InvalidTimes();
         if (p.mode == Mode.Selection) {
-            if (p.applyWindow == 0) revert InvalidTimes();
+            if (p.applyWindow == 0 || p.chooseWindow > MAX_CHOOSE_WINDOW) revert InvalidTimes();
             if (uint256(p.expiresAt) < block.timestamp + p.applyWindow + p.chooseWindow) revert InvalidTimes();
         }
-        if (p.campaignId != bytes32(0)) _joinCampaign(p.campaignId, p.campaignCapPerAgent);
-
-        _receive(p.currency, msg.sender, p.amount);
+        if (p.campaignId != bytes32(0)) _joinCampaign(_campaignKey(msg.sender, p.campaignId), p.campaignCapPerAgent);
 
         jobId = _jobs.length;
         Job storage job = _jobs.push();
@@ -396,6 +401,8 @@ contract PanalTablon {
             job.chooseWindow = p.chooseWindow;
         }
         books[p.currency].posted += p.amount;
+        // Cobrar al final: primero las cuentas, luego el token.
+        _receive(p.currency, msg.sender, p.amount);
 
         emit JobPosted(jobId, msg.sender, p.category, p.currency, p.amount, p.mode, p.campaignId);
     }
@@ -417,7 +424,7 @@ contract PanalTablon {
         Job storage job = _selectionJob(jobId);
         if (msg.sender != job.client) revert NotClient();
         if (block.timestamp < _applyEnd(job)) revert OffersOpen();
-        if (block.timestamp > job.expiresAt) revert Expired();
+        if (block.timestamp > _applyEnd(job) + job.chooseWindow || block.timestamp > job.expiresAt) revert Expired();
 
         Offer[] storage list = _offers[jobId];
         uint256 i = _findOffer(list, agent);
@@ -431,9 +438,9 @@ contract PanalTablon {
             uint256 diff = o.price - job.amount;
             _requirePerJobCap(job.currency, o.price);
             _requireTotalCap(job.currency, diff);
-            _receive(job.currency, msg.sender, diff);
             books[job.currency].posted += diff;
             job.amount = o.price;
+            _receive(job.currency, msg.sender, diff);
         } else if (msg.value != 0) {
             revert UnexpectedValue();
         }
@@ -548,7 +555,7 @@ contract PanalTablon {
     function autoAssign(uint256 jobId) external nonReentrant {
         Job storage job = _selectionJob(jobId);
         if (block.timestamp < _applyEnd(job) + job.chooseWindow) revert ClientChoosing();
-        if (block.timestamp > job.expiresAt) revert Expired();
+        if (block.timestamp > _lastAssign(job)) revert Expired();
 
         Offer[] storage list = _offers[jobId];
         uint256 n = list.length;
@@ -577,10 +584,11 @@ contract PanalTablon {
         _settle(jobId, _assignedJob(jobId));
     }
 
-    /// @notice Devuelve el deposito si nadie lo cogio a tiempo.
+    /// @notice Devuelve el deposito si nadie lo cogio a tiempo: pasado
+    ///         `expiresAt` o, en seleccion, pasado el ultimo momento para asignar.
     function expire(uint256 jobId) external nonReentrant {
         Job storage job = _postedJob(jobId);
-        if (block.timestamp <= job.expiresAt) revert NotExpired();
+        if (block.timestamp <= _lastAssign(job)) revert NotExpired();
         job.state = State.Expired;
         _unpost(jobId, job);
         emit JobExpired(jobId);
@@ -692,9 +700,9 @@ contract PanalTablon {
             if (s.open >= cap) return ("too many open", level);
         }
 
-        bytes32 campaign = job.campaignId;
-        if (campaign != bytes32(0) && campaignTaken[campaign][agent] >= campaigns[campaign].capPerAgent) {
-            return ("campaign cap reached", level);
+        if (job.campaignId != bytes32(0)) {
+            bytes32 key = _campaignKey(job.client, job.campaignId);
+            if (campaignTaken[key][agent] >= campaignCap[key]) return ("campaign cap reached", level);
         }
         return ("", level);
     }
@@ -737,6 +745,23 @@ contract PanalTablon {
         return uint256(job.postedAt) + job.applyWindow;
     }
 
+    /// @dev El ultimo momento en que el encargo se puede asignar.
+    function _lastAssign(Job storage job) internal view returns (uint256 last) {
+        last = job.expiresAt;
+        if (job.mode == Mode.Selection) {
+            uint256 grace = _applyEnd(job) + job.chooseWindow + AUTO_ASSIGN_GRACE;
+            if (grace < last) last = grace;
+        }
+    }
+
+    /// @dev Una campaña es de quien la publica: su id se guarda junto a su
+    ///      direccion, asi que nadie puede ocupar el de otro adelantandose.
+    ///      Sin campaña (id 0), 0.
+    function _campaignKey(address client, bytes32 id) internal pure returns (bytes32) {
+        if (id == bytes32(0)) return bytes32(0);
+        return keccak256(abi.encode(client, id));
+    }
+
     // ─────────────────────────────────────────────────────────── asignar
 
     /// @dev `job.amount` es el deposito que hay para este encargo: `price` va al
@@ -750,7 +775,7 @@ contract PanalTablon {
         uint8 level,
         bool byClient
     ) internal {
-        _countTaken(agent, job.campaignId, level);
+        _countTaken(agent, _campaignKey(job.client, job.campaignId), level);
 
         address currency = job.currency;
         uint256 deposit = job.amount;
@@ -768,8 +793,8 @@ contract PanalTablon {
         emit JobAssigned(jobId, agent, tid, price, byClient);
     }
 
-    /// @dev Cupo del dia, encargos abiertos, novato y campaña.
-    function _countTaken(address agent, bytes32 campaignId, uint8 level) internal {
+    /// @dev Cupo del dia, encargos abiertos, novato y campaña (`campaignKey`).
+    function _countTaken(address agent, bytes32 campaignKey, uint8 level) internal {
         AgentStats storage s = agentStats[agent];
         uint32 today = _today();
         if (s.day != today) {
@@ -779,7 +804,7 @@ contract PanalTablon {
         s.takenToday += 1;
         s.open += 1;
         if (level == 0) s.newcomerUsed += 1;
-        if (campaignId != bytes32(0)) campaignTaken[campaignId][agent] += 1;
+        if (campaignKey != bytes32(0)) campaignTaken[campaignKey][agent] += 1;
     }
 
     /// @dev La tarea del escrow, ya a nombre del agente. En $PANAL se aprueba
@@ -1013,15 +1038,11 @@ contract PanalTablon {
         if (total != 0 && b.posted + b.inEscrow + extra > total) revert OverTotalCap();
     }
 
-    function _joinCampaign(bytes32 id, uint8 cap) internal {
-        Campaign storage c = campaigns[id];
-        if (c.owner == address(0)) {
-            if (cap == 0) revert InvalidCampaign();
-            c.owner = msg.sender;
-            c.capPerAgent = cap;
-        } else if (c.owner != msg.sender || c.capPerAgent != cap) {
-            revert InvalidCampaign();
-        }
+    /// @dev La primera publicacion fija el tope; las siguientes lo repiten.
+    function _joinCampaign(bytes32 key, uint8 cap) internal {
+        uint8 actual = campaignCap[key];
+        if (cap == 0 || (actual != 0 && actual != cap)) revert InvalidCampaign();
+        campaignCap[key] = cap;
     }
 
     /// @dev Limites fijos: nunca mas de 100 al dia, umbrales que suben, y una
