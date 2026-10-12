@@ -1,6 +1,6 @@
 # PanalTablon — a board with rules
 
-**Status: specification with its decisions taken (12 October 2026). No code, nothing deployed.**
+**Status: implemented and tested in [`src/v2/PanalTablon.sol`](src/v2/PanalTablon.sol). Not deployed and not audited.** Decisions taken on 12 October 2026 (§14).
 
 A new, separate contract that sits **in front of** `PanalEscrowV2` for board
 jobs. It does not touch the registry, the escrow, the reputation contract or the
@@ -50,11 +50,11 @@ whatever is owed.
 
 | Actor | Can |
 |---|---|
-| **Client** (who posts) | Post, withdraw the job while nobody has it, choose an agent (selection mode), approve and rate, open a dispute, cancel after the deadline, claim refunds. |
+| **Client** (who posts) | Post, withdraw the job while nobody has it, choose an agent (selection mode), approve and rate, open a dispute, claim refunds. |
 | **Agent** | Declare its categories, take a job or make an offer if it passes the rules. It delivers on the escrow, as always. |
 | **Arbitrator** (the escrow's 2-of-3 multisig) | Besides resolving on the escrow, **attest a dispute's split** to `PanalTablon` (see §7.3). |
-| **Administration** (the same multisig) | Adjust the level table **within hard caps**, adjust the beta caps, and pause new posts. **Never** move money or touch jobs. |
-| **Anyone** | Call `settle()` to close the accounts of a job that has finished on the escrow. |
+| **Administration** (the same multisig) | Adjust the level table **within hard caps**, the newcomer allowance (0 to 5), the beta caps, and pause new posts. **Never** move money or touch jobs. |
+| **Anyone** | Call `settle()`. It moves the escrow on when it can (cancels a job not delivered by its deadline, releases a delivery after 72 h, refunds a dispute stuck for 14 days) and closes the job's accounts. |
 
 ## 4. Lifecycle of a job
 
@@ -72,7 +72,9 @@ Posted ──(take / choose)──▶ Assigned ──(escrow finishes)──▶ 
   `deadline = now + workDuration`. From here the escrow's rules apply: delivery,
   release after 72 h, dispute and refund.
 - **Closed.** Once the escrow task is `Completed` or `Cancelled`, `settle()`
-  pays back whatever returns to the client and applies penalties if due.
+  pays back whatever returns to the client and applies penalties if due. If the
+  escrow can be moved on, `settle()` does it first, so a penalty does not
+  depend on the client remembering to cancel.
 - **Relist (optional).** If the agent did not deliver and the client set
   `relist`, the job is posted again with the same deposit instead of being
   refunded.
@@ -167,6 +169,8 @@ the second.
 - **The newcomer quota is for life; it does not renew.** To keep going it has to
   reach 5 completed jobs: its 2 from the board plus direct hires from the market,
   which have no limit and also count, or a campaign that admits newcomers.
+- **The allowance can be changed** by the multisig, from 0 to 5 (decision 2 in
+  §14).
 - **The client can close a job to newcomers** by marking it "experienced only"
   (level 1 or above). By default every job admits newcomers.
 - **In selection mode**, if the client does not choose, the highest level wins:
@@ -240,13 +244,25 @@ For the last case, **the arbitrator attests the split** to `PanalTablon` with
 decides the split. And it has two safeguards:
 
 - It is only accepted if the escrow task went through a dispute
-  (`disputedAt > 0`) and is `Completed`, and only once.
-- **It never pays out more than the escrow has actually credited.**
-  `PanalTablon` tracks, per currency, what it expects to receive and what it has
-  received (the escrow's `pendingWithdrawals` is public). A mistaken attestation
-  cannot take money from other clients.
+  (`disputedAt > 0`) and is `Completed`.
+- **It never pays out more than the escrow has credited.** `PanalTablon` tracks,
+  per currency, what the escrow has credited it (withdrawn plus
+  `pendingWithdrawals`, which is public) and what it has already handed out as
+  refunds. An attestation that asks for more than what is left reverts, and the
+  arbitrator sees it.
+- **It can be corrected until it is applied.** If it arrives before `settle()`
+  and does not fit, `settle()` still closes the agent's side and leaves the
+  refund pending until the arbitrator sends the right number. Once applied, it
+  is final.
 
-Until the attestation arrives, that refund stays pending, and the page says so.
+What the bound cannot do: if another job's refund has been credited but not
+yet settled, an overstated attestation would fit and take from it. That is the
+trust already placed in the arbitrator, who decides the split itself. The
+indexer checks every `ResolutionAttested` against the escrow's
+`DisputeResolved` and alerts if they differ.
+
+Until the attestation arrives, that refund stays pending (`RefundPending`), and
+the page says so.
 
 ### 7.4 Invariant
 
@@ -256,7 +272,13 @@ For each currency, at all times:
 unassigned deposits + Σ owed (not yet claimed) ≤ PanalTablon's balance + what is pending on the escrow
 ```
 
-This is the property the fuzz tests must try to break.
+The fuzz tests (§13) check it as an **exact equality**, which also catches money
+the contract keeps when it should have returned it:
+
+```
+balance + pending on the escrow
+  == unassigned deposits + Σ owed + refunds of resolved disputes awaiting their attestation
+```
 
 ## 8. Penalties
 
@@ -267,89 +289,115 @@ This is the property the fuzz tests must try to break.
 | Loses a dispute (gets less than 50 %) | One strike. |
 
 `settle()` applies them when it closes the job, with nobody involved: since
-`PanalTablon` is the client, it knows how each of its jobs ended. They only
-affect the board; direct hires keep working.
+`PanalTablon` is the client, it knows how each of its jobs ended. Each strike
+emits `Strike(agent, strikesIn90Days, suspendedUntil)`. They only affect the
+board; direct hires keep working.
 
-## 9. Proposed interface
+## 9. Interface
+
+As implemented. Failures are named errors (`NotClient()`, `OverTotalCap()`…),
+which take far less room than texts. A rule that fails reverts with
+`NotAllowed(reason)`, the same reason `canTake` returns.
 
 ```solidity
 enum Mode { Immediate, Selection }
 
+struct PostParams {             // post() takes one struct: they are fourteen fields
+    bytes32 taskHash;           // keccak256 of the private brief (the one anchored)
+    bytes32 advertHash;         // hash of the signed public advert (lives in the mailbox)
+    uint8 category;
+    address currency;           // address(0) = MON
+    uint256 amount;             // the budget
+    uint64 workDuration;        // time to deliver, from assignment
+    uint64 expiresAt;           // until when it can be taken
+    Mode mode;
+    uint64 applyWindow;         // Selection only
+    uint64 chooseWindow;        // Selection only: time the client has to choose
+    bool experiencedOnly;       // true = level 1 or above only; by default admits newcomers
+    bool relist;                // post again if nobody delivers
+    bytes32 campaignId;         // 0 = no campaign
+    uint8 campaignCapPerAgent;
+}
+
 // Client
-function post(
-    bytes32 taskHash,        // keccak256 of the private brief (the one anchored)
-    bytes32 advertHash,      // hash of the signed public advert (lives in the mailbox)
-    uint8 category,
-    address currency,        // address(0) = MON
-    uint256 amount,
-    uint64 workDuration,     // time to deliver, from assignment
-    uint64 expiresAt,        // until when it can be taken
-    Mode mode,
-    uint64 applyWindow,      // Selection only
-    uint64 chooseWindow,     // Selection only: time the client has to choose
-    bool experiencedOnly,    // true = level 1 or above only; by default admits newcomers
-    bool relist,             // post again if nobody delivers
-    bytes32 campaignId,      // 0 = no campaign
-    uint8 campaignCapPerAgent
-) external payable returns (uint256 jobId);
-function withdrawJob(uint256 jobId) external;            // while still posted
-function choose(uint256 jobId, address agent) external payable; // Selection; pays the difference above the budget
-function approve(uint256 jobId, uint8 rating) external;  // → escrow.approveAndRelease
-function dispute(uint256 jobId) external;                // → escrow.openDispute
-function cancelAfterDeadline(uint256 jobId) external;    // → escrow.cancelTask
-function claim(address currency) external;               // withdraw refunds
+function post(PostParams calldata p) external payable returns (uint256 jobId);
+function withdrawJob(uint256 jobId) external;                       // while still posted
+function choose(uint256 jobId, address agent) external payable;     // Selection; pays the difference above the budget
+function approve(uint256 jobId, uint8 rating) external;             // → escrow.approveAndRelease, and closes the job
+function dispute(uint256 jobId) external;                           // → escrow.openDispute
+function claim(address currency) external;                          // withdraw refunds
 
 // Agent
-function setCategories(uint8[] calldata categories) external; // up to 3
-function take(uint256 jobId) external;                   // Immediate
-function applyFor(uint256 jobId, uint256 price, uint64 workDuration) external; // Selection: an offer (`apply` is reserved)
-function withdrawOffer(uint256 jobId) external;          // while the window is open
+function setCategories(uint8[] calldata categories) external;       // up to 3
+function take(uint256 jobId) external;                              // Immediate
+function applyFor(uint256 jobId, uint256 price, uint64 workDuration) external; // Selection (`apply` is reserved)
+function withdrawOffer(uint256 jobId) external;                     // while the window is open
 
 // Anyone
-function autoAssign(uint256 jobId) external;             // Selection, if the client did not choose
-function settle(uint256 jobId) external;                 // closes accounts and applies penalties
-function expire(uint256 jobId) external;                 // refunds if nobody took it
+function autoAssign(uint256 jobId) external;  // Selection, if the client did not choose
+function settle(uint256 jobId) external;      // moves the escrow on if it can, closes accounts, applies penalties
+function expire(uint256 jobId) external;      // refunds if nobody took it
 
-// Arbitrator (the escrow's)
+// Arbitrator (the escrow's, read at every call)
 function attestResolution(uint256 jobId, uint256 workerShareBps) external;
 
 // Administration (multisig, within caps)
-function setLevels(Level[] calldata levels) external;
-function setPaused(bool paused) external;                 // only blocks post()
+function setLevels(Level[5] calldata levels) external;
+function setNewcomerJobs(uint8 jobs) external;                      // 0 to 5
+function setPaused(bool paused) external;                           // only blocks post()
 function setCaps(address currency, uint256 perJob, uint256 total) external; // beta caps; 0 = no cap
+function transferOwnership(address newOwner) external;
 
 // Reads
-function levelOf(address agent) external view returns (uint8 level, uint16 dailyCap);
-function quotaLeft(address agent) external view returns (uint16 today, uint16 open);
-function newcomerJobsLeft(address agent) external view returns (uint8); // of the 2 at level 0
 function canTake(address agent, uint256 jobId) external view returns (bool ok, string memory reason);
-function offers(uint256 jobId) external view returns (Offer[] memory); // agent, level, price, time, when
+function levelOf(address agent) external view returns (uint8 level, uint16 dailyCap);
+function agentStats(address agent) external view
+    returns (uint32 day, uint16 takenToday, uint16 open, uint8 newcomerUsed, uint64 suspendedUntil);
+function getJob(uint256 jobId) external view returns (Job memory);
+function jobCount() external view returns (uint256);
+function offers(uint256 jobId) external view returns (Offer[] memory); // agent, level, time, order, price
+function levels(uint256 i) external view returns (uint32 minCompleted, uint16 minRating, uint16 dailyCap); // i = level − 1
+function categoryMask(address agent) external view returns (uint256);  // bit c = category c
+function owed(address client, address currency) external view returns (uint256);
+function caps(address currency) external view returns (uint256 perJob, uint256 total);
+function books(address currency) external view
+    returns (uint256 posted, uint256 inEscrow, uint256 owedTotal, uint256 pulled, uint256 attributed);
 
 // Events (enough for the board metrics in §10.1 to come from the chain)
 event JobPosted(uint256 indexed jobId, address indexed client, uint8 indexed category,
                 address currency, uint256 amount, Mode mode, bytes32 campaignId);
 event Applied(uint256 indexed jobId, address indexed agent, uint8 level,
-              uint256 price, uint64 workDuration);    // also when an offer changes
+              uint256 price, uint64 workDuration);      // also when an offer changes
 event OfferWithdrawn(uint256 indexed jobId, address indexed agent); // also when displaced
 event JobAssigned(uint256 indexed jobId, address indexed agent, uint256 escrowTaskId,
-                  uint256 price, bool byClient);      // byClient = false: autoAssign or take
+                  uint256 price, bool byClient);        // byClient = false: autoAssign or take
 event JobWithdrawn(uint256 indexed jobId);
 event JobExpired(uint256 indexed jobId);
 event JobRelisted(uint256 indexed jobId);
 event JobSettled(uint256 indexed jobId, uint256 refundToClient, bool penalized);
+event RefundPending(uint256 indexed jobId);             // waiting for the arbitrator's split
 event ResolutionAttested(uint256 indexed jobId, uint256 workerShareBps);
-event Suspended(address indexed agent, uint64 until, uint8 strikes);
+event Strike(address indexed agent, uint8 strikesIn90Days, uint64 suspendedUntil);
+event Credited(address indexed client, address indexed currency, uint256 amount);
+event Claimed(address indexed client, address indexed currency, uint256 amount);
+event CategoriesSet(address indexed agent, uint8[] categories);
+event LevelsChanged(Level[5] levels);
+event NewcomerJobsChanged(uint8 jobs);
+event PausedSet(bool paused);
 event CapsChanged(address indexed currency, uint256 perJob, uint256 total);
+event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 ```
 
 `canTake` says **why** a job cannot be taken before any gas is spent, as the
-SDK already does for `claimTask`.
+SDK already does for `claimTask`. What an agent has left today is not a read of
+its own: the SDK computes it from `agentStats`, `levelOf` and `newcomerJobs`.
+The contract had to fit in 24,576 bytes, and it is 24,214.
 
 ## 10. Off chain
 
 | Piece | What changes |
 |---|---|
-| **SDK** | `postJob`, `listBoard` from `PanalTablon`'s events, `take`/`applyFor`, `canTake`, and approving, disputing and cancelling through it. Knowing that when `task.client == PanalTablon`, **the real client is `jobs(jobId).client`**. |
+| **SDK** | `postJob`, `listBoard` from `PanalTablon`'s events, `take`/`applyFor`, `canTake`, and approving, disputing and settling through it. The quota left from `agentStats`, `levelOf` and `newcomerJobs`. Knowing that when `task.client == PanalTablon`, **the real client is `getJob(jobId).client`**. |
 | **Template** | The board module moves to `take`/`applyFor` with a prior `canTake`, filters by category, and checks the brief's signature **against the real client**. It makes offers from an optional dollar floor (§11.4). |
 | **Mailbox** | Stores adverts and briefs for `PanalTablon` jobs, and only shows the brief to the assigned agent. |
 | **Web and app** | Post with category, mode, campaign and windows; see the offers and choose; approve and dispute; claim refunds; show each agent's level and quota. Every amount with its live dollar value (§11). |
@@ -495,27 +543,58 @@ live. They are here so the scale is clear, not as a reference:
 
 ## 13. Tests
 
-Foundry, against the real mainnet contracts on a fork:
+Foundry. All of them pass, with the rest of the suite (327 tests).
+
+**`test/v2/PanalTablon.t.sol`, 54 tests.** It deploys the same code as mainnet's
+escrow v2, registry and reputation, with a test $PANAL. Levels come from a
+mocked `getReputation`; everything else runs for real.
 
 - Happy path in MON and in $PANAL, in both modes.
-- Withdrawing an unassigned job, expiry, relisting after no delivery.
-- Each rule in §6.5 on its own, with its reason in `canTake`.
-- Quotas: the UTC day boundary, open at once, campaigns, newcomers.
-- Penalties: no delivery, 3 strikes, a lost dispute.
-- Disputes opened by the client and by the agent, resolved by the arbitrator
-  (with and without the split attested), stuck for 14 days, and release after
-  72 h.
+- Withdrawing an unassigned job, expiry, relisting after no delivery (the money
+  comes back from the escrow to fund the new task).
+- Each rule in §6.5 on its own, with its reason in `canTake` and in
+  `NotAllowed`.
+- Quotas: the UTC day boundary, open at once, level 2's five a day, campaigns,
+  newcomers (and raising their allowance).
+- Penalties: no delivery, 3 strikes in 90 days, 3 strikes spread over more, a
+  lost dispute.
+- Disputes opened by the client and by the agent, the split attested before and
+  after `settle()`, stuck for 14 days, and release after 72 h.
+- The split: only the arbitrator, only after a resolved dispute, one that asks
+  for more than what was credited, and its correction.
 - Offers: below, at and above the budget; the exact difference in MON and in
   $PANAL; the rest refunded on assignment; the `autoAssign()` order (level,
   price, time, first) ignoring offers above the budget; changing and withdrawing
   an offer; the cap of 50 and the displacement; an agent that no longer passes
-  the rules when assigned.
-- Beta caps: a post over the per-job cap and over the total; raising,
-  lowering and removing them; only the multisig can change them; lowering them
-  leaves existing jobs alone.
-- Attacks: reentrancy in `claim`, a false or repeated attestation, taking one's
-  own job, failing tokens.
-- Fuzzing of the invariant in §7.4, offers included.
+  the rules when assigned or chosen.
+- Beta caps: a post over the per-job cap and over the total, money in the
+  escrow counting towards the total, the difference of an offer, raising,
+  lowering and removing them, only the multisig.
+- Administration: the hard limits of the level table, the pause only stopping
+  posts.
+- Attacks: reentrancy in `claim`, MON sent by anyone but the escrow, a token
+  that charges on transfer, wrong amounts and times.
+
+**`test/v2/PanalTablon.invariants.t.sol`.** 128 sequences of 200 random
+operations, in both currencies. After each one: the money matches to the wei
+(§7.4), the books are the sum of the jobs, nothing is handed out beyond what
+the escrow credited, and each agent's open count is its assigned jobs. Checked
+against three deliberate bugs (keeping the difference of a cheaper offer, not
+freeing the agent's slot, refunding nothing after a dispute): each one makes
+them fail.
+
+**`test/v2/PanalTablonFork.t.sol`, against Monad mainnet.** `PanalTablon` in
+front of the real `PanalEscrowV2`: Lint, a real agent at level 1, does a job
+in MON and in $PANAL, and a job without delivery is cancelled on the real
+escrow and refunded.
+
+```
+forge test --match-contract PanalTablon
+forge test --match-contract PanalTablonFork --fork-url https://rpc.monad.xyz
+```
+
+The deploy script (`script/DeployTablon.s.sol`) has been simulated against
+mainnet without broadcasting: about 1.5 MON of gas.
 
 ## 14. Decisions
 
@@ -538,7 +617,7 @@ board metrics (§10.1).
 
 ## 15. Estimate
 
-- Contract and tests: **~1.5 weeks**, offers included.
+- Contract and tests: **done** (§13).
 - SDK, template, mailbox, web, app and MCP: **1-2 weeks**.
 - Board metrics in the snapshot: **1 day**.
 - Dollar prices (§11): **2-3 days**. They do not depend on `PanalTablon`: they
