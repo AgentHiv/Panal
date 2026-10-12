@@ -50,7 +50,9 @@ contract ClienteReentrante {
     }
 }
 
-contract PanalTablonTest is Test {
+/// La preparacion y las ayudas, sin pruebas: la heredan las pruebas de aqui,
+/// las de ataques y las que vengan, sin repetir las de este archivo.
+abstract contract PanalTablonBase is Test {
     PanalRegistryV2 registry;
     PanalReputation reputation;
     PanalEscrowV2 escrow;
@@ -220,6 +222,9 @@ contract PanalTablonTest is Test {
         (,,,,,,, st,) = escrow.tasks(_job(jobId).escrowTaskId);
     }
 
+}
+
+contract PanalTablonTest is PanalTablonBase {
     // ─────────────────────────────────────────────────────── despliegue
 
     function test_lee_del_escrow_todo_lo_que_no_puede_quedar_desparejado() public view {
@@ -433,6 +438,28 @@ contract PanalTablonTest is Test {
         vm.warp(block.timestamp + 26 hours);
         tablon.autoAssign(id);
         assertEq(_job(id).agent, otro);
+    }
+
+    function test_el_cliente_elige_dentro_de_su_plazo_y_autoAssign_con_un_dia_de_margen() public {
+        address a = _agent("a", 30, 420);
+        PanalTablon.PostParams memory p = _params(MON, 1 ether, SELECTION);
+        p.expiresAt = uint64(block.timestamp + 365 days); // aunque caduque dentro de un año
+        uint256 id = _post(p);
+        _apply(a, id, 1 ether, 0);
+
+        vm.warp(block.timestamp + 2 hours + 24 hours + 1); // se acabo el plazo del cliente
+        vm.prank(client);
+        vm.expectRevert(PanalTablon.Expired.selector);
+        tablon.choose(id, a);
+        vm.expectRevert(PanalTablon.NotExpired.selector);
+        tablon.expire(id); // todavia queda el dia de autoAssign
+
+        vm.warp(block.timestamp + 1 days); // y ahora tambien ese dia
+        vm.expectRevert(PanalTablon.Expired.selector);
+        tablon.autoAssign(id);
+
+        tablon.expire(id); // sin esperar al año
+        assertEq(tablon.owed(client, MON), 1 ether);
     }
 
     function test_el_cliente_no_puede_elegir_a_quien_ya_no_pasa_las_reglas() public {
@@ -702,11 +729,18 @@ contract PanalTablonTest is Test {
         _notAllowed("campaign cap reached");
         _take(a, id3);
 
-        // La campaña es de quien la creo, con su tope.
-        vm.deal(client2, 10 ether);
-        vm.prank(client2);
-        vm.expectRevert(PanalTablon.InvalidCampaign.selector);
-        tablon.post{value: 1 ether}(p);
+        bytes32 key = keccak256(abi.encode(client, p.campaignId));
+        assertEq(tablon.campaignCap(key), 2);
+        assertEq(tablon.campaignTaken(key, a), 2);
+
+        // El mismo id en otro cliente es otra campaña, con su tope y su cuenta.
+        p.campaignCapPerAgent = 1;
+        uint256 ajena = _postAs(client2, p);
+        _take(_agent("b", 30, 420), ajena);
+        assertEq(tablon.campaignCap(keccak256(abi.encode(client2, p.campaignId))), 1);
+        assertEq(tablon.campaignCap(key), 2, "la de client no cambia");
+
+        // Las siguientes publicaciones repiten el tope, y no hay campañas con tope 0.
         p.campaignCapPerAgent = 3;
         vm.prank(client);
         vm.expectRevert(PanalTablon.InvalidCampaign.selector);
@@ -1207,6 +1241,16 @@ contract PanalTablonTest is Test {
 
         p = _params(MON, 1 ether, IMMEDIATE);
         p.workDuration = 0;
+        vm.expectRevert(PanalTablon.InvalidTimes.selector);
+        tablon.post{value: 1 ether}(p);
+
+        p.workDuration = 1 hours - 1; // menos de una hora
+        vm.expectRevert(PanalTablon.InvalidTimes.selector);
+        tablon.post{value: 1 ether}(p);
+
+        p = _params(MON, 1 ether, SELECTION);
+        p.chooseWindow = 7 days + 1; // mas de una semana para elegir
+        p.expiresAt = uint64(block.timestamp + 30 days);
         vm.expectRevert(PanalTablon.InvalidTimes.selector);
         tablon.post{value: 1 ether}(p);
 
