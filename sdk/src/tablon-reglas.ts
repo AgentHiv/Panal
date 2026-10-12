@@ -249,3 +249,28 @@ export function problemaAlPublicar(p: PublicarEnElTablon): string | null {
   }
   return null;
 }
+
+/*
+ * Lo que se firma para el buzón (bot/src/buzon.ts). IDÉNTICO byte a byte a lo
+ * que comprueba él: una diferencia y toda firma sale inválida sin que nada
+ * diga por qué. Van por número de ENCARGO y dicen de qué tablón son: una firma
+ * de la tarea #7 del escrow no abre el encargo #7.
+ *
+ * El anuncio y el encargo NO se firman al dejarlos: PanalTablon guarda su
+ * keccak256 y el buzón solo acepta el texto que da ese hash.
+ */
+
+/** Su cliente o su agente leen el encargo. */
+export function tablonEncargoSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · encargo #${jobId.toString()} · ${expira}`;
+}
+
+/** Su agente deja la entrega. */
+export function tablonEntregaSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · entrega #${jobId.toString()} · ${expira}`;
+}
+
+/** Su cliente se lleva la entrega. */
+export function tablonResultadoSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · resultado #${jobId.toString()} · ${expira}`;
+}

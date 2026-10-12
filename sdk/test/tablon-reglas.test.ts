@@ -26,6 +26,9 @@ import {
   idDeCampana,
   problemaAlPublicar,
   situacionDe,
+  tablonEncargoSignMessage,
+  tablonEntregaSignMessage,
+  tablonResultadoSignMessage,
   type PublicarEnElTablon,
 } from '../src/tablon-reglas.js';
 
@@ -51,6 +54,11 @@ console.log('\nla clave de una campaña, la del contrato');
     claveDeCampana('0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC', id) !== clave,
   );
 }
+
+console.log('\nlos mensajes del buzón, idénticos a los de bot/src/buzon.ts');
+check('encargo', tablonEncargoSignMessage(7n, 1700000000) === 'Panal tablón con reglas · encargo #7 · 1700000000');
+check('entrega', tablonEntregaSignMessage(7n, 1700000000) === 'Panal tablón con reglas · entrega #7 · 1700000000');
+check('resultado', tablonResultadoSignMessage(7n, 1700000000) === 'Panal tablón con reglas · resultado #7 · 1700000000');
 
 console.log('\nlas categorías de la máscara');
 check('0, 9 y 255', categoriasDeMascara(1n | (1n << 9n) | (1n << 255n)).join() === '0,9,255');

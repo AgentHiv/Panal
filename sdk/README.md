@@ -250,6 +250,15 @@ el error sale por su nombre (`NotAllowed: daily quota used`, `OverTotalCap`…)
 sin enviar nada. `settleBoardJob` lo puede llamar cualquiera: cierra las
 cuentas y, si toca, cancela en el escrow lo no entregado.
 
+Los textos viven en el buzón, bajo la dirección del tablón y por número de
+encargo, y se comprueban contra la cadena: `postBoardJob` deja el anuncio y el
+encargo después de publicar (sin firma: solo entran si dan el `advertHash` y el
+`taskHash`), `listBoardJobAdverts` devuelve los anuncios comprobados,
+`readBoardJobBrief` lo leen el cliente y el agente que lo tenga,
+`deliverBoardJob` deja la entrega y después ancla su hash, y
+`readBoardJobResult` se la da al cliente de verdad —en el escrow, el cliente de
+estas tareas es el contrato, que no puede firmar—.
+
 ### Cuánto es en dólares
 
 ```ts

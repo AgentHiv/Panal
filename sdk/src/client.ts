@@ -34,6 +34,9 @@ import {
   ofertaDeLaCadena,
   problemaAlPublicar,
   situacionDe,
+  tablonEncargoSignMessage,
+  tablonEntregaSignMessage,
+  tablonResultadoSignMessage,
   type EncargoConReglas,
   type OfertaConReglas,
   type PublicarEnElTablon,
@@ -1552,7 +1555,9 @@ export class PanalClient {
    * suben aquí: a la cadena va su keccak256, y los textos se dejan en el
    * buzón, que los comprueba contra esos hashes.
    */
-  async postBoardJob(p: PublicarEnElTablon): Promise<{ jobId: bigint; txHash: Hex; taskHash: Hex; advertHash: Hex }> {
+  async postBoardJob(
+    p: PublicarEnElTablon,
+  ): Promise<{ jobId: bigint; txHash: Hex; taskHash: Hex; advertHash: Hex; textosGuardados: boolean; error?: string }> {
     const problema = problemaAlPublicar(p);
     if (problema) throw new Error(problema);
     const moneda = p.moneda ?? NATIVE_CURRENCY;
@@ -1582,7 +1587,147 @@ export class PanalClient {
     const { hash, recibo } = await this.firmarEnTablon('La publicación', 'post', [params], nativa ? p.importe : 0n);
     const [ev] = parseEventLogs({ abi: panalTablonAbi, logs: recibo.logs, eventName: 'JobPosted' });
     if (!ev) throw new Error(`La publicación salió (tx ${hash}) pero no se encontró el evento JobPosted.`);
-    return { jobId: ev.args.jobId, txHash: hash, taskHash, advertHash };
+    const jobId = ev.args.jobId;
+    // Los textos van DESPUÉS de la cadena: hasta que el encargo existe, el buzón
+    // no tiene hash con qué comprobarlos. Si fallan, el encargo está pagado y
+    // sin anunciar: se dice y se reintenta con `publishBoardJobTexts`.
+    try {
+      await this.publishBoardJobTexts(jobId, { anuncio: p.anuncio, encargo: p.encargo });
+      return { jobId, txHash: hash, taskHash, advertHash, textosGuardados: true };
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err);
+      return { jobId, txHash: hash, taskHash, advertHash, textosGuardados: false, error };
+    }
+  }
+
+  /**
+   * Deja en el buzón el anuncio y el encargo de un encargo ya publicado. Sin
+   * firma: el buzón solo acepta los textos que dan los hashes de la cadena.
+   * Repetirlo no molesta.
+   */
+  async publishBoardJobTexts(jobId: bigint, textos: { anuncio: string; encargo: string }): Promise<void> {
+    const base = `${this.buzonUrl}/${this.tablon()}`;
+    for (const [ruta, campo, texto] of [
+      ['anuncio', 'anuncio', textos.anuncio],
+      ['brief', 'brief', textos.encargo],
+    ] as const) {
+      const { status, text } = await fetchLimited(`${base}/${ruta}/${jobId}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ [campo]: texto }),
+        timeoutMs: 15_000,
+        maxBytes: 10_000,
+      });
+      if (status !== 200) {
+        throw new Error(`El buzón no aceptó el ${campo === 'brief' ? 'encargo' : 'anuncio'} del #${jobId} (${status}: ${text.slice(0, 160)}).`);
+      }
+    }
+  }
+
+  /** Lo que se firma para leer del buzón: dirección, firma y caducidad. */
+  private async credencialesDeBuzon(mensaje: (expira: number) => string): Promise<Record<string, string>> {
+    const expira = Math.floor(Date.now() / 1000) + VENTANA_FIRMA_S;
+    const firma = await this.wallet().signMessage({ account: this.account!, message: mensaje(expira) });
+    return { 'x-panal-address': this.account!.address, 'x-panal-signature': firma, 'x-panal-expira': String(expira) };
+  }
+
+  /**
+   * El anuncio de cada encargo publicado, comprobado contra su `advertHash`.
+   * Un anuncio que no cuadre no se devuelve: el buzón no puede inventarse uno.
+   */
+  async listBoardJobAdverts(opciones: { limit?: number } = {}): Promise<(EncargoConReglas & { anuncio: string })[]> {
+    const [encargos, respuesta] = await Promise.all([
+      this.listBoardJobs({ limit: opciones.limit }),
+      fetchLimited(`${this.buzonUrl}/${this.tablon()}/lista`, { timeoutMs: 15_000, maxBytes: 2_000_000 }),
+    ]);
+    if (respuesta.status !== 200) throw new Error(`El buzón respondió ${respuesta.status} al pedir los anuncios.`);
+    const { anuncios = [] } = JSON.parse(respuesta.text) as { anuncios?: { jobId: string; anuncio: string }[] };
+    const porId = new Map(anuncios.map((a) => [a.jobId, a.anuncio]));
+    return encargos.flatMap((j) => {
+      const anuncio = porId.get(j.id.toString());
+      if (typeof anuncio !== 'string') return [];
+      if (keccak256(toBytes(anuncio)).toLowerCase() !== j.advertHash.toLowerCase()) return [];
+      return [{ ...j, anuncio }];
+    });
+  }
+
+  /**
+   * El encargo privado. Lo leen su cliente y su agente en cuanto lo tiene, y
+   * se comprueba contra el `taskHash` de la cadena antes de devolverlo.
+   */
+  async readBoardJobBrief(jobId: bigint): Promise<string> {
+    const job = await this.getBoardJob(jobId);
+    const yo = this.account?.address.toLowerCase();
+    if (yo !== job.cliente.toLowerCase() && yo !== job.agente.toLowerCase()) {
+      throw new Error(`El encargo #${jobId} solo lo leen su cliente y el agente que lo tenga.`);
+    }
+    const { status, text } = await fetchLimited(`${this.buzonUrl}/${this.tablon()}/encargo/${jobId}`, {
+      headers: await this.credencialesDeBuzon((e) => tablonEncargoSignMessage(jobId, e)),
+      timeoutMs: 15_000,
+      maxBytes: 1_000_000,
+    });
+    if (status === 404) throw new Error(`El buzón no tiene el encargo #${jobId}: su cliente no llegó a dejarlo.`);
+    if (status !== 200) throw new Error(`El buzón respondió ${status} al pedir el encargo #${jobId}.`);
+    const { brief } = JSON.parse(text) as { brief?: string };
+    if (typeof brief !== 'string' || keccak256(toBytes(brief)).toLowerCase() !== job.taskHash.toLowerCase()) {
+      throw new Error(`El encargo #${jobId} del buzón no cuadra con el taskHash de la cadena: no se trabaja sobre él.`);
+    }
+    return brief;
+  }
+
+  /**
+   * Entregar un encargo del tablón con reglas: se deja en el buzón y DESPUÉS
+   * se ancla su hash en el escrow. Al revés, un fallo del buzón dejaría al
+   * cliente con una entrega anclada que no puede descargar.
+   */
+  async deliverBoardJob(jobId: bigint, texto: string): Promise<{ txHash: Hex; resultHash: Hex }> {
+    this.wallet();
+    const job = await this.getBoardJob(jobId);
+    if (job.agente.toLowerCase() !== this.account!.address.toLowerCase()) {
+      throw new Error(`El encargo #${jobId} lo tiene ${job.agente}, no tú.`);
+    }
+    if (job.estado !== EstadoTablon.Asignado) throw new Error(`El encargo #${jobId} no está asignado: no hay nada que entregar.`);
+    const cabeceras = await this.credencialesDeBuzon((e) => tablonEntregaSignMessage(jobId, e));
+    const { status, text } = await fetchLimited(`${this.buzonUrl}/${this.tablon()}/entrega/${jobId}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        entrega: texto,
+        address: cabeceras['x-panal-address'],
+        signature: cabeceras['x-panal-signature'],
+        expira: Number(cabeceras['x-panal-expira']),
+      }),
+      timeoutMs: 30_000,
+      maxBytes: 100_000,
+    });
+    if (status !== 200) {
+      throw new Error(`El buzón no aceptó la entrega del #${jobId} (${status}: ${text.slice(0, 160)}). No se ha anclado nada.`);
+    }
+    return this.deliverResult(job.escrowTaskId, texto);
+  }
+
+  /**
+   * La entrega, para su cliente. Se comprueba contra el `resultHash` anclado
+   * en el escrow: el buzón no puede cambiarla.
+   */
+  async readBoardJobResult(jobId: bigint): Promise<string> {
+    const job = await this.getBoardJob(jobId);
+    if (this.account?.address.toLowerCase() !== job.cliente.toLowerCase()) {
+      throw new Error(`La entrega del #${jobId} solo la descarga su cliente.`);
+    }
+    const { status, text } = await fetchLimited(`${this.buzonUrl}/${this.tablon()}/result/${jobId}`, {
+      headers: await this.credencialesDeBuzon((e) => tablonResultadoSignMessage(jobId, e)),
+      timeoutMs: 15_000,
+      maxBytes: 1_000_000,
+    });
+    if (status === 404) throw new Error(`El encargo #${jobId} todavía no tiene entrega en el buzón.`);
+    if (status !== 200) throw new Error(`El buzón respondió ${status} al pedir la entrega del #${jobId}.`);
+    const { resultText } = JSON.parse(text) as { resultText?: string };
+    const tarea = await this.getTask(job.escrowTaskId);
+    if (typeof resultText !== 'string' || keccak256(toBytes(resultText)).toLowerCase() !== tarea.resultHash.toLowerCase()) {
+      throw new Error(`La entrega del #${jobId} no cuadra con el resultHash anclado en el escrow.`);
+    }
+    return resultText;
   }
 
   /** Coger un encargo inmediato. Antes de firmar pregunta si se puede, y por qué no. */

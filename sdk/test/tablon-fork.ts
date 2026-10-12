@@ -10,8 +10,11 @@
  * métodos del cliente:
  *
  *   1. Un agente nuevo se registra en el registry real y declara su categoría.
- *   2. Un cliente publica un encargo inmediato en MON; el agente pregunta si
- *      puede, lo coge, entrega en el escrow; el cliente aprueba y se cierra.
+ *   2. Un cliente publica un encargo inmediato en MON, y su anuncio y su
+ *      encargo quedan en el BUZÓN de verdad (bot/src/buzon.ts, arrancado aquí
+ *      mismo). El agente lo ve en la lista con su anuncio, pregunta si puede,
+ *      lo coge, lee el encargo y entrega; el cliente se descarga la entrega,
+ *      aunque en el escrow su cliente sea el contrato, y aprueba.
  *   3. Un segundo encargo, en selección: el agente oferta por debajo del
  *      presupuesto, el cliente elige, la diferencia se le debe y la cobra.
  *   4. Lo que se rechaza dice por qué antes de firmar: un novato con un
@@ -29,6 +32,11 @@ import { createPanalClient } from '../src/client.js';
 import { MAINNET_ADDRESSES } from '../src/chains.js';
 import { escrowAbi } from '../src/abis.js';
 import { EstadoTablon, ModoTablon } from '../src/tablon-reglas.js';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createBuzonServer } from '../../bot/src/buzon.js';
+import { BuzonStore } from '../../bot/src/buzon-store.js';
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -90,8 +98,33 @@ try {
   const tablon = (await lector.waitForTransactionReceipt({ hash: hashDespliegue })).contractAddress!;
   console.log(`PanalTablon en la copia: ${tablon}`);
 
-  const cliente = createPanalClient({ rpcUrl: RPC, indexerUrl: null, account: privateKeyToAccount(CLAVE_CLIENTE), addresses: { tablon } });
-  const agente = createPanalClient({ rpcUrl: RPC, indexerUrl: null, account: privateKeyToAccount(CLAVE_AGENTE), addresses: { tablon } });
+  // El buzón de verdad, leyendo de la copia.
+  const lectorSdk = createPanalClient({ rpcUrl: RPC, indexerUrl: null, addresses: { tablon } });
+  const buzon = createBuzonServer({
+    store: new BuzonStore(mkdtempSync(join(tmpdir(), 'panal-tablon-fork-'))),
+    fetchTask: async (id) => {
+      const t = await lectorSdk.getTask(id);
+      return { ...t, status: t.status } as never;
+    },
+    fetchAgent: async () => {
+      throw new Error('no hace falta');
+    },
+    contratos: { escrow: MAINNET_ADDRESSES.escrow, registry: MAINNET_ADDRESSES.registry, token: MAINNET_ADDRESSES.panalToken },
+    simboloDe: () => 'MON',
+    indexer: '',
+    allowLocalhostOrigin: true,
+    tablon,
+    fetchJob: async (id) => {
+      const j = await lectorSdk.getBoardJob(id);
+      return { client: j.cliente, state: j.estado, agent: j.agente, taskHash: j.taskHash, advertHash: j.advertHash, escrowTaskId: j.escrowTaskId };
+    },
+  });
+  await new Promise<void>((r) => buzon.listen(PUERTO + 1, '127.0.0.1', r));
+  const buzonUrl = `http://127.0.0.1:${PUERTO + 1}/buzon`;
+  process.on('exit', () => buzon.close());
+
+  const cliente = createPanalClient({ rpcUrl: RPC, indexerUrl: null, buzonUrl, account: privateKeyToAccount(CLAVE_CLIENTE), addresses: { tablon } });
+  const agente = createPanalClient({ rpcUrl: RPC, indexerUrl: null, buzonUrl, account: privateKeyToAccount(CLAVE_AGENTE), addresses: { tablon } });
   const yo = agente.account!.address;
 
   // ── 1. Un agente nuevo ─────────────────────────────────────────────────
@@ -118,8 +151,12 @@ try {
     modo: ModoTablon.Inmediato,
   });
   check('publicado, con el hash del encargo en la cadena', pub.taskHash === keccak256(toBytes(brief)));
-  const lista = await agente.listBoardJobs();
-  check('el agente lo ve en la lista', lista.some((j) => j.id === pub.jobId));
+  check('y sus textos en el buzón', pub.textosGuardados, pub.error ?? '');
+  const lista = await agente.listBoardJobAdverts();
+  check(
+    'el agente lo ve en la lista, con su anuncio comprobado',
+    lista.some((j) => j.id === pub.jobId && j.anuncio === 'Traducción ES→FR, una frase'),
+  );
   check('canTake dice que sí', (await agente.canTakeBoardJob(yo, pub.jobId)).ok);
 
   const cogido = await agente.takeBoardJob(pub.jobId);
@@ -150,14 +187,20 @@ try {
   }
   check('y lo dice antes de firmar', motivo.includes('newcomer job in progress'), motivo);
 
-  const agenteWallet = createWalletClient({ chain: monad, transport: http(RPC), account: privateKeyToAccount(CLAVE_AGENTE) });
-  const entrega = await agenteWallet.writeContract({
-    address: MAINNET_ADDRESSES.escrow,
-    abi: escrowAbi,
-    functionName: 'deliverResult',
-    args: [cogido.escrowTaskId, keccak256(toBytes('Le rucher travaille la nuit.'))],
-  });
-  await lector.waitForTransactionReceipt({ hash: entrega });
+  check('el agente lee el encargo del buzón', (await agente.readBoardJobBrief(pub.jobId)) === brief);
+  const traduccion = 'Le rucher travaille la nuit.';
+  await agente.deliverBoardJob(pub.jobId, traduccion);
+  check(
+    'el cliente de verdad se descarga la entrega, comprobada contra el escrow',
+    (await cliente.readBoardJobResult(pub.jobId)) === traduccion,
+  );
+  let ajeno = '';
+  try {
+    await agente.readBoardJobResult(pub.jobId);
+  } catch (e) {
+    ajeno = e instanceof Error ? e.message : String(e);
+  }
+  check('y nadie más', ajeno.includes('solo la descarga su cliente'), ajeno);
   await cliente.approveBoardJob(pub.jobId, 5);
   check('aprobado y cerrado', (await cliente.getBoardJob(pub.jobId)).estado === EstadoTablon.Cerrado);
   const cobra = await cliente.getPendingWithdrawal(yo);
