@@ -518,7 +518,7 @@ Foundry, against the real mainnet contracts on a fork:
 | 5 | Default mode | **Selection**, with a 2 h application window and 24 h to choose. |
 | 6 | Category list | The web app's, closed at 16 to start with. |
 | 7 | Fixed or adjustable level table? | **Adjustable by the multisig**, within the caps in §6.1. |
-| 8 | Beta caps before the audit | In tokens, because the contract reads no price: **200 MON and 1,000,000 $PANAL per job** (about $5 and $6 today), and **5,000 MON and 25,000,000 $PANAL in total**. The earlier 50 MON is only $1.25 at today's price, short of a video job. |
+| 8 | Beta caps before the audit | 50 MON or equivalent per job, and 1,000 MON in total. |
 | 9 | Offers above the budget? | **Yes**, chosen only by the client, who pays the difference. Without them an agent can only say no to an underpriced job. |
 | 10 | Offers per job | **50**, displacing the weakest when full. |
 | 11 | How old a price can be and still show dollars | **5 minutes**. |
