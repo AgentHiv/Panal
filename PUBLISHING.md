@@ -21,6 +21,9 @@ contratos no leen ningún precio (contracts/BOARD.md §11).
 
 - **`@panal/sdk` 0.21.0** — `leerPrecios`, `enDolares`, `valorDeVenta`,
   `formatearDolares`, y en el cliente `precios()` y `valorDeVentaPanal()`.
+  Y los métodos del tablón con reglas (`postBoardJob`, `takeBoardJob`,
+  `offerOnBoardJob`, `chooseBoardOffer`, `boardStanding`…), que no hacen nada
+  hasta que PanalTablon se despliegue: `boardJobsAvailable` es `false`.
 - **`panal-mcp` 0.15.0** — las respuestas llevan «(≈ $x)» junto a cada precio,
   saldo e importe en MON o $PANAL.
 - **`create-panal-agent` 0.23.0** — `TABLON_MINIMO_USD`: el tablón automático

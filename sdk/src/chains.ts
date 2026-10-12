@@ -51,6 +51,13 @@ export interface PanalAddresses {
    * nada esté levantado.
    */
   names: Address;
+  /**
+   * PanalTablon: el tablón con reglas delante del escrow (contracts/BOARD.md).
+   * Cero mientras no esté desplegado: los métodos `…BoardJob` lo dicen en vez
+   * de mandar nada a la dirección cero. Para probarlo antes, se pasa en
+   * `addresses`.
+   */
+  tablon: Address;
 }
 
 /** Desplegados en Monad mainnet el 2026-07-29 (escrow v2 auditado). */
@@ -60,6 +67,7 @@ export const MAINNET_ADDRESSES: PanalAddresses = {
   panalToken: '0x2e2e44e7fa6178822d4397299f719e89d1a67777',
   arbitrator: '0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0',
   names: '0xc94a8107C87859cAd2E472e71BbE25c15cdD614A',
+  tablon: '0x0000000000000000000000000000000000000000',
 };
 
 /**
@@ -73,6 +81,7 @@ export const TESTNET_ADDRESSES: PanalAddresses = {
   panalToken: '0x0000000000000000000000000000000000000000',
   arbitrator: '0x0000000000000000000000000000000000000000',
   names: '0x0000000000000000000000000000000000000000',
+  tablon: '0x0000000000000000000000000000000000000000',
 };
 
 /** `address(0)` significa MON nativo en todo el protocolo. */

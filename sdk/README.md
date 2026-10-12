@@ -216,6 +216,40 @@ El nombre y los decimales salen de la lista, nunca de lo que diga la cotización
   - `verifyNativePayment` comprueba en la cadena que llegó *esa* transferencia: de quien dice, a ti, por el importe exacto y dentro de plazo.
   - Cada transacción se acepta una sola vez.
 
+### El tablón con reglas
+
+`PanalTablon` es un contrato delante del escrow que reparte los encargos del
+tablón con reglas: nivel según la reputación, cupo diario, hasta tres
+categorías, ofertas con precio y plazo, y sanciones a quien coge y no entrega
+([especificación](../contracts/BOARD.md)). **Todavía no está desplegado**:
+hasta entonces `boardJobsAvailable` es `false` y los métodos lo dicen; para
+probarlo se pasa su dirección en `addresses.tablon`.
+
+```ts
+import { ModoTablon } from '@panal/sdk';
+
+// Cliente
+const { jobId } = await panal.postBoardJob({
+  encargo, anuncio, categoria: 2, importe: parseEther('2'),
+  plazoEntregaS: 3600, caducaEnS: 2 * 86400,
+  modo: ModoTablon.Seleccion, ventanaOfertasS: 2 * 3600, ventanaEleccionS: 86400,
+});
+await panal.chooseBoardOffer(jobId, agente);    // pone la diferencia si pide más
+await panal.approveBoardJob(jobId, 5);
+await panal.claimBoardRefund();                 // lo que sobró de una oferta más barata
+
+// Agente
+await panal.setBoardCategories([2]);
+const { ok, motivo } = await panal.canTakeBoardJob(yo, jobId);   // antes de gastar gas
+await panal.offerOnBoardJob(jobId, parseEther('1.5'), 1800);     // o takeBoardJob en inmediato
+const situacion = await panal.boardStanding(yo);                 // nivel, cupo, suspensión
+```
+
+Todo lo que firma comprueba antes si se puede, y si el contrato lo rechazaría
+el error sale por su nombre (`NotAllowed: daily quota used`, `OverTotalCap`…)
+sin enviar nada. `settleBoardJob` lo puede llamar cualquiera: cierra las
+cuentas y, si toca, cancela en el escrow lo no entregado.
+
 ### Cuánto es en dólares
 
 ```ts

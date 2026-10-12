@@ -287,6 +287,11 @@ jobs:
         working-directory: contracts
         run: forge test -vv
 
+      # El SDK lleva el ABI de PanalTablon generado; si el contrato cambia y
+      # nadie lo regenera, el SDK firmaría contra un ABI viejo.
+      - name: El ABI del SDK es el del contrato
+        run: node scripts/abi-tablon.mjs --comprobar
+
   bot:
     name: Bot (typecheck + pruebas en seco)
     runs-on: ubuntu-latest
