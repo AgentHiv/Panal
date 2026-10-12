@@ -16,8 +16,8 @@
  * y en uso: el caso de "quiero probar esto ahora" no debería exigir un .env.
  */
 
-import { createPublicClient, createWalletClient, formatEther, getAddress, http, keccak256, toBytes, verifyMessage } from 'viem';
-import type { Abi, Account, Address, Hex, PublicClient, WalletClient } from 'viem';
+import { createPublicClient, createWalletClient, formatEther, getAddress, http, keccak256, parseEventLogs, toBytes, verifyMessage } from 'viem';
+import type { Abi, Account, Address, Hex, PublicClient, TransactionReceipt, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, namesAbi, registryAbi } from './abis.js';
 import { leerX402 } from './agent-card.js';
 import { assertPublicUrl, fetchLimited, rutaDeAgente } from './net.js';
@@ -25,6 +25,20 @@ import { X402Error, payAndAsk, quoteAsk, type AskResult, type X402Accept } from 
 import { descend, newEnvelope, remainingBudget, type CallEnvelope } from './envelope.js';
 import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type PanalNetwork } from './chains.js';
 import { leerPrecios, valorDeVenta, type OpcionesPrecios, type Precios } from './precios.js';
+import { panalTablonAbi } from './tablon-abi.js';
+import {
+  EstadoTablon,
+  MAX_CATEGORIAS,
+  ModoTablon,
+  encargoDeLaCadena,
+  ofertaDeLaCadena,
+  problemaAlPublicar,
+  situacionDe,
+  type EncargoConReglas,
+  type OfertaConReglas,
+  type PublicarEnElTablon,
+  type SituacionEnElTablon,
+} from './tablon-reglas.js';
 import {
   BUZON_URL,
   TABLON,
@@ -91,6 +105,14 @@ const TOPE_GAS_RETIRADA = 300_000n;
  * lo da `eth_estimateGas`, que es fiable; el que inflaba era `eth_fillTransaction`.
  */
 const TOPE_GAS_FICHA = 30_000_000n;
+
+/**
+ * El tope de gas de lo que se firma en PanalTablon. Coger cuesta ~330.000 y
+ * aprobar ~230.000; elegir borra hasta 50 ofertas y `autoAssign` las recorre,
+ * así que el techo es alto. Como en los demás: solo corta un disparate, y lo
+ * que se firma es la estimación + 10 %.
+ */
+const TOPE_GAS_TABLON = 3_000_000n;
 
 /** Cuántos agentes se leen por llamada al registry. */
 const REGISTRY_PAGE = 50n;
@@ -1392,6 +1414,271 @@ export class PanalClient {
   }
 
   /** Comprueba el saldo antes de firmar, para fallar con un mensaje legible. */
+  // -------------------------------------------------------------------------
+  // El tablón con reglas (PanalTablon). Ver tablon-reglas.ts y BOARD.md.
+  // -------------------------------------------------------------------------
+
+  /** Si PanalTablon existe en esta red. Hasta que se despliegue, no. */
+  get boardJobsAvailable(): boolean {
+    return this.addresses.tablon !== NATIVE_CURRENCY;
+  }
+
+  /** La dirección de PanalTablon, o un error que dice que aún no existe. */
+  private tablon(): Address {
+    if (!this.boardJobsAvailable) {
+      throw new Error(
+        `PanalTablon todavía no está desplegado en ${this.network}. Para probarlo, pasa su dirección en \`addresses.tablon\`.`,
+      );
+    }
+    return this.addresses.tablon;
+  }
+
+  private leerTablon<T>(functionName: string, args: readonly unknown[] = []): Promise<T> {
+    return this.publicClient.readContract({
+      address: this.tablon(),
+      abi: panalTablonAbi,
+      functionName,
+      args,
+    } as never) as Promise<T>;
+  }
+
+  async getBoardJob(jobId: bigint): Promise<EncargoConReglas> {
+    return encargoDeLaCadena(jobId, await this.leerTablon('getJob', [jobId]));
+  }
+
+  async getBoardJobCount(): Promise<bigint> {
+    return this.leerTablon<bigint>('jobCount');
+  }
+
+  /**
+   * Los últimos encargos, del más nuevo al más viejo; por defecto solo los
+   * publicados. Se leen de diez en diez: el RPC público limita.
+   */
+  async listBoardJobs(opciones: { limit?: number; estado?: EstadoTablon | 'todos' } = {}): Promise<EncargoConReglas[]> {
+    const total = await this.getBoardJobCount();
+    const cuantos = BigInt(Math.max(1, Math.min(opciones.limit ?? 50, 200)));
+    const ids: bigint[] = [];
+    for (let i = total - 1n; i >= 0n && i >= total - cuantos; i--) ids.push(i);
+    const out: EncargoConReglas[] = [];
+    for (let k = 0; k < ids.length; k += 10) {
+      out.push(...(await Promise.all(ids.slice(k, k + 10).map((id) => this.getBoardJob(id)))));
+    }
+    const estado = opciones.estado ?? EstadoTablon.Publicado;
+    return estado === 'todos' ? out : out.filter((j) => j.estado === estado);
+  }
+
+  async getBoardOffers(jobId: bigint): Promise<OfertaConReglas[]> {
+    const lista = await this.leerTablon<readonly Record<string, unknown>[]>('offers', [jobId]);
+    return lista.map(ofertaDeLaCadena);
+  }
+
+  /** Si un agente puede coger (inmediato) u ofertar (selección) ahora, y por qué no. */
+  async canTakeBoardJob(agent: Address, jobId: bigint): Promise<{ ok: boolean; motivo: string }> {
+    const [ok, motivo] = await this.leerTablon<readonly [boolean, string]>('canTake', [getAddress(agent), jobId]);
+    return { ok, motivo };
+  }
+
+  /** Su nivel, lo que le queda hoy, si está suspendido y sus categorías. */
+  async boardStanding(agent: Address): Promise<SituacionEnElTablon> {
+    const a = getAddress(agent);
+    const [[nivel, cupo], stats, novato, mascara] = await Promise.all([
+      this.leerTablon<readonly [number, number]>('levelOf', [a]),
+      this.leerTablon<readonly [number, number, number, number, bigint]>('agentStats', [a]),
+      this.leerTablon<number>('newcomerJobs'),
+      this.leerTablon<bigint>('categoryMask', [a]),
+    ]);
+    return situacionDe(
+      {
+        nivel: Number(nivel),
+        cupoDiario: Number(cupo),
+        stats: {
+          day: Number(stats[0]),
+          takenToday: Number(stats[1]),
+          open: Number(stats[2]),
+          newcomerUsed: Number(stats[3]),
+          suspendedUntil: Number(stats[4]),
+        },
+        encargosDeNovato: Number(novato),
+        mascara,
+      },
+      Math.floor(Date.now() / 1000),
+    );
+  }
+
+  /** Lo que PanalTablon le debe a un cliente en una moneda: se cobra con `claimBoardRefund`. */
+  async getBoardRefund(client: Address, currency: Address = NATIVE_CURRENCY): Promise<bigint> {
+    return this.leerTablon<bigint>('owed', [getAddress(client), currency]);
+  }
+
+  /**
+   * Firma en PanalTablon con el gas fijado y espera a que salga bien. Si el
+   * contrato lo rechazaría, la estimación ya falla con el error por su nombre
+   * (`NotAllowed`, `OverTotalCap`…) y no se envía nada.
+   */
+  private async firmarEnTablon(
+    que: string,
+    functionName: string,
+    args: readonly unknown[],
+    value = 0n,
+  ): Promise<{ hash: Hex; recibo: TransactionReceipt }> {
+    const wallet = this.wallet();
+    const llamada = { address: this.tablon(), abi: panalTablonAbi as unknown as Abi, functionName, args, value };
+    await this.comprobarReserva(que, llamada);
+    const hash = await wallet.writeContract({
+      ...llamada,
+      gas: await this.gasFijo(que, llamada, TOPE_GAS_TABLON),
+      chain: chainFor(this.network),
+      account: this.account!,
+    } as never);
+    const recibo = await this.publicClient.waitForTransactionReceipt({ hash });
+    if (recibo.status !== 'success') throw new Error(`${que} revirtió (tx ${hash}): se cobró el gas y no cambió nada.`);
+    return { hash, recibo };
+  }
+
+  /** `approve` exacto a PanalTablon para un pago en token. Nunca infinito. */
+  private async aprobarAlTablon(token: Address, importe: bigint): Promise<void> {
+    const aFirmar = { address: token, abi: erc20Abi, functionName: 'approve', args: [this.tablon(), importe] } as const;
+    const hash = await this.wallet().writeContract({
+      ...aFirmar,
+      gas: await this.gasFijo('El approve', aFirmar as never),
+      chain: chainFor(this.network),
+      account: this.account!,
+    });
+    await this.esperarExito(hash, 'El approve');
+  }
+
+  /**
+   * Publica un encargo en el tablón con reglas. El encargo y el anuncio NO se
+   * suben aquí: a la cadena va su keccak256, y los textos se dejan en el
+   * buzón, que los comprueba contra esos hashes.
+   */
+  async postBoardJob(p: PublicarEnElTablon): Promise<{ jobId: bigint; txHash: Hex; taskHash: Hex; advertHash: Hex }> {
+    const problema = problemaAlPublicar(p);
+    if (problema) throw new Error(problema);
+    const moneda = p.moneda ?? NATIVE_CURRENCY;
+    const nativa = moneda.toLowerCase() === NATIVE_CURRENCY.toLowerCase();
+    await this.assertFunds(moneda, p.importe, nativa);
+
+    const taskHash = keccak256(toBytes(p.encargo));
+    const advertHash = keccak256(toBytes(p.anuncio));
+    const seleccion = p.modo === ModoTablon.Seleccion;
+    const params = {
+      taskHash,
+      advertHash,
+      category: p.categoria,
+      currency: moneda,
+      amount: p.importe,
+      workDuration: BigInt(p.plazoEntregaS),
+      expiresAt: BigInt(Math.floor(Date.now() / 1000) + p.caducaEnS),
+      mode: p.modo,
+      applyWindow: BigInt(seleccion ? (p.ventanaOfertasS ?? 0) : 0),
+      chooseWindow: BigInt(seleccion ? (p.ventanaEleccionS ?? 0) : 0),
+      experiencedOnly: p.soloConExperiencia ?? false,
+      relist: p.republicar ?? false,
+      campaignId: p.campana?.id ?? `0x${'0'.repeat(64)}`,
+      campaignCapPerAgent: p.campana?.topePorAgente ?? 0,
+    };
+    if (!nativa) await this.aprobarAlTablon(moneda, p.importe);
+    const { hash, recibo } = await this.firmarEnTablon('La publicación', 'post', [params], nativa ? p.importe : 0n);
+    const [ev] = parseEventLogs({ abi: panalTablonAbi, logs: recibo.logs, eventName: 'JobPosted' });
+    if (!ev) throw new Error(`La publicación salió (tx ${hash}) pero no se encontró el evento JobPosted.`);
+    return { jobId: ev.args.jobId, txHash: hash, taskHash, advertHash };
+  }
+
+  /** Coger un encargo inmediato. Antes de firmar pregunta si se puede, y por qué no. */
+  async takeBoardJob(jobId: bigint): Promise<{ txHash: Hex; escrowTaskId: bigint }> {
+    this.wallet();
+    const { ok, motivo } = await this.canTakeBoardJob(this.account!.address, jobId);
+    if (!ok) throw new Error(`No se puede coger el encargo #${jobId}: ${motivo}.`);
+    const { hash } = await this.firmarEnTablon('Coger el encargo', 'take', [jobId]);
+    return { txHash: hash, escrowTaskId: (await this.getBoardJob(jobId)).escrowTaskId };
+  }
+
+  /**
+   * Ofertar en un encargo de selección: precio y plazo (0 = el del encargo).
+   * Volver a llamar cambia la oferta. Un precio por encima del presupuesto vale:
+   * solo lo puede elegir el cliente, poniendo la diferencia.
+   */
+  async offerOnBoardJob(jobId: bigint, precio: bigint, plazoEntregaS = 0): Promise<Hex> {
+    this.wallet();
+    const { ok, motivo } = await this.canTakeBoardJob(this.account!.address, jobId);
+    if (!ok) throw new Error(`No se puede ofertar en el encargo #${jobId}: ${motivo}.`);
+    return (await this.firmarEnTablon('La oferta', 'applyFor', [jobId, precio, BigInt(plazoEntregaS)])).hash;
+  }
+
+  async withdrawBoardOffer(jobId: bigint): Promise<Hex> {
+    return (await this.firmarEnTablon('Retirar la oferta', 'withdrawOffer', [jobId])).hash;
+  }
+
+  /**
+   * El cliente elige una oferta. Si pide más que el presupuesto, se manda la
+   * diferencia exacta (en $PANAL, con su `approve` exacto); si pide menos, la
+   * diferencia queda para cobrar con `claimBoardRefund`.
+   */
+  async chooseBoardOffer(jobId: bigint, agent: Address): Promise<{ txHash: Hex; escrowTaskId: bigint }> {
+    const [job, ofertas] = await Promise.all([this.getBoardJob(jobId), this.getBoardOffers(jobId)]);
+    const oferta = ofertas.find((o) => o.agente.toLowerCase() === agent.toLowerCase());
+    if (!oferta) throw new Error(`${agent} no tiene oferta en el encargo #${jobId}.`);
+    const diferencia = oferta.precio > job.importe ? oferta.precio - job.importe : 0n;
+    const nativa = job.moneda.toLowerCase() === NATIVE_CURRENCY.toLowerCase();
+    if (diferencia > 0n) {
+      await this.assertFunds(job.moneda, diferencia, nativa);
+      if (!nativa) await this.aprobarAlTablon(job.moneda, diferencia);
+    }
+    const { hash } = await this.firmarEnTablon('Elegir la oferta', 'choose', [jobId, getAddress(agent)], nativa ? diferencia : 0n);
+    return { txHash: hash, escrowTaskId: (await this.getBoardJob(jobId)).escrowTaskId };
+  }
+
+  /** Asignar un encargo de selección cuyo cliente no eligió. Lo puede llamar cualquiera. */
+  async autoAssignBoardJob(jobId: bigint): Promise<Hex> {
+    return (await this.firmarEnTablon('La asignación', 'autoAssign', [jobId])).hash;
+  }
+
+  /** El cliente aprueba la entrega (1-5) y el encargo se cierra. */
+  async approveBoardJob(jobId: bigint, rating: number): Promise<Hex> {
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new Error('La valoración es un entero de 1 a 5.');
+    return (await this.firmarEnTablon('La aprobación', 'approve', [jobId, rating])).hash;
+  }
+
+  async disputeBoardJob(jobId: bigint): Promise<Hex> {
+    return (await this.firmarEnTablon('La disputa', 'dispute', [jobId])).hash;
+  }
+
+  /**
+   * Cerrar las cuentas de un encargo. Si el escrow se puede adelantar
+   * —cancelar sin entrega pasado el plazo, liberar a las 72 h, devolver una
+   * disputa atascada— lo hace primero. Lo puede llamar cualquiera.
+   */
+  async settleBoardJob(jobId: bigint): Promise<Hex> {
+    return (await this.firmarEnTablon('El cierre', 'settle', [jobId])).hash;
+  }
+
+  /** El cliente retira un encargo que nadie tiene todavía. */
+  async withdrawBoardJob(jobId: bigint): Promise<Hex> {
+    return (await this.firmarEnTablon('Retirar el encargo', 'withdrawJob', [jobId])).hash;
+  }
+
+  async expireBoardJob(jobId: bigint): Promise<Hex> {
+    return (await this.firmarEnTablon('La caducidad', 'expire', [jobId])).hash;
+  }
+
+  /** Cobrar lo que PanalTablon le debe a esta cuenta en una moneda. */
+  async claimBoardRefund(currency: Address = NATIVE_CURRENCY): Promise<{ txHash: Hex; importe: bigint }> {
+    this.wallet();
+    const importe = await this.getBoardRefund(this.account!.address, currency);
+    if (importe === 0n) throw new Error('No hay nada que cobrar en esa moneda.');
+    const { hash } = await this.firmarEnTablon('El cobro', 'claim', [currency]);
+    return { txHash: hash, importe };
+  }
+
+  /** Las categorías del agente en el tablón: hasta tres, sin repetir. */
+  async setBoardCategories(categorias: number[]): Promise<Hex> {
+    if (categorias.length > MAX_CATEGORIAS) throw new Error(`Hasta ${MAX_CATEGORIAS} categorías.`);
+    if (new Set(categorias).size !== categorias.length) throw new Error('Hay categorías repetidas.');
+    if (categorias.some((c) => !Number.isInteger(c) || c < 0 || c > 255)) throw new Error('Las categorías van de 0 a 255.');
+    return (await this.firmarEnTablon('Las categorías', 'setCategories', [categorias])).hash;
+  }
+
   private async assertFunds(currency: Address, amount: bigint, isNative: boolean): Promise<void> {
     const owner = this.account!.address;
     const balance = isNative

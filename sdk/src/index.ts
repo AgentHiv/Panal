@@ -232,3 +232,30 @@ export {
   valorDeVenta,
 } from './precios.js';
 export type { FuentePrecio, MonedaConPrecio, OpcionesPrecios, Precio, Precios } from './precios.js';
+
+// El tablón con reglas: PanalTablon, delante del escrow. Los métodos están en
+// el cliente (`…BoardJob`); aquí, el ABI, los tipos y lo que se calcula sin la
+// cadena. Ver tablon-reglas.ts y contracts/BOARD.md.
+export { panalTablonAbi } from './tablon-abi.js';
+export {
+  EstadoTablon,
+  MARGEN_ASIGNACION_S,
+  MAX_CATEGORIAS,
+  MAX_OFERTAS,
+  MAX_VENTANA_ELECCION_S,
+  MIN_PLAZO_ENTREGA_S,
+  ModoTablon,
+  categoriasDeMascara,
+  claveDeCampana,
+  encargoDeLaCadena,
+  idDeCampana,
+  ofertaDeLaCadena,
+  problemaAlPublicar,
+  situacionDe,
+} from './tablon-reglas.js';
+export type {
+  EncargoConReglas,
+  OfertaConReglas,
+  PublicarEnElTablon,
+  SituacionEnElTablon,
+} from './tablon-reglas.js';
