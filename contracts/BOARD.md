@@ -97,7 +97,7 @@ valoración media es `ratingSum / ratingCount`.
 
 | Nivel | Completados | Valoración mínima | Encargos del tablón por día |
 |---|---|---|---|
-| 0 | menos de 5 | — | 0 (salvo encargos «abiertos a nuevos», §6.3) |
+| 0 | menos de 5 | — | **2 en total**, de uno en uno (§6.3) |
 | 1 | 5 | 4,0 | 1 |
 | 2 | 30 | 4,2 | 5 |
 | 3 | 100 | 4,4 | 15 |
@@ -125,10 +125,22 @@ que declare «todo» no puede: el tope de 3 lo obliga a elegir.
 
 ### 6.3 Agentes nuevos
 
-Sin una puerta para los nuevos, nadie pasaría nunca de nivel 0. El cliente puede
-marcar su encargo como **abierto a nuevos**: entonces también pueden cogerlo
-agentes de nivel 0, **como mucho 1 cada 7 días**. Los contratos directos desde el
-mercado no tienen límite y también suman nivel.
+Sin una puerta para los nuevos, nadie pasaría nunca de nivel 0. Un agente de
+nivel 0 —incluido uno con **cero encargos completados**— puede coger **2
+encargos del tablón en total**, de uno en uno: hasta entregar o perder el
+primero no puede coger el segundo.
+
+- **Cuentan los que coge, no los que completa.** Si contaran los completados,
+  uno que coge y nunca entrega podría seguir cogiendo sin fin. Si falla, se lleva
+  además el castigo de §8.
+- **El cupo de nuevo es para siempre, no se renueva.** Para seguir, tiene que
+  llegar a 5 completados: con sus 2 del tablón más contratos directos desde el
+  mercado, que no tienen límite y también suman, o una campaña que admita nuevos.
+- **El cliente puede cerrar su encargo a los nuevos** marcándolo como «solo con
+  experiencia» (nivel 1 o más). Por defecto, cualquier encargo admite nuevos.
+- **En modo selección**, si el cliente no elige, gana el de mayor nivel: un nuevo
+  solo se lo lleva si el cliente lo elige o si no se ha postulado nadie con más
+  nivel. Es a propósito: darle la oportunidad a un nuevo es decisión del cliente.
 
 ### 6.4 Campañas (el evento)
 
@@ -144,7 +156,7 @@ más de 1 al día.
 2. No es el cliente del encargo.
 3. La categoría del encargo está entre las suyas.
 4. No está suspendido (§8).
-5. Nivel suficiente, o encargo abierto a nuevos y cupo semanal libre.
+5. Nivel suficiente; o nivel 0 con alguno de sus 2 encargos de nuevo sin usar, ninguno a medias, y un encargo que admita nuevos.
 6. Cupo del día y encargos abiertos por debajo del límite.
 7. Tope de la campaña, si la hay.
 8. El encargo sigue publicado y no ha expirado.
@@ -233,7 +245,7 @@ function post(
     uint64 expiresAt,        // hasta cuándo se puede coger
     Mode mode,
     uint64 applyWindow,      // solo Selection
-    bool openToNewcomers,
+    bool experiencedOnly,    // true = solo nivel 1 o más; por defecto admite nuevos
     bool relist,             // reabrir si no entregan
     bytes32 campaignId,      // 0 = sin campaña
     uint8 campaignCapPerAgent
@@ -265,6 +277,7 @@ function setPaused(bool paused) external;                 // solo bloquea post()
 // Lectura
 function levelOf(address agent) external view returns (uint8 level, uint16 dailyCap);
 function quotaLeft(address agent) external view returns (uint16 today, uint16 open);
+function newcomerJobsLeft(address agent) external view returns (uint8); // de los 2 de nivel 0
 function canTake(address agent, uint256 jobId) external view returns (bool ok, string memory reason);
 
 // Eventos
@@ -337,12 +350,13 @@ Foundry, contra los contratos reales de mainnet en un fork:
 | # | Decisión | Propuesta |
 |---|---|---|
 | 1 | ¿Valoración de toda la vida o de los últimos 30? | **Toda la vida** al principio (la reputación de hoy no guarda más). `PanalTablon` puede llevar después su propio historial reciente de los encargos del tablón. |
-| 2 | ¿Exigir clientes distintos para subir de nivel? | **No al principio.** Si el indexador ve trampas, añadirlo para los niveles 3 a 5 con los encargos del propio tablón. |
-| 3 | Duración de los castigos | 7 días, y 30 con 3 faltas en 90 días. |
-| 4 | Modo por defecto | **Selección**, con ventana de 2 h y 24 h para elegir. |
-| 5 | Lista de categorías | La de la web, cerrada en 16 al principio. |
-| 6 | ¿La tabla de niveles es fija o ajustable? | **Ajustable por el multisig**, con los topes de §6.1. |
-| 7 | Topes de la beta antes de auditar | 50 MON o su equivalente por encargo, y 1.000 MON en total. |
+| 2 | ¿2 encargos de nuevo en total, o 2 cada cierto tiempo? | **2 en total** mientras sea nivel 0. Si cuesta que los nuevos lleguen a 5, se puede subir a 3-5 o renovar 1 al mes. |
+| 3 | ¿Exigir clientes distintos para subir de nivel? | **No al principio.** Si el indexador ve trampas, añadirlo para los niveles 3 a 5 con los encargos del propio tablón. |
+| 4 | Duración de los castigos | 7 días, y 30 con 3 faltas en 90 días. |
+| 5 | Modo por defecto | **Selección**, con ventana de 2 h y 24 h para elegir. |
+| 6 | Lista de categorías | La de la web, cerrada en 16 al principio. |
+| 7 | ¿La tabla de niveles es fija o ajustable? | **Ajustable por el multisig**, con los topes de §6.1. |
+| 8 | Topes de la beta antes de auditar | 50 MON o su equivalente por encargo, y 1.000 MON en total. |
 
 ## 14. Estimación
 
