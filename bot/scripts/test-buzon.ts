@@ -127,9 +127,13 @@ async function main(): Promise<void> {
   const dir = mkdtempSync(join(tmpdir(), 'panal-buzon-test-'));
   const store = new BuzonStore(dir);
 
+  // Cuántas veces se pregunta a la cadena: una firma que no vale no debe
+  // costar ni una llamada.
+  const lecturas = { tareas: 0, trabajos: 0 };
   const server = createBuzonServer({
     store,
     fetchTask: async (taskId) => {
+      lecturas.tareas++;
       const t = TAREAS[taskId.toString()];
       if (!t) throw new Error('no existe');
       return t;
@@ -146,6 +150,7 @@ async function main(): Promise<void> {
     allowLocalhostOrigin: true,
     tablon: TABLON_V2,
     fetchJob: async (jobId) => {
+      lecturas.trabajos++;
       const j = TRABAJOS[jobId.toString()];
       if (!j) throw new Error('execution reverted: InvalidJob()');
       return j;
@@ -548,7 +553,8 @@ async function main(): Promise<void> {
   check(
     'los mensajes de firma, idénticos a los del SDK',
     tablonEncargoSignMessage(7n, 1700000000) === 'Panal tablón con reglas · encargo #7 · 1700000000' &&
-      tablonEntregaSignMessage(7n, 1700000000) === 'Panal tablón con reglas · entrega #7 · 1700000000' &&
+      tablonEntregaSignMessage(7n, `0x${'AB'.repeat(32)}`, 1700000000) ===
+        `Panal tablón con reglas · entrega #7 · 0x${'ab'.repeat(32)} · 1700000000` &&
       tablonResultadoSignMessage(7n, 1700000000) === 'Panal tablón con reglas · resultado #7 · 1700000000',
   );
 
@@ -606,12 +612,14 @@ async function main(): Promise<void> {
   const v10 = await getV2('encargo/1', persona, (e) => encargoSignMessage(1n, e));
   check('403 la firma de una TAREA #1 no abre el ENCARGO #1', v10.status === 403, `status=${v10.status}`);
 
-  const entregaV2 = async (id: bigint, texto: string, quien: typeof cliente) => {
+  const entregaV2 = async (id: bigint, texto: string, quien: typeof cliente, firmadoSobre = texto) => {
     const e = enUnMinuto();
     return postV2(`entrega/${id}`, {
       entrega: texto,
       address: quien.address,
-      signature: await quien.signMessage({ message: tablonEntregaSignMessage(id, e) }),
+      signature: await quien.signMessage({
+        message: tablonEntregaSignMessage(id, keccak256(toBytes(firmadoSobre)), e),
+      }),
       expira: e,
     });
   };
@@ -619,6 +627,8 @@ async function main(): Promise<void> {
   check('403 solo su agente deja la entrega', v11.status === 403, `status=${v11.status}`);
   const v12 = await entregaV2(0n, ENTREGA, persona);
   check('403 y no en un encargo que nadie tiene', v12.status === 403, `status=${v12.status}`);
+  const v12b = await entregaV2(1n, OTRA_ENTREGA, persona, ENTREGA);
+  check('403 una firma de la entrega A no deja la entrega B', v12b.status === 403, `status=${v12b.status}`);
   const v13 = await entregaV2(1n, ENTREGA, persona);
   check('200 su agente sí', v13.status === 200, `status=${v13.status}`);
   const v14 = await entregaV2(2n, OTRA_ENTREGA, persona);
@@ -637,6 +647,20 @@ async function main(): Promise<void> {
   );
   const v18 = await getV2('result/1', cliente, (e) => resultSignMessageConCaducidad(1n, e));
   check('403 con la firma de una tarea, no', v18.status === 403, `status=${v18.status}`);
+
+  /* ── una firma que no vale no le cuesta nada a la cadena ─────────────── */
+  console.log('\n── Una firma que no vale no llega a preguntar a la cadena ──\n');
+  const antes = { ...lecturas };
+  const falsa = { ...OTRA_IP, 'x-panal-address': persona.address, 'x-panal-signature': `0x${'11'.repeat(65)}`, 'x-panal-expira': String(enUnMinuto()) };
+  const f1 = await fetch(`${v2}/encargo/1`, { headers: falsa });
+  const f2 = await fetch(`${v2}/result/1`, { headers: falsa });
+  const f3 = await fetch(`${base}/encargo/1`, { headers: falsa });
+  const f4 = await fetch(`${base}/result/1`, { headers: falsa });
+  check(
+    '403 en las cuatro, sin una sola lectura de la cadena',
+    [f1, f2, f3, f4].every((r) => r.status === 403) && lecturas.tareas === antes.tareas && lecturas.trabajos === antes.trabajos,
+    `${[f1, f2, f3, f4].map((r) => r.status).join(',')} · tareas ${lecturas.tareas - antes.tareas} · trabajos ${lecturas.trabajos - antes.trabajos}`,
+  );
 
   /* ── la retención ─────────────────────────────────────────────────────── */
   console.log('\n── Es un relevo, no un archivo ──\n');

@@ -14,6 +14,8 @@
  */
 
 import {
+  BaseError,
+  ContractFunctionRevertedError,
   createPublicClient,
   createWalletClient,
   defineChain,
@@ -323,13 +325,31 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/** Ejecuta `fn` reintentando con backoff exponencial ante errores de RPC/red. */
+/**
+ * Si el error es que el CONTRATO revirtió, no la red.
+ *
+ * Un revert es la respuesta, no un fallo: pedir la tarea 999.999.999 revierte
+ * hoy, dentro de un minuto y siempre. Reintentarlo era peor que inútil. Medido
+ * el 2026-10-13: una petición al buzón por una tarea que no existe tenía la
+ * conexión abierta 63 s y gastaba 5 llamadas del RPC público. Con el límite de
+ * 60 por minuto y por IP, una sola IP dejaba 300 conexiones colgadas y quemaba
+ * 300 llamadas por minuto del RPC que comparten el indexador y los avisos.
+ */
+export function esRevert(err: unknown): boolean {
+  return err instanceof BaseError && err.walk((e) => e instanceof ContractFunctionRevertedError) !== null;
+}
+
+/**
+ * Ejecuta `fn` reintentando con backoff exponencial ante errores de RPC/red.
+ * Un revert del contrato se lanza al momento: ver `esRevert`.
+ */
 export async function withRetry<T>(what: string, fn: () => Promise<T>): Promise<T> {
   let lastError: unknown;
   for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt++) {
     try {
       return await fn();
     } catch (err) {
+      if (esRevert(err)) throw err;
       lastError = err;
       const wait = Math.min(RETRY_BASE_MS * 2 ** attempt, RETRY_MAX_MS);
       const jitter = Math.floor(Math.random() * 500);

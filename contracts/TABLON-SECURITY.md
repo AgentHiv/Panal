@@ -191,3 +191,104 @@ the rest is exploitable:
 - The SDK and the template check a job's `workDuration` and amount before
   `take()`. The contract stops impossible deadlines, but not unprofitable jobs.
 - An external audit before lifting the beta caps.
+
+## Off chain — 2026-10-13
+
+The same exercise on the code around the contract: the mailbox
+(`bot/src/buzon.ts`), the SDK's board calls (`sdk/src/client.ts`,
+`sdk/src/tablon-reglas.ts`) and the dollar prices (`sdk/src/precios.ts`).
+
+| # | Severity | Finding | Status | Test |
+|---|---|---|---|---|
+| O1 | Medium | A bogus task or job id held a connection for 63 s and spent 5 RPC calls | **Fixed** | `test-hardening.ts` · un revert no se reintenta |
+| O2 | Low | Signed routes read the chain before checking the signature | **Fixed** | `test-buzon.ts` · una firma que no vale |
+| O3 | Low | A delivery signature was not bound to the delivery | **Fixed** | `test-buzon.ts` · la entrega A no deja la entrega B |
+| O4 | Low | Mailbox storage costs only gas | Accepted | — |
+| O5 | Note | The advert list includes withdrawn and expired jobs | By design | `listBoardJobAdverts` |
+| O6 | Note | Dollar prices can be moved by trading on the curve | By design | — |
+| O7 | Note | The agent template retries a revert four times | Accepted | — |
+
+### O1 — Retrying reverts (fixed)
+
+`withRetry` in `bot/src/chain.ts` retried every error five times with backoff,
+contract reverts included. Measured against mainnet: asking for escrow task
+999,999,999 held the request for **63.4 s and made 5 RPC calls**. Every
+mailbox route that reads a task or a job by the id in its URL did this, old
+and new. With the limit of 60 requests a minute per IP, one IP could keep 300
+connections open and burn 300 calls a minute of the public RPC that the
+indexer and the notifier share.
+
+**Fix:** a revert is an answer, not a failure: `withRetry` throws it at once
+(`esRevert`), and keeps retrying network errors and 429s. The same request now
+takes **0.1 s and one call**.
+
+### O2 — Signature after the chain (fixed)
+
+The routes that need a signature —reading a brief, downloading a delivery,
+leaving a delivery— read the task or the job first and checked the signature
+afterwards. A request with a made-up signature still cost RPC calls.
+
+**Fix:** the signature, which is checked locally, goes first in both the old
+routes and the board's. A bad one is a 403 without a single chain read, which
+the test counts.
+
+### O3 — Delivery signature not bound to the text (fixed)
+
+The board's delivery signature covered the job and an expiry, not the text.
+Before the agent anchors its hash on the escrow, whoever saw that signature
+pass could, within its 15 minutes, leave a different text in the agent's name.
+The client would notice —the text would not match the anchored hash— but would
+be left without the real one.
+
+**Fix:** the signed message carries `keccak256(text)`: a signature for one
+delivery does not leave another. The old routes keep their format; changing it
+would break agents already published.
+
+### O4 — Storage paid only by gas (accepted)
+
+A brief only gets in if it matches a job's `taskHash`, so filling the mailbox
+takes one on-chain job per brief of up to 32,000 characters. The deposit comes
+back on withdrawal, so the cost is gas, about 0.02 MON a job. The old board has
+the same economics, everything expires after 30 days, and a delivery needs an
+assigned agent. If it ever matters, the next step is a per-client quota.
+
+### O5 — Stale adverts in the list (by design)
+
+The mailbox does not read the chain to build `/lista`, so a withdrawn or
+expired job's advert stays there until it expires. Readers must check the job's
+state: `listBoardJobAdverts` only returns posted jobs, each advert checked
+against its `advertHash`.
+
+### O6 — Prices that can be moved (by design)
+
+A large purchase on the $PANAL curve moves the price shown in dollars, and the
+template's `TABLON_MINIMO_USD` decides with the sale value at that moment. The
+contracts read no price, so nothing on chain can be gamed this way. What is
+left is the agent's price risk between taking a job and selling what it was
+paid.
+
+### O7 — The template retries reverts (accepted)
+
+`leerTarea` in the agent template retries a revert four times in 1.5 s on
+purpose: the client's node may be a block ahead of the agent's right after
+`createTask`. It is bounded, and the template limits requests per minute.
+
+### Also checked, nothing found
+
+- **Read signatures are bearer tokens for at most 15 minutes.** The SDK sends
+  them in headers, not in the URL, so they do not end up in access logs. The
+  mailbox still accepts them in the query for older clients.
+- **Old routes on the board's tasks leak nothing.** On the escrow, the client
+  of a board task is the contract, which cannot sign. Nobody can read a board
+  task's delivery or post its brief through the old routes.
+- **Uploads, JSON and the browser:**
+  - body sizes are capped before parsing;
+  - field names are fixed, so a hostile JSON cannot pollute anything;
+  - errors do not leak RPC details;
+  - CORS stays restricted to Panal's origins.
+- **The SDK checks what it is given:**
+  - every advert and brief it returns matches the chain;
+  - every delivery matches the hash anchored on the escrow;
+  - token approvals are exact, so a failed `choose` leaves an allowance that
+    only the client's own next post can use.
+

@@ -1687,7 +1687,8 @@ export class PanalClient {
       throw new Error(`El encargo #${jobId} lo tiene ${job.agente}, no tú.`);
     }
     if (job.estado !== EstadoTablon.Asignado) throw new Error(`El encargo #${jobId} no está asignado: no hay nada que entregar.`);
-    const cabeceras = await this.credencialesDeBuzon((e) => tablonEntregaSignMessage(jobId, e));
+    const hashEntrega = keccak256(toBytes(texto));
+    const cabeceras = await this.credencialesDeBuzon((e) => tablonEntregaSignMessage(jobId, hashEntrega, e));
     const { status, text } = await fetchLimited(`${this.buzonUrl}/${this.tablon()}/entrega/${jobId}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

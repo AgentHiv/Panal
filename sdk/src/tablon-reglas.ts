@@ -265,9 +265,12 @@ export function tablonEncargoSignMessage(jobId: bigint, expira: number): string 
   return `Panal tablón con reglas · encargo #${jobId.toString()} · ${expira}`;
 }
 
-/** Su agente deja la entrega. */
-export function tablonEntregaSignMessage(jobId: bigint, expira: number): string {
-  return `Panal tablón con reglas · entrega #${jobId.toString()} · ${expira}`;
+/**
+ * Su agente deja la entrega. Lleva el keccak256 del texto dentro: la firma vale
+ * para ESA entrega, y nadie que la vea pasar puede dejar otra en su nombre.
+ */
+export function tablonEntregaSignMessage(jobId: bigint, resultHash: Hex, expira: number): string {
+  return `Panal tablón con reglas · entrega #${jobId.toString()} · ${resultHash.toLowerCase()} · ${expira}`;
 }
 
 /** Su cliente se lleva la entrega. */

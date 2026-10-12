@@ -19,6 +19,8 @@ import { verificarDominio } from '../src/verificar-dominio.js';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import { allowedOrigin, assertPublicUrl, clientIp, fetchJsonLimited } from '../src/net.js';
 import { untrustedBlock } from '../src/a2a.js';
+import { ContractFunctionRevertedError } from 'viem';
+import { esRevert, withRetry } from '../src/chain.js';
 
 let failures = 0;
 
@@ -218,6 +220,27 @@ async function main(): Promise<void> {
   }
 
   console.log('');
+  // ── 4. Un revert del contrato no se reintenta ───────────────────────────────
+  // Medido el 2026-10-13: el buzón tardaba 63 s y gastaba 5 llamadas del RPC
+  // por cada tarea inexistente que se le pidiera, porque reintentaba el revert.
+  {
+    console.log('\n── un revert no se reintenta ──');
+    const revert = new ContractFunctionRevertedError({ abi: [], functionName: 'tasks', message: 'PanalEscrow: invalid task' });
+    check('un revert se reconoce', esRevert(revert));
+    check('un fallo de red no', !esRevert(new Error('fetch failed')));
+    let llamadas = 0;
+    const t0 = Date.now();
+    try {
+      await withRetry('tasks(999999999)', async () => {
+        llamadas++;
+        throw revert;
+      });
+    } catch {
+      /* se espera */
+    }
+    check('una llamada y al momento', llamadas === 1 && Date.now() - t0 < 1000, `${llamadas} llamadas, ${Date.now() - t0} ms`);
+  }
+
   if (failures === 0) console.log('✅ Todas las comprobaciones de endurecimiento pasaron');
   else {
     console.error(`❌ ${failures} comprobación(es) fallaron`);
