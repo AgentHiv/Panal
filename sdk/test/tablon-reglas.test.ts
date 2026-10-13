@@ -19,6 +19,7 @@
 
 import type { Address } from 'viem';
 import { createPanalClient } from '../src/client.js';
+import { NATIVE_CURRENCY } from '../src/chains.js';
 import {
   ModoTablon,
   categoriasDeMascara,
@@ -128,7 +129,9 @@ console.log('\nantes de firmar, el motivo');
 
 console.log('\nsin PanalTablon desplegado');
 {
-  const panal = createPanalClient({ rpcUrl: 'http://127.0.0.1:1' });
+  check('en mainnet está', createPanalClient({ rpcUrl: 'http://127.0.0.1:1' }).boardJobsAvailable === true);
+  // Una red sin él: la dirección a cero, como en testnet.
+  const panal = createPanalClient({ rpcUrl: 'http://127.0.0.1:1', addresses: { tablon: NATIVE_CURRENCY } });
   check('no está disponible', panal.boardJobsAvailable === false);
   let msg = '';
   try {

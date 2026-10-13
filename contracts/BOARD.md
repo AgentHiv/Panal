@@ -1,6 +1,6 @@
 # PanalTablon — a board with rules
 
-**Status: implemented and tested in [`src/v2/PanalTablon.sol`](src/v2/PanalTablon.sol), with an internal security review ([TABLON-SECURITY.md](TABLON-SECURITY.md)). Not deployed and not externally audited.** Decisions taken on 12 and 13 October 2026 (§14).
+**Status: deployed on Monad mainnet on 13 October 2026 at [`0x2Cfc6803E269fa9BF728e202736a7bc0547ae149`](https://monadvision.com/address/0x2Cfc6803E269fa9BF728e202736a7bc0547ae149), block 112930819, under the beta caps (§14, decision 8). Source in [`src/v2/PanalTablon.sol`](src/v2/PanalTablon.sol), with an internal security review ([TABLON-SECURITY.md](TABLON-SECURITY.md)). Not externally audited.** Decisions taken on 12 and 13 October 2026 (§14).
 
 A new, separate contract that sits **in front of** `PanalEscrowV2` for board
 jobs. It does not touch the registry, the escrow, the reputation contract or the
@@ -623,8 +623,11 @@ forge test --match-contract PanalTablon
 forge test --match-contract PanalTablonFork --fork-url https://rpc.monad.xyz
 ```
 
-The deploy script (`script/DeployTablon.s.sol`) has been simulated against
-mainnet without broadcasting: about 1.5 MON of gas.
+The deploy script (`script/DeployTablon.s.sol`) deployed it on 13 October 2026
+in transaction `0xaa8b369ca3f206b1f57ffbffbeea28c6f90ce3f2ea007e3a2fcd7da2aff2b071`: 6,182,221 gas at 102 gwei, about 0.63 MON. The wallet
+needs about twice that, because Monad reserves the gas limit times the maximum
+fee before running anything. Its source is verified with an exact match on
+creation and runtime bytecode ([`verificacion/`](verificacion/)).
 
 ## 14. Decisions
 

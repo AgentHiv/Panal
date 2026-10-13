@@ -5,6 +5,9 @@ board with rules in front of `PanalEscrowV2` ([specification](BOARD.md)),
 before it is deployed. **It is not an external audit**, and the specification
 still recommends one before the beta caps are lifted.
 
+It went live afterwards, on 13 October 2026, at
+[`0x2Cfc6803E269fa9BF728e202736a7bc0547ae149`](https://monadvision.com/address/0x2Cfc6803E269fa9BF728e202736a7bc0547ae149), with every fix below in it.
+
 ## Result
 
 - **No way to take money was found.** Every attempt in the list below fails,

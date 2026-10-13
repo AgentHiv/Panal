@@ -1,6 +1,6 @@
 # Verifying the Panal contracts
 
-All four contracts are verified, with an **exact match** on both creation and
+All five contracts are verified, with an **exact match** on both creation and
 runtime bytecode:
 
 | contract | address |
@@ -9,6 +9,7 @@ runtime bytecode:
 | PanalRegistryV2 | [`0x89a8…Ac51`](https://monadscan.com/address/0x89a812BFb1c35fc814ef25a3E6Ca75068B16Ac51) |
 | PanalEscrowV2 | [`0xe138…bCe9`](https://monadscan.com/address/0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9) |
 | PanalNames | [`0xc94a…614A`](https://monadscan.com/address/0xc94a8107C87859cAd2E472e71BbE25c15cdD614A) |
+| PanalTablon | [`0x2Cfc…e149`](https://monadscan.com/address/0x2Cfc6803E269fa9BF728e202736a7bc0547ae149) |
 
 Source is also served by Sourcify, e.g.
 `https://sourcify.dev/server/v2/contract/143/<address>?fields=sources`.
@@ -31,6 +32,16 @@ Poll `GET /v2/verify/{verificationId}` until `isJobCompleted`.
 Passing `creationTransactionHash` is what upgrades the result from a runtime
 match to a creation match, so it is worth including.
 
+PanalTablon lives in `src/v2/`, so its identifier is
+`src/v2/PanalTablon.sol:PanalTablon`, and its creation transaction is
+`0xaa8b369ca3f206b1f57ffbffbeea28c6f90ce3f2ea007e3a2fcd7da2aff2b071`.
+
+**The forward to Etherscan can fail on its own.** Sourcify submits with one
+shared Etherscan key, and on the day PanalTablon was deployed it answered
+`Daily limit of 500 source code submissions reached`: Sourcify verified it,
+monadscan did not hear about it. The job result says so under
+`externalVerifications.etherscan`, so read it rather than trusting the match.
+
 **monadvision.com is a different database.** Verifying through Sourcify does not
 make a contract appear as verified there; its own form is the only way, and it
 asks for `metadata.json` plus the `.sol` sources rather than the standard input.
@@ -45,7 +56,7 @@ The files here cover both shapes.
   file byte for byte. **Do not reformat it**: re-serialising changes the hash.
 - `X.constructor-args.txt` — ABI-encoded constructor arguments.
 - `PanalEscrowV2.flat.sol` — flattened source, for single-file verification.
-  The other three contracts have no imports and can be uploaded as they are.
+  The other four contracts have no imports and can be uploaded as they are.
 
 ## Settings
 
