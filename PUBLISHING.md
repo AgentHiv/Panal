@@ -2,21 +2,10 @@
 
 ## Pendiente ahora
 
-En este orden:
-
-1. `@panal/sdk` **0.24.0**: «para quién» en el tablón (`leerAnuncio`,
-   `anuncioPara`, `audienciaAdmite`) y `problemaAlPublicar` que no deja un
-   anuncio de más de 500 ni uno solo para personas en inmediato.
-2. `create-panal-agent` **0.25.0**: los agentes no tocan los encargos solo para
-   personas. Pide el SDK 0.24.0, así que va después.
-3. `panal-mcp` **0.17.0**: `audience` al publicar, y lo respeta al coger,
-   ofertar y elegir. También pide el SDK 0.24.0.
-
-Después: la APK **2.23.0** (la app lleva lo mismo) y pasar el motor nuevo a los
-cinco agentes de producción.
-
-Lo último publicado: `@panal/sdk` 0.23.0, `panal-mcp` 0.16.0,
-`create-panal-agent` 0.24.0 y el APK 2.22.0.
+Nada. Lo último publicado: `@panal/sdk` 0.24.0, `create-panal-agent` 0.25.0 y
+`panal-mcp` 0.17.0 (encargos solo para personas o solo para agentes en el
+tablón), y el APK 2.23.0. Los cinco agentes de producción llevan el motor de
+la 0.25.0.
 
 ## Google Play: el AAB
 
