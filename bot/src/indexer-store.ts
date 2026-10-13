@@ -21,6 +21,7 @@
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { encodeAbiParameters, keccak256, type Hex } from 'viem';
 import { leerMarca } from './marca.js';
 
 /** Evento indexado (args serializados: bigint -> string decimal). */
@@ -56,10 +57,13 @@ export interface IndexerState {
    * pasó entre el despliegue y ese momento no lo cubre nadie más.
    */
   tablonHasta: number | null;
+  /** Las señales de vigilancia ya avisadas: no se repiten al reiniciar. */
+  vigilanciaAvisada: string[];
 }
 
 const EMPTY_STATE: IndexerState = {
   tablonHasta: null,
+  vigilanciaAvisada: [],
   lastBlock: 0,
   sweepFloor: null,
   sweepDay: '',
@@ -157,10 +161,92 @@ export interface IndexedJob {
   attestedBps?: number;
   /** Cuántas veces se volvió a publicar sin entrega. */
   relisted: number;
+  /** Si alguna vez tuvo una oferta: los que nunca la tienen son demanda sin agente. */
+  everOffered: boolean;
+  /** Al asignar: cuántas ofertas había en pie, y la más barata (selección). */
+  offersAtAssignment?: number;
+  cheapestAtAssignment?: string;
+  /** Su campaña: `keccak256(abi.encode(cliente, campaignId))`, como en el contrato. */
+  campaignKey?: string;
   postedTs: number;
   assignedTs?: number;
   closedTs?: number;
   updatedTs: number;
+}
+
+/** Una oferta en pie en un encargo de selección. */
+export interface OfertaIndexada {
+  agent: string;
+  /** El nivel con el que ofertó. */
+  level: number;
+  price: string;
+  workDuration: number;
+  ts: number;
+}
+
+/** Un agente en el tablón: sus categorías, sus faltas y lo que ha cogido. */
+export interface AgenteEnElTablon {
+  agent: string;
+  categorias: number[];
+  /** Todas las faltas, y las de los últimos 90 días según el contrato. */
+  faltas: number;
+  faltasEn90Dias: number;
+  /** Unix en segundos; 0 si no lo han suspendido nunca. */
+  suspendidoHasta: number;
+  ultimaFaltaTs?: number;
+  asignados: number;
+  cerrados: number;
+  sancionados: number;
+}
+
+/** Cómo está el tablón ahora: lo que la web necesita para validar antes de firmar. */
+export interface ConfigTablon {
+  /** Por moneda (dirección en minúsculas): tope por encargo y total, en unidades mínimas. "0" = sin tope. */
+  caps: Record<string, { perJob: string; total: string }>;
+  paused: boolean;
+  levels: { minCompleted: number; minRating: number; dailyCap: number }[] | null;
+  newcomerJobs: number | null;
+  updatedTs: number;
+}
+
+/** Una campaña: de quien la publica, con lo que ha cogido cada agente. */
+export interface CampanaIndexada {
+  key: string;
+  campaignId: string;
+  owner: string;
+  jobs: number;
+  /** El tope por agente, leído del contrato (`campaignCap`). null hasta leerlo. */
+  cap: number | null;
+  tomados: Record<string, number>;
+}
+
+/** Las cifras del tablón de un periodo, para la foto del mes (BOARD.md §10.1). */
+export interface MetricasTablon {
+  desde: number;
+  hasta: number;
+  volumen: {
+    publicados: number;
+    asignados: number;
+    retirados: number;
+    caducados: number;
+    republicados: number;
+    /** Presupuesto publicado, por moneda, en unidades mínimas. */
+    publicadoPorMoneda: Record<string, string>;
+  };
+  /** Mediana de segundos entre publicar y asignar, por modo. null sin datos. */
+  rapidez: { inmediato: number | null; seleccion: number | null };
+  competencia: {
+    medianaOfertas: number | null;
+    sinOfertaParte: number | null;
+    /** Mediana del precio elegido entre el presupuesto (1 = el presupuesto). */
+    medianaPrecioSobrePresupuesto: number | null;
+  };
+  eleccion: { porElCliente: number; automatica: number; noLaMasBarata: number };
+  entrega: { completados: number; cancelados: number; disputas: number; devueltoPorMoneda: Record<string, string> };
+  sanciones: { faltas: number; suspensiones7: number; suspensiones30: number; agentes: number };
+  /** Los agentes que cogieron encargos: la foto mira en la cadena su nivel al corte. */
+  agentes: string[];
+  porCategoria: { categoria: number; encargos: number; sinOferta: number; medianaPorMoneda: Record<string, string> }[];
 }
 
 /**
@@ -174,7 +260,29 @@ export interface Vigilancia {
   disputasLargas: { taskId: string; jobId?: string; abiertaTs: number; dias: number }[];
   /** Agentes cuyas tareas completadas vienen casi todas de uno o dos clientes (F7). */
   parejas: { agente: string; completadas: number; clientes: number; principal: string; parte: number }[];
+  /** Dos direcciones que se contratan la una a la otra (F7, de ida y vuelta). */
+  cruzados: { a: string; b: string; aParaB: number; bParaA: number }[];
   generado: number;
+}
+
+/** La mediana de una lista de números; null si está vacía. */
+function mediana(xs: number[]): number | null {
+  if (xs.length === 0) return null;
+  const o = [...xs].sort((x, y) => x - y);
+  const m = Math.floor(o.length / 2);
+  return o.length % 2 ? o[m]! : (o[m - 1]! + o[m]!) / 2;
+}
+
+function medianaBig(xs: bigint[]): bigint {
+  const o = [...xs].sort((x, y) => (x < y ? -1 : x > y ? 1 : 0));
+  return o[Math.floor((o.length - 1) / 2)] ?? 0n;
+}
+
+const VACIO_32 = /^0x0+$/;
+
+/** La clave de una campaña, como `_campaignKey` en PanalTablon.sol. */
+export function claveDeCampana(owner: string, campaignId: string): string {
+  return keccak256(encodeAbiParameters([{ type: 'address' }, { type: 'bytes32' }], [owner as Hex, campaignId as Hex]));
 }
 
 /**
@@ -386,10 +494,20 @@ class StatsBuilder {
   readonly jobs = new Map<string, IndexedJob>();
   /** Tarea del escrow -> encargo del tablón que la creó. */
   private readonly jobDeTarea = new Map<string, string>();
-  /** Quién tiene oferta en pie en cada encargo. */
-  private readonly ofertas = new Map<string, Set<string>>();
+  /** Las ofertas en pie de cada encargo, por agente. */
+  readonly ofertas = new Map<string, Map<string, OfertaIndexada>>();
   /** Las categorías que ha declarado cada agente en el tablón. */
   readonly categorias = new Map<string, number[]>();
+  /** Faltas, suspensión y encargos de cada agente en el tablón. */
+  readonly agentesTablon = new Map<string, Omit<AgenteEnElTablon, 'agent' | 'categorias'>>();
+  /** Lo que el tablón le debe a cada cliente, por moneda (Credited − Claimed). */
+  readonly porCobrar = new Map<string, Map<string, bigint>>();
+  readonly configTablon: ConfigTablon = { caps: {}, paused: false, levels: null, newcomerJobs: null, updatedTs: 0 };
+  readonly campanas = new Map<string, { key: string; campaignId: string; owner: string; jobs: number; cap: number | null; tomados: Map<string, number> }>();
+  /** Para las métricas: cada falta, cada republicación y cada cierre, con su fecha. */
+  readonly faltas: { agent: string; ts: number; suspendidoHasta: number }[] = [];
+  readonly republicaciones: number[] = [];
+  readonly cierres: { ts: number; refund: bigint; coin: string; penalized: boolean }[] = [];
   total = 0;
 
   constructor(
@@ -421,6 +539,16 @@ class StatsBuilder {
   private sinOfertas(j: IndexedJob): void {
     this.ofertas.delete(j.jobId);
     j.offers = 0;
+  }
+
+  private agenteTablon(agent: string): Omit<AgenteEnElTablon, 'agent' | 'categorias'> {
+    const k = agent.toLowerCase();
+    let a = this.agentesTablon.get(k);
+    if (!a) {
+      a = { faltas: 0, faltasEn90Dias: 0, suspendidoHasta: 0, asignados: 0, cerrados: 0, sancionados: 0 };
+      this.agentesTablon.set(k, a);
+    }
+    return a;
   }
 
   private agent(address: string, ts: number): AgentStats & { ratingSum: number } {
@@ -667,28 +795,50 @@ class StatsBuilder {
           mode: Number(a['mode']) === 1 ? 'selection' : 'immediate',
           budget: amount,
           amount,
-          campaignId: /^0x0+$/.test(campana) || !campana ? null : campana,
+          campaignId: VACIO_32.test(campana) || !campana ? null : campana,
           state: 'posted',
           offers: 0,
           relisted: 0,
+          everOffered: false,
           postedTs: ev.ts,
           updatedTs: ev.ts,
         });
+        const j = this.jobs.get(jobId)!;
+        if (j.campaignId) {
+          j.campaignKey = claveDeCampana(j.client, j.campaignId);
+          let c = this.campanas.get(j.campaignKey);
+          if (!c) {
+            c = { key: j.campaignKey, campaignId: j.campaignId, owner: j.client, jobs: 0, cap: null, tomados: new Map() };
+            this.campanas.set(j.campaignKey, c);
+          }
+          c.jobs += 1;
+        }
         break;
       }
       case 'Applied':
       case 'OfferWithdrawn': {
         const j = this.job(a['jobId']);
         if (!j) break;
-        let quienes = this.ofertas.get(j.jobId);
-        if (!quienes) {
-          quienes = new Set();
-          this.ofertas.set(j.jobId, quienes);
+        let enPie = this.ofertas.get(j.jobId);
+        if (!enPie) {
+          enPie = new Map();
+          this.ofertas.set(j.jobId, enPie);
         }
         const agente = String(a['agent']).toLowerCase();
-        if (ev.event === 'Applied') quienes.add(agente);
-        else quienes.delete(agente);
-        j.offers = quienes.size;
+        if (ev.event === 'Applied') {
+          // Volver a ofertar la sustituye: la última es la que cuenta.
+          enPie.set(agente, {
+            agent: agente,
+            level: Number(a['level'] ?? 0),
+            price: String(a['price'] ?? '0'),
+            workDuration: Number(a['workDuration'] ?? 0),
+            ts: ev.ts,
+          });
+          j.everOffered = true;
+        } else {
+          enPie.delete(agente);
+        }
+        j.offers = enPie.size;
         j.updatedTs = ev.ts;
         break;
       }
@@ -702,8 +852,20 @@ class StatsBuilder {
         j.byClient = a['byClient'] === true || a['byClient'] === 'true';
         j.assignedTs = ev.ts;
         j.updatedTs = ev.ts;
+        const enPie = [...(this.ofertas.get(j.jobId)?.values() ?? [])];
+        if (j.mode === 'selection') {
+          j.offersAtAssignment = enPie.length;
+          if (enPie.length > 0) {
+            j.cheapestAtAssignment = enPie.reduce((m, o) => (BigInt(o.price) < BigInt(m) ? o.price : m), enPie[0]!.price);
+          }
+        }
         this.sinOfertas(j);
         this.vincular(j.escrowTaskId, j.jobId);
+        this.agenteTablon(j.agent).asignados += 1;
+        if (j.campaignKey) {
+          const c = this.campanas.get(j.campaignKey);
+          if (c) c.tomados.set(j.agent, (c.tomados.get(j.agent) ?? 0) + 1);
+        }
         break;
       }
       case 'JobWithdrawn':
@@ -724,11 +886,24 @@ class StatsBuilder {
         // del agente queda en su evento Strike, no aquí.
         j.state = 'posted';
         j.relisted += 1;
-        for (const k of ['agent', 'escrowTaskId', 'closedTs', 'assignedTs', 'byClient', 'refund', 'penalized', 'refundPending', 'attestedBps'] as const) {
+        for (const k of [
+          'agent',
+          'escrowTaskId',
+          'closedTs',
+          'assignedTs',
+          'byClient',
+          'refund',
+          'penalized',
+          'refundPending',
+          'attestedBps',
+          'offersAtAssignment',
+          'cheapestAtAssignment',
+        ] as const) {
           delete j[k];
         }
         j.amount = j.budget;
         j.updatedTs = ev.ts;
+        this.republicaciones.push(ev.ts);
         break;
       }
       case 'JobSettled': {
@@ -740,6 +915,12 @@ class StatsBuilder {
         j.refundPending = false;
         j.closedTs = ev.ts;
         j.updatedTs = ev.ts;
+        this.cierres.push({ ts: ev.ts, refund: BigInt(j.refund), coin: j.coin, penalized: j.penalized });
+        if (j.agent) {
+          const ag = this.agenteTablon(j.agent);
+          ag.cerrados += 1;
+          if (j.penalized) ag.sancionados += 1;
+        }
         break;
       }
       case 'RefundPending': {
@@ -756,6 +937,62 @@ class StatsBuilder {
         if (!j) break;
         j.attestedBps = Number(a['workerShareBps']);
         j.updatedTs = ev.ts;
+        break;
+      }
+      case 'Strike': {
+        const agente = String(a['agent']).toLowerCase();
+        const ag = this.agenteTablon(agente);
+        const hasta = Number(a['suspendedUntil'] ?? 0);
+        ag.faltas += 1;
+        ag.faltasEn90Dias = Number(a['strikesIn90Days'] ?? 0);
+        ag.suspendidoHasta = Math.max(ag.suspendidoHasta, hasta);
+        ag.ultimaFaltaTs = ev.ts;
+        this.faltas.push({ agent: agente, ts: ev.ts, suspendidoHasta: hasta });
+        break;
+      }
+      case 'Credited':
+      case 'Claimed': {
+        const cliente = String(a['client']).toLowerCase();
+        const moneda = String(a['currency'] ?? NATIVE).toLowerCase();
+        let porMoneda = this.porCobrar.get(cliente);
+        if (!porMoneda) {
+          porMoneda = new Map();
+          this.porCobrar.set(cliente, porMoneda);
+        }
+        const antes = porMoneda.get(moneda) ?? 0n;
+        const cuanto = BigInt(String(a['amount'] ?? '0'));
+        porMoneda.set(moneda, ev.event === 'Credited' ? antes + cuanto : antes > cuanto ? antes - cuanto : 0n);
+        break;
+      }
+      case 'CapsChanged': {
+        this.configTablon.caps[String(a['currency'] ?? NATIVE).toLowerCase()] = {
+          perJob: String(a['perJob'] ?? '0'),
+          total: String(a['total'] ?? '0'),
+        };
+        this.configTablon.updatedTs = ev.ts;
+        break;
+      }
+      case 'PausedSet': {
+        this.configTablon.paused = a['paused'] === true || a['paused'] === 'true';
+        this.configTablon.updatedTs = ev.ts;
+        break;
+      }
+      case 'NewcomerJobsChanged': {
+        this.configTablon.newcomerJobs = Number(a['jobs'] ?? 0);
+        this.configTablon.updatedTs = ev.ts;
+        break;
+      }
+      case 'LevelsChanged': {
+        const crudo = a['levels'];
+        if (typeof crudo === 'string') {
+          const niveles = JSON.parse(crudo) as { minCompleted: unknown; minRating: unknown; dailyCap: unknown }[];
+          this.configTablon.levels = niveles.map((n) => ({
+            minCompleted: Number(n.minCompleted),
+            minRating: Number(n.minRating),
+            dailyCap: Number(n.dailyCap),
+          }));
+          this.configTablon.updatedTs = ev.ts;
+        }
         break;
       }
       case 'CategoriesSet': {
@@ -1291,6 +1528,16 @@ export class IndexStore {
     this.state.tablonHasta = n;
   }
 
+  yaAvisado(clave: string): boolean {
+    return this.state.vigilanciaAvisada.includes(clave);
+  }
+
+  /** Anota una señal avisada. Se guardan las 2.000 últimas: de sobra para no repetir. */
+  marcarAvisado(clave: string): void {
+    this.state.vigilanciaAvisada.push(clave);
+    if (this.state.vigilanciaAvisada.length > 2_000) this.state.vigilanciaAvisada.splice(0, 500);
+  }
+
   /** Los encargos del tablón, del más nuevo al más viejo, con filtros. */
   jobs(f: {
     state?: IndexedJob['state'];
@@ -1345,12 +1592,15 @@ export class IndexStore {
 
     const disputasLargas: Vigilancia['disputasLargas'] = [];
     const parejasPorAgente = new Map<string, Map<string, number>>();
+    // Lo que importa es cómo trabaja AHORA: una pareja de hace un año no dice
+    // nada de hoy, y sin ventana un agente veterano arrastraría su historia.
+    const desde = ahoraS - 90 * 86_400;
     for (const t of this.stats.tasks.values()) {
       if (t.status === 'disputed' && t.disputedTs !== undefined) {
         const dias = Math.floor((ahoraS - t.disputedTs) / 86_400);
         if (dias >= 7) disputasLargas.push({ taskId: t.taskId, jobId: t.jobId, abiertaTs: t.disputedTs, dias });
       }
-      if (t.status === 'completed' && t.worker && t.worker !== NATIVE) {
+      if (t.status === 'completed' && t.worker && t.worker !== NATIVE && t.updatedTs >= desde) {
         const cliente = t.realClient ?? t.client;
         let porCliente = parejasPorAgente.get(t.worker);
         if (!porCliente) {
@@ -1372,8 +1622,174 @@ export class IndexStore {
         parejas.push({ agente, completadas, clientes: porCliente.size, principal, parte: Math.round(parte * 100) / 100 });
       }
     }
+    // De ida y vuelta: A contrata a B y B contrata a A, tres veces o más cada
+    // uno. Es la forma más barata de subir de nivel con carteras propias.
+    const cruzados: Vigilancia['cruzados'] = [];
+    for (const [a, porCliente] of parejasPorAgente) {
+      for (const [b, bParaA] of porCliente) {
+        if (a >= b) continue; // cada pareja una vez
+        const aParaB = parejasPorAgente.get(b)?.get(a) ?? 0;
+        if (aParaB >= 3 && bParaA >= 3) cruzados.push({ a, b, aParaB, bParaA });
+      }
+    }
     parejas.sort((x, y) => y.completadas - x.completadas);
     disputasLargas.sort((x, y) => y.dias - x.dias);
-    return { repartosDistintos, disputasLargas, parejas, generado: ahoraS };
+    return { repartosDistintos, disputasLargas, parejas, cruzados, generado: ahoraS };
+  }
+
+  /** Las ofertas en pie de un encargo, de la más barata a la más cara. */
+  ofertasDe(jobId: string): OfertaIndexada[] {
+    return [...(this.stats.ofertas.get(jobId)?.values() ?? [])].sort((x, y) =>
+      BigInt(x.price) < BigInt(y.price) ? -1 : BigInt(x.price) > BigInt(y.price) ? 1 : x.ts - y.ts,
+    );
+  }
+
+  /** Un agente en el tablón. Sin actividad, todo a cero. */
+  agenteEnElTablon(agent: string): AgenteEnElTablon {
+    const k = agent.toLowerCase();
+    return {
+      agent: k,
+      categorias: this.categoriasDe(k),
+      ...(this.stats.agentesTablon.get(k) ?? {
+        faltas: 0,
+        faltasEn90Dias: 0,
+        suspendidoHasta: 0,
+        asignados: 0,
+        cerrados: 0,
+        sancionados: 0,
+      }),
+    };
+  }
+
+  /** Lo que el tablón le debe a un cliente, por moneda; solo lo que no es cero. */
+  porCobrarDe(client: string): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [moneda, v] of this.stats.porCobrar.get(client.toLowerCase()) ?? []) {
+      if (v > 0n) out[moneda] = v.toString();
+    }
+    return out;
+  }
+
+  configTablon(): ConfigTablon {
+    return structuredClone(this.stats.configTablon);
+  }
+
+  campanas(owner?: string): CampanaIndexada[] {
+    const out: CampanaIndexada[] = [];
+    for (const c of this.stats.campanas.values()) {
+      if (owner && c.owner !== owner.toLowerCase()) continue;
+      out.push({ key: c.key, campaignId: c.campaignId, owner: c.owner, jobs: c.jobs, cap: c.cap, tomados: Object.fromEntries(c.tomados) });
+    }
+    return out;
+  }
+
+  campana(key: string): CampanaIndexada | null {
+    return this.campanas().find((c) => c.key === key.toLowerCase()) ?? null;
+  }
+
+  /** Las campañas cuyo tope aún no se ha leído del contrato. */
+  campanasSinTope(): string[] {
+    return [...this.stats.campanas.values()].filter((c) => c.cap === null).map((c) => c.key);
+  }
+
+  marcarTopeDeCampana(key: string, cap: number): void {
+    const c = this.stats.campanas.get(key.toLowerCase());
+    if (c) c.cap = cap;
+  }
+
+  /**
+   * Las cifras del tablón entre `desde` (incluido) y `hasta` (excluido), en
+   * segundos: lo que la foto del mes guarda (BOARD.md §10.1).
+   */
+  metricasTablon(desde: number, hasta: number): MetricasTablon {
+    const en = (ts: number | undefined): boolean => ts !== undefined && ts >= desde && ts < hasta;
+    const jobs = [...this.stats.jobs.values()];
+    const publicados = jobs.filter((j) => en(j.postedTs));
+    const asignados = jobs.filter((j) => en(j.assignedTs));
+
+    const publicadoPorMoneda: Record<string, bigint> = {};
+    for (const j of publicados) publicadoPorMoneda[j.coin] = (publicadoPorMoneda[j.coin] ?? 0n) + BigInt(j.budget);
+
+    const espera = (modo: IndexedJob['mode']) =>
+      mediana(asignados.filter((j) => j.mode === modo).map((j) => j.assignedTs! - j.postedTs));
+    const seleccion = asignados.filter((j) => j.mode === 'selection');
+    const seleccionPublicados = publicados.filter((j) => j.mode === 'selection');
+
+    let noLaMasBarata = 0;
+    for (const j of seleccion) {
+      if (j.byClient && j.cheapestAtAssignment !== undefined && BigInt(j.amount) > BigInt(j.cheapestAtAssignment)) noLaMasBarata++;
+    }
+
+    let completados = 0;
+    let cancelados = 0;
+    let disputas = 0;
+    for (const j of asignados) {
+      const t = j.escrowTaskId ? this.stats.tasks.get(j.escrowTaskId) : undefined;
+      if (!t) continue;
+      if (t.status === 'completed') completados++;
+      if (t.status === 'cancelled') cancelados++;
+      if (t.disputedTs !== undefined) disputas++;
+    }
+    const devuelto: Record<string, bigint> = {};
+    for (const c of this.stats.cierres) {
+      if (en(c.ts) && c.refund > 0n) devuelto[c.coin] = (devuelto[c.coin] ?? 0n) + c.refund;
+    }
+
+    const faltas = this.stats.faltas.filter((f) => en(f.ts));
+    const larga = (f: { ts: number; suspendidoHasta: number }) => f.suspendidoHasta - f.ts >= 29 * 86_400;
+    const corta = (f: { ts: number; suspendidoHasta: number }) => !larga(f) && f.suspendidoHasta - f.ts >= 6 * 86_400;
+
+    const categorias = new Map<number, IndexedJob[]>();
+    for (const j of publicados) categorias.set(j.category, [...(categorias.get(j.category) ?? []), j]);
+
+    const aTexto = (r: Record<string, bigint>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v.toString()]));
+    return {
+      desde,
+      hasta,
+      volumen: {
+        publicados: publicados.length,
+        asignados: asignados.length,
+        retirados: jobs.filter((j) => j.state === 'withdrawn' && en(j.closedTs)).length,
+        caducados: jobs.filter((j) => j.state === 'expired' && en(j.closedTs)).length,
+        republicados: this.stats.republicaciones.filter(en).length,
+        publicadoPorMoneda: aTexto(publicadoPorMoneda),
+      },
+      rapidez: { inmediato: espera('immediate'), seleccion: espera('selection') },
+      competencia: {
+        medianaOfertas: mediana(seleccion.map((j) => j.offersAtAssignment ?? 0)),
+        sinOfertaParte:
+          seleccionPublicados.length === 0
+            ? null
+            : Math.round((seleccionPublicados.filter((j) => !j.everOffered).length / seleccionPublicados.length) * 100) / 100,
+        medianaPrecioSobrePresupuesto: mediana(
+          seleccion.filter((j) => BigInt(j.budget) > 0n).map((j) => Number((BigInt(j.amount) * 1000n) / BigInt(j.budget)) / 1000),
+        ),
+      },
+      eleccion: {
+        porElCliente: asignados.filter((j) => j.byClient).length,
+        automatica: asignados.filter((j) => !j.byClient).length,
+        noLaMasBarata,
+      },
+      entrega: { completados, cancelados, disputas, devueltoPorMoneda: aTexto(devuelto) },
+      sanciones: {
+        faltas: faltas.length,
+        suspensiones7: faltas.filter(corta).length,
+        suspensiones30: faltas.filter(larga).length,
+        agentes: new Set(faltas.map((f) => f.agent)).size,
+      },
+      agentes: [...new Set(asignados.map((j) => j.agent!).filter(Boolean))],
+      porCategoria: [...categorias.entries()]
+        .sort((x, y) => x[0] - y[0])
+        .map(([categoria, js]) => {
+          const porMoneda = new Map<string, bigint[]>();
+          for (const j of js) porMoneda.set(j.coin, [...(porMoneda.get(j.coin) ?? []), BigInt(j.budget)]);
+          return {
+            categoria,
+            encargos: js.length,
+            sinOferta: js.filter((j) => j.mode === 'selection' && !j.everOffered).length,
+            medianaPorMoneda: Object.fromEntries([...porMoneda.entries()].map(([k, v]) => [k, medianaBig(v).toString()])),
+          };
+        }),
+    };
   }
 }

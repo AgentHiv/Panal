@@ -500,7 +500,19 @@ curl "http://localhost:8788/index/tablon/jobs?state=posted&category=2"
 curl "http://localhost:8788/index/tablon/job?id=0"
 # Las señales de contracts/TABLON-SECURITY.md:
 curl "http://localhost:8788/index/tablon/vigilancia"
+# Un agente (categorías, faltas, suspensión) y un cliente (lo que se le debe):
+curl "http://localhost:8788/index/tablon/agente?address=0x…"
+curl "http://localhost:8788/index/tablon/cliente?address=0x…"
+# Topes, pausa, niveles y encargos de novato vigentes:
+curl "http://localhost:8788/index/tablon/config"
+# Campañas, con su tope por agente (leído del contrato) y lo que ha cogido cada uno:
+curl "http://localhost:8788/index/tablon/campanas?owner=0x…"
+# Las cifras de un periodo, para la foto del mes:
+curl "http://localhost:8788/index/tablon/metricas?desde=1793491200&hasta=1796169600"
 ```
+
+`/index/tablon/job` trae además las ofertas en pie con su precio, su plazo y el
+nivel con que se hicieron, y su campaña si la tiene.
 
 Dos cosas cambian además en `/index/tasks`. Una tarea del escrow creada por el
 tablón tiene como cliente al CONTRATO, que no puede aprobar ni disputar desde la
@@ -512,10 +524,15 @@ La vigilancia también va al log, una vez por señal y por arranque, como
 
 - un reparto que el árbitro atestó en PanalTablon y no cuadra con el del escrow;
 - una disputa abierta hace 7 días o más (a los 14 se devuelve todo sin falta);
-- un agente con diez tareas completadas o más que vienen casi todas de uno o dos
-  clientes.
+- un agente con diez tareas completadas o más en 90 días que vienen casi todas
+  de uno o dos clientes;
+- dos direcciones que se contratan la una a la otra, tres veces o más cada una,
+  en 90 días.
 
-Son señales para mirar, no pruebas de nada.
+Con `VIGILANCIA_TELEGRAM_CHAT_ID` (y el `TELEGRAM_BOT_TOKEN` de siempre) llegan
+también a ese chat. Cada señal se avisa una vez: lo avisado se guarda en el
+estado del índice y no se repite al reiniciar. Son señales para mirar, no
+pruebas de nada.
 
 ### Actualizar el indexador desplegado
 

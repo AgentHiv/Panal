@@ -65,6 +65,12 @@ export interface BotConfig {
    * aquí en adelante.
    */
   tablonDesdeBloque: number | null;
+  /**
+   * Chat de Telegram al que el indexador manda las señales de vigilancia del
+   * tablón (contracts/TABLON-SECURITY.md), con el mismo TELEGRAM_BOT_TOKEN.
+   * Sin él, van solo al log.
+   */
+  vigilanciaChatId: string | null;
   dashboardUrl: string;
   /**
    * Idioma de los avisos de Telegram (BOT_LANG). El bot habla con UNA persona
@@ -325,6 +331,7 @@ export function loadConfig(): BotConfig {
     namesAddress: envAddress('PANAL_NAMES_ADDRESS', false) ?? null,
     tablonAddress: envAddress('PANAL_TABLON_ADDRESS', false) ?? null,
     tablonDesdeBloque: process.env.PANAL_TABLON_BLOQUE?.trim() ? envInt('PANAL_TABLON_BLOQUE', 0, 0) : null,
+    vigilanciaChatId: env('VIGILANCIA_TELEGRAM_CHAT_ID') ?? null,
     dashboardUrl: env('DASHBOARD_URL') ?? 'https://panal.lat/dashboard',
     lang: resolveLang(env('BOT_LANG')),
     pollIntervalMs: envInt('POLL_INTERVAL_MS', 20_000, 5_000),

@@ -19,7 +19,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { IndexStore, type IndexedEvent } from '../src/indexer-store.js';
+import { IndexStore, claveDeCampana, type IndexedEvent } from '../src/indexer-store.js';
 import { createIndexServer } from '../src/indexer-http.js';
 import { TABLON_EVENTS } from '../src/indexer.js';
 import { toEventSelector } from 'viem';
@@ -344,6 +344,150 @@ rmSync(dir, { recursive: true, force: true });
   check('/index/tablon/vigilancia', a4.repartosDistintos.length === 1);
   server.close();
   rmSync(dirT, { recursive: true, force: true });
+}
+
+/* ── El resto del tablón: ofertas, faltas, cobros, configuración, campañas ── */
+{
+  console.log('\n── Ofertas con detalle, faltas, cobros, configuración y campañas ──');
+  const TABLON = '0x7ab1000000000000000000000000000000000007';
+  const dirR = mkdtempSync(join(tmpdir(), 'panal-idx-resto-'));
+  const st = new IndexStore(dirR, PANAL, TABLON);
+  const t = (event: string, args: Record<string, string | number | boolean>, ts?: number): IndexedEvent => ({
+    ...ev(event, args as Record<string, string | number>, ts),
+    contract: 'tablon',
+  });
+  const CERO32 = `0x${'0'.repeat(64)}`;
+  const UNO = '1000000000000000000';
+
+  // La configuración que emite el constructor al desplegar.
+  st.append([
+    t('LevelsChanged', { levels: JSON.stringify([{ minCompleted: 5, minRating: 400, dailyCap: 1 }, { minCompleted: 30, minRating: 420, dailyCap: 5 }]) }),
+    t('NewcomerJobsChanged', { jobs: 2 }),
+    t('CapsChanged', { currency: NATIVO, perJob: '500000000000000000000', total: '1000000000000000000000' }),
+    t('CapsChanged', { currency: PANAL, perJob: '2066000000000000000000000', total: '4133000000000000000000000' }),
+    t('PausedSet', { paused: true }),
+  ]);
+  const cfg = st.configTablon();
+  check(
+    'la configuración: niveles, novatos, topes por moneda y pausa',
+    cfg.levels?.length === 2 && cfg.levels[1]!.dailyCap === 5 && cfg.newcomerJobs === 2 && cfg.caps[NATIVO]?.perJob === '500000000000000000000' && cfg.caps[PANAL] !== undefined && cfg.paused,
+    JSON.stringify(cfg),
+  );
+
+  // Ofertas: dos, una cambia y la otra se retira; se asigna a la más cara.
+  st.append([
+    t('JobPosted', { jobId: '0', client: CLIENTE, category: 3, currency: NATIVO, amount: '2000000000000000000', mode: 1, campaignId: CERO32 }),
+    t('Applied', { jobId: '0', agent: AGENTE, level: 2, price: '1500000000000000000', workDuration: '3600' }),
+    t('Applied', { jobId: '0', agent: OTRO, level: 1, price: UNO, workDuration: '7200' }),
+    t('Applied', { jobId: '0', agent: AGENTE, level: 2, price: '1800000000000000000', workDuration: '1800' }),
+  ]);
+  const ofertas = st.ofertasDe('0');
+  check(
+    'las ofertas, de la más barata a la más cara, con la última de cada agente',
+    ofertas.length === 2 && ofertas[0]!.agent === OTRO.toLowerCase() && ofertas[1]!.price === '1800000000000000000' && ofertas[1]!.workDuration === 1800,
+    JSON.stringify(ofertas),
+  );
+  st.append([
+    ev('TaskCreated', { taskId: '70', client: TABLON, worker: AGENTE, amount: '1800000000000000000', currency: NATIVO }),
+    t('JobAssigned', { jobId: '0', agent: AGENTE, escrowTaskId: '70', price: '1800000000000000000', byClient: true }),
+  ]);
+  const j0 = st.job('0')!;
+  check('al asignar se apunta cuántas había y la más barata', j0.offersAtAssignment === 2 && j0.cheapestAtAssignment === UNO);
+  check('y las ofertas dejan de estar en pie', st.ofertasDe('0').length === 0);
+
+  // Faltas y cobros.
+  st.append([
+    t('Strike', { agent: OTRO, strikesIn90Days: 1, suspendedUntil: 1_780_000_000 + 7 * 86_400 }),
+    t('Credited', { client: CLIENTE, currency: NATIVO, amount: '500000000000000000' }),
+    t('Credited', { client: CLIENTE, currency: NATIVO, amount: '200000000000000000' }),
+    t('Claimed', { client: CLIENTE, currency: NATIVO, amount: '500000000000000000' }),
+  ]);
+  const otro = st.agenteEnElTablon(OTRO);
+  check('una falta, con su suspensión', otro.faltas === 1 && otro.faltasEn90Dias === 1 && otro.suspendidoHasta === 1_780_000_000 + 7 * 86_400);
+  check('lo que se le debe al cliente: lo acreditado menos lo cobrado', st.porCobrarDe(CLIENTE)[NATIVO] === '200000000000000000', JSON.stringify(st.porCobrarDe(CLIENTE)));
+  check('el agente cuenta su encargo asignado', st.agenteEnElTablon(AGENTE).asignados === 1);
+
+  // Campañas: la clave es la del contrato, byte a byte (calculada con cast).
+  const DUENO = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
+  const ID = '0xc8e4e9c1a06629e509692479a42ee41d208595e66c42375387882931cbc01a4b';
+  check(
+    'la clave de campaña es la del contrato',
+    claveDeCampana(DUENO, ID) === '0xff52237ba3f72d16fe17be8086faf362513d640be2eaef7a2189fbc9748b6323',
+  );
+  st.append([
+    t('JobPosted', { jobId: '1', client: DUENO, category: 3, currency: NATIVO, amount: UNO, mode: 0, campaignId: ID }),
+    t('JobPosted', { jobId: '2', client: DUENO, category: 3, currency: NATIVO, amount: UNO, mode: 0, campaignId: ID }),
+    ev('TaskCreated', { taskId: '71', client: TABLON, worker: AGENTE, amount: UNO, currency: NATIVO }),
+    t('JobAssigned', { jobId: '1', agent: AGENTE, escrowTaskId: '71', price: UNO, byClient: false }),
+  ]);
+  const clave = claveDeCampana(DUENO, ID);
+  check('la campaña: dos encargos, uno cogido por el agente, tope aún sin leer', st.campana(clave)?.jobs === 2 && st.campana(clave)?.tomados[AGENTE.toLowerCase()] === 1 && st.campana(clave)?.cap === null);
+  check('y el indexador sabe que tiene que leer su tope', st.campanasSinTope().includes(clave));
+  st.marcarTopeDeCampana(clave, 2);
+  check('una vez leído', st.campana(clave)?.cap === 2 && st.campanasSinTope().length === 0);
+
+  console.log('\n── Las métricas del periodo (BOARD.md §10.1) ──');
+  st.append([
+    t('JobPosted', { jobId: '3', client: CLIENTE, category: 7, currency: PANAL, amount: '100000000000000000000', mode: 1, campaignId: CERO32 }),
+    t('JobExpired', { jobId: '3' }),
+    t('Strike', { agent: AGENTE, strikesIn90Days: 3, suspendedUntil: 1_780_000_000 + 30 * 86_400 }),
+  ]);
+  const m = st.metricasTablon(1_780_000_000, 1_780_000_000 + 86_400);
+  check('publicados, asignados y caducados', m.volumen.publicados === 4 && m.volumen.asignados === 2 && m.volumen.caducados === 1, JSON.stringify(m.volumen));
+  check('elegido por el cliente sin ser la más barata', m.eleccion.porElCliente === 1 && m.eleccion.automatica === 1 && m.eleccion.noLaMasBarata === 1, JSON.stringify(m.eleccion));
+  check('la mitad de los de selección sin ninguna oferta', m.competencia.sinOfertaParte === 0.5 && m.competencia.medianaOfertas === 2, JSON.stringify(m.competencia));
+  check('el precio elegido entre el presupuesto: 0,9', m.competencia.medianaPrecioSobrePresupuesto === 0.9);
+  check('una suspensión de 7 días y otra de 30, de dos agentes', m.sanciones.suspensiones7 === 1 && m.sanciones.suspensiones30 === 1 && m.sanciones.agentes === 2, JSON.stringify(m.sanciones));
+  const cat7 = m.porCategoria.find((c) => c.categoria === 7);
+  check('por categoría: la 7 con un encargo sin oferta, en $PANAL', cat7?.encargos === 1 && cat7.sinOferta === 1 && cat7.medianaPorMoneda['$PANAL'] === '100000000000000000000', JSON.stringify(m.porCategoria));
+  check('fuera del periodo, nada', st.metricasTablon(1_700_000_000, 1_700_000_001).volumen.publicados === 0);
+
+  console.log('\n── La vigilancia: de ida y vuelta, y solo los últimos 90 días ──');
+  const A = '0xA100000000000000000000000000000000000001';
+  const B = '0xB200000000000000000000000000000000000002';
+  const ahora = 1_780_000_000 + 30 * 86_400;
+  const lote: IndexedEvent[] = [];
+  for (let i = 0; i < 3; i++) {
+    for (const [cliente, trabajador] of [[A, B], [B, A]] as const) {
+      const id = `${cliente === A ? 300 : 400}${i}`;
+      lote.push(
+        ev('TaskCreated', { taskId: id, client: cliente, worker: trabajador, amount: UNO, currency: NATIVO }),
+        ev('TaskCompleted', { taskId: id, worker: trabajador, workerPaid: '975000000000000000', fee: '25000000000000000', rating: 5 }),
+      );
+    }
+  }
+  st.append(lote);
+  const v = st.vigilancia(ahora);
+  check('A y B se contratan el uno al otro', v.cruzados.length === 1 && v.cruzados[0]!.aParaB === 3 && v.cruzados[0]!.bParaA === 3, JSON.stringify(v.cruzados));
+  check('pasados 90 días ya no cuenta', st.vigilancia(ahora + 120 * 86_400).cruzados.length === 0);
+
+  console.log('\n── Y su API ──');
+  const server = createIndexServer({ store: st, allowLocalhostOrigin: true });
+  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+  const dirS = server.address();
+  const base = `http://127.0.0.1:${typeof dirS === 'object' && dirS ? dirS.port : 0}`;
+  const pedir = async (ruta: string) => {
+    const r = await fetch(`${base}${ruta}`);
+    return { status: r.status, body: (await r.json()) as Record<string, unknown> };
+  };
+  const r1 = await pedir('/index/tablon/job?id=1');
+  check('/job trae su campaña', (r1.body.campaign as { key?: string } | null)?.key === clave);
+  const r2 = await pedir(`/index/tablon/agente?address=${OTRO}`);
+  check('/agente', r2.status === 200 && r2.body.faltas === 1);
+  const r3 = await pedir(`/index/tablon/cliente?address=${CLIENTE}`);
+  check('/cliente, con lo que se le debe', (r3.body.porCobrar as Record<string, string>)[NATIVO] === '200000000000000000');
+  const r4 = await pedir('/index/tablon/config');
+  check('/config', r4.body.paused === true && r4.body.newcomerJobs === 2);
+  const r5 = await pedir(`/index/tablon/campanas?owner=${DUENO}`);
+  check('/campanas de un dueño', r5.body.count === 1);
+  const r6 = await pedir(`/index/tablon/campana?key=${clave}`);
+  check('/campana', r6.status === 200 && r6.body.cap === 2);
+  const r7 = await pedir('/index/tablon/metricas?desde=1780000000&hasta=1780086400');
+  check('/metricas', r7.status === 200 && (r7.body.volumen as { publicados: number }).publicados === 4);
+  const r8 = await pedir('/index/tablon/metricas?desde=5&hasta=1');
+  check('/metricas con fechas al revés es un 400', r8.status === 400);
+  server.close();
+  rmSync(dirR, { recursive: true, force: true });
 }
 
 console.log(
