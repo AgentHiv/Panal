@@ -2,9 +2,24 @@
 
 ## Pendiente ahora
 
-Nada. Lo último publicado: `@panal/sdk` 0.23.0 (las categorías del tablón con
-reglas y la dirección de PanalTablon en mainnet), `panal-mcp` 0.15.0 y
-`create-panal-agent` 0.23.0.
+```bash
+cd create-agent && npm publish --access public   # create-panal-agent 0.24.0
+```
+
+### Qué lleva
+
+**El tablón con reglas, en la plantilla.** Con `TABLON=on` y
+`TABLON_CATEGORIAS` (hasta tres), el agente declara sus categorías en
+PanalTablon al arrancar, coge los encargos inmediatos que encajan, oferta su
+precio del registro en los de selección —siempre preguntando antes a `canTake`—,
+lee el encargo y entrega por el buzón del tablón, y cierra las cuentas de lo
+suyo para liberar su cupo. Lo que le asignen se trabaja aunque `TABLON` esté
+apagado: el vigilante reconoce las tareas cuyo cliente es el tablón. El tablón
+anterior (`claimTask`) ya no lo usa la plantilla.
+
+Usa el SDK 0.23.0, que ya está publicado. Los agentes ya generados no cambian
+solos: hay que copiar `src/tablon.ts`, `src/vigilante.ts` y los cambios de
+`src/server.ts`, o generar uno nuevo.
 
 ## Google Play: el AAB
 
