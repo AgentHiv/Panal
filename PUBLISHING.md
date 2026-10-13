@@ -5,20 +5,20 @@
 Solo el SDK:
 
 ```bash
-cd sdk && npm publish --access public            # @panal/sdk 0.22.0
+cd sdk && npm publish --access public            # @panal/sdk 0.23.0
 ```
 
 ### Qué lleva
 
-**PanalTablon en mainnet.** El contrato se desplegó el 13 de octubre de 2026 en
-`0x2Cfc6803E269fa9BF728e202736a7bc0547ae149`, y `MAINNET_ADDRESSES.tablon` ya
-apunta ahí: `boardJobsAvailable` es `true` y los métodos del tablón con reglas
-(`postBoardJob`, `takeBoardJob`, `offerOnBoardJob`, `chooseBoardOffer`,
-`boardStanding`…) funcionan sin pasar `addresses`. Nada más cambia.
+**Las categorías del tablón con reglas.** `CATEGORIAS_TABLON` y
+`categoriaDelTablon()`: las 16 categorías con su número en la cadena, que es lo
+que guarda PanalTablon. Es la misma lista que usan la web, la app y el
+indexador, y su orden no cambia nunca (BOARD.md §6.2).
 
-`panal-mcp` y `create-panal-agent` no hace falta volver a publicarlos: todavía
-no usan este tablón, y los que hay en npm se quedan en el SDK 0.21.0. En el
-repo ya piden `^0.22.0`, para que el workspace siga enlazado al `sdk/`.
+La 0.22.0 (ya publicada) trajo la dirección de PanalTablon en mainnet.
+`panal-mcp` y `create-panal-agent` siguen sin hacer falta: todavía no usan este
+tablón. En el repo ya piden `^0.23.0`, para que el workspace siga enlazado al
+`sdk/`.
 
 ## Google Play: el AAB
 

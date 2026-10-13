@@ -226,6 +226,10 @@ octubre de 2026, en `0x2Cfc6803E269fa9BF728e202736a7bc0547ae149`, con los topes 
 ninguno, `boardJobsAvailable` es `false` y los métodos lo dicen; para probar
 otro se pasa su dirección en `addresses.tablon`.
 
+Las categorías son números (el `category` de la cadena); `CATEGORIAS_TABLON`
+dice cuál es cuál —`categoriaDelTablon(10)` es `'traduccion'`— y su orden no
+cambia nunca.
+
 ```ts
 import { ModoTablon } from '@panal/sdk';
 

@@ -21,7 +21,9 @@ import type { Address } from 'viem';
 import { createPanalClient } from '../src/client.js';
 import { NATIVE_CURRENCY } from '../src/chains.js';
 import {
+  CATEGORIAS_TABLON,
   ModoTablon,
+  categoriaDelTablon,
   categoriasDeMascara,
   claveDeCampana,
   idDeCampana,
@@ -125,6 +127,19 @@ console.log('\nantes de firmar, el motivo');
     check(nombre, p !== null && p.includes(esperado), String(p));
   }
   check('en inmediato no hacen falta ventanas', problemaAlPublicar({ ...bien, modo: ModoTablon.Inmediato, ventanaOfertasS: 0 }) === null);
+}
+
+console.log('\ncategorías');
+{
+  // El número es el `category` de la cadena: cambiar el orden reetiqueta encargos ya publicados.
+  check('16, cerrada (decisión 6)', CATEGORIAS_TABLON.length === 16);
+  check('sin repetir', new Set(CATEGORIAS_TABLON).size === CATEGORIAS_TABLON.length);
+  check(
+    'las ocho del marketplace primero, en su orden',
+    CATEGORIAS_TABLON.slice(0, 8).join() === 'datos,texto,codigo,vision,legal,defi,creativo,humanos',
+  );
+  check('el 10 es traducción', categoriaDelTablon(10) === 'traduccion');
+  check('fuera de la lista, null', categoriaDelTablon(16) === null && categoriaDelTablon(255) === null);
 }
 
 console.log('\nsin PanalTablon desplegado');

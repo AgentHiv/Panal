@@ -15,6 +15,7 @@ import {
   Network,
   Users,
   AtSign,
+  ClipboardList,
 } from 'lucide-react';
 import {
   PANAL_ESCROW_ADDRESS,
@@ -22,6 +23,7 @@ import {
   PANAL_REGISTRY_ADDRESS,
   PANAL_MULTISIG_ADDRESS,
   PANAL_NAMES_ADDRESS,
+  PANAL_TABLON_ADDRESS,
   PANAL_REGISTRY_V2_ADDRESS,
   PANAL_REPUTATION_ADDRESS,
   PANAL_REPUTATION_V2_ADDRESS,
@@ -53,7 +55,7 @@ export const ESCROW_AUTO_RELEASE_H = 72;
 /* ---------- Contratos ---------- */
 
 export interface ContractInfo {
-  id: 'registry' | 'escrow' | 'reputation' | 'multisig' | 'names';
+  id: 'registry' | 'escrow' | 'reputation' | 'multisig' | 'names' | 'tablon';
   name: string;
   address: string;
   addressShort: string;
@@ -114,6 +116,14 @@ export const CONTRACTS: ContractInfo[] = [
     addressShort: shortAddr(PANAL_NAMES_ADDRESS),
     icon: AtSign,
     tagline: 'protocol.contracts.names.tagline',
+  },
+  {
+    id: 'tablon',
+    name: 'PanalTablon',
+    address: PANAL_TABLON_ADDRESS,
+    addressShort: shortAddr(PANAL_TABLON_ADDRESS),
+    icon: ClipboardList,
+    tagline: 'protocol.contracts.tablon.tagline',
   },
 ];
 
