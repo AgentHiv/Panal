@@ -23,8 +23,11 @@
  *
  * CUÁNTO SE ASOMA A LA RED
  *
- * Se pregunta lo mínimo: SOLO al abrir el menú —no al arrancar, no de fondo— y
- * como mucho una vez al día; el resto del tiempo se contesta con lo guardado.
+ * Se pregunta lo mínimo: SOLO al abrir el menú —no al arrancar, no de fondo—.
+ * Si lo guardado ya anuncia una versión nueva, vale un día; si decía que no hay
+ * nada, una hora. Con un día para todo, quien abrió el menú por la mañana no se
+ * enteraba de una versión sacada por la tarde hasta el día siguiente: pasó con
+ * la 2.21.0, publicada tres horas y media después de la 2.20.0.
  * Sin red o con el bucket caído no se dice nada: el fallo de esto nunca puede
  * ser un error en la cara de nadie.
  *
@@ -49,6 +52,7 @@ const ULTIMA = 'https://panalandroid.panal.lat/ultima.json';
 
 const CLAVE = 'panal:ultima-version:v1';
 const UN_DIA = 24 * 60 * 60 * 1000;
+const UNA_HORA = 60 * 60 * 1000;
 
 /** Que una respuesta lenta no deje la promesa colgando para siempre. */
 const ESPERA = 8000;
@@ -158,7 +162,12 @@ async function preguntar(): Promise<string | null> {
 }
 
 /**
- * La versión publicada, preguntando como mucho una vez al día.
+ * La versión publicada, preguntando como mucho una vez al día si ya hay algo
+ * que anunciar, y una vez por hora si no.
+ *
+ * «Nada nuevo» caduca antes porque es la respuesta que se queda vieja en
+ * cuanto se publica algo; «hay una nueva» sigue siendo verdad hasta que se
+ * instala, y entonces la instalada la alcanza y vuelve a contar la hora.
  *
  * Lo guardado se usa aunque esté caducado si la pregunta falla: es mejor una
  * respuesta de ayer que ninguna, y de todas formas se compara contra la
@@ -166,7 +175,9 @@ async function preguntar(): Promise<string | null> {
  */
 export async function ultimaPublicada(): Promise<string | null> {
   const guardado = leerGuardado();
-  if (guardado && Date.now() - guardado.visto < UN_DIA) return guardado.version;
+  const actual = versionInstalada();
+  const anuncia = guardado !== null && actual !== null && esMasNueva(guardado.version, actual);
+  if (guardado && Date.now() - guardado.visto < (anuncia ? UN_DIA : UNA_HORA)) return guardado.version;
 
   const fresca = await preguntar();
   if (!fresca) return guardado?.version ?? null;
