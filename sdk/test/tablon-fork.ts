@@ -19,6 +19,9 @@
  *      presupuesto, el cliente elige, la diferencia se le debe y la cobra.
  *   4. Lo que se rechaza dice por qué antes de firmar: un novato con un
  *      encargo abierto no puede coger otro.
+ *   5. El INDEXADOR de verdad (bot/src/indexer.ts) recorre los bloques desde
+ *      el despliegue y monta cada encargo, ata cada tarea del escrow a su
+ *      cliente de verdad y lee las categorías del agente.
  *
  * Las claves son las de prueba de anvil: no tienen nada fuera de la copia.
  */
@@ -37,6 +40,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createBuzonServer } from '../../bot/src/buzon.js';
 import { BuzonStore } from '../../bot/src/buzon-store.js';
+import { createClients } from '../../bot/src/chain.js';
+import type { BotConfig } from '../../bot/src/config.js';
+import { runIndexer } from '../../bot/src/indexer.js';
+import { IndexStore } from '../../bot/src/indexer-store.js';
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -95,7 +102,8 @@ try {
       { perJob: parseEther('2066000'), total: parseEther('4133000') },
     ],
   });
-  const tablon = (await lector.waitForTransactionReceipt({ hash: hashDespliegue })).contractAddress!;
+  const reciboDespliegue = await lector.waitForTransactionReceipt({ hash: hashDespliegue });
+  const tablon = reciboDespliegue.contractAddress!;
   console.log(`PanalTablon en la copia: ${tablon}`);
 
   // El buzón de verdad, leyendo de la copia.
@@ -240,6 +248,42 @@ try {
   s = await agente.boardStanding(yo);
   check('7 días fuera', s.suspendidoHasta > 0, JSON.stringify(s));
   check('y el cliente vuelve a tener su 1,5', (await cliente.getBoardRefund(cliente.account!.address)) === parseEther('1.5'));
+
+  // ── 5. El indexador ──────────────────────────────────────────────────────
+  console.log('\nel indexador');
+  const cfgIdx = {
+    rpcUrl: RPC,
+    registryAddress: MAINNET_ADDRESSES.registry,
+    escrowAddress: MAINNET_ADDRESSES.escrow,
+    panalTokenAddress: MAINNET_ADDRESSES.panalToken,
+    namesAddress: null,
+    tablonAddress: tablon,
+    tablonDesdeBloque: null,
+    indexPollIntervalMs: 500,
+    indexSweepWindowsPerDay: 0,
+  } as unknown as BotConfig;
+  const indice = new IndexStore(mkdtempSync(join(tmpdir(), 'panal-idx-fork-')), MAINNET_ADDRESSES.panalToken, tablon);
+  indice.setLastBlock(Number(reciboDespliegue.blockNumber) - 1);
+  indice.setSweepFloor(0);
+  const cabeza = Number(await lector.getBlockNumber());
+  const parar = { stopped: false };
+  const vuelta = runIndexer(cfgIdx, createClients(cfgIdx), indice, parar);
+  for (let i = 0; i < 120 && indice.lastBlock < cabeza; i++) await new Promise((r) => setTimeout(r, 250));
+  parar.stopped = true;
+  await vuelta;
+  const trabajos = indice.jobs();
+  check('ve los tres encargos', trabajos.length === 3, String(trabajos.length));
+  const primero = indice.job(pub.jobId.toString());
+  check('el primero, cerrado, con su agente y su tarea', primero?.state === 'closed' && primero.agent === yo.toLowerCase() && primero.escrowTaskId === cogido.escrowTaskId.toString());
+  const tareaIdx = indice.task(cogido.escrowTaskId.toString());
+  check('su tarea del escrow, atada a su cliente de verdad', tareaIdx?.realClient === cliente.account!.address.toLowerCase() && tareaIdx.jobId === pub.jobId.toString());
+  check(
+    'y el cliente la encuentra entre las suyas',
+    indice.tasksOf(cliente.account!.address, { role: 'client' }).some((t) => t.taskId === cogido.escrowTaskId.toString()),
+  );
+  check('el retirado, retirado', indice.job(otro.jobId.toString())?.state === 'withdrawn');
+  check('el de selección, cerrado tras su oferta', indice.job(sel.jobId.toString())?.state === 'closed' && indice.job(sel.jobId.toString())?.mode === 'selection');
+  check('las categorías del agente, del evento', indice.categoriasDe(yo).join() === '2', indice.categoriasDe(yo).join());
 } catch (e) {
   console.error(e);
   fallos++;

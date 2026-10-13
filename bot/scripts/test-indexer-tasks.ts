@@ -20,6 +20,12 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { IndexStore, type IndexedEvent } from '../src/indexer-store.js';
+import { createIndexServer } from '../src/indexer-http.js';
+import { TABLON_EVENTS } from '../src/indexer.js';
+import { toEventSelector } from 'viem';
+// El ABI generado del contrato, el mismo que usa el SDK: sin dependencias, se
+// importa tal cual aunque el bot sea otro paquete.
+import { panalTablonAbi } from '../../sdk/src/tablon-abi.js';
 
 let failures = 0;
 
@@ -179,6 +185,166 @@ check(
 );
 
 rmSync(dir, { recursive: true, force: true });
+
+/* ── El tablón con reglas (PanalTablon) ─────────────────────────────────── */
+{
+  console.log('\n── El tablón con reglas: el encargo y su cliente de verdad ──');
+  const TABLON = '0x7ab1000000000000000000000000000000000007';
+  const W = '0xD000000000000000000000000000000000000004';
+  const dirT = mkdtempSync(join(tmpdir(), 'panal-idx-tablon-'));
+  const st = new IndexStore(dirT, PANAL, TABLON);
+  const delTablon = (event: string, args: Record<string, string | number | boolean>, ts?: number): IndexedEvent => ({
+    ...ev(event, args as Record<string, string | number>, ts),
+    contract: 'tablon',
+  });
+  const DIEZ = '10000000000000000000';
+  const OCHO = '8000000000000000000';
+
+  st.append([
+    delTablon('JobPosted', { jobId: '0', client: CLIENTE, category: 2, currency: NATIVO, amount: DIEZ, mode: 1, campaignId: `0x${'0'.repeat(64)}` }),
+    delTablon('Applied', { jobId: '0', agent: AGENTE, level: 2, price: OCHO, workDuration: '3600' }),
+    delTablon('Applied', { jobId: '0', agent: OTRO, level: 1, price: DIEZ, workDuration: '3600' }),
+    delTablon('Applied', { jobId: '0', agent: AGENTE, level: 2, price: OCHO, workDuration: '1800' }),
+    delTablon('OfferWithdrawn', { jobId: '0', agent: OTRO }),
+  ]);
+  let j = st.job('0')!;
+  check('publicado, en selección, en su categoría', j.state === 'posted' && j.mode === 'selection' && j.category === 2);
+  check('cambiar una oferta no cuenta dos; retirarla, resta', j.offers === 1, String(j.offers));
+  check('sin campaña, null y no ceros', j.campaignId === null);
+
+  // En la misma transacción, el escrow emite TaskCreated antes que el tablón JobAssigned.
+  st.append([
+    ev('TaskCreated', { taskId: '50', client: TABLON, worker: AGENTE, amount: OCHO, currency: NATIVO }),
+    delTablon('JobAssigned', { jobId: '0', agent: AGENTE, escrowTaskId: '50', price: OCHO, byClient: true }),
+  ]);
+  j = st.job('0')!;
+  check('asignado, al precio de la oferta', j.state === 'assigned' && j.amount === OCHO && j.budget === DIEZ && j.offers === 0);
+  const tarea = st.task('50')!;
+  check('la tarea del escrow sabe de qué encargo es y quién es su cliente', tarea.jobId === '0' && tarea.realClient === CLIENTE.toLowerCase());
+  check('y el cliente de verdad la encuentra en «mis tareas»', st.tasksOf(CLIENTE, { role: 'client' }).some((t) => t.taskId === '50'));
+
+  // Al revés: si el JobAssigned se ve antes que su TaskCreated (barrido), también.
+  st.append([
+    delTablon('JobPosted', { jobId: '1', client: CLIENTE, category: 2, currency: NATIVO, amount: DIEZ, mode: 0, campaignId: `0x${'0'.repeat(64)}` }),
+    delTablon('JobAssigned', { jobId: '1', agent: AGENTE, escrowTaskId: '51', price: DIEZ, byClient: false }),
+    ev('TaskCreated', { taskId: '51', client: TABLON, worker: AGENTE, amount: DIEZ, currency: NATIVO }),
+  ]);
+  check('en cualquier orden', st.task('51')!.realClient === CLIENTE.toLowerCase());
+
+  // Una tarea cuyo cliente en el escrow NO es el tablón no se le atribuye a nadie.
+  st.append([
+    delTablon('JobPosted', { jobId: '9', client: OTRO, category: 2, currency: NATIVO, amount: DIEZ, mode: 0, campaignId: `0x${'0'.repeat(64)}` }),
+    delTablon('JobAssigned', { jobId: '9', agent: AGENTE, escrowTaskId: '1', price: DIEZ, byClient: false }),
+  ]);
+  check('una tarea ajena al tablón no cambia de cliente', st.task('1') === null || st.task('1')!.realClient === undefined);
+
+  console.log('\n── Cerrar, volver a publicar, retirar, caducar ──');
+  st.append([
+    delTablon('JobPosted', { jobId: '3', client: CLIENTE, category: 2, currency: NATIVO, amount: DIEZ, mode: 0, campaignId: `0x${'0'.repeat(64)}` }),
+    ev('TaskCreated', { taskId: '53', client: TABLON, worker: AGENTE, amount: DIEZ, currency: NATIVO }),
+    delTablon('JobAssigned', { jobId: '3', agent: AGENTE, escrowTaskId: '53', price: DIEZ, byClient: false }),
+    ev('TaskCancelled', { taskId: '53' }),
+    delTablon('JobSettled', { jobId: '3', refundToClient: '0', penalized: true }),
+    delTablon('JobRelisted', { jobId: '3' }),
+  ]);
+  j = st.job('3')!;
+  check('sin entrega y con republicar: otra vez publicado y sin agente', j.state === 'posted' && j.relisted === 1 && j.agent === undefined);
+  check(
+    'y sin nada de la ronda anterior: ni sanción, ni devolución, ni fecha de asignación',
+    j.penalized === undefined && j.refund === undefined && j.assignedTs === undefined && j.amount === j.budget,
+    JSON.stringify(j),
+  );
+  st.append([
+    delTablon('JobPosted', { jobId: '4', client: CLIENTE, category: 5, currency: PANAL, amount: DIEZ, mode: 0, campaignId: `0x${'ab'.repeat(32)}` }),
+    delTablon('JobWithdrawn', { jobId: '4' }),
+  ]);
+  check('retirado', st.job('4')!.state === 'withdrawn' && st.job('4')!.coin === '$PANAL' && st.job('4')!.campaignId !== null);
+  check('los filtros: por estado y por categoría', st.jobs({ state: 'posted' }).length === 1 && st.jobs({ category: 5 }).length === 1);
+
+  st.append([delTablon('CategoriesSet', { agent: AGENTE, categories: '[0,2]' })]);
+  check('las categorías de un agente, de su JSON', st.categoriasDe(AGENTE).join() === '0,2', st.categoriasDe(AGENTE).join());
+
+  console.log('\n── La vigilancia (TABLON-SECURITY.md) ──');
+  const ahora = 1_780_000_000 + 30 * 86_400;
+  // Disputa de la tarea 50: el árbitro da el 30 % al agente → al cliente, 5,6.
+  st.append([
+    ev('TaskDelivered', { taskId: '50', resultHash: '0x01' }),
+    ev('TaskDisputed', { taskId: '50', openedBy: CLIENTE }, ahora - 9 * 86_400),
+    ev('TaskDisputed', { taskId: '51', openedBy: CLIENTE }, ahora - 3 * 86_400),
+  ]);
+  let v = st.vigilancia(ahora);
+  check('una disputa de 9 días salta; una de 3, no', v.disputasLargas.length === 1 && v.disputasLargas[0]!.taskId === '50', JSON.stringify(v.disputasLargas));
+  check('y dice de qué encargo es', v.disputasLargas[0]?.jobId === '0');
+
+  st.append([
+    ev('DisputeResolved', { taskId: '50', workerPaid: '2340000000000000000', clientRefunded: '5600000000000000000', rating: 3 }),
+    delTablon('ResolutionAttested', { jobId: '0', workerShareBps: '3000' }),
+  ]);
+  v = st.vigilancia(ahora);
+  check('un reparto que cuadra con el escrow no salta', v.repartosDistintos.length === 0, JSON.stringify(v.repartosDistintos));
+  check('y la disputa resuelta deja de contar', v.disputasLargas.length === 0);
+
+  st.append([
+    ev('TaskDelivered', { taskId: '51', resultHash: '0x02' }),
+    ev('DisputeResolved', { taskId: '51', workerPaid: '9750000000000000000', clientRefunded: '0', rating: 4 }),
+    delTablon('ResolutionAttested', { jobId: '1', workerShareBps: '0' }),
+  ]);
+  v = st.vigilancia(ahora);
+  check(
+    'uno que devuelve todo cuando el escrow no devolvió nada, salta',
+    v.repartosDistintos.length === 1 && v.repartosDistintos[0]!.jobId === '1' && v.repartosDistintos[0]!.atestado === DIEZ,
+    JSON.stringify(v.repartosDistintos),
+  );
+
+  // F7: diez completadas para W, nueve del mismo cliente.
+  const lote: IndexedEvent[] = [];
+  for (let i = 0; i < 10; i++) {
+    const id = String(100 + i);
+    lote.push(
+      ev('TaskCreated', { taskId: id, client: i < 9 ? CLIENTE : OTRO, worker: W, amount: '1000000000000000', currency: NATIVO }),
+      ev('TaskCompleted', { taskId: id, worker: W, workerPaid: '975000000000000', fee: '25000000000000', rating: 5 }),
+    );
+  }
+  st.append(lote);
+  v = st.vigilancia(ahora);
+  const pareja = v.parejas.find((p) => p.agente === W.toLowerCase());
+  check('un agente con el 90 % de un solo cliente, salta', !!pareja && pareja.parte === 0.9 && pareja.clientes === 2, JSON.stringify(v.parejas));
+  check('uno con dos completadas no (hacen falta diez)', !v.parejas.some((p) => p.agente === AGENTE.toLowerCase()));
+
+  console.log('\n── Los eventos que pide el indexador son los del contrato ──');
+  // Si una firma no cuadra, getLogs no devuelve ese evento y nada falla: el
+  // tablón simplemente no se indexaría. Se compara con el ABI real.
+  const delContrato = new Set(
+    panalTablonAbi.filter((x) => x.type === 'event').map((x) => toEventSelector(x as Parameters<typeof toEventSelector>[0])),
+  );
+  const fuera = TABLON_EVENTS.filter((e) => !delContrato.has(toEventSelector(e))).map((e) => e.name);
+  check(
+    `las ${TABLON_EVENTS.length} firmas existen en PanalTablon`,
+    fuera.length === 0,
+    fuera.join(', '),
+  );
+  const sinIndexar = panalTablonAbi
+    .filter((x) => x.type === 'event' && x.name !== 'OwnershipTransferred')
+    .filter((x) => !TABLON_EVENTS.some((e) => e.name === x.name))
+    .map((x) => x.name);
+  check('y no se deja ninguno del contrato', sinIndexar.length === 0, sinIndexar.join(', '));
+
+  console.log('\n── La API ──');
+  const server = createIndexServer({ store: st, allowLocalhostOrigin: true });
+  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+  const dirS = server.address();
+  const baseApi = `http://127.0.0.1:${typeof dirS === 'object' && dirS ? dirS.port : 0}`;
+  const a1 = (await (await fetch(`${baseApi}/index/tablon/jobs?state=posted`)).json()) as { jobs: { jobId: string }[] };
+  check('/index/tablon/jobs?state=posted', a1.jobs.length === 1 && a1.jobs[0]!.jobId === '3', JSON.stringify(a1));
+  const a2 = (await (await fetch(`${baseApi}/index/tablon/job?id=0`)).json()) as { job: { state: string }; task: { taskId: string } | null };
+  check('/index/tablon/job trae su tarea', a2.job.state === 'assigned' && a2.task?.taskId === '50');
+  const a3 = await fetch(`${baseApi}/index/tablon/jobs?state=nada`);
+  check('un estado que no existe es un 400', a3.status === 400);
+  const a4 = (await (await fetch(`${baseApi}/index/tablon/vigilancia`)).json()) as { repartosDistintos: unknown[] };
+  check('/index/tablon/vigilancia', a4.repartosDistintos.length === 1);
+  server.close();
+  rmSync(dirT, { recursive: true, force: true });
+}
 
 console.log(
   failures === 0

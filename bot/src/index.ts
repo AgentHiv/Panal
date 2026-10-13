@@ -48,7 +48,7 @@ async function main(): Promise<void> {
   // Modo indexer: proceso hermano, solo lectura. No usa Store/Telegram del
   // bot (tiene su propio IndexStore en INDEX_DIR y su propia API HTTP).
   if (cfg.mode === 'indexer') {
-    const indexStore = new IndexStore(cfg.indexDir, cfg.panalTokenAddress);
+    const indexStore = new IndexStore(cfg.indexDir, cfg.panalTokenAddress, cfg.tablonAddress);
     let indexServer: Server | undefined;
     if (cfg.indexHttpPort > 0) {
       indexServer = startIndexServer(cfg, indexStore);
