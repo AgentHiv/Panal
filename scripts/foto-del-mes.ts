@@ -232,7 +232,7 @@ async function main(): Promise<void> {
       registry: panal.addresses.registry,
       escrow: panal.addresses.escrow,
       indexer: `${INDEXADOR}/index/events`,
-      ...(TABLON ? { board: TABLON, boardMetrics: `${INDEXADOR}/index/tablon/metricas` } : {}),
+      ...(TABLON ? { board: TABLON, boardMetrics: `${INDEXADOR}/index/board/metrics` } : {}),
     },
     agents: {
       registered: agentes.length,
@@ -280,19 +280,19 @@ async function main(): Promise<void> {
  */
 async function fotoDelTablon(tablon: Address, bloque: bigint, corteTs: number) {
   const inicio = Date.UTC(anio, numMes - 1, 1) / 1000;
-  const r = await fetch(`${INDEXADOR}/index/tablon/metricas?desde=${inicio}&hasta=${corte}`);
+  const r = await fetch(`${INDEXADOR}/index/board/metrics?from=${inicio}&to=${corte}`);
   if (!r.ok) return null; // un indexador sin el tablón
   const m = (await r.json()) as {
-    volumen: { publicados: number; asignados: number; retirados: number; caducados: number; republicados: number; publicadoPorMoneda: Record<string, string> };
-    rapidez: { inmediato: number | null; seleccion: number | null };
-    competencia: { medianaOfertas: number | null; sinOfertaParte: number | null; medianaPrecioSobrePresupuesto: number | null };
-    eleccion: { porElCliente: number; automatica: number; noLaMasBarata: number };
-    entrega: { completados: number; cancelados: number; disputas: number; devueltoPorMoneda: Record<string, string> };
-    sanciones: { faltas: number; suspensiones7: number; suspensiones30: number; agentes: number };
-    agentes: string[];
-    porCategoria: { categoria: number; encargos: number; sinOferta: number; medianaPorMoneda: Record<string, string> }[];
+    volume: { posted: number; assigned: number; withdrawn: number; expired: number; relisted: number; postedByCoin: Record<string, string> };
+    speed: { immediate: number | null; selection: number | null };
+    competition: { medianOffers: number | null; noOfferShare: number | null; medianPriceToBudget: number | null };
+    choice: { byClient: number; automatic: number; notCheapest: number };
+    delivery: { completed: number; cancelled: number; disputes: number; refundedByCoin: Record<string, string> };
+    penalties: { strikes: number; suspensions7d: number; suspensions30d: number; agents: number };
+    agents: string[];
+    byCategory: { category: number; jobs: number; noOffer: number; medianByCoin: Record<string, string> }[];
   };
-  if (m.volumen.publicados === 0 && m.volumen.asignados === 0) return null;
+  if (m.volume.posted === 0 && m.volume.assigned === 0) return null;
 
   const enElCorte = {
     readContract: (a: Parameters<typeof panal.publicClient.readContract>[0]) =>
@@ -314,7 +314,7 @@ async function fotoDelTablon(tablon: Address, bloque: bigint, corteTs: number) {
   };
 
   // Quien cogió encargos este mes, ¿qué nivel tenía al corte?
-  const niveles = await enTandas(m.agentes, 8, async (a) => {
+  const niveles = await enTandas(m.agents, 8, async (a) => {
     const [nivel] = (await panal.publicClient.readContract({
       address: tablon,
       abi: panalTablonAbi,
@@ -328,13 +328,13 @@ async function fotoDelTablon(tablon: Address, bloque: bigint, corteTs: number) {
   const enUnidades = (r: Record<string, string>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, formatEther(BigInt(v))]));
   return {
     ...m,
-    volumen: { ...m.volumen, publicadoPorMoneda: enUnidades(m.volumen.publicadoPorMoneda), publicadoUsd: usd(m.volumen.publicadoPorMoneda) },
-    entrega: { ...m.entrega, devueltoPorMoneda: enUnidades(m.entrega.devueltoPorMoneda), devueltoUsd: usd(m.entrega.devueltoPorMoneda) },
-    porCategoria: m.porCategoria.map((c) => ({ ...c, medianaPorMoneda: enUnidades(c.medianaPorMoneda) })),
-    agentes: { conEncargo: m.agentes.length, nivelUnoOMasAlCorte: niveles.filter((n) => n >= 1).length },
-    precios: {
-      mon: precios.mon ? { usd: precios.mon.valor, publicado: new Date(precios.mon.actualizado * 1000).toISOString(), fuente: precios.mon.fuente } : null,
-      panal: precios.panal ? { usd: precios.panal.valor, enMon: precios.panalEnMon?.valor ?? null, fuente: precios.panal.fuente } : null,
+    volume: { ...m.volume, postedByCoin: enUnidades(m.volume.postedByCoin), postedUsd: usd(m.volume.postedByCoin) },
+    delivery: { ...m.delivery, refundedByCoin: enUnidades(m.delivery.refundedByCoin), refundedUsd: usd(m.delivery.refundedByCoin) },
+    byCategory: m.byCategory.map((c) => ({ ...c, medianByCoin: enUnidades(c.medianByCoin) })),
+    agents: { tookJobs: m.agents.length, atLevelOneOrMoreAtCut: niveles.filter((n) => n >= 1).length },
+    prices: {
+      mon: precios.mon ? { usd: precios.mon.valor, publishedAt: new Date(precios.mon.actualizado * 1000).toISOString(), source: precios.mon.fuente } : null,
+      panal: precios.panal ? { usd: precios.panal.valor, inMon: precios.panalEnMon?.valor ?? null, source: precios.panal.fuente } : null,
     },
   };
 }
@@ -387,11 +387,11 @@ function tablaDelTablon(fotos: { month: string; board?: Record<string, any> }[])
   const horas = (s: number | null) => (s === null ? '—' : `${Math.round((s / 3600) * 10) / 10} h`);
   const parte = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)} %`);
   const filas = conTablon.map(({ month, board: b }) => {
-    const usd = b!.volumen.publicadoUsd === null ? '' : ` ($${b!.volumen.publicadoUsd})`;
+    const usd = b!.volume.postedUsd === null ? '' : ` ($${b!.volume.postedUsd})`;
     return (
-      `| ${month} | ${b!.volumen.publicados}${usd} | ${b!.volumen.asignados} | ${horas(b!.rapidez.seleccion)} | ` +
-      `${b!.competencia.medianaOfertas ?? '—'} | ${parte(b!.competencia.sinOfertaParte)} | ${b!.entrega.completados} | ` +
-      `${b!.sanciones.faltas} | ${b!.agentes.conEncargo} (${b!.agentes.nivelUnoOMasAlCorte} at level 1+) |`
+      `| ${month} | ${b!.volume.posted}${usd} | ${b!.volume.assigned} | ${horas(b!.speed.selection)} | ` +
+      `${b!.competition.medianOffers ?? '—'} | ${parte(b!.competition.noOfferShare)} | ${b!.delivery.completed} | ` +
+      `${b!.penalties.strikes} | ${b!.agents.tookJobs} (${b!.agents.atLevelOneOrMoreAtCut} at level 1+) |`
     );
   });
   return `

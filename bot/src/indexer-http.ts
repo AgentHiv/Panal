@@ -18,25 +18,27 @@
  *   GET /index/stats
  *       Contadores globales + series diarias: { lastBlock, totalEvents,
  *       byType, totals: { agents, tasks, completed }, daily30, daily7 }.
- *   GET /index/tablon/jobs?state=&category=&client=&agent=&limit=
- *       Los encargos del tablón con reglas (PanalTablon), del más nuevo al
- *       más viejo. `state`: posted | assigned | closed | withdrawn | expired.
- *   GET /index/tablon/job?id=<jobId>
- *       Un encargo, con su tarea del escrow si ya tiene agente.
- *   GET /index/tablon/vigilancia
- *       Las señales de contracts/TABLON-SECURITY.md: repartos que no cuadran,
- *       disputas de 7 días o más, agentes con casi un solo cliente y
- *       direcciones que se contratan la una a la otra.
- *   GET /index/tablon/agente?address=
- *       Un agente en el tablón: categorías, faltas, suspensión y encargos.
- *   GET /index/tablon/cliente?address=
+ *
+ *   El tablón con reglas (PanalTablon). Rutas y campos en inglés, como el
+ *   resto de la API pública; por dentro el índice habla en español, y se
+ *   traduce aquí al responder (ver `enIngles`):
+ *   GET /index/board/jobs?state=&category=&client=&agent=&limit=
+ *       Los encargos, del más nuevo al más viejo. `state`: posted | assigned |
+ *       closed | withdrawn | expired.
+ *   GET /index/board/job?id=<jobId>
+ *       Un encargo, con sus ofertas en pie, su tarea del escrow y su campaña.
+ *   GET /index/board/agent?address=
+ *       Un agente: categorías, faltas, suspensión y encargos.
+ *   GET /index/board/client?address=
  *       Un cliente: lo que el tablón le debe por moneda y sus encargos.
- *   GET /index/tablon/config
+ *   GET /index/board/config
  *       Topes por moneda, pausa, niveles y encargos de novato vigentes.
- *   GET /index/tablon/campanas?owner=   ·   GET /index/tablon/campana?key=
+ *   GET /index/board/campaigns?owner=   ·   GET /index/board/campaign?key=
  *       Las campañas, con su tope por agente y lo que ha cogido cada uno.
- *   GET /index/tablon/metricas?desde=<ts>&hasta=<ts>
- *       Las cifras del tablón de un periodo, para la foto del mes.
+ *   GET /index/board/metrics?from=<ts>&to=<ts>
+ *       Las cifras de un periodo, para la foto del mes.
+ *   GET /index/board/monitoring
+ *       Las señales de contracts/TABLON-SECURITY.md.
  *
  * Protecciones (mismo patrón que http.ts):
  *   - CORS restringido a https://panal.lat (y http://localhost:* fuera de
@@ -47,7 +49,99 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { allowedOrigin, clientIp } from './net.js';
 import type { BotConfig } from './config.js';
-import type { IndexStore } from './indexer-store.js';
+import type {
+  AgenteEnElTablon,
+  CampanaIndexada,
+  IndexStore,
+  MetricasTablon,
+  Vigilancia,
+} from './indexer-store.js';
+
+/*
+ * El índice guarda en español, como el resto del código; la API pública
+ * responde en inglés, como sus otras rutas. Esto traduce en el borde.
+ */
+const enIngles = {
+  agente: (a: AgenteEnElTablon) => ({
+    agent: a.agent,
+    categories: a.categorias,
+    strikes: a.faltas,
+    strikesIn90Days: a.faltasEn90Dias,
+    suspendedUntil: a.suspendidoHasta,
+    lastStrikeTs: a.ultimaFaltaTs ?? null,
+    assigned: a.asignados,
+    closed: a.cerrados,
+    penalized: a.sancionados,
+  }),
+  campana: (c: CampanaIndexada) => ({
+    key: c.key,
+    campaignId: c.campaignId,
+    owner: c.owner,
+    jobs: c.jobs,
+    cap: c.cap,
+    taken: c.tomados,
+  }),
+  metricas: (m: MetricasTablon) => ({
+    from: m.desde,
+    to: m.hasta,
+    volume: {
+      posted: m.volumen.publicados,
+      assigned: m.volumen.asignados,
+      withdrawn: m.volumen.retirados,
+      expired: m.volumen.caducados,
+      relisted: m.volumen.republicados,
+      postedByCoin: m.volumen.publicadoPorMoneda,
+    },
+    speed: { immediate: m.rapidez.inmediato, selection: m.rapidez.seleccion },
+    competition: {
+      medianOffers: m.competencia.medianaOfertas,
+      noOfferShare: m.competencia.sinOfertaParte,
+      medianPriceToBudget: m.competencia.medianaPrecioSobrePresupuesto,
+    },
+    choice: {
+      byClient: m.eleccion.porElCliente,
+      automatic: m.eleccion.automatica,
+      notCheapest: m.eleccion.noLaMasBarata,
+    },
+    delivery: {
+      completed: m.entrega.completados,
+      cancelled: m.entrega.cancelados,
+      disputes: m.entrega.disputas,
+      refundedByCoin: m.entrega.devueltoPorMoneda,
+    },
+    penalties: {
+      strikes: m.sanciones.faltas,
+      suspensions7d: m.sanciones.suspensiones7,
+      suspensions30d: m.sanciones.suspensiones30,
+      agents: m.sanciones.agentes,
+    },
+    agents: m.agentes,
+    byCategory: m.porCategoria.map((c) => ({
+      category: c.categoria,
+      jobs: c.encargos,
+      noOffer: c.sinOferta,
+      medianByCoin: c.medianaPorMoneda,
+    })),
+  }),
+  vigilancia: (v: Vigilancia) => ({
+    mismatchedSplits: v.repartosDistintos.map((r) => ({
+      jobId: r.jobId,
+      escrowTaskId: r.escrowTaskId,
+      attestedRefund: r.atestado,
+      escrowRefund: r.escrow,
+    })),
+    longDisputes: v.disputasLargas.map((d) => ({ taskId: d.taskId, jobId: d.jobId ?? null, openedTs: d.abiertaTs, days: d.dias })),
+    concentratedAgents: v.parejas.map((p) => ({
+      agent: p.agente,
+      completed: p.completadas,
+      clients: p.clientes,
+      topClient: p.principal,
+      share: p.parte,
+    })),
+    crossHiring: v.cruzados.map((c) => ({ a: c.a, b: c.b, aForB: c.aParaB, bForA: c.bParaA })),
+    generatedTs: v.generado,
+  }),
+};
 
 // ---------------------------------------------------------------------------
 // Rate limit por IP: ventana deslizante de 1 minuto, 60 peticiones máximo.
@@ -318,7 +412,7 @@ export function createIndexServer(deps: IndexServerDeps): Server {
       // La web y la app leen de aquí la lista, y la cadena solo para el
       // encargo que se abre: leer los 200 últimos encargos del contrato, uno a
       // uno, en cada carga sería lo que ya pasó con el catálogo.
-      case '/index/tablon/jobs': {
+      case '/index/board/jobs': {
         const estados = ['posted', 'assigned', 'closed', 'withdrawn', 'expired'] as const;
         const stateRaw = url.searchParams.get('state');
         if (stateRaw !== null && !(estados as readonly string[]).includes(stateRaw)) {
@@ -359,7 +453,7 @@ export function createIndexServer(deps: IndexServerDeps): Server {
         return;
       }
 
-      case '/index/tablon/job': {
+      case '/index/board/job': {
         const id = url.searchParams.get('id');
         if (!id || !/^\d{1,20}$/.test(id)) {
           json(res, 400, { error: 'id required' });
@@ -374,29 +468,32 @@ export function createIndexServer(deps: IndexServerDeps): Server {
           job,
           offers: store.ofertasDe(id),
           task: job.escrowTaskId ? store.task(job.escrowTaskId) : null,
-          campaign: job.campaignKey ? store.campana(job.campaignKey) : null,
+          campaign: (() => {
+            const c = job.campaignKey ? store.campana(job.campaignKey) : null;
+            return c ? enIngles.campana(c) : null;
+          })(),
           lastBlock: store.lastBlock,
         });
         return;
       }
 
-      case '/index/tablon/agente':
-      case '/index/tablon/cliente': {
+      case '/index/board/agent':
+      case '/index/board/client': {
         const address = url.searchParams.get('address');
         if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address)) {
           json(res, 400, { error: 'address required (0x + 40 hex)' });
           return;
         }
-        if (url.pathname === '/index/tablon/agente') {
+        if (url.pathname === '/index/board/agent') {
           json(res, 200, {
-            ...store.agenteEnElTablon(address),
+            ...enIngles.agente(store.agenteEnElTablon(address)),
             jobs: store.jobs({ agent: address, limit: TASKS_DEFAULT_LIMIT }),
             lastBlock: store.lastBlock,
           });
         } else {
           json(res, 200, {
             client: address.toLowerCase(),
-            porCobrar: store.porCobrarDe(address),
+            owed: store.porCobrarDe(address),
             jobs: store.jobs({ client: address, limit: TASKS_DEFAULT_LIMIT }),
             lastBlock: store.lastBlock,
           });
@@ -404,23 +501,23 @@ export function createIndexServer(deps: IndexServerDeps): Server {
         return;
       }
 
-      case '/index/tablon/config': {
+      case '/index/board/config': {
         json(res, 200, { ...store.configTablon(), lastBlock: store.lastBlock });
         return;
       }
 
-      case '/index/tablon/campanas': {
+      case '/index/board/campaigns': {
         const owner = url.searchParams.get('owner');
         if (owner !== null && !/^0x[0-9a-fA-F]{40}$/.test(owner)) {
           json(res, 400, { error: 'bad owner (0x + 40 hex)' });
           return;
         }
-        const campanas = store.campanas(owner ?? undefined);
-        json(res, 200, { campanas, count: campanas.length, lastBlock: store.lastBlock });
+        const campaigns = store.campanas(owner ?? undefined).map(enIngles.campana);
+        json(res, 200, { campaigns, count: campaigns.length, lastBlock: store.lastBlock });
         return;
       }
 
-      case '/index/tablon/campana': {
+      case '/index/board/campaign': {
         const key = url.searchParams.get('key');
         if (!key || !/^0x[0-9a-fA-F]{64}$/.test(key)) {
           json(res, 400, { error: 'key required (0x + 64 hex)' });
@@ -431,23 +528,23 @@ export function createIndexServer(deps: IndexServerDeps): Server {
           json(res, 404, { error: 'no such campaign' });
           return;
         }
-        json(res, 200, { ...c, lastBlock: store.lastBlock });
+        json(res, 200, { ...enIngles.campana(c), lastBlock: store.lastBlock });
         return;
       }
 
-      case '/index/tablon/metricas': {
-        const desde = Number(url.searchParams.get('desde'));
-        const hasta = Number(url.searchParams.get('hasta'));
-        if (!Number.isInteger(desde) || !Number.isInteger(hasta) || desde < 0 || hasta <= desde) {
-          json(res, 400, { error: 'desde and hasta required (unix seconds, desde < hasta)' });
+      case '/index/board/metrics': {
+        const from = Number(url.searchParams.get('from'));
+        const to = Number(url.searchParams.get('to'));
+        if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to <= from) {
+          json(res, 400, { error: 'from and to required (unix seconds, from < to)' });
           return;
         }
-        json(res, 200, { ...store.metricasTablon(desde, hasta), lastBlock: store.lastBlock });
+        json(res, 200, { ...enIngles.metricas(store.metricasTablon(from, to)), lastBlock: store.lastBlock });
         return;
       }
 
-      case '/index/tablon/vigilancia': {
-        json(res, 200, { ...store.vigilancia(), lastBlock: store.lastBlock });
+      case '/index/board/monitoring': {
+        json(res, 200, { ...enIngles.vigilancia(store.vigilancia()), lastBlock: store.lastBlock });
         return;
       }
 
@@ -477,7 +574,7 @@ export function startIndexServer(cfg: BotConfig, store: IndexStore): Server {
     allowLocalhostOrigin: cfg.dryRun || process.env.NODE_ENV !== 'production',
   });
   server.listen(cfg.indexHttpPort, () => {
-    console.log(`   API del índice: http://localhost:${cfg.indexHttpPort}/index/events|agents|stats|tablon/jobs`);
+    console.log(`   API del índice: http://localhost:${cfg.indexHttpPort}/index/events|agents|stats|tasks|board/…`);
   });
   return server;
 }

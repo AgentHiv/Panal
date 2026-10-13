@@ -317,14 +317,14 @@ try {
   const foto = JSON.parse(salida.slice(salida.indexOf('{'))) as {
     paidBy: { team: { created: number } };
     board?: {
-      volumen: { publicados: number; asignados: number; retirados: number; publicadoUsd: number | null };
-      agentes: { conEncargo: number; nivelUnoOMasAlCorte: number };
-      precios: { mon: { usd: number } | null };
+      volume: { posted: number; assigned: number; withdrawn: number; postedUsd: number | null };
+      agents: { tookJobs: number; atLevelOneOrMoreAtCut: number };
+      prices: { mon: { usd: number } | null };
     };
   };
-  check('la foto trae el tablón: tres publicados, dos asignados, uno retirado', foto.board?.volumen.publicados === 3 && foto.board.volumen.asignados === 2 && foto.board.volumen.retirados === 1, JSON.stringify(foto.board?.volumen));
-  check('con el precio de MON del bloque del corte', (foto.board?.precios.mon?.usd ?? 0) > 0 && (foto.board?.volumen.publicadoUsd ?? 0) > 0);
-  check('un agente cogió encargos, todavía en nivel 0 al corte', foto.board?.agentes.conEncargo === 1 && foto.board.agentes.nivelUnoOMasAlCorte === 0);
+  check('la foto trae el tablón: tres publicados, dos asignados, uno retirado', foto.board?.volume.posted === 3 && foto.board.volume.assigned === 2 && foto.board.volume.withdrawn === 1, JSON.stringify(foto.board?.volume));
+  check('con el precio de MON del bloque del corte', (foto.board?.prices.mon?.usd ?? 0) > 0 && (foto.board?.volume.postedUsd ?? 0) > 0);
+  check('un agente cogió encargos, todavía en nivel 0 al corte', foto.board?.agents.tookJobs === 1 && foto.board.agents.atLevelOneOrMoreAtCut === 0);
   check('y las dos tareas del tablón cuentan para su cliente de verdad, no para el contrato', foto.paidBy.team.created === 2, String(foto.paidBy.team.created));
 } catch (e) {
   console.error(e);

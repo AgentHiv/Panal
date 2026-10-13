@@ -334,14 +334,22 @@ rmSync(dir, { recursive: true, force: true });
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
   const dirS = server.address();
   const baseApi = `http://127.0.0.1:${typeof dirS === 'object' && dirS ? dirS.port : 0}`;
-  const a1 = (await (await fetch(`${baseApi}/index/tablon/jobs?state=posted`)).json()) as { jobs: { jobId: string }[] };
-  check('/index/tablon/jobs?state=posted', a1.jobs.length === 1 && a1.jobs[0]!.jobId === '3', JSON.stringify(a1));
-  const a2 = (await (await fetch(`${baseApi}/index/tablon/job?id=0`)).json()) as { job: { state: string }; task: { taskId: string } | null };
-  check('/index/tablon/job trae su tarea', a2.job.state === 'assigned' && a2.task?.taskId === '50');
-  const a3 = await fetch(`${baseApi}/index/tablon/jobs?state=nada`);
+  const a1 = (await (await fetch(`${baseApi}/index/board/jobs?state=posted`)).json()) as { jobs: { jobId: string }[] };
+  check('/index/board/jobs?state=posted', a1.jobs.length === 1 && a1.jobs[0]!.jobId === '3', JSON.stringify(a1));
+  const a2 = (await (await fetch(`${baseApi}/index/board/job?id=0`)).json()) as { job: { state: string }; task: { taskId: string } | null };
+  check('/index/board/job trae su tarea', a2.job.state === 'assigned' && a2.task?.taskId === '50');
+  const a3 = await fetch(`${baseApi}/index/board/jobs?state=nada`);
   check('un estado que no existe es un 400', a3.status === 400);
-  const a4 = (await (await fetch(`${baseApi}/index/tablon/vigilancia`)).json()) as { repartosDistintos: unknown[] };
-  check('/index/tablon/vigilancia', a4.repartosDistintos.length === 1);
+  const a4 = (await (await fetch(`${baseApi}/index/board/monitoring`)).json()) as {
+    mismatchedSplits: { attestedRefund: string; escrowRefund: string }[];
+  };
+  check(
+    '/index/board/monitoring, en inglés',
+    a4.mismatchedSplits.length === 1 && a4.mismatchedSplits[0]!.escrowRefund === '0',
+    JSON.stringify(a4),
+  );
+  const a5 = await fetch(`${baseApi}/index/tablon/jobs`);
+  check('las rutas en español ya no existen', a5.status === 404);
   server.close();
   rmSync(dirT, { recursive: true, force: true });
 }
@@ -470,22 +478,23 @@ rmSync(dir, { recursive: true, force: true });
     const r = await fetch(`${base}${ruta}`);
     return { status: r.status, body: (await r.json()) as Record<string, unknown> };
   };
-  const r1 = await pedir('/index/tablon/job?id=1');
-  check('/job trae su campaña', (r1.body.campaign as { key?: string } | null)?.key === clave);
-  const r2 = await pedir(`/index/tablon/agente?address=${OTRO}`);
-  check('/agente', r2.status === 200 && r2.body.faltas === 1);
-  const r3 = await pedir(`/index/tablon/cliente?address=${CLIENTE}`);
-  check('/cliente, con lo que se le debe', (r3.body.porCobrar as Record<string, string>)[NATIVO] === '200000000000000000');
-  const r4 = await pedir('/index/tablon/config');
+  const r1 = await pedir('/index/board/job?id=1');
+  check('/job trae su campaña, con lo cogido en inglés', (r1.body.campaign as { key?: string; taken?: object } | null)?.key === clave && 'taken' in (r1.body.campaign as object));
+  const r2 = await pedir(`/index/board/agent?address=${OTRO}`);
+  check('/agent', r2.status === 200 && r2.body.strikes === 1 && r2.body.strikesIn90Days === 1 && 'suspendedUntil' in r2.body, JSON.stringify(r2.body));
+  const r3 = await pedir(`/index/board/client?address=${CLIENTE}`);
+  check('/client, con lo que se le debe', (r3.body.owed as Record<string, string>)[NATIVO] === '200000000000000000');
+  const r4 = await pedir('/index/board/config');
   check('/config', r4.body.paused === true && r4.body.newcomerJobs === 2);
-  const r5 = await pedir(`/index/tablon/campanas?owner=${DUENO}`);
-  check('/campanas de un dueño', r5.body.count === 1);
-  const r6 = await pedir(`/index/tablon/campana?key=${clave}`);
-  check('/campana', r6.status === 200 && r6.body.cap === 2);
-  const r7 = await pedir('/index/tablon/metricas?desde=1780000000&hasta=1780086400');
-  check('/metricas', r7.status === 200 && (r7.body.volumen as { publicados: number }).publicados === 4);
-  const r8 = await pedir('/index/tablon/metricas?desde=5&hasta=1');
-  check('/metricas con fechas al revés es un 400', r8.status === 400);
+  const r5 = await pedir(`/index/board/campaigns?owner=${DUENO}`);
+  check('/campaigns de un dueño', r5.body.count === 1 && Array.isArray(r5.body.campaigns));
+  const r6 = await pedir(`/index/board/campaign?key=${clave}`);
+  check('/campaign', r6.status === 200 && r6.body.cap === 2);
+  const r7 = await pedir('/index/board/metrics?from=1780000000&to=1780086400');
+  const vol = r7.body.volume as { posted: number; postedByCoin: Record<string, string> } | undefined;
+  check('/metrics, en inglés', r7.status === 200 && vol?.posted === 4 && !!vol.postedByCoin && 'byCategory' in r7.body, JSON.stringify(r7.body).slice(0, 200));
+  const r8 = await pedir('/index/board/metrics?from=5&to=1');
+  check('/metrics con fechas al revés es un 400', r8.status === 400);
   server.close();
   rmSync(dirR, { recursive: true, force: true });
 }
