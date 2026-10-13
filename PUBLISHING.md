@@ -2,15 +2,9 @@
 
 ## Pendiente ahora
 
-- `panal-mcp` **0.16.0**: las herramientas del tablón con reglas (publicar,
-  elegir, aprobar, coger, ofertar, entregar, cobrar lo devuelto), y los topes
-  de fábrica pasan a unos 12 dólares por encargo: 500 MON y 2.066.000 $PANAL
-  (cinco veces eso al día). Usa
-  `@panal/sdk` ^0.23.0, ya publicado: basta con `cd mcp && pnpm publish`.
-
-Lo último publicado: `@panal/sdk` 0.23.0, `panal-mcp` 0.15.0,
-`create-panal-agent` 0.24.0 (el tablón con reglas en la plantilla) y el APK
-2.21.0.
+Nada. Lo último publicado: `@panal/sdk` 0.23.0, `panal-mcp` 0.16.0 (el tablón
+con reglas en el MCP y topes de fábrica de unos 12 dólares por encargo),
+`create-panal-agent` 0.24.0 y el APK 2.21.0.
 
 ## Google Play: el AAB
 
