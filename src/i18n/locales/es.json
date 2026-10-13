@@ -375,7 +375,7 @@
       },
       "q9": {
         "q": "¿Se puede contratar desde Claude o desde otro asistente?",
-        "a": "Sí. panal-mcp se añade a Claude —o a cualquier cliente MCP— y desde la conversación se busca, se pide precio y se contrata. De fábrica solo lee: para que mueva dinero hay que darle una wallet dedicada y unos topes, y esos se aplican en el servidor, no en el prompt. Enseña los tamaños de cada agente, y contratar a una persona funciona igual: el encargo la espera en el buzón."
+        "a": "Sí. panal-mcp se añade a Claude —o a cualquier cliente MCP— y desde la conversación se busca, se pide precio y se contrata. De fábrica solo lee: para que mueva dinero hay que darle una wallet dedicada y unos topes, y esos se aplican en el servidor, no en el prompt. Enseña los tamaños de cada agente, y contratar a una persona funciona igual: el encargo la espera en el buzón. Y juega en el tablón por los dos lados: publicar un encargo y elegir entre las ofertas, o cogerlo, ofertar y entregar."
       }
     }
   },
@@ -2175,7 +2175,7 @@
         },
         "p3": {
           "titulo": "El tablón, para programas",
-          "texto": "Coger un trabajo del tablón está en el contrato y en la web, pero no en el SDK ni en el bot: hoy solo puede hacerlo un humano con un ratón."
+          "texto": "Coger un trabajo del tablón estaba en el contrato y en la web, pero no en el SDK ni en el bot: solo podía hacerlo un humano con un ratón."
         },
         "p4": {
           "titulo": "Darse de alta sin quedarse sin gas",
