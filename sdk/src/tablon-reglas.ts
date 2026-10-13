@@ -19,6 +19,7 @@
  */
 
 import { encodeAbiParameters, keccak256, toBytes, type Address, type Hex } from 'viem';
+import type { TipoDeAgente } from './tipo.js';
 
 /** Cómo se asigna un encargo. */
 export enum ModoTablon {
@@ -134,6 +135,46 @@ export type CategoriaTablon = (typeof CATEGORIAS_TABLON)[number];
 /** El nombre de una categoría por su número, o `null` si no está en la lista. */
 export function categoriaDelTablon(numero: number): CategoriaTablon | null {
   return CATEGORIAS_TABLON[numero] ?? null;
+}
+
+/**
+ * Para quién es un encargo: cualquiera, solo personas o solo agentes.
+ *
+ * El contrato no lo sabe, y no podría: que alguien es una persona lo declara
+ * él en su ficha (`tipo:persona`) y nada en la cadena lo comprueba. Así que va
+ * en el ANUNCIO, delante del texto —`para:personas · Traducir un menú`—, y
+ * como el anuncio queda anclado por su hash, nadie lo cambia después, ni el
+ * buzón. Lo respetan la web, la app, el MCP y los agentes de la plantilla; un
+ * programa ajeno podría ignorarlo, y por eso «solo personas» va siempre en
+ * selección, donde elige el cliente (ver `problemaAlPublicar`).
+ */
+export type AudienciaTablon = 'todos' | 'personas' | 'agentes';
+
+const MARCA_AUDIENCIA = /^para:(personas|agentes)\s*·\s*/i;
+
+/** Lo que cabe en un anuncio: el buzón no guarda más (bot/src/buzon.ts). */
+export const MAX_ANUNCIO = 500;
+/** Lo que puede escribir quien publica, dejando sitio a la marca de audiencia. */
+export const MAX_TEXTO_ANUNCIO = MAX_ANUNCIO - 'para:personas · '.length;
+
+/** El anuncio partido: para quién es y el texto que se enseña, sin la marca. */
+export function leerAnuncio(anuncio: string): { audiencia: AudienciaTablon; texto: string } {
+  const m = MARCA_AUDIENCIA.exec(anuncio);
+  if (!m) return { audiencia: 'todos', texto: anuncio };
+  return { audiencia: m[1]!.toLowerCase() as AudienciaTablon, texto: anuncio.slice(m[0].length) };
+}
+
+/** El anuncio tal como se publica (y se hashea), con su marca si la lleva. */
+export function anuncioPara(audiencia: AudienciaTablon, texto: string): string {
+  // Sin la marca que trajera ya: dos marcas se leerían como texto.
+  const limpio = leerAnuncio(texto.trim()).texto.trim();
+  return audiencia === 'todos' ? limpio : `para:${audiencia} · ${limpio}`;
+}
+
+/** Si alguien de ese tipo puede coger u ofertar en un encargo para esa audiencia. */
+export function audienciaAdmite(audiencia: AudienciaTablon, tipo: TipoDeAgente): boolean {
+  if (audiencia === 'todos') return true;
+  return audiencia === 'personas' ? tipo === 'persona' : tipo === 'bot';
 }
 
 /**
@@ -268,11 +309,19 @@ export interface PublicarEnElTablon {
  */
 export function problemaAlPublicar(p: PublicarEnElTablon): string | null {
   if (!p.encargo.trim()) return 'El encargo está vacío.';
-  if (!p.anuncio.trim()) return 'El anuncio está vacío: es lo único que se lee antes de coger.';
+  // Sin contar la marca de audiencia: `para:personas · ` solo no es un anuncio.
+  if (!leerAnuncio(p.anuncio).texto.trim()) return 'El anuncio está vacío: es lo único que se lee antes de coger.';
+  // El buzón no guarda más: pasarse dejaría el encargo pagado y sin anuncio.
+  if (p.anuncio.length > MAX_ANUNCIO) return `El anuncio pasa de ${MAX_ANUNCIO} caracteres, contando su marca.`;
   if (!Number.isInteger(p.categoria) || p.categoria < 0 || p.categoria > 255) return 'La categoría es un número de 0 a 255.';
   if (p.importe <= 0n) return 'El importe tiene que ser mayor que cero.';
   if (p.plazoEntregaS < MIN_PLAZO_ENTREGA_S) return 'El plazo de entrega es de una hora como mínimo.';
   if (p.caducaEnS <= 0) return 'Tiene que caducar en el futuro.';
+  // Solo personas, en selección: elige el cliente. En inmediato lo cogería el
+  // primero que pase las reglas, y la cadena no sabe quién es persona.
+  if (leerAnuncio(p.anuncio).audiencia === 'personas' && p.modo !== ModoTablon.Seleccion) {
+    return 'Un encargo solo para personas se publica en selección: así eliges tú a la persona.';
+  }
   if (p.modo === ModoTablon.Seleccion) {
     const ofertas = p.ventanaOfertasS ?? 0;
     const eleccion = p.ventanaEleccionS ?? 0;

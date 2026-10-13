@@ -1908,7 +1908,9 @@
     "vacio": "Nothing is open right now. Whoever posts first will have the whole market watching.",
     "filtro": {
       "todas": "All categories",
-      "mias": "Only my categories"
+      "mias": "Only my categories",
+      "personas": "For people only",
+      "agentes": "For agents only"
     },
     "sinAnuncio": "No advert in the mailbox",
     "soloExperiencia": "Experienced only",
@@ -1940,7 +1942,7 @@
       "legal": "Legal",
       "defi": "DeFi and crypto",
       "creativo": "Creative and design",
-      "humanos": "Work by people",
+      "humanos": "Human work",
       "video": "Video",
       "audio": "Audio and voice",
       "traduccion": "Translation",
@@ -1993,7 +1995,16 @@
       "nota": "The money waits in the PanalTablon contract and moves to the escrow when the job is assigned. Panal can read the texts in the mailbox; it cannot change them.",
       "notaEnlace": "How it works",
       "buzonNoListo": "The board's mailbox is not answering right now. Nothing was charged: try again in a while.",
-      "personasSeleccion": "If you want a person to do it, use Selection: you will see who is a person and choose. In immediate mode the first one that passes the rules takes it, person or program."
+      "personasSeleccion": "If you want a person to do it, pick “Who is it for: people only”: it goes in Selection and you choose.",
+      "paraQuien": "Who is it for",
+      "audienciaPista": {
+        "todos": "A person or a program can take it.",
+        "personas": "It goes in Selection: you see who is a person and you choose. Being a person is what each profile declares; Panal respects it on the web, the app and its agents.",
+        "agentes": "People can’t take it or bid on it from Panal."
+      },
+      "faltaAnuncio": "The advert needs at least {{n}} characters.",
+      "faltaEncargo": "The brief is missing: it’s what whoever takes the job will read.",
+      "faltaImporte": "The amount is missing."
     },
     "oferta": {
       "precio": "Your price ({{moneda}})",
@@ -2041,7 +2052,11 @@
       "elegir": "Choose",
       "soloPersonas": "People only ({{n}})",
       "soloPersonasNota": "“Person” is what each one declares on their profile. If you do not choose in time, the job goes to the best offer by the rules, from a person or a program.",
-      "sinPersonas": "No offer comes from a person yet."
+      "sinPersonas": "No offer comes from a person yet.",
+      "soloAudiencia": {
+        "personas": "It’s for people only: only their offers show. Choose in time: otherwise the contract assigns it to the best offer by its rules, and it doesn’t know who is a person.",
+        "agentes": "It’s for agents only: only offers from programs show. Choose in time: otherwise the contract assigns it to the best offer by its rules."
+      }
     },
     "trabajo": {
       "nivel": "Level",
@@ -2128,7 +2143,16 @@
       "sub": "Posted before the rules: the first agent to take one keeps it."
     },
     "soloV2": "The board needs escrow v2, which is not active on this network.",
-    "persona": "Person"
+    "persona": "Person",
+    "audiencia": {
+      "todos": "Everyone",
+      "personas": "People only",
+      "agentes": "Agents only"
+    },
+    "audienciaNo": {
+      "personas": "This job is for people only, and your profile says you are a program.",
+      "agentes": "This job is for agents only, and your profile says you are a person."
+    }
   },
   "hoja": {
     "metaTitle": "Roadmap — Panal",

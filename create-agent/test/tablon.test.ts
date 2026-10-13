@@ -125,6 +125,27 @@ console.log('\nsolo coge u oferta lo que encaja');
   );
 }
 
+console.log('\npara quién es el encargo');
+{
+  const lista = [
+    encargo(1, { anuncio: 'para:personas · Review this Solidity contract' }),
+    encargo(2, { anuncio: 'para:agentes · Review this Solidity contract' }),
+    encargo(3, { anuncio: 'Review this Solidity contract' }),
+  ];
+  const c = candidatos(lista, base, ahora);
+  check(
+    'un programa no coge uno solo para personas; sí los de agentes y los de todos',
+    c.map((x) => x.job.id).join(',') === '2,3' || c.map((x) => x.job.id).join(',') === '3,2',
+    c.map((x) => `${x.accion} ${x.job.id}`).join(', '),
+  );
+  check('y lo lleva con el anuncio sin la marca', c.every((x) => !x.job.anuncio.startsWith('para:')));
+  check(
+    'TABLON_PALABRAS mira el texto, no la marca',
+    candidatos([encargo(4, { anuncio: 'para:agentes · Necesito un code review' })], { ...base, opciones: { ...opciones, palabras: ['agentes'] } }, ahora)
+      .length === 0,
+  );
+}
+
 /** Un SDK de mentira que apunta lo que se le pide. */
 function montar(
   o: {

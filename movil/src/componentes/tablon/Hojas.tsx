@@ -8,7 +8,16 @@
 import { useState } from 'react';
 import { useSignMessage } from 'wagmi';
 import { formatEther, keccak256, parseEther, parseEventLogs, toBytes, type Address, type Hex } from 'viem';
-import { CATEGORIAS_TABLON, ModoTablon, panalTablonAbi, type EncargoConReglas, type OfertaConReglas } from '@panal/sdk';
+import {
+  CATEGORIAS_TABLON,
+  MAX_TEXTO_ANUNCIO,
+  ModoTablon,
+  anuncioPara,
+  panalTablonAbi,
+  type AudienciaTablon,
+  type EncargoConReglas,
+  type OfertaConReglas,
+} from '@panal/sdk';
 import { NATIVE_CURRENCY, PANAL_TOKEN_ADDRESS, publicClient } from '@/contracts/config';
 import { useReglasDelTablon } from '@/hooks/useTablonReglas';
 import {
@@ -368,6 +377,9 @@ function HojaEntregar({ job, firma, onCerrar }: { job: EncargoConReglas; firma: 
 
 const HORA = 3600;
 const DIA = 86_400;
+const MIN_ANUNCIO = 10;
+/** Para quién es: el contrato no lo sabe, va en el anuncio (ver `anuncioPara`). */
+const AUDIENCIAS: readonly AudienciaTablon[] = ['todos', 'personas', 'agentes'];
 const PLAZOS = [6 * HORA, DIA, 3 * DIA, 7 * DIA];
 const VENTANAS_OFERTAS = [2 * HORA, DIA, 3 * DIA];
 const VENTANAS_ELECCION = [DIA, 3 * DIA, 7 * DIA];
@@ -409,6 +421,7 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
   const [anuncio, setAnuncio] = useState('');
   const [encargo, setEncargo] = useState('');
   const [categoria, setCategoria] = useState<number | null>(null);
+  const [audiencia, setAudiencia] = useState<AudienciaTablon>('todos');
   const [enPanal, setEnPanal] = useState(false);
   const [importe, setImporte] = useState('');
   const [modo, setModo] = useState<ModoTablon>(ModoTablon.Seleccion);
@@ -419,7 +432,8 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
   const [experiencia, setExperiencia] = useState(false);
   const [republicar, setRepublicar] = useState(false);
   const [paso, setPaso] = useState<'permiso' | 'publicando' | 'textos' | null>(null);
-  const [hecho, setHecho] = useState<{ jobId: bigint; textos: boolean } | null>(null);
+  // Con los textos tal y como se hashearon: reintentar tiene que mandar esos.
+  const [hecho, setHecho] = useState<{ jobId: bigint; textos: boolean; anuncio: string; encargo: string } | null>(null);
 
   const moneda = (enPanal ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY) as Address;
   const simbolo = enPanal ? '$PANAL' : 'MON';
@@ -429,7 +443,7 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
   const seleccion = modo === ModoTablon.Seleccion;
 
   const problema = ((): string | null => {
-    if (anuncioT.length < 10 || !encargoT) return null;
+    if (anuncioT.length < MIN_ANUNCIO || !encargoT) return null;
     if (categoria === null) return P.faltaCategoria;
     if (wei === null || wei === 0n) return importe ? P.importeMal : null;
     if (reglas) {
@@ -444,11 +458,27 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
     if (seleccion && caduca < ofertas + eleccion) return P.caducaCorta;
     return null;
   })();
-  const listo = anuncioT.length >= 10 && !!encargoT && categoria !== null && wei !== null && wei > 0n && !problema && !reglas?.pausado;
+  const listo = anuncioT.length >= MIN_ANUNCIO && !!encargoT && categoria !== null && wei !== null && wei > 0n && !problema && !reglas?.pausado;
+  /**
+   * Lo que falta, cuando el botón está apagado sin un problema que decir. Sin
+   * esto se quedaba gris y callado con un anuncio de nueve letras o sin
+   * importe, y desde fuera parecía que publicar no funcionaba.
+   */
+  const falta =
+    anuncioT.length < MIN_ANUNCIO
+      ? P.faltaAnuncio(MIN_ANUNCIO)
+      : !encargoT
+        ? P.faltaEncargo
+        : categoria === null
+          ? P.faltaCategoria
+          : !importe.trim()
+            ? P.faltaImporte
+            : null;
 
   const publicar = async () => {
     if (wei === null || categoria === null) return;
-    const textoAnuncio = anuncioT;
+    // El anuncio lleva delante para quién es; su hash lo deja fijo.
+    const textoAnuncio = anuncioPara(audiencia, anuncioT);
     const textoEncargo = encargoT;
     await firma.ejecutar('publicar', async (e, c) => {
       try {
@@ -488,7 +518,7 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
         } catch {
           textos = false;
         }
-        setHecho({ jobId: ev.args.jobId, textos });
+        setHecho({ jobId: ev.args.jobId, textos, anuncio: textoAnuncio, encargo: textoEncargo });
       } finally {
         setPaso(null);
       }
@@ -499,7 +529,7 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
     if (!hecho) return;
     setPaso('textos');
     try {
-      await guardarTextos(hecho.jobId, anuncioT, encargoT);
+      await guardarTextos(hecho.jobId, hecho.anuncio, hecho.encargo);
       setHecho({ ...hecho, textos: true });
     } catch {
       // sigue ofreciendo el reintento
@@ -538,7 +568,7 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
       <div className="mt-3 flex flex-col gap-3.5 pb-4">
         {reglas?.pausado && <Nota tono="miel">{T.tablon.pausado}</Nota>}
         <Campo etiqueta={P.anuncio}>
-          <textarea value={anuncio} onChange={(e) => setAnuncio(e.target.value.slice(0, 500))} rows={2} className={`${CAMPO} resize-none`} />
+          <textarea value={anuncio} onChange={(e) => setAnuncio(e.target.value.slice(0, MAX_TEXTO_ANUNCIO))} rows={2} className={`${CAMPO} resize-none`} />
           <span className="px-1 text-[11.5px] text-ink-3">{P.anuncioPista}</span>
         </Campo>
         <Campo etiqueta={P.encargo}>
@@ -553,6 +583,27 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
               </option>
             ))}
           </select>
+        </Campo>
+        <Campo etiqueta={P.paraQuien}>
+          <div className="grid grid-cols-3 gap-1.5">
+            {AUDIENCIAS.map((a) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() => {
+                  setAudiencia(a);
+                  // Solo personas va en selección: en inmediato lo cogería el
+                  // primero que pase las reglas, y la cadena no sabe quién es persona.
+                  if (a === 'personas') setModo(ModoTablon.Seleccion);
+                }}
+                aria-pressed={audiencia === a}
+                className={`pulsable h-9 whitespace-nowrap rounded-full border px-1 text-[12.5px] font-medium ${audiencia === a ? 'border-honey bg-honey-soft text-honey' : 'border-line text-ink-2'}`}
+              >
+                {T.tablon.audiencia[a]}
+              </button>
+            ))}
+          </div>
+          <span className="px-1 text-[11.5px] leading-[1.45] text-ink-3">{P.audienciaPista[audiencia]}</span>
         </Campo>
         <Campo etiqueta={P.importe}>
           <div className="flex gap-2">
@@ -583,8 +634,8 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
           )}
         </Campo>
         <Campo etiqueta={P.modo}>
-          <div className="grid grid-cols-2 gap-1.5">
-            {[ModoTablon.Seleccion, ModoTablon.Inmediato].map((m) => (
+          <div className={`grid gap-1.5 ${audiencia === 'personas' ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            {(audiencia === 'personas' ? [ModoTablon.Seleccion] : [ModoTablon.Seleccion, ModoTablon.Inmediato]).map((m) => (
               <button
                 key={m}
                 type="button"
@@ -597,7 +648,7 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
             ))}
           </div>
           <span className="px-1 text-[11.5px] leading-[1.45] text-ink-3">{seleccion ? P.modoSeleccion : P.modoInmediato}</span>
-          {!seleccion && categoria === CATEGORIAS_TABLON.indexOf('humanos') && (
+          {audiencia !== 'personas' && categoria === CATEGORIAS_TABLON.indexOf('humanos') && (
             <span className="px-1 text-[11.5px] leading-[1.45] text-honey">{P.personasSeleccion}</span>
           )}
         </Campo>
@@ -628,6 +679,7 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
           </label>
         ))}
         {problema && <p className="px-1 text-[12.5px] leading-[1.5] text-terra">{problema}</p>}
+        {!problema && falta && <p className="px-1 text-[12.5px] leading-[1.5] text-ink-3">{falta}</p>}
         <Fallo firma={firma} />
         <Boton onClick={() => void publicar()} disabled={!listo || firma.ocupado !== null}>
           {paso === 'permiso' ? P.pasoPermiso : paso === 'publicando' ? P.pasoPublicar : paso === 'textos' ? P.pasoTextos : P.confirmar}

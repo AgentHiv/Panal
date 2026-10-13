@@ -22,11 +22,16 @@ import { createPanalClient } from '../src/client.js';
 import { NATIVE_CURRENCY } from '../src/chains.js';
 import {
   CATEGORIAS_TABLON,
+  MAX_ANUNCIO,
+  MAX_TEXTO_ANUNCIO,
   ModoTablon,
+  anuncioPara,
+  audienciaAdmite,
   categoriaDelTablon,
   categoriasDeMascara,
   claveDeCampana,
   idDeCampana,
+  leerAnuncio,
   problemaAlPublicar,
   situacionDe,
   tablonEncargoSignMessage,
@@ -127,6 +132,38 @@ console.log('\nantes de firmar, el motivo');
     check(nombre, p !== null && p.includes(esperado), String(p));
   }
   check('en inmediato no hacen falta ventanas', problemaAlPublicar({ ...bien, modo: ModoTablon.Inmediato, ventanaOfertasS: 0 }) === null);
+  // Lo que el buzón no guardaría: el encargo quedaría pagado y sin anuncio.
+  check('un anuncio de más de 500 no se publica', problemaAlPublicar({ ...bien, anuncio: 'x'.repeat(MAX_ANUNCIO + 1) })?.includes('500') === true);
+  check('con la marca sola no hay anuncio', problemaAlPublicar({ ...bien, anuncio: 'para:personas · ' })?.includes('anuncio') === true);
+}
+
+console.log('\npara quién es el encargo');
+{
+  check('sin marca, para todos', leerAnuncio('Traducir un menú').audiencia === 'todos');
+  const p = leerAnuncio('para:personas · Traducir un menú');
+  check('para personas, y el texto sin la marca', p.audiencia === 'personas' && p.texto === 'Traducir un menú', JSON.stringify(p));
+  check('para agentes', leerAnuncio('para:agentes · Revisar código').audiencia === 'agentes');
+  check('la marca solo cuenta al principio', leerAnuncio('Ojo: para:personas · no').audiencia === 'todos');
+  check('anuncioPara pone la marca', anuncioPara('personas', '  Traducir  ') === 'para:personas · Traducir');
+  check('y para todos no pone nada', anuncioPara('todos', 'Traducir') === 'Traducir');
+  check('nunca dos marcas', anuncioPara('agentes', 'para:personas · Traducir') === 'para:agentes · Traducir');
+  check('lo que se escribe más la marca cabe en el buzón', anuncioPara('personas', 'x'.repeat(MAX_TEXTO_ANUNCIO)).length <= MAX_ANUNCIO);
+  check('una persona entra en uno para personas', audienciaAdmite('personas', 'persona'));
+  check('  un programa, no', !audienciaAdmite('personas', 'bot'));
+  check('un programa entra en uno para agentes', audienciaAdmite('agentes', 'bot'));
+  check('  una persona, no', !audienciaAdmite('agentes', 'persona'));
+  check('en uno para todos, los dos', audienciaAdmite('todos', 'persona') && audienciaAdmite('todos', 'bot'));
+  const bien: PublicarEnElTablon = {
+    encargo: 'Recoger un paquete', anuncio: anuncioPara('personas', 'Recoger un paquete en Madrid'), categoria: 7,
+    importe: 10n ** 18n, plazoEntregaS: 24 * 3600, caducaEnS: 7 * 24 * 3600, modo: ModoTablon.Seleccion,
+    ventanaOfertasS: 2 * 3600, ventanaEleccionS: 24 * 3600,
+  };
+  check('solo personas en selección pasa', problemaAlPublicar(bien) === null, String(problemaAlPublicar(bien)));
+  check(
+    'solo personas en inmediato no: lo cogería el primero que pase las reglas',
+    problemaAlPublicar({ ...bien, modo: ModoTablon.Inmediato })?.includes('selección') === true,
+  );
+  check('solo agentes en inmediato sí', problemaAlPublicar({ ...bien, anuncio: anuncioPara('agentes', 'Revisar código'), modo: ModoTablon.Inmediato }) === null);
 }
 
 console.log('\ncategorías');

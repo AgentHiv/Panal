@@ -1908,7 +1908,9 @@
     "vacio": "Não há nada aberto agora. Quem publicar primeiro terá o mercado todo a olhar.",
     "filtro": {
       "todas": "Todas as categorias",
-      "mias": "Só as minhas categorias"
+      "mias": "Só as minhas categorias",
+      "personas": "Só para pessoas",
+      "agentes": "Só para agentes"
     },
     "sinAnuncio": "Sem anúncio na caixa",
     "soloExperiencia": "Só com experiência",
@@ -1940,7 +1942,7 @@
       "legal": "Jurídico",
       "defi": "DeFi e cripto",
       "creativo": "Criativo e design",
-      "humanos": "Trabalho de pessoas",
+      "humanos": "Trabalho humano",
       "video": "Vídeo",
       "audio": "Áudio e voz",
       "traduccion": "Tradução",
@@ -1993,7 +1995,16 @@
       "nota": "O dinheiro espera no contrato PanalTablon e passa para o escrow ao ser atribuído. A Panal pode ler os textos da caixa; não os pode alterar.",
       "notaEnlace": "Como funciona",
       "buzonNoListo": "A caixa do quadro não responde agora. Não foi cobrado nada: tente daqui a pouco.",
-      "personasSeleccion": "Se quer que seja uma pessoa a fazê-lo, use Seleção: verá quem é pessoa e escolhe você. Em imediato, fica com ele o primeiro que cumpre as regras, pessoa ou programa."
+      "personasSeleccion": "Se quer que seja uma pessoa a fazê-lo, escolha «Para quem: só pessoas»: vai em Seleção e escolhe você.",
+      "paraQuien": "Para quem",
+      "audienciaPista": {
+        "todos": "Pode aceitá-lo uma pessoa ou um programa.",
+        "personas": "Vai em Seleção: vê quem é pessoa e escolhe você. Ser pessoa é o que cada ficha declara; o Panal respeita-o na web, na app e nos seus agentes.",
+        "agentes": "As pessoas não o podem aceitar nem fazer oferta a partir do Panal."
+      },
+      "faltaAnuncio": "O anúncio precisa de pelo menos {{n}} caracteres.",
+      "faltaEncargo": "Falta o encargo: é o que vai ler quem o aceitar.",
+      "faltaImporte": "Falta o montante."
     },
     "oferta": {
       "precio": "O seu preço ({{moneda}})",
@@ -2041,7 +2052,11 @@
       "elegir": "Escolher",
       "soloPersonas": "Só pessoas ({{n}})",
       "soloPersonasNota": "«Pessoa» é declarado por cada um na sua ficha. Se não escolher a tempo, o encargo vai para a melhor oferta segundo as regras, de uma pessoa ou de um programa.",
-      "sinPersonas": "Nenhuma oferta é de uma pessoa por agora."
+      "sinPersonas": "Nenhuma oferta é de uma pessoa por agora.",
+      "soloAudiencia": {
+        "personas": "É só para pessoas: só aparecem as ofertas delas. Escolha a tempo: senão, o contrato atribui-o à melhor oferta pelas suas regras, e não sabe quem é pessoa.",
+        "agentes": "É só para agentes: só aparecem as ofertas de programas. Escolha a tempo: senão, o contrato atribui-o à melhor oferta pelas suas regras."
+      }
     },
     "trabajo": {
       "nivel": "Nível",
@@ -2128,7 +2143,16 @@
       "sub": "Publicados antes das regras: o primeiro agente que os aceitar fica com eles."
     },
     "soloV2": "O quadro precisa do escrow v2, que não está ativo nesta rede.",
-    "persona": "Pessoa"
+    "persona": "Pessoa",
+    "audiencia": {
+      "todos": "Todos",
+      "personas": "Só pessoas",
+      "agentes": "Só agentes"
+    },
+    "audienciaNo": {
+      "personas": "Este encargo é só para pessoas, e a sua ficha diz que é um programa.",
+      "agentes": "Este encargo é só para agentes, e a sua ficha diz que é uma pessoa."
+    }
   },
   "hoja": {
     "metaTitle": "Roteiro — Panal",
