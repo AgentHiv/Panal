@@ -27,7 +27,7 @@ import { leerMarca } from './marca.js';
 export interface IndexedEvent {
   /** `${txHash}-${logIndex}` — clave de dedup. */
   id: string;
-  contract: 'registry' | 'escrow' | 'names';
+  contract: 'registry' | 'escrow' | 'names' | 'tablon';
   event: string;
   blockNumber: number;
   logIndex: number;
@@ -50,9 +50,16 @@ export interface IndexerState {
   totalEvents: number;
   byType: Record<string, number>;
   updatedAt: number;
+  /**
+   * Hasta qué bloque se recorrió PanalTablon desde su despliegue. Hace falta
+   * aparte del barrido: si su dirección se pone con el índice ya hecho, lo que
+   * pasó entre el despliegue y ese momento no lo cubre nadie más.
+   */
+  tablonHasta: number | null;
 }
 
 const EMPTY_STATE: IndexerState = {
+  tablonHasta: null,
   lastBlock: 0,
   sweepFloor: null,
   sweepDay: '',
@@ -110,6 +117,64 @@ export interface IndexedTask {
   rating?: number;
   createdTs: number;
   updatedTs: number;
+  /**
+   * Si la tarea es de un encargo de PanalTablon: en el escrow su cliente es el
+   * contrato, y el de verdad es este. Es el que la tiene que encontrar en «mis
+   * tareas» para aprobarla o disputarla.
+   */
+  realClient?: string;
+  jobId?: string;
+  /** Cuándo se abrió la disputa, si la hay. */
+  disputedTs?: number;
+  /** Lo que el árbitro devolvió al cliente, si se resolvió una disputa. */
+  clientRefunded?: string;
+}
+
+/** Un encargo de PanalTablon, montado con sus eventos (contracts/BOARD.md). */
+export interface IndexedJob {
+  jobId: string;
+  /** El cliente de verdad, en minúsculas. */
+  client: string;
+  category: number;
+  currency: string;
+  coin: string;
+  mode: 'immediate' | 'selection';
+  /** El presupuesto con que se publicó. */
+  budget: string;
+  /** El presupuesto mientras está publicado; el precio, una vez asignado. */
+  amount: string;
+  campaignId: string | null;
+  state: 'posted' | 'assigned' | 'closed' | 'withdrawn' | 'expired';
+  /** Cuántas ofertas tiene en pie (selección). */
+  offers: number;
+  agent?: string;
+  escrowTaskId?: string;
+  /** Si lo eligió su cliente; si no, `take` o `autoAssign`. */
+  byClient?: boolean;
+  refund?: string;
+  penalized?: boolean;
+  refundPending?: boolean;
+  attestedBps?: number;
+  /** Cuántas veces se volvió a publicar sin entrega. */
+  relisted: number;
+  postedTs: number;
+  assignedTs?: number;
+  closedTs?: number;
+  updatedTs: number;
+}
+
+/**
+ * Lo que vigila el indexador en el tablón con reglas
+ * (contracts/TABLON-SECURITY.md). Son señales para una persona, no veredictos.
+ */
+export interface Vigilancia {
+  /** Repartos atestados en PanalTablon que no cuadran con el del escrow. */
+  repartosDistintos: { jobId: string; escrowTaskId: string; atestado: string; escrow: string }[];
+  /** Disputas abiertas hace 7 días o más: a los 14 se devuelven sin falta (F5). */
+  disputasLargas: { taskId: string; jobId?: string; abiertaTs: number; dias: number }[];
+  /** Agentes cuyas tareas completadas vienen casi todas de uno o dos clientes (F7). */
+  parejas: { agente: string; completadas: number; clientes: number; principal: string; parte: number }[];
+  generado: number;
 }
 
 /**
@@ -317,9 +382,46 @@ class StatsBuilder {
    * vez de recorrerlas todas.
    */
   readonly tasksByAddress = new Map<string, Set<string>>();
+  /** Los encargos de PanalTablon. */
+  readonly jobs = new Map<string, IndexedJob>();
+  /** Tarea del escrow -> encargo del tablón que la creó. */
+  private readonly jobDeTarea = new Map<string, string>();
+  /** Quién tiene oferta en pie en cada encargo. */
+  private readonly ofertas = new Map<string, Set<string>>();
+  /** Las categorías que ha declarado cada agente en el tablón. */
+  readonly categorias = new Map<string, number[]>();
   total = 0;
 
-  constructor(private readonly panalToken: string) {}
+  constructor(
+    private readonly panalToken: string,
+    private readonly tablon: string | null = null,
+  ) {}
+
+  /**
+   * Ata una tarea del escrow a su encargo del tablón: su cliente de verdad
+   * pasa a encontrarla en «mis tareas». Da igual qué evento llegue antes.
+   */
+  private vincular(taskId: string, jobId: string): void {
+    this.jobDeTarea.set(taskId, jobId);
+    const t = this.tasks.get(taskId);
+    const j = this.jobs.get(jobId);
+    if (!t || !j) return;
+    // Solo si en el escrow su cliente es de verdad el tablón: una dirección mal
+    // configurada no puede atribuirle a nadie las tareas de otro.
+    if (this.tablon && t.client !== this.tablon) return;
+    t.realClient = j.client;
+    t.jobId = jobId;
+    this.ligar(j.client, taskId);
+  }
+
+  private job(jobId: unknown): IndexedJob | undefined {
+    return jobId === undefined ? undefined : this.jobs.get(String(jobId));
+  }
+
+  private sinOfertas(j: IndexedJob): void {
+    this.ofertas.delete(j.jobId);
+    j.offers = 0;
+  }
 
   private agent(address: string, ts: number): AgentStats & { ratingSum: number } {
     const key = address.toLowerCase();
@@ -426,6 +528,8 @@ class StatsBuilder {
           });
           this.ligar(client, taskId);
           if (w && w !== NATIVE) this.ligar(w, taskId);
+          const jobId = this.jobDeTarea.get(taskId);
+          if (jobId) this.vincular(taskId, jobId);
         }
         break;
       }
@@ -476,6 +580,7 @@ class StatsBuilder {
           tr.status = 'completed';
           tr.updatedTs = ev.ts;
           if (a['rating'] !== undefined) tr.rating = Number(a['rating']);
+          if (a['clientRefunded'] !== undefined) tr.clientRefunded = String(a['clientRefunded']);
         }
         break;
       }
@@ -498,6 +603,7 @@ class StatsBuilder {
         const t = a['taskId'] !== undefined ? this.task(String(a['taskId'])) : undefined;
         if (t) {
           t.status = 'disputed';
+          t.disputedTs = ev.ts;
           t.updatedTs = ev.ts;
         }
         break;
@@ -543,6 +649,122 @@ class StatsBuilder {
       case 'Liberado': {
         const dueno = String(ev.args.dueno ?? '').toLowerCase();
         if (dueno) this.nombres.delete(dueno);
+        break;
+      }
+
+      // ── PanalTablon (contracts/BOARD.md) ─────────────────────────────────
+      case 'JobPosted': {
+        const jobId = String(a['jobId']);
+        const amount = String(a['amount'] ?? '0');
+        const currency = String(a['currency'] ?? NATIVE);
+        const campana = String(a['campaignId'] ?? '');
+        this.jobs.set(jobId, {
+          jobId,
+          client: String(a['client']).toLowerCase(),
+          category: Number(a['category'] ?? 0),
+          currency,
+          coin: coinOf(currency, this.panalToken),
+          mode: Number(a['mode']) === 1 ? 'selection' : 'immediate',
+          budget: amount,
+          amount,
+          campaignId: /^0x0+$/.test(campana) || !campana ? null : campana,
+          state: 'posted',
+          offers: 0,
+          relisted: 0,
+          postedTs: ev.ts,
+          updatedTs: ev.ts,
+        });
+        break;
+      }
+      case 'Applied':
+      case 'OfferWithdrawn': {
+        const j = this.job(a['jobId']);
+        if (!j) break;
+        let quienes = this.ofertas.get(j.jobId);
+        if (!quienes) {
+          quienes = new Set();
+          this.ofertas.set(j.jobId, quienes);
+        }
+        const agente = String(a['agent']).toLowerCase();
+        if (ev.event === 'Applied') quienes.add(agente);
+        else quienes.delete(agente);
+        j.offers = quienes.size;
+        j.updatedTs = ev.ts;
+        break;
+      }
+      case 'JobAssigned': {
+        const j = this.job(a['jobId']);
+        if (!j) break;
+        j.state = 'assigned';
+        j.agent = String(a['agent']).toLowerCase();
+        j.escrowTaskId = String(a['escrowTaskId']);
+        j.amount = String(a['price'] ?? j.amount);
+        j.byClient = a['byClient'] === true || a['byClient'] === 'true';
+        j.assignedTs = ev.ts;
+        j.updatedTs = ev.ts;
+        this.sinOfertas(j);
+        this.vincular(j.escrowTaskId, j.jobId);
+        break;
+      }
+      case 'JobWithdrawn':
+      case 'JobExpired': {
+        const j = this.job(a['jobId']);
+        if (!j) break;
+        j.state = ev.event === 'JobWithdrawn' ? 'withdrawn' : 'expired';
+        j.closedTs = ev.ts;
+        j.updatedTs = ev.ts;
+        this.sinOfertas(j);
+        break;
+      }
+      case 'JobRelisted': {
+        // Llega justo después de su JobSettled, en la misma transacción.
+        const j = this.job(a['jobId']);
+        if (!j) break;
+        // Lo de la ronda anterior no es de este encargo publicado: la falta
+        // del agente queda en su evento Strike, no aquí.
+        j.state = 'posted';
+        j.relisted += 1;
+        for (const k of ['agent', 'escrowTaskId', 'closedTs', 'assignedTs', 'byClient', 'refund', 'penalized', 'refundPending', 'attestedBps'] as const) {
+          delete j[k];
+        }
+        j.amount = j.budget;
+        j.updatedTs = ev.ts;
+        break;
+      }
+      case 'JobSettled': {
+        const j = this.job(a['jobId']);
+        if (!j) break;
+        j.state = 'closed';
+        j.refund = String(a['refundToClient'] ?? '0');
+        j.penalized = a['penalized'] === true || a['penalized'] === 'true';
+        j.refundPending = false;
+        j.closedTs = ev.ts;
+        j.updatedTs = ev.ts;
+        break;
+      }
+      case 'RefundPending': {
+        const j = this.job(a['jobId']);
+        if (!j) break;
+        j.state = 'closed';
+        j.refundPending = true;
+        j.closedTs = ev.ts;
+        j.updatedTs = ev.ts;
+        break;
+      }
+      case 'ResolutionAttested': {
+        const j = this.job(a['jobId']);
+        if (!j) break;
+        j.attestedBps = Number(a['workerShareBps']);
+        j.updatedTs = ev.ts;
+        break;
+      }
+      case 'CategoriesSet': {
+        const cats = a['categories'];
+        const lista = typeof cats === 'string' ? (JSON.parse(cats) as unknown[]) : [];
+        this.categorias.set(
+          String(a['agent']).toLowerCase(),
+          lista.map(Number).filter((c) => Number.isInteger(c) && c >= 0 && c <= 255),
+        );
         break;
       }
 
@@ -598,12 +820,12 @@ export class IndexStore {
   private readonly stats: StatsBuilder;
   private state: IndexerState;
 
-  constructor(dir: string, panalToken: string) {
+  constructor(dir: string, panalToken: string, tablon: string | null = null) {
     this.dir = resolve(dir);
     mkdirSync(this.dir, { recursive: true });
     this.eventsFile = join(this.dir, 'events.jsonl');
     this.stateFile = join(this.dir, 'state.json');
-    this.stats = new StatsBuilder(panalToken);
+    this.stats = new StatsBuilder(panalToken, tablon?.toLowerCase() ?? null);
     this.loadEvents();
     this.state = this.loadState();
   }
@@ -1046,7 +1268,7 @@ export class IndexStore {
     for (const id of ids) {
       const t = this.stats.tasks.get(id);
       if (!t) continue;
-      if (opts.role === 'client' && t.client !== yo) continue;
+      if (opts.role === 'client' && t.client !== yo && t.realClient !== yo) continue;
       if (opts.role === 'worker' && t.worker !== yo) continue;
       out.push(t);
     }
@@ -1057,5 +1279,101 @@ export class IndexStore {
   /** Una tarea suelta, para consultarla por id sin leer la cadena. */
   task(taskId: string): IndexedTask | null {
     return this.stats.tasks.get(taskId) ?? null;
+  }
+
+  // ---- PanalTablon ---------------------------------------------------------
+
+  get tablonHasta(): number | null {
+    return this.state.tablonHasta;
+  }
+
+  setTablonHasta(n: number): void {
+    this.state.tablonHasta = n;
+  }
+
+  /** Los encargos del tablón, del más nuevo al más viejo, con filtros. */
+  jobs(f: {
+    state?: IndexedJob['state'];
+    category?: number;
+    client?: string;
+    agent?: string;
+    limit?: number;
+  } = {}): IndexedJob[] {
+    const out: IndexedJob[] = [];
+    for (const j of this.stats.jobs.values()) {
+      if (f.state && j.state !== f.state) continue;
+      if (f.category !== undefined && j.category !== f.category) continue;
+      if (f.client && j.client !== f.client.toLowerCase()) continue;
+      if (f.agent && j.agent !== f.agent.toLowerCase()) continue;
+      out.push(j);
+    }
+    out.sort((a, b) => Number(b.jobId) - Number(a.jobId));
+    return f.limit !== undefined ? out.slice(0, f.limit) : out;
+  }
+
+  job(jobId: string): IndexedJob | null {
+    return this.stats.jobs.get(jobId) ?? null;
+  }
+
+  /** Las categorías que declaró un agente en el tablón. */
+  categoriasDe(agent: string): number[] {
+    return this.stats.categorias.get(agent.toLowerCase()) ?? [];
+  }
+
+  /**
+   * Lo que hay que mirar, con los umbrales de contracts/TABLON-SECURITY.md:
+   * repartos atestados que no cuadran con el escrow, disputas abiertas desde
+   * hace 7 días o más, y agentes que trabajan casi solo para uno o dos clientes.
+   */
+  vigilancia(ahoraS: number = Math.floor(Date.now() / 1000)): Vigilancia {
+    const repartosDistintos: Vigilancia['repartosDistintos'] = [];
+    for (const j of this.stats.jobs.values()) {
+      if (j.attestedBps === undefined || !j.escrowTaskId) continue;
+      const t = this.stats.tasks.get(j.escrowTaskId);
+      if (t?.clientRefunded === undefined) continue;
+      const precio = BigInt(j.amount);
+      const atestado = precio - (precio * BigInt(j.attestedBps)) / 10_000n;
+      if (atestado.toString() !== t.clientRefunded) {
+        repartosDistintos.push({
+          jobId: j.jobId,
+          escrowTaskId: j.escrowTaskId,
+          atestado: atestado.toString(),
+          escrow: t.clientRefunded,
+        });
+      }
+    }
+
+    const disputasLargas: Vigilancia['disputasLargas'] = [];
+    const parejasPorAgente = new Map<string, Map<string, number>>();
+    for (const t of this.stats.tasks.values()) {
+      if (t.status === 'disputed' && t.disputedTs !== undefined) {
+        const dias = Math.floor((ahoraS - t.disputedTs) / 86_400);
+        if (dias >= 7) disputasLargas.push({ taskId: t.taskId, jobId: t.jobId, abiertaTs: t.disputedTs, dias });
+      }
+      if (t.status === 'completed' && t.worker && t.worker !== NATIVE) {
+        const cliente = t.realClient ?? t.client;
+        let porCliente = parejasPorAgente.get(t.worker);
+        if (!porCliente) {
+          porCliente = new Map();
+          parejasPorAgente.set(t.worker, porCliente);
+        }
+        porCliente.set(cliente, (porCliente.get(cliente) ?? 0) + 1);
+      }
+    }
+
+    // F7: diez completadas o más, y el 80 % de un solo cliente o todo de dos.
+    const parejas: Vigilancia['parejas'] = [];
+    for (const [agente, porCliente] of parejasPorAgente) {
+      const completadas = [...porCliente.values()].reduce((x, y) => x + y, 0);
+      if (completadas < 10) continue;
+      const [principal, deEse] = [...porCliente.entries()].sort((x, y) => y[1] - x[1])[0]!;
+      const parte = deEse / completadas;
+      if (parte >= 0.8 || porCliente.size <= 2) {
+        parejas.push({ agente, completadas, clientes: porCliente.size, principal, parte: Math.round(parte * 100) / 100 });
+      }
+    }
+    parejas.sort((x, y) => y.completadas - x.completadas);
+    disputasLargas.sort((x, y) => y.dias - x.dias);
+    return { repartosDistintos, disputasLargas, parejas, generado: ahoraS };
   }
 }

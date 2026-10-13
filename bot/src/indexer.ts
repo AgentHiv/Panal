@@ -130,6 +130,35 @@ const NAMES_EVENTS = [
   parseAbiItem('event Liberado(bytes32 indexed hash, string nombre, address indexed dueno)'),
 ];
 
+/**
+ * PanalTablon, el tablón con reglas (contracts/BOARD.md). Las firmas, iguales
+ * que en contracts/src/v2/PanalTablon.sol.
+ */
+export const TABLON_EVENTS = [
+  parseAbiItem(
+    'event JobPosted(uint256 indexed jobId, address indexed client, uint8 indexed category, address currency, uint256 amount, uint8 mode, bytes32 campaignId)',
+  ),
+  parseAbiItem('event Applied(uint256 indexed jobId, address indexed agent, uint8 level, uint256 price, uint64 workDuration)'),
+  parseAbiItem('event OfferWithdrawn(uint256 indexed jobId, address indexed agent)'),
+  parseAbiItem(
+    'event JobAssigned(uint256 indexed jobId, address indexed agent, uint256 escrowTaskId, uint256 price, bool byClient)',
+  ),
+  parseAbiItem('event JobWithdrawn(uint256 indexed jobId)'),
+  parseAbiItem('event JobExpired(uint256 indexed jobId)'),
+  parseAbiItem('event JobRelisted(uint256 indexed jobId)'),
+  parseAbiItem('event JobSettled(uint256 indexed jobId, uint256 refundToClient, bool penalized)'),
+  parseAbiItem('event RefundPending(uint256 indexed jobId)'),
+  parseAbiItem('event ResolutionAttested(uint256 indexed jobId, uint256 workerShareBps)'),
+  parseAbiItem('event Strike(address indexed agent, uint8 strikesIn90Days, uint64 suspendedUntil)'),
+  parseAbiItem('event Credited(address indexed client, address indexed currency, uint256 amount)'),
+  parseAbiItem('event Claimed(address indexed client, address indexed currency, uint256 amount)'),
+  parseAbiItem('event CategoriesSet(address indexed agent, uint8[] categories)'),
+  parseAbiItem('event LevelsChanged((uint32 minCompleted, uint16 minRating, uint16 dailyCap)[5] levels)'),
+  parseAbiItem('event NewcomerJobsChanged(uint8 jobs)'),
+  parseAbiItem('event PausedSet(bool paused)'),
+  parseAbiItem('event CapsChanged(address indexed currency, uint256 perJob, uint256 total)'),
+];
+
 /** Log decodificado por viem al pasar `events` al getLogs. */
 interface DecodedLog {
   eventName?: string;
@@ -190,7 +219,7 @@ function parseRangeLimit(err: unknown): bigint | null {
 async function fetchWindow(
   clients: ChainClients,
   address: Address,
-  events: typeof REGISTRY_EVENTS | typeof ESCROW_EVENTS | typeof NAMES_EVENTS,
+  events: typeof REGISTRY_EVENTS | typeof ESCROW_EVENTS | typeof NAMES_EVENTS | typeof TABLON_EVENTS,
   fromBlock: bigint,
   toBlock: bigint,
 ): Promise<DecodedLog[]> {
@@ -213,7 +242,7 @@ async function fetchWindow(
 async function getLogsChunked(
   clients: ChainClients,
   address: Address,
-  events: typeof REGISTRY_EVENTS | typeof ESCROW_EVENTS | typeof NAMES_EVENTS,
+  events: typeof REGISTRY_EVENTS | typeof ESCROW_EVENTS | typeof NAMES_EVENTS | typeof TABLON_EVENTS,
   fromBlock: bigint,
   toBlock: bigint,
 ): Promise<DecodedLog[]> {
@@ -249,15 +278,31 @@ async function getLogsBoth(
   cfg: BotConfig,
   fromBlock: bigint,
   toBlock: bigint,
-): Promise<{ registry: DecodedLog[]; escrow: DecodedLog[]; names: DecodedLog[] }> {
+): Promise<{ registry: DecodedLog[]; escrow: DecodedLog[]; names: DecodedLog[]; tablon: DecodedLog[] }> {
   const registry = await getLogsChunked(clients, cfg.registryAddress, REGISTRY_EVENTS, fromBlock, toBlock);
   const escrow = await getLogsChunked(clients, cfg.escrowAddress, ESCROW_EVENTS, fromBlock, toBlock);
   // Sin PanalNames desplegado no se pide nada: seria una llamada RPC por
-  // ventana, en cada vuelta, a un contrato que no existe.
+  // ventana, en cada vuelta, a un contrato que no existe. Lo mismo con el tablon.
   const names = cfg.namesAddress
     ? await getLogsChunked(clients, cfg.namesAddress, NAMES_EVENTS, fromBlock, toBlock)
     : [];
-  return { registry, escrow, names };
+  const tablon = cfg.tablonAddress
+    ? await getLogsChunked(clients, cfg.tablonAddress, TABLON_EVENTS, fromBlock, toBlock)
+    : [];
+  return { registry, escrow, names, tablon };
+}
+
+/** Los cuatro contratos de una ventana, ya decodificados y con su fecha. */
+async function eventosDe(
+  clients: ChainClients,
+  logs: { registry: DecodedLog[]; escrow: DecodedLog[]; names: DecodedLog[]; tablon: DecodedLog[] },
+): Promise<IndexedEvent[]> {
+  return [
+    ...(await toIndexedEvents(clients, 'registry', logs.registry)),
+    ...(await toIndexedEvents(clients, 'escrow', logs.escrow)),
+    ...(await toIndexedEvents(clients, 'names', logs.names)),
+    ...(await toIndexedEvents(clients, 'tablon', logs.tablon)),
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -390,16 +435,23 @@ async function fetchBlockTimestamps(clients: ChainClients, blockNumbers: bigint[
   }
 }
 
-/** Serializa un arg decodificado por viem (bigint -> string decimal). */
+/**
+ * Serializa un arg decodificado por viem (bigint -> string decimal). Listas y
+ * structs van como JSON: `String([0, 2])` daba «0,2», y un struct salía como
+ * «[object Object]».
+ */
 function serializeArg(value: unknown): string | number | boolean {
   if (typeof value === 'bigint') return value.toString();
   if (typeof value === 'number' || typeof value === 'boolean') return value;
+  if (typeof value === 'object' && value !== null) {
+    return JSON.stringify(value, (_k, v: unknown) => (typeof v === 'bigint' ? v.toString() : v));
+  }
   return String(value);
 }
 
 async function toIndexedEvents(
   clients: ChainClients,
-  contract: 'registry' | 'escrow' | 'names',
+  contract: 'registry' | 'escrow' | 'names' | 'tablon',
   logs: DecodedLog[],
 ): Promise<IndexedEvent[]> {
   if (logs.length === 0) return [];
@@ -446,14 +498,9 @@ async function bootstrapByPoints(
     const b = await blockAtTime(clients, ts, head);
     const from = b > BOOTSTRAP_HALF_WINDOW ? b - BOOTSTRAP_HALF_WINDOW : 0n;
     const to = b + BOOTSTRAP_HALF_WINDOW < head ? b + BOOTSTRAP_HALF_WINDOW : head;
-    const { registry, escrow, names } = await getLogsBoth(clients, cfg, from, to);
-    const events = [
-      ...(await toIndexedEvents(clients, 'registry', registry)),
-      ...(await toIndexedEvents(clients, 'escrow', escrow)),
-    ...(await toIndexedEvents(clients, 'names', names)),
-      ...(await toIndexedEvents(clients, 'names', names)),
-    ];
-    const added = store.append(events);
+    const logs = await getLogsBoth(clients, cfg, from, to);
+    const { registry, escrow } = logs;
+    const added = store.append(await eventosDe(clients, logs));
     total += added;
     console.log(
       `[index] bootstrap: ts=${ts} bloque≈${b} ventana=[${from},${to}] -> ${registry.length + escrow.length} logs (${added} nuevos)`,
@@ -474,13 +521,7 @@ async function incremental(
 ): Promise<number> {
   const from = BigInt(store.lastBlock) + 1n;
   if (from > head) return 0;
-  const { registry, escrow, names } = await getLogsBoth(clients, cfg, from, head);
-  const events = [
-    ...(await toIndexedEvents(clients, 'registry', registry)),
-    ...(await toIndexedEvents(clients, 'escrow', escrow)),
-    ...(await toIndexedEvents(clients, 'names', names)),
-  ];
-  const added = store.append(events);
+  const added = store.append(await eventosDe(clients, await getLogsBoth(clients, cfg, from, head)));
   store.setLastBlock(Number(head));
   if (added > 0) {
     console.log(`[index] incremental [${from},${head}]: ${added} eventos nuevos (total ${store.totalEvents})`);
@@ -506,14 +547,7 @@ async function sweepBackwards(
   while (used < SWEEP_BATCH_PER_TICK && used < budget && floor > 0) {
     const to: bigint = BigInt(floor) - 1n;
     const from: bigint = to + 1n > maxLogRange ? to + 1n - maxLogRange : 0n;
-    const { registry, escrow, names } = await getLogsBoth(clients, cfg, from, to);
-    const events = [
-      ...(await toIndexedEvents(clients, 'registry', registry)),
-      ...(await toIndexedEvents(clients, 'escrow', escrow)),
-    ...(await toIndexedEvents(clients, 'names', names)),
-      ...(await toIndexedEvents(clients, 'names', names)),
-    ];
-    const added = store.append(events);
+    const added = store.append(await eventosDe(clients, await getLogsBoth(clients, cfg, from, to)));
     floor = Number(from);
     store.setSweepFloor(floor);
     used += 1;
@@ -529,6 +563,67 @@ async function sweepBackwards(
   budget = store.sweepBudgetRemaining(cfg.indexSweepWindowsPerDay);
   if (used > 0) {
     console.log(`[index] barrido: ${used} ventanas, frente en bloque ${floor}, quedan ${budget} ventanas hoy`);
+  }
+}
+
+/** Ventanas del tablón que se recorren como mucho por vuelta al ponerse al día. */
+const TABLON_VENTANAS_POR_VUELTA = 20;
+
+/**
+ * Recorre una vez PanalTablon desde su despliegue (`PANAL_TABLON_BLOQUE`).
+ *
+ * Hace falta aparte del barrido hacia atrás: si la dirección del tablón se pone
+ * con el índice ya hecho —o con el barrido ya en el bloque 0—, nadie cubre lo
+ * que pasó entre el despliegue y ese momento. Solo pide los logs del tablón,
+ * por tandas, y en cuanto alcanza `lastBlock` no vuelve a hacer nada: de ahí
+ * en adelante lo trae el sondeo incremental.
+ */
+async function ponerseAlDiaConElTablon(cfg: BotConfig, clients: ChainClients, store: IndexStore): Promise<void> {
+  if (!cfg.tablonAddress || cfg.tablonDesdeBloque === null) return;
+  const desde = Math.max((store.tablonHasta ?? cfg.tablonDesdeBloque - 1) + 1, cfg.tablonDesdeBloque);
+  if (desde > store.lastBlock) return;
+  const hasta = Math.min(desde + Number(maxLogRange) * TABLON_VENTANAS_POR_VUELTA - 1, store.lastBlock);
+  const logs = await getLogsChunked(clients, cfg.tablonAddress, TABLON_EVENTS, BigInt(desde), BigInt(hasta));
+  const added = store.append(await toIndexedEvents(clients, 'tablon', logs));
+  store.setTablonHasta(hasta);
+  if (added > 0 || hasta === store.lastBlock) {
+    console.log(`[index] tablón [${desde},${hasta}]: ${added} eventos${hasta === store.lastBlock ? ' — al día' : ''}`);
+  }
+}
+
+/** Lo que ya se avisó: cada señal se escribe en el log una sola vez por arranque. */
+const yaAvisado = new Set<string>();
+
+/**
+ * Las señales de contracts/TABLON-SECURITY.md, al log en cuanto aparecen:
+ * un reparto atestado que no cuadra con el escrow, una disputa de 7 días y un
+ * agente que trabaja casi solo para uno o dos clientes. También se sirven en
+ * `/index/tablon/vigilancia`.
+ */
+function vigilar(store: IndexStore): void {
+  const v = store.vigilancia();
+  const avisar = (clave: string, texto: string): void => {
+    if (yaAvisado.has(clave)) return;
+    yaAvisado.add(clave);
+    console.warn(`[vigilancia] ${texto}`);
+  };
+  for (const r of v.repartosDistintos) {
+    avisar(
+      `reparto:${r.jobId}`,
+      `el reparto atestado del encargo #${r.jobId} devuelve ${r.atestado} y el escrow devolvió ${r.escrow} (tarea #${r.escrowTaskId}): revisar la atestación`,
+    );
+  }
+  for (const d of v.disputasLargas) {
+    avisar(
+      `disputa:${d.taskId}`,
+      `la disputa de la tarea #${d.taskId}${d.jobId ? ` (encargo #${d.jobId})` : ''} lleva ${d.dias} días abierta: a los 14 se devuelve todo sin falta`,
+    );
+  }
+  for (const p of v.parejas) {
+    avisar(
+      `pareja:${p.agente}:${p.completadas}`,
+      `${p.agente}: ${p.completadas} completadas de ${p.clientes} cliente(s), el ${Math.round(p.parte * 100)} % de ${p.principal}`,
+    );
   }
 }
 
@@ -879,6 +974,8 @@ export async function runIndexer(
     try {
       const newHead = await withRetry('getBlockNumber', () => clients.publicClient.getBlockNumber());
       await incremental(cfg, clients, store, newHead);
+      await ponerseAlDiaConElTablon(cfg, clients, store);
+      if (cfg.tablonAddress) vigilar(store);
       await refrescarFichas(cfg, clients, store);
       await verificarDominios(store);
       await verificarCuentas(store);

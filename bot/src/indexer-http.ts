@@ -18,6 +18,14 @@
  *   GET /index/stats
  *       Contadores globales + series diarias: { lastBlock, totalEvents,
  *       byType, totals: { agents, tasks, completed }, daily30, daily7 }.
+ *   GET /index/tablon/jobs?state=&category=&client=&agent=&limit=
+ *       Los encargos del tablón con reglas (PanalTablon), del más nuevo al
+ *       más viejo. `state`: posted | assigned | closed | withdrawn | expired.
+ *   GET /index/tablon/job?id=<jobId>
+ *       Un encargo, con su tarea del escrow si ya tiene agente.
+ *   GET /index/tablon/vigilancia
+ *       Las señales de contracts/TABLON-SECURITY.md: repartos que no cuadran,
+ *       disputas de 7 días o más y agentes con casi un solo cliente.
  *
  * Protecciones (mismo patrón que http.ts):
  *   - CORS restringido a https://panal.lat (y http://localhost:* fuera de
@@ -294,6 +302,76 @@ export function createIndexServer(deps: IndexServerDeps): Server {
         return;
       }
 
+      // ---- El tablón con reglas (PanalTablon) ------------------------------
+      //
+      // La web y la app leen de aquí la lista, y la cadena solo para el
+      // encargo que se abre: leer los 200 últimos encargos del contrato, uno a
+      // uno, en cada carga sería lo que ya pasó con el catálogo.
+      case '/index/tablon/jobs': {
+        const estados = ['posted', 'assigned', 'closed', 'withdrawn', 'expired'] as const;
+        const stateRaw = url.searchParams.get('state');
+        if (stateRaw !== null && !(estados as readonly string[]).includes(stateRaw)) {
+          json(res, 400, { error: `bad state (${estados.join(' | ')})` });
+          return;
+        }
+        const catRaw = url.searchParams.get('category');
+        const category = catRaw === null ? undefined : Number(catRaw);
+        if (category !== undefined && (!Number.isInteger(category) || category < 0 || category > 255)) {
+          json(res, 400, { error: 'bad category (0..255)' });
+          return;
+        }
+        const quien = { client: url.searchParams.get('client'), agent: url.searchParams.get('agent') };
+        for (const [k, v] of Object.entries(quien)) {
+          if (v !== null && !/^0x[0-9a-fA-F]{40}$/.test(v)) {
+            json(res, 400, { error: `bad ${k} (0x + 40 hex)` });
+            return;
+          }
+        }
+        const limitRaw = url.searchParams.get('limit');
+        let limit = TASKS_DEFAULT_LIMIT;
+        if (limitRaw !== null) {
+          const n = Number.parseInt(limitRaw, 10);
+          if (!Number.isFinite(n) || n < 1 || n > TASKS_MAX_LIMIT) {
+            json(res, 400, { error: `bad limit (1..${TASKS_MAX_LIMIT})` });
+            return;
+          }
+          limit = n;
+        }
+        const jobs = store.jobs({
+          state: (stateRaw ?? undefined) as (typeof estados)[number] | undefined,
+          category,
+          client: quien.client ?? undefined,
+          agent: quien.agent ?? undefined,
+          limit,
+        });
+        json(res, 200, { jobs, count: jobs.length, lastBlock: store.lastBlock });
+        return;
+      }
+
+      case '/index/tablon/job': {
+        const id = url.searchParams.get('id');
+        if (!id || !/^\d{1,20}$/.test(id)) {
+          json(res, 400, { error: 'id required' });
+          return;
+        }
+        const job = store.job(id);
+        if (!job) {
+          json(res, 404, { error: 'no such job' });
+          return;
+        }
+        json(res, 200, {
+          job,
+          task: job.escrowTaskId ? store.task(job.escrowTaskId) : null,
+          lastBlock: store.lastBlock,
+        });
+        return;
+      }
+
+      case '/index/tablon/vigilancia': {
+        json(res, 200, { ...store.vigilancia(), lastBlock: store.lastBlock });
+        return;
+      }
+
       default:
         json(res, 404, { error: 'not found' });
         return;
@@ -320,7 +398,7 @@ export function startIndexServer(cfg: BotConfig, store: IndexStore): Server {
     allowLocalhostOrigin: cfg.dryRun || process.env.NODE_ENV !== 'production',
   });
   server.listen(cfg.indexHttpPort, () => {
-    console.log(`   API del índice: http://localhost:${cfg.indexHttpPort}/index/events|agents|stats`);
+    console.log(`   API del índice: http://localhost:${cfg.indexHttpPort}/index/events|agents|stats|tablon/jobs`);
   });
   return server;
 }

@@ -59,6 +59,12 @@ export interface BotConfig {
    * esté desplegado: el buzón no abre sus rutas y nada lo lee.
    */
   tablonAddress: Address | null;
+  /**
+   * El bloque en que se desplegó PanalTablon. El indexador recorre desde ahí
+   * una vez lo que pasó antes de poner la dirección; sin él, solo indexa de
+   * aquí en adelante.
+   */
+  tablonDesdeBloque: number | null;
   dashboardUrl: string;
   /**
    * Idioma de los avisos de Telegram (BOT_LANG). El bot habla con UNA persona
@@ -318,6 +324,7 @@ export function loadConfig(): BotConfig {
     // cada vuelta.
     namesAddress: envAddress('PANAL_NAMES_ADDRESS', false) ?? null,
     tablonAddress: envAddress('PANAL_TABLON_ADDRESS', false) ?? null,
+    tablonDesdeBloque: process.env.PANAL_TABLON_BLOQUE?.trim() ? envInt('PANAL_TABLON_BLOQUE', 0, 0) : null,
     dashboardUrl: env('DASHBOARD_URL') ?? 'https://panal.lat/dashboard',
     lang: resolveLang(env('BOT_LANG')),
     pollIntervalMs: envInt('POLL_INTERVAL_MS', 20_000, 5_000),

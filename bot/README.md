@@ -256,7 +256,7 @@ bot/
     format.ts    Markdown → texto plano para Telegram
     indexer.ts        modo indexer: bootstrap por timestamps + barrido + poll
     indexer-store.ts  índice JSONL append-only + state.json atómico + stats
-    indexer-http.ts   API pública del índice (/index/events|agents|stats)
+    indexer-http.ts   API pública del índice (/index/events|agents|stats|tasks|tablon/…)
     buzon.ts          modo buzón: las rutas, las firmas y sus ventanas, y el
                       tablón. No guarda claves: lo único que puede decir que sí
                       es un hash que la cadena ya sostiene
@@ -485,6 +485,37 @@ redundante: de ahí saca el cliente el logo y los enlaces del creador
 (`src/lib/marca.ts` del marketplace), y tenerlo entero permite que ese formato
 crezca sin volver a desplegar este servicio. Un cliente que hable con un
 indexador anterior sencillamente no ve ese campo y funciona igual.
+
+### El tablón con reglas (PanalTablon)
+
+Con `PANAL_TABLON_ADDRESS` en el `.env`, el indexador sigue también ese contrato
+(`contracts/BOARD.md`). Con `PANAL_TABLON_BLOQUE` —el bloque de su despliegue—
+recorre una vez lo que pasó desde ahí, por si la dirección se pone con el índice
+ya hecho.
+
+```bash
+# Los encargos, filtrables por estado, categoría, cliente o agente:
+curl "http://localhost:8788/index/tablon/jobs?state=posted&category=2"
+# Uno, con su tarea del escrow si ya tiene agente:
+curl "http://localhost:8788/index/tablon/job?id=0"
+# Las señales de contracts/TABLON-SECURITY.md:
+curl "http://localhost:8788/index/tablon/vigilancia"
+```
+
+Dos cosas cambian además en `/index/tasks`. Una tarea del escrow creada por el
+tablón tiene como cliente al CONTRATO, que no puede aprobar ni disputar desde la
+web. El índice le ata su cliente de verdad (`realClient`, con su `jobId`), y esa
+persona la encuentra al pedir sus tareas, también con `role=client`.
+
+La vigilancia también va al log, una vez por señal y por arranque, como
+`[vigilancia] …`:
+
+- un reparto que el árbitro atestó en PanalTablon y no cuadra con el del escrow;
+- una disputa abierta hace 7 días o más (a los 14 se devuelve todo sin falta);
+- un agente con diez tareas completadas o más que vienen casi todas de uno o dos
+  clientes.
+
+Son señales para mirar, no pruebas de nada.
 
 ### Actualizar el indexador desplegado
 
