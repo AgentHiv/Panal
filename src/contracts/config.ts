@@ -141,6 +141,19 @@ export const PANAL_MULTISIG_ADDRESS = '0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe
 /** PanalNames: los nombres unicos de los agentes. Desplegado 2026-08-14. */
 export const PANAL_NAMES_ADDRESS = '0xc94a8107C87859cAd2E472e71BbE25c15cdD614A' as const;
 
+/**
+ * PanalTablon: el tablón con reglas delante del escrow (contracts/BOARD.md).
+ * Desplegado 2026-10-13, bloque 112930819. Es el CLIENTE en el escrow de cada
+ * tarea que reparte: quien publicó el encargo aprueba y disputa a través de él.
+ */
+export const PANAL_TABLON_ADDRESS = '0x2Cfc6803E269fa9BF728e202736a7bc0547ae149' as const;
+
+/**
+ * Multicall3, en su dirección de siempre: muchas lecturas en un solo `eth_call`.
+ * El tablón lee un encargo por fila, y el RPC público limita las peticiones.
+ */
+export const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11' as const;
+
 export const PANAL_TOKEN_ADDRESS = '0x2e2e44e7fa6178822d4397299f719e89d1a67777' as const;
 
 /** Símbolo de UI para una `currency` on-chain: address(0) = MON, PANAL_TOKEN = $PANAL. */

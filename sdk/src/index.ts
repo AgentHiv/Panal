@@ -238,6 +238,7 @@ export type { FuentePrecio, MonedaConPrecio, OpcionesPrecios, Precio, Precios } 
 // cadena. Ver tablon-reglas.ts y contracts/BOARD.md.
 export { panalTablonAbi } from './tablon-abi.js';
 export {
+  CATEGORIAS_TABLON,
   EstadoTablon,
   MARGEN_ASIGNACION_S,
   MAX_CATEGORIAS,
@@ -245,6 +246,7 @@ export {
   MAX_VENTANA_ELECCION_S,
   MIN_PLAZO_ENTREGA_S,
   ModoTablon,
+  categoriaDelTablon,
   categoriasDeMascara,
   claveDeCampana,
   encargoDeLaCadena,
@@ -257,6 +259,7 @@ export {
   tablonResultadoSignMessage,
 } from './tablon-reglas.js';
 export type {
+  CategoriaTablon,
   EncargoConReglas,
   OfertaConReglas,
   PublicarEnElTablon,

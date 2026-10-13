@@ -11,6 +11,7 @@
  */
 
 import { useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertTriangle, ExternalLink, Hexagon, Loader2, Paperclip, RefreshCw, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -49,6 +50,7 @@ import { appendFilesManifest, type DeliveredFile } from '@/lib/deliveredFiles';
 import { describirArchivo, tamanoLegible, MAX_ADJUNTOS, type Adjunto } from '@/lib/adjuntos';
 import { parseAttachmentsManifest } from '@panal/sdk';
 import { hayEntrega } from '@/lib/expedientes';
+import { esDelTablon } from '@/lib/tablonReglas';
 import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
@@ -56,7 +58,14 @@ import ResultDialog from '@/components/dashboard/ResultDialog';
 import { useContractAction } from '@/hooks/useContractAction';
 import type { ContractActionRequest } from '@/hooks/useContractAction';
 import { shortAddress } from '@/hooks/useWallet';
-import { EXPLORER_TX, NATIVE_CURRENCY, PANAL_TOKEN_ADDRESS, V2_ENABLED, activeChain, currencySymbol } from '@/contracts/config';
+import {
+  EXPLORER_TX,
+  NATIVE_CURRENCY,
+  PANAL_TOKEN_ADDRESS,
+  V2_ENABLED,
+  activeChain,
+  currencySymbol,
+} from '@/contracts/config';
 import type { Perspective } from './data';
 import { formatMonEs } from './data';
 
@@ -443,6 +452,9 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   /** Botones de acción disponibles para una tarea (según rol y estado real). */
   const actionsFor = (task: RealTask) => {
     const out: { kind: DialogKind; label: string; className: string }[] = [];
+    // Las del tablón con reglas se llevan en /tablon: su cliente en el escrow
+    // es PanalTablon y el encargo vive en el buzón del tablón, no en el tuyo.
+    if (esDelTablon(task.client)) return out;
     const workerZero = task.worker.toLowerCase() === ZERO_ADDRESS;
     if (task.role === 'worker') {
       if (task.status === TASK_STATUS.Open && workerZero) {
@@ -513,7 +525,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
               <HexAvatar seed={counterparty} size={32} logo={logoDe(counterparty)} />
               <span className="flex min-w-0 flex-col">
                 <span className="max-w-[150px] truncate text-[0.875rem] font-medium text-ink">
-                  {counterpartyZero ? t('tasks.unassigned') : nameOf(counterparty)}
+                  {counterpartyZero ? t('tasks.unassigned') : esDelTablon(task.client) ? t('tasks.delTablon') : nameOf(counterparty)}
                 </span>
                 {(() => {
                   const brief = getTaskBrief(task.taskHash);
@@ -551,7 +563,16 @@ export default function TasksSection({ perspective }: { perspective: Perspective
           {withActions && (
             <td className="whitespace-nowrap py-3.5 pl-3 pr-5">
               <div className="flex items-center justify-end gap-1.5">
-                {acts.length === 0 && <span className="font-mono text-[0.75rem] text-ink-3">—</span>}
+                {esDelTablon(task.client) ? (
+                  <Link
+                    to="/tablon#trabajo"
+                    className="rounded-full border border-honey px-3 py-1.5 text-[0.75rem] font-semibold text-honey-deep transition-colors hover:bg-honey-soft"
+                  >
+                    {t('tasks.enElTablon')}
+                  </Link>
+                ) : (
+                  acts.length === 0 && <span className="font-mono text-[0.75rem] text-ink-3">—</span>
+                )}
                 {acts.map((a) => (
                   <button
                     key={a.kind}

@@ -20,6 +20,14 @@ const TRAZOS: Record<string, string[]> = {
     'M3.6 8.4A2.4 2.4 0 0 1 6 6h12A2.4 2.4 0 0 1 20.4 8.4v7.2A2.4 2.4 0 0 1 18 18H6a2.4 2.4 0 0 1-2.4-2.4z',
     'M20.4 10.5h-2.8a1.9 1.9 0 0 0 0 3.8h2.8',
   ],
+  // Una tablilla con pinza y tres renglones: el tablón de encargos.
+  tablon: [
+    'M8.4 4.6H6.6A1.8 1.8 0 0 0 4.8 6.4v13.1a1.8 1.8 0 0 0 1.8 1.8h10.8a1.8 1.8 0 0 0 1.8-1.8V6.4a1.8 1.8 0 0 0-1.8-1.8h-1.8',
+    'M9 3h6v3.2H9z',
+    'M8.4 11h7.2',
+    'M8.4 14.6h7.2',
+    'M8.4 18.2h4.2',
+  ],
 
   // Acciones
   mas: ['M12 5.5v13', 'M5.5 12h13'],

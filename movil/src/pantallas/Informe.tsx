@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getTaskBrief } from '@/lib/taskBriefs';
+import { esDelTablon } from '@/lib/tablonReglas';
 import Icono from '~/componentes/Icono';
 import Hoja, { Boton } from '~/componentes/Hoja';
 import { useFicha, useTareasDe } from '~/lib/agentes';
@@ -264,7 +265,11 @@ function Bloque({
             <div className="min-w-0 grow">
               <p className="text-[13px]">
                 <span className="font-mono text-ink-3">#{l.id}</span>{' '}
-                {dia(l.ts)} · <span className="font-mono text-[11.5px]">{l.cliente.slice(0, 6)}…</span>
+                {dia(l.ts)} · {esDelTablon(l.cliente) ? (
+                  T.tablon.titulo
+                ) : (
+                  <span className="font-mono text-[11.5px]">{l.cliente.slice(0, 6)}…</span>
+                )}
               </p>
               {l.disputada && (
                 <p className="mt-0.5 text-[11px] text-terra">{T.informe.disputada}</p>

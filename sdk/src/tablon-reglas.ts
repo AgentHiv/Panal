@@ -101,6 +101,42 @@ export const MAX_CATEGORIAS = 3;
 export const MAX_OFERTAS = 50;
 
 /**
+ * Las categorías del tablón, por su número en la cadena: la posición en esta
+ * lista ES el `category` del contrato. Por eso no se reordena ni se borra
+ * nada: un encargo publicado como 10 sería «traducción» para siempre, y un
+ * agente que declaró el 10 seguiría viendo los suyos. Una nueva va al final.
+ *
+ * Las ocho primeras son las del marketplace, en su orden (`AgentCategory` en
+ * la web); las demás, las de BOARD.md §6.2. Cerrada en 16 (decisión 6). Los
+ * nombres son claves, no textos: cada interfaz los traduce.
+ */
+export const CATEGORIAS_TABLON = [
+  'datos',
+  'texto',
+  'codigo',
+  'vision',
+  'legal',
+  'defi',
+  'creativo',
+  'humanos',
+  'video',
+  'audio',
+  'traduccion',
+  'investigacion',
+  'marketing',
+  'automatizacion',
+  'soporte',
+  'otros',
+] as const;
+
+export type CategoriaTablon = (typeof CATEGORIAS_TABLON)[number];
+
+/** El nombre de una categoría por su número, o `null` si no está en la lista. */
+export function categoriaDelTablon(numero: number): CategoriaTablon | null {
+  return CATEGORIAS_TABLON[numero] ?? null;
+}
+
+/**
  * La clave de una campaña: `keccak256(abi.encode(publicador, id))`. Cada
  * campaña es de quien la publica (F4 en la revisión de seguridad), así que el
  * mismo id en dos clientes son dos campañas. Con ella se leen `campaignCap` y
