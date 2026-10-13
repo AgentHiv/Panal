@@ -39,8 +39,16 @@ PanalTablon lives in `src/v2/`, so its identifier is
 **The forward to Etherscan can fail on its own.** Sourcify submits with one
 shared Etherscan key, and on the day PanalTablon was deployed it answered
 `Daily limit of 500 source code submissions reached`: Sourcify verified it,
-monadscan did not hear about it. The job result says so under
-`externalVerifications.etherscan`, so read it rather than trusting the match.
+monadscan did not hear about it, and Sourcify does not forward a contract it
+already has. The job result says so under `externalVerifications.etherscan`,
+so read it rather than trusting the match. PanalTablon was then verified on
+monadscan directly, with an Etherscan API key:
+
+    ETHERSCAN_API_KEY=… forge verify-contract <address> src/v2/PanalTablon.sol:PanalTablon \
+      --chain 143 --verifier etherscan \
+      --verifier-url "https://api.etherscan.io/v2/api?chainid=143" \
+      --compiler-version 0.8.24 --num-of-optimizations 200 --evm-version cancun \
+      --constructor-args "$(cat verificacion/PanalTablon.constructor-args.txt)" --watch
 
 **monadvision.com is a different database.** Verifying through Sourcify does not
 make a contract appear as verified there; its own form is the only way, and it
