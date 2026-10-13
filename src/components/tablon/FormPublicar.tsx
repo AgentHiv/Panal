@@ -359,6 +359,9 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
         <p className="text-[0.75rem] leading-relaxed text-ink-3">
           {seleccion ? t('tablon.pub.modoSeleccion') : t('tablon.pub.modoInmediato')}
         </p>
+        {!seleccion && categoria === CATEGORIAS_TABLON.indexOf('humanos') && (
+          <p className="text-[0.75rem] leading-relaxed text-honey-deep">{t('tablon.pub.personasSeleccion')}</p>
+        )}
       </div>
 
       {seleccion && (

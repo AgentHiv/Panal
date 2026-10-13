@@ -359,6 +359,15 @@ function ordenar(ofertas: OfertaConReglas[], presupuesto: bigint): OfertaConRegl
   });
 }
 
+/** Si la ficha de un agente dice que es una persona. Lo declara cada uno: el contrato no lo sabe. */
+function useEsPersona(): (direccion: string) => boolean {
+  const { agents } = usePanalAgents();
+  return useMemo(() => {
+    const personas = new Set(agents.filter((a) => a.type === 'humano').map((a) => a.workerAddress.toLowerCase()));
+    return (d: string) => personas.has(d.toLowerCase());
+  }, [agents]);
+}
+
 function useNombreDe(): (direccion: string) => string {
   const { agents } = usePanalAgents();
   return useMemo(() => {
@@ -370,8 +379,10 @@ function useNombreDe(): (direccion: string) => string {
 function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas; datos: DatosDelTablon; yo: Address; firma: Firma; abrir: Abrir; T: Textos }) {
   const ahora = useAhora();
   const nombreDe = useNombreDe();
+  const esPersona = useEsPersona();
   const { data: reglas } = useReglasDelTablon();
   const { signMessageAsync } = useSignMessage();
+  const [soloPersonas, setSoloPersonas] = useState(false);
   const [leyendo, setLeyendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const M = T.tablon.mios;
@@ -478,6 +489,8 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
   }
 
   const terminado = job.estado !== EstadoTablon.Publicado && job.estado !== EstadoTablon.Asignado;
+  // La que elegiría `autoAssign`, se filtre o no: la primera que cabe en el presupuesto.
+  const mejor = ofertas.find((o) => o.precio <= job.importe);
 
   return (
     <li className={`rounded-2xl bg-cream p-3.5 ${terminado ? 'opacity-75' : ''}`}>
@@ -493,13 +506,33 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
         <span className="font-mono text-[11px] text-ink-3">#{id}</span>
       </div>
       {job.estado >= EstadoTablon.Asignado && job.estado <= EstadoTablon.Cerrado && (
-        <p className="mt-1.5 text-[12px] font-medium text-ink-2">{nombreDe(job.agente)}</p>
+        <p className="mt-1.5 flex items-center gap-1.5 text-[12px] font-medium text-ink-2">
+          {nombreDe(job.agente)}
+          {esPersona(job.agente) && <Etiqueta>{T.tablon.persona}</Etiqueta>}
+        </p>
       )}
       <p className="mt-1.5 text-[12.5px] leading-[1.45] text-ink-2">{estado}</p>
 
       {ofertas.length > 0 && (
-        <ul className="mt-2.5 divide-y divide-line overflow-hidden rounded-xl border border-line">
-          {ofertas.map((o, i) => {
+        <div className="mt-2.5 flex flex-col gap-1.5">
+          <button
+            type="button"
+            aria-pressed={soloPersonas}
+            onClick={() => setSoloPersonas((v) => !v)}
+            className={`pulsable self-start rounded-full border px-3 py-1 text-[12px] font-medium ${
+              soloPersonas ? 'border-olive/40 bg-olive/10 text-olive' : 'border-line text-ink-2'
+            }`}
+          >
+            {M.soloPersonas(ofertas.filter((o) => esPersona(o.agente)).length)}
+          </button>
+          {soloPersonas && <p className="text-[11.5px] leading-[1.45] text-ink-3">{M.soloPersonasNota}</p>}
+          {soloPersonas && !ofertas.some((o) => esPersona(o.agente)) && <p className="text-[12px] text-ink-3">{M.sinPersonas}</p>}
+        </div>
+      )}
+
+      {ofertas.length > 0 && (
+        <ul className="mt-2.5 divide-y divide-line overflow-hidden rounded-xl border border-line empty:hidden">
+          {ofertas.filter((o) => !soloPersonas || esPersona(o.agente)).map((o) => {
             const diferencia = o.precio > job.importe ? o.precio - job.importe : 0n;
             const nombre = nombreDe(o.agente);
             // En Play no se paga una diferencia desde la app: esa oferta no se elige aquí.
@@ -509,8 +542,9 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
                 <div className="min-w-0 grow">
                   <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
                     <span className="truncate">{nombre}</span>
+                    {esPersona(o.agente) && <Etiqueta>{T.tablon.persona}</Etiqueta>}
                     <Etiqueta tono={o.nivel > 0 ? 'oliva' : 'gris'}>{T.tablon.nivel(o.nivel)}</Etiqueta>
-                    {i === 0 && diferencia === 0n && <Etiqueta tono="miel">{M.mejor}</Etiqueta>}
+                    {o === mejor && <Etiqueta tono="miel">{M.mejor}</Etiqueta>}
                   </p>
                   <p className="mt-0.5 font-mono text-[11px] text-ink-3">{T.tablon.entregaEn(duracion(o.plazoEntregaS))}</p>
                   {diferencia > 0n && <p className="mt-0.5 text-[11.5px] text-honey">{M.diferencia(monto(diferencia), simboloDe(job.moneda))}</p>}

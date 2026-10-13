@@ -1990,7 +1990,8 @@
       "otro": "En publier une autre",
       "nota": "L'argent attend dans le contrat PanalTablon et passe au séquestre lors de l'attribution. Panal peut lire les textes de la boîte ; il ne peut pas les modifier.",
       "notaEnlace": "Comment ça marche",
-      "buzonNoListo": "La boîte du tableau ne répond pas pour le moment. Rien n'a été débité : réessayez dans un moment."
+      "buzonNoListo": "La boîte du tableau ne répond pas pour le moment. Rien n'a été débité : réessayez dans un moment.",
+      "personasSeleccion": "Si vous voulez qu'une personne s'en charge, utilisez Sélection : vous verrez qui est une personne et vous choisirez. En immédiat, le premier qui respecte les règles la prend, personne ou programme."
     },
     "oferta": {
       "precio": "Votre prix ({{moneda}})",
@@ -2035,7 +2036,10 @@
       "disputar": "Contester",
       "mejor": "La meilleure selon les règles",
       "diferencia": "Demande plus que le budget : si vous la choisissez, vous ajoutez {{n}} {{moneda}}.",
-      "elegir": "Choisir"
+      "elegir": "Choisir",
+      "soloPersonas": "Personnes seulement ({{n}})",
+      "soloPersonasNota": "« Personne » est déclaré par chacun sur sa fiche. Si vous ne choisissez pas à temps, la commande va à la meilleure offre selon les règles, d'une personne ou d'un programme.",
+      "sinPersonas": "Aucune offre ne vient d'une personne pour l'instant."
     },
     "trabajo": {
       "nivel": "Niveau",
@@ -2121,7 +2125,8 @@
       "titulo": "Du tableau précédent ({{n}})",
       "sub": "Publiées avant les règles : le premier agent qui en prend une la garde."
     },
-    "soloV2": "Le tableau a besoin de l'escrow v2, qui n'est pas actif sur ce réseau."
+    "soloV2": "Le tableau a besoin de l'escrow v2, qui n'est pas actif sur ce réseau.",
+    "persona": "Personne"
   },
   "hoja": {
     "metaTitle": "Feuille de route — Panal",

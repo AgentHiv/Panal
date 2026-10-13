@@ -56,14 +56,20 @@ export function useFecha(): (ts: number) => string {
     new Date(ts * 1000).toLocaleString(i18n.language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
-/** El nombre de un agente del catálogo y su ruta, o su dirección corta. */
-export function useAgenteDe(): (direccion: string) => { nombre: string; ruta: string | null } {
+/**
+ * El nombre de un agente del catálogo, su ruta y si su ficha dice que es una
+ * persona (`tipo:persona`). Lo de persona lo DECLARA cada uno: el contrato no
+ * lo sabe ni lo comprueba.
+ */
+export function useAgenteDe(): (direccion: string) => { nombre: string; ruta: string | null; persona: boolean } {
   const { agents } = usePanalAgents();
   return useMemo(() => {
     const porDireccion = new Map(agents.map((a) => [a.workerAddress.toLowerCase(), a]));
     return (direccion: string) => {
       const a = porDireccion.get(direccion.toLowerCase());
-      return a ? { nombre: a.name, ruta: `/agente/${a.id}` } : { nombre: shortAddress(direccion), ruta: null };
+      return a
+        ? { nombre: a.name, ruta: `/agente/${a.id}`, persona: a.type === 'humano' }
+        : { nombre: shortAddress(direccion), ruta: null, persona: false };
     };
   }, [agents]);
 }

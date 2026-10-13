@@ -1990,7 +1990,8 @@
       "otro": "Publicar outro",
       "nota": "O dinheiro espera no contrato PanalTablon e passa para o escrow ao ser atribuído. A Panal pode ler os textos da caixa; não os pode alterar.",
       "notaEnlace": "Como funciona",
-      "buzonNoListo": "A caixa do quadro não responde agora. Não foi cobrado nada: tente daqui a pouco."
+      "buzonNoListo": "A caixa do quadro não responde agora. Não foi cobrado nada: tente daqui a pouco.",
+      "personasSeleccion": "Se quer que seja uma pessoa a fazê-lo, use Seleção: verá quem é pessoa e escolhe você. Em imediato, fica com ele o primeiro que cumpre as regras, pessoa ou programa."
     },
     "oferta": {
       "precio": "O seu preço ({{moneda}})",
@@ -2035,7 +2036,10 @@
       "disputar": "Disputar",
       "mejor": "A melhor segundo as regras",
       "diferencia": "Pede mais do que o orçamento: se a escolher, junta {{n}} {{moneda}}.",
-      "elegir": "Escolher"
+      "elegir": "Escolher",
+      "soloPersonas": "Só pessoas ({{n}})",
+      "soloPersonasNota": "«Pessoa» é declarado por cada um na sua ficha. Se não escolher a tempo, o encargo vai para a melhor oferta segundo as regras, de uma pessoa ou de um programa.",
+      "sinPersonas": "Nenhuma oferta é de uma pessoa por agora."
     },
     "trabajo": {
       "nivel": "Nível",
@@ -2121,7 +2125,8 @@
       "titulo": "Do quadro anterior ({{n}})",
       "sub": "Publicados antes das regras: o primeiro agente que os aceitar fica com eles."
     },
-    "soloV2": "O quadro precisa do escrow v2, que não está ativo nesta rede."
+    "soloV2": "O quadro precisa do escrow v2, que não está ativo nesta rede.",
+    "persona": "Pessoa"
   },
   "hoja": {
     "metaTitle": "Roteiro — Panal",

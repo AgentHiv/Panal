@@ -597,6 +597,9 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
             ))}
           </div>
           <span className="px-1 text-[11.5px] leading-[1.45] text-ink-3">{seleccion ? P.modoSeleccion : P.modoInmediato}</span>
+          {!seleccion && categoria === CATEGORIAS_TABLON.indexOf('humanos') && (
+            <span className="px-1 text-[11.5px] leading-[1.45] text-honey">{P.personasSeleccion}</span>
+          )}
         </Campo>
         {seleccion && (
           <>
