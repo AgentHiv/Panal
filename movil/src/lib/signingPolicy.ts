@@ -14,7 +14,13 @@
  *
  *   - Transacciones al escrow (cualquiera de sus funciones), al registro (dar
  *     de alta y editar el agente propio) y a $PANAL solo `approve` con el
- *     escrow de beneficiario. Ni contratos nuevos, ni MON suelto, ni
+ *     escrow de beneficiario.
+ *   - En el tablón con reglas (PanalTablon), lo que no pone dinero a favor de
+ *     nadie: coger, ofertar, aprobar, disputar, cerrar, cobrar… Publicar
+ *     (`post`) y elegir una oferta (`choose`) solo los que la hoja acaba de
+ *     enseñar, como un `createTask`: los dos dejan el dinero camino de un
+ *     agente. Y el `approve` de $PANAL al tablón, solo por lo que esa hoja
+ *     confirmó. Ni contratos nuevos, ni MON suelto, ni
  *     `transfer`: mandar a otra wallet va por `lib/enviar.ts`, con su propia
  *     pantalla de confirmar, y no pasa por el conector.
  *   - `createTask`, además, solo el que la persona acaba de confirmar en la
@@ -22,7 +28,8 @@
  *     llamada al escrow que pone dinero a favor de un tercero; uno hacia un
  *     desconocido le bloquearía el saldo, y si nadie disputa, a los tres días
  *     de «entregar» lo cobra.
- *   - Mensajes, solo los de Panal: `Panal brief #12`, `Panal resultado #12 · …`.
+ *   - Mensajes, solo los de Panal: `Panal brief #12`, `Panal resultado #12 · …`
+ *     y los del buzón del tablón con reglas.
  *   - Datos tipados, solo el permit de x402 en una moneda que Panal acepta
  *     ($PANAL, GHO, USDC o AUSD), al agente, por el importe y EN LA MONEDA que
  *     enseñó la hoja del chat, y que caduque pronto.
@@ -44,10 +51,11 @@ import {
   NATIVE_CURRENCY,
   PANAL_ESCROW_V2_ADDRESS,
   PANAL_REGISTRY_V2_ADDRESS,
+  PANAL_TABLON_ADDRESS,
   PANAL_TOKEN_ADDRESS,
   activeChain,
 } from '@/contracts/config';
-import { X402_NATIVE, x402Currency } from '@panal/sdk';
+import { X402_NATIVE, panalTablonAbi, x402Currency } from '@panal/sdk';
 import { textos } from '~/i18n/idiomas';
 
 /** Cuánto vale lo armado por una hoja. Da para minar un `approve` y volver. */
@@ -60,8 +68,28 @@ export const VIDA_PERMISO_MS = 5 * 60_000;
  */
 export const PLAZO_MAX_PERMIT_S = 15 * 60;
 
-/** Los mensajes de Panal, enteros. Los arman `src/lib/botEndpoint.ts`. */
-const MENSAJES_DE_PANAL = /^Panal (brief #\d+|(resultado|encargo|entrega) #\d+ · \d+)$/;
+/**
+ * Los mensajes de Panal, enteros. Los arman `src/lib/botEndpoint.ts` y, los
+ * del tablón con reglas, `tablon-reglas.ts` del SDK; la entrega lleva dentro
+ * el hash de lo entregado.
+ */
+const MENSAJES_DE_PANAL =
+  /^Panal (brief #\d+|(resultado|encargo|entrega) #\d+ · \d+|tablón con reglas · ((encargo|resultado) #\d+|entrega #\d+ · 0x[0-9a-f]{64}) · \d+)$/;
+
+/** Lo que se firma en PanalTablon sin hoja: nada de esto pone dinero a favor de nadie. */
+const TABLON_SIN_HOJA = new Set([
+  'take',
+  'applyFor',
+  'withdrawOffer',
+  'setCategories',
+  'withdrawJob',
+  'approve',
+  'dispute',
+  'settle',
+  'expire',
+  'autoAssign',
+  'claim',
+]);
 
 /** La forma de EIP-2612. Con otros campos, la misma firma significaría otra cosa. */
 const CAMPOS_PERMIT = [
@@ -106,8 +134,20 @@ interface PagoArmado {
   vence: number;
 }
 
+interface TablonArmado {
+  funcion: 'post' | 'choose';
+  /** Al publicar, el depósito; al elegir, la diferencia que se pone (0 si no pide más). */
+  amount: bigint;
+  currency: Address;
+  /** Al elegir: qué encargo y a quién. */
+  jobId?: bigint;
+  agente?: Address;
+  vence: number;
+}
+
 let encargo: EncargoArmado | null = null;
 let pago: PagoArmado | null = null;
+let tablon: TablonArmado | null = null;
 
 /** La hoja de encargar, justo antes de pedir el `createTask`. */
 export function permitirEncargo(e: { worker: Address; amount: bigint; currency: Address }, ahora = Date.now()): void {
@@ -119,10 +159,16 @@ export function permitirPago(p: { spender: Address; value: bigint; token: Addres
   pago = { ...p, vence: ahora + VIDA_PERMISO_MS };
 }
 
+/** La hoja del tablón, justo antes de publicar o de elegir una oferta. */
+export function permitirTablon(t: Omit<TablonArmado, 'vence'>, ahora = Date.now()): void {
+  tablon = { ...t, vence: ahora + VIDA_PERMISO_MS };
+}
+
 /** Al cerrar la sesión no queda nada armado para la siguiente. */
 export function olvidarPermisos(): void {
   encargo = null;
   pago = null;
+  tablon = null;
 }
 
 /* ── las comprobaciones ─────────────────────────────────────────────────── */
@@ -172,6 +218,33 @@ export function revisarTransaccion(t: { to?: Address; data?: Hex; value?: bigint
     return;
   }
 
+  if (isAddressEqual(t.to, PANAL_TABLON_ADDRESS)) {
+    const llamada = decodificar(panalTablonAbi as unknown as Abi, datos, 'el tablón');
+    const fn = llamada.functionName;
+    if (fn !== 'post' && fn !== 'choose') {
+      if (!TABLON_SIN_HOJA.has(fn)) bloquear(`PanalTablon.${fn}, que no es de lo que firma esta app`);
+      if (valor !== 0n) bloquear(`MON a PanalTablon.${fn}, que no lo cobra`);
+      return;
+    }
+    const a = tablon;
+    if (!a || a.vence < ahora || a.funcion !== fn) bloquear(`un ${fn} del tablón que ninguna hoja ha confirmado`);
+    const nativa = isAddressEqual(a.currency, NATIVE_CURRENCY);
+    if (fn === 'post') {
+      const [p] = llamada.args as readonly [{ amount: bigint; currency: Address }];
+      if (p.amount !== a.amount || !isAddressEqual(p.currency, a.currency)) {
+        bloquear(`publicar por ${p.amount} en ${p.currency}, y la hoja confirmó ${a.amount} en ${a.currency}`);
+      }
+    } else {
+      const [jobId, agente] = llamada.args as readonly [bigint, Address];
+      if (jobId !== a.jobId || !a.agente || !isAddressEqual(agente, a.agente)) {
+        bloquear(`elegir a ${agente} en el #${jobId}, y la hoja confirmó a ${String(a.agente)} en el #${String(a.jobId)}`);
+      }
+    }
+    if (valor !== (nativa ? a.amount : 0n)) bloquear(`${fn} manda ${valor} wei de MON, y la hoja confirmó ${a.amount}`);
+    tablon = null;
+    return;
+  }
+
   if (isAddressEqual(t.to, PANAL_REGISTRY_V2_ADDRESS)) {
     decodificar(panalRegistryV2Abi, datos, 'el registro');
     if (valor !== 0n) bloquear('MON al registro');
@@ -180,8 +253,17 @@ export function revisarTransaccion(t: { to?: Address; data?: Hex; value?: bigint
 
   if (isAddressEqual(t.to, PANAL_TOKEN_ADDRESS)) {
     const llamada = decodificar(panalTokenAbi, datos, '$PANAL');
-    if (llamada.functionName !== 'approve' || !isAddressEqual(llamada.args?.[0] as Address, PANAL_ESCROW_V2_ADDRESS)) {
-      bloquear(`$PANAL.${llamada.functionName} a ${String(llamada.args?.[0])}: solo se aprueba al escrow`);
+    const [beneficiario, cuanto] = (llamada.args ?? []) as readonly [Address, bigint];
+    if (llamada.functionName !== 'approve') bloquear(`$PANAL.${llamada.functionName}: solo se firma approve`);
+    if (isAddressEqual(beneficiario, PANAL_TABLON_ADDRESS)) {
+      // Al tablón, solo lo que la hoja enseñó en $PANAL. No se gasta aquí:
+      // detrás viene el `post` o el `choose`, que es lo que lo consume.
+      const a = tablon;
+      if (!a || a.vence < ahora || !isAddressEqual(a.currency, PANAL_TOKEN_ADDRESS) || cuanto !== a.amount) {
+        bloquear(`aprobar ${cuanto} $PANAL al tablón, y ninguna hoja lo ha confirmado`);
+      }
+    } else if (!isAddressEqual(beneficiario, PANAL_ESCROW_V2_ADDRESS)) {
+      bloquear(`$PANAL.approve a ${beneficiario}: solo se aprueba al escrow o al tablón`);
     }
     if (valor !== 0n) bloquear('MON a $PANAL');
     return;

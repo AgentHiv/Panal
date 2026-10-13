@@ -50,6 +50,7 @@ import { appendFilesManifest, type DeliveredFile } from '@/lib/deliveredFiles';
 import { describirArchivo, tamanoLegible, MAX_ADJUNTOS, type Adjunto } from '@/lib/adjuntos';
 import { parseAttachmentsManifest } from '@panal/sdk';
 import { hayEntrega } from '@/lib/expedientes';
+import { esDelTablon } from '@/lib/tablonReglas';
 import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
@@ -60,7 +61,6 @@ import { shortAddress } from '@/hooks/useWallet';
 import {
   EXPLORER_TX,
   NATIVE_CURRENCY,
-  PANAL_TABLON_ADDRESS,
   PANAL_TOKEN_ADDRESS,
   V2_ENABLED,
   activeChain,
@@ -165,11 +165,6 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
       <p className="max-w-sm text-[0.875rem] text-ink-2">{desc}</p>
     </div>
   );
-}
-
-/** Una tarea que repartió PanalTablon: en el escrow, su cliente es el tablón. */
-function esDelTablon(task: RealTask): boolean {
-  return task.client.toLowerCase() === PANAL_TABLON_ADDRESS.toLowerCase();
 }
 
 export default function TasksSection({ perspective }: { perspective: Perspective }) {
@@ -459,7 +454,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
     const out: { kind: DialogKind; label: string; className: string }[] = [];
     // Las del tablón con reglas se llevan en /tablon: su cliente en el escrow
     // es PanalTablon y el encargo vive en el buzón del tablón, no en el tuyo.
-    if (esDelTablon(task)) return out;
+    if (esDelTablon(task.client)) return out;
     const workerZero = task.worker.toLowerCase() === ZERO_ADDRESS;
     if (task.role === 'worker') {
       if (task.status === TASK_STATUS.Open && workerZero) {
@@ -530,7 +525,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
               <HexAvatar seed={counterparty} size={32} logo={logoDe(counterparty)} />
               <span className="flex min-w-0 flex-col">
                 <span className="max-w-[150px] truncate text-[0.875rem] font-medium text-ink">
-                  {counterpartyZero ? t('tasks.unassigned') : esDelTablon(task) ? t('tasks.delTablon') : nameOf(counterparty)}
+                  {counterpartyZero ? t('tasks.unassigned') : esDelTablon(task.client) ? t('tasks.delTablon') : nameOf(counterparty)}
                 </span>
                 {(() => {
                   const brief = getTaskBrief(task.taskHash);
@@ -568,7 +563,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
           {withActions && (
             <td className="whitespace-nowrap py-3.5 pl-3 pr-5">
               <div className="flex items-center justify-end gap-1.5">
-                {esDelTablon(task) ? (
+                {esDelTablon(task.client) ? (
                   <Link
                     to="/tablon#trabajo"
                     className="rounded-full border border-honey px-3 py-1.5 text-[0.75rem] font-semibold text-honey-deep transition-colors hover:bg-honey-soft"

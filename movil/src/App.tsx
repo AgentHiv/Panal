@@ -3,6 +3,7 @@ import BarraRed from '~/componentes/BarraRed';
 import Pestanas from '~/componentes/Pestanas';
 import Chats from '~/pantallas/Chats';
 import Mercado from '~/pantallas/Mercado';
+import Tablon from '~/pantallas/Tablon';
 import Saldo from '~/pantallas/Saldo';
 import Hilo from '~/pantallas/Hilo';
 import Agente from '~/pantallas/Agente';
@@ -29,7 +30,7 @@ function AlAgente(): React.ReactElement {
 }
 
 /** Las rutas con pestañas abajo. Un hilo o una ficha ocupan la pantalla entera. */
-const CON_PESTANAS = ['/chats', '/mercado', '/archivo', '/saldo'];
+const CON_PESTANAS = ['/chats', '/mercado', '/tablon', '/archivo', '/saldo'];
 
 export default function App(): React.ReactElement {
   const { pathname } = useLocation();
@@ -50,6 +51,7 @@ export default function App(): React.ReactElement {
           <Route path="/chat/:id" element={SIN_PAGOS ? <AlAgente /> : <Hilo />} />
           <Route path="/agente/:id" element={<Agente />} />
           <Route path="/mercado" element={<Mercado />} />
+          <Route path="/tablon" element={<Tablon />} />
           <Route path="/archivo" element={<Archivo />} />
           <Route path="/expediente/:id" element={<Expediente />} />
           <Route path="/saldo" element={<Saldo />} />

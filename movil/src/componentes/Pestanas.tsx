@@ -13,9 +13,10 @@ import { SIN_PAGOS } from '~/lib/canal';
  * y pasado eso se pierde lo más viejo sin avisar. Un aviso que hay que buscar
  * no es un aviso.
  */
-const TODAS: { a: string; clave: 'chats' | 'mercado' | 'archivo' | 'saldo'; icono: NombreIcono }[] = [
+const TODAS: { a: string; clave: 'chats' | 'mercado' | 'tablon' | 'archivo' | 'saldo'; icono: NombreIcono }[] = [
   { a: '/chats', clave: 'chats', icono: 'chat' },
   { a: '/mercado', clave: 'mercado', icono: 'bolsa' },
+  { a: '/tablon', clave: 'tablon', icono: 'tablon' },
   { a: '/archivo', clave: 'archivo', icono: 'carpeta' },
   { a: '/saldo', clave: 'saldo', icono: 'cartera' },
 ];

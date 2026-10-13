@@ -166,6 +166,17 @@ console.log('\nmensajes: solo los de Panal');
 dice('«Panal brief #7» se firma', !(await parado('personal_sign', [hex('Panal brief #7'), wallet.direccion])));
 dice('un mensaje cualquiera, no', await parado('personal_sign', [hex('Sign in to claim your airdrop'), wallet.direccion]));
 dice('ni uno que solo empieza como los de Panal', await parado('personal_sign', [hex('Panal brief #7 y algo más'), wallet.direccion]));
+const { tablonEncargoSignMessage, tablonEntregaSignMessage, tablonResultadoSignMessage, panalTablonAbi } = await import('@panal/sdk');
+dice(
+  'los del buzón del tablón con reglas, sí',
+  !(await parado('personal_sign', [hex(tablonEncargoSignMessage(3n, 1900000000)), wallet.direccion])) &&
+    !(await parado('personal_sign', [hex(tablonEntregaSignMessage(3n, `0x${'ab'.repeat(32)}`, 1900000000)), wallet.direccion])) &&
+    !(await parado('personal_sign', [hex(tablonResultadoSignMessage(3n, 1900000000)), wallet.direccion])),
+);
+dice(
+  'una entrega del tablón sin su hash, no',
+  await parado('personal_sign', [hex('Panal tablón con reglas · entrega #3 · 1900000000'), wallet.direccion]),
+);
 
 console.log('\npermits: solo el que armó la hoja');
 const permitDe = (cambios = {}, dominio = {}) =>
@@ -295,6 +306,55 @@ politica.permitirPago({ spender: AGENTE, value: IMPORTE_MON, token: MON });
 dice('con datos, no: es una transferencia, no una llamada', !pasa({ to: AGENTE, value: IMPORTE_MON, data: '0xa9059cbb' }));
 politica.permitirPago({ spender: AGENTE, value: 50n, token: TOKEN });
 dice('la hoja armó $PANAL y llega MON, no', !pasa({ to: AGENTE, value: 50n }));
+politica.olvidarPermisos();
+
+console.log('\nel tablón con reglas');
+const { PANAL_TABLON_ADDRESS: TABLON } = await import('@/contracts/config');
+const enTablon = (functionName, args) => encodeFunctionData({ abi: panalTablonAbi, functionName, args });
+const publicar = (amount, currency = MON) =>
+  enTablon('post', [{
+    taskHash: `0x${'ab'.repeat(32)}`, advertHash: `0x${'cd'.repeat(32)}`, category: 2, currency, amount,
+    workDuration: 86400n, expiresAt: 1900000000n, mode: 1, applyWindow: 7200n, chooseWindow: 86400n,
+    experiencedOnly: false, relist: false, campaignId: `0x${'00'.repeat(32)}`, campaignCapPerAgent: 0,
+  }]);
+dice('coger, ofertar, aprobar, cerrar y cobrar, sin hoja, sí', [
+  enTablon('take', [1n]),
+  enTablon('applyFor', [1n, 10n ** 18n, 0n]),
+  enTablon('approve', [1n, 5]),
+  enTablon('settle', [1n]),
+  enTablon('claim', [MON]),
+  enTablon('setCategories', [[2, 10]]),
+].every((data) => pasa({ to: TABLON, data })));
+dice('con MON pegado, no', !pasa({ to: TABLON, data: enTablon('take', [1n]), value: 1n }));
+dice('lo del dueño del contrato, no', !pasa({ to: TABLON, data: enTablon('setPaused', [true]) }));
+dice('publicar sin hoja, no', !pasa({ to: TABLON, data: publicar(10n ** 18n), value: 10n ** 18n }));
+politica.permitirTablon({ funcion: 'post', amount: 10n ** 18n, currency: MON });
+dice('publicar por otro importe que el confirmado, no', !pasa({ to: TABLON, data: publicar(2n * 10n ** 18n), value: 2n * 10n ** 18n }));
+politica.permitirTablon({ funcion: 'post', amount: 10n ** 18n, currency: MON });
+dice('publicar lo confirmado mandando más MON, no', !pasa({ to: TABLON, data: publicar(10n ** 18n), value: 2n * 10n ** 18n }));
+politica.permitirTablon({ funcion: 'post', amount: 10n ** 18n, currency: MON });
+dice('publicar lo confirmado, sí', pasa({ to: TABLON, data: publicar(10n ** 18n), value: 10n ** 18n }));
+dice('y una sola vez', !pasa({ to: TABLON, data: publicar(10n ** 18n), value: 10n ** 18n }));
+politica.permitirTablon({ funcion: 'post', amount: 5000n, currency: TOKEN });
+dice(
+  'en $PANAL, aprobar al tablón lo confirmado, sí',
+  pasa({ to: TOKEN, data: encodeFunctionData({ abi: panalTokenAbi, functionName: 'approve', args: [TABLON, 5000n] }) }),
+);
+dice(
+  'y aprobar más de lo confirmado, no',
+  !pasa({ to: TOKEN, data: encodeFunctionData({ abi: panalTokenAbi, functionName: 'approve', args: [TABLON, 5001n] }) }),
+);
+dice('y el post en $PANAL después del approve, sí', pasa({ to: TABLON, data: publicar(5000n, TOKEN) }));
+dice(
+  'sin hoja, aprobar $PANAL al tablón, no',
+  !pasa({ to: TOKEN, data: encodeFunctionData({ abi: panalTokenAbi, functionName: 'approve', args: [TABLON, 1n] }) }),
+);
+politica.permitirTablon({ funcion: 'choose', amount: 0n, currency: MON, jobId: 4n, agente: AGENTE });
+dice('elegir a otro agente que el confirmado, no', !pasa({ to: TABLON, data: enTablon('choose', [4n, DESCONOCIDO]) }));
+politica.permitirTablon({ funcion: 'choose', amount: 0n, currency: MON, jobId: 4n, agente: AGENTE });
+dice('elegir en otro encargo, no', !pasa({ to: TABLON, data: enTablon('choose', [5n, AGENTE]) }));
+politica.permitirTablon({ funcion: 'choose', amount: 2n, currency: MON, jobId: 4n, agente: AGENTE });
+dice('elegir lo confirmado poniendo la diferencia justa, sí', pasa({ to: TABLON, data: enTablon('choose', [4n, AGENTE]), value: 2n }));
 politica.olvidarPermisos();
 
 console.log('\nse cierra sola por inactividad');

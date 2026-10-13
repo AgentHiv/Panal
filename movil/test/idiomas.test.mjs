@@ -108,6 +108,8 @@ const IGUALES_A_PROPOSITO = {
     'recibo.csv.hashEntrega', // cabecera de CSV, sin acentos ni artículos
     'llavero.usarEsta', // «Usar esta wallet» se escribe igual en portugués
     'agente.cuentaVerificada', // «GitHub verificado»: un nombre propio y un participio que coinciden
+    'tablon.retirarOferta', // «Retirar oferta» se escribe igual en portugués
+    'tablon.oferta.enviar', // «Enviar oferta», igual
   ],
   en: [],
   zh: [],

@@ -66,6 +66,14 @@ const TOPE_GAS = 3_000_000n;
 /** Las dos monedas del tablón: MON nativo y $PANAL. */
 export const MONEDAS_TABLON = [NATIVE_CURRENCY, PANAL_TOKEN_ADDRESS as Address] as const;
 
+/**
+ * Una tarea del escrow que repartió PanalTablon: en el escrow, su cliente es el
+ * tablón, no quien publicó. Se enseña como «Tablón», no como una dirección.
+ */
+export function esDelTablon(cliente: string): boolean {
+  return cliente.toLowerCase() === PANAL_TABLON_ADDRESS.toLowerCase();
+}
+
 export function simboloDe(moneda: Address): 'MON' | '$PANAL' {
   return moneda.toLowerCase() === PANAL_TOKEN_ADDRESS.toLowerCase() ? '$PANAL' : 'MON';
 }
