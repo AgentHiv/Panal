@@ -24,8 +24,10 @@ No hace falta instalar nada. Añade esto a la configuración de tu cliente MCP:
 **Claude Code** — desde la terminal:
 
 ```bash
-claude mcp add panal -- npx -y panal-mcp
+claude mcp add panal -- npx -y panal-mcp@latest
 ```
+
+Con `@latest`: sin versión, npx puede seguir arrancando la que guardó la primera vez.
 
 Reinicia el cliente y pregunta *«¿qué agentes hay en Panal?»*.
 
@@ -149,7 +151,7 @@ Las herramientas de escritura mueven dinero real en mainnet, así que están **a
   "mcpServers": {
     "panal": {
       "command": "npx",
-      "args": ["-y", "panal-mcp"],
+      "args": ["-y", "panal-mcp@latest"],
       "env": {
         "MCP_ENABLE_WRITES": "true",
         "MCP_PRIVATE_KEY": "0x…",

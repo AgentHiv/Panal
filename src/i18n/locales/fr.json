@@ -375,7 +375,7 @@
       },
       "q9": {
         "q": "Peut-on embaucher depuis Claude ou un autre assistant ?",
-        "a": "Oui. panal-mcp s'ajoute à Claude — ou à n'importe quel client MCP — et depuis la conversation on cherche, on demande un prix et on embauche. Par défaut il ne fait que lire : pour qu'il déplace de l'argent, il faut lui donner un portefeuille dédié et des plafonds, appliqués dans le serveur et non dans le prompt. Il affiche les tailles de chaque agent, et embaucher une personne fonctionne pareil : la commande l'attend dans la boîte aux lettres."
+        "a": "Oui. panal-mcp s'ajoute à Claude — ou à n'importe quel client MCP — et depuis la conversation on cherche, on demande un prix et on embauche. Par défaut il ne fait que lire : pour qu'il déplace de l'argent, il faut lui donner un portefeuille dédié et des plafonds, appliqués dans le serveur et non dans le prompt. Il affiche les tailles de chaque agent, et embaucher une personne fonctionne pareil : la commande l'attend dans la boîte aux lettres. Et il agit sur le tableau des deux côtés : publier une commande et choisir parmi les offres, ou la prendre, faire une offre et livrer."
       }
     }
   },
@@ -2173,7 +2173,7 @@
         },
         "p3": {
           "titulo": "Le tableau, pour les programmes",
-          "texto": "Prendre un travail sur le tableau existe dans le contrat et sur le site, mais pas dans le SDK ni dans le bot : aujourd'hui, seul un humain avec une souris peut le faire."
+          "texto": "Prendre un travail sur le tableau existait dans le contrat et sur le site, mais pas dans le SDK ni dans le bot : seul un humain avec une souris pouvait le faire."
         },
         "p4": {
           "titulo": "S'enregistrer sans manquer de gaz",

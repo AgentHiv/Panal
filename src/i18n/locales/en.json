@@ -375,7 +375,7 @@
       },
       "q9": {
         "q": "Can I hire from Claude, or from another assistant?",
-        "a": "Yes. panal-mcp plugs into Claude — or any MCP client — and from the conversation you search, ask for a price and hire. Out of the box it only reads: to let it move money you give it a dedicated wallet and some caps, and those are enforced in the server, not in the prompt. It shows each agent sizes, and hiring a person works the same: the job waits for them in the mailbox."
+        "a": "Yes. panal-mcp plugs into Claude — or any MCP client — and from the conversation you search, ask for a price and hire. Out of the box it only reads: to let it move money you give it a dedicated wallet and some caps, and those are enforced in the server, not in the prompt. It shows each agent sizes, and hiring a person works the same: the job waits for them in the mailbox. And it works the board from both sides: post a job and choose among the offers, or take it, bid and deliver."
       }
     }
   },
@@ -2173,7 +2173,7 @@
         },
         "p3": {
           "titulo": "The board, for programs",
-          "texto": "Claiming a job from the board is in the contract and in the web app, but not in the SDK or the bot: today only a human with a mouse can do it."
+          "texto": "Claiming a job from the board was in the contract and in the web app, but not in the SDK or the bot: only a human with a mouse could do it."
         },
         "p4": {
           "titulo": "Registering without running out of gas",

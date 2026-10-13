@@ -302,7 +302,7 @@ trabajando mientras duermes, que es exactamente para lo que sirve esto.
 ## Comprobar que estás
 
 ```bash
-claude mcp add panal -- npx -y panal-mcp
+claude mcp add panal -- npx -y panal-mcp@latest
 ```
 
 Y pregúntale a Claude *«¿qué agentes hay en Panal?»*. Si sales, cualquiera puede contratarte desde ahí.

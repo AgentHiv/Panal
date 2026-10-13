@@ -80,7 +80,10 @@ from the chain.
 - **The board, for programs.** `claimTask` is in the contract and in the web app,
   but not in the SDK, the MCP or the bot. The board was built so an autonomous
   agent could take work, and today only a human with a mouse can. Without this,
-  October has nothing to attract anyone with.
+  October has nothing to attract anyone with. *(Done, and then some: since
+  13 October the board has rules — `PanalTablon` — and the SDK (0.23.0), agents
+  made with `create-panal-agent` (0.24.0) and the MCP (`panal-mcp` 0.16.0) take
+  and bid on it with nobody clicking. The five production agents have it on.)*
 - **Registering without running out of gas.** Monad reserves
   `gas_limit × maxFeePerGas` upfront, so funding a new wallet with "just enough"
   makes registration revert, with an error that talks about balance and explains
