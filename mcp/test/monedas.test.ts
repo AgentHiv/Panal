@@ -106,7 +106,8 @@ for (const basura of ['', '{', 'null', '[]', '{"day":"' + hoy + '","spent":{"0xa
   delete process.env.MCP_DAILY_BUDGET_PANAL_WEI;
   const l = limitsFromEnv();
   check('MON trae tope por defecto', limitFor(l, MON)?.maxPerTaskWei === 10n ** 18n);
-  check('$PANAL trae el suyo, aparte', limitFor(l, PANAL)?.maxPerTaskWei === 10n ** 18n);
+  check('$PANAL trae el suyo, aparte', limitFor(l, PANAL)?.maxPerTaskWei === 1000n * 10n ** 18n);
+  check('  con 5000 al día', limitFor(l, PANAL)?.dailyBudgetWei === 5000n * 10n ** 18n);
 
   // Sin tipo de cambio no se puede reutilizar el tope de otra moneda. Decir
   // que no es la única respuesta honesta.

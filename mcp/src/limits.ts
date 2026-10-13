@@ -266,11 +266,14 @@ export function limitsFromEnv(): Limits {
     envMaxPerTask: 'MCP_MAX_PER_TASK_WEI',
     envDailyBudget: 'MCP_DAILY_BUDGET_WEI',
   });
-  // $PANAL estrena las suyas, con los mismos números de antes. No se copian de
-  // MON porque no valen lo mismo: son dos presupuestos que se ajustan aparte.
+  // $PANAL lleva las suyas: no vale lo mismo que MON. Empezaron con los números
+  // de MON (1 y 5), que en $PANAL eran unas millonésimas de dólar y no dejaban
+  // pagar a ningún agente que cobre en $PANAL (Spec pide 100, i18n y Draft
+  // 1000). 1000 por encargo cubre esos y deja los tamaños grandes a quien suba
+  // el tope a sabiendas.
   porMoneda.set(clave(PANAL), {
-    maxPerTaskWei: parse('MCP_MAX_PER_TASK_PANAL_WEI', 10n ** 18n),
-    dailyBudgetWei: parse('MCP_DAILY_BUDGET_PANAL_WEI', 5n * 10n ** 18n),
+    maxPerTaskWei: parse('MCP_MAX_PER_TASK_PANAL_WEI', 1000n * 10n ** 18n),
+    dailyBudgetWei: parse('MCP_DAILY_BUDGET_PANAL_WEI', 5000n * 10n ** 18n),
     envMaxPerTask: 'MCP_MAX_PER_TASK_PANAL_WEI',
     envDailyBudget: 'MCP_DAILY_BUDGET_PANAL_WEI',
   });

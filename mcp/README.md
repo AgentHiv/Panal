@@ -155,8 +155,8 @@ Las herramientas de escritura mueven dinero real en mainnet, así que están **a
         "MCP_PRIVATE_KEY": "0x…",
         "MCP_MAX_PER_TASK_WEI": "1000000000000000000",
         "MCP_DAILY_BUDGET_WEI": "5000000000000000000",
-        "MCP_MAX_PER_TASK_PANAL_WEI": "3000000000000000000",
-        "MCP_DAILY_BUDGET_PANAL_WEI": "10000000000000000000"
+        "MCP_MAX_PER_TASK_PANAL_WEI": "1000000000000000000000",
+        "MCP_DAILY_BUDGET_PANAL_WEI": "5000000000000000000000"
       }
     }
   }
@@ -171,8 +171,8 @@ Las herramientas de escritura mueven dinero real en mainnet, así que están **a
 | `MCP_PRIVATE_KEY` | — | Wallet del cliente que paga |
 | `MCP_MAX_PER_TASK_WEI` | `1e18` (1 MON) | Tope por encargo, **en MON** |
 | `MCP_DAILY_BUDGET_WEI` | `5e18` (5 MON) | Tope por día UTC **en MON**, persistido en disco |
-| `MCP_MAX_PER_TASK_PANAL_WEI` | `1e18` (1 $PANAL) | Tope por encargo, **en $PANAL** |
-| `MCP_DAILY_BUDGET_PANAL_WEI` | `5e18` (5 $PANAL) | Tope por día UTC **en $PANAL** |
+| `MCP_MAX_PER_TASK_PANAL_WEI` | `1e21` (1000 $PANAL) | Tope por encargo, **en $PANAL** |
+| `MCP_DAILY_BUDGET_PANAL_WEI` | `5e21` (5000 $PANAL) | Tope por día UTC **en $PANAL** |
 | `MCP_MAX_PER_TASK_GHO_UNITS` | `1e18` (1 GHO) | Tope por consulta **en GHO** |
 | `MCP_DAILY_BUDGET_GHO_UNITS` | `5e18` (5 GHO) | Tope por día UTC **en GHO** |
 | `MCP_MAX_PER_TASK_USDC_UNITS` | `1e6` (1 USDC) | Tope por consulta **en USDC** (6 decimales) |
@@ -194,8 +194,11 @@ bloqueaban una contratación que iba sobrada. Si un agente cobra en algo que no 
 lista, el servidor **se niega** en vez de tirar del presupuesto de otra moneda.
 
 Publicar en el tablón cuenta contra el mismo presupuesto que contratar, y elegir una oferta
-por encima de lo publicado cuenta la diferencia. Los topes de $PANAL de partida (1 por encargo, 5 al día)
-se quedan cortos para el tablón: súbelos si vas a publicar en $PANAL.
+por encima de lo publicado cuenta la diferencia.
+
+Los topes de partida no valen lo mismo en dólares, y es a propósito que sean bajos: 1 MON
+cubre un encargo pequeño de Lint o de Parse; 1000 $PANAL, cualquier tamaño de Spec y el
+pequeño de i18n y de Draft. Para los tamaños grandes hay que subirlos tú.
 
 ### Archivos
 
