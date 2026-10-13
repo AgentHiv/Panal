@@ -2,23 +2,9 @@
 
 ## Pendiente ahora
 
-Solo el SDK:
-
-```bash
-cd sdk && npm publish --access public            # @panal/sdk 0.23.0
-```
-
-### Qué lleva
-
-**Las categorías del tablón con reglas.** `CATEGORIAS_TABLON` y
-`categoriaDelTablon()`: las 16 categorías con su número en la cadena, que es lo
-que guarda PanalTablon. Es la misma lista que usan la web, la app y el
-indexador, y su orden no cambia nunca (BOARD.md §6.2).
-
-La 0.22.0 (ya publicada) trajo la dirección de PanalTablon en mainnet.
-`panal-mcp` y `create-panal-agent` siguen sin hacer falta: todavía no usan este
-tablón. En el repo ya piden `^0.23.0`, para que el workspace siga enlazado al
-`sdk/`.
+Nada. Lo último publicado: `@panal/sdk` 0.23.0 (las categorías del tablón con
+reglas y la dirección de PanalTablon en mainnet), `panal-mcp` 0.15.0 y
+`create-panal-agent` 0.23.0.
 
 ## Google Play: el AAB
 

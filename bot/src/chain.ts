@@ -765,8 +765,13 @@ export interface TrabajoTablon {
 /**
  * Solo `getJob`, con la forma entera del struct: viem decodifica por
  * posición y una tupla incompleta leería los campos corridos.
+ *
+ * Y su error. Sin él, un encargo que no existe revierte como `0x71c8f460`
+ * a secas, y el buzón no sabía que eso es «no existe»: respondía 502 «rpc
+ * error» y dejaba un aviso en el registro por cada número inventado.
  */
-const tablonAbi = [
+export const tablonAbi = [
+  { type: 'error', name: 'InvalidJob', inputs: [] },
   {
     type: 'function',
     name: 'getJob',

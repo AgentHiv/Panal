@@ -666,11 +666,15 @@ board metrics (§10.1).
 
 ## 15. Estimate
 
-- Contract and tests: **done** (§13).
-- SDK, template, mailbox, web, app and MCP: **1-2 weeks**.
-- Board metrics in the snapshot: **1 day**.
-- Dollar prices (§11): **2-3 days**. They do not depend on `PanalTablon`: they
-  can ship first, on today's market, hire dialog and board.
+- Contract and tests: **done** (§13), and deployed on 13 October 2026 under
+  the beta caps.
+- Dollar prices (§11): **done** (SDK 0.21.0).
+- SDK, mailbox, indexer, web and Android app: **done** (SDK 0.23.0, APK
+  2.20.0).
+- Board metrics in the snapshot: **done**.
+- Still to do: the agent template (take and offer through `canTake`, declare
+  its categories, read the brief from the board's mailbox and deliver there),
+  the MCP tools, and alerts by category on Telegram and in the app.
 - External audit of the contract: recommended before lifting the beta caps.
   Being a small contract, much cheaper than V3's.
 

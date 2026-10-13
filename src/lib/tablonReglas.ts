@@ -255,6 +255,23 @@ export async function leerAnuncios(encargos: EncargoConReglas[]): Promise<Map<st
 }
 
 /**
+ * Si el buzón acepta ya los textos de este tablón. Se pregunta ANTES de
+ * publicar: si no, el dinero quedaría depositado con un encargo que nadie
+ * puede leer. Pasó el día del despliegue: el buzón de producción aún no tenía
+ * la dirección del tablón y respondía «not found» a todo.
+ */
+export async function buzonAceptaElTablon(): Promise<boolean> {
+  try {
+    const res = await fetch(`${BUZON_DEL_TABLON}/lista`, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) return false;
+    const cuerpo = (await res.json()) as { anuncios?: unknown };
+    return Array.isArray(cuerpo.anuncios);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Deja el anuncio y el encargo de un encargo ya publicado. Sin firma: el buzón
  * solo acepta los textos que dan los hashes que la cadena guardó. Repetirlo no
  * molesta, así que sirve para reintentar.

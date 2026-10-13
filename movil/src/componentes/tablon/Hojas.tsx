@@ -12,6 +12,7 @@ import { CATEGORIAS_TABLON, ModoTablon, panalTablonAbi, type EncargoConReglas, t
 import { NATIVE_CURRENCY, PANAL_TOKEN_ADDRESS, publicClient } from '@/contracts/config';
 import { useReglasDelTablon } from '@/hooks/useTablonReglas';
 import {
+  buzonAceptaElTablon,
   dejarEntrega,
   enTablon,
   entregarEnEscrow,
@@ -451,6 +452,8 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
     const textoEncargo = encargoT;
     await firma.ejecutar('publicar', async (e, c) => {
       try {
+        // Antes de cobrar nada: sin buzón, el encargo quedaría pagado y mudo.
+        if (!(await buzonAceptaElTablon())) throw new Error(P.buzonNoListo);
         // Lo que esta hoja enseña, y nada más: la wallet del teléfono no firma otro.
         permitirTablon({ funcion: 'post', amount: wei, currency: moneda });
         if (enPanal) {
