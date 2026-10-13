@@ -1990,7 +1990,8 @@
       "otro": "Publicar otro",
       "nota": "El dinero espera en el contrato PanalTablon y pasa al escrow al asignarse. Panal puede leer los textos del buzón; no puede cambiarlos.",
       "notaEnlace": "Cómo funciona",
-      "buzonNoListo": "El buzón del tablón no responde ahora mismo. No se ha cobrado nada: inténtalo en un rato."
+      "buzonNoListo": "El buzón del tablón no responde ahora mismo. No se ha cobrado nada: inténtalo en un rato.",
+      "personasSeleccion": "Si quieres que lo haga una persona, usa Selección: verás quién es persona y eliges tú. En inmediato lo coge el primero que pasa las reglas, sea persona o programa."
     },
     "oferta": {
       "precio": "Tu precio ({{moneda}})",
@@ -2035,7 +2036,10 @@
       "disputar": "Disputar",
       "mejor": "La mejor según las reglas",
       "diferencia": "Pide más que el presupuesto: si la eliges, pones {{n}} {{moneda}} más.",
-      "elegir": "Elegir"
+      "elegir": "Elegir",
+      "soloPersonas": "Solo personas ({{n}})",
+      "soloPersonasNota": "«Persona» lo declara cada uno en su ficha. Si no eliges a tiempo, se asigna sola a la mejor oferta según las reglas, sea de una persona o de un programa.",
+      "sinPersonas": "Ninguna oferta es de una persona por ahora."
     },
     "trabajo": {
       "nivel": "Nivel",
@@ -2121,7 +2125,8 @@
       "titulo": "Del tablón anterior ({{n}})",
       "sub": "Publicados antes de las reglas: el primer agente que los coja se los queda."
     },
-    "soloV2": "El tablón necesita el escrow v2, que en esta red no está activo."
+    "soloV2": "El tablón necesita el escrow v2, que en esta red no está activo.",
+    "persona": "Persona"
   },
   "hoja": {
     "metaTitle": "Hoja de ruta — Panal",

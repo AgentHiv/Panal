@@ -15,7 +15,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useSignMessage } from 'wagmi';
-import { Star } from 'lucide-react';
+import { Star, User } from 'lucide-react';
 import type { Address } from 'viem';
 import {
   EstadoTablon,
@@ -130,6 +130,7 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
   const [leyendo, setLeyendo] = useState(false);
   const [errorEntrega, setErrorEntrega] = useState<string | null>(null);
   const [nota, setNota] = useState(5);
+  const [soloPersonas, setSoloPersonas] = useState(false);
 
   const id = job.id.toString();
   const anuncio = datos.anuncios.get(id);
@@ -304,6 +305,8 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
   }
 
   const terminado = job.estado !== EstadoTablon.Publicado && job.estado !== EstadoTablon.Asignado;
+  // La que elegiría `autoAssign`, se filtre o no: la primera que cabe en el presupuesto.
+  const mejor = ofertas?.find((o) => o.precio <= job.importe);
 
   return (
     <li className={cn('rounded-2xl border border-line bg-paper p-5', terminado ? 'opacity-80' : 'shadow-card')}>
@@ -333,14 +336,37 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
           ) : (
             <span className="font-mono">{agente.nombre}</span>
           )}
+          {agente.persona && <EtiquetaPersona />}
         </div>
       )}
 
       {estado && <p className="mt-3 text-[0.8125rem] leading-relaxed text-ink-2">{estado}</p>}
 
       {ofertas && ofertas.length > 0 && (
-        <ul className="mt-3 flex flex-col divide-y divide-line rounded-xl border border-line">
-          {ofertas.map((o, i) => {
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={soloPersonas}
+            onClick={() => setSoloPersonas((v) => !v)}
+            className={cn(
+              'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[0.75rem] font-medium transition-colors',
+              soloPersonas ? 'border-olive/40 bg-olive/10 text-olive' : 'border-line text-ink-2 hover:border-honey',
+            )}
+          >
+            <User size={12} aria-hidden />
+            {t('tablon.mios.soloPersonas', { n: ofertas.filter((o) => agenteDe(o.agente).persona).length })}
+          </button>
+          {soloPersonas && <span className="text-[0.75rem] leading-relaxed text-ink-3">{t('tablon.mios.soloPersonasNota')}</span>}
+        </div>
+      )}
+
+      {ofertas && ofertas.length > 0 && soloPersonas && !ofertas.some((o) => agenteDe(o.agente).persona) && (
+        <p className="mt-3 text-[0.8125rem] text-ink-3">{t('tablon.mios.sinPersonas')}</p>
+      )}
+
+      {ofertas && ofertas.length > 0 && (
+        <ul className="mt-3 flex flex-col divide-y divide-line rounded-xl border border-line empty:hidden">
+          {ofertas.filter((o) => !soloPersonas || agenteDe(o.agente).persona).map((o) => {
             const a = agenteDe(o.agente);
             const clave = `elegir:${id}:${o.agente}`;
             const diferencia = o.precio > job.importe ? o.precio - job.importe : 0n;
@@ -356,8 +382,9 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
                     ) : (
                       <span className="font-mono text-ink">{a.nombre}</span>
                     )}
+                    {a.persona && <EtiquetaPersona />}
                     <Chip tono={o.nivel > 0 ? 'oliva' : 'neutro'}>{t('tablon.nivel', { n: o.nivel })}</Chip>
-                    {i === 0 && diferencia === 0n && <Chip tono="miel">{t('tablon.mios.mejor')}</Chip>}
+                    {o === mejor && <Chip tono="miel">{t('tablon.mios.mejor')}</Chip>}
                   </p>
                   <p className="mt-0.5 font-mono text-[12px] text-ink-3">{t('tablon.entregaEn', { dur: duracion(o.plazoEntregaS) })}</p>
                   {diferencia > 0n && (
@@ -391,6 +418,17 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
         </div>
       )}
     </li>
+  );
+}
+
+/** «Persona», como la declara su ficha. */
+function EtiquetaPersona() {
+  const { t } = useTranslation();
+  return (
+    <Chip>
+      <User size={11} className="mr-1" aria-hidden />
+      {t('tablon.persona')}
+    </Chip>
   );
 }
 
