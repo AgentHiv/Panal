@@ -93,6 +93,33 @@ espia = fingeManifiesto({ cuerpo: { version: '2.7.0' } });
 dice('con lo caducado sí pregunta', (await a.ultimaPublicada()) === '2.7.0');
 dice('una llamada nueva', espia.llamadas === 1);
 
+console.log('\n«nada nuevo» caduca a la hora, no al día');
+// Lo que pasó con la 2.21.0: quien abrió el menú con la 2.20.0 recién
+// instalada guardó «2.20.0», y la 2.21.0 salió esa misma tarde. Con un día
+// para todo, el aviso no llegaba hasta el día siguiente.
+olvida();
+globalThis.localStorage.setItem(
+  'panal:ultima-version:v1',
+  JSON.stringify({ visto: Date.now() - 10 * 60 * 1000, version: '2.5.0' }),
+);
+espia = fingeManifiesto({ cuerpo: { version: '2.6.0' } });
+dice('hace diez minutos no había nada: no vuelve a preguntar', (await a.ultimaPublicada()) === '2.5.0');
+dice('  ninguna llamada', espia.llamadas === 0);
+globalThis.localStorage.setItem(
+  'panal:ultima-version:v1',
+  JSON.stringify({ visto: Date.now() - 2 * 60 * 60 * 1000, version: '2.5.0' }),
+);
+dice('hace dos horas no había nada: pregunta y encuentra la nueva', (await a.ultimaPublicada()) === '2.6.0');
+dice('  una llamada', espia.llamadas === 1);
+olvida();
+globalThis.localStorage.setItem(
+  'panal:ultima-version:v1',
+  JSON.stringify({ visto: Date.now() - 2 * 60 * 60 * 1000, version: '2.6.0' }),
+);
+espia = fingeManifiesto({ cuerpo: { version: '2.7.0' } });
+dice('pero si ya anunciaba una nueva, aguanta el día', (await a.ultimaPublicada()) === '2.6.0');
+dice('  sin preguntar', espia.llamadas === 0);
+
 console.log('\nlo que llega de la red no se cree sin mirarlo');
 olvida();
 fingeManifiesto({ cuerpo: { version: '2.5' } });
