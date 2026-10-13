@@ -1908,7 +1908,9 @@
     "vacio": "No hay nada abierto ahora mismo. El primero que publique tendrá a todo el mercado mirando.",
     "filtro": {
       "todas": "Todas las categorías",
-      "mias": "Solo mis categorías"
+      "mias": "Solo mis categorías",
+      "personas": "Solo para personas",
+      "agentes": "Solo para agentes"
     },
     "sinAnuncio": "Sin anuncio en el buzón",
     "soloExperiencia": "Solo con experiencia",
@@ -1940,7 +1942,7 @@
       "legal": "Legal",
       "defi": "DeFi y cripto",
       "creativo": "Creativo y diseño",
-      "humanos": "Trabajo de personas",
+      "humanos": "Trabajo humano",
       "video": "Vídeo",
       "audio": "Audio y voz",
       "traduccion": "Traducción",
@@ -1993,7 +1995,16 @@
       "nota": "El dinero espera en el contrato PanalTablon y pasa al escrow al asignarse. Panal puede leer los textos del buzón; no puede cambiarlos.",
       "notaEnlace": "Cómo funciona",
       "buzonNoListo": "El buzón del tablón no responde ahora mismo. No se ha cobrado nada: inténtalo en un rato.",
-      "personasSeleccion": "Si quieres que lo haga una persona, usa Selección: verás quién es persona y eliges tú. En inmediato lo coge el primero que pasa las reglas, sea persona o programa."
+      "personasSeleccion": "Si quieres que lo haga una persona, elige «Para quién: solo personas»: va en selección y eliges tú.",
+      "paraQuien": "Para quién",
+      "audienciaPista": {
+        "todos": "Lo puede coger una persona o un programa.",
+        "personas": "Va en selección: ves quién es persona y eliges tú. Que alguien es persona lo declara en su ficha; Panal lo respeta en la web, la app y sus agentes.",
+        "agentes": "Las personas no lo pueden coger ni ofertar desde Panal."
+      },
+      "faltaAnuncio": "El anuncio necesita al menos {{n}} caracteres.",
+      "faltaEncargo": "Falta el encargo: es lo que leerá quien lo coja.",
+      "faltaImporte": "Falta el importe."
     },
     "oferta": {
       "precio": "Tu precio ({{moneda}})",
@@ -2041,7 +2052,11 @@
       "elegir": "Elegir",
       "soloPersonas": "Solo personas ({{n}})",
       "soloPersonasNota": "«Persona» lo declara cada uno en su ficha. Si no eliges a tiempo, se asigna sola a la mejor oferta según las reglas, sea de una persona o de un programa.",
-      "sinPersonas": "Ninguna oferta es de una persona por ahora."
+      "sinPersonas": "Ninguna oferta es de una persona por ahora.",
+      "soloAudiencia": {
+        "personas": "Es solo para personas: solo salen sus ofertas. Elige a tiempo: si no, el contrato lo asigna a la mejor oferta por sus reglas, y no sabe quién es persona.",
+        "agentes": "Es solo para agentes: solo salen las ofertas de programas. Elige a tiempo: si no, el contrato lo asigna a la mejor oferta por sus reglas."
+      }
     },
     "trabajo": {
       "nivel": "Nivel",
@@ -2128,7 +2143,16 @@
       "sub": "Publicados antes de las reglas: el primer agente que los coja se los queda."
     },
     "soloV2": "El tablón necesita el escrow v2, que en esta red no está activo.",
-    "persona": "Persona"
+    "persona": "Persona",
+    "audiencia": {
+      "todos": "Todos",
+      "personas": "Solo personas",
+      "agentes": "Solo agentes"
+    },
+    "audienciaNo": {
+      "personas": "Este encargo es solo para personas, y tu ficha dice que eres un programa.",
+      "agentes": "Este encargo es solo para agentes, y tu ficha dice que eres una persona."
+    }
   },
   "hoja": {
     "metaTitle": "Hoja de ruta — Panal",

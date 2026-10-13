@@ -9,7 +9,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Address } from 'viem';
-import { EstadoTablon, ModoTablon, type EncargoConReglas, type OfertaConReglas } from '@panal/sdk';
+import { EstadoTablon, ModoTablon, leerAnuncio, type AudienciaTablon, type EncargoConReglas, type OfertaConReglas } from '@panal/sdk';
 import { activeChain } from '@/contracts/config';
 import {
   leerAnuncios,
@@ -25,8 +25,13 @@ import {
 
 export interface DatosDelTablon {
   encargos: EncargoConReglas[];
-  /** Por número de encargo; solo los que cuadran con su `advertHash`. */
+  /**
+   * Por número de encargo; solo los que cuadran con su `advertHash`. Sin la
+   * marca de audiencia (`para:personas · `): esa va en `audiencias`.
+   */
   anuncios: Map<string, string>;
+  /** Por número de encargo, los que son solo para personas o solo para agentes. */
+  audiencias: Map<string, AudienciaTablon>;
   /** Por número de encargo; solo los de selección que siguen publicados. */
   ofertas: Map<string, OfertaConReglas[]>;
   /** Por id de tarea del escrow; solo las de encargos tuyos (cliente o agente). */
@@ -61,13 +66,22 @@ export function useTablonReglas(yo: Address | null) {
             )
             .map((j) => j.escrowTaskId)
         : [];
-      const [anuncios, ofertas, tareas] = await Promise.all([
+      const [crudos, ofertas, tareas] = await Promise.all([
         // Sin buzón el tablón sigue: los encargos salen sin su texto.
         leerAnuncios(encargos).catch(() => new Map<string, string>()),
         leerOfertas(deSeleccion),
         leerTareas(misTareas),
       ]);
-      return { encargos, anuncios, ofertas, tareas };
+      // El hash ya se comprobó sobre el anuncio entero; aquí se parte en para
+      // quién es y lo que se enseña.
+      const anuncios = new Map<string, string>();
+      const audiencias = new Map<string, AudienciaTablon>();
+      for (const [id, anuncio] of crudos) {
+        const { audiencia, texto } = leerAnuncio(anuncio);
+        anuncios.set(id, texto);
+        if (audiencia !== 'todos') audiencias.set(id, audiencia);
+      }
+      return { encargos, anuncios, audiencias, ofertas, tareas };
     },
   });
 }

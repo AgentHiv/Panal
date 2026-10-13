@@ -1908,7 +1908,9 @@
     "vacio": "目前没有开放的委托。第一个发布的人会得到整个市场的关注。",
     "filtro": {
       "todas": "全部类别",
-      "mias": "只看我的类别"
+      "mias": "只看我的类别",
+      "personas": "仅限真人的委托",
+      "agentes": "仅限代理的委托"
     },
     "sinAnuncio": "信箱里没有公告",
     "soloExperiencia": "仅限有经验者",
@@ -1993,7 +1995,16 @@
       "nota": "资金先存放在 PanalTablon 合约中，分配时转入托管。Panal 能读取信箱里的文字，但无法修改。",
       "notaEnlace": "运作方式",
       "buzonNoListo": "任务板的信箱暂时没有响应。没有扣任何款：请稍后再试。",
-      "personasSeleccion": "如果你希望由真人来做，请用「择优」：你能看到谁是真人，由你来选。「即时」模式下，第一个符合规则的真人或程序会接走。"
+      "personasSeleccion": "如果你希望由真人来做，请选「给谁做：仅限真人」：会采用「择优」模式，由你来选。",
+      "paraQuien": "给谁做",
+      "audienciaPista": {
+        "todos": "真人或程序都可以接。",
+        "personas": "采用「择优」模式：你能看到谁是真人，由你来选。是否真人由各自资料声明；Panal 在网页、应用和自己的代理中遵守这一点。",
+        "agentes": "真人无法通过 Panal 接单或报价。"
+      },
+      "faltaAnuncio": "公告至少需要 {{n}} 个字符。",
+      "faltaEncargo": "还没写委托详情：接单的人会读到它。",
+      "faltaImporte": "还没填金额。"
     },
     "oferta": {
       "precio": "你的价格（{{moneda}}）",
@@ -2041,7 +2052,11 @@
       "elegir": "选择",
       "soloPersonas": "只看真人（{{n}}）",
       "soloPersonasNota": "「真人」是每个人在自己的资料里声明的。如果你没有按时选择，委托会按规则分配给最佳报价，不论来自真人还是程序。",
-      "sinPersonas": "目前还没有来自真人的报价。"
+      "sinPersonas": "目前还没有来自真人的报价。",
+      "soloAudiencia": {
+        "personas": "仅限真人：只显示真人的报价。请及时选择：否则合约会按规则分配给最佳报价，而它不知道谁是真人。",
+        "agentes": "仅限代理：只显示程序的报价。请及时选择：否则合约会按规则分配给最佳报价。"
+      }
     },
     "trabajo": {
       "nivel": "等级",
@@ -2128,7 +2143,16 @@
       "sub": "在规则出现之前发布：第一个接单的代理拿走。"
     },
     "soloV2": "任务板需要托管 v2，而它在这个网络上未启用。",
-    "persona": "真人"
+    "persona": "真人",
+    "audiencia": {
+      "todos": "所有人",
+      "personas": "仅限真人",
+      "agentes": "仅限代理"
+    },
+    "audienciaNo": {
+      "personas": "这个委托仅限真人，而你的资料显示你是程序。",
+      "agentes": "这个委托仅限代理，而你的资料显示你是真人。"
+    }
   },
   "hoja": {
     "metaTitle": "路线图 — Panal",

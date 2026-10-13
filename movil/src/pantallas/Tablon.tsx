@@ -8,8 +8,11 @@ import {
   MARGEN_ASIGNACION_S,
   MAX_CATEGORIAS,
   ModoTablon,
+  audienciaAdmite,
+  leerTipo,
   type EncargoConReglas,
   type OfertaConReglas,
+  type TipoDeAgente,
 } from '@panal/sdk';
 import { useWallet } from '@/hooks/useWallet';
 import { useAhora } from '@/hooks/useAhora';
@@ -60,6 +63,8 @@ export default function Tablon(): React.ReactElement {
   const yo = (connected && address ? address : null) as Address | null;
   const perfil = useMyAgentProfile();
   const esAgente = perfil.isAgent && perfil.isActive;
+  // Persona o programa, según su ficha: decide qué encargos puede coger.
+  const miTipo = perfil.agent ? leerTipo(perfil.agent.metadataURI) : null;
   const [vista, setVista] = useState<Vista>('abiertos');
   const [hoja, setHoja] = useState<HojaAbierta | null>(null);
   const firma = useFirmaTablon();
@@ -142,7 +147,17 @@ export default function Tablon(): React.ReactElement {
             <Accion onClick={() => void refetch()}>{T.tablon.reintentar}</Accion>
           </div>
         ) : vista === 'abiertos' ? (
-          <Abiertos datos={datos} yo={yo} esAgente={esAgente} misCategorias={situacion?.categorias ?? []} permisos={permisos} firma={firma} abrir={abrir} T={T} />
+          <Abiertos
+            datos={datos}
+            yo={yo}
+            esAgente={esAgente}
+            miTipo={miTipo}
+            misCategorias={situacion?.categorias ?? []}
+            permisos={permisos}
+            firma={firma}
+            abrir={abrir}
+            T={T}
+          />
         ) : !yo ? (
           <div className="flex flex-col items-center gap-3 pt-6 text-center">
             <p className="text-[13.5px] leading-relaxed text-ink-3">{T.tablon.conecta}</p>
@@ -168,6 +183,7 @@ function Abiertos({
   datos,
   yo,
   esAgente,
+  miTipo,
   misCategorias,
   permisos,
   firma,
@@ -177,6 +193,8 @@ function Abiertos({
   datos: DatosDelTablon;
   yo: Address | null;
   esAgente: boolean;
+  /** Lo que dice su ficha que es. `null` si no es agente. */
+  miTipo: TipoDeAgente | null;
   misCategorias: number[];
   permisos: Map<string, { ok: boolean; motivo: string }> | undefined;
   firma: Firma;
@@ -189,6 +207,7 @@ function Abiertos({
     if (j.estado !== EstadoTablon.Publicado || ahora > j.caducaEn) return false;
     if (j.modo === ModoTablon.Seleccion && ahora >= j.publicadoEn + j.ventanaOfertasS) return false;
     if (filtro === 'mias') return misCategorias.includes(j.categoria);
+    if (filtro === 'personas' || filtro === 'agentes') return datos.audiencias.get(j.id.toString()) === filtro;
     if (filtro !== 'todas') return j.categoria === Number(filtro);
     return true;
   });
@@ -202,6 +221,8 @@ function Abiertos({
       >
         <option value="todas">{T.tablon.todas}</option>
         {misCategorias.length > 0 && <option value="mias">{T.tablon.mias}</option>}
+        <option value="personas">{T.tablon.soloParaPersonas}</option>
+        <option value="agentes">{T.tablon.soloParaAgentes}</option>
         {CATEGORIAS_TABLON.map((c, i) => (
           <option key={c} value={i}>
             {T.tablon.cat[c]}
@@ -219,8 +240,14 @@ function Abiertos({
           const mia = yo ? ofertas.find((o) => o.agente.toLowerCase() === yo.toLowerCase()) : undefined;
           const esMio = !!yo && j.cliente.toLowerCase() === yo.toLowerCase();
           const permiso = permisos?.get(id);
-          const motivo =
-            esAgente && permiso && !permiso.ok && permiso.motivo !== 'own job'
+          // Para quién es: la cadena no lo sabe, lo dice el anuncio. Una
+          // persona no coge uno «solo agentes», ni un programa uno «solo personas».
+          const audiencia = datos.audiencias.get(id) ?? 'todos';
+          const fuera = esAgente && miTipo !== null && !audienciaAdmite(audiencia, miTipo);
+          const puede = !!permiso?.ok && !fuera;
+          const motivo = fuera
+            ? T.tablon.audienciaNo[audiencia as 'personas' | 'agentes']
+            : esAgente && permiso && !permiso.ok && permiso.motivo !== 'own job'
               ? ((T.tablon.motivo as Record<string, string>)[claveDeMotivo(permiso.motivo)] ?? permiso.motivo)
               : null;
           const claveRetirar = `retirar:${id}`;
@@ -235,6 +262,7 @@ function Abiertos({
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <Categoria numero={j.categoria} />
                 <Etiqueta>{seleccion ? T.tablon.seleccion : T.tablon.inmediato}</Etiqueta>
+                {audiencia !== 'todos' && <Etiqueta tono="oliva">{T.tablon.audiencia[audiencia]}</Etiqueta>}
                 {j.soloConExperiencia && <Etiqueta tono="oliva">{T.tablon.conExperiencia}</Etiqueta>}
                 {esMio && <Etiqueta tono="miel">{T.tablon.esTuyo}</Etiqueta>}
               </div>
@@ -255,7 +283,7 @@ function Abiertos({
                   )}
                   {seleccion ? (
                     <>
-                      <Accion tono="miel" onClick={() => abrir({ tipo: 'oferta', job: j, previa: mia })} disabled={!permiso?.ok || firma.ocupado !== null}>
+                      <Accion tono="miel" onClick={() => abrir({ tipo: 'oferta', job: j, previa: mia })} disabled={!puede || firma.ocupado !== null}>
                         {T.tablon.ofertar}
                       </Accion>
                       {mia && (
@@ -269,7 +297,7 @@ function Abiertos({
                       )}
                     </>
                   ) : (
-                    <Accion tono="miel" onClick={() => abrir({ tipo: 'coger', job: j })} disabled={!permiso?.ok || firma.ocupado !== null}>
+                    <Accion tono="miel" onClick={() => abrir({ tipo: 'coger', job: j })} disabled={!puede || firma.ocupado !== null}>
                       {T.tablon.coger}
                     </Accion>
                   )}
@@ -387,6 +415,12 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
   const [error, setError] = useState<string | null>(null);
   const M = T.tablon.mios;
   const id = job.id.toString();
+  /**
+   * Solo personas o solo agentes: se enseñan y se eligen solo esas ofertas. El
+   * contrato dejaría elegir cualquiera; quien publicó dijo para quién era.
+   */
+  const audiencia = datos.audiencias.get(id) ?? 'todos';
+  const admite = (o: OfertaConReglas) => audienciaAdmite(audiencia, esPersona(o.agente) ? 'persona' : 'bot');
   const tarea =
     job.estado === EstadoTablon.Asignado || job.estado === EstadoTablon.Cerrado ? datos.tareas.get(job.escrowTaskId.toString()) : undefined;
   const seleccion = job.modo === ModoTablon.Seleccion;
@@ -503,6 +537,7 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <Categoria numero={job.categoria} />
         <Etiqueta>{seleccion ? T.tablon.seleccion : T.tablon.inmediato}</Etiqueta>
+        {audiencia !== 'todos' && <Etiqueta tono="oliva">{T.tablon.audiencia[audiencia]}</Etiqueta>}
         <span className="font-mono text-[11px] text-ink-3">#{id}</span>
       </div>
       {job.estado >= EstadoTablon.Asignado && job.estado <= EstadoTablon.Cerrado && (
@@ -513,7 +548,11 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
       )}
       <p className="mt-1.5 text-[12.5px] leading-[1.45] text-ink-2">{estado}</p>
 
-      {ofertas.length > 0 && (
+      {ofertas.length > 0 && audiencia !== 'todos' && (
+        <p className="mt-2.5 text-[11.5px] leading-[1.45] text-ink-3">{M.soloAudiencia[audiencia]}</p>
+      )}
+
+      {ofertas.length > 0 && audiencia === 'todos' && (
         <div className="mt-2.5 flex flex-col gap-1.5">
           <button
             type="button"
@@ -532,7 +571,7 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
 
       {ofertas.length > 0 && (
         <ul className="mt-2.5 divide-y divide-line overflow-hidden rounded-xl border border-line empty:hidden">
-          {ofertas.filter((o) => !soloPersonas || esPersona(o.agente)).map((o) => {
+          {ofertas.filter((o) => (!soloPersonas || esPersona(o.agente)) && admite(o)).map((o) => {
             const diferencia = o.precio > job.importe ? o.precio - job.importe : 0n;
             const nombre = nombreDe(o.agente);
             // En Play no se paga una diferencia desde la app: esa oferta no se elige aquí.

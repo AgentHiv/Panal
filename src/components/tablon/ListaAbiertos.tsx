@@ -12,7 +12,16 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { TriangleAlert } from 'lucide-react';
 import { parseEther, type Address } from 'viem';
-import { CATEGORIAS_TABLON, EstadoTablon, ModoTablon, type EncargoConReglas, type OfertaConReglas } from '@panal/sdk';
+import {
+  CATEGORIAS_TABLON,
+  EstadoTablon,
+  ModoTablon,
+  audienciaAdmite,
+  type AudienciaTablon,
+  type EncargoConReglas,
+  type OfertaConReglas,
+  type TipoDeAgente,
+} from '@panal/sdk';
 import HexAvatar from '@/components/HexAvatar';
 import { shortAddress } from '@/hooks/useWallet';
 import { useAhora } from '@/hooks/useAhora';
@@ -35,15 +44,19 @@ interface Props {
   esAgente: boolean;
   /** Sus categorías en el tablón, para el filtro «las mías». */
   misCategorias: number[];
+  /** Lo que dice su ficha que es: persona o programa. `null` si no es agente. */
+  miTipo: TipoDeAgente | null;
   permisos: Map<string, { ok: boolean; motivo: string }> | undefined;
   /** Tras coger u ofertar: para llevarle a su pestaña. */
   onCogido?: () => void;
 }
 
-export default function ListaAbiertos({ datos, yo, esAgente, misCategorias, permisos, onCogido }: Props) {
+type Filtro = number | 'todas' | 'mias' | 'personas' | 'agentes';
+
+export default function ListaAbiertos({ datos, yo, esAgente, misCategorias, miTipo, permisos, onCogido }: Props) {
   const { t } = useTranslation();
   const ahora = useAhora();
-  const [categoria, setCategoria] = useState<number | 'todas' | 'mias'>('todas');
+  const [categoria, setCategoria] = useState<Filtro>('todas');
 
   const abiertos = useMemo(
     () =>
@@ -53,10 +66,11 @@ export default function ListaAbiertos({ datos, yo, esAgente, misCategorias, perm
         if (ahora > j.caducaEn) return false;
         if (j.modo === ModoTablon.Seleccion && ahora >= j.publicadoEn + j.ventanaOfertasS) return false;
         if (categoria === 'mias') return misCategorias.includes(j.categoria);
+        if (categoria === 'personas' || categoria === 'agentes') return datos.audiencias.get(j.id.toString()) === categoria;
         if (categoria !== 'todas') return j.categoria === categoria;
         return true;
       }),
-    [datos.encargos, ahora, categoria, misCategorias],
+    [datos.encargos, datos.audiencias, ahora, categoria, misCategorias],
   );
 
   return (
@@ -68,12 +82,14 @@ export default function ListaAbiertos({ datos, yo, esAgente, misCategorias, perm
           value={String(categoria)}
           onChange={(e) => {
             const v = e.target.value;
-            setCategoria(v === 'todas' || v === 'mias' ? v : Number(v));
+            setCategoria(v === 'todas' || v === 'mias' || v === 'personas' || v === 'agentes' ? v : Number(v));
           }}
           className="rounded-full border border-line bg-paper px-3 py-1.5 text-[0.8125rem] text-ink-2 focus:border-honey focus:outline-none"
         >
           <option value="todas">{t('tablon.filtro.todas')}</option>
           {misCategorias.length > 0 && <option value="mias">{t('tablon.filtro.mias')}</option>}
+          <option value="personas">{t('tablon.filtro.personas')}</option>
+          <option value="agentes">{t('tablon.filtro.agentes')}</option>
           {CATEGORIAS_TABLON.map((c, i) => (
             <option key={c} value={i}>
               {t(`tablon.cat.${c}`)}
@@ -91,6 +107,8 @@ export default function ListaAbiertos({ datos, yo, esAgente, misCategorias, perm
               key={j.id.toString()}
               job={j}
               anuncio={datos.anuncios.get(j.id.toString())}
+              audiencia={datos.audiencias.get(j.id.toString()) ?? 'todos'}
+              miTipo={miTipo}
               ofertas={datos.ofertas.get(j.id.toString()) ?? []}
               yo={yo}
               esAgente={esAgente}
@@ -120,6 +138,8 @@ export default function ListaAbiertos({ datos, yo, esAgente, misCategorias, perm
 function TarjetaAbierta({
   job,
   anuncio,
+  audiencia,
+  miTipo,
   ofertas,
   yo,
   esAgente,
@@ -129,6 +149,8 @@ function TarjetaAbierta({
 }: {
   job: EncargoConReglas;
   anuncio: string | undefined;
+  audiencia: AudienciaTablon;
+  miTipo: TipoDeAgente | null;
   ofertas: OfertaConReglas[];
   yo: Address | null;
   esAgente: boolean;
@@ -156,8 +178,16 @@ function TarjetaAbierta({
   const retirarOferta = () =>
     void ejecutar(`retirar:${id}`, (escribir, cuenta) => firmarYEsperar(escribir, cuenta, enTablon('withdrawOffer', [job.id])));
 
-  const motivo =
-    esAgente && permiso && !permiso.ok && permiso.motivo !== 'own job'
+  /**
+   * Para quién es. La cadena no lo sabe —lo dice el anuncio—, así que aquí se
+   * corta: una persona no coge uno «solo agentes», ni un programa uno «solo
+   * personas». Va antes que el permiso del contrato, que diría que sí.
+   */
+  const fueraDeAudiencia = esAgente && miTipo !== null && !audienciaAdmite(audiencia, miTipo);
+  const puede = !!permiso?.ok && !fueraDeAudiencia;
+  const motivo = fueraDeAudiencia
+    ? t(`tablon.audienciaNo.${audiencia}`)
+    : esAgente && permiso && !permiso.ok && permiso.motivo !== 'own job'
       ? t(`tablon.motivo.${claveDeMotivo(permiso.motivo)}`, { defaultValue: permiso.motivo })
       : null;
 
@@ -176,6 +206,7 @@ function TarjetaAbierta({
               <NombreDeCategoria numero={job.categoria} />
             </Chip>
             <Chip>{seleccion ? t('tablon.modo.seleccion') : t('tablon.modo.inmediato')}</Chip>
+            {audiencia !== 'todos' && <Chip tono="oliva">{t(`tablon.audiencia.${audiencia}`)}</Chip>}
             {job.soloConExperiencia && <Chip tono="oliva">{t('tablon.soloExperiencia')}</Chip>}
             {esMio && <Chip tono="miel">{t('tablon.esTuyo')}</Chip>}
           </div>
@@ -216,14 +247,14 @@ function TarjetaAbierta({
                 <button
                   type="button"
                   onClick={() => setOfertando((v) => !v)}
-                  disabled={!yo || !esAgente || !permiso?.ok || ocupado !== null}
+                  disabled={!yo || !esAgente || !puede || ocupado !== null}
                   className={BOTON_MIEL}
                 >
                   {t('tablon.ofertar')}
                 </button>
               )
             ) : (
-              <button type="button" onClick={coger} disabled={!yo || !esAgente || !permiso?.ok || ocupado !== null} className={BOTON_MIEL}>
+              <button type="button" onClick={coger} disabled={!yo || !esAgente || !puede || ocupado !== null} className={BOTON_MIEL}>
                 {ocupado === `coger:${id}` && <Girando />}
                 {t('tablon.coger')}
               </button>

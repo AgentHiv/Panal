@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Hexagon } from 'lucide-react';
 import { keccak256, parseEther, parseEventLogs, toBytes, type Address, type Hex } from 'viem';
-import { CATEGORIAS_TABLON, ModoTablon, panalTablonAbi } from '@panal/sdk';
+import { CATEGORIAS_TABLON, MAX_TEXTO_ANUNCIO, ModoTablon, anuncioPara, panalTablonAbi, type AudienciaTablon } from '@panal/sdk';
 import Dolares from '@/components/Dolares';
 import { Checkbox } from '@/components/ui/checkbox';
 import TxHash from '@/components/TxHash';
@@ -32,8 +32,10 @@ import { cn } from '@/lib/utils';
 import { Girando } from './comun';
 import { BOTON_LINEA, CAMPO, cantidad, useDuracion } from './util';
 
-const MAX_ANUNCIO = 500;
+const MIN_ANUNCIO = 10;
 const MAX_ENCARGO = 32_000;
+/** Para quién es: el contrato no lo sabe, va en el anuncio (ver `anuncioPara`). */
+const AUDIENCIAS: readonly AudienciaTablon[] = ['todos', 'personas', 'agentes'];
 const HORA = 3600;
 const DIA = 86_400;
 
@@ -55,6 +57,9 @@ interface Hecho {
   jobId: bigint;
   hash: Hex;
   textos: boolean;
+  /** Los textos tal y como se hashearon: reintentar tiene que mandar esos. */
+  anuncio: string;
+  encargo: string;
 }
 
 function Opciones<T extends number>({
@@ -98,6 +103,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
   const [anuncio, setAnuncio] = useState('');
   const [encargo, setEncargo] = useState('');
   const [categoria, setCategoria] = useState<number | null>(null);
+  const [audiencia, setAudiencia] = useState<AudienciaTablon>('todos');
   const [enPanal, setEnPanal] = useState(false);
   const [importe, setImporte] = useState('');
   const [modo, setModo] = useState<ModoTablon>(ModoTablon.Seleccion);
@@ -120,7 +126,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
 
   /** Lo primero que impide publicar, o null. Las reglas de la beta, del contrato. */
   const problema = ((): string | null => {
-    if (anuncioT.length < 10) return null; // aún escribiendo: no se riñe
+    if (anuncioT.length < MIN_ANUNCIO) return null; // aún escribiendo: no se riñe
     if (!encargoT) return null;
     if (categoria === null) return t('tablon.pub.faltaCategoria');
     if (importeWei === null || importeWei === 0n) return importe ? t('tablon.pub.importeMal') : null;
@@ -140,8 +146,24 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
     return null;
   })();
 
+  /**
+   * Lo que falta, cuando el botón está apagado sin un problema que decir. Sin
+   * esto el botón se quedaba gris y callado con un anuncio de nueve letras o
+   * sin importe, y desde fuera parecía que publicar no funcionaba.
+   */
+  const falta =
+    anuncioT.length < MIN_ANUNCIO
+      ? t('tablon.pub.faltaAnuncio', { n: MIN_ANUNCIO })
+      : !encargoT
+        ? t('tablon.pub.faltaEncargo')
+        : categoria === null
+          ? t('tablon.pub.faltaCategoria')
+          : !importeStr
+            ? t('tablon.pub.faltaImporte')
+            : null;
+
   const listo =
-    anuncioT.length >= 10 &&
+    anuncioT.length >= MIN_ANUNCIO &&
     encargoT.length > 0 &&
     categoria !== null &&
     importeWei !== null &&
@@ -153,7 +175,8 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
     void ejecutar('publicar', async (escribir, cuenta) => {
       if (importeWei === null || categoria === null) return;
       // Los textos tal y como se hashean: el estado puede cambiar entre medias.
-      const textoAnuncio = anuncioT;
+      // El anuncio lleva delante para quién es; su hash lo deja fijo.
+      const textoAnuncio = anuncioPara(audiencia, anuncioT);
       const textoEncargo = encargoT;
       try {
         // Antes de cobrar nada: sin buzón, el encargo quedaría pagado y mudo.
@@ -191,7 +214,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
         } catch {
           textos = false;
         }
-        setHecho({ jobId, hash, textos });
+        setHecho({ jobId, hash, textos, anuncio: textoAnuncio, encargo: textoEncargo });
         onPublicado?.();
       } finally {
         setPaso(null);
@@ -203,7 +226,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
       if (!hecho) return;
       setPaso('textos');
       try {
-        await guardarTextos(hecho.jobId, anuncioT, encargoT);
+        await guardarTextos(hecho.jobId, hecho.anuncio, hecho.encargo);
         setHecho({ ...hecho, textos: true });
       } catch {
         // sigue ofreciendo el reintento
@@ -257,7 +280,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
         <textarea
           id="tab-anuncio"
           value={anuncio}
-          onChange={(e) => setAnuncio(e.target.value.slice(0, MAX_ANUNCIO))}
+          onChange={(e) => setAnuncio(e.target.value.slice(0, MAX_TEXTO_ANUNCIO))}
           rows={3}
           placeholder={t('tablon.anuncioHueco')}
           className={cn(CAMPO, 'resize-none')}
@@ -298,6 +321,23 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
           ))}
         </select>
         <p className="text-[0.75rem] leading-relaxed text-ink-3">{t('tablon.pub.categoriaPista')}</p>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[0.8125rem] font-medium text-ink-2">{t('tablon.pub.paraQuien')}</span>
+        <Opciones
+          valores={[0, 1, 2] as const}
+          valor={AUDIENCIAS.indexOf(audiencia) as 0 | 1 | 2}
+          onChange={(i) => {
+            const a = AUDIENCIAS[i]!;
+            setAudiencia(a);
+            // Solo personas va en selección: en inmediato lo cogería el
+            // primero que pase las reglas, y la cadena no sabe quién es persona.
+            if (a === 'personas') setModo(ModoTablon.Seleccion);
+          }}
+          etiqueta={(i) => t(`tablon.audiencia.${AUDIENCIAS[i]}`)}
+        />
+        <p className="text-[0.75rem] leading-relaxed text-ink-3">{t(`tablon.pub.audienciaPista.${audiencia}`)}</p>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -351,7 +391,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
       <div className="flex flex-col gap-1.5">
         <span className="text-[0.8125rem] font-medium text-ink-2">{t('tablon.pub.modo')}</span>
         <Opciones
-          valores={[ModoTablon.Seleccion, ModoTablon.Inmediato] as const}
+          valores={audiencia === 'personas' ? ([ModoTablon.Seleccion] as const) : ([ModoTablon.Seleccion, ModoTablon.Inmediato] as const)}
           valor={modo}
           onChange={setModo}
           etiqueta={(m) => (m === ModoTablon.Seleccion ? t('tablon.modo.seleccion') : t('tablon.modo.inmediato'))}
@@ -359,7 +399,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
         <p className="text-[0.75rem] leading-relaxed text-ink-3">
           {seleccion ? t('tablon.pub.modoSeleccion') : t('tablon.pub.modoInmediato')}
         </p>
-        {!seleccion && categoria === CATEGORIAS_TABLON.indexOf('humanos') && (
+        {audiencia !== 'personas' && categoria === CATEGORIAS_TABLON.indexOf('humanos') && (
           <p className="text-[0.75rem] leading-relaxed text-honey-deep">{t('tablon.pub.personasSeleccion')}</p>
         )}
       </div>
@@ -406,6 +446,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
       </label>
 
       {problema && <p className="text-[0.8125rem] leading-relaxed text-terra">{problema}</p>}
+      {!problema && falta && <p className="text-[0.8125rem] leading-relaxed text-ink-3">{falta}</p>}
 
       {connected ? (
         <button

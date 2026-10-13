@@ -29,13 +29,18 @@ import {
   ModoTablon,
   NATIVE_CURRENCY,
   TaskStatus,
+  anuncioPara,
+  audienciaAdmite,
   categoriaDelTablon,
+  leerAnuncio,
   leerTipo,
   problemaAlPublicar,
+  type AudienciaTablon,
   type EncargoConReglas,
   type OfertaConReglas,
   type PanalClient,
   type PublicarEnElTablon,
+  type TipoDeAgente,
 } from '@panal/sdk';
 
 /** La misma forma que las herramientas de server.ts. */
@@ -148,6 +153,34 @@ export function categoriaDeTexto(entrada: string): number | null {
 
 const LISTA_CATEGORIAS = CATEGORIAS_TABLON.join(', ');
 
+/**
+ * Para quién es un encargo. La cadena no lo sabe: va en el anuncio
+ * (`para:personas · …`) y lo respetan los clientes de Panal. Ver `anuncioPara`.
+ */
+const AUDIENCIA_DE_TEXTO: Record<string, AudienciaTablon> = {
+  everyone: 'todos',
+  anyone: 'todos',
+  people: 'personas',
+  persons: 'personas',
+  humans: 'personas',
+  agents: 'agentes',
+  bots: 'agentes',
+  programs: 'agentes',
+};
+const NOMBRE_AUDIENCIA: Record<AudienciaTablon, string> = {
+  todos: 'everyone',
+  personas: 'people only',
+  agentes: 'agents only',
+};
+
+/** Por qué este tipo de wallet no entra en un encargo para esa audiencia, o null. */
+function fueraDeAudiencia(audiencia: AudienciaTablon, tipo: TipoDeAgente | null): string | null {
+  if (!tipo || audienciaAdmite(audiencia, tipo)) return null;
+  return audiencia === 'personas'
+    ? "it is for people only, and this wallet's profile says it is a program"
+    : "it is for agents only, and this wallet's profile says it is a person";
+}
+
 /** El último momento en que un encargo publicado se puede asignar (`_lastAssign`). */
 function ultimoParaAsignar(j: EncargoConReglas): number {
   if (j.modo !== ModoTablon.Seleccion) return j.caducaEn;
@@ -211,6 +244,22 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
     return out;
   }
 
+  /** Lo que dice la ficha de esta wallet que es, o null si no es agente. */
+  async function miTipo(): Promise<TipoDeAgente | null> {
+    if (!d.cuenta) return null;
+    try {
+      return leerTipo((await panal.getAgent(d.cuenta)).metadataURI);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Para quién es un encargo, según su anuncio. Sin buzón, «todos»: lo demás lo dice el contrato. */
+  async function audienciaDe(j: EncargoConReglas): Promise<AudienciaTablon> {
+    const crudo = (await anunciosDe([j])).get(j.id.toString());
+    return crudo ? leerAnuncio(crudo).audiencia : 'todos';
+  }
+
   async function leerEncargo(id: bigint): Promise<EncargoConReglas | string> {
     try {
       return await panal.getBoardJob(id);
@@ -255,28 +304,34 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
       (j) => abiertoAhora(j, ahora) && (filtro === null || j.categoria === filtro),
     );
     if (!abiertos.length) return 'Nothing is open on the board with rules right now' + (filtro !== null ? ' in that category.' : '.');
-    const [anuncios, ofertas, permisos] = await Promise.all([
+    const [anuncios, ofertas, permisos, tipo] = await Promise.all([
       anunciosDe(abiertos),
       Promise.all(abiertos.map((j) => (j.modo === ModoTablon.Seleccion ? panal.getBoardOffers(j.id).catch(() => null) : null))),
       // Una lectura por encargo: con muchos, solo los primeros.
       d.cuenta
         ? Promise.all(abiertos.slice(0, 20).map((j) => panal.canTakeBoardJob(d.cuenta!, j.id).catch(() => null)))
         : Promise.resolve([]),
+      miTipo(),
     ]);
     const lineas = abiertos.map((j, i) => {
       const permiso = permisos[i];
       const tuyo = d.cuenta && j.cliente.toLowerCase() === d.cuenta.toLowerCase();
+      const crudo = anuncios.get(j.id.toString());
+      const { audiencia, texto: anuncio } = crudo ? leerAnuncio(crudo) : { audiencia: 'todos' as const, texto: null };
+      const fuera = fueraDeAudiencia(audiencia, tipo);
       return [
-        `\n${cabecera(j, ahora, ofertas[i]?.length)}`,
-        `  "${anuncios.get(j.id.toString()) ?? '(advert not in the mailbox)'}"`,
+        `\n${cabecera(j, ahora, ofertas[i]?.length)}${audiencia !== 'todos' ? `, for ${NOMBRE_AUDIENCIA[audiencia]}` : ''}`,
+        `  "${anuncio ?? '(advert not in the mailbox)'}"`,
         `  posted by ${j.cliente}`,
         tuyo
           ? '  (posted by this wallet)'
-          : permiso
-            ? permiso.ok
-              ? `  This wallet can ${j.modo === ModoTablon.Inmediato ? 'take it' : 'bid on it'}.`
-              : `  This wallet cannot: ${permiso.motivo}.`
-            : null,
+          : fuera
+            ? `  This wallet cannot: ${fuera}.`
+            : permiso
+              ? permiso.ok
+                ? `  This wallet can ${j.modo === ModoTablon.Inmediato ? 'take it' : 'bid on it'}.`
+                : `  This wallet cannot: ${permiso.motivo}.`
+              : null,
       ]
         .filter(Boolean)
         .join('\n');
@@ -359,11 +414,13 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         const yo = d.cuenta?.toLowerCase();
         const soyCliente = yo === j.cliente.toLowerCase();
         const soyAgente = yo === j.agente.toLowerCase();
-        const anuncio = (await anunciosDe([j])).get(id.toString());
+        const crudo = (await anunciosDe([j])).get(id.toString());
+        const { audiencia, texto: anuncio } = crudo ? leerAnuncio(crudo) : { audiencia: 'todos' as const, texto: null };
 
         const lineas: (string | null)[] = [
           cabecera(j, ahora),
           `  State: ${ESTADO[j.estado]}`,
+          audiencia !== 'todos' ? `  For: ${NOMBRE_AUDIENCIA[audiencia]} (declared in the advert; the contract cannot check who is a person)` : null,
           `  Advert: ${anuncio ? `"${anuncio}"` : '(not in the mailbox)'}`,
           `  Client: ${j.cliente}${soyCliente ? ' (this wallet)' : ''}`,
         ];
@@ -419,8 +476,10 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
               siguiente.push('withdraw it and get the money back with panal_close_board_job');
             }
           } else if (d.cuenta && abiertoAhora(j, ahora)) {
-            const p = await panal.canTakeBoardJob(d.cuenta, id).catch(() => null);
-            if (p?.ok) siguiente.push(j.modo === ModoTablon.Inmediato ? 'take it with panal_take_board_job' : 'bid with panal_offer_board_job');
+            const fuera = fueraDeAudiencia(audiencia, await miTipo());
+            const p = fuera ? null : await panal.canTakeBoardJob(d.cuenta, id).catch(() => null);
+            if (fuera) siguiente.push(`this wallet cannot take or bid on it: ${fuera}`);
+            else if (p?.ok) siguiente.push(j.modo === ModoTablon.Inmediato ? 'take it with panal_take_board_job' : 'bid with panal_offer_board_job');
             else if (p) siguiente.push(`this wallet cannot take or bid on it: ${p.motivo}`);
           }
         } else if (j.estado === EstadoTablon.Asignado) {
@@ -524,6 +583,8 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         'Mode "selection" (default): agents bid a price and a deadline during offer_hours, then you choose ' +
         'within choose_hours, or the best offer by the rules gets it. Mode "immediate": the first agent that ' +
         'passes the rules takes it at your price. category is one of: ' + LISTA_CATEGORIAS + '. ' +
+        'audience "people" makes it people-only (always selection, you pick the person) and "agents" agents-only; ' +
+        'it goes in the advert, since the contract cannot tell a person from a program. ' +
         'Counts against this server\'s budget for that currency. Requires an explicit yes from the person after ' +
         'seeing the amount, mode, category and deadlines. If the texts failed to reach the mailbox, call it ' +
         'again with retry_job_id and the SAME advert and brief: that only re-sends the texts.',
@@ -536,6 +597,7 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
           amount: { type: 'string', description: 'What you pay, e.g. "1.5". In selection, the budget.' },
           currency: { type: 'string', description: '"MON" (default) or "PANAL".' },
           mode: { type: 'string', description: '"selection" (default) or "immediate".' },
+          audience: { type: 'string', description: '"everyone" (default), "people" or "agents".' },
           delivery_hours: { type: 'number', description: 'Time to deliver once assigned. At least 1. Default 72.' },
           open_hours: { type: 'number', description: 'How long it can be taken. Default 72.' },
           offer_hours: { type: 'number', description: 'Selection: time to make offers. Default 2.' },
@@ -550,10 +612,15 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
       handler: async (args) => {
         const no = puedeEscribir(args, 'post a job');
         if (no) return no;
-        const anuncio = texto(args.advert);
+        const textoAnuncio = texto(args.advert);
         // El encargo tal cual: su hash es lo que va a la cadena.
         const encargo = typeof args.brief === 'string' ? args.brief : '';
-        if (!anuncio || !encargo.trim()) return 'Both advert and brief are needed.';
+        if (!textoAnuncio || !encargo.trim()) return 'Both advert and brief are needed.';
+        const audiencia = AUDIENCIA_DE_TEXTO[(texto(args.audience) ?? 'everyone').toLowerCase()];
+        if (!audiencia) return 'audience is "everyone", "people" or "agents".';
+        // Para quién va delante del anuncio, y su hash lo deja fijo. Reintentar
+        // lo vuelve a componer igual, así que hay que pasar la misma audiencia.
+        const anuncio = anuncioPara(audiencia, textoAnuncio);
 
         const reintento = args.retry_job_id === undefined ? null : parseJobId(args.retry_job_id);
         if (args.retry_job_id !== undefined) {
@@ -573,6 +640,9 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         const cuanto = parseImporte(args.amount);
         if (cuanto === null || cuanto === 0n) return 'amount must be a positive number, like "1.5".';
         const modo = (texto(args.mode) ?? 'selection').toLowerCase() === 'immediate' ? ModoTablon.Inmediato : ModoTablon.Seleccion;
+        if (audiencia === 'personas' && modo === ModoTablon.Inmediato) {
+          return 'Not posted, nothing was spent: a people-only job goes in selection mode, so you pick the person. In immediate mode the first one that passes the rules would take it, and the contract cannot tell a person from a program.';
+        }
         const horas = (v: unknown, def: number): number => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : def);
 
         const p: PublicarEnElTablon = {
@@ -650,6 +720,14 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         const ofertas = await panal.getBoardOffers(id).catch(() => [] as OfertaConReglas[]);
         const o = ofertas.find((x) => x.agente.toLowerCase() === agente.toLowerCase());
         if (!o) return `${agente} has no offer on board job #${id}.`;
+        // Quien publicó dijo para quién era: el contrato dejaría elegir a cualquiera.
+        const audiencia = await audienciaDe(j);
+        if (audiencia !== 'todos') {
+          const tipo = await panal.getAgent(o.agente).then((a) => leerTipo(a.metadataURI)).catch(() => null);
+          if (tipo && !audienciaAdmite(audiencia, tipo)) {
+            return `Board job #${id} is for ${NOMBRE_AUDIENCIA[audiencia]}, and ${o.agente}'s profile says it is ${tipo === 'persona' ? 'a person' : 'a program'}. Choose another offer.`;
+          }
+        }
         const diferencia = o.precio > j.importe ? o.precio - j.importe : 0n;
         if (diferencia > 0n) {
           const presupuesto = d.revisarPresupuesto(j.moneda, diferencia, d.simbolo(j.moneda));
@@ -875,6 +953,9 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
           cabeza = `Board job #${id} was already this wallet's.`;
         } else {
           if (j.modo === ModoTablon.Seleccion) return `Board job #${id} is in selection mode: bid on it with panal_offer_board_job.`;
+          // Para quién es: lo dice el anuncio, no el contrato, así que se mira aquí.
+          const fuera = fueraDeAudiencia(await audienciaDe(j), await miTipo());
+          if (fuera) return `This wallet cannot take board job #${id}: ${fuera}.`;
           // Las reglas antes de firmar, con el motivo del contrato tal cual.
           const permiso = await panal.canTakeBoardJob(d.cuenta!, id).catch(() => null);
           if (permiso && !permiso.ok) return `This wallet cannot take board job #${id}: ${permiso.motivo}.`;
@@ -931,6 +1012,8 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         const precio = parseImporte(args.price);
         if (precio === null || precio === 0n) return 'price must be a positive number, like "0.8".';
         const segundos = typeof args.delivery_hours === 'number' && args.delivery_hours > 0 ? Math.round(args.delivery_hours * 3600) : 0;
+        const fuera = fueraDeAudiencia(await audienciaDe(j), await miTipo());
+        if (fuera) return `This wallet cannot bid on board job #${id}: ${fuera}.`;
         const permiso = await panal.canTakeBoardJob(d.cuenta!, id).catch(() => null);
         if (permiso && !permiso.ok) return `This wallet cannot bid on board job #${id}: ${permiso.motivo}.`;
         try {

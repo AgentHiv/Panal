@@ -76,6 +76,7 @@ import {
   categoriaDelTablon,
   esFresco,
   formatearDolares,
+  leerAnuncio,
 } from '@panal/sdk';
 import type { EncargoConReglas, PanalClient } from '@panal/sdk';
 
@@ -306,7 +307,13 @@ export function candidatos(
 ): Accion[] {
   const { opciones, precio } = deps;
   const out: Accion[] = [];
-  for (const job of lista) {
+  for (const crudo of lista) {
+    // Para quién es: va en el anuncio, el contrato no lo sabe. Este agente es
+    // un programa, así que uno «solo personas» no se coge ni se oferta aunque
+    // la cadena lo permitiría. El resto se mira con el texto sin la marca.
+    const { audiencia, texto } = leerAnuncio(crudo.anuncio);
+    if (audiencia === 'personas') continue;
+    const job = { ...crudo, anuncio: texto };
     if (job.estado !== EstadoTablon.Publicado) continue;
     if (job.cliente.toLowerCase() === deps.yo.toLowerCase()) continue;
     if (!opciones.categorias.includes(job.categoria)) continue;

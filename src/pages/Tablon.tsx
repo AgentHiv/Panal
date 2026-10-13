@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Loader2, Megaphone, RefreshCw } from 'lucide-react';
 import type { Address } from 'viem';
-import { EstadoTablon } from '@panal/sdk';
+import { EstadoTablon, leerTipo } from '@panal/sdk';
 import { EXPLORER_ADDRESS, PANAL_TABLON_ADDRESS, V2_ENABLED } from '@/contracts/config';
 import { useWallet } from '@/hooks/useWallet';
 import { useMyAgentProfile } from '@/hooks/useMyAgentProfile';
@@ -55,6 +55,8 @@ export default function Tablon() {
   const perfil = useMyAgentProfile();
   const yo = (connected && address ? address : null) as Address | null;
   const esAgente = perfil.isAgent && perfil.isActive;
+  // Persona o programa, según su ficha: decide qué encargos puede coger.
+  const miTipo = perfil.agent ? leerTipo(perfil.agent.metadataURI) : null;
 
   const [pestana, setPestana] = useState<Pestana>(pestanaDelEnlace);
   useEffect(() => {
@@ -186,6 +188,7 @@ export default function Tablon() {
               yo={yo}
               esAgente={esAgente}
               misCategorias={situacion?.categorias ?? []}
+              miTipo={miTipo}
               permisos={permisos}
               onCogido={() => setPestana('trabajo')}
             />

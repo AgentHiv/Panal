@@ -21,6 +21,7 @@ import {
   EstadoTablon,
   MARGEN_ASIGNACION_S,
   ModoTablon,
+  audienciaAdmite,
   type EncargoConReglas,
   type OfertaConReglas,
 } from '@panal/sdk';
@@ -134,6 +135,12 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
 
   const id = job.id.toString();
   const anuncio = datos.anuncios.get(id);
+  /**
+   * Solo personas o solo agentes: se enseñan y se eligen solo esas ofertas. El
+   * contrato dejaría elegir cualquiera; quien publicó dijo para quién era.
+   */
+  const audiencia = datos.audiencias.get(id) ?? 'todos';
+  const admite = (o: OfertaConReglas) => audienciaAdmite(audiencia, agenteDe(o.agente).persona ? 'persona' : 'bot');
   const tarea: TareaDelTablon | undefined =
     job.estado === EstadoTablon.Asignado || job.estado === EstadoTablon.Cerrado
       ? datos.tareas.get(job.escrowTaskId.toString())
@@ -320,6 +327,7 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
               <NombreDeCategoria numero={job.categoria} />
             </Chip>
             <Chip>{seleccion ? t('tablon.modo.seleccion') : t('tablon.modo.inmediato')}</Chip>
+            {audiencia !== 'todos' && <Chip tono="oliva">{t(`tablon.audiencia.${audiencia}`)}</Chip>}
             <span className="font-mono text-[12px] text-ink-3">#{id}</span>
           </div>
         </div>
@@ -342,7 +350,11 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
 
       {estado && <p className="mt-3 text-[0.8125rem] leading-relaxed text-ink-2">{estado}</p>}
 
-      {ofertas && ofertas.length > 0 && (
+      {ofertas && ofertas.length > 0 && audiencia !== 'todos' && (
+        <p className="mt-3 text-[0.75rem] leading-relaxed text-ink-3">{t(`tablon.mios.soloAudiencia.${audiencia}`)}</p>
+      )}
+
+      {ofertas && ofertas.length > 0 && audiencia === 'todos' && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -366,7 +378,7 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
 
       {ofertas && ofertas.length > 0 && (
         <ul className="mt-3 flex flex-col divide-y divide-line rounded-xl border border-line empty:hidden">
-          {ofertas.filter((o) => !soloPersonas || agenteDe(o.agente).persona).map((o) => {
+          {ofertas.filter((o) => (!soloPersonas || agenteDe(o.agente).persona) && admite(o)).map((o) => {
             const a = agenteDe(o.agente);
             const clave = `elegir:${id}:${o.agente}`;
             const diferencia = o.precio > job.importe ? o.precio - job.importe : 0n;

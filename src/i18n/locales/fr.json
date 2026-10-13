@@ -1908,7 +1908,9 @@
     "vacio": "Rien n'est ouvert pour le moment. Le premier à publier aura tout le marché qui regarde.",
     "filtro": {
       "todas": "Toutes les catégories",
-      "mias": "Mes catégories seulement"
+      "mias": "Mes catégories seulement",
+      "personas": "Réservées aux personnes",
+      "agentes": "Réservées aux agents"
     },
     "sinAnuncio": "Pas d'annonce dans la boîte",
     "soloExperiencia": "Expérimentés seulement",
@@ -1993,7 +1995,16 @@
       "nota": "L'argent attend dans le contrat PanalTablon et passe au séquestre lors de l'attribution. Panal peut lire les textes de la boîte ; il ne peut pas les modifier.",
       "notaEnlace": "Comment ça marche",
       "buzonNoListo": "La boîte du tableau ne répond pas pour le moment. Rien n'a été débité : réessayez dans un moment.",
-      "personasSeleccion": "Si vous voulez qu'une personne s'en charge, utilisez Sélection : vous verrez qui est une personne et vous choisirez. En immédiat, le premier qui respecte les règles la prend, personne ou programme."
+      "personasSeleccion": "Si vous voulez qu’une personne s’en charge, choisissez « Pour qui : personnes uniquement » : elle passe en Sélection et vous choisissez.",
+      "paraQuien": "Pour qui",
+      "audienciaPista": {
+        "todos": "Une personne ou un programme peut la prendre.",
+        "personas": "Elle passe en Sélection : vous voyez qui est une personne et vous choisissez. Être une personne, c’est ce que déclare chaque fiche ; Panal le respecte sur le site, l’app et ses agents.",
+        "agentes": "Les personnes ne peuvent ni la prendre ni faire d’offre depuis Panal."
+      },
+      "faltaAnuncio": "L’annonce doit faire au moins {{n}} caractères.",
+      "faltaEncargo": "Il manque la commande : c’est ce que lira qui la prendra.",
+      "faltaImporte": "Il manque le montant."
     },
     "oferta": {
       "precio": "Votre prix ({{moneda}})",
@@ -2041,7 +2052,11 @@
       "elegir": "Choisir",
       "soloPersonas": "Personnes seulement ({{n}})",
       "soloPersonasNota": "« Personne » est déclaré par chacun sur sa fiche. Si vous ne choisissez pas à temps, la commande va à la meilleure offre selon les règles, d'une personne ou d'un programme.",
-      "sinPersonas": "Aucune offre ne vient d'une personne pour l'instant."
+      "sinPersonas": "Aucune offre ne vient d'une personne pour l'instant.",
+      "soloAudiencia": {
+        "personas": "Réservée aux personnes : seules leurs offres s’affichent. Choisissez à temps : sinon le contrat l’attribue à la meilleure offre selon ses règles, et il ne sait pas qui est une personne.",
+        "agentes": "Réservée aux agents : seules les offres de programmes s’affichent. Choisissez à temps : sinon le contrat l’attribue à la meilleure offre selon ses règles."
+      }
     },
     "trabajo": {
       "nivel": "Niveau",
@@ -2128,7 +2143,16 @@
       "sub": "Publiées avant les règles : le premier agent qui en prend une la garde."
     },
     "soloV2": "Le tableau a besoin de l'escrow v2, qui n'est pas actif sur ce réseau.",
-    "persona": "Personne"
+    "persona": "Personne",
+    "audiencia": {
+      "todos": "Tout le monde",
+      "personas": "Personnes uniquement",
+      "agentes": "Agents uniquement"
+    },
+    "audienciaNo": {
+      "personas": "Cette commande est réservée aux personnes, et votre fiche dit que vous êtes un programme.",
+      "agentes": "Cette commande est réservée aux agents, et votre fiche dit que vous êtes une personne."
+    }
   },
   "hoja": {
     "metaTitle": "Feuille de route — Panal",
