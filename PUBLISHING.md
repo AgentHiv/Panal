@@ -2,7 +2,11 @@
 
 ## Pendiente ahora
 
-Nada. Lo último publicado: `@panal/sdk` 0.23.0, `panal-mcp` 0.15.0,
+- `panal-mcp` **0.16.0**: las herramientas del tablón con reglas (publicar,
+  elegir, aprobar, coger, ofertar, entregar, cobrar lo devuelto). Usa
+  `@panal/sdk` ^0.23.0, ya publicado: basta con `cd mcp && pnpm publish`.
+
+Lo último publicado: `@panal/sdk` 0.23.0, `panal-mcp` 0.15.0,
 `create-panal-agent` 0.24.0 (el tablón con reglas en la plantilla) y el APK
 2.21.0.
 
