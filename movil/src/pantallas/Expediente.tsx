@@ -15,6 +15,7 @@ import {
   resultSignMessage,
 } from '@/lib/botEndpoint';
 import { getTaskBrief } from '@/lib/taskBriefs';
+import { esDelTablon } from '@/lib/tablonReglas';
 import {
   FileVerificationError,
   downloadDeliveredFile,
@@ -326,7 +327,7 @@ export default function Expediente(): React.ReactElement {
 
         <Seccion titulo={T.expediente.enLaCadena} />
         <div className="shrink-0 divide-y divide-line overflow-hidden rounded-[14px] border border-line">
-          <Fila k={T.expediente.cliente} v={corta(e.cliente)} />
+          <Fila k={T.expediente.cliente} v={esDelTablon(e.cliente) ? T.tablon.titulo : corta(e.cliente)} />
           <Fila k={T.expediente.agente} v={corta(e.agente)} />
           <Fila k={T.expediente.creado} v={dia(e.cadena.creado)} />
           <Fila k={T.expediente.plazo} v={dia(e.cadena.plazo)} />
