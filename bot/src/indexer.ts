@@ -43,6 +43,7 @@ import { IndexStore, type EstadoDominio, type IndexedEvent } from './indexer-sto
 import { leerMarca } from './marca.js';
 import { verificarDominio } from './verificar-dominio.js';
 import { normalizarUsuario, verificarCuenta } from './verificar-cuenta.js';
+import { Telegram } from './telegram.js';
 
 // ---------------------------------------------------------------------------
 // ABIs y eventos (firmas exactas de contracts/src/v2/).
@@ -591,21 +592,57 @@ async function ponerseAlDiaConElTablon(cfg: BotConfig, clients: ChainClients, st
   }
 }
 
-/** Lo que ya se avisó: cada señal se escribe en el log una sola vez por arranque. */
-const yaAvisado = new Set<string>();
+/** El tope por agente de una campaña, que el contrato no emite en ningún evento. */
+const campaignCapAbi = [
+  {
+    type: 'function',
+    name: 'campaignCap',
+    stateMutability: 'view',
+    inputs: [{ name: 'key', type: 'bytes32' }],
+    outputs: [{ name: '', type: 'uint8' }],
+  },
+] as const;
+
+/** Lee del contrato el tope de las campañas nuevas, de pocas en pocas. */
+async function leerTopesDeCampana(cfg: BotConfig, clients: ChainClients, store: IndexStore): Promise<void> {
+  if (!cfg.tablonAddress) return;
+  for (const key of store.campanasSinTope().slice(0, 10)) {
+    try {
+      const cap = await clients.publicClient.readContract({
+        address: cfg.tablonAddress,
+        abi: campaignCapAbi,
+        functionName: 'campaignCap',
+        args: [key as `0x${string}`],
+      });
+      store.marcarTopeDeCampana(key, Number(cap));
+    } catch {
+      return; // se reintenta en la próxima vuelta
+    }
+  }
+}
+
+/** Telegram para la vigilancia, si hay chat; si no, null y va solo al log. */
+let telegramVigilancia: Telegram | null | undefined;
 
 /**
- * Las señales de contracts/TABLON-SECURITY.md, al log en cuanto aparecen:
- * un reparto atestado que no cuadra con el escrow, una disputa de 7 días y un
- * agente que trabaja casi solo para uno o dos clientes. También se sirven en
- * `/index/tablon/vigilancia`.
+ * Las señales de contracts/TABLON-SECURITY.md, en cuanto aparecen: un reparto
+ * atestado que no cuadra con el escrow, una disputa de 7 días, un agente que
+ * trabaja casi solo para uno o dos clientes y dos direcciones que se contratan
+ * la una a la otra. Al log siempre; a Telegram si hay `VIGILANCIA_TELEGRAM_CHAT_ID`.
+ * Cada señal se avisa una vez: lo avisado se guarda en el estado del índice.
  */
-function vigilar(store: IndexStore): void {
+async function vigilar(cfg: BotConfig, store: IndexStore): Promise<void> {
+  if (telegramVigilancia === undefined) {
+    telegramVigilancia =
+      cfg.vigilanciaChatId && cfg.telegramBotToken ? new Telegram({ ...cfg, telegramChatId: cfg.vigilanciaChatId }) : null;
+  }
   const v = store.vigilancia();
+  const pendientes: string[] = [];
   const avisar = (clave: string, texto: string): void => {
-    if (yaAvisado.has(clave)) return;
-    yaAvisado.add(clave);
+    if (store.yaAvisado(clave)) return;
+    store.marcarAvisado(clave);
     console.warn(`[vigilancia] ${texto}`);
+    pendientes.push(texto);
   };
   for (const r of v.repartosDistintos) {
     avisar(
@@ -620,10 +657,20 @@ function vigilar(store: IndexStore): void {
     );
   }
   for (const p of v.parejas) {
+    // Por cada diez más: sin eso, cada tarea nueva sería un aviso nuevo.
     avisar(
-      `pareja:${p.agente}:${p.completadas}`,
-      `${p.agente}: ${p.completadas} completadas de ${p.clientes} cliente(s), el ${Math.round(p.parte * 100)} % de ${p.principal}`,
+      `pareja:${p.agente}:${Math.floor(p.completadas / 10)}`,
+      `${p.agente}: ${p.completadas} completadas en 90 días de ${p.clientes} cliente(s), el ${Math.round(p.parte * 100)} % de ${p.principal}`,
     );
+  }
+  for (const c of v.cruzados) {
+    avisar(
+      `cruzados:${c.a}:${c.b}`,
+      `${c.a} y ${c.b} se contratan el uno al otro: ${c.aParaB} y ${c.bParaA} completadas en 90 días`,
+    );
+  }
+  if (telegramVigilancia && pendientes.length > 0) {
+    await telegramVigilancia.sendText(`Vigilancia del tablón\n\n${pendientes.map((t) => `• ${t}`).join('\n')}`);
   }
 }
 
@@ -975,7 +1022,10 @@ export async function runIndexer(
       const newHead = await withRetry('getBlockNumber', () => clients.publicClient.getBlockNumber());
       await incremental(cfg, clients, store, newHead);
       await ponerseAlDiaConElTablon(cfg, clients, store);
-      if (cfg.tablonAddress) vigilar(store);
+      if (cfg.tablonAddress) {
+        await leerTopesDeCampana(cfg, clients, store);
+        await vigilar(cfg, store);
+      }
       await refrescarFichas(cfg, clients, store);
       await verificarDominios(store);
       await verificarCuentas(store);

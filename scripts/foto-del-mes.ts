@@ -14,7 +14,12 @@
  *   - días sin actividad: de los eventos del indexador, que es lo único que
  *     guarda la fecha de cada movimiento;
  *   - quién pagó cada encargo: el `client` de la tarea en la cadena, clasificado
- *     con la lista de `metrics/wallets.json`.
+ *     con la lista de `metrics/wallets.json`. En las tareas del tablón con
+ *     reglas ese `client` es el CONTRATO; el de verdad lo da el indexador;
+ *   - el tablón con reglas (PanalTablon): de los eventos del indexador, que es
+ *     lo único que guarda la fecha de cada publicación y cada asignación, con
+ *     los precios en dólares y el nivel de cada agente leídos en la cadena en el
+ *     bloque del corte.
  *
  * EL CORTE ES LA MEDIANOCHE, NO LA HORA A LA QUE CORRE. Todo se lee en el
  * último bloque del mes —el último con fecha anterior al día 1 a las 00:00
@@ -41,6 +46,8 @@ import { formatEther, getAddress, type Address } from 'viem';
 import {
   createPanalClient,
   escrowAbi,
+  leerPrecios,
+  panalTablonAbi,
   registryAbi,
   TaskStatus,
   NATIVE_CURRENCY,
@@ -78,6 +85,12 @@ for (const cat of ['team', 'unconfirmed', 'collaborator'] as const) {
 }
 
 const panal = createPanalClient({ rpcUrl: process.env.RPC_URL?.trim() || undefined, indexerUrl: null });
+/** PanalTablon, si existe: de `PANAL_TABLON_ADDRESS` o del SDK. */
+const TABLON: Address | null = (() => {
+  const env = process.env.PANAL_TABLON_ADDRESS?.trim();
+  if (env) return getAddress(env);
+  return panal.addresses.tablon.toLowerCase() === NATIVE_CURRENCY.toLowerCase() ? null : panal.addresses.tablon;
+})();
 const simbolo = (c: Address): string =>
   c.toLowerCase() === NATIVE_CURRENCY.toLowerCase()
     ? 'MON'
@@ -139,6 +152,18 @@ async function main(): Promise<void> {
   }));
   const direccionesAgentes = new Set(agentes.map((a) => a.address.toLowerCase()));
 
+  // ---- Las tareas del tablón, con su cliente de verdad ----------------------
+  // En el escrow, el cliente de una tarea del tablón con reglas es el contrato:
+  // sin esto, todas contarían como «pagadas de fuera».
+  const clienteReal = new Map<string, string>();
+  if (TABLON) {
+    const r = await fetch(`${INDEXADOR}/index/tasks?address=${TABLON}&limit=1000`);
+    if (r.ok) {
+      const { tasks: delTablon } = (await r.json()) as { tasks: { taskId: string; realClient?: string }[] };
+      for (const t of delTablon) if (t.realClient) clienteReal.set(t.taskId, t.realClient);
+    }
+  }
+
   // ---- Encargos, en el bloque del corte -----------------------------------
   const cuantas = Number(await leer<bigint>(panal.addresses.escrow, escrowAbi, 'getTaskCount'));
   const tareas = await enTandas([...Array(cuantas).keys()], 8, (i) =>
@@ -156,13 +181,13 @@ async function main(): Promise<void> {
     outside: { created: 0, completed: 0, byRegisteredAgents: 0, distinctWallets: 0 },
   };
   const walletsDeFuera = new Set<string>();
-  for (const t of tareas) {
+  for (const [i, t] of tareas.entries()) {
     const estado = TaskStatus[t.status] ?? String(t.status);
     porEstado[estado] = (porEstado[estado] ?? 0) + 1;
     const completada = t.status === TaskStatus.Completed;
     if (completada) volumen[simbolo(t.currency)] = (volumen[simbolo(t.currency)] ?? 0n) + t.amount;
 
-    const quien = t.client.toLowerCase();
+    const quien = (clienteReal.get(String(i)) ?? t.client).toLowerCase();
     const cat = categoriaDe.get(quien) ?? 'outside';
     porPagador[cat].created++;
     if (completada) porPagador[cat].completed++;
@@ -194,6 +219,8 @@ async function main(): Promise<void> {
   }
   const ultimo = delMes.reduce((m, e) => Math.max(m, e.ts), 0);
 
+  const tablon = TABLON ? await fotoDelTablon(TABLON, bloque.number, Number(bloque.timestamp)) : null;
+
   const foto = {
     month: mes,
     // El instante del bloque leído: el último antes de `cutoff`.
@@ -205,6 +232,7 @@ async function main(): Promise<void> {
       registry: panal.addresses.registry,
       escrow: panal.addresses.escrow,
       indexer: `${INDEXADOR}/index/events`,
+      ...(TABLON ? { board: TABLON, boardMetrics: `${INDEXADOR}/index/board/metrics` } : {}),
     },
     agents: {
       registered: agentes.length,
@@ -220,6 +248,9 @@ async function main(): Promise<void> {
       daysWithNothingInLast30: sinNada,
       lastEvent: ultimo ? new Date(ultimo * 1000).toISOString() : null,
     },
+    // Solo si PanalTablon existe y el indexador lo sigue: sin él no hay fila
+    // del tablón, mejor que una fila de ceros.
+    ...(tablon ? { board: tablon } : {}),
     // La lista con la que se clasificó, tal como estaba hoy.
     wallets: {
       team: (lista.team ?? []).map((w) => getAddress(w.address)),
@@ -237,6 +268,75 @@ async function main(): Promise<void> {
   writeFileSync(join(DIR, `${mes}.json`), texto);
   escribirSerie();
   console.log(`metrics/${mes}.json escrita · bloque ${foto.block}`);
+}
+
+/**
+ * El tablón con reglas del mes: las cifras del indexador, valoradas en dólares
+ * al precio del BLOQUE DEL CORTE, y el nivel al corte de quien cogió encargos.
+ *
+ * Los precios se leen en la cadena en ese bloque, sin CoinGecko ni la API de
+ * nad.fun, que darían el de hoy. Pyth puede llevar un rato sin publicar en ese
+ * momento: se guarda su fecha, para que se vea de cuándo es.
+ */
+async function fotoDelTablon(tablon: Address, bloque: bigint, corteTs: number) {
+  const inicio = Date.UTC(anio, numMes - 1, 1) / 1000;
+  const r = await fetch(`${INDEXADOR}/index/board/metrics?from=${inicio}&to=${corte}`);
+  if (!r.ok) return null; // un indexador sin el tablón
+  const m = (await r.json()) as {
+    volume: { posted: number; assigned: number; withdrawn: number; expired: number; relisted: number; postedByCoin: Record<string, string> };
+    speed: { immediate: number | null; selection: number | null };
+    competition: { medianOffers: number | null; noOfferShare: number | null; medianPriceToBudget: number | null };
+    choice: { byClient: number; automatic: number; notCheapest: number };
+    delivery: { completed: number; cancelled: number; disputes: number; refundedByCoin: Record<string, string> };
+    penalties: { strikes: number; suspensions7d: number; suspensions30d: number; agents: number };
+    agents: string[];
+    byCategory: { category: number; jobs: number; noOffer: number; medianByCoin: Record<string, string> }[];
+  };
+  if (m.volume.posted === 0 && m.volume.assigned === 0) return null;
+
+  const enElCorte = {
+    readContract: (a: Parameters<typeof panal.publicClient.readContract>[0]) =>
+      panal.publicClient.readContract({ ...a, blockNumber: bloque } as never),
+  };
+  const precios = await leerPrecios(enElCorte as never, {
+    ahora: corteTs,
+    panalToken: panal.addresses.panalToken,
+    fetch: (async () => new Response('', { status: 503 })) as never,
+  });
+  const usd = (porMoneda: Record<string, string>): number | null => {
+    let total = 0;
+    for (const [moneda, wei] of Object.entries(porMoneda)) {
+      const p = moneda === 'MON' ? precios.mon : moneda === '$PANAL' ? precios.panal : null;
+      if (!p) return null;
+      total += Number(formatEther(BigInt(wei))) * p.valor;
+    }
+    return Math.round(total * 100) / 100;
+  };
+
+  // Quien cogió encargos este mes, ¿qué nivel tenía al corte?
+  const niveles = await enTandas(m.agents, 8, async (a) => {
+    const [nivel] = (await panal.publicClient.readContract({
+      address: tablon,
+      abi: panalTablonAbi,
+      functionName: 'levelOf',
+      args: [a as Address],
+      blockNumber: bloque,
+    })) as readonly [number, number];
+    return Number(nivel);
+  });
+
+  const enUnidades = (r: Record<string, string>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, formatEther(BigInt(v))]));
+  return {
+    ...m,
+    volume: { ...m.volume, postedByCoin: enUnidades(m.volume.postedByCoin), postedUsd: usd(m.volume.postedByCoin) },
+    delivery: { ...m.delivery, refundedByCoin: enUnidades(m.delivery.refundedByCoin), refundedUsd: usd(m.delivery.refundedByCoin) },
+    byCategory: m.byCategory.map((c) => ({ ...c, medianByCoin: enUnidades(c.medianByCoin) })),
+    agents: { tookJobs: m.agents.length, atLevelOneOrMoreAtCut: niveles.filter((n) => n >= 1).length },
+    prices: {
+      mon: precios.mon ? { usd: precios.mon.valor, publishedAt: new Date(precios.mon.actualizado * 1000).toISOString(), source: precios.mon.fuente } : null,
+      panal: precios.panal ? { usd: precios.panal.valor, inMon: precios.panalEnMon?.valor ?? null, source: precios.panal.fuente } : null,
+    },
+  };
 }
 
 /** metrics/README.md: la serie entera, rehecha a partir de todas las fotos. */
@@ -271,10 +371,40 @@ a file in this folder; every number in it can be recomputed.
 | Month | Agents registered | Active | Tasks | Completed | Paid by outsiders | Paid by the team | Days with nothing (of 30) | Block |
 |---|---|---|---|---|---|---|---|---|
 ${filas.join('\n')}
-
+${tablaDelTablon(fotos)}
 Regenerated by \`pnpm foto\` (\`scripts/foto-del-mes.ts\`).
 `,
   );
+}
+
+/**
+ * La tabla del tablón con reglas, solo con los meses que lo tienen: antes de
+ * que PanalTablon exista no se enseña, mejor que una tabla de ceros.
+ */
+function tablaDelTablon(fotos: { month: string; board?: Record<string, any> }[]): string {
+  const conTablon = fotos.filter((f) => f.board);
+  if (conTablon.length === 0) return '';
+  const horas = (s: number | null) => (s === null ? '—' : `${Math.round((s / 3600) * 10) / 10} h`);
+  const parte = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)} %`);
+  const filas = conTablon.map(({ month, board: b }) => {
+    const usd = b!.volume.postedUsd === null ? '' : ` ($${b!.volume.postedUsd})`;
+    return (
+      `| ${month} | ${b!.volume.posted}${usd} | ${b!.volume.assigned} | ${horas(b!.speed.selection)} | ` +
+      `${b!.competition.medianOffers ?? '—'} | ${parte(b!.competition.noOfferShare)} | ${b!.delivery.completed} | ` +
+      `${b!.penalties.strikes} | ${b!.agents.tookJobs} (${b!.agents.atLevelOneOrMoreAtCut} at level 1+) |`
+    );
+  });
+  return `
+## The rule-based board
+
+From PanalTablon's events in the indexer, up to the same cut (contracts/BOARD.md
+§10.1). Dollars at the price on the cut block, read on chain; each snapshot keeps
+the price and when it was published.
+
+| Month | Posted | Assigned | Time to assign (selection, median) | Offers per job (median) | Selection jobs with no offer | Completed | Strikes | Agents who took jobs |
+|---|---|---|---|---|---|---|---|---|
+${filas.join('\n')}
+`;
 }
 
 main().catch((e) => {

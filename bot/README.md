@@ -256,7 +256,7 @@ bot/
     format.ts    Markdown → texto plano para Telegram
     indexer.ts        modo indexer: bootstrap por timestamps + barrido + poll
     indexer-store.ts  índice JSONL append-only + state.json atómico + stats
-    indexer-http.ts   API pública del índice (/index/events|agents|stats|tasks|tablon/…)
+    indexer-http.ts   API pública del índice (/index/events|agents|stats|tasks|board/…)
     buzon.ts          modo buzón: las rutas, las firmas y sus ventanas, y el
                       tablón. No guarda claves: lo único que puede decir que sí
                       es un hash que la cadena ya sostiene
@@ -489,18 +489,31 @@ indexador anterior sencillamente no ve ese campo y funciona igual.
 ### El tablón con reglas (PanalTablon)
 
 Con `PANAL_TABLON_ADDRESS` en el `.env`, el indexador sigue también ese contrato
-(`contracts/BOARD.md`). Con `PANAL_TABLON_BLOQUE` —el bloque de su despliegue—
+(`contracts/BOARD.md`). Sus rutas van en inglés, como el resto de la API, bajo
+`/index/board/`. Con `PANAL_TABLON_BLOQUE` —el bloque de su despliegue—
 recorre una vez lo que pasó desde ahí, por si la dirección se pone con el índice
 ya hecho.
 
 ```bash
 # Los encargos, filtrables por estado, categoría, cliente o agente:
-curl "http://localhost:8788/index/tablon/jobs?state=posted&category=2"
+curl "http://localhost:8788/index/board/jobs?state=posted&category=2"
 # Uno, con su tarea del escrow si ya tiene agente:
-curl "http://localhost:8788/index/tablon/job?id=0"
+curl "http://localhost:8788/index/board/job?id=0"
 # Las señales de contracts/TABLON-SECURITY.md:
-curl "http://localhost:8788/index/tablon/vigilancia"
+curl "http://localhost:8788/index/board/monitoring"
+# Un agente (categorías, faltas, suspensión) y un cliente (lo que se le debe):
+curl "http://localhost:8788/index/board/agent?address=0x…"
+curl "http://localhost:8788/index/board/client?address=0x…"
+# Topes, pausa, niveles y encargos de novato vigentes:
+curl "http://localhost:8788/index/board/config"
+# Campañas, con su tope por agente (leído del contrato) y lo que ha cogido cada uno:
+curl "http://localhost:8788/index/board/campaigns?owner=0x…"
+# Las cifras de un periodo, para la foto del mes:
+curl "http://localhost:8788/index/board/metrics?from=1793491200&to=1796169600"
 ```
+
+`/index/board/job` trae además las ofertas en pie con su precio, su plazo y el
+nivel con que se hicieron, y su campaña si la tiene.
 
 Dos cosas cambian además en `/index/tasks`. Una tarea del escrow creada por el
 tablón tiene como cliente al CONTRATO, que no puede aprobar ni disputar desde la
@@ -512,10 +525,15 @@ La vigilancia también va al log, una vez por señal y por arranque, como
 
 - un reparto que el árbitro atestó en PanalTablon y no cuadra con el del escrow;
 - una disputa abierta hace 7 días o más (a los 14 se devuelve todo sin falta);
-- un agente con diez tareas completadas o más que vienen casi todas de uno o dos
-  clientes.
+- un agente con diez tareas completadas o más en 90 días que vienen casi todas
+  de uno o dos clientes;
+- dos direcciones que se contratan la una a la otra, tres veces o más cada una,
+  en 90 días.
 
-Son señales para mirar, no pruebas de nada.
+Con `VIGILANCIA_TELEGRAM_CHAT_ID` (y el `TELEGRAM_BOT_TOKEN` de siempre) llegan
+también a ese chat. Cada señal se avisa una vez: lo avisado se guarda en el
+estado del índice y no se repite al reiniciar. Son señales para mirar, no
+pruebas de nada.
 
 ### Actualizar el indexador desplegado
 

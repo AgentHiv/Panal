@@ -22,12 +22,17 @@
  *   5. El INDEXADOR de verdad (bot/src/indexer.ts) recorre los bloques desde
  *      el despliegue y monta cada encargo, ata cada tarea del escrow a su
  *      cliente de verdad y lee las categorías del agente.
+ *   6. La FOTO DEL MES (scripts/foto-del-mes.ts) del mes en curso, adelantando
+ *      el reloj al siguiente: la tabla del tablón sale de ese indexador, con
+ *      los dólares del bloque del corte, y las tareas del tablón cuentan para
+ *      su cliente de verdad y no para el contrato.
  *
  * Las claves son las de prueba de anvil: no tienen nada fuera de la copia.
  */
 
-import { spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { execFile, spawn } from 'node:child_process';
+import { promisify } from 'node:util';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { createPublicClient, createWalletClient, http, keccak256, parseEther, toBytes, type Address, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { monad } from 'viem/chains';
@@ -44,6 +49,7 @@ import { createClients } from '../../bot/src/chain.js';
 import type { BotConfig } from '../../bot/src/config.js';
 import { runIndexer } from '../../bot/src/indexer.js';
 import { IndexStore } from '../../bot/src/indexer-store.js';
+import { createIndexServer } from '../../bot/src/indexer-http.js';
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -284,6 +290,42 @@ try {
   check('el retirado, retirado', indice.job(otro.jobId.toString())?.state === 'withdrawn');
   check('el de selección, cerrado tras su oferta', indice.job(sel.jobId.toString())?.state === 'closed' && indice.job(sel.jobId.toString())?.mode === 'selection');
   check('las categorías del agente, del evento', indice.categoriasDe(yo).join() === '2', indice.categoriasDe(yo).join());
+
+  // ── 6. La foto del mes ───────────────────────────────────────────────────
+  console.log('\nla foto del mes');
+  const servidorIdx = createIndexServer({ store: indice, allowLocalhostOrigin: true });
+  await new Promise<void>((r) => servidorIdx.listen(PUERTO + 2, '127.0.0.1', r));
+  process.on('exit', () => servidorIdx.close());
+  const ahoraBloque = await lector.getBlock();
+  const fecha = new Date(Number(ahoraBloque.timestamp) * 1000);
+  const mesActual = fecha.toISOString().slice(0, 7);
+  // Al día 2 del mes siguiente: el mes en curso ya ha terminado.
+  await tiempo(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth() + 1, 2) / 1000 - Number(ahoraBloque.timestamp));
+  const wallets = join(mkdtempSync(join(tmpdir(), 'panal-foto-')), 'wallets.json');
+  writeFileSync(wallets, JSON.stringify({ team: [{ address: cliente.account!.address, label: 'el cliente de esta prueba' }] }));
+  // Asíncrono a propósito: el indexador al que pregunta la foto lo sirve ESTE
+  // proceso, y con execFileSync se quedaría parado esperándola.
+  const { stdout: salida } = await promisify(execFile)(
+    'pnpm',
+    ['exec', 'tsx', '../scripts/foto-del-mes.ts', '--seco', '--mes', mesActual],
+    {
+      env: { ...process.env, RPC_URL: RPC, INDEXER_URL: `http://127.0.0.1:${PUERTO + 2}`, PANAL_TABLON_ADDRESS: tablon, WALLETS_FILE: wallets },
+      encoding: 'utf8',
+      maxBuffer: 10_000_000,
+    },
+  );
+  const foto = JSON.parse(salida.slice(salida.indexOf('{'))) as {
+    paidBy: { team: { created: number } };
+    board?: {
+      volume: { posted: number; assigned: number; withdrawn: number; postedUsd: number | null };
+      agents: { tookJobs: number; atLevelOneOrMoreAtCut: number };
+      prices: { mon: { usd: number } | null };
+    };
+  };
+  check('la foto trae el tablón: tres publicados, dos asignados, uno retirado', foto.board?.volume.posted === 3 && foto.board.volume.assigned === 2 && foto.board.volume.withdrawn === 1, JSON.stringify(foto.board?.volume));
+  check('con el precio de MON del bloque del corte', (foto.board?.prices.mon?.usd ?? 0) > 0 && (foto.board?.volume.postedUsd ?? 0) > 0);
+  check('un agente cogió encargos, todavía en nivel 0 al corte', foto.board?.agents.tookJobs === 1 && foto.board.agents.atLevelOneOrMoreAtCut === 0);
+  check('y las dos tareas del tablón cuentan para su cliente de verdad, no para el contrato', foto.paidBy.team.created === 2, String(foto.paidBy.team.created));
 } catch (e) {
   console.error(e);
   fallos++;

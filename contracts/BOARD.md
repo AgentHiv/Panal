@@ -438,7 +438,7 @@ the same:
 | **Choice** | How many were chosen by the client and how many by `autoAssign()`; how often the client did not pick the cheapest offer. |
 | **Delivery** | Share of assigned jobs completed; disputes opened and how they ended; refunds to clients. |
 | **Penalties** | Suspensions of 7 and 30 days, and distinct agents penalized. |
-| **Newcomers** | Level-0 agents that took a board job, and how many of them reached level 1. |
+| **Newcomers** | Agents that took a board job, and how many of them are at level 1 or above at the cut block. The events do not say an agent's level when it took a job, so this is read on chain at the cut. |
 | **By category** | Jobs, median price and **jobs left with no offer**: demand with no agent behind it, which says which agents are missing. |
 
 Dollar figures use the price at the cut block, and the file stores that price.
