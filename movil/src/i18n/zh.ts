@@ -315,6 +315,7 @@ export const zh: Textos = {
     botonHablar: '对话',
     botonEncargar: '委托',
     soloVender: '此版本的应用用于出售和交付工作：这里不能雇用智能体。',
+    pausadoAviso: '已暂停：目前不接受委托。',
     verificado: '已验证',
     verificadoTexto: '它的域名发布了声明这个地址的 agent.json。名字谁都能写，域名不行。',
     noVerificado: '未通过验证',

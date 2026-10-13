@@ -38,7 +38,7 @@ import type { Agent, AgentCategory } from '@/data/agents';
 import { esTokenDeNivel, esTokenDeTipo, leerTipo } from '@panal/sdk';
 import { useIdiomaDelDocumento } from '@/lib/idiomaActual';
 import { MARCA_VACIA, esTokenDeMarca, leerMarca, type Marca } from '@/lib/marca';
-import { canalDeFicha, type Canal } from '@/lib/botEndpoint';
+import { canalDeFicha, extractBotUrl, type Canal } from '@/lib/botEndpoint';
 import type { CuentaDeAgente } from '@/lib/cuenta';
 import {
   fetchCatalogo,
@@ -84,6 +84,12 @@ export interface OnchainAgent extends Agent {
    * exactamente la mentira contraria a la que esto viene a arreglar.
    */
   canal: Canal;
+  /**
+   * La dirección que publica para recibir encargos, o `null` si no publica
+   * ninguna o el catálogo no trae su ficha. Sirve para preguntarle EN DIRECTO
+   * si contesta (ver `useCierre`), sin volver a leer la cadena.
+   */
+  botUrl: string | null;
   /**
    * Si la cuenta pública que declara ha demostrado ser suya.
    *
@@ -366,6 +372,7 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
         // Del mismo `metadataURI`, y por eso mismo `undefined` con un indexador
         // anterior a él: entonces es «no se sabe» y no se marca nada.
         canal: canalDeFicha(f.metadataURI),
+        botUrl: extractBotUrl(f.metadataURI),
         // Lo comprueba el indexador yendo a por el gist de esa cuenta. Un
         // indexador anterior a esto no lo manda, y entonces es «no se sabe».
         cuenta: f.cuenta ?? null,
@@ -510,6 +517,7 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       marca: leerMarca(data.metadataURI),
       // Aquí la ficha viene entera de la cadena: la respuesta es sí o no.
       canal: canalDeFicha(data.metadataURI),
+      botUrl: extractBotUrl(data.metadataURI),
       totalEarned: 0,
       memberSince: new Date(Number(data.registeredAt) * 1000).toLocaleDateString('es-ES', {
         month: 'short',

@@ -35,6 +35,7 @@ import { responseInWords } from '@/components/market/detail-data';
 import { cn } from '@/lib/utils';
 import { EXPLORER_ADDRESS, currencySymbol } from '@/contracts/config';
 import { canalDe, cuentaDe, isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
+import { TEXTO_CIERRE, useCierre } from '@/hooks/useCierre';
 import { MARCA_VACIA } from '@/lib/marca';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 import { useTopAgents } from '@/hooks/useTopAgents';
@@ -78,6 +79,12 @@ export default function AgentDetail() {
    * mirar, `false`: la pantalla de carga no acusa a nadie.
    */
   const sinCanal = agent ? canalDe(agent) === 'ninguno' : false;
+  /**
+   * Si se le puede contratar ahora: sin dirección, en pausa o sin contestar,
+   * no. Aquí se le pregunta en directo, y eso manda sobre lo que dijo el
+   * indexador; los cuatro botones de contratar de la ficha usan esta respuesta.
+   */
+  const cierre = useCierre(agent);
   const [tab, setTab] = useState<TabValue>('resumen');
   const [hireOpen, setHireOpen] = useState(false);
   const [nivel, setNivel] = useState<Nivel | null>(null);
@@ -389,7 +396,7 @@ export default function AgentDetail() {
 
             {/* tarjeta de contratación (col 4, sticky) */}
             <div className="lg:col-span-4">
-              <HireCard agent={agent} onHire={openHire} />
+              <HireCard agent={agent} onHire={openHire} cierre={cierre} />
             </div>
           </div>
         </div>
@@ -463,7 +470,7 @@ export default function AgentDetail() {
               </TabsContent>
               <TabsContent value="servicios" className="mt-0 focus-visible:outline-none">
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-                  <ServicesTab agent={agent} onHire={openHireConNivel} />
+                  <ServicesTab agent={agent} onHire={openHireConNivel} cierre={cierre} />
                 </motion.div>
               </TabsContent>
               <TabsContent value="resenas" className="mt-0 focus-visible:outline-none">
@@ -508,7 +515,7 @@ export default function AgentDetail() {
             />
           </h2>
           <FadeUp y={16} delay={0.15} className="flex flex-col items-center gap-3 sm:flex-row">
-            {!sinCanal && (
+            {!sinCanal && cierre !== 'no-responde' && (
               <Link
                 to={rutaChat}
                 className="inline-flex items-center gap-2 rounded-full border border-line px-7 py-3.5 text-[0.9375rem] font-semibold text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
@@ -520,7 +527,7 @@ export default function AgentDetail() {
             <motion.button
               type="button"
               onClick={openHire}
-              disabled={sinCanal}
+              disabled={cierre !== null}
               initial={{ scale: 0.96 }}
               whileInView={{ scale: 1 }}
               viewport={{ once: true }}
@@ -538,13 +545,13 @@ export default function AgentDetail() {
           </FadeUp>
           <p className="flex items-center gap-2 font-mono text-[12px] text-coal-mute">
             <Hexagon size={12} className="fill-honey text-honey" aria-hidden />
-            {sinCanal ? t('detail.sinCanal') : t('detail.cta.escrowNote')}
+            {cierre ? t(TEXTO_CIERRE[cierre]) : t('detail.cta.escrowNote')}
           </p>
         </div>
       </section>
 
       {/* barra fija móvil + modal de contratación */}
-      <MobileHireBar agent={agent} onHire={openHire} />
+      <MobileHireBar agent={agent} onHire={openHire} cierre={cierre} />
       <HireDialog agent={agent} open={hireOpen} onOpenChange={setHireOpen} nivel={nivel} />
     </div>
   );

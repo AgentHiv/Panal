@@ -5,6 +5,7 @@ import { BadgeCheck, Star } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import HexAvatar from '@/components/HexAvatar';
 import { marcaDe } from '@/hooks/usePanalAgents';
+import { TEXTO_CIERRE, cierreDe } from '@/hooks/useCierre';
 import { cn } from '@/lib/utils';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
@@ -44,6 +45,12 @@ function RankCell({ rank }: { rank: number }) {
 export default function RankingTable({ agents, onHire }: RankingTableProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // Al que no contesta o está en pausa no se le ofrece contratar (useCierre).
+  const cierres = new Map(agents.map((a) => [a.id, cierreDe(a)]));
+  const tituloCierre = (id: string) => {
+    const c = cierres.get(id);
+    return c ? t(TEXTO_CIERRE[c]) : undefined;
+  };
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-line bg-paper">
@@ -128,7 +135,9 @@ export default function RankingTable({ agents, onHire }: RankingTableProps) {
                     e.stopPropagation();
                     onHire(agent);
                   }}
-                  className="rounded-full border border-line px-4 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:bg-honey hover:text-ink"
+                  disabled={cierres.get(agent.id) !== null}
+                  title={tituloCierre(agent.id)}
+                  className="rounded-full border border-line px-4 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:bg-honey hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-line disabled:hover:bg-transparent disabled:hover:text-ink-2"
                 >
                   {t('common.hire')}
                 </button>

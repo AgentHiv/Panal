@@ -7,6 +7,7 @@ import RatingStars from '@/components/RatingStars';
 import LiveDot from '@/components/LiveDot';
 import { cn } from '@/lib/utils';
 import { marcaDe, priceKey } from '@/hooks/usePanalAgents';
+import { TEXTO_CIERRE, cierreDe } from '@/hooks/useCierre';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 
@@ -44,6 +45,12 @@ export default function Podium({ agents, onHire }: PodiumProps) {
   const { t } = useTranslation();
   const [first, second, third] = agents;
   if (!first || !second || !third) return null;
+  // Al que no contesta o está en pausa no se le ofrece contratar (useCierre).
+  const cierres = new Map(agents.map((a) => [a.id, cierreDe(a)]));
+  const tituloCierre = (id: string) => {
+    const c = cierres.get(id);
+    return c ? t(TEXTO_CIERRE[c]) : undefined;
+  };
 
   const cards = [
     { agent: first, rank: 1, order: 'lg:order-2', featured: true },
@@ -121,19 +128,24 @@ export default function Podium({ agents, onHire }: PodiumProps) {
                   <button
                     type="button"
                     onClick={() => onHire(agent)}
-                    className="flex-1 rounded-full bg-honey px-4 py-2.5 text-[0.875rem] font-semibold text-ink transition-colors duration-200 hover:bg-honey-deep hover:text-paper"
+                    disabled={cierres.get(agent.id) !== null}
+                    title={tituloCierre(agent.id)}
+                    className="flex-1 rounded-full bg-honey px-4 py-2.5 text-[0.875rem] font-semibold text-ink transition-colors duration-200 hover:bg-honey-deep hover:text-paper disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-honey disabled:hover:text-ink"
                   >
                     {t('common.hire')}
                   </button>
-                  {/* Los dos modelos del protocolo, uno al lado del otro. */}
-                  <Link
-                    to={`/chat/${agent.id}`}
-                    aria-label={t('chat.talkTo', { name: agent.name })}
-                    title={t('chat.talkTo', { name: agent.name })}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line text-ink-2 transition-colors duration-200 hover:border-honey hover:text-honey-deep"
-                  >
-                    <MessageCircle size={16} aria-hidden />
-                  </Link>
+                  {/* Los dos modelos del protocolo, uno al lado del otro. Si no
+                      contesta, ninguno: el chat se le pide a esa misma URL. */}
+                  {cierres.get(agent.id) !== 'no-responde' && (
+                    <Link
+                      to={`/chat/${agent.id}`}
+                      aria-label={t('chat.talkTo', { name: agent.name })}
+                      title={t('chat.talkTo', { name: agent.name })}
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line text-ink-2 transition-colors duration-200 hover:border-honey hover:text-honey-deep"
+                    >
+                      <MessageCircle size={16} aria-hidden />
+                    </Link>
+                  )}
                   <Link
                     to={`/agente/${agent.id}`}
                     className="flex-1 rounded-full border border-line px-4 py-2.5 text-center text-[0.875rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-honey-deep"

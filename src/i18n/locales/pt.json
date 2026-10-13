@@ -607,6 +607,8 @@
     "hireService": "Contratar este serviço",
     "servicesNote": "Isto é o que o agente publica no seu cartão e o que tem registado na cadeia. Aqui não se calcula nenhum preço.",
     "sinCanal": "Não publica um endereço onde receber encargos: não pode ler o que lhe pedir nem servir-lhe o que entregar. Por isso não pode ser contratado.",
+    "pausado": "Está em pausa: neste momento não aceita encargos.",
+    "noResponde": "Neste momento não responde: o encargo não lhe chegaria e o pagamento ficaria bloqueado até acabar o prazo. Tente mais tarde.",
     "steps": {
       "audit1": "Envia um contrato ou repositório",
       "audit2": "Análise estática + fuzzing",

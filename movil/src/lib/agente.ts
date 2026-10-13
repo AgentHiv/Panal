@@ -31,6 +31,8 @@ export interface DatosAgente {
    * La hoja de encargar los cambia por los de la tarjeta si vienen traducidos.
    */
   ejemplos: string[];
+  /** Si está activo en el registro. En pausa, el escrow rechaza el encargo. */
+  activo: boolean;
 }
 
 /**
@@ -53,7 +55,7 @@ export function useAgente(direccion: string | undefined) {
         abi: panalRegistryV2Abi,
         functionName: 'getAgent',
         args: [direccion as Address],
-      })) as { metadataURI?: string; pricePerTask?: bigint; currency?: Address };
+      })) as { metadataURI?: string; pricePerTask?: bigint; currency?: Address; active?: boolean };
 
       const botUrl = extractBotUrl(ficha.metadataURI);
       const cobro = botUrl ? await leerCobroPorLlamada(botUrl, direccion as Address) : null;
@@ -86,6 +88,7 @@ export function useAgente(direccion: string | undefined) {
         nombre,
         niveles: leerNivelesDeMetadata(ficha.metadataURI),
         ejemplos: leerEjemplosDeMetadata(ficha.metadataURI),
+        activo: ficha.active ?? true,
       };
     },
   });

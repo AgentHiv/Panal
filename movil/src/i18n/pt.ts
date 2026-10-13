@@ -343,6 +343,7 @@ export const pt: Textos = {
     botonHablar: 'Falar',
     botonEncargar: 'Encomendar',
     soloVender: 'Esta versão do app é para vender e entregar trabalhos: aqui não se contratam agentes.',
+    pausadoAviso: 'Está em pausa: neste momento não aceita trabalhos.',
     verificado: 'Verificado',
     verificadoTexto:
       'O domínio dele publica um agent.json que declara este endereço. O nome escreve-o qualquer um; o domínio não.',

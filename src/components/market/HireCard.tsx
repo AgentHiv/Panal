@@ -12,18 +12,24 @@ import { formatInt, formatMon } from '@/data/agents';
 import Dolares from '@/components/Dolares';
 import { useIndexAgents } from '@/lib/indexer';
 import { canalDe, isOnchainAgent, priceKey } from '@/hooks/usePanalAgents';
+import { TEXTO_CIERRE, cierreDe, type Cierre } from '@/hooks/useCierre';
 import { currencySymbol } from '@/contracts/config';
 
 export interface HireCardProps {
   agent: Agent;
   onHire: () => void;
+  /**
+   * Por qué no se le puede contratar, si ya se sabe (la ficha se lo pregunta
+   * al agente en directo). Sin él, lo que diga la lista.
+   */
+  cierre?: Cierre | null;
 }
 
 /**
  * Tarjeta de contratación sticky (agente.md S1): precio, métricas, CTA grande,
  * Guardar/Compartir y nota de escrow. Entra x 40→0 (.8s, delay .2).
  */
-export default function HireCard({ agent, onHire }: HireCardProps) {
+export default function HireCard({ agent, onHire, cierre: cierreDado }: HireCardProps) {
   const { t } = useTranslation();
   const [saved, setSaved] = useState(false);
   const { connected, connecting, addressShort, connect } = useWallet();
@@ -36,6 +42,7 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
    * verdad está en `HireDialog`, que lo relee de la cadena antes de firmar.
    */
   const sinCanal = canalDe(agent) === 'ninguno';
+  const cierre = cierreDado !== undefined ? cierreDado : cierreDe(agent);
 
   const share = async () => {
     try {
@@ -72,22 +79,24 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
       <button
         type="button"
         onClick={onHire}
-        disabled={sinCanal}
+        disabled={cierre !== null}
         className="btn-monad mt-5 inline-flex w-full px-5 py-3.5 text-[0.9375rem] font-semibold disabled:cursor-not-allowed disabled:opacity-40"
       >
         {t(priceKey('detail.cta.hireNow', agent), { price: formatMon(agent.pricePerTask) })}
       </button>
 
-      {sinCanal ? (
+      {cierre && (
         <p className="mt-2.5 flex items-start gap-2 text-[0.8125rem] leading-[1.5] text-ink-2">
           <PlugZap size={15} className="mt-0.5 shrink-0 text-terra" aria-hidden />
-          {t('detail.sinCanal')}
+          {t(TEXTO_CIERRE[cierre])}
         </p>
-      ) : (
+      )}
+      {!sinCanal && cierre !== 'no-responde' && (
         /* Preguntar antes de encargar. Cuesta céntimos y responde al momento;
            encargar bloquea el pago y da entrega verificable. Lo normal es lo
-           primero y luego, si merece la pena, lo segundo. Sin endpoint no hay
-           ninguna de las dos: el chat se le pide a esa misma URL. */
+           primero y luego, si merece la pena, lo segundo. Sin endpoint —o si
+           no contesta— no hay ninguna de las dos: el chat se le pide a esa
+           misma URL. En pausa sí puede contestar mensajes sueltos. */
         <Link
           to={`/chat/${agent.id}`}
           className="mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
@@ -151,10 +160,11 @@ export default function HireCard({ agent, onHire }: HireCardProps) {
  * Barra fija inferior en móvil (agente.md Notas): h-16, blur, precio + CTA.
  * Visible tras 300px de scroll, slide-up .3s.
  */
-export function MobileHireBar({ agent, onHire }: HireCardProps) {
+export function MobileHireBar({ agent, onHire, cierre: cierreDado }: HireCardProps) {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const sinCanal = canalDe(agent) === 'ninguno';
+  const cierre = cierreDado !== undefined ? cierreDado : cierreDe(agent);
 
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > 300);
@@ -181,7 +191,7 @@ export function MobileHireBar({ agent, onHire }: HireCardProps) {
             {isOnchainAgent(agent) && <Dolares cantidad={agent.priceWei} moneda={currencySymbol(agent.currency)} />}
           </div>
           <div className="flex items-center gap-2">
-            {!sinCanal && (
+            {!sinCanal && cierre !== 'no-responde' && (
               <Link
                 to={`/chat/${agent.id}`}
                 aria-label={t('chat.talkTo', { name: agent.name })}
@@ -193,7 +203,8 @@ export function MobileHireBar({ agent, onHire }: HireCardProps) {
             <button
               type="button"
               onClick={onHire}
-              disabled={sinCanal}
+              disabled={cierre !== null}
+              title={cierre ? t(TEXTO_CIERRE[cierre]) : undefined}
               className="btn-monad inline-flex px-6 py-2.5 text-[0.875rem] font-semibold disabled:cursor-not-allowed disabled:opacity-40"
             >
               {t('common.hire')}

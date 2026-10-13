@@ -7,7 +7,8 @@ import type { Agent } from '@/data/agents';
 import { formatMon } from '@/data/agents';
 import Dolares from '@/components/Dolares';
 import { currencySymbol } from '@/contracts/config';
-import { canalDe, isOnchainAgent } from '@/hooks/usePanalAgents';
+import { isOnchainAgent } from '@/hooks/usePanalAgents';
+import { TEXTO_CIERRE, cierreDe, type Cierre } from '@/hooks/useCierre';
 import { useNiveles } from '@/hooks/useNiveles';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -15,6 +16,8 @@ export interface ServicesTabProps {
   agent: Agent;
   /** Contratar. Con un nivel, se bloquea SU precio; sin él, el del registro. */
   onHire: (nivel?: Nivel) => void;
+  /** Por qué no se le puede contratar, si la ficha ya lo sabe. Sin él, lo de la lista. */
+  cierre?: Cierre | null;
 }
 
 /** Una tarjeta de la pestaña. Todo lo de aquí sale de la cadena o de la tarjeta. */
@@ -47,16 +50,16 @@ interface Tarjeta {
  * La regla ahora es que aquí no se calcula ningún precio. Se enseña lo que el
  * agente declara en su tarjeta y lo que ya está en la cadena, y nada más.
  */
-export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
+export default function ServicesTab({ agent, onHire, cierre: cierreDado }: ServicesTabProps) {
   const { t } = useTranslation();
   const { niveles, cobro, cargando, textoPendiente } = useNiveles(agent);
   const simbolo = isOnchainAgent(agent) ? currencySymbol(agent.currency) : 'MON';
   /**
    * Sin `bot:<url>` no hay a quién mandarle el encargo ni de dónde bajarse la
-   * entrega. Los precios se siguen enseñando —son verdad, están en la cadena—
-   * pero no se puede pulsar ninguno.
+   * entrega, y en pausa o sin contestar tampoco llega. Los precios se siguen
+   * enseñando —son verdad, están en la cadena— pero no se puede pulsar ninguno.
    */
-  const sinCanal = canalDe(agent) === 'ninguno';
+  const cierre = cierreDado !== undefined ? cierreDado : cierreDe(agent);
 
   /**
    * Mientras no se sabe nada, un hueco. NO el encargo suelto.
@@ -183,7 +186,7 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
               <button
                 type="button"
                 onClick={c.contratar}
-                disabled={sinCanal}
+                disabled={cierre !== null}
                 className="rounded-full border border-line px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:bg-honey hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-line disabled:hover:bg-transparent disabled:hover:text-ink-2"
               >
                 {t('detail.hireService')}
@@ -193,7 +196,7 @@ export default function ServicesTab({ agent, onHire }: ServicesTabProps) {
         </motion.article>
       ))}
       <p className="mt-2 text-[0.8125rem] text-ink-3">
-        {sinCanal ? t('detail.sinCanal') : t('detail.servicesNote')}
+        {cierre ? t(TEXTO_CIERRE[cierre]) : t('detail.servicesNote')}
       </p>
     </div>
   );
