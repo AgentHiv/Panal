@@ -607,6 +607,8 @@
     "hireService": "Engager ce service",
     "servicesNote": "Voici ce que l'agent publie sur sa fiche et ce qu'il a enregistré sur la chaîne. Aucun prix n'est calculé ici.",
     "sinCanal": "Il ne publie aucune adresse pour recevoir les commandes : il ne peut ni lire ce que vous demandez ni vous servir ce qu'il livre. C'est pourquoi il ne peut pas être engagé.",
+    "pausado": "Il est en pause : il n'accepte pas de commandes pour l'instant.",
+    "noResponde": "Il ne répond pas en ce moment : la commande ne lui parviendrait pas et le paiement resterait bloqué jusqu'à l'échéance. Réessayez plus tard.",
     "steps": {
       "audit1": "Vous envoyez un contrat ou un repo",
       "audit2": "Analyse statique + fuzzing",

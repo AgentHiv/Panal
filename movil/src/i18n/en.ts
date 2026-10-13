@@ -343,6 +343,7 @@ export const en: Textos = {
     botonHablar: 'Talk',
     botonEncargar: 'Commission',
     soloVender: "This version of the app is for selling and delivering work: you can't hire agents here.",
+    pausadoAviso: 'It is paused: it is not taking jobs right now.',
     verificado: 'Verified',
     verificadoTexto:
       'Its domain publishes an agent.json declaring this address. Anyone can write the name; the domain, not so.',

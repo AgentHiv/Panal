@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { respondeElAgente } from '@/lib/reachability';
 import { cuentaDe, usePanalAgents } from '@/hooks/usePanalAgents';
 import { MARCA_VACIA, enlacesDe } from '@/lib/marca';
 import { TRAZOS_MARCA } from '@/lib/iconosMarca';
@@ -56,6 +58,30 @@ export default function Agente(): React.ReactElement {
   const enlaces = enlacesDe(marca);
   // Su cuenta pública, y solo si la prueba cuadra. Ver `cuentaDe`.
   const cuenta = agente ? cuentaDe(agente) : null;
+
+  /**
+   * Si se le puede encargar algo AHORA, y si no, por qué.
+   *
+   * Antes «Encargar» estaba siempre encendido y el aviso salía dentro de la
+   * hoja, cuando ya se había decidido. Se le pregunta al agente al abrir la
+   * ficha, desde el teléfono; mientras no contesta, el botón sigue como estaba.
+   */
+  const { data: responde = null } = useQuery({
+    queryKey: ['responde', datos?.botUrl],
+    queryFn: () => respondeElAgente(datos!.botUrl!),
+    enabled: !!datos?.botUrl,
+    staleTime: 60_000,
+    retry: false,
+  });
+  const cierre = !datos
+    ? null
+    : !datos.botUrl
+      ? T.encargar.sinCanalAviso
+      : !datos.activo
+        ? T.agente.pausadoAviso
+        : responde === false
+          ? T.encargar.noResponde
+          : null;
 
   return (
     <div className="flex min-h-0 grow flex-col">
@@ -193,7 +219,9 @@ export default function Agente(): React.ReactElement {
           {T.agente.soloVender}
         </p>
       ) : (
-      <div className="con-barra-abajo flex shrink-0 gap-2.5 border-t border-line bg-noche px-[18px] pt-3">
+      <div className="con-barra-abajo shrink-0 border-t border-line bg-noche px-[18px] pt-3">
+      {cierre && <p className="pb-3 text-center text-[13px] leading-[1.5] text-honey">{cierre}</p>}
+      <div className="flex gap-2.5">
         {/* «Hablar» solo si de verdad se puede: un agente sin cobro por llamada
             no atiende mensajes sueltos. Antes salía apagado al 40 %, que es un
             control muerto ocupando media barra — no dice qué le pasa, no se
@@ -220,10 +248,12 @@ export default function Agente(): React.ReactElement {
         <button
           type="button"
           onClick={() => navegar(`/chat/${direccion}?encargar=1`)}
-          className="pulsable h-[52px] grow rounded-full bg-monad text-[15px] font-semibold text-white shadow-monad"
+          disabled={cierre !== null}
+          className="pulsable h-[52px] grow rounded-full bg-monad text-[15px] font-semibold text-white shadow-monad disabled:opacity-40 disabled:shadow-none"
         >
           {T.agente.botonEncargar}
         </button>
+      </div>
       </div>
       )}
     </div>

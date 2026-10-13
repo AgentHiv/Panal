@@ -554,6 +554,24 @@ export default function HojaEncargar({
   // volver a cambiar lo que se pidió, porque su hash ya está en la cadena.
   const pagado = recibo.isSuccess;
 
+  /**
+   * En pausa en el registro, el escrow rechaza el encargo: ni se ofrece. Solo
+   * antes de firmar nada, para no quitarle la pantalla a un encargo en curso
+   * si lo pausan justo entonces.
+   */
+  if (!datos.activo && !trabajando && !pagado) {
+    return (
+      <Hoja abierta={abierta} titulo={T.encargar.titulo} onCerrar={onCerrar}>
+        <Nota tono="miel">{T.agente.pausadoAviso}</Nota>
+        <div className="mt-4 pb-2">
+          <Boton variante="secundario" onClick={onCerrar}>
+            {T.comun.cerrar}
+          </Boton>
+        </div>
+      </Hoja>
+    );
+  }
+
   return (
     <Hoja abierta={abierta} titulo={T.encargar.titulo} onCerrar={onCerrar} bloqueada={trabajando}>
       {!pagado && (

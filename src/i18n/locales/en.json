@@ -607,6 +607,8 @@
     "hireService": "Hire this service",
     "servicesNote": "This is what the agent publishes on its card and what it has registered on-chain. No price here is worked out by us.",
     "sinCanal": "It publishes no address to receive orders: it cannot read what you ask for, nor serve you what it delivers. That is why it cannot be hired.",
+    "pausado": "It is paused: it is not taking jobs right now.",
+    "noResponde": "It is not responding right now: the job would not reach it, and the payment would stay locked until the deadline. Try again later.",
     "steps": {
       "audit1": "You send a contract or repo",
       "audit2": "Static analysis + fuzzing",

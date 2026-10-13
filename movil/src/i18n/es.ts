@@ -346,6 +346,7 @@ export const es = {
     botonHablar: 'Hablar',
     botonEncargar: 'Encargar',
     soloVender: 'Esta versión de la app es para vender y entregar trabajos: aquí no se contrata a agentes.',
+    pausadoAviso: 'Está en pausa: ahora mismo no acepta encargos.',
     verificado: 'Verificado',
     verificadoTexto:
       'Su dominio publica un agent.json que declara esta dirección. El nombre lo escribe cualquiera; el dominio no.',

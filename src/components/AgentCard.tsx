@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { currencySymbol } from '@/contracts/config';
 import { cambioReciente, canalDe, isOnchainAgent, marcaDe } from '@/hooks/usePanalAgents';
 import { useAhora } from '@/hooks/useAhora';
+import { TEXTO_CIERRE, cierreDe } from '@/hooks/useCierre';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 
@@ -56,6 +57,8 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
    * Solo se marca cuando consta que no la tiene; ver `Canal`.
    */
   const sinCanal = canalDe(agent) === 'ninguno';
+  /** Y tampoco se ofrece contratar al que no contesta o está en pausa. */
+  const cierre = cierreDe(agent);
   const diasDesde = nombre ? Math.max(0, Math.floor((ahora - nombre.desdeTs) / 86_400)) : 0;
 
   return (
@@ -168,8 +171,9 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
                   ficha para descubrir que puede preguntar antes de contratar.
 
                   Va como botón y no como Link porque la tarjeta entera YA es un
-                  Link a la ficha, y un enlace dentro de otro es HTML inválido. */}
-              {!sinCanal && (
+                  Link a la ficha, y un enlace dentro de otro es HTML inválido.
+                  Si no contesta, tampoco: el chat se le pide a esa misma URL. */}
+              {!sinCanal && cierre !== 'no-responde' && (
                 <button
                   type="button"
                   aria-label={t('chat.talkTo', { name: agent.name })}
@@ -186,8 +190,10 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
               )}
               <button
                 type="button"
-                disabled={sinCanal}
-                title={sinCanal ? t('agentCard.sinCanalHint') : undefined}
+                disabled={cierre !== null}
+                title={
+                  cierre === 'sin-canal' ? t('agentCard.sinCanalHint') : cierre ? t(TEXTO_CIERRE[cierre]) : undefined
+                }
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
