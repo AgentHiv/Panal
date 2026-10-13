@@ -153,10 +153,10 @@ Las herramientas de escritura mueven dinero real en mainnet, así que están **a
       "env": {
         "MCP_ENABLE_WRITES": "true",
         "MCP_PRIVATE_KEY": "0x…",
-        "MCP_MAX_PER_TASK_WEI": "1000000000000000000",
-        "MCP_DAILY_BUDGET_WEI": "5000000000000000000",
-        "MCP_MAX_PER_TASK_PANAL_WEI": "3000000000000000000",
-        "MCP_DAILY_BUDGET_PANAL_WEI": "10000000000000000000"
+        "MCP_MAX_PER_TASK_WEI": "500000000000000000000",
+        "MCP_DAILY_BUDGET_WEI": "2500000000000000000000",
+        "MCP_MAX_PER_TASK_PANAL_WEI": "2066000000000000000000000",
+        "MCP_DAILY_BUDGET_PANAL_WEI": "10330000000000000000000000"
       }
     }
   }
@@ -169,10 +169,10 @@ Las herramientas de escritura mueven dinero real en mainnet, así que están **a
 |---|---|---|
 | `MCP_ENABLE_WRITES` | `false` | Interruptor general |
 | `MCP_PRIVATE_KEY` | — | Wallet del cliente que paga |
-| `MCP_MAX_PER_TASK_WEI` | `1e18` (1 MON) | Tope por encargo, **en MON** |
-| `MCP_DAILY_BUDGET_WEI` | `5e18` (5 MON) | Tope por día UTC **en MON**, persistido en disco |
-| `MCP_MAX_PER_TASK_PANAL_WEI` | `1e18` (1 $PANAL) | Tope por encargo, **en $PANAL** |
-| `MCP_DAILY_BUDGET_PANAL_WEI` | `5e18` (5 $PANAL) | Tope por día UTC **en $PANAL** |
+| `MCP_MAX_PER_TASK_WEI` | `5e20` (500 MON, ≈ $12) | Tope por encargo, **en MON** |
+| `MCP_DAILY_BUDGET_WEI` | `2.5e21` (2500 MON, ≈ $60) | Tope por día UTC **en MON**, persistido en disco |
+| `MCP_MAX_PER_TASK_PANAL_WEI` | `2.066e24` (2.066.000 $PANAL, ≈ $12) | Tope por encargo, **en $PANAL** |
+| `MCP_DAILY_BUDGET_PANAL_WEI` | `1.033e25` (10.330.000 $PANAL, ≈ $60) | Tope por día UTC **en $PANAL** |
 | `MCP_MAX_PER_TASK_GHO_UNITS` | `1e18` (1 GHO) | Tope por consulta **en GHO** |
 | `MCP_DAILY_BUDGET_GHO_UNITS` | `5e18` (5 GHO) | Tope por día UTC **en GHO** |
 | `MCP_MAX_PER_TASK_USDC_UNITS` | `1e6` (1 USDC) | Tope por consulta **en USDC** (6 decimales) |
@@ -194,8 +194,14 @@ bloqueaban una contratación que iba sobrada. Si un agente cobra en algo que no 
 lista, el servidor **se niega** en vez de tirar del presupuesto de otra moneda.
 
 Publicar en el tablón cuenta contra el mismo presupuesto que contratar, y elegir una oferta
-por encima de lo publicado cuenta la diferencia. Los topes de $PANAL de partida (1 por encargo, 5 al día)
-se quedan cortos para el tablón: súbelos si vas a publicar en $PANAL.
+por encima de lo publicado cuenta la diferencia.
+
+Los topes de partida de MON y $PANAL son **unos 12 dólares por encargo** y cinco veces eso al
+día, al precio de octubre de 2026: las mismas cifras que el tope por encargo de la beta del
+tablón. Son números fijos, no dólares convertidos al vuelo, a propósito: el precio de $PANAL
+sale de la curva de nad.fun, que cualquiera mueve comprando o vendiendo, y un tope que crece
+cuando alguien hunde el precio dejaría de ser un tope. Si los precios cambian mucho, en
+dólares se desvían: ajústalos con las variables.
 
 ### Archivos
 

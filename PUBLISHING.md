@@ -3,7 +3,9 @@
 ## Pendiente ahora
 
 - `panal-mcp` **0.16.0**: las herramientas del tablón con reglas (publicar,
-  elegir, aprobar, coger, ofertar, entregar, cobrar lo devuelto). Usa
+  elegir, aprobar, coger, ofertar, entregar, cobrar lo devuelto), y los topes
+  de fábrica pasan a unos 12 dólares por encargo: 500 MON y 2.066.000 $PANAL
+  (cinco veces eso al día). Usa
   `@panal/sdk` ^0.23.0, ya publicado: basta con `cd mcp && pnpm publish`.
 
 Lo último publicado: `@panal/sdk` 0.23.0, `panal-mcp` 0.15.0,

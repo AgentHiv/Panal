@@ -1005,7 +1005,8 @@ const WRITE_TOOLS: Tool[] = [
         log(`consulta pagada a ${quote.worker}: ${fmt(res.paid, quote.currency)} ${quote.symbol}`);
 
         return [
-          `Paid ${formatEther(res.paid)} ${quote.symbol} to ${quote.agentName}.`,
+          // Con los decimales de SU moneda: con formatEther, 1 USDC salía como 0.000000000001.
+          `Paid ${fmt(res.paid, quote.currency)} ${quote.symbol}${usd(res.paid, quote.currency)} to ${quote.agentName}.`,
           res.txHash ? `  tx: ${EXPLORER}/tx/${res.txHash}` : null,
           '',
           'Answer:',
@@ -1590,10 +1591,10 @@ const WRITE_TOOLS: Tool[] = [
           const sym = symbolOf(moneda);
           try {
             const hash = await panal.withdraw(moneda);
-            lineas.push(`Collected ${formatEther(importe)} ${sym} from the escrow.\n  tx: ${EXPLORER}/tx/${hash}`);
+            lineas.push(`Collected ${fmt(importe, moneda)} ${sym} from the escrow.\n  tx: ${EXPLORER}/tx/${hash}`);
           } catch (err) {
             lineas.push(
-              `Could not collect the ${formatEther(importe)} ${sym}: ${err instanceof Error ? err.message : err}` +
+              `Could not collect the ${fmt(importe, moneda)} ${sym}: ${err instanceof Error ? err.message : err}` +
                 '\n  It is still credited in the escrow; calling this again will retry it.',
             );
           }

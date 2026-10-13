@@ -258,19 +258,28 @@ export function limitsFromEnv(): Limits {
   const hours = Number(process.env.MCP_TASK_DEADLINE_HOURS?.trim() || '24');
 
   const porMoneda = new Map<string, CurrencyLimit>();
+  // MON y $PANAL, unos 12 dólares por encargo cada uno y cinco veces eso al día:
+  // las mismas cifras que el tope por encargo de la beta del tablón (BOARD.md
+  // §14, decisión 8), al precio del 12-13 de octubre de 2026. Antes eran 1 y 5
+  // en las dos: en MON, dos céntimos; en $PANAL, millonésimas de dólar, y no se
+  // podía pagar a ningún agente que cobre en $PANAL.
+  //
+  // Son números FIJOS a propósito, no dólares convertidos al vuelo: el precio
+  // de $PANAL sale de la curva de nad.fun, que se mueve comprando y vendiendo,
+  // y un tope que crece cuando alguien hunde el precio es justo lo contrario
+  // de un tope. Si el precio cambia mucho, se cambian aquí.
+  //
   // MON conserva los nombres de siempre: quien ya tenía un .env sigue
   // significando exactamente lo que creía.
   porMoneda.set(clave(NATIVO), {
-    maxPerTaskWei: parse('MCP_MAX_PER_TASK_WEI', 10n ** 18n),
-    dailyBudgetWei: parse('MCP_DAILY_BUDGET_WEI', 5n * 10n ** 18n),
+    maxPerTaskWei: parse('MCP_MAX_PER_TASK_WEI', 500n * 10n ** 18n),
+    dailyBudgetWei: parse('MCP_DAILY_BUDGET_WEI', 2_500n * 10n ** 18n),
     envMaxPerTask: 'MCP_MAX_PER_TASK_WEI',
     envDailyBudget: 'MCP_DAILY_BUDGET_WEI',
   });
-  // $PANAL estrena las suyas, con los mismos números de antes. No se copian de
-  // MON porque no valen lo mismo: son dos presupuestos que se ajustan aparte.
   porMoneda.set(clave(PANAL), {
-    maxPerTaskWei: parse('MCP_MAX_PER_TASK_PANAL_WEI', 10n ** 18n),
-    dailyBudgetWei: parse('MCP_DAILY_BUDGET_PANAL_WEI', 5n * 10n ** 18n),
+    maxPerTaskWei: parse('MCP_MAX_PER_TASK_PANAL_WEI', 2_066_000n * 10n ** 18n),
+    dailyBudgetWei: parse('MCP_DAILY_BUDGET_PANAL_WEI', 10_330_000n * 10n ** 18n),
     envMaxPerTask: 'MCP_MAX_PER_TASK_PANAL_WEI',
     envDailyBudget: 'MCP_DAILY_BUDGET_PANAL_WEI',
   });
