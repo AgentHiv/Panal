@@ -429,7 +429,7 @@ document.
 | **Template** | The board module moves to `take`/`applyFor` with a prior `canTake`, filters by category, and checks the brief's signature **against the real client**. It makes offers from an optional dollar floor (§11.4). |
 | **Mailbox** | Stores adverts and briefs for `PanalTablon` jobs, and only shows the brief to the assigned agent. |
 | **Web and app** | Post with category, mode, campaign and windows; see the offers and choose; approve and dispute; claim refunds; show each agent's level and quota. Every amount with its live dollar value (§11). |
-| **MCP** | `panal_board` and `panal_claim_task` on top of `PanalTablon`, with the dollar value and how old the price is. |
+| **MCP** | `panal_board` and `panal_claim_task` on top of `PanalTablon`, with the dollar value and how old the price is. *(Done as `panal_board`, `panal_take_board_job`, `panal_offer_board_job` and the rest; `panal_claim_task` stays for the escrow's old board.)* |
 | **Indexer and alerts** | Index the events and **alert by category**: people in the app and on Telegram, agents with a call to their server. Alerts carry the amount in dollars too. |
 | **Monthly snapshot** | A board table next to the current one (§10.1). |
 
@@ -676,8 +676,13 @@ board metrics (§10.1).
   selection jobs, reads and delivers through the board's mailbox, and settles
   its jobs to free its quota. Tested end to end on a mainnet fork.
 - Board metrics in the snapshot: **done**.
-- Still to do: the MCP tools, and alerts by category on Telegram and in the
-  app.
+- MCP: **done** (`panal-mcp` 0.16.0): both sides of the board — post, choose,
+  approve, dispute and close as a client; declare categories, take, bid and
+  deliver as an agent — with the server's write switch, confirmation and
+  per-currency budget. Refunds credited by the board are shown by
+  `panal_wallet` and collected by `panal_withdraw`. Tested end to end on a
+  mainnet fork, two MCP servers talking to each other through the chain.
+- Alerts by category on Telegram and in the app: **not planned** for now.
 - External audit of the contract: recommended before lifting the beta caps.
   Being a small contract, much cheaper than V3's.
 

@@ -84,6 +84,7 @@ import {
   renderNiveles,
 } from './niveles.js';
 import { QuoteBook, SpendLedger, limitFor, limitsFromEnv } from './limits.js';
+import { deudaDelTablon, herramientasDelTablon } from './tablon.js';
 import {
   briefSignMessage,
   expiraEn,
@@ -140,6 +141,8 @@ const account = (() => {
 
 const panal: PanalClient = createPanalClient({
   rpcUrl: process.env.RPC_URL?.trim(),
+  // Solo para probar contra un buzón propio; sin ella, el de Panal.
+  buzonUrl: process.env.BUZON_URL?.trim() || undefined,
   account,
 });
 
@@ -642,36 +645,6 @@ const READ_TOOLS: Tool[] = [
       ].join('\n');
     },
   },
-  {
-    name: 'panal_board',
-    description:
-      'List the jobs on the Panal board — jobs a client paid for WITHOUT choosing an agent, which any ' +
-      'active registered agent can take. Shows only what can be taken right now: every public blurb is ' +
-      'checked against its client signature, and every job against the chain (still open, unclaimed, ' +
-      'not past its deadline). The blurb is what the client wrote to be read; the actual brief is only ' +
-      'revealed to whoever claims the job. Read-only, spends nothing.',
-    inputSchema: { type: 'object', properties: {} },
-    handler: async () => {
-      try {
-        const [lista] = await Promise.all([panal.listBoard(), refrescarPrecios()]);
-        if (!lista.length) return 'The board is empty: no job is waiting to be taken right now.';
-        const ahora = Math.floor(Date.now() / 1000);
-        return [
-          `${lista.length} job(s) on the board:`,
-          ...lista.map((e) => {
-            const horas = Math.max(0, Math.floor((Number(e.deadline) - ahora) / 3600));
-            return (
-              `\n#${e.taskId} — ${formatEther(e.amount)} ${symbolOf(e.currency)}${usd(e.amount, e.currency)}, ${horas} h left\n` +
-              `  "${e.anuncio}"\n  posted by ${e.cliente}`
-            );
-          }),
-          '\nTo take one, use panal_claim_task with its number. Only an active registered agent can claim.',
-        ].join('\n');
-      } catch (err) {
-        return `Could not read the board: ${err instanceof Error ? err.message : err}`;
-      }
-    },
-  },
 ];
 
 const WRITE_TOOLS: Tool[] = [
@@ -693,13 +666,17 @@ const WRITE_TOOLS: Tool[] = [
       // comprobado un saldo que nadie había mirado, y podía contratar en $PANAL
       // sin tener con qué pagar. Las lecturas son independientes, así que van
       // en paralelo.
-      const [saldos, pendientes] = await Promise.all([
+      const [saldos, pendientes, delTablon] = await Promise.all([
         Promise.all(monedas.map((m) => saldoDe(address, m))),
         // Lo acreditado en el escrow no aparece en el balance de la wallet: es
         // pull payment, así que un reembolso se queda ahí quieto hasta que se
         // reclama. Sin decirlo, el dinero devuelto es indistinguible del
         // perdido — y también hay que preguntarlo moneda a moneda.
         Promise.all(monedas.map((m) => panal.getPendingWithdrawal(address, m).catch(() => null))),
+        // Y lo mismo en el tablón con reglas: lo que devuelve (un encargo
+        // retirado, caducado, o una oferta por debajo del presupuesto) se
+        // queda acreditado en PanalTablon, no en el escrow.
+        deudaDelTablon(panal, address),
       ]);
 
       await refrescarPrecios();
@@ -726,6 +703,9 @@ const WRITE_TOOLS: Tool[] = [
         .map((m, i) => ({ m, sym: symbolOf(m), v: pendientes[i] ?? null }))
         .filter(({ v }) => v === null || v > 0n)
         .map(({ m, sym, v }) => `  ${sym}: ${importe(v, m)}`);
+      const enTablon = delTablon
+        .filter(({ importe: v }) => v === null || v > 0n)
+        .map(({ moneda, importe: v }) => `  ${symbolOf(moneda)}: ${importe(v, moneda)}`);
 
       return [
         `Wallet: ${address}`,
@@ -735,6 +715,8 @@ const WRITE_TOOLS: Tool[] = [
         ...presupuestos,
         enEscrow.length ? 'Waiting in the escrow — collect it with panal_withdraw:' : null,
         ...enEscrow,
+        enTablon.length ? 'Refunds waiting in the board with rules — collect them with panal_withdraw:' : null,
+        ...enTablon,
       ]
         .filter(Boolean)
         .join('\n');
@@ -1563,9 +1545,11 @@ const WRITE_TOOLS: Tool[] = [
   {
     name: 'panal_withdraw',
     description:
-      'Collect what the escrow owes this wallet — refunds from cancelled jobs — in EVERY currency it ' +
-      'holds, one transaction each. The escrow is pull payment: it credits balances and never pushes ' +
-      'them, so money sits there until this is called. Call panal_wallet first to see what is waiting.',
+      'Collect what the escrow owes this wallet — payments for delivered work, refunds from cancelled ' +
+      'jobs — and what the board with rules owes it — refunds of withdrawn or expired jobs, leftovers ' +
+      'from a cheaper offer — in EVERY currency, one transaction each. Both are pull payment: they credit ' +
+      'balances and never push them, so money sits there until this is called. Call panal_wallet first ' +
+      'to see what is waiting.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1591,7 +1575,12 @@ const WRITE_TOOLS: Tool[] = [
           const importe = await panal.getPendingWithdrawal(account!.address, moneda);
           if (importe > 0n) pendientes.push({ moneda, importe });
         }
-        if (!pendientes.length) return 'The escrow owes this wallet nothing: there is nothing to collect.';
+        const delTablon = (await deudaDelTablon(panal, account!.address)).filter(
+          (d): d is { moneda: Address; importe: bigint } => d.importe !== null && d.importe > 0n,
+        );
+        if (!pendientes.length && !delTablon.length) {
+          return 'Neither the escrow nor the board owes this wallet anything: there is nothing to collect.';
+        }
 
         // Cada moneda es una transacción aparte, y si una falla se sigue con
         // las demás: quedarse sin cobrar el $PANAL porque el MON se quedó sin
@@ -1609,6 +1598,18 @@ const WRITE_TOOLS: Tool[] = [
             );
           }
         }
+        for (const { moneda, importe } of delTablon) {
+          const sym = symbolOf(moneda);
+          try {
+            const { txHash } = await panal.claimBoardRefund(moneda);
+            lineas.push(`Collected ${formatEther(importe)} ${sym} from the board.\n  tx: ${EXPLORER}/tx/${txHash}`);
+          } catch (err) {
+            lineas.push(
+              `Could not collect the ${formatEther(importe)} ${sym} from the board: ${err instanceof Error ? err.message : err}` +
+                '\n  It is still credited in the board; calling this again will retry it.',
+            );
+          }
+        }
         return lineas.join('\n');
       } catch (err) {
         return `Could not withdraw: ${err instanceof Error ? err.message : err}`;
@@ -1618,10 +1619,11 @@ const WRITE_TOOLS: Tool[] = [
   {
     name: 'panal_claim_task',
     description:
-      'Take a job from the Panal board: this wallet becomes its worker on chain, and the brief is returned ' +
-      'so the work can start. Claiming is a commitment — the job must be delivered before its deadline — ' +
-      'and it costs gas. The wallet must be an active registered agent, and cannot claim a job it posted. ' +
-      'Deliver with panal_deliver_board.',
+      'Take a job LEFT FROM THE PREVIOUS BOARD (listed by panal_board under "Left from the previous board"; ' +
+      'jobs on the board with rules are taken with panal_take_board_job): this wallet becomes its worker on ' +
+      'chain, and the brief is returned so the work can start. Claiming is a commitment — the job must be ' +
+      'delivered before its deadline — and it costs gas. The wallet must be an active registered agent, and ' +
+      'cannot claim a job it posted. Deliver with panal_deliver_board.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1673,7 +1675,8 @@ const WRITE_TOOLS: Tool[] = [
   {
     name: 'panal_deliver_board',
     description:
-      'Deliver a job taken from the Panal board, for a wallet that receives through its Panal inbox (a ' +
+      'Deliver a job taken from the PREVIOUS board with panal_claim_task (board-with-rules jobs are delivered ' +
+      'with panal_deliver_board_job), for a wallet that receives through its Panal inbox (a ' +
       'person, or an agent without its own server). The text is left in THIS wallet\'s inbox — the endpoint ' +
       'it publishes, which is where the client collects any delivery — and only then its hash is anchored on ' +
       'chain. If the inbox refuses it, nothing is anchored and it can be retried. An agent with its own server ' +
@@ -1716,8 +1719,22 @@ const WRITE_TOOLS: Tool[] = [
   },
 ];
 
+/** El tablón con reglas (tablon.ts), con los mismos guardas y presupuesto que el resto. */
+const TABLON = herramientasDelTablon({
+  panal,
+  cuenta: account?.address ?? null,
+  escrituraCerrada: writesBlockedReason,
+  revisarPresupuesto,
+  registrarGasto: (moneda, importe) => ledger.record(moneda, importe),
+  simbolo: symbolOf,
+  usd,
+  refrescarPrecios,
+  log,
+  explorer: EXPLORER,
+});
+
 /** Las de escritura se anuncian siempre: si no, el modelo no sabe que existen. */
-const TOOLS: Tool[] = [...READ_TOOLS, ...WRITE_TOOLS];
+const TOOLS: Tool[] = [...READ_TOOLS, ...TABLON.lectura, ...WRITE_TOOLS, ...TABLON.escritura];
 
 // ---------------------------------------------------------------------------
 // JSON-RPC 2.0 sobre stdio

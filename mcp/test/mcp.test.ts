@@ -139,7 +139,7 @@ async function main(): Promise<void> {
 
     const list = await mcp.request('tools/list');
     const names: string[] = (list?.tools ?? []).map((t: { name: string }) => t.name);
-    check('las 19 herramientas se anuncian', names.length === 19, names.join(', '));
+    check('las 31 herramientas se anuncian', names.length === 31, names.join(', '));
     for (const expected of [
       'panal_search_agents',
       'panal_get_agent',
@@ -163,10 +163,25 @@ async function main(): Promise<void> {
       'panal_open_dispute',
       'panal_withdraw',
       // El tablón: encargos sin dueño que coge un agente sin que nadie haga
-      // clic. Estaba en el contrato y en la web, pero no aquí.
+      // clic. Estaba en el contrato y en la web, pero no aquí. claim_task y
+      // deliver_board quedan para lo que sobra del tablón anterior.
       'panal_board',
       'panal_claim_task',
       'panal_deliver_board',
+      // El tablón con reglas (PanalTablon): los dos lados, quien publica y
+      // quien trabaja.
+      'panal_board_job',
+      'panal_board_mine',
+      'panal_post_board_job',
+      'panal_choose_board_offer',
+      'panal_board_result',
+      'panal_approve_board_job',
+      'panal_dispute_board_job',
+      'panal_close_board_job',
+      'panal_set_board_categories',
+      'panal_take_board_job',
+      'panal_offer_board_job',
+      'panal_deliver_board_job',
     ]) {
       check(`  ${expected} presente`, names.includes(expected));
     }
@@ -255,6 +270,34 @@ async function main(): Promise<void> {
     const reenvio = await mcp.callTool('panal_send_brief', { task_id: 0, brief: 'lo que sea' });
     check('reenviar el encargo también está cerrado', reenvio.includes('READ-ONLY'), reenvio.slice(0, 60));
 
+    // El tablón con reglas: mirar funciona sin wallet; todo lo que firma, no.
+    const tablon = await mcp.callTool('panal_board');
+    check(
+      'el tablón se lee en solo lectura',
+      /board with rules|open on the board/.test(tablon) && !tablon.startsWith('Could not'),
+      tablon.split('\n')[0],
+    );
+    const sinCategoria = await mcp.callTool('panal_board', { category: 'cocina' });
+    check('una categoría inventada se dice', sinCategoria.includes('is not a category'), sinCategoria.slice(0, 60));
+    const inexistente = await mcp.callTool('panal_board_job', { job_id: '99999999' });
+    check('un encargo que no existe se dice', inexistente.includes('does not exist'), inexistente.slice(0, 60));
+    const mio = await mcp.callTool('panal_board_mine');
+    check('«lo mío» sin wallet lo dice', mio.includes('no wallet'), mio.slice(0, 60));
+    for (const [herramienta, args] of [
+      ['panal_post_board_job', { advert: 'a', brief: 'b', category: 'texto', amount: '1', confirmed_by_user: true }],
+      ['panal_choose_board_offer', { job_id: '0', agent: '0x' + '1'.repeat(40), confirmed_by_user: true }],
+      ['panal_approve_board_job', { job_id: '0', rating: 5, confirmed_by_user: true }],
+      ['panal_dispute_board_job', { job_id: '0', confirmed_by_user: true }],
+      ['panal_close_board_job', { job_id: '0', confirmed_by_user: true }],
+      ['panal_set_board_categories', { categories: 'texto', confirmed_by_user: true }],
+      ['panal_take_board_job', { job_id: '0', confirmed_by_user: true }],
+      ['panal_offer_board_job', { job_id: '0', price: '1', confirmed_by_user: true }],
+      ['panal_deliver_board_job', { job_id: '0', result: 'hecho', confirmed_by_user: true }],
+    ] as const) {
+      const r = await mcp.callTool(herramienta, args);
+      check(`  ${herramienta} está cerrado`, r.includes('READ-ONLY'), r.slice(0, 60));
+    }
+
     console.log('\n── 6. El informe de la wallet mira TODAS las monedas ──');
     // La regresión que motiva esto: `panal_wallet` leía solo el saldo nativo y
     // debajo listaba los topes de MON y de $PANAL. Quien lo leía daba por
@@ -292,6 +335,16 @@ async function main(): Promise<void> {
       // Cobrar sin que nadie lo haya pedido no se hace, ni con la wallet puesta.
       const sinPermiso = await conWallet.callTool('panal_withdraw', {});
       check('no se retira sin confirmación explícita', sinPermiso.includes('confirmed_by_user'), sinPermiso.slice(0, 60));
+      // Ni publicar en el tablón: el dinero queda bloqueado en cuanto sale.
+      const sinPublicar = await conWallet.callTool('panal_post_board_job', {
+        advert: 'a',
+        brief: 'b',
+        category: 'texto',
+        amount: '1',
+      });
+      check('no se publica sin confirmación explícita', sinPublicar.includes('confirmed_by_user'), sinPublicar.slice(0, 60));
+      const situacion = await conWallet.callTool('panal_board_mine');
+      check('«lo mío» con wallet enseña su nivel', situacion.includes('Level '), situacion.split('\n').slice(0, 3).join(' | '));
     } finally {
       conWallet.stop();
     }
