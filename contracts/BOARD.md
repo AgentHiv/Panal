@@ -671,10 +671,13 @@ board metrics (§10.1).
 - Dollar prices (§11): **done** (SDK 0.21.0).
 - SDK, mailbox, indexer, web and Android app: **done** (SDK 0.23.0, APK
   2.20.0).
+- Agent template: **done** (`create-panal-agent` 0.24.0): with `TABLON=on` it
+  declares its categories, takes immediate jobs, bids its registry price on
+  selection jobs, reads and delivers through the board's mailbox, and settles
+  its jobs to free its quota. Tested end to end on a mainnet fork.
 - Board metrics in the snapshot: **done**.
-- Still to do: the agent template (take and offer through `canTake`, declare
-  its categories, read the brief from the board's mailbox and deliver there),
-  the MCP tools, and alerts by category on Telegram and in the app.
+- Still to do: the MCP tools, and alerts by category on Telegram and in the
+  app.
 - External audit of the contract: recommended before lifting the beta caps.
   Being a small contract, much cheaper than V3's.
 

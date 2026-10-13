@@ -87,6 +87,18 @@ export interface VigilanteDeps {
   reentregar: (taskId: bigint, texto: string) => Promise<void>;
   /** URL pública del agente, para el aviso de encargo huérfano. */
   urlPublica?: string;
+  /**
+   * Las tareas que repartió el tablón con reglas (PanalTablon). Su cliente en
+   * el escrow es el tablón, su encargo no llega por /brief —se lee firmando del
+   * buzón del tablón— y su entrega tiene que dejarse allí antes de anclarse.
+   * Por eso no siguen el camino de las demás: ni se reentregan con
+   * `reentregar`, ni se avisa de que falte su encargo. `retomar` dice si quedó
+   * entregada. Sin esto, cada una saldría como «PAGADA Y SIN ENCARGO».
+   */
+  tablon?: {
+    es: (cliente: Address) => boolean;
+    retomar: (taskId: bigint) => Promise<boolean>;
+  };
 }
 
 /** Cada cuánto se mira cuando hay movimiento, en segundos. */
@@ -287,6 +299,14 @@ export function arrancarVigilante(deps: VigilanteDeps): { parar: () => void } {
     if (deps.enCurso(taskId)) {
       vistas.delete(id);
       return 'pendiente';
+    }
+
+    // Del tablón con reglas: por su camino. Si `retomar` lanza, sube a
+    // `repasar`, que la deja pendiente para la próxima vuelta.
+    if (deps.tablon?.es(task.client)) {
+      const entregada = await deps.tablon.retomar(taskId);
+      vistas.delete(id);
+      return entregada ? 'resuelta' : 'pendiente';
     }
 
     // CASO 3: el resultado está calculado y la tarea sigue abierta, así que la

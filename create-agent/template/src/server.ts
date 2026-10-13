@@ -70,13 +70,14 @@ import {
 import { comoAdjunto } from './salida.js';
 import { privateKeyToAccount } from 'viem/accounts';
 import { isAddress, keccak256, parseEther, parseUnits, toBytes, verifyMessage } from 'viem';
-import type { Address } from 'viem';
+import type { Address, Hex } from 'viem';
+import type { EncargoConReglas } from '@panal/sdk';
 import { handleTask, NIVELES, SUBCONTRATA_SKILLS } from './agent.js';
 import { frasesGuardadas, pedirTraduccion } from './traduccion.js';
 import type { AdjuntoRecibido, NivelPropio, TaskContext, TaskFile, TaskResult } from './agent.js';
 import { arrancarVigilante } from './vigilante.js';
 import { arrancarRetirada, opcionesDelEntorno } from './retirada.js';
-import { arrancarTablon, opcionesDelEntorno as opcionesTablon } from './tablon.js';
+import { arrancarTablon, EncargosPropios, opcionesDelEntorno as opcionesTablon, retomarDelTablon } from './tablon.js';
 import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -220,7 +221,13 @@ if (!key || !/^0x[0-9a-fA-F]{64}$/.test(key)) {
   process.exit(1);
 }
 const account = privateKeyToAccount(key as `0x${string}`);
-const panal = createPanalClient({ account, rpcUrl: process.env.RPC_URL });
+// `BUZON_URL` solo para probar contra un buzón propio (una copia local de la
+// cadena, por ejemplo): el de Panal no conoce los encargos de esa copia.
+const panal = createPanalClient({
+  account,
+  rpcUrl: process.env.RPC_URL,
+  ...(process.env.BUZON_URL?.trim() ? { buzonUrl: process.env.BUZON_URL.trim() } : {}),
+});
 
 console.log(`Agente ${account.address} escuchando en :${PORT}`);
 
@@ -848,10 +855,22 @@ function contexto(
  */
 export type ResultadoTrabajo = 'entregada' | 'esperando' | 'fallo' | 'en-curso';
 
+/**
+ * Un encargo del tablón con reglas no se entrega como los demás: su cliente en
+ * el escrow es PanalTablon, y quien lo publicó lee la entrega del BUZÓN DEL
+ * TABLÓN. `entregar` la deja ahí antes de anclar su hash (ver tablon.ts), y
+ * `cliente` es quien publicó, que es lo que le interesa saber a `handleTask`.
+ */
+interface ComoEntregar {
+  cliente: Address;
+  entregar: (texto: string) => Promise<{ txHash: Hex }>;
+}
+
 async function work(
   taskId: bigint,
   brief: string,
   sobre: CallEnvelope | null,
+  delTablon: ComoEntregar | null = null,
 ): Promise<ResultadoTrabajo> {
   const key = taskId.toString();
   if (inFlight.has(key)) return 'en-curso';
@@ -886,7 +905,7 @@ async function work(
       contexto(
         {
           taskId,
-          client: task.client,
+          client: delTablon?.cliente ?? task.client,
           amount: task.amount,
           deadline: task.deadline,
           adjuntos: recibidos,
@@ -902,14 +921,20 @@ async function work(
     // archivos. Los archivos se escriben en disco y su hash se cuela en el
     // texto: lo que se ancla en la cadena pasa a cubrirlos también.
     const { text: cuerpo, files } = normalizarSalida(salida);
-    const text = files.length ? appendFilesManifest(cuerpo, saveFiles(taskId, files)) : cuerpo;
+    // Por el buzón del tablón solo viaja texto: los archivos se sirven desde
+    // este servidor a quien firme como cliente de la tarea, y ahí el cliente
+    // es PanalTablon. Se dice en vez de entregar un manifiesto que nadie puede abrir.
+    if (delTablon && files.length) {
+      console.warn(`[tablon] #${taskId}: ${files.length} archivo(s) no viajan por el tablón; se entrega solo el texto.`);
+    }
+    const text = files.length && !delTablon ? appendFilesManifest(cuerpo, saveFiles(taskId, files)) : cuerpo;
 
     // Primero se guarda y luego se entrega: si el orden fuera al revés y el
     // proceso muriera entre medias, el hash estaría anclado on-chain y el texto
     // perdido, o sea una entrega imposible de cumplir.
     saveResult(taskId, text);
-    const { txHash } = await panal.deliverResult(taskId, text);
-    console.log(`[panal] #${taskId} entregada · tx ${txHash}`);
+    const { txHash } = delTablon ? await delTablon.entregar(text) : await panal.deliverResult(taskId, text);
+    console.log(`[panal] #${taskId} entregada${delTablon ? ' por el tablón' : ''} · tx ${txHash}`);
     return 'entregada';
   } catch (err) {
     console.error(`[panal] #${taskId} falló: ${err instanceof Error ? err.message : err}`);
@@ -1978,6 +2003,22 @@ const server = createServer((req, res) => {
 
 server.listen(PORT);
 
+// Mientras el tablón coge un encargo la wallet está firmando, aunque `work()`
+// todavía no haya empezado. La retirada tiene que verlo: dos transacciones
+// seguidas de la misma wallet chocan por el nonce.
+let tablonFirmando = false;
+
+// Los encargos del tablón con reglas de este agente, hasta que se cierran sus
+// cuentas. En disco: cerrar puede tocar tres días después de entregar.
+const encargosDelTablon = new EncargosPropios(DATA_DIR);
+
+/** Trabajar un encargo del tablón: el `work()` de siempre, entregando por su buzón. */
+const trabajarDelTablon = async (job: EncargoConReglas, brief: string): Promise<boolean> =>
+  (await work(job.escrowTaskId, brief, null, {
+    cliente: job.cliente,
+    entregar: (texto) => panal.deliverBoardJob(job.id, texto),
+  })) === 'entregada';
+
 // El vigilante. Va DESPUÉS de escuchar: su primer repaso puede tardar unos
 // segundos contra el RPC, y durante ese rato el agente ya tiene que estar
 // atendiendo peticiones normales.
@@ -2003,16 +2044,36 @@ arrancarVigilante({
     console.log(`[vigilante] #${taskId} entregada al segundo intento · tx ${txHash}`);
   },
   urlPublica: process.env.PUBLIC_URL?.trim(),
+  // Las del tablón con reglas: su cliente en el escrow es PanalTablon, y el
+  // encargo y la entrega van por el buzón del tablón. Funciona aunque el tablón
+  // automático esté apagado: si el dueño ofertó a mano desde la web con la
+  // wallet de este agente, el agente trabaja lo que le asignen.
+  tablon: panal.boardJobsAvailable
+    ? {
+        es: (cliente) => cliente.toLowerCase() === panal.addresses.tablon.toLowerCase(),
+        retomar: async (taskId) => {
+          // Mientras la ronda del tablón coge y lee, el encargo es suyo.
+          if (tablonFirmando) return false;
+          return retomarDelTablon(
+            {
+              panal,
+              yo: account.address,
+              propios: encargosDelTablon,
+              briefGuardado: loadBrief,
+              resultadoGuardado: loadResult,
+              trabajar: trabajarDelTablon,
+            },
+            taskId,
+          );
+        },
+      }
+    : undefined,
 });
 
 // La retirada automática: lo que el escrow acredita por cada encargo aprobado
 // se queda en el contrato hasta que alguien llama a `withdraw`, y un agente que
 // corre solo no tiene a nadie que le dé al botón. `RETIRADA=off` la apaga; el
 // porqué de cada umbral está en retirada.ts.
-// Mientras el tablón coge un encargo la wallet está firmando, aunque `work()`
-// todavía no haya empezado. La retirada tiene que verlo: dos transacciones
-// seguidas de la misma wallet chocan por el nonce.
-let tablonFirmando = false;
 
 const retirada = opcionesDelEntorno(process.env);
 if (retirada) {
@@ -2027,9 +2088,9 @@ if (retirada) {
   });
 }
 
-// El tablón: coger solo los encargos publicados sin dueño que encajen con este
-// agente. APAGADO salvo `TABLON=on`: coger es comprometerse a entregar. El
-// porqué de cada regla está en tablon.ts.
+// El tablón con reglas: coger u ofertar solo en los encargos publicados sin
+// dueño que encajen con este agente. APAGADO salvo `TABLON=on`: coger es
+// comprometerse a entregar. El porqué de cada regla está en tablon.ts.
 const tablon = opcionesTablon(process.env);
 if (tablon) {
   void arrancarTablon({
@@ -2040,8 +2101,7 @@ if (tablon) {
     marcar: (ocupada) => {
       tablonFirmando = ocupada;
     },
-    // El mismo camino que un encargo normal: guarda, trabaja, sirve la entrega
-    // desde este servidor —que es donde la busca el cliente— y la ancla.
-    trabajar: (taskId, brief) => work(taskId, brief, null),
+    trabajar: trabajarDelTablon,
+    propios: encargosDelTablon,
   });
 }

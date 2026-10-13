@@ -41,6 +41,7 @@ const OTRO = '0x2222222222222222222222222222222222222222' as const;
 const BRIEF = 'revisa este contrato';
 
 interface TareaFalsa {
+  client: string;
   worker: string;
   status: TaskStatus;
   taskHash: string;
@@ -246,6 +247,50 @@ console.log('\n── Lo que de verdad pasó con la #54: reiniciar ──\n');
   );
   check('el vigilante nuevo VUELVE a mirarla', mirada);
   check('y al entregarla sale de la lista', leerEstado(dir).pendientes.length === 0);
+}
+
+console.log('\n── Las del tablón con reglas, por su camino ──\n');
+{
+  // Su cliente en el escrow es PanalTablon, no hay encargo guardado (llega del
+  // buzón del tablón) y hay un resultado a medias: nada de eso puede llevarla
+  // al camino de las demás.
+  const TABLON = '0x2Cfc6803E269fa9BF728e202736a7bc0547ae149';
+  const dir = nuevoDir();
+  const llamadas: string[] = [];
+  await unaPasada(
+    deps(
+      dir,
+      {
+        briefGuardado: () => null,
+        resultadoGuardado: () => 'a medias',
+        reentregar: async () => {
+          llamadas.push('reentregar');
+        },
+        trabajar: async () => {
+          llamadas.push('trabajar');
+          return true;
+        },
+        tablon: {
+          es: (cliente) => cliente.toLowerCase() === TABLON.toLowerCase(),
+          retomar: async (id) => {
+            llamadas.push(`retomar #${id}`);
+            return true;
+          },
+        },
+      },
+      [tarea({ client: TABLON })],
+    ),
+  );
+  check('la retoma el tablón, y no se reentrega ni se trabaja por el camino normal', llamadas.join() === 'retomar #0', llamadas.join());
+  check('  y, entregada, sale de la lista', leerEstado(dir).pendientes.length === 0);
+}
+{
+  const TABLON = '0x2Cfc6803E269fa9BF728e202736a7bc0547ae149';
+  const dir = nuevoDir();
+  await unaPasada(
+    deps(dir, { briefGuardado: () => null, tablon: { es: () => true, retomar: async () => false } }, [tarea({ client: TABLON })]),
+  );
+  check('si el tablón no la entregó, queda pendiente', leerEstado(dir).pendientes.includes('0'));
 }
 
 console.log('\n── Compatibilidad con el archivo de la versión anterior ──\n');
