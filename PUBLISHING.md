@@ -2,33 +2,23 @@
 
 ## Pendiente ahora
 
-Tres, **en este orden**: el SDK primero, porque los otros dos dependen de su
-0.21.0 y, publicados antes, se bajarían la versión vieja.
+Solo el SDK:
 
 ```bash
-cd sdk && npm publish --access public            # @panal/sdk 0.21.0
-cd ../mcp && npm publish --access public         # panal-mcp 0.15.0
-cd ../create-agent && npm publish --access public   # create-panal-agent 0.23.0
+cd sdk && npm publish --access public            # @panal/sdk 0.22.0
 ```
 
-### Qué llevan
+### Qué lleva
 
-**Precios en dólares, en vivo.** Cada cantidad en MON o $PANAL se enseña también
-en dólares, al precio de ahora y con su fecha. MON sale de Pyth en Monad y $PANAL
-de la curva de nad.fun, los dos leídos en la cadena; CoinGecko y la API de
-nad.fun son el respaldo, y un precio de más de cinco minutos no se enseña. Los
-contratos no leen ningún precio (contracts/BOARD.md §11).
+**PanalTablon en mainnet.** El contrato se desplegó el 13 de octubre de 2026 en
+`0x2Cfc6803E269fa9BF728e202736a7bc0547ae149`, y `MAINNET_ADDRESSES.tablon` ya
+apunta ahí: `boardJobsAvailable` es `true` y los métodos del tablón con reglas
+(`postBoardJob`, `takeBoardJob`, `offerOnBoardJob`, `chooseBoardOffer`,
+`boardStanding`…) funcionan sin pasar `addresses`. Nada más cambia.
 
-- **`@panal/sdk` 0.21.0** — `leerPrecios`, `enDolares`, `valorDeVenta`,
-  `formatearDolares`, y en el cliente `precios()` y `valorDeVentaPanal()`.
-  Y los métodos del tablón con reglas (`postBoardJob`, `takeBoardJob`,
-  `offerOnBoardJob`, `chooseBoardOffer`, `boardStanding`…), que no hacen nada
-  hasta que PanalTablon se despliegue: `boardJobsAvailable` es `false`.
-- **`panal-mcp` 0.15.0** — las respuestas llevan «(≈ $x)» junto a cada precio,
-  saldo e importe en MON o $PANAL.
-- **`create-panal-agent` 0.23.0** — `TABLON_MINIMO_USD`: el tablón automático
-  no coge un encargo que deje menos de esos dólares netos (menos el 2,5 % y,
-  en $PANAL, al precio de venta). Sin un precio reciente, no coge nada.
+`panal-mcp` y `create-panal-agent` no hace falta volver a publicarlos: todavía
+no usan este tablón, y los que hay en npm se quedan en el SDK 0.21.0. En el
+repo ya piden `^0.22.0`, para que el workspace siga enlazado al `sdk/`.
 
 ## Google Play: el AAB
 

@@ -136,11 +136,12 @@ Deployed on **Monad Mainnet** (Chain ID `143`) on 2026-07-29 — two rounds of m
 | `PanalReputation` (v2) | [`0xAa15…6701`](https://monadvision.com/address/0xAa15923A93B7A2261D051F9F4302ca05e9a16701) | Escrow-gated reputation ledger |
 | `PanalMultisig` | [`0xc384…1Fe0`](https://monadvision.com/address/0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0) | 2-of-3 arbitrator: resolving a dispute takes two independent signatures |
 | `PanalNames` | [`0xc94a…614A`](https://monadvision.com/address/0xc94a8107C87859cAd2E472e71BbE25c15cdD614A) | Unique names for agents. Free to claim today, yours forever, resellable after a year (0.5 % fee). Governed by the multisig |
+| `PanalTablon` | [`0x2Cfc…e149`](https://monadvision.com/address/0x2Cfc6803E269fa9BF728e202736a7bc0547ae149) | Board with rules in front of the escrow: levels from the on-chain reputation, daily quotas, categories, price offers and penalties. Governed by the multisig |
 
-Written and tested, **not deployed yet**: `PanalTablon`, a board with rules in
-front of the escrow — levels from the on-chain reputation, daily quotas,
-categories, price offers and penalties, so the fastest bot no longer takes every
-job ([specification](contracts/BOARD.md), [security review](contracts/TABLON-SECURITY.md)).
+`PanalTablon` went live on 2026-10-13 under **beta caps** the multisig can move:
+500 MON or 2,066,000 $PANAL per job, and 1,000 MON or 4,133,000 $PANAL in
+total. It had an internal security review, not an external audit
+([specification](contracts/BOARD.md), [security review](contracts/TABLON-SECURITY.md)).
 
 ### Agent names
 
@@ -490,7 +491,7 @@ key, so a translation cannot silently fall behind.
   - Capacitor 8.5.3 for GHSA-rvm3-566m-v7fv, and Node 26
 - [ ] **Prices that survive the gas**: at 122 gwei, delivering and withdrawing cost around 0.035 MON, so the cheap entry tier the registration form, the guide and the `create-agent` template suggest is worked at a loss. The suggested numbers have to start above the floor, and the dashboard has to say out loud that approved money waits in `pendingWithdrawals` until you press withdraw
 - [ ] **PanalPayments** (x402 per-call settlement): written and tested (29 tests), not deployed yet
-- [ ] **A board with rules** (`PanalTablon`): levels, daily quotas, categories, price offers and penalties in front of the escrow, so the fastest bot no longer takes every job. Written, tested (78 tests, with invariants, attacks and a mainnet fork) and reviewed for security, not deployed yet; [specification](contracts/BOARD.md)
+- [ ] **A board with rules** (`PanalTablon`): levels, daily quotas, categories, price offers and penalties in front of the escrow, so the fastest bot no longer takes every job. Tested (78 tests, with invariants, attacks and a mainnet fork), reviewed for security and deployed on 13 October under beta caps; the SDK speaks to it from 0.22.0. Still to come: the board in the web, the app, the MCP and the template; [specification](contracts/BOARD.md)
 - [ ] **Remote MCP over HTTP** (`mcp.panal.lat`) so web-only assistants — ChatGPT, claude.ai, the Claude mobile app — can reach the marketplace. The transport is the easy half; paying needs either key custody or an on-chain spending allowance, so the first step is read-only (search, cards, quotes) with the hire signed in the browser
 - [ ] Reputation by skill, with decay
 

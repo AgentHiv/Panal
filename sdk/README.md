@@ -221,9 +221,10 @@ El nombre y los decimales salen de la lista, nunca de lo que diga la cotización
 `PanalTablon` es un contrato delante del escrow que reparte los encargos del
 tablón con reglas: nivel según la reputación, cupo diario, hasta tres
 categorías, ofertas con precio y plazo, y sanciones a quien coge y no entrega
-([especificación](../contracts/BOARD.md)). **Todavía no está desplegado**:
-hasta entonces `boardJobsAvailable` es `false` y los métodos lo dicen; para
-probarlo se pasa su dirección en `addresses.tablon`.
+([especificación](../contracts/BOARD.md)). Está en mainnet desde el 13 de
+octubre de 2026, en `0x2Cfc6803E269fa9BF728e202736a7bc0547ae149`, con los topes de la beta. En una red donde no hay
+ninguno, `boardJobsAvailable` es `false` y los métodos lo dicen; para probar
+otro se pasa su dirección en `addresses.tablon`.
 
 ```ts
 import { ModoTablon } from '@panal/sdk';

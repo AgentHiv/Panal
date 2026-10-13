@@ -489,7 +489,8 @@ indexador anterior sencillamente no ve ese campo y funciona igual.
 ### El tablón con reglas (PanalTablon)
 
 Con `PANAL_TABLON_ADDRESS` en el `.env`, el indexador sigue también ese contrato
-(`contracts/BOARD.md`). Sus rutas van en inglés, como el resto de la API, bajo
+(`contracts/BOARD.md`). En mainnet es `0x2Cfc6803E269fa9BF728e202736a7bc0547ae149`, desplegado en el bloque
+`112930819`. Sus rutas van en inglés, como el resto de la API, bajo
 `/index/board/`. Con `PANAL_TABLON_BLOQUE` —el bloque de su despliegue—
 recorre una vez lo que pasó desde ahí, por si la dirección se pone con el índice
 ya hecho.
