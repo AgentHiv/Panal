@@ -1989,7 +1989,8 @@
       "reintentar": "Retry",
       "otro": "Post another",
       "nota": "The money waits in the PanalTablon contract and moves to the escrow when the job is assigned. Panal can read the texts in the mailbox; it cannot change them.",
-      "notaEnlace": "How it works"
+      "notaEnlace": "How it works",
+      "buzonNoListo": "The board's mailbox is not answering right now. Nothing was charged: try again in a while."
     },
     "oferta": {
       "precio": "Your price ({{moneda}})",

@@ -68,6 +68,7 @@ import { leerNivelesDeMetadata } from './niveles.js';
 import {
   currencySymbol,
   getRegistryAgent,
+  esRevert,
   getTablonJob,
   getTask,
   monad,
@@ -1038,7 +1039,9 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       return await deps.fetchJob!(jobId);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('InvalidJob')) {
+      // `getJob` solo revierte por `InvalidJob`: cualquier revert es «no existe»,
+      // se llame como se llame en el ABI que lo decodifique.
+      if (msg.includes('InvalidJob') || esRevert(err)) {
         json(res, 404, { error: 'no such job' });
       } else {
         console.warn(`[buzon] no se pudo leer getJob(${jobId}): ${msg.split('\n')[0]}`);

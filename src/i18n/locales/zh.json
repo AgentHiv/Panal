@@ -1989,7 +1989,8 @@
       "reintentar": "重试",
       "otro": "再发布一个",
       "nota": "资金先存放在 PanalTablon 合约中，分配时转入托管。Panal 能读取信箱里的文字，但无法修改。",
-      "notaEnlace": "运作方式"
+      "notaEnlace": "运作方式",
+      "buzonNoListo": "任务板的信箱暂时没有响应。没有扣任何款：请稍后再试。"
     },
     "oferta": {
       "precio": "你的价格（{{moneda}}）",

@@ -1127,6 +1127,7 @@ export const en: Textos = {
       minimo: (n: string, moneda: string) => `The minimum is ${n} ${moneda}.`,
       topeEncargo: (n: string, moneda: string) => `During the beta, at most ${n} ${moneda} per job.`,
       topeTotal: (n: string, queda: string, moneda: string) => `The beta allows ${n} ${moneda} in total and ${queda} is left.`,
+      buzonNoListo: "The board's mailbox is not answering right now. Nothing was charged: try again in a while.",
       caducaCorta: 'It has to stay open at least as long as the offer time plus the choosing time.',
     },
     trabajo: {

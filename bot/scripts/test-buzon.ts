@@ -25,7 +25,15 @@ import { existsSync, mkdtempSync, readdirSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Hex } from 'viem';
-import { getAddress, keccak256, toBytes, verifyMessage } from 'viem';
+import {
+  ContractFunctionExecutionError,
+  ContractFunctionRevertedError,
+  decodeErrorResult,
+  getAddress,
+  keccak256,
+  toBytes,
+  verifyMessage,
+} from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import {
   briefSignMessage,
@@ -39,7 +47,7 @@ import {
   tablonResultadoSignMessage,
 } from '../src/buzon.js';
 import { BuzonStore } from '../src/buzon-store.js';
-import { NATIVE_CURRENCY, TaskStatus, type RegistryAgent, type Task, type TrabajoTablon } from '../src/chain.js';
+import { NATIVE_CURRENCY, TaskStatus, tablonAbi, type RegistryAgent, type Task, type TrabajoTablon } from '../src/chain.js';
 
 // Cuentas bien conocidas (Anvil/Hardhat), solo para este test.
 const cliente = privateKeyToAccount('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
@@ -151,6 +159,14 @@ async function main(): Promise<void> {
     tablon: TABLON_V2,
     fetchJob: async (jobId) => {
       lecturas.trabajos++;
+      // El #98 revierte como en producción con un ABI que no conoce el error:
+      // un revert de viem con la firma a secas, sin «InvalidJob» en el texto.
+      if (jobId === 98n) {
+        throw new ContractFunctionExecutionError(
+          new ContractFunctionRevertedError({ abi: [], data: '0x71c8f460', functionName: 'getJob' }),
+          { abi: [], args: [jobId], functionName: 'getJob' },
+        );
+      }
       const j = TRABAJOS[jobId.toString()];
       if (!j) throw new Error('execution reverted: InvalidJob()');
       return j;
@@ -594,6 +610,12 @@ async function main(): Promise<void> {
   check('409 ni el de un encargo retirado', v3.status === 409, `status=${v3.status}`);
   const v4 = await postV2('anuncio/99', { anuncio: ANUNCIO_V2 });
   check('404 ni el de un encargo que no existe', v4.status === 404, `status=${v4.status}`);
+  const v4b = await postV2('anuncio/98', { anuncio: ANUNCIO_V2 });
+  check('404 aunque el revert llegue sin nombre, no 502', v4b.status === 404, `status=${v4b.status}`);
+  check(
+    'y el ABI del bot sí le pone nombre: InvalidJob',
+    decodeErrorResult({ abi: tablonAbi, data: '0x71c8f460' }).errorName === 'InvalidJob',
+  );
 
   const v5 = await postV2('brief/0', { brief: 'Un encargo distinto del pagado' });
   check('400 un encargo que no da el taskHash no entra', v5.status === 400, `status=${v5.status}`);

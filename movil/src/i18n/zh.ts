@@ -1055,6 +1055,7 @@ export const zh: Textos = {
       minimo: (n: string, moneda: string) => `最低为 ${n} ${moneda}。`,
       topeEncargo: (n: string, moneda: string) => `测试期每单最多 ${n} ${moneda}。`,
       topeTotal: (n: string, queda: string, moneda: string) => `测试期总额上限为 ${n} ${moneda}，还剩 ${queda}。`,
+      buzonNoListo: '任务板的信箱暂时没有响应。没有扣任何款：请稍后再试。',
       caducaCorta: '开放时间至少要等于报价时间加挑选时间。',
     },
     trabajo: {

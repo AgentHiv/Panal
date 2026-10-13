@@ -1989,7 +1989,8 @@
       "reintentar": "Réessayer",
       "otro": "En publier une autre",
       "nota": "L'argent attend dans le contrat PanalTablon et passe au séquestre lors de l'attribution. Panal peut lire les textes de la boîte ; il ne peut pas les modifier.",
-      "notaEnlace": "Comment ça marche"
+      "notaEnlace": "Comment ça marche",
+      "buzonNoListo": "La boîte du tableau ne répond pas pour le moment. Rien n'a été débité : réessayez dans un moment."
     },
     "oferta": {
       "precio": "Votre prix ({{moneda}})",

@@ -27,7 +27,7 @@ import { NATIVE_CURRENCY, PANAL_TOKEN_ADDRESS, publicClient } from '@/contracts/
 import { useWallet } from '@/hooks/useWallet';
 import { useFirmaDelTablon } from '@/hooks/useFirmaDelTablon';
 import { useReglasDelTablon } from '@/hooks/useTablonReglas';
-import { enTablon, firmarYEsperar, guardarTextos, permitirPanal } from '@/lib/tablonReglas';
+import { buzonAceptaElTablon, enTablon, firmarYEsperar, guardarTextos, permitirPanal } from '@/lib/tablonReglas';
 import { cn } from '@/lib/utils';
 import { Girando } from './comun';
 import { BOTON_LINEA, CAMPO, cantidad, useDuracion } from './util';
@@ -156,6 +156,8 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
       const textoAnuncio = anuncioT;
       const textoEncargo = encargoT;
       try {
+        // Antes de cobrar nada: sin buzón, el encargo quedaría pagado y mudo.
+        if (!(await buzonAceptaElTablon())) throw new Error(t('tablon.pub.buzonNoListo'));
         if (enPanal) {
           setPaso('permiso');
           await permitirPanal(escribir, cuenta, importeWei);

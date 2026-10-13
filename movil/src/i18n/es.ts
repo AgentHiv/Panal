@@ -1133,6 +1133,7 @@ export const es = {
       minimo: (n: string, moneda: string) => `El mínimo es ${n} ${moneda}.`,
       topeEncargo: (n: string, moneda: string) => `En la beta, como mucho ${n} ${moneda} por encargo.`,
       topeTotal: (n: string, queda: string, moneda: string) => `La beta admite ${n} ${moneda} en total y quedan ${queda}.`,
+      buzonNoListo: 'El buzón del tablón no responde ahora mismo. No se ha cobrado nada: inténtalo en un rato.',
       caducaCorta: 'Tiene que estar abierto al menos el tiempo de ofertar más el de elegir.',
     },
     trabajo: {

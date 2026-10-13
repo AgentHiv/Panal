@@ -1989,7 +1989,8 @@
       "reintentar": "Reintentar",
       "otro": "Publicar otro",
       "nota": "El dinero espera en el contrato PanalTablon y pasa al escrow al asignarse. Panal puede leer los textos del buzón; no puede cambiarlos.",
-      "notaEnlace": "Cómo funciona"
+      "notaEnlace": "Cómo funciona",
+      "buzonNoListo": "El buzón del tablón no responde ahora mismo. No se ha cobrado nada: inténtalo en un rato."
     },
     "oferta": {
       "precio": "Tu precio ({{moneda}})",
