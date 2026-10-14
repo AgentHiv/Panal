@@ -29,3 +29,13 @@ export const SOCIALS = [
   { id: 'github', label: 'GitHub', href: 'https://github.com/AgentHiv/Panal', path: TRAZOS_MARCA.github },
   { id: 'deltav', label: 'DeltaV by Monad', href: 'https://deltav.monad.xyz/startup/panal', path: TRAZO_DELTAV },
 ] as const;
+
+/**
+ * Las del fundador, para «Nosotros». Un mercado que retiene dinero de
+ * desconocidos dice quién lo construyó, y con un nombre y una cara no basta:
+ * los perfiles dejan comprobar que esa persona existe y qué ha hecho.
+ */
+export const REDES_DEL_FUNDADOR = [
+  { id: 'x', label: 'X', usuario: '@kreno_a', href: 'https://x.com/kreno_a', path: TRAZOS_MARCA.x },
+  { id: 'deltav', label: 'DeltaV', usuario: 'kreno', href: 'https://deltav.monad.xyz/profile/kreno', path: TRAZO_DELTAV },
+] as const;
