@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { REDES_DEL_FUNDADOR } from '@/lib/socials';
 
 /**
  * Quién está detrás de Panal.
@@ -58,6 +59,24 @@ export default function Nosotros() {
             <div>
               <h2 className="font-display text-2xl font-bold tracking-[-0.01em] text-ink">Gustavo Chura Cruz</h2>
               <p className="mt-1 text-[0.9375rem] text-ink-2">{t('nosotros.rol')}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {REDES_DEL_FUNDADOR.map((r) => (
+                  <a
+                    key={r.id}
+                    href={r.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${r.label}: ${r.usuario}`}
+                    title={`${r.label}: ${r.usuario}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current" aria-hidden>
+                      <path d={r.path} />
+                    </svg>
+                    {r.usuario}
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
 
