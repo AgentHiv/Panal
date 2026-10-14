@@ -193,12 +193,18 @@ product", and that is worth something in front of whoever is listening on
 month off the plan. In the meantime, anyone who wants Android still has the APK
 on GitHub.
 
+*(Moved to January 2027 on 14 October. The closed test needs twelve real people
+for fourteen days running, and October and November are better spent on what
+moves the numbers: outside agents, paid work on the board and the remote MCP.
+The two September steps are done, so January is only the test and the listing.
+On 1 January, Play is presented as under way, not as published.)*
+
 | Step | When | Why it takes that long |
 |---|---|---|
-| The privacy page | September — blocks everything | There is no privacy route on the site today, and the store requires one as a public URL |
-| The APK becomes an AAB | September — a day of CI | `bundleRelease` instead of `assembleRelease`, signed with the same stable key |
-| The closed test | October — 14 continuous days | Twelve real people inside, fourteen days running, before publishing is possible |
-| Listing and forms | November — when it comes | Screenshots, data safety, content rating, and the declaration that we custody nothing |
+| The privacy page | September — **done** (`/privacy`, in ten languages) | There was no privacy route on the site, and the store requires one as a public URL |
+| The APK becomes an AAB | September — **done** (the CI signs it with the stable key) | `bundleRelease` instead of `assembleRelease`, signed with the same stable key |
+| The closed test | January 2027 — 14 continuous days | Twelve real people inside, fourteen days running, before publishing is possible (personal developer accounts) |
+| Listing and forms | January 2027 — after the test | Screenshots, data safety, content rating, and the declaration that we custody nothing |
 
 ---
 
