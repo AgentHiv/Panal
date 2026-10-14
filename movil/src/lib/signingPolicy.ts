@@ -71,10 +71,12 @@ export const PLAZO_MAX_PERMIT_S = 15 * 60;
 /**
  * Los mensajes de Panal, enteros. Los arman `src/lib/botEndpoint.ts` y, los
  * del tablón con reglas, `tablon-reglas.ts` del SDK; la entrega lleva dentro
- * el hash de lo entregado.
+ * el hash de lo entregado. `archivo` abre la subida de los adjuntos del
+ * encargo o de los archivos de la entrega: sin él, la app no podía mandar
+ * ningún archivo por el tablón.
  */
 const MENSAJES_DE_PANAL =
-  /^Panal (brief #\d+|(resultado|encargo|entrega) #\d+ · \d+|tablón con reglas · ((encargo|resultado) #\d+|entrega #\d+ · 0x[0-9a-f]{64}) · \d+)$/;
+  /^Panal (brief #\d+|(resultado|encargo|entrega) #\d+ · \d+|tablón con reglas · ((encargo|resultado|archivo) #\d+|entrega #\d+ · 0x[0-9a-f]{64}) · \d+)$/;
 
 /** Lo que se firma en PanalTablon sin hoja: nada de esto pone dinero a favor de nadie. */
 const TABLON_SIN_HOJA = new Set([

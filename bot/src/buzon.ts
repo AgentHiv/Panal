@@ -36,6 +36,9 @@
  *     GET  /buzon/:tablon/encargo/:jobId    lo leen su cliente y su agente
  *     POST /buzon/:tablon/entrega/:jobId    la deja su agente
  *     GET  /buzon/:tablon/result/:jobId     se la lleva su cliente
+ *     POST /buzon/:tablon/archivo/:jobId    un adjunto de su cliente o un
+ *                                           archivo de la entrega de su agente
+ *     GET  /buzon/:tablon/archivo/:jobId/:nombre  lo bajan su cliente y su agente
  *
  * QUÉ NO PUEDE HACER
  *
@@ -143,6 +146,40 @@ export function tablonEntregaSignMessage(jobId: bigint, resultHash: Hex, expira:
 /** Su cliente se lleva la entrega. */
 export function tablonResultadoSignMessage(jobId: bigint, expira: number): string {
   return `Panal tablón con reglas · resultado #${jobId.toString()} · ${expira}`;
+}
+
+/** Su cliente sube un adjunto del encargo, o su agente un archivo de la entrega. */
+export function tablonArchivoSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · archivo #${jobId.toString()} · ${expira}`;
+}
+
+/**
+ * Los adjuntos que anuncia un encargo: su hash y su tamaño, del bloque
+ * `[panal-attach/1]` que escribe el SDK (`appendAttachmentsManifest`). Solo lo
+ * necesario para reconocer unos bytes; el resto del formato es del SDK.
+ */
+export function adjuntosAnunciados(brief: string): { hash: string; size: number }[] {
+  const out: { hash: string; size: number }[] = [];
+  let actual: { hash?: string; size?: number } | null = null;
+  const cerrar = () => {
+    if (actual?.hash && actual.size !== undefined) out.push({ hash: actual.hash, size: actual.size });
+    actual = null;
+  };
+  for (const linea of brief.split(/\r?\n/)) {
+    const l = linea.trim();
+    if (l === '[panal-attach/1]') {
+      cerrar();
+      actual = {};
+    } else if (actual && l === '') {
+      cerrar();
+    } else if (actual) {
+      const m = /^(hash|size):\s*(\S+)$/.exec(l);
+      if (m?.[1] === 'hash' && /^0x[0-9a-fA-F]{64}$/.test(m[2]!)) actual.hash = m[2]!.toLowerCase();
+      if (m?.[1] === 'size' && /^\d+$/.test(m[2]!)) actual.size = Number(m[2]);
+    }
+  }
+  cerrar();
+  return out;
 }
 
 /** Lo máximo que puede durar una firma. Abre un encargo entero. */
@@ -1072,6 +1109,153 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
   };
 
+  // ---- Archivos del tablón con reglas ----------------------------------------
+  //
+  // Los mismos topes y el mismo almacén que los del buzón de cada agente, bajo
+  // la dirección del tablón y por número de encargo. Dos diferencias:
+  //
+  //   - un adjunto del CLIENTE tiene que estar anunciado en su encargo, que ya
+  //     se comprobó contra el `taskHash` de la cadena: aquí no entra un byte
+  //     que el pago no cubra;
+  //   - un archivo del AGENTE se sube antes de dejar la entrega —su hash va
+  //     dentro del texto que se ancla—, así que no hay contra qué mirarlo
+  //     todavía. Lo comprueba quien lo baja, contra esa entrega anclada.
+  const subirArchivoDelTablon = async (
+    tablon: Address,
+    jobId: bigint,
+    url: URL,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> => {
+    const { address: addressParam, signature, expira } = credenciales(req, url);
+    if (!isAddress(addressParam) || !isHex(signature)) {
+      json(res, 400, { error: 'bad credentials' });
+      return;
+    }
+    let nombre = '';
+    try {
+      nombre = sanearNombre(decodeURIComponent((req.headers['x-panal-filename'] as string | undefined) ?? ''));
+    } catch {
+      nombre = '';
+    }
+    if (!nombre) {
+      json(res, 400, { error: 'bad filename' });
+      return;
+    }
+    const address = getAddress(addressParam);
+    if (!(await firmaVigente(address, signature as Hex, expira, (e) => tablonArchivoSignMessage(jobId, e)))) {
+      json(res, 403, { error: 'bad signature' });
+      return;
+    }
+    const job = await trabajoDe(jobId, res);
+    if (!job) return;
+    const esCliente = address.toLowerCase() === job.client.toLowerCase();
+    const esAgente = job.agent.toLowerCase() !== TABLON.toLowerCase() && address.toLowerCase() === job.agent.toLowerCase();
+    let de: 'cliente' | 'trabajador';
+    if (esCliente) {
+      // Publicado o asignado: retirado, caducado o cerrado ya no tiene agente que lo lea.
+      if (job.state !== 0 && job.state !== 1) {
+        json(res, 409, { error: 'job closed' });
+        return;
+      }
+      de = 'cliente';
+    } else if (esAgente) {
+      if (job.state !== 1) {
+        json(res, 409, { error: 'job not assigned' });
+        return;
+      }
+      de = 'trabajador';
+    } else {
+      json(res, 403, { error: 'not client nor agent' });
+      return;
+    }
+
+    const bytes = await readBytes(req, MAX_ARCHIVO_BYTES);
+    if (bytes === null) {
+      json(res, 413, { error: 'file too large' });
+      return;
+    }
+    if (bytes.byteLength === 0) {
+      json(res, 400, { error: 'empty file' });
+      return;
+    }
+    if (de === 'cliente') {
+      const brief = deps.store.leer(tablon, jobId)?.brief;
+      if (!brief) {
+        json(res, 409, { error: 'brief first' });
+        return;
+      }
+      const hash = keccak256(bytes).toLowerCase();
+      if (!adjuntosAnunciados(brief).some((a) => a.hash === hash && a.size === bytes.byteLength)) {
+        json(res, 409, { error: 'not announced in the brief' });
+        return;
+      }
+    }
+
+    const mime = (req.headers['content-type'] as string | undefined) ?? undefined;
+    const guardado = deps.store.guardarArchivo(
+      tablon,
+      jobId,
+      nombre,
+      bytes,
+      de,
+      mime && mime !== 'application/octet-stream' ? mime : undefined,
+    );
+    if ('error' in guardado) {
+      const codigo = guardado.error === 'grande' ? 413 : guardado.error === 'clave' ? 400 : 409;
+      json(res, codigo, { error: guardado.error });
+      return;
+    }
+    console.log(`[buzon] tablón con reglas: archivo «${nombre}» de ${de} en el #${jobId} (${bytes.byteLength} B)`);
+    json(res, 200, { ok: true, hash: guardado.hash });
+  };
+
+  /**
+   * Un archivo del tablón, a su cliente o a su agente. El cliente abre con la
+   * firma de leer el encargo o la de llevarse la entrega —las que ya tiene a
+   * mano en cada caso—; el agente, con la de leer el encargo. `de=adjunto` o
+   * `de=entrega` dice cuál busca si los dos subieron uno con el mismo nombre.
+   */
+  const darArchivoDelTablon = async (
+    tablon: Address,
+    jobId: bigint,
+    nombre: string,
+    url: URL,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> => {
+    const { address: addressParam, signature, expira } = credenciales(req, url);
+    if (!isAddress(addressParam) || !isHex(signature)) {
+      json(res, 400, { error: 'bad credentials' });
+      return;
+    }
+    const address = getAddress(addressParam);
+    const job = await trabajoDe(jobId, res);
+    if (!job) return;
+    const esCliente = address.toLowerCase() === job.client.toLowerCase();
+    const esAgente = job.agent.toLowerCase() !== TABLON.toLowerCase() && address.toLowerCase() === job.agent.toLowerCase();
+    const leeEncargo = (esCliente || esAgente) && (await firmaVigente(address, signature as Hex, expira, (e) => tablonEncargoSignMessage(jobId, e)));
+    const leeEntrega = esCliente && !leeEncargo && (await firmaVigente(address, signature as Hex, expira, (e) => tablonResultadoSignMessage(jobId, e)));
+    if (!leeEncargo && !leeEntrega) {
+      json(res, 403, { error: 'not client nor agent' });
+      return;
+    }
+    const pedido = url.searchParams.get('de');
+    const de = pedido === 'adjunto' ? 'cliente' : pedido === 'entrega' ? 'trabajador' : undefined;
+    const guardado = deps.store.leerArchivo(tablon, jobId, nombre, de);
+    if (!guardado) {
+      json(res, 404, { error: 'file not here' });
+      return;
+    }
+    res.writeHead(200, {
+      'content-type': guardado.archivo.mime || 'application/octet-stream',
+      'content-length': String(guardado.bytes.byteLength),
+      'content-disposition': 'attachment',
+      'x-content-type-options': 'nosniff',
+    });
+    res.end(guardado.bytes);
+  };
+
   const tablonConReglas = async (
     tablon: Address,
     resto: string,
@@ -1093,6 +1277,32 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       });
       return;
     }
+    // Los archivos: `archivo/<encargo>` para subir, `archivo/<encargo>/<nombre>` para bajar.
+    const deArchivo = /^archivo\/(\d{1,20})(?:\/(.+))?$/.exec(resto);
+    if (deArchivo) {
+      const jobId = BigInt(deArchivo[1]!);
+      if (req.method === 'POST' && !deArchivo[2]) {
+        await subirArchivoDelTablon(tablon, jobId, url, req, res);
+        return;
+      }
+      if (req.method === 'GET' && deArchivo[2]) {
+        let nombre = '';
+        try {
+          nombre = sanearNombre(decodeURIComponent(deArchivo[2]));
+        } catch {
+          nombre = '';
+        }
+        if (!nombre) {
+          json(res, 400, { error: 'bad filename' });
+          return;
+        }
+        await darArchivoDelTablon(tablon, jobId, nombre, url, req, res);
+        return;
+      }
+      json(res, 405, { error: 'method not allowed' });
+      return;
+    }
+
     const m = /^(anuncio|brief|encargo|entrega|result)\/(\d{1,20})$/.exec(resto);
     if (!m) {
       json(res, 404, { error: 'not found' });

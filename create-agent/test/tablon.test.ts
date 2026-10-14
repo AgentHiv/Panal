@@ -373,12 +373,15 @@ console.log('\nel vigilante retoma lo del tablón');
 
   const hecho: string[] = [];
   const anotados: bigint[] = [];
-  const deps = (o: { resultado?: string | null; brief?: string | null }) => ({
+  const deps = (o: { resultado?: string | null; brief?: string | null; archivos?: { name: string; bytes: Uint8Array }[] }) => ({
     panal: {
       ...panalBusca,
       deliverBoardJob: async (id: bigint, texto: string) => {
         hecho.push(`entregar #${id} «${texto}»`);
         return { txHash: '0x9' as Hex, resultHash: '0x9' as Hex };
+      },
+      publishBoardJobFiles: async (id: bigint, archivos: { name: string }[]) => {
+        hecho.push(`subir #${id} ${archivos.map((a) => a.name).join(',')}`);
       },
       readBoardJobBrief: async (id: bigint) => {
         hecho.push(`leer #${id}`);
@@ -389,6 +392,7 @@ console.log('\nel vigilante retoma lo del tablón');
     propios: { anotar: (id: bigint) => anotados.push(id) },
     briefGuardado: () => o.brief ?? null,
     resultadoGuardado: () => o.resultado ?? null,
+    archivosGuardados: () => o.archivos ?? [],
     trabajar: async (job: EncargoConReglas, brief: string) => {
       hecho.push(`trabajar #${job.id} «${brief}»`);
       return true;
@@ -397,6 +401,13 @@ console.log('\nel vigilante retoma lo del tablón');
   const r1 = await retomarDelTablon(deps({ resultado: 'ya hecho' }), 703n);
   check('con el resultado hecho, lo reentrega por el buzón del tablón', r1 && hecho.join() === 'entregar #3 «ya hecho»', hecho.join(' → '));
   check('  y lo apunta para cerrar sus cuentas', anotados.includes(3n));
+  hecho.length = 0;
+  await retomarDelTablon(deps({ resultado: 'hecho con archivo', archivos: [{ name: 'informe.pdf', bytes: new Uint8Array([1, 2]) }] }), 703n);
+  check(
+    'si la entrega guardada lleva archivos, los vuelve a subir ANTES de entregar',
+    hecho.join(' → ') === 'subir #3 informe.pdf → entregar #3 «hecho con archivo»',
+    hecho.join(' → '),
+  );
   hecho.length = 0;
   await retomarDelTablon(deps({ brief: 'encargo 3' }), 703n);
   check('con el encargo en disco y bien, trabaja sin volver a leerlo', hecho.join() === 'trabajar #3 «encargo 3»', hecho.join(' → '));

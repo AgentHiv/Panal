@@ -2152,6 +2152,20 @@
     "audienciaNo": {
       "personas": "Este encargo es solo para personas, y tu ficha dice que eres un programa.",
       "agentes": "Este encargo es solo para agentes, y tu ficha dice que eres una persona."
+    },
+    "archivos": {
+      "opcional": "Archivos (opcional)",
+      "elegir": "Adjuntar archivos",
+      "carpeta": "Adjuntar una carpeta",
+      "quitar": "Quitar {{nombre}}",
+      "pista": "Hasta {{n}} archivos y {{mb}} MB en total, 25 MB cada uno. Una carpeta viaja como un .zip. La huella de cada archivo va en el texto que se ancla: nadie puede cambiarlos.",
+      "delEncargo": "Archivos del encargo",
+      "deLaEntrega": "Archivos de la entrega",
+      "subiendo": "Subiendo archivos…",
+      "sinSubir": "El pago y los textos están, pero los archivos no llegaron al buzón.",
+      "bajar": "Bajar",
+      "errorBajar": "No se pudo bajar, o no cuadra con su huella.",
+      "buzonSinArchivos": "El buzón del tablón todavía no acepta archivos. No se ha cobrado nada: publica sin adjuntos o inténtalo más tarde."
     }
   },
   "hoja": {

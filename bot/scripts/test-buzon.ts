@@ -42,6 +42,8 @@ import {
   entregaSignMessage,
   ofertaSignMessage,
   resultSignMessageConCaducidad,
+  adjuntosAnunciados,
+  tablonArchivoSignMessage,
   tablonEncargoSignMessage,
   tablonEntregaSignMessage,
   tablonResultadoSignMessage,
@@ -84,19 +86,24 @@ const TAREAS: Record<string, Task> = {
 const TABLON_V2 = getAddress('0x00000000000000000000000000000000000000ab');
 const ANUNCIO_V2 = 'Traducción ES→FR, 12 páginas, jurídica';
 const BRIEF_V2 = 'El contrato entero, para el martes.';
+// Un encargo con un adjunto anunciado, como lo escribe `appendAttachmentsManifest`.
+const ADJUNTO = new TextEncoder().encode('fila 1,fila 2\n');
+const BRIEF_ARCHIVOS =
+  `Revisa esta hoja.\n\n[panal-attach/1]\nname: hoja.csv\nsize: ${ADJUNTO.byteLength}\nmime: text/csv\nhash: ${keccak256(ADJUNTO)}\n`;
 const TRABAJOS: Record<string, TrabajoTablon> = {
   '0': trabajo(0, CERO, 0n),
   '1': trabajo(1, AGENTE, 1n),
   '2': trabajo(1, AGENTE, 2n),
   '3': trabajo(3, CERO, 0n),
+  '5': trabajo(1, AGENTE, 5n, BRIEF_ARCHIVOS),
 };
 
-function trabajo(state: number, agent: `0x${string}`, escrowTaskId: bigint): TrabajoTablon {
+function trabajo(state: number, agent: `0x${string}`, escrowTaskId: bigint, brief = BRIEF_V2): TrabajoTablon {
   return {
     client: cliente.address,
     state,
     agent,
-    taskHash: keccak256(toBytes(BRIEF_V2)),
+    taskHash: keccak256(toBytes(brief)),
     advertHash: keccak256(toBytes(ANUNCIO_V2)),
     escrowTaskId,
   };
@@ -669,6 +676,69 @@ async function main(): Promise<void> {
   );
   const v18 = await getV2('result/1', cliente, (e) => resultSignMessageConCaducidad(1n, e));
   check('403 con la firma de una tarea, no', v18.status === 403, `status=${v18.status}`);
+
+  /* ── archivos del tablón ───────────────────────────────────────────────── */
+  console.log('\n── Archivos del tablón: adjuntos del cliente y archivos de la entrega ──\n');
+  check(
+    'lee los adjuntos anunciados de un encargo',
+    JSON.stringify(adjuntosAnunciados(BRIEF_ARCHIVOS)) === JSON.stringify([{ hash: keccak256(ADJUNTO).toLowerCase(), size: ADJUNTO.byteLength }]),
+    JSON.stringify(adjuntosAnunciados(BRIEF_ARCHIVOS)),
+  );
+  check('un encargo sin bloque no anuncia nada', adjuntosAnunciados(BRIEF_V2).length === 0);
+  check(
+    'el mensaje es el mismo que firma el SDK',
+    tablonArchivoSignMessage(7n, 1700000000) === 'Panal tablón con reglas · archivo #7 · 1700000000',
+  );
+  const subirAlTablon = async (id: number, quien: typeof cliente, nombre: string, bytes: Uint8Array) => {
+    const e = enUnMinuto();
+    return fetch(`${v2}/archivo/${id}`, {
+      method: 'POST',
+      headers: {
+        ...OTRA_IP,
+        'content-type': 'text/csv',
+        'x-panal-filename': encodeURIComponent(nombre),
+        'x-panal-address': quien.address,
+        'x-panal-signature': await quien.signMessage({ message: tablonArchivoSignMessage(BigInt(id), e) }),
+        'x-panal-expira': String(e),
+      },
+      body: bytes,
+    });
+  };
+  const a0 = await subirAlTablon(5, cliente, 'hoja.csv', ADJUNTO);
+  check('409 un adjunto antes de dejar el encargo: no hay contra qué mirarlo', a0.status === 409, `status=${a0.status}`);
+  await postV2('brief/5', { brief: BRIEF_ARCHIVOS });
+  const a1 = await subirAlTablon(5, intruso, 'hoja.csv', ADJUNTO);
+  check('403 un tercero no sube nada', a1.status === 403, `status=${a1.status}`);
+  const a2 = await subirAlTablon(5, cliente, 'otra.csv', new TextEncoder().encode('lo que nadie pagó'));
+  check('409 su cliente no cuela un archivo que el encargo no anuncia', a2.status === 409, `status=${a2.status}`);
+  const a3 = await subirAlTablon(5, cliente, 'hoja.csv', ADJUNTO);
+  const h3 = (await a3.json()) as { hash?: string };
+  check('200 el anunciado sí, y devuelve su hash', a3.status === 200 && h3.hash === keccak256(ADJUNTO).toLowerCase(), `status=${a3.status}`);
+  const a4 = await subirAlTablon(3, cliente, 'hoja.csv', ADJUNTO);
+  check('409 ni en un encargo retirado', a4.status === 409, `status=${a4.status}`);
+  const DE_LA_ENTREGA = new TextEncoder().encode('hoja revisada\n');
+  const a5 = await subirAlTablon(5, persona, 'hoja.csv', DE_LA_ENTREGA);
+  check('200 su agente sube los de la entrega, aunque se llamen igual', a5.status === 200, `status=${a5.status}`);
+  const a6 = await subirAlTablon(0, persona, 'x.csv', DE_LA_ENTREGA);
+  check('403 un agente no sube a un encargo que no tiene', a6.status === 403, `status=${a6.status}`);
+
+  const bajarDelTablon = async (ruta: string, quien: typeof cliente, mensaje: (e: number) => string) => {
+    const r = await getV2(ruta, quien, mensaje);
+    return { status: r.status, bytes: r.status === 200 ? new Uint8Array(await r.arrayBuffer()) : null };
+  };
+  const igual = (a: Uint8Array | null, b: Uint8Array) => !!a && a.length === b.length && a.every((x, i) => x === b[i]);
+  const z1 = await bajarDelTablon('archivo/5/hoja.csv?de=adjunto', persona, (e) => tablonEncargoSignMessage(5n, e));
+  check('200 su agente baja el adjunto con la firma de leer el encargo', z1.status === 200 && igual(z1.bytes, ADJUNTO), `status=${z1.status}`);
+  const z2 = await bajarDelTablon('archivo/5/hoja.csv?de=entrega', cliente, (e) => tablonResultadoSignMessage(5n, e));
+  check('200 su cliente baja el de la entrega con la de llevársela', z2.status === 200 && igual(z2.bytes, DE_LA_ENTREGA), `status=${z2.status}`);
+  const z3 = await bajarDelTablon('archivo/5/hoja.csv?de=adjunto', cliente, (e) => tablonEncargoSignMessage(5n, e));
+  check('y el suyo propio, sin confundirlo con el del agente', z3.status === 200 && igual(z3.bytes, ADJUNTO), `status=${z3.status}`);
+  const z4 = await bajarDelTablon('archivo/5/hoja.csv?de=adjunto', intruso, (e) => tablonEncargoSignMessage(5n, e));
+  check('403 un tercero no baja nada', z4.status === 403, `status=${z4.status}`);
+  const z5 = await bajarDelTablon('archivo/5/hoja.csv?de=entrega', persona, (e) => tablonResultadoSignMessage(5n, e));
+  check('403 la firma de llevarse la entrega no es del agente', z5.status === 403, `status=${z5.status}`);
+  const z6 = await bajarDelTablon('archivo/5/no-existe.csv', cliente, (e) => tablonEncargoSignMessage(5n, e));
+  check('404 lo que no está', z6.status === 404, `status=${z6.status}`);
 
   /* ── una firma que no vale no le cuesta nada a la cadena ─────────────── */
   console.log('\n── Una firma que no vale no llega a preguntar a la cadena ──\n');

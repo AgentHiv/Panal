@@ -22,6 +22,8 @@ import {
   MARGEN_ASIGNACION_S,
   ModoTablon,
   audienciaAdmite,
+  parseFilesManifest,
+  stripFilesManifest,
   type EncargoConReglas,
   type OfertaConReglas,
 } from '@panal/sdk';
@@ -32,15 +34,19 @@ import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import { useDeudaDelTablon, useReglasDelTablon, type DatosDelTablon } from '@/hooks/useTablonReglas';
 import {
   MONEDAS_TABLON,
+  credencialTablon,
+  credencialVigente,
   enTablon,
   firmarYEsperar,
-  leerEntrega,
+  leerEntregaConFirma,
   permitirPanal,
   simboloDe,
+  type CredencialTablon,
   type TareaDelTablon,
 } from '@/lib/tablonReglas';
 import { hayEntrega } from '@/lib/expedientes';
 import { cn } from '@/lib/utils';
+import { ListaDeArchivos } from './Archivos';
 import { Chip, Girando, Importe, NombreDeCategoria } from './comun';
 import { BOTON_LINEA, BOTON_MIEL, BOTON_OLIVA, BOTON_PELIGRO, cantidad, useAgenteDe, useDuracion, useFecha } from './util';
 
@@ -128,6 +134,8 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
   const { ejecutar, ocupado } = useFirmaDelTablon();
   const { signMessageAsync } = useSignMessage();
   const [entrega, setEntrega] = useState<string | null>(null);
+  // La firma con la que se abrió la entrega: abre también sus archivos.
+  const [cred, setCred] = useState<CredencialTablon | null>(null);
   const [leyendo, setLeyendo] = useState(false);
   const [errorEntrega, setErrorEntrega] = useState<string | null>(null);
   const [nota, setNota] = useState(5);
@@ -183,9 +191,14 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
       setLeyendo(true);
       setErrorEntrega(null);
       try {
-        const texto = await leerEntrega(job.id, tarea.resultHash, yo, (message) => signMessageAsync({ message }));
-        if (texto === null) setErrorEntrega(t('tablon.mios.entregaNoEsta'));
-        else setEntrega(texto);
+        const leida = await leerEntregaConFirma(
+          job.id,
+          tarea.resultHash,
+          await credencialTablon('resultado', job.id, yo, (message) => signMessageAsync({ message })),
+        );
+        setCred(leida.cred);
+        if (leida.texto === null) setErrorEntrega(t('tablon.mios.entregaNoEsta'));
+        else setEntrega(leida.texto);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         setErrorEntrega(/user (rejected|denied)/i.test(msg) ? t('hire.step3.rejected') : t('tablon.mios.entregaError'));
@@ -193,6 +206,13 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
         setLeyendo(false);
       }
     })();
+
+  const credencialDeLaEntrega = async () => {
+    if (credencialVigente(cred)) return cred;
+    const nueva = await credencialTablon('resultado', job.id, yo, (message) => signMessageAsync({ message }));
+    setCred(nueva);
+    return nueva;
+  };
 
   const descargar = () => {
     if (entrega === null) return;
@@ -423,7 +443,16 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
       {errorEntrega && <p className="mt-3 text-[0.8125rem] text-terra">{errorEntrega}</p>}
       {entrega !== null && (
         <div className="mt-4 rounded-xl border border-line bg-cream p-4">
-          <p className="max-h-80 overflow-y-auto whitespace-pre-wrap break-words text-[0.875rem] leading-relaxed text-ink">{entrega}</p>
+          <p className="max-h-80 overflow-y-auto whitespace-pre-wrap break-words text-[0.875rem] leading-relaxed text-ink">
+            {stripFilesManifest(entrega)}
+          </p>
+          <ListaDeArchivos
+            jobId={job.id}
+            archivos={parseFilesManifest(entrega)}
+            de="entrega"
+            credencial={credencialDeLaEntrega}
+            titulo={t('tablon.archivos.deLaEntrega')}
+          />
           <button type="button" onClick={descargar} className={cn(BOTON_LINEA, 'mt-3')}>
             {t('tablon.mios.descargar')}
           </button>

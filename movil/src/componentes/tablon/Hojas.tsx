@@ -13,23 +13,37 @@ import {
   MAX_TEXTO_ANUNCIO,
   ModoTablon,
   anuncioPara,
+  appendAttachmentsManifest,
+  attachmentFrom,
   panalTablonAbi,
+  parseAttachmentsManifest,
+  parseFilesManifest,
+  problemaConArchivos,
+  stripFilesManifest,
+  type ArchivoParaSubir,
   type AudienciaTablon,
   type EncargoConReglas,
   type OfertaConReglas,
 } from '@panal/sdk';
+import { useWallet } from '@/hooks/useWallet';
 import { NATIVE_CURRENCY, PANAL_TOKEN_ADDRESS, publicClient } from '@/contracts/config';
 import { useReglasDelTablon } from '@/hooks/useTablonReglas';
 import {
+  buzonAceptaArchivos,
   buzonAceptaElTablon,
+  credencialTablon,
+  credencialVigente,
   dejarEntrega,
   enTablon,
+  entregaConArchivos,
   entregarEnEscrow,
   firmarYEsperar,
   guardarTextos,
-  leerEncargoPrivado,
+  leerEncargoConFirma,
   permitirPanal,
   simboloDe,
+  subirArchivosDelTablon,
+  type CredencialTablon,
 } from '@/lib/tablonReglas';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
 import Icono from '~/componentes/Icono';
@@ -39,6 +53,7 @@ import type { useFirmaTablon } from '~/lib/usarFirmaTablon';
 import { explicarFallo } from '~/lib/usarFirmaTablon';
 import { monto } from '~/lib/formato';
 import { useTextos } from '~/i18n/idiomas';
+import { ElegirArchivos, ListaDeArchivos } from './Archivos';
 import { Importe } from './Piezas';
 import { ahoraS, duracion, fecha } from './util';
 
@@ -51,6 +66,8 @@ export type HojaAbierta =
   | { tipo: 'aprobar'; job: EncargoConReglas }
   | { tipo: 'disputar'; job: EncargoConReglas }
   | { tipo: 'texto'; titulo: string; texto: string }
+  /** La entrega, para su cliente, con sus archivos y la firma con que se leyó. */
+  | { tipo: 'entrega'; job: EncargoConReglas; texto: string; cred: CredencialTablon }
   | { tipo: 'entregar'; job: EncargoConReglas }
   | { tipo: 'publicar' };
 
@@ -86,6 +103,8 @@ export default function HojasDelTablon({
       return <HojaDisputar job={hoja.job} firma={firma} onCerrar={onCerrar} />;
     case 'texto':
       return <HojaTexto titulo={hoja.titulo} texto={hoja.texto} onCerrar={onCerrar} />;
+    case 'entrega':
+      return <HojaEntrega job={hoja.job} texto={hoja.texto} cred={hoja.cred} onCerrar={onCerrar} />;
     case 'entregar':
       return <HojaEntregar job={hoja.job} firma={firma} onCerrar={onCerrar} />;
     case 'publicar':
@@ -308,13 +327,43 @@ function HojaTexto({ titulo, texto, onCerrar }: { titulo: string; texto: string;
   );
 }
 
+/** La entrega, para su cliente: el texto sin el manifiesto y sus archivos para bajar. */
+function HojaEntrega({ job, texto, cred, onCerrar }: { job: EncargoConReglas; texto: string; cred: CredencialTablon; onCerrar: () => void }) {
+  const T = useTextos();
+  const { signMessageAsync } = useSignMessage();
+  const [firmaVigente, setFirmaVigente] = useState(cred);
+  // La firma con que se leyó la entrega abre también sus archivos; si caducó, otra.
+  const credencial = async () => {
+    if (credencialVigente(firmaVigente)) return firmaVigente;
+    const nueva = await credencialTablon('resultado', job.id, cred.yo, (message) => signMessageAsync({ message }));
+    setFirmaVigente(nueva);
+    return nueva;
+  };
+  return (
+    <Hoja abierta titulo={T.tablon.entrega.titulo} onCerrar={onCerrar}>
+      <p className="seleccionable mt-3 max-h-[45vh] overflow-y-auto whitespace-pre-wrap break-words rounded-xl bg-sand px-3.5 py-3 text-[13.5px] leading-[1.55] text-ink">
+        {stripFilesManifest(texto)}
+      </p>
+      <ListaDeArchivos jobId={job.id} archivos={parseFilesManifest(texto)} de="entrega" credencial={credencial} titulo={T.tablon.archivos.deLaEntrega} />
+      <div className="mt-4 pb-4">
+        <Boton variante="secundario" onClick={onCerrar}>
+          {T.comun.cerrar}
+        </Boton>
+      </div>
+    </Hoja>
+  );
+}
+
 function HojaEntregar({ job, firma, onCerrar }: { job: EncargoConReglas; firma: Firma; onCerrar: () => void }) {
   const T = useTextos();
   const { signMessageAsync } = useSignMessage();
   const [encargo, setEncargo] = useState<string | null>(null);
+  // La firma con que se leyó el encargo: abre también sus adjuntos.
+  const [cred, setCred] = useState<CredencialTablon | null>(null);
   const [leyendo, setLeyendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [texto, setTexto] = useState('');
+  const [archivos, setArchivos] = useState<ArchivoParaSubir[]>([]);
   const firmar = (message: string) => signMessageAsync({ message });
   const clave = `entregar:${job.id}`;
   const ocupado = firma.ocupado === clave;
@@ -323,7 +372,9 @@ function HojaEntregar({ job, firma, onCerrar }: { job: EncargoConReglas; firma: 
     setLeyendo(true);
     setError(null);
     try {
-      const brief = await leerEncargoPrivado(job, cuenta, firmar);
+      const leido = await leerEncargoConFirma(job, await credencialTablon('encargo', job.id, cuenta, firmar));
+      setCred(leido.cred);
+      const brief = leido.brief;
       if (brief === null) setError(T.tablon.trabajo.encargoNoEsta);
       else setEncargo(brief);
     } catch (err) {
@@ -336,11 +387,21 @@ function HojaEntregar({ job, firma, onCerrar }: { job: EncargoConReglas; firma: 
   };
   const entregar = async () => {
     const hecho = await firma.ejecutar(clave, async (e, c) => {
-      const hash = await dejarEntrega(job.id, texto.trim(), c, firmar);
+      // Los archivos primero, y su hash dentro del texto que se ancla: si el
+      // buzón no los acepta, no se ancla nada.
+      await subirArchivosDelTablon(job.id, archivos, c, firmar);
+      const final = archivos.length > 0 ? entregaConArchivos(job.id, texto.trim(), archivos) : texto.trim();
+      const hash = await dejarEntrega(job.id, final, c, firmar);
       await firmarYEsperar(e, c, entregarEnEscrow(job.escrowTaskId, hash));
       return true;
     });
     if (hecho) onCerrar();
+  };
+  const credencialDelEncargo = async () => {
+    if (credencialVigente(cred)) return cred;
+    const nueva = await credencialTablon('encargo', job.id, job.agente, firmar);
+    setCred(nueva);
+    return nueva;
   };
   return (
     <Hoja abierta titulo={T.tablon.trabajo.entregar} onCerrar={onCerrar} bloqueada={ocupado}>
@@ -356,18 +417,31 @@ function HojaEntregar({ job, firma, onCerrar }: { job: EncargoConReglas; firma: 
         <div className="mt-3">
           <p className="px-1 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-ink-3">{T.tablon.trabajo.elEncargo}</p>
           <p className="seleccionable mt-1.5 max-h-[30vh] overflow-y-auto whitespace-pre-wrap break-words rounded-xl bg-sand px-3.5 py-3 text-[13.5px] leading-[1.55] text-ink">
-            {encargo}
+            {stripFilesManifest(encargo)}
           </p>
+          <ListaDeArchivos
+            jobId={job.id}
+            archivos={parseAttachmentsManifest(encargo)}
+            de="adjunto"
+            credencial={credencialDelEncargo}
+            titulo={T.tablon.archivos.delEncargo}
+          />
         </div>
       )}
       <label className="mt-4 flex flex-col gap-1.5 text-[12.5px] font-medium text-ink-2">
         {T.tablon.trabajo.tuEntrega}
         <textarea value={texto} onChange={(e) => setTexto(e.target.value.slice(0, 200_000))} rows={6} className={`${CAMPO} resize-none`} />
       </label>
+      <div className="mt-3">
+        <ElegirArchivos archivos={archivos} onChange={setArchivos} disabled={firma.ocupado !== null} />
+      </div>
       <Nota>{T.tablon.trabajo.entregarPista}</Nota>
       <Fallo firma={firma} />
       <div className="mt-4 pb-4">
-        <Boton onClick={() => void entregar()} disabled={!texto.trim() || firma.ocupado !== null}>
+        <Boton
+          onClick={() => void entregar()}
+          disabled={(!texto.trim() && archivos.length === 0) || (archivos.length > 0 && problemaConArchivos(archivos) !== null) || firma.ocupado !== null}
+        >
           {ocupado ? '…' : T.tablon.trabajo.entregar}
         </Boton>
       </div>
@@ -431,9 +505,19 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
   const [caduca, setCaduca] = useState(3 * DIA);
   const [experiencia, setExperiencia] = useState(false);
   const [republicar, setRepublicar] = useState(false);
-  const [paso, setPaso] = useState<'permiso' | 'publicando' | 'textos' | null>(null);
+  const [paso, setPaso] = useState<'permiso' | 'publicando' | 'textos' | 'archivos' | null>(null);
+  const [adjuntos, setAdjuntos] = useState<ArchivoParaSubir[]>([]);
+  const { address } = useWallet();
+  const { signMessageAsync } = useSignMessage();
   // Con los textos tal y como se hashearon: reintentar tiene que mandar esos.
-  const [hecho, setHecho] = useState<{ jobId: bigint; textos: boolean; anuncio: string; encargo: string } | null>(null);
+  const [hecho, setHecho] = useState<{
+    jobId: bigint;
+    textos: boolean;
+    archivos: boolean;
+    anuncio: string;
+    encargo: string;
+    adjuntos: ArchivoParaSubir[];
+  } | null>(null);
 
   const moneda = (enPanal ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY) as Address;
   const simbolo = enPanal ? '$PANAL' : 'MON';
@@ -458,7 +542,7 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
     if (seleccion && caduca < ofertas + eleccion) return P.caducaCorta;
     return null;
   })();
-  const listo = anuncioT.length >= MIN_ANUNCIO && !!encargoT && categoria !== null && wei !== null && wei > 0n && !problema && !reglas?.pausado;
+  const listo = (adjuntos.length === 0 || problemaConArchivos(adjuntos) === null) && anuncioT.length >= MIN_ANUNCIO && !!encargoT && categoria !== null && wei !== null && wei > 0n && !problema && !reglas?.pausado;
   /**
    * Lo que falta, cuando el botón está apagado sin un problema que decir. Sin
    * esto se quedaba gris y callado con un anuncio de nueve letras o sin
@@ -479,11 +563,18 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
     if (wei === null || categoria === null) return;
     // El anuncio lleva delante para quién es; su hash lo deja fijo.
     const textoAnuncio = anuncioPara(audiencia, anuncioT);
-    const textoEncargo = encargoT;
+    // Los adjuntos se anuncian DENTRO del encargo, con su hash: el taskHash
+    // que va a la cadena los cubre desde el momento del pago.
+    const archivos = adjuntos;
+    const textoEncargo = appendAttachmentsManifest(
+      encargoT,
+      archivos.map((a) => attachmentFrom(a.name, a.bytes, a.mime)),
+    );
     await firma.ejecutar('publicar', async (e, c) => {
       try {
         // Antes de cobrar nada: sin buzón, el encargo quedaría pagado y mudo.
         if (!(await buzonAceptaElTablon())) throw new Error(P.buzonNoListo);
+        if (archivos.length > 0 && !(await buzonAceptaArchivos())) throw new Error(T.tablon.archivos.buzonSinArchivos);
         // Lo que esta hoja enseña, y nada más: la wallet del teléfono no firma otro.
         permitirTablon({ funcion: 'post', amount: wei, currency: moneda });
         if (enPanal) {
@@ -518,7 +609,18 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
         } catch {
           textos = false;
         }
-        setHecho({ jobId: ev.args.jobId, textos, anuncio: textoAnuncio, encargo: textoEncargo });
+        // Los bytes, después del encargo: el buzón solo acepta los que anuncia.
+        let subidos = archivos.length === 0;
+        if (textos && archivos.length > 0) {
+          setPaso('archivos');
+          try {
+            await subirArchivosDelTablon(ev.args.jobId, archivos, c, (message) => signMessageAsync({ message }));
+            subidos = true;
+          } catch {
+            subidos = false;
+          }
+        }
+        setHecho({ jobId: ev.args.jobId, textos, archivos: subidos, anuncio: textoAnuncio, encargo: textoEncargo, adjuntos: archivos });
       } finally {
         setPaso(null);
       }
@@ -529,8 +631,15 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
     if (!hecho) return;
     setPaso('textos');
     try {
-      await guardarTextos(hecho.jobId, hecho.anuncio, hecho.encargo);
-      setHecho({ ...hecho, textos: true });
+      if (!hecho.textos) {
+        await guardarTextos(hecho.jobId, hecho.anuncio, hecho.encargo);
+        setHecho((h) => (h ? { ...h, textos: true } : h));
+      }
+      if (!hecho.archivos && address) {
+        setPaso('archivos');
+        await subirArchivosDelTablon(hecho.jobId, hecho.adjuntos, address as Address, (message) => signMessageAsync({ message }));
+        setHecho((h) => (h ? { ...h, textos: true, archivos: true } : h));
+      }
     } catch {
       // sigue ofreciendo el reintento
     } finally {
@@ -544,9 +653,9 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
     return (
       <Hoja abierta titulo={P.titulo} onCerrar={onCerrar} bloqueada={paso !== null}>
         <Nota tono="miel">{P.hecho(hecho.jobId.toString())}</Nota>
-        {!hecho.textos && (
+        {(!hecho.textos || !hecho.archivos) && (
           <>
-            <p className="mt-3 px-1 text-[12.5px] leading-[1.5] text-terra">{P.sinTextos}</p>
+            <p className="mt-3 px-1 text-[12.5px] leading-[1.5] text-terra">{hecho.textos ? T.tablon.archivos.sinSubir : P.sinTextos}</p>
             <div className="mt-3">
               <Boton variante="secundario" onClick={() => void reintentar()} disabled={paso !== null}>
                 {paso ? '…' : P.reintentar}
@@ -555,7 +664,7 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
           </>
         )}
         <div className="mt-4 pb-4">
-          <Boton onClick={onCerrar} disabled={!hecho.textos}>
+          <Boton onClick={onCerrar} disabled={!hecho.textos || !hecho.archivos}>
             {T.comun.listo}
           </Boton>
         </div>
@@ -574,6 +683,7 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
         <Campo etiqueta={P.encargo}>
           <textarea value={encargo} onChange={(e) => setEncargo(e.target.value.slice(0, 32_000))} rows={4} className={`${CAMPO} resize-none`} />
         </Campo>
+        <ElegirArchivos archivos={adjuntos} onChange={setAdjuntos} disabled={trabajando} />
         <Campo etiqueta={P.categoria}>
           <select value={categoria ?? ''} onChange={(e) => setCategoria(e.target.value === '' ? null : Number(e.target.value))} className={CAMPO}>
             <option value="">{P.eligeCategoria}</option>
@@ -682,7 +792,15 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
         {!problema && falta && <p className="px-1 text-[12.5px] leading-[1.5] text-ink-3">{falta}</p>}
         <Fallo firma={firma} />
         <Boton onClick={() => void publicar()} disabled={!listo || firma.ocupado !== null}>
-          {paso === 'permiso' ? P.pasoPermiso : paso === 'publicando' ? P.pasoPublicar : paso === 'textos' ? P.pasoTextos : P.confirmar}
+          {paso === 'permiso'
+            ? P.pasoPermiso
+            : paso === 'publicando'
+              ? P.pasoPublicar
+              : paso === 'textos'
+                ? P.pasoTextos
+                : paso === 'archivos'
+                  ? T.tablon.archivos.subiendo
+                  : P.confirmar}
         </Boton>
       </div>
     </Hoja>

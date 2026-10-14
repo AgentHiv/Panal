@@ -31,14 +31,20 @@ import {
   type Hex,
 } from 'viem';
 import {
+  MAX_FILE_BYTES,
   encargoDeLaCadena,
   ofertaDeLaCadena,
   panalTablonAbi,
+  sanitizeFileName,
   situacionDe,
+  tablonArchivoSignMessage,
   tablonEncargoSignMessage,
   tablonEntregaSignMessage,
   tablonResultadoSignMessage,
+  verifyFileBytes,
+  type ArchivoParaSubir,
   type EncargoConReglas,
+  type HashedFile,
   type OfertaConReglas,
   type SituacionEnElTablon,
 } from '@panal/sdk';
@@ -272,6 +278,22 @@ export async function buzonAceptaElTablon(): Promise<boolean> {
 }
 
 /**
+ * Si el buzón del tablón ya guarda archivos. Se pregunta ANTES de cobrar un
+ * encargo con adjuntos: un buzón anterior a los archivos aceptaría el encargo
+ * y no sus bytes, y el agente cobraría por algo que no puede abrir. Un POST sin
+ * credenciales a la ruta de archivos: el que la conoce contesta 400 (faltan
+ * credenciales); el que no, 404.
+ */
+export async function buzonAceptaArchivos(): Promise<boolean> {
+  try {
+    const res = await fetch(`${BUZON_DEL_TABLON}/archivo/0`, { method: 'POST', signal: AbortSignal.timeout(10_000) });
+    return res.status !== 404;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Deja el anuncio y el encargo de un encargo ya publicado. Sin firma: el buzón
  * solo acepta los textos que dan los hashes que la cadena guardó. Repetirlo no
  * molesta, así que sirve para reintentar.
@@ -298,19 +320,54 @@ type Firmar = (mensaje: string) => Promise<string>;
  * `taskHash` de la cadena. `null` si el buzón no lo tiene.
  */
 export async function leerEncargoPrivado(job: EncargoConReglas, yo: Address, firmar: Firmar): Promise<string | null> {
+  return (await leerEncargoConFirma(job, await credencialTablon('encargo', job.id, yo, firmar))).brief;
+}
+
+/**
+ * Una firma para leer del buzón del tablón, que vale unos minutos. Se guarda y
+ * se reutiliza: con la misma que abre el encargo se bajan sus adjuntos, y con
+ * la que abre la entrega, sus archivos. Una ventana de la wallet, no cinco.
+ */
+export interface CredencialTablon {
+  yo: Address;
+  firma: string;
+  expira: number;
+}
+
+export async function credencialTablon(
+  tipo: 'encargo' | 'resultado' | 'archivo',
+  jobId: bigint,
+  yo: Address,
+  firmar: Firmar,
+): Promise<CredencialTablon> {
   const expira = expiraEn();
-  const firma = await firmar(tablonEncargoSignMessage(job.id, expira));
+  const mensaje =
+    tipo === 'encargo'
+      ? tablonEncargoSignMessage(jobId, expira)
+      : tipo === 'resultado'
+        ? tablonResultadoSignMessage(jobId, expira)
+        : tablonArchivoSignMessage(jobId, expira);
+  return { yo, firma: await firmar(mensaje), expira };
+}
+
+/** Si una credencial sigue sirviendo un rato más (un minuto de margen). */
+export function credencialVigente(c: CredencialTablon | null): c is CredencialTablon {
+  return !!c && c.expira > Math.floor(Date.now() / 1000) + 60;
+}
+
+/** El encargo privado con una credencial ya firmada (la de `encargo`). */
+export async function leerEncargoConFirma(job: EncargoConReglas, cred: CredencialTablon): Promise<{ brief: string | null; cred: CredencialTablon }> {
   const res = await fetch(`${BUZON_DEL_TABLON}/encargo/${job.id.toString()}`, {
-    headers: cabecerasFirma(yo, firma, expira),
+    headers: cabecerasFirma(cred.yo, cred.firma, cred.expira),
     signal: AbortSignal.timeout(15_000),
   });
-  if (res.status === 404) return null;
+  if (res.status === 404) return { brief: null, cred };
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const { brief } = (await res.json()) as { brief?: unknown };
   if (typeof brief !== 'string' || keccak256(toBytes(brief)).toLowerCase() !== job.taskHash.toLowerCase()) {
     throw new Error('no cuadra con el taskHash');
   }
-  return brief;
+  return { brief, cred };
 }
 
 /**
@@ -334,19 +391,87 @@ export async function dejarEntrega(jobId: bigint, texto: string, yo: Address, fi
 
 /** La entrega, para su cliente, comprobada contra el `resultHash` del escrow. */
 export async function leerEntrega(jobId: bigint, resultHash: Hex, yo: Address, firmar: Firmar): Promise<string | null> {
-  const expira = expiraEn();
-  const firma = await firmar(tablonResultadoSignMessage(jobId, expira));
+  return (await leerEntregaConFirma(jobId, resultHash, await credencialTablon('resultado', jobId, yo, firmar))).texto;
+}
+
+/** La entrega con una credencial ya firmada (la de `resultado`), para reutilizarla en sus archivos. */
+export async function leerEntregaConFirma(
+  jobId: bigint,
+  resultHash: Hex,
+  cred: CredencialTablon,
+): Promise<{ texto: string | null; cred: CredencialTablon }> {
   const res = await fetch(`${BUZON_DEL_TABLON}/result/${jobId.toString()}`, {
-    headers: cabecerasFirma(yo, firma, expira),
+    headers: cabecerasFirma(cred.yo, cred.firma, cred.expira),
     signal: AbortSignal.timeout(15_000),
   });
-  if (res.status === 404) return null;
+  if (res.status === 404) return { texto: null, cred };
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const { resultText } = (await res.json()) as { resultText?: unknown };
   if (typeof resultText !== 'string' || keccak256(toBytes(resultText)).toLowerCase() !== resultHash.toLowerCase()) {
     throw new Error('no cuadra con el resultHash');
   }
-  return resultText;
+  return { texto: resultText, cred };
+}
+
+/* ── archivos ─────────────────────────────────────────────────────────── */
+
+/**
+ * Sube archivos al buzón del tablón: los adjuntos del cliente (después de dejar
+ * el encargo, que los anuncia) o los de la entrega del agente (antes de dejar
+ * la entrega, que los anunciará). Una firma para todos. Repetir no ocupa más.
+ */
+export async function subirArchivosDelTablon(
+  jobId: bigint,
+  archivos: ArchivoParaSubir[],
+  yo: Address,
+  firmar: Firmar,
+  alSubir?: (hechos: number) => void,
+): Promise<void> {
+  if (archivos.length === 0) return;
+  const cred = await credencialTablon('archivo', jobId, yo, firmar);
+  let hechos = 0;
+  for (const a of archivos) {
+    const nombre = sanitizeFileName(a.name);
+    const res = await fetch(`${BUZON_DEL_TABLON}/archivo/${jobId.toString()}`, {
+      method: 'POST',
+      headers: {
+        ...cabecerasFirma(cred.yo, cred.firma, cred.expira),
+        'content-type': a.mime || 'application/octet-stream',
+        'x-panal-filename': encodeURIComponent(nombre),
+      },
+      body: a.bytes as unknown as BodyInit,
+      signal: AbortSignal.timeout(180_000),
+    });
+    if (!res.ok) throw new Error(`«${nombre}»: HTTP ${res.status}`);
+    alSubir?.(++hechos);
+  }
+}
+
+/** El texto de la entrega con sus archivos: la del SDK, la misma que firma la plantilla. */
+export { entregaConArchivos } from '@panal/sdk';
+
+/**
+ * Un archivo del tablón, comprobado byte a byte contra el hash del texto
+ * anclado. `adjunto`: del encargo; `entrega`: de la entrega. La credencial es
+ * la misma con la que se leyó ese texto.
+ */
+export async function bajarArchivoDelTablon(
+  jobId: bigint,
+  archivo: HashedFile,
+  de: 'adjunto' | 'entrega',
+  cred: CredencialTablon,
+): Promise<Uint8Array> {
+  const nombre = sanitizeFileName(archivo.name);
+  const res = await fetch(
+    `${BUZON_DEL_TABLON}/archivo/${jobId.toString()}/${encodeURIComponent(nombre)}?de=${de}`,
+    { headers: cabecerasFirma(cred.yo, cred.firma, cred.expira), signal: AbortSignal.timeout(180_000) },
+  );
+  if (!res.ok) throw new Error(`«${nombre}»: HTTP ${res.status}`);
+  const largo = Number(res.headers.get('content-length') ?? 0);
+  if (largo > MAX_FILE_BYTES) throw new Error(`«${nombre}» pasa del tope`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  verifyFileBytes(archivo, bytes);
+  return bytes;
 }
 
 /* ── firmar ───────────────────────────────────────────────────────────── */

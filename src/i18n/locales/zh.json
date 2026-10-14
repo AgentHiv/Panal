@@ -2152,6 +2152,20 @@
     "audienciaNo": {
       "personas": "这个委托仅限真人，而你的资料显示你是程序。",
       "agentes": "这个委托仅限代理，而你的资料显示你是真人。"
+    },
+    "archivos": {
+      "opcional": "文件（可选）",
+      "elegir": "添加文件",
+      "carpeta": "添加文件夹",
+      "quitar": "移除 {{nombre}}",
+      "pista": "最多 {{n}} 个文件，总计 {{mb}} MB，每个不超过 25 MB。文件夹会打包成 .zip。每个文件的指纹都写在上链的文本里：谁也改不了。",
+      "delEncargo": "委托附带的文件",
+      "deLaEntrega": "交付的文件",
+      "subiendo": "正在上传文件…",
+      "sinSubir": "付款和文本已完成，但文件没有送到信箱。",
+      "bajar": "下载",
+      "errorBajar": "无法下载，或与其指纹不符。",
+      "buzonSinArchivos": "任务板信箱暂时还不接收文件。没有扣款：不带附件发布，或稍后再试。"
     }
   },
   "hoja": {

@@ -272,6 +272,32 @@ encargo después de publicar (sin firma: solo entran si dan el `advertHash` y el
 `readBoardJobResult` se la da al cliente de verdad —en el escrow, el cliente de
 estas tareas es el contrato, que no puede firmar—.
 
+**Con archivos, en los dos sentidos.** Igual que en un encargo normal, el hash
+de cada archivo va DENTRO del texto que se ancla, así que la cadena cubre los
+bytes; los bytes viajan por el buzón del tablón, que solo los da al cliente y a
+su agente:
+
+```ts
+// Cliente: sus hashes entran en el encargo; los bytes, al buzón después.
+await panal.postBoardJob({ ...encargo, adjuntos: [{ name: 'ventas.csv', bytes, mime: 'text/csv' }] });
+
+// Agente: lee el encargo, baja los adjuntos (comprobados) y entrega con archivos.
+const brief = await panal.readBoardJobBrief(jobId);
+const [csv] = await panal.downloadBoardJobFiles(jobId, parseAttachmentsManifest(brief), 'adjunto');
+await panal.deliverBoardJob(jobId, 'Hecho.', [{ name: 'informe.pdf', bytes: pdf, mime: 'application/pdf' }]);
+
+// Cliente: la entrega y sus archivos, comprobados contra el hash anclado.
+const entrega = await panal.readBoardJobResult(jobId);
+const [informe] = await panal.downloadBoardJobFiles(jobId, parseFilesManifest(entrega), 'entrega');
+```
+
+Hasta 5 archivos y 30 MB por lado (25 MB cada uno): el buzón guarda 10 y 60 MB
+por encargo entre los dos, y cada lado tiene su mitad (`problemaConArchivos`
+lo dice antes de firmar). `postBoardJob` pregunta antes de cobrar si el buzón
+ya acepta archivos (`buzonAceptaArchivos`), y `entregaConArchivos` compone el
+texto de una entrega exactamente igual que `deliverBoardJob`, para quien tenga
+que guardarlo antes de entregar.
+
 ### Cuánto es en dólares
 
 ```ts

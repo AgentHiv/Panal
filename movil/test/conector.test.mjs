@@ -166,12 +166,16 @@ console.log('\nmensajes: solo los de Panal');
 dice('«Panal brief #7» se firma', !(await parado('personal_sign', [hex('Panal brief #7'), wallet.direccion])));
 dice('un mensaje cualquiera, no', await parado('personal_sign', [hex('Sign in to claim your airdrop'), wallet.direccion]));
 dice('ni uno que solo empieza como los de Panal', await parado('personal_sign', [hex('Panal brief #7 y algo más'), wallet.direccion]));
-const { tablonEncargoSignMessage, tablonEntregaSignMessage, tablonResultadoSignMessage, panalTablonAbi } = await import('@panal/sdk');
+const { tablonArchivoSignMessage, tablonEncargoSignMessage, tablonEntregaSignMessage, tablonResultadoSignMessage, panalTablonAbi } = await import('@panal/sdk');
 dice(
   'los del buzón del tablón con reglas, sí',
   !(await parado('personal_sign', [hex(tablonEncargoSignMessage(3n, 1900000000)), wallet.direccion])) &&
     !(await parado('personal_sign', [hex(tablonEntregaSignMessage(3n, `0x${'ab'.repeat(32)}`, 1900000000)), wallet.direccion])) &&
     !(await parado('personal_sign', [hex(tablonResultadoSignMessage(3n, 1900000000)), wallet.direccion])),
+);
+dice(
+  'y el de subir archivos al tablón, también',
+  !(await parado('personal_sign', [hex(tablonArchivoSignMessage(3n, 1900000000)), wallet.direccion])),
 );
 dice(
   'una entrega del tablón sin su hash, no',

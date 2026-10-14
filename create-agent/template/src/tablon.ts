@@ -78,7 +78,7 @@ import {
   formatearDolares,
   leerAnuncio,
 } from '@panal/sdk';
-import type { EncargoConReglas, PanalClient } from '@panal/sdk';
+import type { ArchivoParaSubir, EncargoConReglas, PanalClient } from '@panal/sdk';
 
 export interface OpcionesTablon {
   /** Cada cuánto se mira el tablón, en minutos. */
@@ -485,6 +485,8 @@ export async function retomarDelTablon(
     propios: Pick<EncargosPropios, 'anotar'>;
     briefGuardado: (taskId: bigint) => string | null;
     resultadoGuardado: (taskId: bigint) => string | null;
+    /** Los archivos de una entrega guardada, leídos de disco. */
+    archivosGuardados?: (taskId: bigint, texto: string) => ArchivoParaSubir[];
     trabajar: (job: EncargoConReglas, brief: string) => Promise<boolean>;
   },
   taskId: bigint,
@@ -498,6 +500,12 @@ export async function retomarDelTablon(
 
   const resultado = deps.resultadoGuardado(taskId);
   if (resultado !== null) {
+    // Si la entrega anuncia archivos, se vuelven a subir de disco antes: el
+    // proceso pudo morir entre guardarla y subirlos, y anclar un texto que
+    // anuncia archivos que el buzón no tiene dejaría al cliente sin ellos.
+    // Subir otra vez lo mismo no ocupa más.
+    const archivos = deps.archivosGuardados?.(taskId, resultado) ?? [];
+    if (archivos.length > 0) await deps.panal.publishBoardJobFiles(job.id, archivos);
     const { txHash } = await deps.panal.deliverBoardJob(job.id, resultado);
     console.log(`[tablon] encargo #${job.id} (tarea #${taskId}) entregado al segundo intento · tx ${txHash}`);
     return true;

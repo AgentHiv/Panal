@@ -20,7 +20,15 @@ import { createPublicClient, createWalletClient, formatEther, getAddress, http, 
 import type { Abi, Account, Address, Hex, PublicClient, TransactionReceipt, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, namesAbi, registryAbi } from './abis.js';
 import { leerX402 } from './agent-card.js';
-import { assertPublicUrl, fetchLimited, rutaDeAgente } from './net.js';
+import { assertPublicUrl, fetchBytesLimited, fetchLimited, rutaDeAgente } from './net.js';
+import {
+  MAX_FILE_BYTES,
+  appendAttachmentsManifest,
+  attachmentFrom,
+  sanitizeFileName,
+  verifyFileBytes,
+  type HashedFile,
+} from './files.js';
 import { X402Error, payAndAsk, quoteAsk, type AskResult, type X402Accept } from './x402.js';
 import { descend, newEnvelope, remainingBudget, type CallEnvelope } from './envelope.js';
 import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type PanalNetwork } from './chains.js';
@@ -31,12 +39,16 @@ import {
   MAX_CATEGORIAS,
   ModoTablon,
   encargoDeLaCadena,
+  entregaConArchivos,
   ofertaDeLaCadena,
   problemaAlPublicar,
+  problemaConArchivos,
   situacionDe,
+  tablonArchivoSignMessage,
   tablonEncargoSignMessage,
   tablonEntregaSignMessage,
   tablonResultadoSignMessage,
+  type ArchivoParaSubir,
   type EncargoConReglas,
   type OfertaConReglas,
   type PublicarEnElTablon,
@@ -1555,16 +1567,37 @@ export class PanalClient {
    * suben aquí: a la cadena va su keccak256, y los textos se dejan en el
    * buzón, que los comprueba contra esos hashes.
    */
-  async postBoardJob(
-    p: PublicarEnElTablon,
-  ): Promise<{ jobId: bigint; txHash: Hex; taskHash: Hex; advertHash: Hex; textosGuardados: boolean; error?: string }> {
+  async postBoardJob(p: PublicarEnElTablon): Promise<{
+    jobId: bigint;
+    txHash: Hex;
+    taskHash: Hex;
+    advertHash: Hex;
+    /** El encargo tal como se hasheó, con los adjuntos anunciados: para reintentar. */
+    encargo: string;
+    textosGuardados: boolean;
+    /** Si los adjuntos están en el buzón. Sin adjuntos, `true`. */
+    archivosGuardados: boolean;
+    error?: string;
+  }> {
     const problema = problemaAlPublicar(p);
     if (problema) throw new Error(problema);
     const moneda = p.moneda ?? NATIVE_CURRENCY;
     const nativa = moneda.toLowerCase() === NATIVE_CURRENCY.toLowerCase();
     await this.assertFunds(moneda, p.importe, nativa);
 
-    const taskHash = keccak256(toBytes(p.encargo));
+    // Los adjuntos se anuncian DENTRO del encargo, con su hash: el `taskHash`
+    // que va a la cadena los cubre desde el momento del pago.
+    const adjuntos = p.adjuntos ?? [];
+    // Antes de cobrar: un buzón anterior a los archivos aceptaría el encargo
+    // y no sus bytes, y el agente cobraría por algo que no puede abrir.
+    if (adjuntos.length > 0 && !(await this.buzonAceptaArchivos())) {
+      throw new Error('El buzón del tablón todavía no acepta archivos: no se ha publicado nada. Publica sin adjuntos o inténtalo más tarde.');
+    }
+    const encargo = appendAttachmentsManifest(
+      p.encargo,
+      adjuntos.map((a) => attachmentFrom(a.name, a.bytes, a.mime)),
+    );
+    const taskHash = keccak256(toBytes(encargo));
     const advertHash = keccak256(toBytes(p.anuncio));
     const seleccion = p.modo === ModoTablon.Seleccion;
     const params = {
@@ -1591,13 +1624,97 @@ export class PanalClient {
     // Los textos van DESPUÉS de la cadena: hasta que el encargo existe, el buzón
     // no tiene hash con qué comprobarlos. Si fallan, el encargo está pagado y
     // sin anunciar: se dice y se reintenta con `publishBoardJobTexts`.
+    const base = { jobId, txHash: hash, taskHash, advertHash, encargo };
     try {
-      await this.publishBoardJobTexts(jobId, { anuncio: p.anuncio, encargo: p.encargo });
-      return { jobId, txHash: hash, taskHash, advertHash, textosGuardados: true };
+      await this.publishBoardJobTexts(jobId, { anuncio: p.anuncio, encargo });
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
-      return { jobId, txHash: hash, taskHash, advertHash, textosGuardados: false, error };
+      return { ...base, textosGuardados: false, archivosGuardados: adjuntos.length === 0, error };
     }
+    // Los bytes, después del encargo: el buzón solo acepta los que anuncia.
+    try {
+      await this.publishBoardJobFiles(jobId, adjuntos);
+      return { ...base, textosGuardados: true, archivosGuardados: true };
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err);
+      return { ...base, textosGuardados: true, archivosGuardados: false, error };
+    }
+  }
+
+  /**
+   * Si el buzón del tablón ya guarda archivos: el que conoce la ruta contesta
+   * 400 a un POST sin credenciales; uno anterior, 404.
+   */
+  async buzonAceptaArchivos(): Promise<boolean> {
+    try {
+      const { status } = await fetchLimited(`${this.buzonUrl}/${this.tablon()}/archivo/0`, { method: 'POST', timeoutMs: 10_000, maxBytes: 10_000 });
+      return status !== 404;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Sube archivos al buzón del tablón, con una firma para todos. Su cliente,
+   * los adjuntos de un encargo ya publicado (solo entran los que el encargo
+   * anuncia); su agente, los de la entrega (lo que hace `deliverBoardJob`, o
+   * para volver a subirlos al retomar). Repetirlo no ocupa más.
+   */
+  async publishBoardJobFiles(jobId: bigint, archivos: ArchivoParaSubir[]): Promise<void> {
+    if (archivos.length === 0) return;
+    const cabeceras = await this.credencialesDeBuzon((e) => tablonArchivoSignMessage(jobId, e));
+    for (const a of archivos) await this.subirArchivoAlTablon(jobId, a, cabeceras);
+  }
+
+  private async subirArchivoAlTablon(jobId: bigint, a: ArchivoParaSubir, cabeceras: Record<string, string>): Promise<void> {
+    const nombre = sanitizeFileName(a.name);
+    const { status, text } = await fetchLimited(`${this.buzonUrl}/${this.tablon()}/archivo/${jobId}`, {
+      method: 'POST',
+      headers: {
+        ...cabeceras,
+        'content-type': a.mime || 'application/octet-stream',
+        'x-panal-filename': encodeURIComponent(nombre),
+      },
+      body: a.bytes as unknown as RequestInit['body'],
+      timeoutMs: 180_000,
+      maxBytes: 10_000,
+    });
+    if (status !== 200) {
+      throw new Error(`El buzón no aceptó «${nombre}» del #${jobId} (${status}: ${text.slice(0, 160)}).`);
+    }
+  }
+
+  /**
+   * Los archivos de un encargo del tablón, comprobados byte a byte contra su
+   * hash. `adjunto`: los que el cliente mandó con el encargo (los bajan él y
+   * su agente). `entrega`: los que entregó el agente (los baja su cliente).
+   * El hash viene del texto anclado —`readBoardJobBrief` o
+   * `readBoardJobResult`—, nunca del buzón. Una firma para todos.
+   */
+  async downloadBoardJobFiles(jobId: bigint, archivos: HashedFile[], de: 'adjunto' | 'entrega'): Promise<Uint8Array[]> {
+    if (archivos.length === 0) return [];
+    const job = await this.getBoardJob(jobId);
+    const yo = this.wallet() && this.account!.address.toLowerCase();
+    const esCliente = yo === job.cliente.toLowerCase();
+    if (!esCliente && yo !== job.agente.toLowerCase()) {
+      throw new Error(`Los archivos del #${jobId} solo los bajan su cliente y su agente.`);
+    }
+    // El cliente abre la entrega con la firma de llevársela; lo demás, con la de leer el encargo.
+    const cabeceras = await this.credencialesDeBuzon((e) =>
+      de === 'entrega' && esCliente ? tablonResultadoSignMessage(jobId, e) : tablonEncargoSignMessage(jobId, e),
+    );
+    const out: Uint8Array[] = [];
+    for (const f of archivos) {
+      const { status, bytes } = await fetchBytesLimited(
+        `${this.buzonUrl}/${this.tablon()}/archivo/${jobId}/${encodeURIComponent(sanitizeFileName(f.name))}?de=${de}`,
+        { headers: cabeceras, timeoutMs: 180_000, maxBytes: Math.min(MAX_FILE_BYTES, f.size + 1024) },
+      );
+      if (status === 404) throw new Error(`«${f.name}» no está en el buzón del tablón.`);
+      if (status !== 200) throw new Error(`El buzón respondió ${status} al pedir «${f.name}».`);
+      verifyFileBytes(f, bytes);
+      out.push(bytes);
+    }
+    return out;
   }
 
   /**
@@ -1680,13 +1797,27 @@ export class PanalClient {
    * se ancla su hash en el escrow. Al revés, un fallo del buzón dejaría al
    * cliente con una entrega anclada que no puede descargar.
    */
-  async deliverBoardJob(jobId: bigint, texto: string): Promise<{ txHash: Hex; resultHash: Hex }> {
+  async deliverBoardJob(
+    jobId: bigint,
+    textoEscrito: string,
+    archivos: ArchivoParaSubir[] = [],
+  ): Promise<{ txHash: Hex; resultHash: Hex; texto: string }> {
     this.wallet();
     const job = await this.getBoardJob(jobId);
     if (job.agente.toLowerCase() !== this.account!.address.toLowerCase()) {
       throw new Error(`El encargo #${jobId} lo tiene ${job.agente}, no tú.`);
     }
     if (job.estado !== EstadoTablon.Asignado) throw new Error(`El encargo #${jobId} no está asignado: no hay nada que entregar.`);
+    // Los archivos primero, y su hash dentro del texto que se ancla: si el
+    // buzón no los acepta, no se ancla nada.
+    let texto = textoEscrito;
+    if (archivos.length > 0) {
+      const problema = problemaConArchivos(archivos);
+      if (problema) throw new Error(problema);
+      const cabecerasArchivos = await this.credencialesDeBuzon((e) => tablonArchivoSignMessage(jobId, e));
+      for (const a of archivos) await this.subirArchivoAlTablon(jobId, a, cabecerasArchivos);
+      texto = entregaConArchivos(jobId, textoEscrito, archivos);
+    }
     const hashEntrega = keccak256(toBytes(texto));
     const cabeceras = await this.credencialesDeBuzon((e) => tablonEntregaSignMessage(jobId, hashEntrega, e));
     const { status, text } = await fetchLimited(`${this.buzonUrl}/${this.tablon()}/entrega/${jobId}`, {
@@ -1704,7 +1835,8 @@ export class PanalClient {
     if (status !== 200) {
       throw new Error(`El buzón no aceptó la entrega del #${jobId} (${status}: ${text.slice(0, 160)}). No se ha anclado nada.`);
     }
-    return this.deliverResult(job.escrowTaskId, texto);
+    const anclada = await this.deliverResult(job.escrowTaskId, texto);
+    return { ...anclada, texto };
   }
 
   /**
