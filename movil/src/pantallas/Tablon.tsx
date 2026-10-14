@@ -26,7 +26,7 @@ import {
   useTablonReglas,
   type DatosDelTablon,
 } from '@/hooks/useTablonReglas';
-import { claveDeMotivo, enTablon, firmarYEsperar, leerEntrega, MONEDAS_TABLON, simboloDe } from '@/lib/tablonReglas';
+import { claveDeMotivo, credencialTablon, enTablon, firmarYEsperar, leerEntregaConFirma, MONEDAS_TABLON, simboloDe } from '@/lib/tablonReglas';
 import { hayEntrega } from '@/lib/expedientes';
 import Menu from '~/componentes/Menu';
 import Icono from '~/componentes/Icono';
@@ -447,9 +447,14 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
     setLeyendo(true);
     setError(null);
     try {
-      const texto = await leerEntrega(job.id, tarea.resultHash, yo, (message) => signMessageAsync({ message }));
+      // La misma firma abre la entrega y sus archivos: se pasa a la hoja.
+      const { texto, cred } = await leerEntregaConFirma(
+        job.id,
+        tarea.resultHash,
+        await credencialTablon('resultado', job.id, yo, (message) => signMessageAsync({ message })),
+      );
       if (texto === null) setError(M.entregaNoEsta);
-      else abrir({ tipo: 'texto', titulo: T.tablon.entrega.titulo, texto });
+      else abrir({ tipo: 'entrega', job, texto, cred });
     } catch (err) {
       setError(err instanceof Error && /no cuadra|HTTP/.test(err.message) ? M.entregaError : explicarFallo(err, T));
     } finally {

@@ -20,6 +20,7 @@
 
 import { encodeAbiParameters, keccak256, toBytes, type Address, type Hex } from 'viem';
 import type { TipoDeAgente } from './tipo.js';
+import { MAX_FILE_BYTES, appendFilesManifest, sanitizeFileName, type DeliveredFile } from './files.js';
 
 /** Cómo se asigna un encargo. */
 export enum ModoTablon {
@@ -300,6 +301,12 @@ export interface PublicarEnElTablon {
   soloConExperiencia?: boolean;
   republicar?: boolean;
   campana?: { id: Hex; topePorAgente: number };
+  /**
+   * Archivos que acompañan al encargo. Su hash se anuncia dentro del encargo
+   * antes de publicar, así que el `taskHash` los cubre; los bytes se suben al
+   * buzón del tablón después.
+   */
+  adjuntos?: ArchivoParaSubir[];
 }
 
 /**
@@ -328,6 +335,10 @@ export function problemaAlPublicar(p: PublicarEnElTablon): string | null {
     if (ofertas <= 0) return 'En selección hace falta un tiempo para ofertar.';
     if (eleccion > MAX_VENTANA_ELECCION_S) return 'El cliente tiene 7 días como mucho para elegir.';
     if (p.caducaEnS < ofertas + eleccion) return 'Caduca antes de que acabe el tiempo de elegir.';
+  }
+  if (p.adjuntos?.length) {
+    const archivos = problemaConArchivos(p.adjuntos);
+    if (archivos) return archivos;
   }
   if (p.campana && (p.campana.topePorAgente < 1 || p.campana.topePorAgente > 255)) {
     return 'El tope de una campaña es de 1 a 255 encargos por agente.';
@@ -361,4 +372,75 @@ export function tablonEntregaSignMessage(jobId: bigint, resultHash: Hex, expira:
 /** Su cliente se lleva la entrega. */
 export function tablonResultadoSignMessage(jobId: bigint, expira: number): string {
   return `Panal tablón con reglas · resultado #${jobId.toString()} · ${expira}`;
+}
+
+/** Su cliente sube un adjunto del encargo, o su agente un archivo de la entrega. */
+export function tablonArchivoSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · archivo #${jobId.toString()} · ${expira}`;
+}
+
+/*
+ * Archivos en el tablón.
+ *
+ * Los mismos que en un encargo normal: el hash de cada archivo va DENTRO del
+ * texto que se ancla —el encargo, en `[panal-attach/1]`; la entrega, en
+ * `[panal-files/1]`—, así que la cadena cubre los bytes y nadie los cambia
+ * después. Los bytes viajan por el buzón del tablón, que solo los da al cliente
+ * y a su agente.
+ *
+ * Los topes son POR LADO. El buzón guarda 10 archivos y 60 MB por encargo entre
+ * los dos (bot/src/buzon-store.ts); la mitad para los adjuntos del cliente y la
+ * mitad para la entrega, para que adjuntar mucho no deje al agente sin sitio.
+ */
+export const MAX_ARCHIVOS_TABLON = 5;
+export const MAX_BYTES_ARCHIVOS_TABLON = 30 * 1024 * 1024;
+
+/** Un archivo para subir al tablón: su nombre, sus bytes y su tipo si se sabe. */
+export interface ArchivoParaSubir {
+  name: string;
+  bytes: Uint8Array;
+  mime?: string;
+}
+
+/**
+ * El texto de una entrega del tablón con sus archivos anunciados: nombre,
+ * tamaño, tipo y hash de cada uno, dentro de lo que se ancla. La ruta es
+ * relativa al buzón del tablón (`${buzonUrl}/${tablon}`).
+ *
+ * UNA sola función para todos —SDK, web, app y plantilla— porque este texto se
+ * hashea: dos versiones que difieran en un espacio darían dos hashes, y el
+ * cliente vería una entrega que no cuadra con la anclada.
+ */
+export function entregaConArchivos(jobId: bigint, texto: string, archivos: ArchivoParaSubir[]): string {
+  const entregados: DeliveredFile[] = archivos.map((a) => {
+    const nombre = sanitizeFileName(a.name);
+    return {
+      name: nombre,
+      size: a.bytes.byteLength,
+      hash: keccak256(a.bytes),
+      ...(a.mime ? { mime: a.mime } : {}),
+      path: `/archivo/${jobId.toString()}/${encodeURIComponent(nombre)}?de=entrega`,
+    };
+  });
+  return appendFilesManifest(texto, entregados);
+}
+
+/** Por qué estos archivos no caben en un lado del encargo, o `null`. */
+export function problemaConArchivos(archivos: ArchivoParaSubir[]): string | null {
+  if (archivos.length > MAX_ARCHIVOS_TABLON) return `Como mucho ${MAX_ARCHIVOS_TABLON} archivos.`;
+  const nombres: string[] = [];
+  for (const a of archivos) {
+    try {
+      nombres.push(sanitizeFileName(a.name));
+    } catch {
+      return `«${a.name}» no es un nombre de archivo que se pueda usar.`;
+    }
+    if (a.bytes.byteLength === 0) return `«${a.name}» está vacío.`;
+    if (a.bytes.byteLength > MAX_FILE_BYTES) return `«${a.name}» pasa de ${MAX_FILE_BYTES / 1024 / 1024} MB.`;
+  }
+  // Se piden por nombre: dos con el mismo serían uno.
+  if (new Set(nombres).size !== nombres.length) return 'Hay dos archivos con el mismo nombre.';
+  const total = archivos.reduce((n, a) => n + a.bytes.byteLength, 0);
+  if (total > MAX_BYTES_ARCHIVOS_TABLON) return `Entre todos pasan de ${MAX_BYTES_ARCHIVOS_TABLON / 1024 / 1024} MB.`;
+  return null;
 }

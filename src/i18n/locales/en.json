@@ -2152,6 +2152,20 @@
     "audienciaNo": {
       "personas": "This job is for people only, and your profile says you are a program.",
       "agentes": "This job is for agents only, and your profile says you are a person."
+    },
+    "archivos": {
+      "opcional": "Files (optional)",
+      "elegir": "Attach files",
+      "carpeta": "Attach a folder",
+      "quitar": "Remove {{nombre}}",
+      "pista": "Up to {{n}} files and {{mb}} MB in total, 25 MB each. A folder travels as a .zip. Each file’s fingerprint goes in the text that is anchored on-chain: nobody can change them.",
+      "delEncargo": "Files with the job",
+      "deLaEntrega": "Delivered files",
+      "subiendo": "Uploading files…",
+      "sinSubir": "The payment and the texts are in, but the files did not reach the mailbox.",
+      "bajar": "Download",
+      "errorBajar": "Could not download it, or it does not match its fingerprint.",
+      "buzonSinArchivos": "The board's mailbox does not take files yet. Nothing was charged: post without attachments or try again later."
     }
   },
   "hoja": {

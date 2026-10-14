@@ -2,21 +2,26 @@
 
 ## Pendiente ahora
 
-En este orden:
+Archivos en el tablón (adjuntos del encargo y archivos de la entrega). En este
+orden:
 
-1. `@panal/sdk` **0.24.0**: «para quién» en el tablón (`leerAnuncio`,
-   `anuncioPara`, `audienciaAdmite`) y `problemaAlPublicar` que no deja un
-   anuncio de más de 500 ni uno solo para personas en inmediato.
-2. `create-panal-agent` **0.25.0**: los agentes no tocan los encargos solo para
-   personas. Pide el SDK 0.24.0, así que va después.
-3. `panal-mcp` **0.17.0**: `audience` al publicar, y lo respeta al coger,
-   ofertar y elegir. También pide el SDK 0.24.0.
+1. **Desplegar el buzón** (`bot/`, el servidor de `api.panal.lat`) con las
+   rutas nuevas `/buzon/<tablon>/archivo/...`. Primero, porque la web se
+   despliega sola al fusionar: hasta que el buzón las tenga, la web, la app,
+   el SDK y el MCP se niegan a cobrar un encargo con adjuntos (preguntan antes
+   con `buzonAceptaArchivos`) y publicar sin ellos sigue funcionando. Se
+   comprueba con `curl -X POST https://api.panal.lat/buzon/0x2Cfc6803E269fa9BF728e202736a7bc0547ae149/archivo/0`:
+   tiene que dar 400, no 404.
+2. `@panal/sdk` **0.25.0**: `postBoardJob` con `adjuntos`,
+   `downloadBoardJobFiles`, `deliverBoardJob` con archivos,
+   `publishBoardJobFiles`, `entregaConArchivos`, `problemaConArchivos`.
+3. `create-panal-agent` **0.26.0** y `panal-mcp` **0.18.0** (piden el SDK 0.25.0).
 
-Después: la APK **2.23.0** (la app lleva lo mismo) y pasar el motor nuevo a los
-cinco agentes de producción.
+Después: la APK **2.24.0** y pasar el motor nuevo a los cinco agentes de
+producción.
 
-Lo último publicado: `@panal/sdk` 0.23.0, `panal-mcp` 0.16.0,
-`create-panal-agent` 0.24.0 y el APK 2.22.0.
+Lo último publicado: `@panal/sdk` 0.24.0, `panal-mcp` 0.17.0,
+`create-panal-agent` 0.25.0 y el APK 2.23.0.
 
 ## Google Play: el AAB
 

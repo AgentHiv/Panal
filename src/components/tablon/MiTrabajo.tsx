@@ -18,12 +18,35 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useSignMessage } from 'wagmi';
 import type { Address } from 'viem';
-import { CATEGORIAS_TABLON, EstadoTablon, MAX_CATEGORIAS, ModoTablon, type EncargoConReglas } from '@panal/sdk';
+import {
+  CATEGORIAS_TABLON,
+  EstadoTablon,
+  MAX_CATEGORIAS,
+  ModoTablon,
+  parseAttachmentsManifest,
+  problemaConArchivos,
+  stripFilesManifest,
+  type ArchivoParaSubir,
+  type EncargoConReglas,
+} from '@panal/sdk';
 import { useAhora } from '@/hooks/useAhora';
 import { useFirmaDelTablon } from '@/hooks/useFirmaDelTablon';
 import { useReglasDelTablon, useSituacionEnElTablon, type DatosDelTablon } from '@/hooks/useTablonReglas';
-import { dejarEntrega, enTablon, entregarEnEscrow, firmarYEsperar, leerEncargoPrivado, simboloDe } from '@/lib/tablonReglas';
+import {
+  credencialTablon,
+  credencialVigente,
+  dejarEntrega,
+  enTablon,
+  entregaConArchivos,
+  entregarEnEscrow,
+  firmarYEsperar,
+  leerEncargoConFirma,
+  simboloDe,
+  subirArchivosDelTablon,
+  type CredencialTablon,
+} from '@/lib/tablonReglas';
 import { cn } from '@/lib/utils';
+import { ElegirArchivos, ListaDeArchivos } from './Archivos';
 import { Chip, Girando, Importe, NombreDeCategoria } from './comun';
 import { BOTON_LINEA, BOTON_MIEL, BOTON_PELIGRO, CAMPO, cantidad, useDuracion, useFecha } from './util';
 
@@ -254,9 +277,12 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
   const { ejecutar, ocupado } = useFirmaDelTablon();
   const { signMessageAsync } = useSignMessage();
   const [encargo, setEncargo] = useState<string | null>(null);
+  // La firma con la que se leyó el encargo: abre también sus adjuntos.
+  const [cred, setCred] = useState<CredencialTablon | null>(null);
   const [leyendo, setLeyendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [texto, setTexto] = useState('');
+  const [archivos, setArchivos] = useState<ArchivoParaSubir[]>([]);
 
   const id = job.id.toString();
   const tarea = datos.tareas.get(job.escrowTaskId.toString());
@@ -267,9 +293,10 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
       setLeyendo(true);
       setError(null);
       try {
-        const brief = await leerEncargoPrivado(job, yo, firmar);
-        if (brief === null) setError(t('tablon.trabajo.encargoNoEsta'));
-        else setEncargo(brief);
+        const leido = await leerEncargoConFirma(job, await credencialTablon('encargo', job.id, yo, firmar));
+        setCred(leido.cred);
+        if (leido.brief === null) setError(t('tablon.trabajo.encargoNoEsta'));
+        else setEncargo(leido.brief);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         setError(/user (rejected|denied)/i.test(msg) ? t('hire.step3.rejected') : t('tablon.trabajo.encargoError'));
@@ -281,10 +308,22 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
   const claveEntregar = `entregar:${id}`;
   const entregar = () =>
     void ejecutar(claveEntregar, async (e, c) => {
-      const hash = await dejarEntrega(job.id, texto.trim(), c, firmar);
+      // Los archivos primero, y su hash dentro del texto que se ancla: si el
+      // buzón no los acepta, no se ancla nada.
+      await subirArchivosDelTablon(job.id, archivos, c, firmar);
+      const final = archivos.length > 0 ? entregaConArchivos(job.id, texto.trim(), archivos) : texto.trim();
+      const hash = await dejarEntrega(job.id, final, c, firmar);
       await firmarYEsperar(e, c, entregarEnEscrow(job.escrowTaskId, hash));
       setTexto('');
+      setArchivos([]);
     });
+  const credencialDelEncargo = async () => {
+    if (credencialVigente(cred)) return cred;
+    const nueva = await credencialTablon('encargo', job.id, yo, firmar);
+    setCred(nueva);
+    return nueva;
+  };
+  const adjuntos = encargo !== null ? parseAttachmentsManifest(encargo) : [];
   const claveCerrar = `cerrar:${id}`;
   const cerrar = () => void ejecutar(claveCerrar, (e, c) => firmarYEsperar(e, c, enTablon('settle', [job.id])));
 
@@ -348,7 +387,16 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
       {encargo !== null && (
         <div className="mt-4 rounded-xl border border-line bg-cream p-4">
           <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('tablon.trabajo.elEncargo')}</p>
-          <p className="mt-2 max-h-80 overflow-y-auto whitespace-pre-wrap break-words text-[0.875rem] leading-relaxed text-ink">{encargo}</p>
+          <p className="mt-2 max-h-80 overflow-y-auto whitespace-pre-wrap break-words text-[0.875rem] leading-relaxed text-ink">
+            {stripFilesManifest(encargo)}
+          </p>
+          <ListaDeArchivos
+            jobId={job.id}
+            archivos={adjuntos}
+            de="adjunto"
+            credencial={credencialDelEncargo}
+            titulo={t('tablon.archivos.delEncargo')}
+          />
         </div>
       )}
 
@@ -364,8 +412,19 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
             rows={6}
             className={cn(CAMPO, 'resize-y')}
           />
+          <ElegirArchivos
+            archivos={archivos}
+            onChange={setArchivos}
+            disabled={ocupado !== null}
+            etiqueta={t('tablon.archivos.opcional')}
+          />
           <div className="flex flex-wrap items-center gap-3">
-            <button type="button" onClick={entregar} disabled={!texto.trim() || ocupado !== null} className={BOTON_MIEL}>
+            <button
+              type="button"
+              onClick={entregar}
+              disabled={(!texto.trim() && archivos.length === 0) || (archivos.length > 0 && problemaConArchivos(archivos) !== null) || ocupado !== null}
+              className={BOTON_MIEL}
+            >
               {ocupado === claveEntregar && <Girando />}
               {t('tablon.trabajo.entregar')}
             </button>

@@ -19,7 +19,19 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Hexagon } from 'lucide-react';
 import { keccak256, parseEther, parseEventLogs, toBytes, type Address, type Hex } from 'viem';
-import { CATEGORIAS_TABLON, MAX_TEXTO_ANUNCIO, ModoTablon, anuncioPara, panalTablonAbi, type AudienciaTablon } from '@panal/sdk';
+import { useSignMessage } from 'wagmi';
+import {
+  CATEGORIAS_TABLON,
+  MAX_TEXTO_ANUNCIO,
+  ModoTablon,
+  anuncioPara,
+  appendAttachmentsManifest,
+  attachmentFrom,
+  panalTablonAbi,
+  problemaConArchivos,
+  type ArchivoParaSubir,
+  type AudienciaTablon,
+} from '@panal/sdk';
 import Dolares from '@/components/Dolares';
 import { Checkbox } from '@/components/ui/checkbox';
 import TxHash from '@/components/TxHash';
@@ -27,8 +39,17 @@ import { NATIVE_CURRENCY, PANAL_TOKEN_ADDRESS, publicClient } from '@/contracts/
 import { useWallet } from '@/hooks/useWallet';
 import { useFirmaDelTablon } from '@/hooks/useFirmaDelTablon';
 import { useReglasDelTablon } from '@/hooks/useTablonReglas';
-import { buzonAceptaElTablon, enTablon, firmarYEsperar, guardarTextos, permitirPanal } from '@/lib/tablonReglas';
+import {
+  buzonAceptaArchivos,
+  buzonAceptaElTablon,
+  enTablon,
+  firmarYEsperar,
+  guardarTextos,
+  permitirPanal,
+  subirArchivosDelTablon,
+} from '@/lib/tablonReglas';
 import { cn } from '@/lib/utils';
+import { ElegirArchivos } from './Archivos';
 import { Girando } from './comun';
 import { BOTON_LINEA, CAMPO, cantidad, useDuracion } from './util';
 
@@ -57,9 +78,12 @@ interface Hecho {
   jobId: bigint;
   hash: Hex;
   textos: boolean;
+  /** Si los adjuntos están en el buzón (sin adjuntos, sí). */
+  archivos: boolean;
   /** Los textos tal y como se hashearon: reintentar tiene que mandar esos. */
   anuncio: string;
   encargo: string;
+  adjuntos: ArchivoParaSubir[];
 }
 
 function Opciones<T extends number>({
@@ -106,7 +130,7 @@ function Opciones<T extends number>({
 
 export default function FormPublicar({ onPublicado }: { onPublicado?: () => void }) {
   const { t } = useTranslation();
-  const { connected, connect, connecting } = useWallet();
+  const { address, connected, connect, connecting } = useWallet();
   const { ejecutar, ocupado } = useFirmaDelTablon();
   const { data: reglas } = useReglasDelTablon();
   const duracion = useDuracion();
@@ -115,6 +139,8 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
   const [encargo, setEncargo] = useState('');
   const [categoria, setCategoria] = useState<number | null>(null);
   const [audiencia, setAudiencia] = useState<AudienciaTablon>('todos');
+  const [adjuntos, setAdjuntos] = useState<ArchivoParaSubir[]>([]);
+  const { signMessageAsync } = useSignMessage();
   const [enPanal, setEnPanal] = useState(false);
   const [importe, setImporte] = useState('');
   const [modo, setModo] = useState<ModoTablon>(ModoTablon.Seleccion);
@@ -124,7 +150,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
   const [caduca, setCaduca] = useState<number>(3 * DIA);
   const [experiencia, setExperiencia] = useState(false);
   const [republicar, setRepublicar] = useState(false);
-  const [paso, setPaso] = useState<'permiso' | 'publicando' | 'textos' | null>(null);
+  const [paso, setPaso] = useState<'permiso' | 'publicando' | 'textos' | 'archivos' | null>(null);
   const [hecho, setHecho] = useState<Hecho | null>(null);
 
   const moneda = (enPanal ? PANAL_TOKEN_ADDRESS : NATIVE_CURRENCY) as Address;
@@ -173,7 +199,10 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
             ? t('tablon.pub.faltaImporte')
             : null;
 
+  const problemaArchivos = adjuntos.length > 0 ? problemaConArchivos(adjuntos) : null;
+
   const listo =
+    problemaArchivos === null &&
     anuncioT.length >= MIN_ANUNCIO &&
     encargoT.length > 0 &&
     categoria !== null &&
@@ -188,10 +217,17 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
       // Los textos tal y como se hashean: el estado puede cambiar entre medias.
       // El anuncio lleva delante para quién es; su hash lo deja fijo.
       const textoAnuncio = anuncioPara(audiencia, anuncioT);
-      const textoEncargo = encargoT;
+      // Los adjuntos se anuncian DENTRO del encargo, con su hash: el taskHash
+      // que va a la cadena los cubre desde el momento del pago.
+      const archivos = adjuntos;
+      const textoEncargo = appendAttachmentsManifest(
+        encargoT,
+        archivos.map((a) => attachmentFrom(a.name, a.bytes, a.mime)),
+      );
       try {
         // Antes de cobrar nada: sin buzón, el encargo quedaría pagado y mudo.
         if (!(await buzonAceptaElTablon())) throw new Error(t('tablon.pub.buzonNoListo'));
+        if (archivos.length > 0 && !(await buzonAceptaArchivos())) throw new Error(t('tablon.archivos.buzonSinArchivos'));
         if (enPanal) {
           setPaso('permiso');
           await permitirPanal(escribir, cuenta, importeWei);
@@ -225,7 +261,18 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
         } catch {
           textos = false;
         }
-        setHecho({ jobId, hash, textos, anuncio: textoAnuncio, encargo: textoEncargo });
+        // Los bytes, después del encargo: el buzón solo acepta los que anuncia.
+        let subidos = archivos.length === 0;
+        if (textos && archivos.length > 0) {
+          setPaso('archivos');
+          try {
+            await subirArchivosDelTablon(jobId, archivos, cuenta, (message) => signMessageAsync({ message }));
+            subidos = true;
+          } catch {
+            subidos = false;
+          }
+        }
+        setHecho({ jobId, hash, textos, archivos: subidos, anuncio: textoAnuncio, encargo: textoEncargo, adjuntos: archivos });
         onPublicado?.();
       } finally {
         setPaso(null);
@@ -237,8 +284,15 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
       if (!hecho) return;
       setPaso('textos');
       try {
-        await guardarTextos(hecho.jobId, hecho.anuncio, hecho.encargo);
-        setHecho({ ...hecho, textos: true });
+        if (!hecho.textos) {
+          await guardarTextos(hecho.jobId, hecho.anuncio, hecho.encargo);
+          setHecho((h) => (h ? { ...h, textos: true } : h));
+        }
+        if (!hecho.archivos && address) {
+          setPaso('archivos');
+          await subirArchivosDelTablon(hecho.jobId, hecho.adjuntos, address as Address, (message) => signMessageAsync({ message }));
+          setHecho((h) => (h ? { ...h, textos: true, archivos: true } : h));
+        }
       } catch {
         // sigue ofreciendo el reintento
       } finally {
@@ -251,6 +305,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
     setAnuncio('');
     setEncargo('');
     setImporte('');
+    setAdjuntos([]);
   };
 
   if (hecho) {
@@ -258,18 +313,18 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
       <div className="mt-5 flex flex-col items-center gap-4 text-center">
         <p className="text-[0.9375rem] text-ink">{t('tablon.pub.hecho', { id: hecho.jobId.toString() })}</p>
         <TxHash hash={hecho.hash} className="rounded-full border border-line bg-cream px-4 py-2" />
-        {hecho.textos ? (
+        {hecho.textos && hecho.archivos ? (
           <p className="text-[0.8125rem] leading-relaxed text-ink-2">{seleccion ? t('tablon.pub.hechoSeleccion') : t('tablon.pub.hechoInmediato')}</p>
         ) : (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-terra/30 bg-terra/5 px-4 py-3 text-[0.8125rem] text-ink-2">
-            <p>{t('tablon.pub.sinTextos')}</p>
+            <p>{hecho.textos ? t('tablon.archivos.sinSubir') : t('tablon.pub.sinTextos')}</p>
             <button type="button" onClick={reintentarTextos} disabled={paso !== null} className={BOTON_LINEA}>
-              {paso === 'textos' && <Girando />}
+              {paso !== null && <Girando />}
               {t('tablon.pub.reintentar')}
             </button>
           </div>
         )}
-        <button type="button" onClick={otro} disabled={!hecho.textos} className={BOTON_LINEA}>
+        <button type="button" onClick={otro} disabled={!hecho.textos || !hecho.archivos} className={BOTON_LINEA}>
           {t('tablon.pub.otro')}
         </button>
       </div>
@@ -313,6 +368,13 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
         />
         <p className="text-[0.75rem] leading-relaxed text-ink-3">{t('tablon.encargoPista')}</p>
       </div>
+
+      <ElegirArchivos
+        archivos={adjuntos}
+        onChange={setAdjuntos}
+        disabled={ocupado !== null}
+        etiqueta={t('tablon.archivos.opcional')}
+      />
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="tab-categoria" className="text-[0.8125rem] font-medium text-ink-2">
@@ -474,7 +536,9 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
               ? t('tablon.pub.pasoPublicar')
               : paso === 'textos'
                 ? t('tablon.guardando')
-                : t('tablon.publicarBoton')}
+                : paso === 'archivos'
+                  ? t('tablon.archivos.subiendo')
+                  : t('tablon.publicarBoton')}
         </button>
       ) : (
         <button type="button" onClick={connect} disabled={connecting} className="btn-monad px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40">

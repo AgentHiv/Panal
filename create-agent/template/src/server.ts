@@ -31,6 +31,7 @@ import {
   assertCanServe,
   buildQuote,
   createPanalClient,
+  entregaConArchivos,
   leerEjemplosDeMetadata,
   leerNiveles,
   leerNivelesDeMetadata,
@@ -43,11 +44,14 @@ import {
   nivelPara,
   parseAttachmentsManifest,
   parseEnvelope,
+  parseFilesManifest,
+  problemaConArchivos,
   permitNonce,
   readPermitDomain,
   sanitizeFileName,
   TaskStatus,
   verifyAndSettle,
+  type ArchivoParaSubir,
   type AttachedFile,
   type CallEnvelope,
   type DeliveredFile,
@@ -863,7 +867,32 @@ export type ResultadoTrabajo = 'entregada' | 'esperando' | 'fallo' | 'en-curso';
  */
 interface ComoEntregar {
   cliente: Address;
-  entregar: (texto: string) => Promise<{ txHash: Hex }>;
+  jobId: bigint;
+  /** Deja la entrega en el buzón del tablón —con sus archivos, si hay— y ancla su hash. */
+  entregar: (texto: string, archivos: ArchivoParaSubir[]) => Promise<{ txHash: Hex }>;
+  /** Los adjuntos del encargo, del buzón del tablón y comprobados contra su hash. */
+  bajarAdjuntos: (archivos: AttachedFile[]) => Promise<Uint8Array[]>;
+}
+
+/** Los archivos de la salida de `handleTask`, como se suben al tablón. */
+function archivosParaElTablon(files: TaskFile[]): ArchivoParaSubir[] {
+  return files.map((f) => ({
+    name: sanitizeFileName(f.name),
+    bytes: typeof f.data === 'string' ? new TextEncoder().encode(f.data) : new Uint8Array(f.data),
+    ...(f.mime ? { mime: f.mime } : {}),
+  }));
+}
+
+/** Los archivos de una entrega ya guardada, leídos de disco, para volver a subirlos. */
+function archivosGuardados(taskId: bigint, texto: string): ArchivoParaSubir[] {
+  return parseFilesManifest(texto).flatMap((f) => {
+    try {
+      const bytes = new Uint8Array(readFileSync(join(filesDir(taskId), sanitizeFileName(f.name))));
+      return [{ name: f.name, bytes, ...(f.mime ? { mime: f.mime } : {}) }];
+    } catch {
+      return [];
+    }
+  });
 }
 
 async function work(
@@ -887,7 +916,19 @@ async function work(
     // que mirar. Sin esto, un agente que se reinicia entre el brief y la
     // subida se pondría a trabajar sin la foto, entregaría lo que pudiera y
     // anclaría ese resultado a medias en la cadena.
-    const { recibidos, faltan } = repasarAdjuntos(taskId, brief);
+    let { recibidos, faltan } = repasarAdjuntos(taskId, brief);
+    // En el tablón no los sube nadie a este servidor: están en el buzón del
+    // tablón. Se bajan, se comprueban contra el hash del encargo y se guardan
+    // donde los guarda una subida normal; a partir de ahí es lo mismo.
+    if (faltan.length > 0 && delTablon) {
+      try {
+        const bytes = await delTablon.bajarAdjuntos(faltan);
+        faltan.forEach((f, i) => guardarAdjunto(taskId, f.name, bytes[i]!));
+        ({ recibidos, faltan } = repasarAdjuntos(taskId, brief));
+      } catch (err) {
+        console.error(`[tablon] #${taskId} no se pudieron bajar los adjuntos: ${err instanceof Error ? err.message : err}`);
+      }
+    }
     if (faltan.length > 0) {
       console.log(
         `[panal] #${taskId} en espera de ${faltan.length} adjunto(s): ${faltan.map((f) => f.name).join(', ')}`,
@@ -921,19 +962,32 @@ async function work(
     // archivos. Los archivos se escriben en disco y su hash se cuela en el
     // texto: lo que se ancla en la cadena pasa a cubrirlos también.
     const { text: cuerpo, files } = normalizarSalida(salida);
-    // Por el buzón del tablón solo viaja texto: los archivos se sirven desde
-    // este servidor a quien firme como cliente de la tarea, y ahí el cliente
-    // es PanalTablon. Se dice en vez de entregar un manifiesto que nadie puede abrir.
+    // En el tablón los archivos van por SU buzón, que solo los da al cliente
+    // que publicó. Se guardan también en disco: si el proceso muere antes de
+    // subirlos, retomar los vuelve a subir de ahí.
+    let paraElTablon: ArchivoParaSubir[] = [];
     if (delTablon && files.length) {
-      console.warn(`[tablon] #${taskId}: ${files.length} archivo(s) no viajan por el tablón; se entrega solo el texto.`);
+      saveFiles(taskId, files);
+      paraElTablon = archivosParaElTablon(files);
+      const problema = problemaConArchivos(paraElTablon);
+      if (problema) {
+        console.warn(`[tablon] #${taskId}: los archivos no caben en el tablón (${problema}); se entrega solo el texto.`);
+        paraElTablon = [];
+      }
     }
-    const text = files.length && !delTablon ? appendFilesManifest(cuerpo, saveFiles(taskId, files)) : cuerpo;
+    const text = delTablon
+      ? paraElTablon.length
+        ? entregaConArchivos(delTablon.jobId, cuerpo, paraElTablon)
+        : cuerpo
+      : files.length
+        ? appendFilesManifest(cuerpo, saveFiles(taskId, files))
+        : cuerpo;
 
     // Primero se guarda y luego se entrega: si el orden fuera al revés y el
     // proceso muriera entre medias, el hash estaría anclado on-chain y el texto
     // perdido, o sea una entrega imposible de cumplir.
     saveResult(taskId, text);
-    const { txHash } = delTablon ? await delTablon.entregar(text) : await panal.deliverResult(taskId, text);
+    const { txHash } = delTablon ? await delTablon.entregar(cuerpo, paraElTablon) : await panal.deliverResult(taskId, text);
     console.log(`[panal] #${taskId} entregada${delTablon ? ' por el tablón' : ''} · tx ${txHash}`);
     return 'entregada';
   } catch (err) {
@@ -2016,7 +2070,10 @@ const encargosDelTablon = new EncargosPropios(DATA_DIR);
 const trabajarDelTablon = async (job: EncargoConReglas, brief: string): Promise<boolean> =>
   (await work(job.escrowTaskId, brief, null, {
     cliente: job.cliente,
-    entregar: (texto) => panal.deliverBoardJob(job.id, texto),
+    jobId: job.id,
+    // Compone el mismo texto que se guardó (`entregaConArchivos`): su hash es el que se ancla.
+    entregar: (texto, archivos) => panal.deliverBoardJob(job.id, texto, archivos),
+    bajarAdjuntos: (archivos) => panal.downloadBoardJobFiles(job.id, archivos, 'adjunto'),
   })) === 'entregada';
 
 // El vigilante. Va DESPUÉS de escuchar: su primer repaso puede tardar unos
@@ -2061,6 +2118,7 @@ arrancarVigilante({
               propios: encargosDelTablon,
               briefGuardado: loadBrief,
               resultadoGuardado: loadResult,
+              archivosGuardados,
               trabajar: trabajarDelTablon,
             },
             taskId,

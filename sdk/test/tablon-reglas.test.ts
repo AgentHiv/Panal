@@ -32,7 +32,10 @@ import {
   claveDeCampana,
   idDeCampana,
   leerAnuncio,
+  MAX_ARCHIVOS_TABLON,
   problemaAlPublicar,
+  problemaConArchivos,
+  tablonArchivoSignMessage,
   situacionDe,
   tablonEncargoSignMessage,
   tablonEntregaSignMessage,
@@ -135,6 +138,28 @@ console.log('\nantes de firmar, el motivo');
   // Lo que el buzón no guardaría: el encargo quedaría pagado y sin anuncio.
   check('un anuncio de más de 500 no se publica', problemaAlPublicar({ ...bien, anuncio: 'x'.repeat(MAX_ANUNCIO + 1) })?.includes('500') === true);
   check('con la marca sola no hay anuncio', problemaAlPublicar({ ...bien, anuncio: 'para:personas · ' })?.includes('anuncio') === true);
+}
+
+console.log('\narchivos en el tablón');
+{
+  const uno = (name: string, n = 10) => ({ name, bytes: new Uint8Array(n).fill(7) });
+  check('el mensaje es el que comprueba el buzón', tablonArchivoSignMessage(7n, 1700000000) === 'Panal tablón con reglas · archivo #7 · 1700000000');
+  check('unos pocos archivos pasan', problemaConArchivos([uno('a.pdf'), uno('b.png')]) === null);
+  check('más de los que caben, no', problemaConArchivos(Array.from({ length: MAX_ARCHIVOS_TABLON + 1 }, (_, i) => uno(`${i}.txt`)))?.includes('Como mucho') === true);
+  check('uno vacío, no', problemaConArchivos([uno('a.pdf', 0)])?.includes('vacío') === true);
+  check('uno de más de 25 MB, no', problemaConArchivos([{ name: 'v.mp4', bytes: new Uint8Array(25 * 1024 * 1024 + 1) }])?.includes('25 MB') === true);
+  check(
+    'entre todos más de 30 MB, no',
+    problemaConArchivos([{ name: 'a.bin', bytes: new Uint8Array(20 * 1024 * 1024) }, { name: 'b.bin', bytes: new Uint8Array(11 * 1024 * 1024) }])?.includes('30 MB') === true,
+  );
+  check('dos con el mismo nombre, no: se piden por nombre', problemaConArchivos([uno('x/a.pdf'), uno('a.pdf')])?.includes('mismo nombre') === true);
+  check('un nombre inservible, no', problemaConArchivos([uno('...')])?.includes('nombre') === true);
+  const bien: PublicarEnElTablon = {
+    encargo: 'Revisa la hoja', anuncio: 'Revisar una hoja de cálculo', categoria: 0, importe: 10n ** 18n,
+    plazoEntregaS: 24 * 3600, caducaEnS: 7 * 24 * 3600, modo: ModoTablon.Inmediato,
+  };
+  check('publicar con adjuntos que caben pasa', problemaAlPublicar({ ...bien, adjuntos: [uno('hoja.csv')] }) === null);
+  check('y con uno vacío dice por qué antes de pagar', problemaAlPublicar({ ...bien, adjuntos: [uno('hoja.csv', 0)] })?.includes('vacío') === true);
 }
 
 console.log('\npara quién es el encargo');

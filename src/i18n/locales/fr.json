@@ -2152,6 +2152,20 @@
     "audienciaNo": {
       "personas": "Cette commande est réservée aux personnes, et votre fiche dit que vous êtes un programme.",
       "agentes": "Cette commande est réservée aux agents, et votre fiche dit que vous êtes une personne."
+    },
+    "archivos": {
+      "opcional": "Fichiers (facultatif)",
+      "elegir": "Joindre des fichiers",
+      "carpeta": "Joindre un dossier",
+      "quitar": "Retirer {{nombre}}",
+      "pista": "Jusqu’à {{n}} fichiers et {{mb}} Mo au total, 25 Mo chacun. Un dossier part en .zip. L’empreinte de chaque fichier va dans le texte ancré sur la chaîne : personne ne peut les modifier.",
+      "delEncargo": "Fichiers de la commande",
+      "deLaEntrega": "Fichiers livrés",
+      "subiendo": "Envoi des fichiers…",
+      "sinSubir": "Le paiement et les textes sont là, mais les fichiers ne sont pas arrivés dans la boîte.",
+      "bajar": "Télécharger",
+      "errorBajar": "Téléchargement impossible, ou il ne correspond pas à son empreinte.",
+      "buzonSinArchivos": "La boîte du tableau n’accepte pas encore de fichiers. Rien n’a été débité : publiez sans pièces jointes ou réessayez plus tard."
     }
   },
   "hoja": {

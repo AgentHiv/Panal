@@ -1732,6 +1732,13 @@ const TABLON = herramientasDelTablon({
   refrescarPrecios,
   log,
   explorer: EXPLORER,
+  // Las mismas guardas que al adjuntar a un encargo normal: solo de MCP_ATTACH_DIR.
+  leerArchivoLocal: (ruta) => {
+    const leido = leerAdjuntoLocal(ruta);
+    if ('error' in leido) return leido;
+    return { name: leido.file.name, bytes: leido.bytes, ...(leido.file.mime ? { mime: leido.file.mime } : {}) };
+  },
+  guardarDescarga,
 });
 
 /** Las de escritura se anuncian siempre: si no, el modelo no sabe que existen. */

@@ -295,11 +295,20 @@ export class BuzonStore {
     return { hash };
   }
 
-  /** Los bytes de un archivo por su nombre, o `null` si aquí no está. */
-  leerArchivo(agente: string, taskId: bigint, nombre: string): { archivo: ArchivoGuardado; bytes: Buffer } | null {
+  /**
+   * Los bytes de un archivo por su nombre, o `null` si aquí no está. Con `de`,
+   * solo los de esa parte: en el tablón el cliente y el agente pueden subir dos
+   * archivos que se llamen igual, y cada uno busca los del otro.
+   */
+  leerArchivo(
+    agente: string,
+    taskId: bigint,
+    nombre: string,
+    de?: 'cliente' | 'trabajador',
+  ): { archivo: ArchivoGuardado; bytes: Buffer } | null {
     const carpeta = this.carpetaArchivos(agente, taskId);
     if (!carpeta) return null;
-    const archivo = (this.leer(agente, taskId)?.archivos ?? []).find((a) => a.name === nombre);
+    const archivo = (this.leer(agente, taskId)?.archivos ?? []).find((a) => a.name === nombre && (!de || a.de === de));
     // Se busca por el ÍNDICE y nunca por lo que llegue en la URL: el nombre lo
     // escribe quien sube, y de él no sale ninguna ruta. La ruta sale del hash,
     // que son 64 hex escritos por nosotros.

@@ -29,9 +29,18 @@ import {
   ModoTablon,
   NATIVE_CURRENCY,
   TaskStatus,
+  MAX_ARCHIVOS_TABLON,
   anuncioPara,
+  appendAttachmentsManifest,
+  attachmentFrom,
   audienciaAdmite,
   categoriaDelTablon,
+  parseAttachmentsManifest,
+  parseFilesManifest,
+  problemaConArchivos,
+  stripFilesManifest,
+  type ArchivoParaSubir,
+  type HashedFile,
   leerAnuncio,
   leerTipo,
   problemaAlPublicar,
@@ -65,6 +74,23 @@ export interface DepsTablon {
   refrescarPrecios: () => Promise<void>;
   log: (m: string) => void;
   explorer: string;
+  /** Un archivo de esta máquina, dentro de la carpeta permitida, o por qué no (adjuntos.ts). */
+  leerArchivoLocal: (ruta: string) => ArchivoParaSubir | { error: string };
+  /** Guarda lo bajado en la carpeta de descargas y devuelve dónde quedó. */
+  guardarDescarga: (nombre: string, bytes: Uint8Array) => string;
+}
+
+/** «12 B», «340 kB», «1.2 MB». */
+function tamano(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} kB`;
+  return `${bytes} B`;
+}
+
+/** Una lista de archivos anunciados, para enseñarla con el texto. */
+function listaDeArchivos(titulo: string, archivos: HashedFile[], pista: string): string {
+  if (archivos.length === 0) return '';
+  return `\n\n${titulo}:\n${archivos.map((f) => `  ${f.name} (${tamano(f.size)})`).join('\n')}\n${pista}`;
 }
 
 const MODO = { [ModoTablon.Inmediato]: 'Immediate', [ModoTablon.Seleccion]: 'Selection' } as const;
@@ -242,6 +268,21 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
       // Sin buzón el tablón se sigue leyendo: los encargos salen sin su texto.
     }
     return out;
+  }
+
+  /** Los archivos de unas rutas locales, o por qué no. Las mismas guardas que al contratar. */
+  function archivosDeRutas(v: unknown): ArchivoParaSubir[] | string {
+    if (v === undefined) return [];
+    if (!Array.isArray(v) || v.some((x) => typeof x !== 'string')) return 'files is a list of paths on this machine.';
+    if (v.length > MAX_ARCHIVOS_TABLON) return `At most ${MAX_ARCHIVOS_TABLON} files.`;
+    const out: ArchivoParaSubir[] = [];
+    for (const ruta of v as string[]) {
+      const leido = d.leerArchivoLocal(ruta);
+      if ('error' in leido) return leido.error;
+      out.push(leido);
+    }
+    const problema = out.length > 0 ? problemaConArchivos(out) : null;
+    return problema ?? out;
   }
 
   /** Lo que dice la ficha de esta wallet que es, o null si no es agente. */
@@ -496,7 +537,11 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
           else if (!soyCliente && !soyAgente) lineas.push('\nOnly the client and the assigned agent can read the brief.');
           else {
             try {
-              lineas.push(`\nThe brief (checked against its hash on chain):\n\n${await panal.readBoardJobBrief(id)}`);
+              const brief = await panal.readBoardJobBrief(id);
+              lineas.push(
+                `\nThe brief (checked against its hash on chain):\n\n${stripFilesManifest(brief)}` +
+                  listaDeArchivos('Files with the job', parseAttachmentsManifest(brief), `Download them with panal_download_board_file job_id ${id} from "job".`),
+              );
             } catch (err) {
               lineas.push(`\nCould not read the brief: ${fallo(err)}`);
             }
@@ -604,7 +649,12 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
           choose_hours: { type: 'number', description: 'Selection: time to choose after offers close (max 168). Default 24.' },
           experienced_only: { type: 'boolean', description: 'Only agents at level 1 or higher.' },
           relist: { type: 'boolean', description: 'If the agent does not deliver, post it again instead of refunding.' },
-          retry_job_id: { type: 'string', description: 'Only re-send the texts of an already posted job.' },
+          files: {
+            type: 'array',
+            items: { type: 'string' },
+            description: `Optional: paths of files on this machine to send with the job (at most ${MAX_ARCHIVOS_TABLON}, 25 MB each, 30 MB in total). Their hashes go inside the brief, so the chain covers them.`,
+          },
+          retry_job_id: { type: 'string', description: 'Only re-send the texts (and files) of an already posted job.' },
           confirmed_by_user: { type: 'boolean', description: 'true only if the person approved posting and paying.' },
         },
         required: ['advert', 'brief', 'confirmed_by_user'],
@@ -621,15 +671,20 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         // Para quién va delante del anuncio, y su hash lo deja fijo. Reintentar
         // lo vuelve a componer igual, así que hay que pasar la misma audiencia.
         const anuncio = anuncioPara(audiencia, textoAnuncio);
+        const adjuntos = archivosDeRutas(args.files);
+        if (typeof adjuntos === 'string') return `Not posted, nothing was spent: ${adjuntos}`;
 
         const reintento = args.retry_job_id === undefined ? null : parseJobId(args.retry_job_id);
         if (args.retry_job_id !== undefined) {
           if (reintento === null) return 'retry_job_id must be a board job number.';
           try {
-            await panal.publishBoardJobTexts(reintento, { anuncio, encargo });
-            return `Texts of board job #${reintento} are in the mailbox now. Nothing was charged.`;
+            // El mismo encargo que se hasheó: el texto con los adjuntos anunciados.
+            const encargoFinal = appendAttachmentsManifest(encargo, adjuntos.map((a) => attachmentFrom(a.name, a.bytes, a.mime)));
+            await panal.publishBoardJobTexts(reintento, { anuncio, encargo: encargoFinal });
+            await panal.publishBoardJobFiles(reintento, adjuntos);
+            return `Texts${adjuntos.length ? ' and files' : ''} of board job #${reintento} are in the mailbox now. Nothing was charged.`;
           } catch (err) {
-            return `The mailbox still did not take them: ${fallo(err)}. Nothing was charged. They must be the exact texts that were posted.`;
+            return `The mailbox still did not take them: ${fallo(err)}. Nothing was charged. They must be the exact texts and files that were posted.`;
           }
         }
 
@@ -658,6 +713,7 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
           ventanaEleccionS: Math.round(horas(args.choose_hours, 24) * 3600),
           soloConExperiencia: args.experienced_only === true,
           republicar: args.relist === true,
+          adjuntos,
         };
         const problema = problemaAlPublicar(p);
         if (problema) return `Not posted, nothing was spent: ${problema}`;
@@ -681,9 +737,9 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
           return [
             `Posted: board job #${r.jobId}, ${importe(cuanto, moneda)} locked in PanalTablon.`,
             `  tx: ${tx(r.txHash)}`,
-            r.textosGuardados
-              ? `  Advert and brief are in the mailbox.`
-              : `  WARNING: the texts did NOT reach the mailbox (${r.error}). Call panal_post_board_job again with retry_job_id ${r.jobId} and the same advert and brief: that only re-sends them.`,
+            r.textosGuardados && r.archivosGuardados
+              ? `  Advert and brief${adjuntos.length ? ` and ${adjuntos.length} file(s)` : ''} are in the mailbox.`
+              : `  WARNING: the ${r.textosGuardados ? 'files' : 'texts'} did NOT reach the mailbox (${r.error}). Call panal_post_board_job again with retry_job_id ${r.jobId} and the same advert, brief and files: that only re-sends them.`,
             modo === ModoTablon.Seleccion
               ? `Agents can bid for ${duracion(p.ventanaOfertasS!)}. Follow it with panal_board_job ${r.jobId}.`
               : `The first agent that passes the rules takes it. Follow it with panal_board_job ${r.jobId}.`,
@@ -772,7 +828,11 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         if (id === null) return 'job_id must be a board job number.';
         try {
           const entrega = await panal.readBoardJobResult(id);
-          return `The delivery of board job #${id} (checked against the hash on chain):\n\n${entrega}\n\nApprove with panal_approve_board_job, or dispute with panal_dispute_board_job.`;
+          return (
+            `The delivery of board job #${id} (checked against the hash on chain):\n\n${stripFilesManifest(entrega)}` +
+            listaDeArchivos('Delivered files', parseFilesManifest(entrega), `Download them with panal_download_board_file job_id ${id} from "delivery".`) +
+            '\n\nApprove with panal_approve_board_job, or dispute with panal_dispute_board_job.'
+          );
         } catch (err) {
           return `Could not read the delivery: ${fallo(err)}`;
         }
@@ -969,7 +1029,11 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         }
         try {
           const brief = await panal.readBoardJobBrief(id);
-          return `${cabeza}\n\nThe brief (checked against its hash on chain):\n\n${brief}\n\nWhen the work is done, deliver it with panal_deliver_board_job.`;
+          return (
+            `${cabeza}\n\nThe brief (checked against its hash on chain):\n\n${stripFilesManifest(brief)}` +
+            listaDeArchivos('Files with the job', parseAttachmentsManifest(brief), `Download them with panal_download_board_file job_id ${id} from "job".`) +
+            '\n\nWhen the work is done, deliver it with panal_deliver_board_job.'
+          );
         } catch (err) {
           return `${cabeza}\nBut the brief could not be read yet: ${fallo(err)}\nCalling panal_take_board_job again re-reads it without taking twice.`;
         }
@@ -1035,13 +1099,18 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
       description:
         'As the agent of a board job, deliver the work. The text is left in the board\'s mailbox first, signed ' +
         'with its hash inside, and only then its hash is anchored in the escrow — so the client can always read ' +
-        'what was anchored. If the mailbox refuses it, nothing is anchored and it can be retried. Only text ' +
-        'travels this way. Costs gas.',
+        'what was anchored. If the mailbox refuses it, nothing is anchored and it can be retried. With files, ' +
+        'they are uploaded first and their hashes go inside the anchored text. Costs gas.',
       inputSchema: {
         type: 'object',
         properties: {
           job_id: { type: 'string', description: 'The board job number.' },
           result: { type: 'string', description: 'The finished work, exactly as the client will receive it.' },
+          files: {
+            type: 'array',
+            items: { type: 'string' },
+            description: `Optional: paths of files on this machine to deliver (at most ${MAX_ARCHIVOS_TABLON}, 25 MB each, 30 MB in total).`,
+          },
           confirmed_by_user: { type: 'boolean', description: 'true only if the person approved delivering this.' },
         },
         required: ['job_id', 'result', 'confirmed_by_user'],
@@ -1051,19 +1120,61 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         if (no) return no;
         // Tal cual, sin recortar: lo que se ancla es el hash de estos bytes.
         const resultado = typeof args.result === 'string' ? args.result : '';
-        if (!resultado.trim()) return 'result is empty: there is nothing to deliver.';
+        const archivos = archivosDeRutas(args.files);
+        if (typeof archivos === 'string') return `Nothing was delivered: ${archivos}`;
+        if (!resultado.trim() && archivos.length === 0) return 'result is empty: there is nothing to deliver.';
         const id = parseJobId(args.job_id);
         if (id === null) return 'job_id must be a board job number.';
         try {
-          const { txHash, resultHash } = await panal.deliverBoardJob(id, resultado);
+          const { txHash, resultHash } = await panal.deliverBoardJob(id, resultado, archivos);
           d.log(`entregado del tablón #${id}`);
           return (
-            `Board job #${id} delivered.\n  tx: ${tx(txHash)}\n  result hash: ${resultHash}\n\n` +
+            `Board job #${id} delivered${archivos.length ? ` with ${archivos.length} file(s)` : ''}.\n  tx: ${tx(txHash)}\n  result hash: ${resultHash}\n\n` +
             'The client can now read it and approve. Once approved, the payment is CREDITED in the escrow: ' +
             'collect it with panal_withdraw. If the client does nothing for 72 h, panal_close_board_job settles it.'
           );
         } catch (err) {
           return `Could not deliver board job #${id}: ${fallo(err)}`;
+        }
+      },
+    },
+    {
+      name: 'panal_download_board_file',
+      description:
+        'Download the files of a board job to this machine, each one checked byte by byte against the hash in ' +
+        'the anchored text: from "job", the files the client sent with it (its client and its agent can); from ' +
+        '"delivery", the files the agent delivered (its client can). Signs a read credential (no transaction, ' +
+        'no money). Files land in MCP_DOWNLOAD_DIR.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          job_id: { type: 'string', description: 'The board job number.' },
+          from: { type: 'string', description: '"job" (the attachments) or "delivery" (the delivered files).' },
+          file: { type: 'string', description: 'Optional: the name of one file. Without it, all of them.' },
+        },
+        required: ['job_id', 'from'],
+      },
+      handler: async (args) => {
+        const no = disponible();
+        if (no) return no;
+        if (!d.cuenta) return 'Downloading needs this server\'s wallet (MCP_PRIVATE_KEY) to sign: there is none.';
+        const id = parseJobId(args.job_id);
+        if (id === null) return 'job_id must be a board job number.';
+        const de = texto(args.from)?.toLowerCase() === 'delivery' ? 'entrega' : texto(args.from)?.toLowerCase() === 'job' ? 'adjunto' : null;
+        if (!de) return 'from is "job" or "delivery".';
+        try {
+          // El hash sale del texto anclado —encargo o entrega—, nunca del buzón.
+          const anunciados =
+            de === 'adjunto' ? parseAttachmentsManifest(await panal.readBoardJobBrief(id)) : parseFilesManifest(await panal.readBoardJobResult(id));
+          const pedido = texto(args.file);
+          const lista = pedido ? anunciados.filter((f) => f.name === pedido) : anunciados;
+          if (anunciados.length === 0) return `Board job #${id} has no files ${de === 'adjunto' ? 'with the job' : 'in its delivery'}.`;
+          if (lista.length === 0) return `"${pedido}" is not one of them: ${anunciados.map((f) => f.name).join(', ')}.`;
+          const bytes = await panal.downloadBoardJobFiles(id, lista, de);
+          const guardados = lista.map((f, i) => `  ${f.name} (${tamano(f.size)}) → ${d.guardarDescarga(f.name, bytes[i]!)}`);
+          return `Downloaded and checked against the hash on chain:\n${guardados.join('\n')}`;
+        } catch (err) {
+          return `Could not download: ${fallo(err)}`;
         }
       },
     },

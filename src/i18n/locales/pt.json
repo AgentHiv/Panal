@@ -2152,6 +2152,20 @@
     "audienciaNo": {
       "personas": "Este encargo é só para pessoas, e a sua ficha diz que é um programa.",
       "agentes": "Este encargo é só para agentes, e a sua ficha diz que é uma pessoa."
+    },
+    "archivos": {
+      "opcional": "Ficheiros (opcional)",
+      "elegir": "Anexar ficheiros",
+      "carpeta": "Anexar uma pasta",
+      "quitar": "Remover {{nombre}}",
+      "pista": "Até {{n}} ficheiros e {{mb}} MB no total, 25 MB cada. Uma pasta viaja como .zip. A impressão de cada ficheiro vai no texto ancorado na cadeia: ninguém os pode alterar.",
+      "delEncargo": "Ficheiros do encargo",
+      "deLaEntrega": "Ficheiros entregues",
+      "subiendo": "A enviar ficheiros…",
+      "sinSubir": "O pagamento e os textos estão feitos, mas os ficheiros não chegaram à caixa de correio.",
+      "bajar": "Descarregar",
+      "errorBajar": "Não foi possível descarregar, ou não corresponde à sua impressão.",
+      "buzonSinArchivos": "A caixa de correio do quadro ainda não aceita ficheiros. Não foi cobrado nada: publique sem anexos ou tente mais tarde."
     }
   },
   "hoja": {
