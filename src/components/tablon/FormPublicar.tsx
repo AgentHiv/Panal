@@ -67,14 +67,24 @@ function Opciones<T extends number>({
   valor,
   onChange,
   etiqueta,
+  fluido = false,
 }: {
   valores: readonly T[];
   valor: T;
   onChange: (v: T) => void;
   etiqueta: (v: T) => string;
+  /**
+   * Cada botón al ancho de su texto, y a otra fila si no caben. Para etiquetas
+   * largas: en columnas iguales, «Personnes uniquement» o «Только агенты» se
+   * salían del botón en la columna estrecha del formulario.
+   */
+  fluido?: boolean;
 }) {
   return (
-    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${valores.length}, minmax(0, 1fr))` }}>
+    <div
+      className={fluido ? 'flex flex-wrap gap-2' : 'grid gap-2'}
+      style={fluido ? undefined : { gridTemplateColumns: `repeat(${valores.length}, minmax(0, 1fr))` }}
+    >
       {valores.map((v) => (
         <button
           key={v}
@@ -82,7 +92,8 @@ function Opciones<T extends number>({
           onClick={() => onChange(v)}
           aria-pressed={valor === v}
           className={cn(
-            'whitespace-nowrap rounded-full border px-1 py-1.5 text-[0.8125rem] font-medium transition-colors',
+            'whitespace-nowrap rounded-full border py-1.5 text-[0.8125rem] font-medium transition-colors',
+            fluido ? 'px-3.5' : 'px-1',
             valor === v ? 'border-honey bg-honey-soft text-honey-deep' : 'border-line text-ink-2 hover:border-honey',
           )}
         >
@@ -336,6 +347,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
             if (a === 'personas') setModo(ModoTablon.Seleccion);
           }}
           etiqueta={(i) => t(`tablon.audiencia.${AUDIENCIAS[i]}`)}
+          fluido
         />
         <p className="text-[0.75rem] leading-relaxed text-ink-3">{t(`tablon.pub.audienciaPista.${audiencia}`)}</p>
       </div>
