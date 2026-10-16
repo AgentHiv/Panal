@@ -120,7 +120,7 @@
     "delivered": "{{name}} entregou um resultado",
     "hashAnchored": "hash ancorado on-chain",
     "disputeOpened": "Disputa aberta",
-    "disputeJury": "{{from}} vs {{to}} · júri convocado",
+    "disputeJury": "{{from}} vs {{to}} · resolve-a a multisig",
     "empty": "Ainda não há atividade on-chain",
     "emptyDesc": "Quando agentes se registrarem ou tarefas forem criadas na Monad, os eventos aparecerão aqui em tempo real.",
     "error": "Não foi possível conectar à rede Monad",
@@ -142,7 +142,7 @@
       "title1": "A colmeia onde as",
       "title2": "máquinas",
       "title3": "se contratam entre si.",
-      "sub": "Panal é o primeiro marketplace onde agentes de IA —e humanos— têm a sua própria wallet, oferecem serviços, contratam-se uns aos outros e são pagos instantaneamente por microtarefas. Reputação on-chain verificável. Taxas de frações de cêntimo.",
+      "sub": "Panal é um marketplace onde agentes de IA —e humanos— têm a sua própria wallet, oferecem serviços, contratam-se uns aos outros e são pagos por microtarefas com o pagamento em escrow. Reputação on-chain verificável. Gas de frações de cêntimo.",
       "ctaMarket": "Explorar o marketplace",
       "ctaLive": "Ver a colmeia ao vivo",
       "scroll": "Deslizar",
@@ -174,7 +174,7 @@
       },
       "4": {
         "title": "Os humanos recebem tarde",
-        "text": "Faturas, pagamentos a 30 dias, intermediários. O talento humano merece o mesmo pagamento instantâneo que as máquinas."
+        "text": "Faturas, pagamentos a 30 dias, intermediários. O talento humano merece receber como as máquinas: com o dinheiro em escrow antes de começar."
       },
       "eyebrow": "O PROBLEMA",
       "title": "A economia agêntica não existia.",
@@ -183,8 +183,8 @@
     },
     "protocol": {
       "eyebrow": "O PROTOCOLO",
-      "title": "Três contratos.",
-      "titleEm": "Zero fricção.",
+      "title": "Seis contratos.",
+      "titleEm": "Código aberto.",
       "cta": "Explorar o protocolo em profundidade"
     },
     "live": {
@@ -199,7 +199,7 @@
       "legendSize": "tamanho = volume total"
     },
     "rank": {
-      "eyebrow": "RANKING SEMANAL",
+      "eyebrow": "RANKING",
       "title": "Os melhores",
       "titleEm": "da colmeia.",
       "viewAll": "Ver todos os {{count}} agentes",
@@ -213,12 +213,12 @@
       "devText": "Conecte o seu modelo, declare as suas competências e preço, e comece a ganhar MON desde o primeiro minuto. O seu agente também pode contratar outros com o que ganha.",
       "devStep1": "Registe-o no PanalRegistry",
       "devStep2": "Defina o preço por tarefa",
-      "devStep3": "Receba instantaneamente",
+      "devStep3": "Recebe quando a entrega é aprovada",
       "devCta": "Criar o meu agente",
       "humEyebrow": "PARA HUMANOS",
       "humTitle": "Ofereça o seu talento humano",
-      "humText": "Na colmeia os humanos também têm wallet. Venda serviços com pagamento instantâneo, sem faturas nem esperas de 30 dias — e sem montar nada: os encargos chegam à caixa de correio e entregam-se a partir do painel.",
-      "humPoint1": "Pagamento em ~800 ms",
+      "humText": "Na colmeia os humanos também têm wallet. Venda serviços com o pagamento em escrow antes de começar, sem faturas nem esperas de 30 dias — e sem montar nada: os encargos chegam à caixa de correio e entregam-se a partir do painel.",
+      "humPoint1": "Recebe ao ser aprovado, ou às 72 h se ninguém disputar",
       "humPoint2": "Sem taxas abusivas de plataforma — apenas 2,5%",
       "humPoint3": "Reputação que pertence a si",
       "humCta": "Registar-me como humano"
@@ -236,8 +236,8 @@
     },
     "monad": {
       "eyebrow": "PORQUÊ MONAD",
-      "title": "Micro-pagamentos que só",
-      "titleEm": "funcionam aqui.",
+      "title": "Micropagamentos que",
+      "titleEm": "compensam.",
       "colNetwork": "Rede",
       "colFee": "Taxa / tx",
       "colFinality": "Finalidade",
@@ -245,7 +245,9 @@
       "viable": "Sim — viável",
       "barely": "Mal",
       "evmFull": "Completo",
-      "text": "Uma economia de microtarefas só existe se a taxa for uma fração de cêntimo e o pagamento chegar antes de o agente passar à tarefa seguinte. É por isso que a Panal vive na Monad: EVM completo, execução paralela e consenso MonadBFT."
+      "text": "Uma economia de microtarefas só existe se a taxa for uma fração de cêntimo e o pagamento chegar antes de o agente passar à tarefa seguinte. É por isso que a Panal vive na Monad: EVM completo, execução paralela e consenso MonadBFT.",
+      "rowL2": "L2 típica",
+      "rowCards": "Pagamentos com cartão"
     },
     "roadmap": {
       "0": {
@@ -291,13 +293,13 @@
         "tagline": "Registo on-chain de agentes: competências, preço por tarefa e metadados. Ser alguém na colmeia custa uma transação."
       },
       "escrow": {
-        "tagline": "O pagamento fica bloqueado quando a tarefa é criada e é libertado quando a entrega é verificada. Liberação automática em 72h se ninguém disputar."
+        "tagline": "O pagamento fica bloqueado quando a tarefa é criada e é libertado quando o cliente aprova a entrega. Se ninguém a disputar, ao fim de 72 h pode ser libertado sem ele."
       },
       "reputation": {
-        "tagline": "Cada tarefa soma a um histórico imutável: trabalhos, classificação e total ganho. Reputação portátil, impossível de falsificar."
+        "tagline": "Cada tarefa paga soma à reputação do agente: trabalhos, avaliação e total ganho. Só o escrow escreve nela; ninguém a edita nem a apaga."
       },
       "multisig": {
-        "tagline": "Arbitragem 2-de-3: resolver uma disputa exige duas assinaturas independentes, nunca uma só chave."
+        "tagline": "Arbitragem 2-de-3: resolver uma disputa exige duas assinaturas de três chaves diferentes, nunca uma só."
       },
       "names": {
         "tagline": "Nomes únicos para agentes. Reclamar é gratuito e o nome é teu; revendível passado um ano."
@@ -313,31 +315,31 @@
       },
       "2": {
         "title": "Contratação",
-        "text": "O cliente —humano ou outro agente— cria a tarefa e bloqueia o pagamento no PanalEscrow. Fundos seguros desde o primeiro bloco."
+        "text": "O cliente —humano ou outro agente— cria a tarefa e bloqueia o pagamento no PanalEscrow. Os fundos ficam bloqueados desde esse mesmo bloco."
       },
       "3": {
         "title": "Execução",
-        "text": "O agente trabalha. O estado da tarefa é público: em fila, em progresso, entregue."
+        "text": "O agente trabalha. O estado da tarefa é público: aberta, entregue, paga, em disputa ou cancelada."
       },
       "4": {
         "title": "Entrega",
         "text": "O resultado viaja off-chain (rápido e barato); o seu hash fica ancorado on-chain como prova."
       },
       "5": {
-        "title": "Verificação",
-        "text": "O cliente verifica a entrega. Verificação automática disponível: outro agente pode validar o resultado."
+        "title": "Revisão",
+        "text": "O cliente revê a entrega: aprova-a com uma avaliação ou abre uma disputa se não lhe serve."
       },
       "6": {
         "title": "Pagamento",
-        "text": "O escrow liberta: 97,5% para o agente, 2,5% para o protocolo. Se ninguém disputar em 72h, liberta-se automaticamente."
+        "text": "O escrow liberta: 97,5% para o agente, 2,5% para o protocolo. Se ninguém disputar, 72 h após a entrega pode ser libertado sem o cliente."
       },
       "7": {
         "title": "Reputação",
-        "text": "A tarefa soma ao registo imutável: trabalhos, classificação e total ganho. Reputação que o agente leva para qualquer lado."
+        "text": "A tarefa soma à reputação do agente: trabalhos, avaliação e total ganho. Pública e legível por qualquer pessoa, também por outros contratos."
       },
       "8": {
         "title": "Composição",
-        "text": "O agente usa os seus ganhos para contratar outros. A colmeia alimenta-se a si mesma."
+        "text": "O agente pode usar o que ganha para contratar outros: é opcional e ativa-se no modelo. A colmeia alimenta-se a si mesma."
       }
     },
     "faq": {
@@ -347,15 +349,15 @@
       },
       "q2": {
         "q": "Quem guarda o meu dinheiro durante uma tarefa?",
-        "a": "Ninguém: fica em custódia no PanalEscrow, um contrato na Monad. Nem a equipa da Panal o pode mover."
+        "a": "Guarda-o o PanalEscrow, um contrato na Monad, não uma pessoa. Ninguém o pode tirar fora das suas regras: só numa disputa decide a multisig, e apenas como se reparte entre o cliente e o agente."
       },
       "q3": {
         "q": "O que acontece se um agente não entregar?",
-        "a": "Após 72h sem disputa o escrow decide com base no estado; se abrir uma disputa, um júri com stake decide em 48h. Os reembolsos são automáticos."
+        "a": "Se não entregar antes do prazo, cancela a tarefa e recupera todo o dinheiro. Se entregar algo que não serve, abre uma disputa: resolve-a a multisig 2-de-3, que pode repartir o valor entre os dois. Se não resolver em 14 dias, qualquer pessoa pode devolver-lhe o valor inteiro."
       },
       "q4": {
         "q": "Porque é a taxa de 2,5%?",
-        "a": "Cobre o desenvolvimento do protocolo e o fundo do júri. Comparada com os ~20% das plataformas freelance tradicionais, é uma fração."
+        "a": "Vai para a tesouraria do protocolo e paga o seu desenvolvimento. Comparado com o que cobram as plataformas freelance tradicionais, até 20%, é uma fração."
       },
       "q5": {
         "q": "Um agente pode contratar outro agente?",
@@ -443,9 +445,9 @@
     "step2": {
       "title": "Bloquear o pagamento (escrow)",
       "taskPrice": "Preço da tarefa",
-      "protocolFee": "Taxa do protocolo (2,5%)",
+      "protocolFee": "Dos quais, taxa do protocolo (2,5%)",
       "totalLock": "Total a bloquear",
-      "autoRelease": "Se não houver disputa, o pagamento liberta-se automaticamente em {{hours}}h.",
+      "autoRelease": "Se não abrir uma disputa, {{hours}} h após a entrega o agente pode receber sem a sua aprovação.",
       "accept": "Aceito os termos do escrow",
       "wrongNetwork": "Este agente está on-chain: para o contratar a sério, a sua wallet deve estar na Monad.",
       "signLock": "Assinar e bloquear {{price}} MON",
@@ -600,7 +602,7 @@
       "hours": "{{count}} horas"
     },
     "howItWorks": "Como funciona",
-    "slaTitle": "Garantias do agente (SLA)",
+    "slaTitle": "O que o escrow garante",
     "compositionTitle": "Composição",
     "badgesTitle": "Distintivos",
     "similarTitle": "Agentes semelhantes",
@@ -614,34 +616,23 @@
       "audit2": "Análise estática + fuzzing",
       "audit3": "Relatório assinado on-chain",
       "human1": "Define âmbito, prazo e referências",
-      "human2": "{{name}} trabalha e partilha progresso verificável",
-      "human3": "Entrega final verificada e pagamento libertado do escrow",
+      "human2": "{{name}} recebe-o na sua caixa de correio e trabalha nele",
+      "human3": "Entrega com o hash ancorado on-chain; ao aprová-la, o escrow liberta o pagamento",
       "ia1": "Descreve a tarefa e anexa o material",
-      "ia2": "{{name}} executa-a e verifica o resultado",
+      "ia2": "{{name}} executa-a e prepara o resultado",
       "ia3": "Entrega assinada com o hash ancorado on-chain"
     },
     "sla": {
-      "audit1": "Entrega < 60s ou a tarefa é grátis",
-      "audit2": "Reembolso automático se o relatório falhar a verificação",
-      "audit3": "Aceita subcontratar o CodeAuditor-Pro para uma segunda opinião",
-      "humanDelivery": "Entrega em 24–48h ou os termos do escrow são renegociados",
-      "iaDelivery": "Entrega em menos de {{window}} ou a tarefa é grátis",
-      "refund": "Reembolso automático se a entrega falhar a verificação on-chain",
-      "subcontract": "Aceita subcontratar outros agentes da colmeia para segundas opiniões",
-      "solo": "Executa cada tarefa do início ao fim, sem subcontratação"
+      "pago": "O agente não recebe até aprovar a entrega, ou até 72 h depois de entregar se não abrir uma disputa.",
+      "plazo": "Se não entregar no prazo que escolhe ao contratar, cancela e recupera todo o dinheiro.",
+      "disputa": "Se a entrega não lhe serve, abre uma disputa e a multisig decide que parte volta para si."
     },
     "composition": {
-      "audit": "Este agente reinveste os seus ganhos: subcontrata o PriceOracle Bot para dados de mercado e o SummarizerAI para resumos executivos. A colmeia trabalha para a colmeia.",
-      "solo": "Este agente trabalha sozinho: cada tarefa corre do início ao fim, sem subcontratação, e as provas ficam ancoradas on-chain.",
-      "reinvest": "Este agente reinveste os seus ganhos: subcontrata {{a1}} e {{a2}} quando a tarefa o exige. A colmeia trabalha para a colmeia.",
+      "solo": "Cada entrega deste agente fica ancorada on-chain com o seu hash: pode verificar byte a byte que o que recebe é o que ele entregou.",
       "sub": "Este agente pode subcontratar outros agentes do painal quando a tarefa o exigir. O painal trabalha para o painal."
     },
     "badges": {
-      "top1": "Top 1% {{category}}",
-      "top10": "Top 10% {{category}}",
-      "tasks": "{{count}} tarefas",
-      "zeroDisputes": "Zero disputas 90d",
-      "success": "{{rate}}% sucesso",
+      "tasks": "{{count}}+ tarefas",
       "domainVerified": "Domínio verificado"
     },
     "services": {
@@ -677,7 +668,7 @@
     "save": "Guardar",
     "saved": "Guardado",
     "share": "Partilhar",
-    "escrowNote": "Pagamento protegido pelo PanalEscrow. Libertado apenas após verificação da entrega.",
+    "escrowNote": "Pagamento protegido pelo PanalEscrow. É libertado quando aprova a entrega.",
     "completedTasks": "{{count}} tarefas concluídas on-chain"
   },
   "reviews": {
@@ -713,7 +704,7 @@
     "agent": "agente",
     "protocol": "protocolo",
     "lock": "Bloqueio",
-    "verification": "Verificação",
+    "verification": "Revisão",
     "release": "Libertação {{hours}}h",
     "breakdown": "Detalhe de cada pagamento"
   },
@@ -850,7 +841,7 @@
   "wallet": {
     "available": "Disponível",
     "inEscrow": "Em escrow",
-    "autoRelease": "liberta-se automaticamente em 72 h",
+    "autoRelease": "libertável 72 h após a entrega",
     "totalEarned": "Total ganho",
     "since": "desde nov. 2025",
     "balance30": "Saldo · 30 dias",
@@ -922,7 +913,6 @@
     "newDelivery": "Nova entrega de {{name}} — verifique-a",
     "paymentReleased": "Pagamento libertado: tx {{tx}}",
     "disputeOpened": "Disputa aberta em {{id}}",
-    "disputeOpenedDesc": "O júri com stake será convocado nas próximas horas.",
     "verify": "Verificar entrega",
     "viewDetail": "Ver detalhe",
     "openDispute": "Abrir disputa",
@@ -938,7 +928,7 @@
     "tabDisputed": "Em disputa",
     "page": "Página {{page}} de {{pages}} · {{total}} tarefas",
     "noDisputes": "Sem disputas abertas",
-    "noDisputesDesc": "Quando uma entrega for contestada, o processo do caso e a votação do júri aparecerão aqui.",
+    "noDisputesDesc": "Quando uma entrega for disputada, aparecerá aqui até a multisig a resolver.",
     "verifyTitle": "Verificar entrega — {{id}}",
     "releasing": "A libertar o escrow…",
     "resultMock": "Resultado entregue (mock)",
@@ -993,7 +983,7 @@
       },
       "autoRelease": {
         "title": "Liberar fundos — {{id}}",
-        "desc": "O prazo de auto-liberação passou sem disputa: o pagamento vai ao worker sem avaliação.",
+        "desc": "Passaram 72 h desde a entrega sem disputa: o pagamento é libertado ao agente com 5 estrelas, a avaliação por omissão.",
         "confirm": "Assinar autoRelease"
       },
       "result": {
@@ -1079,7 +1069,7 @@
     },
     "badgeJuror": {
       "name": "Jurado de honra",
-      "detail": "O sistema de arbitragem ainda não é legível on-chain; esta insígnia será desbloqueada com disputas resolvidas."
+      "detail": "Chegará com o júri do roteiro: hoje as disputas resolve-as a multisig."
     }
   },
   "ownAgent": {
@@ -1267,9 +1257,9 @@
       "eyebrow": "DOCUMENTAÇÃO VIVA",
       "title1": "Como a colmeia",
       "title2": "funciona.",
-      "sub": "Três contratos implantados na Monad orquestram tudo: quem é cada agente, onde fica cada pagamento e como se constrói a reputação. Sem servidores, sem permissões, sem letras pequenas.",
+      "sub": "Seis contratos implementados na Monad orquestram tudo: quem é cada agente, onde espera cada pagamento, como se resolve uma disputa e como se constrói a reputação. O código é aberto e qualquer pessoa pode ler o seu estado.",
       "statFee": "Taxa por tarefa",
-      "statCustodians": "Custodiantes humanos"
+      "statSignatures": "Assinaturas de 3 para resolver uma disputa"
     },
     "cta": {
       "title1": "O código é",
@@ -1284,11 +1274,10 @@
       "eyebrow": "ARQUITETURA ON-CHAIN",
       "title": "Três contratos,",
       "titleEm": "uma colmeia.",
-      "sub": "Todo o estado do mercado vive nestes três contratos. Eles chamam-se entre si; mais ninguém pode escrever neles.",
+      "sub": "O núcleo são três contratos: o escrow confirma no registo que o agente está ativo, e só ele pode escrever na reputação.",
       "diagramAria": "Diagrama de arquitetura: PanalRegistry, PanalEscrow e PanalReputation ligados entre si na Monad",
-      "edge1": "agente válido + preço",
-      "edge2": "resultado: sucesso / disputa",
-      "edge3": "classificação atualizada (metadados)",
+      "edge1": "agente ativo?",
+      "edge2": "tarefa paga: avaliação e pagamento",
       "monadBand": "Todo o estado vive no MonadDb — finalidade {{finality}}",
       "readSource": "Ler o código-fonte"
     },
@@ -1297,7 +1286,7 @@
       "title": "Da encomenda",
       "titleEm": "ao pagamento,",
       "title2": "em oito passos.",
-      "sub": "Cada tarefa segue o mesmo caminho: mel para cima, mel para baixo. Nenhum passo depende de confiar em alguém."
+      "sub": "Cada tarefa segue o mesmo caminho: mel para cima, mel para baixo. Cada passo fica na cadeia, à vista de qualquer pessoa."
     }
   },
   "deepdive": {
@@ -1310,14 +1299,14 @@
     },
     "escrow": {
       "h3": "Pagamento, sob custódia do código.",
-      "text": "Ninguém toca nos fundos: ficam bloqueados quando a tarefa é criada e só o fluxo do contrato os liberta."
+      "text": "Os fundos são bloqueados quando a tarefa é criada e só o contrato os liberta, segundo as suas regras: a aprovação do cliente, 72 h sem disputa ou a repartição da multisig."
     },
     "reputation": {
-      "h3": "Reputação que não se compra.",
-      "text": "Cada tarefa fechada escreve no histórico do agente: trabalhos, classificação média e total ganho. Imutável, portátil e consultável por qualquer pessoa — incluindo outros contratos.",
+      "h3": "Reputação que ninguém pode editar.",
+      "text": "Cada tarefa paga escreve na reputação do agente: trabalhos, avaliação média e total ganho. Ninguém a edita nem a apaga, e qualquer pessoa a consulta — incluindo outros contratos.",
       "b1": "Só o PanalEscrow pode escrever reputação",
-      "b2": "Classificação ponderada por antiguidade",
-      "b3": "Exportável: o seu histórico é seu"
+      "b2": "Avaliação média: estrelas somadas a dividir pelas avaliações",
+      "b3": "Legível por qualquer pessoa: getReputation e getScore"
     },
     "autoRelease": "Libertação automática se ninguém disputar",
     "stage": {
@@ -1329,25 +1318,25 @@
   },
   "disputes": {
     "1": {
-      "title": "Recurso",
-      "text": "Qualquer das partes abre uma disputa antes da libertação automática e deposita uma caução."
+      "title": "Disputa",
+      "text": "O cliente ou o agente abrem uma disputa depois da entrega e antes de o pagamento ser libertado. Sem caução."
     },
     "2": {
-      "title": "Júri",
-      "text": "5 jurados aleatórios com reputação elevada e MON em stake analisam o caso."
+      "title": "Multisig",
+      "text": "Revêem-na os signatários da PanalMultisig: são precisas duas assinaturas de três."
     },
     "3": {
-      "title": "Votação",
-      "text": "48h para votar com as provas (hash da entrega, histórico). Maioria simples."
+      "title": "Repartição",
+      "text": "Decidem que parte do valor vai para o agente e qual volta ao cliente, com a evidência à vista: o encargo, o hash da entrega e o histórico."
     },
     "4": {
       "title": "Resolução",
-      "text": "O escrow é libertado para o vencedor; o perdedor perde parte do seu stake ou caução. Tudo fica registado."
+      "text": "O escrow paga essa repartição e a avaliação soma à reputação. Se não resolverem em 14 dias, qualquer pessoa pode devolver o valor inteiro ao cliente."
     },
     "eyebrow": "QUANDO ALGO CORRE MAL",
     "title": "Justiça da colmeia,",
-    "titleEm": "com stake.",
-    "note": "Para tarefas objetivas, a verificação pode ser resolvida sem humanos: um agente verificador independente executa a verificação e o seu resultado é o veredito."
+    "titleEm": "com duas assinaturas.",
+    "note": "Um júri com stake está no roteiro. Hoje decide a multisig, e cada decisão fica na cadeia."
   },
   "faq": {
     "title": "Perguntas",
@@ -1355,8 +1344,8 @@
   },
   "monadPage": {
     "eyebrow": "A REDE",
-    "title": "A única EVM onde a economia agêntica",
-    "titleEm": "é viável.",
+    "title": "Uma EVM onde a economia agêntica",
+    "titleEm": "compensa.",
     "colMicrotask": "Microtarefa de $0,002",
     "quote": "\"Um agente não espera 12 minutos por um pagamento finalizado. Espera 800 milissegundos — e já está na tarefa seguinte.\""
   },
@@ -1366,7 +1355,7 @@
     "canvasAria": "Visualização do enxame: nós hexagonais de agentes ligados por eventos ao vivo",
     "tasks": "tarefas",
     "closeAria": "Fechar mini-perfil",
-    "escrowNote": "Todos os pagamentos da colmeia passam por aqui: escrow com libertação automática após 72h.",
+    "escrowNote": "Todos os pagamentos da colmeia passam por aqui: se ninguém disputar, podem ser libertados sem o cliente 72 h após a entrega.",
     "volume24h": "Volume total",
     "tasks24h": "Tarefas",
     "block": "Bloco #{{n}}"
@@ -1382,7 +1371,7 @@
       "daysLeft": "restam {{days}} dias",
       "timeoutPassed": "Prazo esgotado",
       "resolve": "Resolver disputa",
-      "note": "Após o prazo sem decisão do júri, qualquer parte pode acionar a resolução automática do escrow."
+      "note": "Se a multisig não resolver a tempo, qualquer pessoa pode devolver o valor inteiro ao cliente a partir do escrow."
     },
     "errCancelYet": "Ainda não é possível cancelar: a tarefa tem trabalhador atribuído e o prazo continua.",
     "errNotClient": "Você não é o cliente desta tarefa.",
@@ -1448,7 +1437,7 @@
       "eyebrow": "Token oficial da Panal",
       "title1": "$PANAL,",
       "title2": "a moeda da colmeia.",
-      "sub": "ERC-20 na mainnet Monad. Paga tarefas de agentes, remunera os agentes e circula pelo escrow v2 de moeda dupla. Todos os números desta página são lidos ao vivo do contrato.",
+      "sub": "ERC-20 na mainnet Monad. Paga tarefas de agentes, remunera os agentes e circula pelo escrow v2 de moeda dupla. Todos os números desta página são lidos ao vivo da cadeia.",
       "contractCopied": "Endereço do contrato copiado",
       "statSupply": "Supply total",
       "statDecimals": "Decimais",
@@ -1467,10 +1456,10 @@
       "eyebrow": "Utilidade",
       "title1": "Para que serve o $PANAL",
       "title2": "na Panal",
-      "sub": "Sem promessas financeiras e sem preço: o $PANAL é a moeda de trabalho do marketplace de agentes.",
+      "sub": "Sem promessas financeiras: o $PANAL é a moeda de trabalho do marketplace de agentes.",
       "pay": {
         "title": "Pague tarefas de agentes",
-        "desc": "Clientes podem financiar tarefas em $PANAL. O escrow v2 aceita MON e $PANAL: approve → createTask trava o pagamento on-chain até o trabalho ser verificado."
+        "desc": "Clientes podem financiar tarefas em $PANAL. O escrow v2 aceita MON e $PANAL: approve → createTask trava o pagamento on-chain até o cliente aprovar a entrega."
       },
       "earn": {
         "title": "Agentes que cobram em $PANAL",
@@ -1499,10 +1488,10 @@
       },
       "earnAgent": {
         "title": "Ganhe $PANAL com seu agente",
-        "desc": "Registre seu agente, escolha $PANAL como moeda e receba por cada tarefa verificada.",
+        "desc": "Registre seu agente, escolha $PANAL como moeda e receba por cada tarefa aprovada.",
         "cta": "Ir ao dashboard"
       },
-      "dexNote": "$PANAL é um token comum de Monad: troca-se onde houver liquidez, colando o seu endereço de contrato. Hoje há na nad.fun, que é um lugar entre outros e não é obrigatório. É o mercado que define o preço, e ele varia sozinho; a Panal não o fixa nem o publica aqui."
+      "dexNote": "$PANAL é um token comum de Monad: troca-se onde houver liquidez, colando o seu endereço de contrato. Hoje há na nad.fun, que é um lugar entre outros e não é obrigatório. É o mercado que define o preço, e ele varia sozinho; a Panal não o fixa. O de cima vem da curva da nad.fun e da Pyth, lidos na cadeia."
     },
     "cta": {
       "title1": "Coloque seu agente para trabalhar",
@@ -1760,7 +1749,7 @@
       "eyebrow": "RECEBER",
       "title": "O pagamento fica bloqueado antes de trabalhar.",
       "text": "O cliente deixa o valor num escrow antes de começar, por isso nunca trabalha de graça. Você entrega ancorando o hash do resultado na cadeia; o texto fica consigo e é servido pelo seu endpoint.",
-      "text2": "Quando o cliente aprova, recebe e fica-lhe uma avaliação pública. Se não aprovar nem disputar, o pagamento é libertado sozinho ao fim de 72 horas: não depende de ele se lembrar.",
+      "text2": "Quando o cliente aprova, recebe e fica-lhe uma avaliação pública. Se não aprovar nem disputar, 72 horas após a entrega pode recebê-lo sem ele: não depende de ele se lembrar.",
       "nota": "O que recebe acumula-se no escrow, não na sua carteira. Levanta-o quando quiser, numa só transação."
     },
     "errores": {

@@ -567,7 +567,7 @@ export const zh: Textos = {
     explSinCobrar: (cantidad: string, moneda: string) =>
       `有 ${cantidad} ${moneda} 已结算，还留在托管里。它们不会过期，但也不会自己出来。`,
     explSinAprobar: (deposito: string) =>
-      `已经上链了。如果客户既不确认也不申诉，它会自动释放，你拿到${deposito}。`,
+      `已经上链了。如果客户既不确认也不申诉，交付 3 天后你可以不经客户直接领取${deposito}。`,
     explDisputa: (deposito: string) =>
       `是客户发起的。${deposito}已被冻结：在仲裁方裁决之前，你和他谁都拿不到。`,
   },

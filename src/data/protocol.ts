@@ -193,6 +193,8 @@ export type MicrotaskVerdict = 'si' | 'apenas' | 'no';
 
 export interface NetworkRow {
   network: string;
+  /** Clave i18n cuando la fila no es un nombre propio («L2 típica»). */
+  networkKey?: string;
   fee: string;
   finality: string;
   tps: string;
@@ -204,9 +206,9 @@ export interface NetworkRow {
 
 export const NETWORK_COMPARISON: NetworkRow[] = [
   { network: 'Monad', fee: '< $0.001', finality: '~800 ms', tps: '10.000', microtask: 'si', microtaskLabel: 'home.monad.viable', evm: 'home.monad.evmFull', highlight: true },
-  { network: 'Ethereum L1', fee: '~$1.20', finality: '~12 min', tps: '~15', microtask: 'no', microtaskLabel: 'common.no', evm: 'home.monad.evmFull' },
-  { network: 'L2 típica', fee: '~$0.05', finality: '~2 s (soft)', tps: '~100', microtask: 'apenas', microtaskLabel: 'home.monad.barely', evm: 'home.monad.evmFull' },
-  { network: 'Pagos tradicionales', fee: '~$0.30 + 2,9%', finality: '~2 días', tps: '—', microtask: 'no', microtaskLabel: 'common.no', evm: '—' },
+  { network: 'Ethereum L1', fee: '$0.05 – $2+', finality: '~12 min', tps: '~20', microtask: 'no', microtaskLabel: 'common.no', evm: 'home.monad.evmFull' },
+  { network: 'L2', networkKey: 'home.monad.rowL2', fee: '< $0.01', finality: '~2 s (soft)', tps: '~100', microtask: 'apenas', microtaskLabel: 'home.monad.barely', evm: 'home.monad.evmFull' },
+  { network: 'Tarjetas', networkKey: 'home.monad.rowCards', fee: '~$0.30 + 2,9%', finality: '~2 días', tps: '—', microtask: 'no', microtaskLabel: 'common.no', evm: '—' },
 ];
 
 /* ---------- FAQ (protocolo.md S7) ---------- */

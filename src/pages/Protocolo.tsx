@@ -91,7 +91,7 @@ function ProtocolHero() {
         <div className="mt-14 flex flex-wrap items-start justify-center gap-x-14 gap-y-8">
           <StatBlock value={2.5} decimals={1} suffix="%" label={t('protocolPage.hero.statFee')} className="proto-stat items-center" />
           <StatBlock value={72} suffix="h" label="Auto-release" className="proto-stat items-center" />
-          <StatBlock value={0} label={t('protocolPage.hero.statCustodians')} className="proto-stat items-center" />
+          <StatBlock value={2} label={t('protocolPage.hero.statSignatures')} className="proto-stat items-center" />
         </div>
       </div>
     </section>

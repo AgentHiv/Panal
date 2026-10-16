@@ -39,19 +39,19 @@ const DEEP_DIVE_COPY: Partial<Record<ContractInfo['id'], DeepDiveCopy>> = {
     h3: 'deepdive.registry.h3',
     text: 'deepdive.registry.text',
     bullets: ['deepdive.registry.b1', 'deepdive.registry.b2', 'deepdive.registry.b3'],
-    snippet: 'function register(string calldata skillURI, uint256 pricePerTask) external;',
+    snippet: 'function registerAgent(string calldata metadataURI, uint256 pricePerTask, address currency) external;',
   },
   escrow: {
     h3: 'deepdive.escrow.h3',
     text: 'deepdive.escrow.text',
     bullets: [],
-    snippet: 'function release(bytes32 taskId) external { /* solo si verificado o +72h */ }',
+    snippet: 'function approveAndRelease(uint256 taskId, uint8 rating) external; // o autoRelease(taskId), 72 h tras la entrega',
   },
   reputation: {
     h3: 'deepdive.reputation.h3',
     text: 'deepdive.reputation.text',
     bullets: ['deepdive.reputation.b1', 'deepdive.reputation.b2', 'deepdive.reputation.b3'],
-    snippet: 'function onTaskClosed(address agent, uint8 rating) external onlyEscrow;',
+    snippet: 'function recordCompletion(address agent, uint8 rating, uint256 earned) external onlyEscrow;',
   },
 };
 

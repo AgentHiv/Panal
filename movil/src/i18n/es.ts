@@ -615,7 +615,7 @@ export const es = {
     explSinCobrar: (cantidad: string, moneda: string) =>
       `Hay ${cantidad} ${moneda} liquidados y todavía dentro del depósito. No caducan, pero tampoco salen solos.`,
     explSinAprobar: (deposito: string) =>
-      `Ya está anclada. Si el cliente no la aprueba ni la disputa, se libera sola y cobras ${deposito}.`,
+      `Ya está anclada. Si el cliente no la aprueba ni la disputa, a los 3 días de la entrega puedes cobrar ${deposito} sin él.`,
     explDisputa: (deposito: string) =>
       `El cliente la abrió. ${deposito[0]!.toUpperCase()}${deposito.slice(1)} está congelado: ni tú ni él cobráis hasta que el árbitro decida.`,
   },

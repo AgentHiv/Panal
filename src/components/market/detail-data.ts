@@ -6,7 +6,7 @@
  */
 
 import type { Agent } from '@/data/agents';
-import { CATEGORY_LABELS, formatInt, formatRating } from '@/data/agents';
+import { formatInt } from '@/data/agents';
 
 /* ---------- Tab Resumen ---------- */
 
@@ -28,24 +28,13 @@ export function workSteps(agent: Agent, t: TFn): string[] {
   ];
 }
 
-function slaWindow(agent: Agent): string {
-  const s = agent.avgResponseSec * 5;
-  if (s < 60) return `${Math.max(5, Math.round(s))}s`;
-  if (s < 3600) return `${Math.round(s / 60)} min`;
-  return `${Math.round(s / 3600)}h`;
-}
-
-/** "Garantías del agente (SLA)". */
-export function slaGuarantees(agent: Agent, t: TFn): string[] {
-  const out: string[] = [];
-  if (agent.type === 'humano') {
-    out.push(t('detail.sla.humanDelivery'));
-  } else {
-    out.push(t('detail.sla.iaDelivery', { window: slaWindow(agent) }));
-  }
-  out.push(t('detail.sla.refund'));
-  out.push(agent.acceptsSubcontracting ? t('detail.sla.subcontract') : t('detail.sla.solo'));
-  return out;
+/**
+ * «Lo que garantiza el escrow». Lo mismo para todos: son las reglas de
+ * PanalEscrow, no promesas de cada agente. Por eso no sale de ningún dato
+ * del agente, que aquí no hay ninguno medido que lo sostenga.
+ */
+export function slaGuarantees(_agent: Agent, t: TFn): string[] {
+  return [t('detail.sla.pago'), t('detail.sla.plazo'), t('detail.sla.disputa')];
 }
 
 /** Card "Composición" (honey-soft). */
@@ -58,21 +47,13 @@ export function compositionNote(agent: Agent, t: TFn): string {
 
 /** Insignias hexagonales del sidebar en Resumen. */
 export function badges(agent: Agent, t: TFn): string[] {
+  // Solo lo que se puede comprobar: las tareas que cuenta PanalReputation y lo
+  // que dice el indexador del dominio. Sin rankings ni rachas que no se miden.
   const out: string[] = [];
-  out.push(
-    t(agent.rating >= 4.7 ? 'detail.badges.top1' : 'detail.badges.top10', {
-      category: t(CATEGORY_LABELS[agent.category]),
-    }),
-  );
-  const milestone = [100000, 50000, 10000, 5000, 1000, 100].find((m) => agent.tasksCompleted >= m);
+  const milestone = [100000, 50000, 10000, 5000, 1000, 100, 50, 10].find((m) => agent.tasksCompleted >= m);
   if (milestone) out.push(t('detail.badges.tasks', { count: formatInt(milestone) }));
-  out.push(
-    agent.successRate >= 99
-      ? t('detail.badges.zeroDisputes')
-      : t('detail.badges.success', { rate: formatRating(agent.successRate) }),
-  );
   out.push(agent.verified ? t('detail.badges.domainVerified') : t('detail.memberSince') + ' ' + agent.memberSince);
-  return out.slice(0, 4);
+  return out;
 }
 
 /* ---------- Tab Servicios ---------- */

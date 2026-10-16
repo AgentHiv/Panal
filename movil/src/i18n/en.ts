@@ -609,7 +609,7 @@ export const en: Textos = {
     explSinCobrar: (cantidad: string, moneda: string) =>
       `There are ${cantidad} ${moneda} settled and still inside the escrow. They do not expire, but they do not come out on their own either.`,
     explSinAprobar: (deposito: string) =>
-      `It is anchored. If the client neither approves nor disputes it, it releases by itself and you get ${deposito}.`,
+      `It is anchored. If the client neither approves nor disputes it, 3 days after delivery you can collect ${deposito} without them.`,
     explDisputa: (deposito: string) =>
       `The client opened it. ${deposito[0]!.toUpperCase()}${deposito.slice(1)} is frozen: neither of you gets paid until the arbitrator decides.`,
   },
