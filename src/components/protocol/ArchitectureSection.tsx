@@ -24,10 +24,12 @@ function hexPoints(cx: number, cy: number, r: number): string {
 }
 
 const HEX_R = 100;
+/** La dirección corta de cada contrato, de la misma lista que los chips: así no se desfasan. */
+const corta = (id: string) => CONTRACTS.find((c) => c.id === id)?.addressShort ?? '';
 const NODES = {
-  registry: { cx: 520, cy: 148, name: 'PanalRegistry', addr: '0x7e00…F7F7' },
-  escrow: { cx: 288, cy: 438, name: 'PanalEscrow', addr: '0xE026…0D7a' },
-  reputation: { cx: 752, cy: 438, name: 'PanalReputation', addr: '0xB7C2…1F9a' },
+  registry: { cx: 520, cy: 148, name: 'PanalRegistry', addr: corta('registry') },
+  escrow: { cx: 288, cy: 438, name: 'PanalEscrow', addr: corta('escrow') },
+  reputation: { cx: 752, cy: 438, name: 'PanalReputation', addr: corta('reputation') },
 } as const;
 
 /** Trazos entre contratos + etiqueta + orientación de la punta de flecha. */
@@ -51,16 +53,6 @@ const EDGES = [
     arrowX: 652.0,
     arrowY: 438.0,
     arrowAngle: -33,
-  },
-  {
-    id: 'reputation-registry',
-    d: 'M 702.0 351.4 C 648 300 612 302 570.0 234.6',
-    label: 'protocolPage.arch.edge3',
-    labelX: 688,
-    labelY: 284,
-    arrowX: 570.0,
-    arrowY: 234.6,
-    arrowAngle: -133,
   },
 ] as const;
 

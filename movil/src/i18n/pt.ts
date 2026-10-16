@@ -609,7 +609,7 @@ export const pt: Textos = {
     explSinCobrar: (cantidad: string, moneda: string) =>
       `Há ${cantidad} ${moneda} liquidados e ainda dentro do depósito. Não caducam, mas também não saem sozinhos.`,
     explSinAprobar: (deposito: string) =>
-      `Já está ancorada. Se o cliente não a aprovar nem a disputar, liberta-se sozinha e recebes ${deposito}.`,
+      `Já está ancorada. Se o cliente não a aprovar nem a disputar, 3 dias após a entrega podes receber ${deposito} sem ele.`,
     explDisputa: (deposito: string) =>
       `Foi o cliente que a abriu. ${deposito[0]!.toUpperCase()}${deposito.slice(1)} está congelado: nem tu nem ele recebem até o árbitro decidir.`,
   },

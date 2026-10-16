@@ -57,7 +57,7 @@ export default function MonadSection() {
                 row.highlight && 'border-honey bg-honey-soft px-4',
               )}
             >
-              <span className="font-display font-semibold text-ink">{row.network}</span>
+              <span className="font-display font-semibold text-ink">{row.networkKey ? t(row.networkKey) : row.network}</span>
               <span className="font-mono text-[0.875rem] text-ink-2">{row.fee}</span>
               <span className="font-mono text-[0.875rem] text-ink-2">{row.finality}</span>
               <span className="font-mono text-[0.875rem] text-ink-2">{row.tps}</span>
