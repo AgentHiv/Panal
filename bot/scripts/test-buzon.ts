@@ -43,6 +43,8 @@ import {
   ofertaSignMessage,
   resultSignMessageConCaducidad,
   adjuntosAnunciados,
+  esTextoCifrado,
+  mensajeParaPublicarClave,
   tablonArchivoSignMessage,
   tablonEncargoSignMessage,
   tablonEntregaSignMessage,
@@ -766,6 +768,60 @@ async function main(): Promise<void> {
     !existsSync(join(dir, AGENTE.toLowerCase(), '1.files')),
   );
   check('lo de hoy se queda', store.leer(AGENTE, 2n)?.entrega === ENTREGA);
+
+  /* ── las claves de cifrado ───────────────────────────────────────────── */
+  console.log('\n── La clave de cifrado: solo la publica su dueño, y no caduca ──\n');
+  {
+    const sdk = await import('../../sdk/src/cifrado.js');
+    const clave = sdk.claveDesdeFirma(
+      persona.address,
+      await persona.signMessage({ message: sdk.mensajeParaDerivarClave(persona.address) }),
+    ).publica;
+    check(
+      'el mensaje del buzón es idéntico al del SDK',
+      mensajeParaPublicarClave(persona.address, clave) === sdk.mensajeParaPublicarClave(persona.address, clave),
+    );
+    const urlClave = `${base}/clave`;
+    const r0 = await fetch(urlClave);
+    check('404 si la cuenta no ha publicado clave', r0.status === 404, `status=${r0.status}`);
+
+    const publicar = (body: unknown) =>
+      fetch(urlClave, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const firmaAjena = await intruso.signMessage({ message: sdk.mensajeParaPublicarClave(persona.address, clave) });
+    const rA = await publicar({ clave, firma: firmaAjena });
+    check('403 nadie publica una clave en nombre de otro', rA.status === 403, `status=${rA.status}`);
+    const firma = await persona.signMessage({ message: sdk.mensajeParaPublicarClave(persona.address, clave) });
+    const rB = await publicar({ clave: 'corta', firma });
+    check('400 una clave sin forma de clave', rB.status === 400, `status=${rB.status}`);
+    const rC = await publicar({ clave, firma });
+    check('200 su dueño la publica', rC.status === 200, `status=${rC.status}`);
+    const rD = await fetch(urlClave);
+    const leida = (await rD.json()) as { cuenta: `0x${string}`; clave: string; firma: Hex };
+    check('y cualquiera la lee', rD.status === 200 && leida.clave === clave);
+    check('y la comprueba sin fiarse del buzón', await sdk.comprobarClavePublicada(leida));
+
+    // La limpieza de los 30 días no se la lleva.
+    store.limpiar(Date.now() + 400 * 86_400_000);
+    check('la limpieza de encargos no borra las claves', store.leerClave(persona.address)?.clave === clave);
+
+    /* Un encargo cifrado ocupa más que el texto, y tiene que caber. */
+    const largo = 'ñ'.repeat(30_000);
+    const sobre = sdk.cifrarTexto(largo, [
+      { cuenta: persona.address, clave },
+      { cuenta: cliente.address, clave },
+    ]);
+    check('el sobre de un encargo largo pasa del tope del texto', sobre.length > 32_000, `${sobre.length} caracteres`);
+    TAREAS['6'] = { ...tarea(TaskStatus.Open, ('0x' + '00'.repeat(32)) as Hex), taskHash: keccak256(toBytes(sobre)) };
+    const firma6 = await cliente.signMessage({ message: briefSignMessage(6n) });
+    const r6 = await dejarBrief(6n, { brief: sobre, address: cliente.address, signature: firma6 });
+    check('200 el sobre entra entero', r6.status === 200, `status=${r6.status}`);
+    check('y se guarda tal cual, sin que el buzón pueda leerlo', store.leer(AGENTE, 6n)?.brief === sobre && !sobre.includes('ñ'));
+    const enClaro = 'x'.repeat(32_001);
+    TAREAS['7'] = { ...tarea(TaskStatus.Open, ('0x' + '00'.repeat(32)) as Hex), taskHash: keccak256(toBytes(enClaro)) };
+    const r7 = await dejarBrief(7n, { brief: enClaro, address: cliente.address, signature: await cliente.signMessage({ message: briefSignMessage(7n) }) });
+    check('400 un texto en claro sigue con su tope', r7.status === 400, `status=${r7.status}`);
+    check('un texto que solo empieza como un sobre no cuenta como sobre', !esTextoCifrado('{"v":"panal-cifrado-1","c":3}'));
+  }
 
   server.close();
   console.log(

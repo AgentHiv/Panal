@@ -194,8 +194,51 @@ const MAX_VENTANA_S = 15 * 60;
  */
 export const MAX_ENTREGA_CHARS = 200_000;
 
-const MAX_BRIEF_BODY_BYTES = MAX_BRIEF_CHARS * 4 + 4_096;
-const MAX_ENTREGA_BODY_BYTES = MAX_ENTREGA_CHARS * 4 + 4_096;
+/**
+ * Un texto cifrado ocupa más que el texto: base64 de sus bytes UTF-8 —hasta 4
+ * por carácter— más la cabecera. El buzón no puede medir el texto de dentro,
+ * así que a un sobre se le deja ese margen; el tope del texto lo aplica quien
+ * cifra, antes de cifrar.
+ */
+const MAX_SOBRE_BRIEF_CHARS = MAX_BRIEF_CHARS * 6;
+const MAX_SOBRE_ENTREGA_CHARS = MAX_ENTREGA_CHARS * 6;
+
+const MAX_BRIEF_BODY_BYTES = MAX_SOBRE_BRIEF_CHARS + 4_096;
+const MAX_ENTREGA_BODY_BYTES = MAX_SOBRE_ENTREGA_CHARS + 4_096;
+
+/**
+ * ¿Es un texto cifrado (`sdk/src/cifrado.ts`)? Solo la forma: el buzón no sabe
+ * abrirlo, y es justo lo que se busca. Copia de `esTextoCifrado`.
+ */
+export function esTextoCifrado(texto: string): boolean {
+  if (!texto.startsWith('{"v":"panal-cifrado-1"')) return false;
+  try {
+    const s = JSON.parse(texto) as { c?: unknown; para?: unknown };
+    return typeof s.c === 'string' && Array.isArray(s.para);
+  } catch {
+    return false;
+  }
+}
+
+/** El tope de un texto, según vaya en claro o cifrado. */
+function topeDe(texto: string, enClaro: number, cifrado: number): number {
+  return esTextoCifrado(texto) ? cifrado : enClaro;
+}
+
+/**
+ * El mensaje con el que una cuenta publica su clave de cifrado. IDÉNTICO a
+ * `mensajeParaPublicarClave` del SDK —lo comprueba scripts/test-buzon.ts—: el
+ * buzón solo guarda la clave si la firma es de esa cuenta, y quien la usa lo
+ * vuelve a comprobar por su cuenta.
+ */
+export function mensajeParaPublicarClave(cuenta: Address, clavePublica: string): string {
+  return ['Panal · mi clave pública de cifrado · v1', '', `Cuenta: ${getAddress(cuenta)}`, `Clave: ${clavePublica}`].join(
+    '\n',
+  );
+}
+
+/** 32 bytes en base64url sin relleno: 43 caracteres. */
+const CLAVE_PUBLICA = /^[A-Za-z0-9_-]{43}$/;
 
 /** El hash de una tarea sin entregar. */
 const SIN_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -427,6 +470,54 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     return task;
   };
 
+  // ---- GET /clave — la clave pública de cifrado de una cuenta ----------------
+  const darClave = (cuenta: Address, res: ServerResponse): void => {
+    const c = deps.store.leerClave(cuenta);
+    if (!c) {
+      json(res, 404, { error: 'no key' });
+      return;
+    }
+    json(res, 200, { cuenta, clave: c.clave, firma: c.firma });
+  };
+
+  // ---- POST /clave — la cuenta publica (o cambia) su clave --------------------
+  //
+  // Sin firma de esa cuenta no entra. El buzón la comprueba para no guardar
+  // basura, pero el que la usa la comprueba otra vez: no tiene que fiarse.
+  const publicarClave = async (cuenta: Address, req: IncomingMessage, res: ServerResponse): Promise<void> => {
+    const raw = await readBody(req, 2_048);
+    if (raw === null) {
+      json(res, 413, { error: 'body too large' });
+      return;
+    }
+    let clave = '';
+    let firma = '';
+    try {
+      const body = JSON.parse(raw || '{}') as Record<string, unknown>;
+      if (typeof body.clave === 'string') clave = body.clave;
+      if (typeof body.firma === 'string') firma = body.firma;
+    } catch {
+      json(res, 400, { error: 'bad json' });
+      return;
+    }
+    if (!CLAVE_PUBLICA.test(clave) || !isHex(firma)) {
+      json(res, 400, { error: 'bad key' });
+      return;
+    }
+    const ok = await verifyMessage({
+      address: cuenta,
+      message: mensajeParaPublicarClave(cuenta, clave),
+      signature: firma as Hex,
+    }).catch(() => false);
+    if (!ok) {
+      json(res, 403, { error: 'bad signature' });
+      return;
+    }
+    deps.store.guardarClave(cuenta, clave, firma);
+    console.log(`[buzon] clave de cifrado de ${cuenta}`);
+    json(res, 200, { ok: true });
+  };
+
   // ---- POST /brief/:taskId — el cliente deja el encargo ---------------------
   const dejarBrief = async (
     agente: Address,
@@ -451,7 +542,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       json(res, 400, { error: 'bad json' });
       return;
     }
-    if (brief.trim().length === 0 || brief.length > MAX_BRIEF_CHARS) {
+    if (brief.trim().length === 0 || brief.length > topeDe(brief, MAX_BRIEF_CHARS, MAX_SOBRE_BRIEF_CHARS)) {
       json(res, 400, { error: `brief requerido, máx. ${MAX_BRIEF_CHARS} caracteres` });
       return;
     }
@@ -660,7 +751,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       json(res, 400, { error: 'bad json' });
       return;
     }
-    if (entrega.trim().length === 0 || entrega.length > MAX_ENTREGA_CHARS) {
+    if (entrega.trim().length === 0 || entrega.length > topeDe(entrega, MAX_ENTREGA_CHARS, MAX_SOBRE_ENTREGA_CHARS)) {
       json(res, 400, { error: `entrega requerida, máx. ${MAX_ENTREGA_CHARS} caracteres` });
       return;
     }
@@ -1523,6 +1614,16 @@ export function createBuzonServer(deps: BuzonDeps): Server {
         return;
       }
       await darArchivo(agente, BigInt(deArchivo[1]!), nombre, url, req, res);
+      return;
+    }
+
+    // La clave de cifrado de una cuenta, sea agente o cliente.
+    if (resto === 'clave' && req.method === 'GET') {
+      darClave(agente, res);
+      return;
+    }
+    if (resto === 'clave' && req.method === 'POST') {
+      await publicarClave(agente, req, res);
       return;
     }
 
