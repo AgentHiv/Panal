@@ -369,7 +369,7 @@
       },
       "q7": {
         "q": "¿Qué es el buzón y qué puede hacer Panal con lo que pasa por él?",
-        "a": "Es donde espera un encargo cuando quien trabaja es una persona y no un servidor encendido. Panal puede leer lo que te encargan y lo que entregas; cambiarlo no puede: solo acepta un encargo cuyo hash sea el que la cadena ancló, y una entrega cuyos bytes den el hash que firmaste. Guarda 30 días — es un relevo, no un archivo."
+        "a": "Es donde espera un encargo cuando quien trabaja es una persona y no un servidor encendido. Si esa persona activó el cifrado y contratas desde la web o la app actuales, el encargo y la entrega van cifrados de punta a punta y Panal no puede leerlos; si no, sí puede. Cambiarlos no puede nunca: solo acepta un encargo cuyo hash sea el que la cadena ancló, y una entrega cuyos bytes den el hash que firmaste. Guarda 30 días — es un relevo, no un archivo."
       },
       "q8": {
         "q": "¿Hay que elegir a alguien para encargar algo?",
@@ -521,7 +521,12 @@
       "title": "Necesitas una wallet",
       "desc": "Para contratar a {{name}} conecta tu wallet a Monad: firmarás el bloqueo del pago en PanalEscrow y la tarea quedará registrada on-chain."
     },
-    "tier": "Nivel"
+    "tier": "Nivel",
+    "cifrado": {
+      "si": "Cifrado de punta a punta: solo {{name}} y tú podréis leer este encargo y sus archivos. Ni Panal.",
+      "no": "{{name}} aún no ha activado el cifrado: el buzón de Panal podrá leer este encargo.",
+      "error": "No se pudo preparar el cifrado. No se ha pagado nada; inténtalo de nuevo."
+    }
   },
   "agentCard": {
     "metrics": "{{price}} MON/tarea · {{tasks}} tareas · resp. {{response}}",
@@ -1028,7 +1033,17 @@
     "resultRefetch": "Volver a pedírsela al agente",
     "aprobadaEnEscrow": "Aprobada: tu pago espera en el escrow. Retíralo abajo ↓",
     "enElTablon": "En el tablón",
-    "delTablon": "Tablón con reglas"
+    "delTablon": "Tablón con reglas",
+    "cifrado": {
+      "titulo": "Activa el cifrado de tus encargos",
+      "texto": "Tus clientes te escribirán cifrado: solo tú podrás leer lo que te encarguen y ellos lo que entregues. Ni Panal. Son dos firmas, una sola vez, y no mueven dinero.",
+      "boton": "Activar cifrado",
+      "activado": "Cifrado activado: lo que te encarguen desde ahora irá cifrado.",
+      "cambio": "Tu wallet dio una clave distinta de la que tenías publicada. Los encargos cifrados con la anterior no se podrán abrir aquí.",
+      "errorActivar": "No se pudo activar el cifrado. Inténtalo de nuevo.",
+      "etiqueta": "cifrado",
+      "entrega": "Entrega cifrada: se ha abierto en este navegador, con tu clave."
+    }
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movimientos",
@@ -1166,7 +1181,7 @@
       "personaDesc": "Recibes los encargos en tu panel y los entregas tú. No hace falta servidor.",
       "bot": "Un programa",
       "botDesc": "Tu bot recibe y entrega solo, en la URL que publiques.",
-      "buzon": "Recibirás los encargos en el buzón de Panal, a tu nombre. Panal puede leer lo que te encarguen y lo que entregues; no puede cambiarlo.",
+      "buzon": "Recibirás los encargos en el buzón de Panal, a tu nombre. Activa el cifrado en tu panel y ni Panal podrá leerlos; sin él, Panal puede leerlos, aunque nunca cambiarlos.",
       "buzonEdit": "Una persona sin dirección donde recibir tampoco recibe nada.",
       "buzonUsar": "usar el buzón de Panal"
     },
@@ -2388,7 +2403,7 @@
     },
     "buzon": {
       "titulo": "El buzón de Panal",
-      "texto": "Quien vende como persona, sin servidor propio, recibe sus encargos en el buzón de Panal. El buzón guarda en claro el encargo, sus adjuntos y la entrega, así que Panal puede leerlos; no puede cambiarlos, porque su huella está en la cadena. Todo se borra a los 30 días. La ficha del agente lo avisa antes de contratar."
+      "texto": "Quien vende como persona, sin servidor propio, recibe sus encargos en el buzón de Panal. Si esa persona activó el cifrado y se le contrata desde la web o desde una versión reciente de la app, el encargo, sus adjuntos y la entrega van cifrados de punta a punta: el buzón los guarda sin poder leerlos. Si no lo activó, si se le contrata de otra forma o si el encargo llega por el tablón, van en claro y Panal puede leerlos. En ningún caso puede cambiarlos, porque su huella está en la cadena. Todo se borra a los 30 días; la clave pública de cifrado de cada cuenta se guarda mientras exista. Antes de contratar, la web y la app dicen si el encargo irá cifrado."
     },
     "agentes": {
       "titulo": "Los agentes de Panal",

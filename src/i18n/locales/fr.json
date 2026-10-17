@@ -369,7 +369,7 @@
       },
       "q7": {
         "q": "Qu’est-ce que la boîte aux lettres, et que peut faire Panal de ce qui y passe ?",
-        "a": "C’est là qu’attend une commande quand celui qui travaille est une personne et non un serveur allumé en permanence. Panal peut lire ce qu’on vous commande et ce que vous livrez ; il ne peut rien y changer : il n’accepte qu’une commande dont le hash est celui ancré sur la chaîne, et une livraison dont les octets donnent le hash que vous avez signé. Il garde 30 jours — c’est un relais, pas une archive."
+        "a": "C’est là qu’attend une commande quand celui qui travaille est une personne et non un serveur allumé. Si cette personne a activé le chiffrement et que vous engagez depuis le site ou l’app à jour, la commande et la livraison sont chiffrées de bout en bout et Panal ne peut pas les lire ; sinon, elle le peut. Les modifier, jamais : elle n’accepte qu’une commande dont le hash est celui ancré on-chain, et une livraison dont les octets donnent le hash que vous avez signé. Elle garde 30 jours — c’est un relais, pas une archive."
       },
       "q8": {
         "q": "Faut-il choisir quelqu’un pour faire faire quelque chose ?",
@@ -521,7 +521,12 @@
       "title": "Wallet requise",
       "desc": "Pour embaucher {{name}}, connectez votre wallet à Monad : vous signerez le blocage du paiement dans PanalEscrow et la tâche sera enregistrée on-chain."
     },
-    "tier": "Niveau"
+    "tier": "Niveau",
+    "cifrado": {
+      "si": "Chiffré de bout en bout : seuls {{name}} et vous pourrez lire cette commande et ses fichiers. Même pas Panal.",
+      "no": "{{name}} n’a pas encore activé le chiffrement : la boîte aux lettres de Panal pourra lire cette commande.",
+      "error": "Le chiffrement n’a pas pu être préparé. Rien n’a été payé ; réessayez."
+    }
   },
   "agentCard": {
     "metrics": "{{price}} MON/tâche · {{tasks}} tâches · rép. {{response}}",
@@ -1028,7 +1033,17 @@
     "resultRefetch": "La redemander à l'agent",
     "aprobadaEnEscrow": "Approuvée : votre paiement vous attend dans l’escrow. Retirez-le ci-dessous ↓",
     "enElTablon": "Sur le tableau",
-    "delTablon": "Tableau avec règles"
+    "delTablon": "Tableau avec règles",
+    "cifrado": {
+      "titulo": "Activez le chiffrement de vos commandes",
+      "texto": "Vos clients vous écriront chiffré : vous seul lirez ce qu’ils commandent, et eux seuls ce que vous livrez. Même pas Panal. Deux signatures, une seule fois, sans bouger d’argent.",
+      "boton": "Activer le chiffrement",
+      "activado": "Chiffrement activé : vos prochaines commandes seront chiffrées.",
+      "cambio": "Votre wallet a produit une clé différente de celle publiée. Les commandes chiffrées avec l’ancienne ne pourront pas être ouvertes ici.",
+      "errorActivar": "Le chiffrement n’a pas pu être activé. Réessayez.",
+      "etiqueta": "chiffré",
+      "entrega": "Livraison chiffrée : ouverte dans ce navigateur, avec votre clé."
+    }
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 mouvements",
@@ -1166,7 +1181,7 @@
       "personaDesc": "Vous recevez les commandes dans votre tableau de bord et vous livrez vous-même. Aucun serveur.",
       "bot": "Un programme",
       "botDesc": "Votre bot reçoit et livre tout seul, à l'URL que vous publiez.",
-      "buzon": "Vous recevrez les commandes dans la boîte aux lettres de Panal, à votre nom. Panal peut lire ce qu'on vous demande et ce que vous livrez ; il ne peut pas le modifier.",
+      "buzon": "Vous recevrez les commandes dans la boîte aux lettres de Panal, à votre nom. Activez le chiffrement dans votre tableau de bord et même Panal ne pourra pas les lire ; sans lui, Panal peut les lire, sans jamais pouvoir les modifier.",
       "buzonEdit": "Une personne sans adresse de réception ne reçoit rien non plus.",
       "buzonUsar": "utiliser la boîte aux lettres de Panal"
     },
@@ -2388,7 +2403,7 @@
     },
     "buzon": {
       "titulo": "La boîte aux lettres de Panal",
-      "texto": "Les personnes qui vendent sans serveur propre reçoivent leurs missions dans la boîte aux lettres de Panal. Elle stocke en clair la mission, ses pièces jointes et la livraison : Panal peut donc les lire, mais pas les modifier, car leur empreinte est sur la blockchain. Tout est effacé au bout de 30 jours. La fiche de l’agent le signale avant l’engagement."
+      "texto": "Qui vend en tant que personne, sans serveur à soi, reçoit ses commandes dans la boîte aux lettres de Panal. Si cette personne a activé le chiffrement et qu’on l’engage depuis le site ou une version récente de l’app, la commande, ses pièces jointes et la livraison sont chiffrées de bout en bout : la boîte les garde sans pouvoir les lire. Si elle ne l’a pas activé, si on l’engage autrement ou si la commande passe par le tableau, elles circulent en clair et Panal peut les lire. Dans aucun cas il ne peut les modifier, car leur empreinte est on-chain. Tout est effacé au bout de 30 jours ; la clé publique de chiffrement de chaque compte est gardée tant qu’il existe. Avant d’engager, le site et l’app indiquent si la commande sera chiffrée."
     },
     "agentes": {
       "titulo": "Les agents de Panal",

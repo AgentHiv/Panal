@@ -16,7 +16,7 @@
  */
 
 import { keccak256, toBytes } from 'viem';
-import { getTaskBrief } from '@/lib/taskBriefs';
+import { getTaskBrief, getTaskSobre } from '@/lib/taskBriefs';
 import { leerHilo } from '@/lib/historial';
 import type { Mensaje } from '@/lib/historial';
 import { parseFilesManifest, stripFilesManifest } from '@/lib/deliveredFiles';
@@ -37,6 +37,16 @@ interface Entrega {
   texto: string;
   /** Epoch ms de cuando se guardó en este teléfono. */
   guardada: number;
+  /**
+   * Si iba cifrada, lo que dice, abierto en este dispositivo. `texto` sigue
+   * siendo el sobre: es lo que cuadra con la cadena, y lo que se comprueba.
+   */
+  claro?: string;
+}
+
+/** Lo que dice una entrega guardada: abierta si iba cifrada. */
+export function textoDeEntrega(e: { texto: string; claro?: string }): string {
+  return e.claro ?? e.texto;
 }
 
 type Entregas = Record<string, Entrega>;
@@ -67,10 +77,10 @@ function escribirEntregas(e: Entregas): void {
  * sale en el expediente diciendo «cuadra con la cadena», y esa frase no puede
  * depender de que quien llame se haya acordado de comprobarlo.
  */
-export function guardarEntrega(taskId: string, texto: string, resultHash: string): boolean {
+export function guardarEntrega(taskId: string, texto: string, resultHash: string, claro?: string): boolean {
   if (keccak256(toBytes(texto)).toLowerCase() !== resultHash.toLowerCase()) return false;
   const todas = leerEntregas();
-  todas[taskId] = { texto, guardada: Date.now() };
+  todas[taskId] = { texto, guardada: Date.now(), ...(claro !== undefined ? { claro } : {}) };
   escribirEntregas(todas);
   return true;
 }
@@ -134,6 +144,8 @@ export interface Expediente {
     briefCuadra: boolean;
     entrega: string | null;
     entregaGuardada: number | null;
+    /** Si iba cifrada: sus archivos también, y hay que abrirlos al bajarlos. */
+    entregaCifrada: boolean;
     /** Los archivos que ANUNCIA la entrega. No están en el teléfono. */
     adjuntos: DeliveredFile[];
     hilo: Mensaje[];
@@ -146,7 +158,10 @@ export function armar(
   yo: string,
 ): Expediente {
   const brief = getTaskBrief(tarea.taskHash);
+  // Si iba cifrado, lo que se ancló es el sobre: es él quien tiene que cuadrar.
+  const sobre = getTaskSobre(tarea.taskHash);
   const guardada = leerEntrega(tarea.id.toString());
+  const entregaLegible = guardada ? textoDeEntrega(guardada) : null;
   // El hilo pertenece al par cliente|agente, y el cliente puede no ser quien
   // mira: un trabajador ve el encargo pero no la conversación del otro.
   const hilo = tarea.role === 'client' ? leerHilo(yo, tarea.worker) : [];
@@ -167,10 +182,13 @@ export function armar(
     },
     local: {
       brief,
-      briefCuadra: brief !== null && keccak256(toBytes(brief)).toLowerCase() === tarea.taskHash.toLowerCase(),
-      entrega: guardada ? stripFilesManifest(guardada.texto) : null,
+      briefCuadra:
+        brief !== null &&
+        keccak256(toBytes(sobre ?? brief)).toLowerCase() === tarea.taskHash.toLowerCase(),
+      entrega: entregaLegible !== null ? stripFilesManifest(entregaLegible) : null,
       entregaGuardada: guardada?.guardada ?? null,
-      adjuntos: guardada ? parseFilesManifest(guardada.texto) : [],
+      entregaCifrada: guardada?.claro !== undefined,
+      adjuntos: entregaLegible !== null ? parseFilesManifest(entregaLegible) : [],
       hilo,
     },
   };

@@ -3,23 +3,27 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ExternalLink, Loader2, Paperclip, Timer, TriangleAlert, X } from 'lucide-react';
+import { Check, ExternalLink, Loader2, Lock, LockOpen, Paperclip, Timer, TriangleAlert, X } from 'lucide-react';
 import { useSignMessage, useSwitchChain, useWriteContract } from 'wagmi';
-import { formatEther, keccak256, parseEventLogs, toBytes } from 'viem';
+import { formatEther, keccak256, parseEventLogs, toBytes, type Address } from 'viem';
 import {
+  cifrarArchivo,
+  cifrarTexto,
   conEjemplosDeLaFicha,
   conTextoDeLaFicha,
   leerEjemplosDeMetadata,
   leerNivelesDeMetadata,
   type Nivel,
 } from '@panal/sdk';
+import { clavePublicaDe, nombreEnBuzon, publicarMiClave } from '@/lib/cifrado';
 import { ensureActiveChain } from '@/lib/ensureChain';
-import { saveTaskBrief } from '@/lib/taskBriefs';
+import { saveTaskBrief, saveTaskSobre } from '@/lib/taskBriefs';
 import {
   briefSignMessage,
   buildBriefUrl,
   buildUploadUrl,
   enviarBriefConReintento,
+  esBuzon,
   extractBotUrl,
   leerCapacidades,
   type CapacidadesAgente,
@@ -186,6 +190,27 @@ function HireWizard({
    * copia congelada cuesta una línea.
    */
   const briefFirmado = useRef<string | null>(null);
+  /** El mismo encargo en claro, para la copia local de quien lo pidió. */
+  const briefEnClaro = useRef<string | null>(null);
+  /**
+   * Lo que se sube DESPUÉS de pagar, tal y como se anunció: cifrado y con
+   * nombre opaco si el encargo va cifrado. Fijado al contratar por lo mismo
+   * que `briefFirmado`: cifrar es aleatorio, y otra vuelta daría otros bytes.
+   */
+  const archivosASubir = useRef<{ name: string; bytes: Uint8Array<ArrayBuffer> }[] | null>(null);
+  /**
+   * La clave pública de quien recibe, si recibe en el buzón de Panal y la ha
+   * publicado. `undefined` mientras se pregunta; `null` si no hay: entonces el
+   * encargo va como siempre, y se dice.
+   */
+  const [claveDelAgente, setClaveDelAgente] = useState<string | null | undefined>(undefined);
+  const [recibeEnBuzon, setRecibeEnBuzon] = useState(false);
+  /**
+   * La clave pública de quien contrata, si ya la publicó. Pedida al abrir para
+   * que contratar no espere a nada: en el navegador de una wallet, una firma o
+   * un pago que no nace del toque del usuario se pierde a menudo.
+   */
+  const [miClavePublicada, setMiClavePublicada] = useState<string | null>(null);
   /**
    * El importe que se decidió al pulsar «contratar».
    *
@@ -199,6 +224,17 @@ function HireWizard({
 
   /* ---------- contratación real (PanalEscrow) ---------- */
   const { connected, connecting, wrongNetwork, switchToMonad, chainId, connect, address } = useWallet();
+
+  useEffect(() => {
+    if (!address || !claveDelAgente) return;
+    let vigente = true;
+    void clavePublicaDe(address as Address).then((c) => {
+      if (vigente) setMiClavePublicada(c);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [address, claveDelAgente]);
   const { switchChainAsync } = useSwitchChain();
   const { signMessageAsync } = useSignMessage();
   const onchain = isOnchainAgent(agent);
@@ -256,6 +292,15 @@ function HireWizard({
             if (vigente) setResponde(r);
           });
         }
+        // Solo quien recibe en el buzón: un servidor propio ya es quien lo lee.
+        if (vigente) setRecibeEnBuzon(esBuzon(botUrl));
+        if (esBuzon(botUrl)) {
+          void clavePublicaDe(agent.workerAddress as Address).then((c) => {
+            if (vigente) setClaveDelAgente(c);
+          });
+        } else if (vigente) {
+          setClaveDelAgente(null);
+        }
         /**
          * El precio de la CADENA, el texto de la tarjeta.
          *
@@ -310,6 +355,42 @@ function HireWizard({
     const texto = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
     return appendAttachmentsManifest(texto, adjuntos);
   }, [taskText, params, adjuntos]);
+
+  /**
+   * El encargo que se ancla, cifrado si quien lo recibe publicó su clave.
+   *
+   * Cifrado va para dos: quien lo hace y quien lo pide, que tiene que poder
+   * releerlo y recibir la entrega cifrada. Por eso, la primera vez, publica
+   * también la suya (dos firmas, una sola vez). Los adjuntos se cifran antes
+   * de anunciarse: el hash del manifiesto es el de los bytes cifrados, que son
+   * los que el buzón guarda y los que se comprueban al bajarlos.
+   */
+  const prepararEncargo = async (): Promise<{ brief: string; enClaro: string }> => {
+    if (!claveDelAgente || !address || !isOnchainAgent(agent)) {
+      archivosASubir.current = null;
+      const brief = componerBrief();
+      return { brief, enClaro: brief };
+    }
+    const yo = address as Address;
+    // Ya publicada: nada que firmar. Si no, la primera vez: dos firmas.
+    const miPublica =
+      miClavePublicada ??
+      (await publicarMiClave(yo, (mensaje) => signMessageAsync({ message: mensaje }))).clave.publica;
+    setMiClavePublicada(miPublica);
+    const para = [
+      { cuenta: agent.workerAddress as Address, clave: claveDelAgente },
+      { cuenta: yo, clave: miPublica },
+    ];
+    const cifrados = adjuntos.map((a) => {
+      const bytes = new Uint8Array(cifrarArchivo(a.bytes, para));
+      const hash = keccak256(bytes);
+      return { ...a, bytes, hash, size: bytes.byteLength };
+    });
+    archivosASubir.current = cifrados.map((c) => ({ name: nombreEnBuzon(c.hash), bytes: c.bytes }));
+    const texto = taskText.trim() + (params.trim() ? '\n' + params.trim() : '');
+    const enClaro = appendAttachmentsManifest(texto, cifrados);
+    return { brief: cifrarTexto(enClaro, para), enClaro };
+  };
 
   /**
    * Añade archivos: los lee, los hashea y los deja listos para anunciarse.
@@ -388,10 +469,22 @@ function HireWizard({
      */
     const aBloquear = elegido?.wei ?? agent.priceWei;
     importeFirmado.current = aBloquear;
-    const brief = componerBrief();
+    let preparado: { brief: string; enClaro: string };
+    try {
+      preparado = await prepararEncargo();
+    } catch (err) {
+      // Sin cifrado preparado no se paga: mandarlo en claro a quien publicó
+      // su clave sería justo lo contrario de lo que pidió.
+      const msg = err instanceof Error ? err.message.split('\n')[0] : '';
+      if (!/reject|denied|user/i.test(msg)) toast.error(t('hire.cifrado.error'));
+      return;
+    }
+    const brief = preparado.brief;
     briefFirmado.current = brief;
+    briefEnClaro.current = preparado.enClaro;
     const taskHash = keccak256(toBytes(brief));
-    saveTaskBrief(taskHash, brief); // caché local: el trabajador verá QUÉ se pidió
+    saveTaskBrief(taskHash, preparado.enClaro); // caché local: el trabajador verá QUÉ se pidió
+    if (brief !== preparado.enClaro) saveTaskSobre(taskHash, brief);
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineHours * 3600);
     if (!V2_ENABLED) {
       // v1: createTask(worker, taskHash, deadline) con value = precio.
@@ -438,10 +531,12 @@ function HireWizard({
     // provoca; reordenarlo para ahorrarlo arriesga cobrar dos veces.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setApprovePhase('approved');
-    const brief = componerBrief();
+    // El que se preparó al pulsar «contratar»: si va cifrado, otra vuelta
+    // daría otros bytes y otro hash que el del encargo que ya se aprobó pagar.
+    const brief = briefFirmado.current ?? componerBrief();
     briefFirmado.current = brief;
     const taskHash = keccak256(toBytes(brief));
-    saveTaskBrief(taskHash, brief); // caché local: el trabajador verá QUÉ se pidió
+    saveTaskBrief(taskHash, briefEnClaro.current ?? brief); // caché local: el trabajador verá QUÉ se pidió
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineHours * 3600);
     // EL MISMO importe que aprobó `hire`, no uno recalculado: aquí sólo se
     // encadena lo que ya se decidió. El approve se firmó por esa cantidad y
@@ -484,7 +579,7 @@ function HireWizard({
     async (botUrl: string, taskId: bigint, signature: string, quien: string): Promise<void> => {
       setAdjuntosEstado('subiendo');
       let fallos = 0;
-      for (const a of adjuntos) {
+      for (const a of archivosASubir.current ?? adjuntos) {
         try {
           const res = await fetch(buildUploadUrl(botUrl, taskId), {
             method: 'POST',
@@ -854,6 +949,20 @@ function HireWizard({
                     placeholder={t('hire.taskPlaceholder', { name: agent.name })}
                     className="w-full resize-none rounded-xl border border-line bg-paper px-4 py-3 text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
                   />
+                  {/* Quién podrá leerlo. Si recibe en el buzón de Panal es la
+                      diferencia entre que Panal pueda leerlo o no, y se dice
+                      en los dos casos. */}
+                  {claveDelAgente ? (
+                    <p className="flex items-start gap-1.5 text-[0.75rem] leading-relaxed text-olive">
+                      <Lock size={13} className="mt-0.5 shrink-0" aria-hidden />
+                      {t('hire.cifrado.si', { name: agent.name })}
+                    </p>
+                  ) : claveDelAgente === null && recibeEnBuzon ? (
+                    <p className="flex items-start gap-1.5 text-[0.75rem] leading-relaxed text-ink-3">
+                      <LockOpen size={13} className="mt-0.5 shrink-0" aria-hidden />
+                      {t('hire.cifrado.no', { name: agent.name })}
+                    </p>
+                  ) : null}
                   {/* Los ejemplos del PROPIO agente, solo con la caja vacía.
                       Había cuatro fijos que salían con cualquiera —a uno de
                       traducción le proponían auditar un contrato—; estos los

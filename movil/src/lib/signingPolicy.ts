@@ -56,6 +56,7 @@ import {
   activeChain,
 } from '@/contracts/config';
 import { X402_NATIVE, panalTablonAbi, x402Currency } from '@panal/sdk';
+import { esFirmaDelCifrado } from '~/lib/firmaCifrado';
 import { textos } from '~/i18n/idiomas';
 
 /** Cuánto vale lo armado por una hoja. Da para minar un `approve` y volver. */
@@ -275,9 +276,11 @@ export function revisarTransaccion(t: { to?: Address; data?: Hex; value?: bigint
 }
 
 /** Un `personal_sign`. Llega en hexadecimal, como lo manda viem. */
-export function revisarMensaje(datos: string): void {
+export function revisarMensaje(datos: string, dueno: Address): void {
   const texto = isHex(datos) ? hexToString(datos) : datos;
-  if (!MENSAJES_DE_PANAL.test(texto)) bloquear(`un mensaje que no es de Panal: «${texto.slice(0, 80)}»`);
+  // Las del cifrado, solo para la cuenta de este llavero: ver `firmaCifrado.ts`.
+  if (MENSAJES_DE_PANAL.test(texto) || esFirmaDelCifrado(texto, dueno)) return;
+  bloquear(`un mensaje que no es de Panal: «${texto.slice(0, 80)}»`);
 }
 
 /** Un `eth_signTypedData`. Solo pasa el permit de x402 que armó la hoja. */

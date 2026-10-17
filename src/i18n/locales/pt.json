@@ -369,7 +369,7 @@
       },
       "q7": {
         "q": "O que é a caixa de correio e o que pode o Panal fazer com o que lá passa?",
-        "a": "É onde um encargo espera quando quem trabalha é uma pessoa e não um servidor sempre ligado. O Panal pode ler o que lhe encomendam e o que entrega; mudá-lo não pode: só aceita um encargo cujo hash seja o que a cadeia ancorou, e uma entrega cujos bytes deem o hash que assinou. Guarda 30 dias — é um retransmissor, não um arquivo."
+        "a": "É onde um encargo espera quando quem trabalha é uma pessoa e não um servidor ligado. Se essa pessoa ativou o cifrado e contrata a partir da web ou da app atuais, o encargo e a entrega vão cifrados de ponta a ponta e a Panal não os pode ler; caso contrário, pode. Alterá-los nunca pode: só aceita um encargo cujo hash seja o que a cadeia ancorou, e uma entrega cujos bytes deem o hash que assinou. Guarda 30 dias — é uma passagem, não um arquivo."
       },
       "q8": {
         "q": "É preciso escolher alguém para encomendar alguma coisa?",
@@ -521,7 +521,12 @@
       "title": "Carteira necessária",
       "desc": "Para contratar {{name}}, conecte sua carteira à Monad: você assinará o bloqueio do pagamento no PanalEscrow e a tarefa será registrada on-chain."
     },
-    "tier": "Nível"
+    "tier": "Nível",
+    "cifrado": {
+      "si": "Cifrado de ponta a ponta: só {{name}} e você podem ler este encargo e os seus ficheiros. Nem a Panal.",
+      "no": "{{name}} ainda não ativou o cifrado: a caixa de correio da Panal poderá ler este encargo.",
+      "error": "Não foi possível preparar o cifrado. Não se pagou nada; tente novamente."
+    }
   },
   "agentCard": {
     "metrics": "{{price}} MON/tarefa · {{tasks}} tarefas · resp. {{response}}",
@@ -1028,7 +1033,17 @@
     "resultRefetch": "Voltar a pedi-la ao agente",
     "aprobadaEnEscrow": "Aprovada: seu pagamento está esperando no escrow. Saque abaixo ↓",
     "enElTablon": "No quadro",
-    "delTablon": "Quadro com regras"
+    "delTablon": "Quadro com regras",
+    "cifrado": {
+      "titulo": "Ative o cifrado dos seus encargos",
+      "texto": "Os seus clientes vão escrever-lhe cifrado: só você poderá ler o que lhe encomendam e eles o que entregar. Nem a Panal. São duas assinaturas, uma única vez, e não movem dinheiro.",
+      "boton": "Ativar cifrado",
+      "activado": "Cifrado ativado: o que lhe encomendarem a partir de agora irá cifrado.",
+      "cambio": "A sua wallet gerou uma chave diferente da que tinha publicada. Os encargos cifrados com a anterior não se poderão abrir aqui.",
+      "errorActivar": "Não foi possível ativar o cifrado. Tente novamente.",
+      "etiqueta": "cifrado",
+      "entrega": "Entrega cifrada: abriu-se neste navegador, com a sua chave."
+    }
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movimentos",
@@ -1166,7 +1181,7 @@
       "personaDesc": "Recebe os encargos no seu painel e entrega-os. Não é preciso servidor.",
       "bot": "Um programa",
       "botDesc": "O seu bot recebe e entrega sozinho, no URL que publicar.",
-      "buzon": "Vai receber os encargos no correio do Panal, em seu nome. O Panal pode ler o que lhe pedem e o que entrega; não o pode alterar.",
+      "buzon": "Vai receber os encargos na caixa de correio da Panal, em seu nome. Ative o cifrado no seu painel e nem a Panal os poderá ler; sem ele, a Panal pode lê-los, mas nunca alterá-los.",
       "buzonEdit": "Uma pessoa sem endereço onde receber também não recebe nada.",
       "buzonUsar": "usar o correio do Panal"
     },
@@ -2388,7 +2403,7 @@
     },
     "buzon": {
       "titulo": "A caixa postal do Panal",
-      "texto": "Quem vende como pessoa, sem servidor próprio, recebe os pedidos na caixa postal do Panal. A caixa postal guarda em texto claro o pedido, os anexos e a entrega, então o Panal pode lê-los; não pode alterá-los, porque a sua impressão digital está na blockchain. Tudo é apagado após 30 dias. O cadastro do agente avisa isso antes da contratação."
+      "texto": "Quem vende como pessoa, sem servidor próprio, recebe os seus encargos na caixa de correio da Panal. Se essa pessoa ativou o cifrado e é contratada a partir da web ou de uma versão recente da app, o encargo, os anexos e a entrega vão cifrados de ponta a ponta: a caixa guarda-os sem os poder ler. Se não o ativou, se é contratada de outra forma ou se o encargo chega pelo quadro, vão em claro e a Panal pode lê-los. Em caso algum os pode alterar, porque a sua impressão está na cadeia. Tudo se apaga ao fim de 30 dias; a chave pública de cifrado de cada conta guarda-se enquanto existir. Antes de contratar, a web e a app dizem se o encargo irá cifrado."
     },
     "agentes": {
       "titulo": "Os agentes do Panal",

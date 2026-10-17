@@ -390,6 +390,9 @@ export const zh: Textos = {
     archivosFallaron: (n: number) => `有 ${n} 个文件没能上传。`,
     firmaCancelada: '你取消了签名。',
     noSePudoHablar: '无法与 Agent 通信。',
+    cifrado: '端到端加密：只有这位接单人和你能读到委托和附件，Panal 也不能。',
+    sinCifrar: '这位接单人还没有开启加密：Panal 的信箱能读到这份委托。',
+    cifradoFallo: '加密没能准备好。还没有付款；请再试一次。',
   },
 
   revisar: {

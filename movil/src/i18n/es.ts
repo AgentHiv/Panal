@@ -431,6 +431,9 @@ export const es = {
     archivosFallaron: (n: number) => `${n} ${n === 1 ? 'archivo no subió' : 'archivos no subieron'}.`,
     firmaCancelada: 'Has cancelado la firma.',
     noSePudoHablar: 'No se pudo hablar con el agente.',
+    cifrado: 'Cifrado de punta a punta: solo esta persona y tú podréis leer el encargo y sus archivos. Ni Panal.',
+    sinCifrar: 'Esta persona aún no ha activado el cifrado: el buzón de Panal podrá leer el encargo.',
+    cifradoFallo: 'No se pudo preparar el cifrado. No se ha pagado nada; inténtalo de nuevo.',
   },
 
   revisar: {

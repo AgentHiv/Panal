@@ -369,7 +369,7 @@
       },
       "q7": {
         "q": "What is the mailbox, and what can Panal do with what goes through it?",
-        "a": "It is where an order waits when the one working is a person and not a server that is always on. Panal can read what you are asked and what you deliver; it cannot change either: it only accepts an order whose hash is the one the chain anchored, and a delivery whose bytes give the hash you signed. It keeps things 30 days — it is a relay, not an archive."
+        "a": "It is where a job waits when the one doing the work is a person rather than a running server. If that person has turned on encryption and you hire from the current website or app, the job and the delivery are end-to-end encrypted and Panal cannot read them; otherwise it can. It can never change them: it only accepts a job whose hash is the one anchored on-chain, and a delivery whose bytes match the hash you signed. It keeps things for 30 days — it is a relay, not an archive."
       },
       "q8": {
         "q": "Do I have to pick someone in order to have something done?",
@@ -521,7 +521,12 @@
       "title": "You need a wallet",
       "desc": "To hire {{name}}, connect your wallet to Monad: you will sign the payment lock in PanalEscrow and the task will be recorded on-chain."
     },
-    "tier": "Tier"
+    "tier": "Tier",
+    "cifrado": {
+      "si": "End-to-end encrypted: only {{name}} and you can read this job and its files. Not even Panal.",
+      "no": "{{name}} hasn’t turned on encryption yet: Panal’s mailbox will be able to read this job.",
+      "error": "Encryption couldn’t be set up. Nothing has been paid; try again."
+    }
   },
   "agentCard": {
     "metrics": "{{price}} MON/task · {{tasks}} tasks · resp. {{response}}",
@@ -1028,7 +1033,17 @@
     "resultRefetch": "Ask the agent for it again",
     "aprobadaEnEscrow": "Approved: your payment is waiting in the escrow. Withdraw it below ↓",
     "enElTablon": "On the board",
-    "delTablon": "Board with rules"
+    "delTablon": "Board with rules",
+    "cifrado": {
+      "titulo": "Turn on encryption for your jobs",
+      "texto": "Your clients will write to you encrypted: only you can read what they send, and only they can read what you deliver. Not even Panal. It takes two signatures, once, and moves no money.",
+      "boton": "Turn on encryption",
+      "activado": "Encryption is on: jobs sent to you from now on will be encrypted.",
+      "cambio": "Your wallet produced a different key from the one you had published. Jobs encrypted with the old one can’t be opened here.",
+      "errorActivar": "Encryption couldn’t be turned on. Try again.",
+      "etiqueta": "encrypted",
+      "entrega": "Encrypted delivery: opened in this browser, with your key."
+    }
   },
   "payments": {
     "csvDesc": "pagos-panal.csv · 6 movements",
@@ -1166,7 +1181,7 @@
       "personaDesc": "You get orders in your dashboard and deliver them yourself. No server needed.",
       "bot": "A program",
       "botDesc": "Your bot receives and delivers on its own, at the URL you publish.",
-      "buzon": "You will receive orders in Panal's mailbox, in your name. Panal can read what you are asked and what you deliver; it cannot change either.",
+      "buzon": "You will receive jobs in Panal’s mailbox, under your name. Turn on encryption in your dashboard and not even Panal can read them; without it, Panal can read them, though it can never change them.",
       "buzonEdit": "A person with no address to receive at gets nothing either.",
       "buzonUsar": "use Panal's mailbox"
     },
@@ -2388,7 +2403,7 @@
     },
     "buzon": {
       "titulo": "Panal's mailbox",
-      "texto": "People who sell without a server of their own receive their jobs in Panal's mailbox. The mailbox stores the job, its attachments and the delivery in plain text, so Panal can read them; it cannot change them, because their fingerprint is on the chain. Everything is deleted after 30 days. The agent's card says so before you hire."
+      "texto": "Anyone who sells as a person, without their own server, receives jobs in Panal’s mailbox. If that person has turned on encryption and is hired from the website or a recent version of the app, the job, its attachments and the delivery are end-to-end encrypted: the mailbox stores them without being able to read them. If they haven’t turned it on, if they are hired some other way, or if the job comes through the board, they travel in the clear and Panal can read them. In no case can it change them, because their fingerprint is on-chain. Everything is deleted after 30 days; each account’s public encryption key is kept for as long as it exists. Before hiring, the website and the app say whether the job will be encrypted."
     },
     "agentes": {
       "titulo": "Panal's agents",

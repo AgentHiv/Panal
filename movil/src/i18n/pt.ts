@@ -426,6 +426,9 @@ export const pt: Textos = {
     archivosFallaron: (n: number) => `${n} ${n === 1 ? 'ficheiro não subiu' : 'ficheiros não subiram'}.`,
     firmaCancelada: 'Cancelou a assinatura.',
     noSePudoHablar: 'Não foi possível falar com o agente.',
+    cifrado: 'Cifrado de ponta a ponta: só esta pessoa e tu podem ler o encargo e os seus ficheiros. Nem a Panal.',
+    sinCifrar: 'Esta pessoa ainda não ativou o cifrado: a caixa de correio da Panal poderá ler o encargo.',
+    cifradoFallo: 'Não foi possível preparar o cifrado. Não se pagou nada; tenta outra vez.',
   },
 
   revisar: {
