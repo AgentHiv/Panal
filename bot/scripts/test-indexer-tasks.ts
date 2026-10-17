@@ -499,6 +499,43 @@ rmSync(dir, { recursive: true, force: true });
   rmSync(dirR, { recursive: true, force: true });
 }
 
+{
+  console.log('\n── Lo que enseña la ficha: entregas, tiempo, disputas y plazos ──');
+  const dirF = mkdtempSync(join(tmpdir(), 'panal-idx-ficha-'));
+  const f = new IndexStore(dirF, PANAL);
+  const T0 = 1_790_000_000;
+  // ev() suma su contador al ts: con ts lejanos, cada diferencia es la del
+  // ts pasado más 1.
+  f.append([
+    // Entrega en 60 s, se aprueba.
+    ev('TaskCreated', { taskId: '1', client: CLIENTE, worker: AGENTE, amount: '1', currency: NATIVO }, T0),
+    ev('TaskDelivered', { taskId: '1', resultHash: '0x01' }, T0 + 59),
+    // Entrega en 300 s, la disputan y vuelve a entregar: cuenta la primera.
+    ev('TaskCreated', { taskId: '2', client: CLIENTE, worker: AGENTE, amount: '1', currency: NATIVO }, T0 + 1_000),
+    ev('TaskDelivered', { taskId: '2', resultHash: '0x02' }, T0 + 1_299),
+    ev('TaskDisputed', { taskId: '2', openedBy: CLIENTE }, T0 + 1_399),
+    ev('TaskDelivered', { taskId: '2', resultHash: '0x03' }, T0 + 9_999),
+    // No entrega y el cliente cancela al vencer el plazo.
+    ev('TaskCreated', { taskId: '3', client: CLIENTE, worker: AGENTE, amount: '1', currency: NATIVO }, T0 + 2_000),
+    ev('TaskCancelled', { taskId: '3' }, T0 + 90_000),
+    // Abierta a cualquiera: el tiempo corre desde que la reclama (120 s), no desde que nace.
+    ev('TaskCreated', { taskId: '4', client: CLIENTE, worker: NATIVO, amount: '1', currency: NATIVO }, T0 + 3_000),
+    ev('TaskClaimed', { taskId: '4', worker: AGENTE }, T0 + 50_000),
+    ev('TaskDelivered', { taskId: '4', resultHash: '0x04' }, T0 + 50_119),
+    // Abierta, nadie la coge y se cancela: no es de nadie.
+    ev('TaskCreated', { taskId: '5', client: CLIENTE, worker: NATIVO, amount: '1', currency: NATIVO }, T0 + 4_000),
+    ev('TaskCancelled', { taskId: '5' }, T0 + 5_000),
+  ]);
+  const st = f.agentStats().find((x) => x.address === AGENTE.toLowerCase())!;
+  check('cuenta la primera entrega de cada tarea, no la que sigue a una disputa', st.delivered === 3, String(st.delivered));
+  check('el tiempo medio sale de la cadena', st.avgDeliverySec === (60 + 300 + 120) / 3, String(st.avgDeliverySec));
+  check('cuenta la disputa', st.disputes === 1, String(st.disputes));
+  check('y el encargo que no entregó a tiempo', st.notDelivered === 1, String(st.notDelivered));
+  check('la tarea que nadie cogió no se le apunta a nadie', !f.agentStats().some((x) => x.notDelivered > 0 && x.address !== AGENTE.toLowerCase()));
+  check('la suma interna no sale por la API', !('deliverySecSum' in st));
+  rmSync(dirF, { recursive: true, force: true });
+}
+
 console.log(
   failures === 0
     ? '\n✅ El indice encuentra las tareas de una direccion sin recorrerlas todas'

@@ -49,13 +49,21 @@ export interface WordRevealProps {
   delay?: number;
 }
 
+/**
+ * Solo se parte letra a letra lo que se escribe con letras sueltas. El árabe,
+ * el urdu, el hindi o el bengalí unen sus letras o las combinan con signos: en
+ * cajas separadas salen desligadas o con los signos sueltos.
+ */
+const LETRAS_SUELTAS = /^[\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Greek}\p{N}\p{P}\p{Zs}$+]*$/u;
+
 /** Tipografía cinética (design.md §4): word-level en H2, char-level en titulares cortos. */
 export function WordReveal({ segments, className, accentClassName, mode = 'words', delay = 0 }: WordRevealProps) {
-  const parts: Array<{ key: string; text: string; accent: boolean }> = [];
+  const parts: Array<{ key: string; text: string; accent: boolean; palabra: boolean }> = [];
   for (const seg of segments) {
-    const tokens = mode === 'chars' ? seg.text.split('') : seg.text.split(' ').filter(Boolean);
+    const porLetras = mode === 'chars' && LETRAS_SUELTAS.test(seg.text);
+    const tokens = porLetras ? [...seg.text] : seg.text.split(' ').filter(Boolean);
     for (const t of tokens) {
-      parts.push({ key: `${parts.length}-${t}`, text: t, accent: Boolean(seg.accent) });
+      parts.push({ key: `${parts.length}-${t}`, text: t, accent: Boolean(seg.accent), palabra: !porLetras });
     }
   }
   return (
@@ -66,6 +74,10 @@ export function WordReveal({ segments, className, accentClassName, mode = 'words
       viewport={{ once: true, margin: '0px 0px -10% 0px' }}
       transition={{ staggerChildren: mode === 'chars' ? 0.018 : 0.05, delayChildren: delay }}
       aria-label={segments.map((s) => s.text).join(' ')}
+      // Cada letra o palabra es una caja aparte, y una página de derecha a
+      // izquierda ordena las cajas en ese sentido: «Parse» salía «esraP» en
+      // árabe. Con `auto` el bloque toma la dirección de su propio texto.
+      dir="auto"
     >
       {parts.map((p, i) => (
         /*
@@ -94,7 +106,7 @@ export function WordReveal({ segments, className, accentClassName, mode = 'words
           >
             {p.text}
           </motion.span>
-          {mode === 'words' && i < parts.length - 1 ? ' ' : ''}
+          {p.palabra && i < parts.length - 1 ? ' ' : ''}
         </Fragment>
       ))}
     </motion.span>

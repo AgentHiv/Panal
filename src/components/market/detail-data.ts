@@ -52,6 +52,10 @@ export function badges(agent: Agent, t: TFn): string[] {
   const out: string[] = [];
   const milestone = [100000, 50000, 10000, 5000, 1000, 100, 50, 10].find((m) => agent.tasksCompleted >= m);
   if (milestone) out.push(t('detail.badges.tasks', { count: formatInt(milestone) }));
+  // Con pocas entregas, «sin disputas» no dice nada.
+  if (agent.disputes === 0 && (agent.delivered ?? 0) >= 5) {
+    out.push(t('detail.badges.noDisputes', { count: formatInt(agent.delivered ?? 0) }));
+  }
   out.push(agent.verified ? t('detail.badges.domainVerified') : t('detail.memberSince') + ' ' + agent.memberSince);
   return out;
 }

@@ -160,7 +160,7 @@ export function isOnchainAgent(agent: Agent): agent is OnchainAgent {
 
 /**
  * Palabras que delatan la categoría de un agente, en los idiomas en los que la
- * gente escribe sus skills. El orden importa: gana la primera que acierte.
+ * gente escribe sus skills. Si dos categorías empatan, gana la que va antes.
  *
  * Es deliberadamente corto. Adivinar de más es peor que no adivinar: un agente
  * mal archivado desaparece del filtro donde su cliente lo busca.
@@ -170,9 +170,9 @@ const PISTAS: [AgentCategory, RegExp][] = [
   ['defi', /\b(defi|swap|liquid|token|trading|yield|staking|precio|price|onchain|on-chain|wallet)/i],
   ['vision', /\b(vision|visión|image|imagen|foto|photo|ocr|video|vídeo|diagram)/i],
   ['datos', /\b(data|datos|json|csv|pars|extract|extracc|structur|estructur|scrap|sql|query|tabla)/i],
-  ['codigo', /\b(code|código|codigo|review|revisi|test|qa|bug|audit|refactor|lint|debug|security|seguridad|program)/i],
-  ['creativo', /\b(creativ|design|diseñ|dise[nñ]|brand|marca|copy|slogan|logo|arte|art\b|music|música)/i],
-  ['texto', /\b(text|texto|translat|traduc|summar|resum|redact|writ|escrib|content|contenido|idioma|language)/i],
+  ['codigo', /\b(code|código|codigo|code-review|test|qa|bug|audit|refactor|lint|debug|security|seguridad|program|solidity|smart-contract|evm)/i],
+  ['creativo', /\b(creativ|design|diseñ|dise[nñ]|brand|marca|copy|slogan|logo|arte|art\b|illustr|ilustr|music|música)/i],
+  ['texto', /\b(text|texto|translat|traduc|locali|i18n|summar|resum|redac|writ|escrib|proofread|correc|document|content|contenido|idioma|language)/i],
 ];
 
 /**
@@ -182,15 +182,26 @@ const PISTAS: [AgentCategory, RegExp][] = [
  * archivados como programadores: quien filtraba por "Datos" no encontraba al
  * que estructura JSON, aunque estuviera registrado, activo y funcionando.
  *
+ * Después ganaba la PRIMERA pista que acertara, y una sola palabra mandaba: un
+ * «review» archivaba a un revisor de documentos como programador, y un «json»
+ * entre ocho skills de traducción lo archivaba en datos. Ahora se cuenta: cada
+ * skill que encaja vale 2 y la descripción, 1. Lo que declara el agente pesa
+ * más que cómo se describe.
+ *
  * Cuando nada encaja se cae en 'texto', que es lo más neutro: un agente en la
  * categoría equivocada engaña, y uno sin categoría no se puede filtrar.
  */
 export function categoriaDe(skills: string[] | undefined, tagline?: string): AgentCategory {
-  const heno = [...(skills ?? []), tagline ?? ''].join(' ');
+  let mejor: AgentCategory = 'texto';
+  let puntos = 0;
   for (const [categoria, pista] of PISTAS) {
-    if (pista.test(heno)) return categoria;
+    const p = (skills ?? []).filter((s) => pista.test(s)).length * 2 + (tagline && pista.test(tagline) ? 1 : 0);
+    if (p > puntos) {
+      mejor = categoria;
+      puntos = p;
+    }
   }
-  return 'texto';
+  return mejor;
 }
 
 /**
@@ -204,6 +215,35 @@ export function categoriaDe(skills: string[] | undefined, tagline?: string): Age
  */
 export function priceKey(base: string, agent: Agent): string {
   return isOnchainAgent(agent) && currencySymbol(agent.currency) === '$PANAL' ? `${base}Token` : base;
+}
+
+/**
+ * Entregas que hacen falta para enseñar un tiempo medio: con una sola, «responde
+ * en 40 s» sería la suerte de un encargo, no una media.
+ */
+const MIN_ENTREGAS_PARA_MEDIA = 3;
+
+/**
+ * Lo que tarda en entregar, medido por el indexador en la cadena: desde que la
+ * tarea es suya hasta su primera entrega. Sin datos suficientes, '—', que es
+ * lo que la ficha y las tarjetas ya saben no enseñar.
+ */
+function respuestaMedida(stats: CatalogAgent['stats']): { avgResponse: string; avgResponseSec: number } {
+  const seg = stats?.avgDeliverySec;
+  if (seg == null || (stats?.delivered ?? 0) < MIN_ENTREGAS_PARA_MEDIA) {
+    return { avgResponse: '—', avgResponseSec: Number.MAX_SAFE_INTEGER };
+  }
+  const s = Math.max(1, Math.round(seg));
+  const texto = s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)}h`;
+  return { avgResponse: texto, avgResponseSec: s };
+}
+
+/**
+ * «oct 2026» en el idioma de quien mira. Estuvo fijado a 'es-ES', y la ficha
+ * decía «ago 2026» también en inglés o en árabe.
+ */
+function mesDeAlta(segundos: number, idioma: string): string {
+  return new Date(segundos * 1000).toLocaleDateString(idioma, { month: 'short', year: 'numeric' });
 }
 
 function short(addr: string): string {
@@ -325,8 +365,9 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
         rating: rating > 0 ? Math.min(5, rating) : 0,
         reviews: f.stats?.ratingCount ?? 0,
         tasksCompleted: f.stats?.completed ?? 0,
-        avgResponse: '—',
-        avgResponseSec: Number.MAX_SAFE_INTEGER,
+        ...respuestaMedida(f.stats),
+        delivered: f.stats?.delivered,
+        disputes: f.stats?.disputes,
         successRate: 100,
         // Activo en la cadena no es lo mismo que en línea: lo que contesta lo
         // dice la última vuelta del indexador por su dominio.
@@ -353,10 +394,7 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
         wallet: addr,
         walletShort: short(addr),
         skills: f.skills,
-        memberSince: new Date(f.registeredAt * 1000).toLocaleDateString('es-ES', {
-          month: 'short',
-          year: 'numeric',
-        }),
+        memberSince: mesDeAlta(f.registeredAt, idioma),
         volume24h: 0,
         trend7d: [0, 0, 0, 0, 0, 0, 0],
         onchain: true,
@@ -392,7 +430,7 @@ async function fetchAgents(idioma: string): Promise<OnchainAgent[]> {
   const cabeza = await publicClient.getBlockNumber().catch(() => undefined);
   const fichas = await fetchCatalogo(cabeza);
   if (fichas !== null) return delCatalogo(fichas, idioma);
-  return fetchOnchainAgents();
+  return fetchOnchainAgents(idioma);
 }
 
 /**
@@ -431,7 +469,7 @@ async function leerNombreOnchain(addr: Address): Promise<NombreDeAgente | null> 
   }
 }
 
-async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
+async function fetchOnchainAgents(idioma: string): Promise<OnchainAgent[]> {
   // Con V2_ENABLED se lee del registry v2 (mismo formato + currency al final).
   const registryAddr = V2_ENABLED ? PANAL_REGISTRY_V2_ADDRESS : PANAL_REGISTRY_ADDRESS;
   const reputationAddr = V2_ENABLED ? PANAL_REPUTATION_V2_ADDRESS : PANAL_REPUTATION_ADDRESS;
@@ -519,10 +557,7 @@ async function fetchOnchainAgents(): Promise<OnchainAgent[]> {
       canal: canalDeFicha(data.metadataURI),
       botUrl: extractBotUrl(data.metadataURI),
       totalEarned: 0,
-      memberSince: new Date(Number(data.registeredAt) * 1000).toLocaleDateString('es-ES', {
-        month: 'short',
-        year: 'numeric',
-      }),
+      memberSince: mesDeAlta(Number(data.registeredAt), idioma),
       volume24h: 0,
       trend7d: [0, 0, 0, 0, 0, 0, 0],
       onchain: true,

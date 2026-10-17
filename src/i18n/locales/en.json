@@ -393,7 +393,6 @@
     "showing": "Showing {{shown}} of {{total}} agents",
     "network": "Network: Monad",
     "onchainCount": "{{count}} on-chain · PanalRegistry",
-    "demoData": "Demo data — no on-chain agents yet",
     "podiumEyebrow": "Top of the hive",
     "podiumTitle": "The three highest rated by the network",
     "all": "All",
@@ -612,9 +611,6 @@
     "pausado": "It is paused: it is not taking jobs right now.",
     "noResponde": "It is not responding right now: the job would not reach it, and the payment would stay locked until the deadline. Try again later.",
     "steps": {
-      "audit1": "You send a contract or repo",
-      "audit2": "Static analysis + fuzzing",
-      "audit3": "Report signed on-chain",
       "human1": "You define scope, deadline and references",
       "human2": "{{name}} receives it in their mailbox and works on it",
       "human3": "Delivery with its hash anchored on-chain; once you approve it, the escrow releases the payment",
@@ -633,7 +629,8 @@
     },
     "badges": {
       "tasks": "{{count}}+ tasks",
-      "domainVerified": "Domain verified"
+      "domainVerified": "Domain verified",
+      "noDisputes": "No disputes in {{count}} deliveries"
     },
     "services": {
       "escrow": {
@@ -661,7 +658,6 @@
   },
   "hireCard": {
     "linkCopied": "Link copied",
-    "metrics": "avg response {{response}} · {{success}}% success · current queue: {{queue}} tasks",
     "connected": "{{address}} connected",
     "connecting": "Connecting wallet…",
     "connectPrompt": "Connect your wallet to hire",
@@ -672,10 +668,7 @@
     "completedTasks": "{{count}} tasks completed on-chain"
   },
   "reviews": {
-    "verifiedAgent": "Verified agent",
-    "verifiedHuman": "Verified human",
     "verifiedOnchain": "Verified on-chain",
-    "endToast": "You've seen the featured reviews of the sample",
     "loadMore": "Load more reviews"
   },
   "activity": {
@@ -712,7 +705,6 @@
     "metaTitle": "Panal — Dashboard: your hive panel",
     "hello": "Hello,",
     "copyAddress": "Copy address",
-    "memberLine": "Hive member since Nov 2025 · Global reputation 4.9 ★ · Rank #12 in Text.",
     "perspectiveAria": "Panel perspective",
     "asProvider": "As provider",
     "asClient": "As client",
@@ -723,20 +715,9 @@
     "registerToastSwitch": "Switch your wallet to Monad to register the agent on-chain.",
     "registerToastConnect": "Connect your wallet to register the agent on-chain in PanalRegistry.",
     "kpi": {
-      "income": "Income (30 days)",
       "activeTasks": "Active tasks now",
-      "inQueue": "4 in queue",
       "avgRating": "Average rating",
-      "reviews": "512 reviews",
-      "rankingTexto": "Ranking in Text",
-      "up3": "▲ 3 this week",
-      "spent": "Spent (30 days)",
-      "hires": "11 hires",
       "requested": "Tasks requested",
-      "inProgress": "3 in progress",
-      "onTime": "On-time deliveries",
-      "claims": "0 claims",
-      "favorites": "Favorite agents",
       "incomeTotal": "Total earnings",
       "incomeMixed": "charged in {{list}} — not added together",
       "spentTotal": "Total spent",
@@ -753,7 +734,6 @@
       "mon30": "MON in 30 days"
     },
     "reputationOverTime": "Reputation over time",
-    "milestones": "milestones: 1,000 tasks · Top 25",
     "yourAgents": "Your agents",
     "favorites": "Favorites",
     "myAgentsTitle": "My",
@@ -765,7 +745,6 @@
     "escrowRunning": "Escrow in motion",
     "tasksTitle": "Active",
     "tasksEm": "tasks",
-    "tasksSub": "Progress advances live; deliveries arrive at the top row for you to verify.",
     "arbitration": "Arbitration",
     "disputeTitle": "Ongoing",
     "disputeEm": "dispute",
@@ -777,52 +756,8 @@
     "reputationTitle": "Your word,",
     "reputationEm": "measured",
     "dispute": {
-      "title": "Challenged delivery: DataMole report",
-      "step1": "Appeal submitted",
-      "step1detail": "2 days ago",
-      "step2": "Jury selected",
-      "step2detail": "5 jurors with stake",
-      "step3": "Voting in progress",
-      "step3detail": "3/5 votes",
-      "step4": "Resolution",
-      "step4detail": "estimated in ~31 h",
-      "note": "If the jury rules in your favor, you receive 100% of the escrow and the counterparty loses part of their stake.",
       "eyebrow": "DISPUTE",
-      "line": "Task {{task}} · {{counterparty}} · escrow of",
-      "locked": "locked until resolution.",
-      "deadline": "Voting deadline",
-      "remaining": "{{h}} h {{m}} min left",
-      "viewCase": "View case file",
-      "caseToast": "Case file {{id}}",
-      "caseToastDesc": "Appeal, evidence and jury votes (demo view)."
-    },
-    "reputation": {
-      "bullet1": "512 reviews verified on-chain",
-      "bullet2": "0 disputes lost",
-      "bullet3": "100% on-time payments"
-    },
-    "badges": {
-      "top1": {
-        "name": "Top 1% Text",
-        "detail": "Among the top 1% of the Text category"
-      },
-      "mil": {
-        "name": "1,000 tasks",
-        "detail": "More than 1,000 tasks completed"
-      },
-      "pionero": {
-        "name": "Mainnet pioneer",
-        "detail": "Present since the Monad genesis block"
-      },
-      "cero": {
-        "name": "Zero disputes 90d",
-        "detail": "90 days without a single dispute"
-      },
-      "jurado": {
-        "name": "Honorary juror",
-        "detail": "Outstanding juror of the dispute system",
-        "hint": "Resolve 10 disputes to unlock"
-      }
+      "locked": "locked until resolution."
     },
     "connectTitle": "Your hive dashboard",
     "connectDesc": "Connect your wallet to see your real on-chain tasks, payments and reputation on Monad.",
@@ -843,7 +778,6 @@
     "inEscrow": "In escrow",
     "autoRelease": "releasable 72 h after delivery",
     "totalEarned": "Total earned",
-    "since": "since Nov 2025",
     "balance30": "Balance · 30 days",
     "send": "Send",
     "receive": "Receive",
@@ -912,7 +846,6 @@
     },
     "newDelivery": "New delivery from {{name}} — verify it",
     "paymentReleased": "Payment released: tx {{tx}}",
-    "disputeOpened": "Dispute opened on {{id}}",
     "verify": "Verify delivery",
     "viewDetail": "View detail",
     "openDispute": "Open dispute",
@@ -931,8 +864,6 @@
     "noDisputesDesc": "When a delivery is disputed, it will show here until the multisig settles it.",
     "verifyTitle": "Verify delivery — {{id}}",
     "releasing": "Releasing escrow…",
-    "resultMock": "Delivered result (mock)",
-    "resultMockText": "\"Executive summary generated: 12 key points, 3 risks and next steps. Result hash anchored on-chain for verification.\"",
     "resultLine": "result: {{hash}} · amount {{amount}} MON",
     "releasePayment": "Release payment",
     "detailTitle": "Detail — {{id}}",
@@ -1031,7 +962,6 @@
     "delTablon": "Board with rules"
   },
   "payments": {
-    "csvDesc": "pagos-panal.csv · 6 movements",
     "pending": "Pending withdrawal",
     "pendingHint": "Funds released by the escrow, ready to move to your wallet.",
     "withdraw": "Withdraw",
@@ -1044,7 +974,6 @@
   "reputation": {
     "reviews": "{{count}} reviews",
     "badgesEyebrow": "Hive badges",
-    "badgesNote": "Badges are on-chain credentials issued by PanalReputation: earned with verifiable results, they can't be bought or transferred.",
     "bulletTasks": "{{count}} tasks completed on-chain",
     "bulletEarned": "{{amount}} {{symbol}} earned in total",
     "bulletNoDisputes": "No open disputes",
@@ -1089,7 +1018,6 @@
     "moreActions": "More actions for {{name}}",
     "stats": "Statistics",
     "statsToast": "Statistics for {{name}}",
-    "statsToastDesc": "Advanced panel available in Phase 2.",
     "withdrawEarnings": "Withdraw earnings",
     "withdrawToast": "Earnings withdrawal for {{name}} started",
     "editTitle": "Edit price — {{name}}",

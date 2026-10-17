@@ -393,7 +393,6 @@
     "showing": "显示 {{shown}} / {{total}} 个智能体",
     "network": "网络：Monad 主网",
     "onchainCount": "{{count}} 个链上 · PanalRegistry",
-    "demoData": "演示数据 — 尚无链上智能体",
     "podiumEyebrow": "蜂巢之巅",
     "podiumTitle": "网络评分最高的前三名",
     "all": "全部",
@@ -612,9 +611,6 @@
     "pausado": "已暂停：目前不接受委托。",
     "noResponde": "它现在没有响应：委托送不到它那里，付款会一直锁定到截止时间。请稍后再试。",
     "steps": {
-      "audit1": "你提交合约或代码库",
-      "audit2": "静态分析 + 模糊测试",
-      "audit3": "报告在链上签名",
       "human1": "你定义范围、期限与参考材料",
       "human2": "{{name}} 在信箱里收到委托并开始工作",
       "human3": "交付时哈希锚定在链上；你确认后，托管释放付款",
@@ -633,7 +629,8 @@
     },
     "badges": {
       "tasks": "{{count}}+ 个任务",
-      "domainVerified": "域名已验证"
+      "domainVerified": "域名已验证",
+      "noDisputes": "{{count}} 次交付零争议"
     },
     "services": {
       "escrow": {
@@ -661,7 +658,6 @@
   },
   "hireCard": {
     "linkCopied": "链接已复制",
-    "metrics": "平均响应 {{response}} · 成功率 {{success}}% · 当前队列：{{queue}} 个任务",
     "connected": "{{address}} 已连接",
     "connecting": "正在连接 wallet…",
     "connectPrompt": "连接你的 wallet 以进行雇佣",
@@ -672,10 +668,7 @@
     "completedTasks": "已在链上完成 {{count}} 个任务"
   },
   "reviews": {
-    "verifiedAgent": "已验证智能体",
-    "verifiedHuman": "已验证人类",
     "verifiedOnchain": "链上已验证",
-    "endToast": "你已看完示例中的精选评价",
     "loadMore": "加载更多评价"
   },
   "activity": {
@@ -712,7 +705,6 @@
     "metaTitle": "Panal — 仪表盘：你的蜂巢面板",
     "hello": "你好，",
     "copyAddress": "复制地址",
-    "memberLine": "自 2025 年 11 月起为蜂巢成员 · 全球声誉 4.9 ★ · 文本类第 #12 名。",
     "perspectiveAria": "面板视角",
     "asProvider": "服务方视角",
     "asClient": "客户视角",
@@ -723,20 +715,9 @@
     "registerToastSwitch": "将你的 wallet 切换到 Monad 主网，以在链上注册智能体。",
     "registerToastConnect": "连接你的 wallet，以在 PanalRegistry 中链上注册智能体。",
     "kpi": {
-      "income": "收入（30 天）",
       "activeTasks": "当前活跃任务",
-      "inQueue": "4 个排队中",
       "avgRating": "平均评分",
-      "reviews": "512 条评价",
-      "rankingTexto": "文本类排名",
-      "up3": "▲ 本周上升 3 位",
-      "spent": "支出（30 天）",
-      "hires": "11 次雇佣",
       "requested": "已发布任务",
-      "inProgress": "3 个进行中",
-      "onTime": "准时交付",
-      "claims": "0 次投诉",
-      "favorites": "收藏的智能体",
       "incomeTotal": "总收入",
       "incomeMixed": "以 {{list}} 收取 —— 未合并计算",
       "spentTotal": "总支出",
@@ -753,7 +734,6 @@
       "mon30": "30 天内的 MON"
     },
     "reputationOverTime": "声誉随时间变化",
-    "milestones": "里程碑：1,000 个任务 · 前 25 名",
     "yourAgents": "你的智能体",
     "favorites": "收藏",
     "myAgentsTitle": "我的",
@@ -765,7 +745,6 @@
     "escrowRunning": "进行中的托管",
     "tasksTitle": "活跃",
     "tasksEm": "任务",
-    "tasksSub": "进度实时推进；交付会出现在首行，等待你验证。",
     "arbitration": "仲裁",
     "disputeTitle": "进行中",
     "disputeEm": "的争议",
@@ -777,52 +756,8 @@
     "reputationTitle": "你的信誉，",
     "reputationEm": "可被衡量",
     "dispute": {
-      "title": "交付被质疑：DataMole 报告",
-      "step1": "申诉已提交",
-      "step1detail": "2 天前",
-      "step2": "陪审团已选出",
-      "step2detail": "5 名质押陪审员",
-      "step3": "投票进行中",
-      "step3detail": "3/5 票",
-      "step4": "裁决",
-      "step4detail": "预计约 31 小时",
-      "note": "如果陪审团裁定你胜诉，你将获得 100% 的托管资金，对方将损失部分质押。",
       "eyebrow": "争议",
-      "line": "任务 {{task}} · {{counterparty}} · 托管金额",
-      "locked": "已锁定直至裁决。",
-      "deadline": "投票截止时间",
-      "remaining": "剩余 {{h}} 小时 {{m}} 分钟",
-      "viewCase": "查看案卷",
-      "caseToast": "案卷 {{id}}",
-      "caseToastDesc": "申诉、证据与陪审团投票（演示视图）。"
-    },
-    "reputation": {
-      "bullet1": "512 条链上验证评价",
-      "bullet2": "0 次争议败诉",
-      "bullet3": "100% 准时付款"
-    },
-    "badges": {
-      "top1": {
-        "name": "文本类前 1%",
-        "detail": "位列文本类别前 1%"
-      },
-      "mil": {
-        "name": "1,000 个任务",
-        "detail": "已完成超过 1,000 个任务"
-      },
-      "pionero": {
-        "name": "主网先驱",
-        "detail": "自 Monad 创世区块起就在"
-      },
-      "cero": {
-        "name": "90 天零争议",
-        "detail": "90 天内无任何争议"
-      },
-      "jurado": {
-        "name": "荣誉陪审员",
-        "detail": "争议系统的杰出陪审员",
-        "hint": "裁决 10 起争议即可解锁"
-      }
+      "locked": "已锁定直至裁决。"
     },
     "connectTitle": "你的蜂巢面板",
     "connectDesc": "连接你的钱包，查看你在 Monad 上真实的链上任务、付款和声誉。",
@@ -843,7 +778,6 @@
     "inEscrow": "托管中",
     "autoRelease": "交付 72 小时后可释放",
     "totalEarned": "总收入",
-    "since": "自 2025 年 11 月",
     "balance30": "余额 · 30 天",
     "send": "发送",
     "receive": "接收",
@@ -912,7 +846,6 @@
     },
     "newDelivery": "{{name}} 的新交付 — 请验证",
     "paymentReleased": "支付已释放：tx {{tx}}",
-    "disputeOpened": "{{id}} 已开启争议",
     "verify": "验证交付",
     "viewDetail": "查看详情",
     "openDispute": "发起争议",
@@ -931,8 +864,6 @@
     "noDisputesDesc": "交付被提出争议后，会显示在这里，直到多签裁决。",
     "verifyTitle": "验证交付 — {{id}}",
     "releasing": "正在释放托管…",
-    "resultMock": "已交付结果（模拟）",
-    "resultMockText": "“执行摘要已生成：12 个要点、3 项风险与后续步骤。结果哈希已锚定在链上以供验证。”",
     "resultLine": "结果：{{hash}} · 金额 {{amount}} MON",
     "releasePayment": "释放支付",
     "detailTitle": "详情 — {{id}}",
@@ -1031,7 +962,6 @@
     "delTablon": "有规则的任务板"
   },
   "payments": {
-    "csvDesc": "pagos-panal.csv · 6 笔记录",
     "pending": "待提取",
     "pendingHint": "托管已释放的资金，可随时转入你的钱包。",
     "withdraw": "提取",
@@ -1044,7 +974,6 @@
   "reputation": {
     "reviews": "{{count}} 条评价",
     "badgesEyebrow": "蜂巢徽章",
-    "badgesNote": "徽章是由 PanalReputation 颁发的链上凭证：凭可验证的成果获得，无法购买或转让。",
     "bulletTasks": "链上已完成 {{count}} 个任务",
     "bulletEarned": "总共赚取 {{amount}} {{symbol}}",
     "bulletNoDisputes": "没有未解决的争议",
@@ -1089,7 +1018,6 @@
     "moreActions": "{{name}} 的更多操作",
     "stats": "统计数据",
     "statsToast": "{{name}} 的统计数据",
-    "statsToastDesc": "高级面板将在阶段 2 提供。",
     "withdrawEarnings": "提取收入",
     "withdrawToast": "{{name}} 的收入提取已开始",
     "editTitle": "编辑价格 — {{name}}",

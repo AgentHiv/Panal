@@ -86,6 +86,18 @@ export interface AgentStats {
   /** Rating medio (TaskCompleted + DisputeResolved). null si no tiene. */
   avgRating: number | null;
   ratingCount: number;
+  /**
+   * Entregas (el primer TaskDelivered de cada tarea) y lo que tardó de media,
+   * en segundos, desde que la tarea es suya: su creación o, si estaba abierta
+   * a cualquiera, desde que la reclamó. Es lo que la ficha enseña como
+   * «responde en»: medido en la cadena, no declarado por nadie.
+   */
+  delivered: number;
+  avgDeliverySec: number | null;
+  /** Tareas suyas en las que alguien abrió una disputa (TaskDisputed). */
+  disputes: number;
+  /** Tareas suyas canceladas sin entregar: el plazo pasó y el cliente recuperó el dinero. */
+  notDelivered: number;
   /** Volumen cobrado por moneda, en wei (string): 'MON' | '$PANAL'. */
   volume: Record<string, string>;
   firstSeenTs: number;
@@ -121,6 +133,8 @@ export interface IndexedTask {
   rating?: number;
   createdTs: number;
   updatedTs: number;
+  /** Cuándo la reclamó su trabajador, si nació abierta a cualquiera. */
+  claimedTs?: number;
   /**
    * Si la tarea es de un encargo de PanalTablon: en el escrow su cliente es el
    * contrato, y el de verdad es este. Es el que la tiene que encontrar en «mis
@@ -475,7 +489,7 @@ function addWei(acc: Record<string, string>, coin: string, amount: string): void
 
 /** Acumulador mutable de stats; se reconstruye rejugando events.jsonl. */
 class StatsBuilder {
-  readonly agents = new Map<string, AgentStats & { ratingSum: number }>();
+  readonly agents = new Map<string, AgentStats & { ratingSum: number; deliverySecSum: number }>();
   readonly days = new Map<string, DayStats & { mon: bigint; panal: bigint; agents: Set<string> }>();
   readonly byType: Record<string, number> = {};
   /** taskId -> currency address (para atribuir volúmenes de TaskCompleted). */
@@ -551,7 +565,7 @@ class StatsBuilder {
     return a;
   }
 
-  private agent(address: string, ts: number): AgentStats & { ratingSum: number } {
+  private agent(address: string, ts: number): AgentStats & { ratingSum: number; deliverySecSum: number } {
     const key = address.toLowerCase();
     let a = this.agents.get(key);
     if (!a) {
@@ -562,6 +576,11 @@ class StatsBuilder {
         avgRating: null,
         ratingCount: 0,
         ratingSum: 0,
+        delivered: 0,
+        avgDeliverySec: null,
+        deliverySecSum: 0,
+        disputes: 0,
+        notDelivered: 0,
         volume: {},
         firstSeenTs: ts,
         lastSeenTs: ts,
@@ -669,6 +688,7 @@ class StatsBuilder {
         const t = a['taskId'] !== undefined ? this.task(String(a['taskId'])) : undefined;
         if (t) {
           t.worker = ag.address;
+          t.claimedTs = ev.ts;
           t.updatedTs = ev.ts;
           this.ligar(ag.address, t.taskId);
         }
@@ -720,6 +740,14 @@ class StatsBuilder {
       case 'TaskDelivered': {
         const t = a['taskId'] !== undefined ? this.task(String(a['taskId'])) : undefined;
         if (t) {
+          // La primera entrega es la que cuenta para el tiempo: una posterior
+          // (tras una disputa) no es lo que tardó en entregar.
+          if (t.status === 'open' && t.worker && t.worker !== NATIVE) {
+            const ag = this.agent(t.worker, ev.ts);
+            ag.delivered += 1;
+            ag.deliverySecSum += Math.max(0, ev.ts - (t.claimedTs ?? t.createdTs));
+            ag.avgDeliverySec = ag.deliverySecSum / ag.delivered;
+          }
           // Solo desde abierta: una disputa posterior no debe volver atrás.
           if (t.status === 'open') t.status = 'delivered';
           if (a['resultHash'] !== undefined) t.resultHash = String(a['resultHash']);
@@ -730,6 +758,7 @@ class StatsBuilder {
       case 'TaskDisputed': {
         const t = a['taskId'] !== undefined ? this.task(String(a['taskId'])) : undefined;
         if (t) {
+          if (t.status !== 'disputed' && t.worker && t.worker !== NATIVE) this.agent(t.worker, ev.ts).disputes += 1;
           t.status = 'disputed';
           t.disputedTs = ev.ts;
           t.updatedTs = ev.ts;
@@ -739,6 +768,10 @@ class StatsBuilder {
       case 'TaskCancelled': {
         const t = a['taskId'] !== undefined ? this.task(String(a['taskId'])) : undefined;
         if (t) {
+          // Con trabajador y sin entregar, el escrow solo deja cancelar cuando
+          // venció el plazo: es un encargo que no entregó. Sin trabajador, es
+          // una tarea abierta que nadie cogió y no es culpa de nadie.
+          if (t.status === 'open' && t.worker && t.worker !== NATIVE) this.agent(t.worker, ev.ts).notDelivered += 1;
           t.status = 'cancelled';
           t.updatedTs = ev.ts;
         }
@@ -1039,7 +1072,7 @@ class StatsBuilder {
 
   agentList(): AgentStats[] {
     return [...this.agents.values()]
-      .map(({ ratingSum: _ratingSum, ...rest }) => rest)
+      .map(({ ratingSum: _ratingSum, deliverySecSum: _deliverySecSum, ...rest }) => rest)
       .sort((x, y) => y.tasks - x.tasks || y.completed - x.completed || y.lastSeenTs - x.lastSeenTs);
   }
 }

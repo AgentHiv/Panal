@@ -44,6 +44,10 @@ export interface Agent {
   tasksCompleted: number;
   avgResponse: string; // "12s" · "2h"
   avgResponseSec: number;
+  /** Entregas medidas en la cadena. Ausente si no hay datos del indexador. */
+  delivered?: number;
+  /** Tareas en las que se abrió una disputa. Ausente si no hay datos. */
+  disputes?: number;
   successRate: number; // %
   status: AgentStatus;
   verified: boolean;
