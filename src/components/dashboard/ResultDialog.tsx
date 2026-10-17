@@ -17,8 +17,10 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, BadgeCheck, FileDown, Loader2, RefreshCw, ShieldX } from 'lucide-react';
-import { keccak256, toBytes } from 'viem';
+import { AlertTriangle, BadgeCheck, FileDown, Loader2, Lock, RefreshCw, ShieldX } from 'lucide-react';
+import { keccak256, toBytes, type Address } from 'viem';
+import { descifrarTexto, esTextoCifrado } from '@panal/sdk';
+import { abrirArchivo, miClave } from '@/lib/cifrado';
 import { useSignMessage } from 'wagmi';
 import {
   PANAL_REGISTRY_ADDRESS,
@@ -31,7 +33,7 @@ import { buildResultUrl, cabecerasFirma, expiraEn, extractBotUrl, resultSignMess
 import { useWallet } from '@/hooks/useWallet';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { cn } from '@/lib/utils';
-import { guardarEntrega, leerEntrega } from '@/lib/expedientes';
+import { guardarEntrega, leerEntrega, textoDeEntrega } from '@/lib/expedientes';
 import {
   FileVerificationError,
   downloadDeliveredFile,
@@ -66,17 +68,19 @@ export default function ResultDialog({ task }: { task: RealTask }) {
   const [copia] = useState(() => {
     const g = leerEntrega(task.id.toString());
     if (!g) return null;
+    // Cifrada y sin abrir en este navegador, la copia no sirve para leerla.
+    if (esTextoCifrado(g.texto) && g.claro === undefined) return null;
     return keccak256(toBytes(g.texto)).toLowerCase() === task.resultHash.toLowerCase() ? g : null;
   });
 
   const [phase, setPhase] = useState<Phase>(copia ? 'done' : 'loadingAgent');
   const [botUrl, setBotUrl] = useState<string | null>(null);
-  const [resultText, setResultText] = useState(copia?.texto ?? '');
+  const [resultText, setResultText] = useState(copia ? textoDeEntrega(copia) : '');
   const [verified, setVerified] = useState<boolean | null>(copia ? true : null);
   const [reloadTick, setReloadTick] = useState(0);
   /** Archivos que anuncia la entrega, leídos del manifiesto del texto. */
   const [files, setFiles] = useState<DeliveredFile[]>(() =>
-    copia ? parseFilesManifest(copia.texto) : [],
+    copia ? parseFilesManifest(textoDeEntrega(copia)) : [],
   );
   /**
    * La firma se guarda porque la MISMA abre el texto y todos los archivos. Sin
@@ -85,6 +89,8 @@ export default function ResultDialog({ task }: { task: RealTask }) {
   const [signature, setSignature] = useState<{ firma: string; expira: number } | null>(null);
   /** Si lo que se ve salió del navegador y no del agente, ahora mismo. */
   const [deCopia, setDeCopia] = useState(copia !== null);
+  /** Si la entrega venía cifrada: sus archivos también, y hay que abrirlos. */
+  const [cifrada, setCifrada] = useState(() => copia?.claro !== undefined);
   /** Estado de cada descarga, por nombre de archivo. */
   const [descargas, setDescargas] = useState<Record<string, 'bajando' | 'ok' | 'mismatch' | 'error'>>({});
 
@@ -165,18 +171,29 @@ export default function ResultDialog({ task }: { task: RealTask }) {
       }
       const body = (await res.json()) as ResultPayload;
       const text = typeof body.resultText === 'string' ? body.resultText : '';
-      setResultText(text);
-      // Verificación local contra el hash anclado on-chain (tupla tasks()).
+      // Verificación local contra el hash anclado on-chain (tupla tasks()). Si
+      // va cifrada, el hash es el del sobre: lo que se comprueba es que el
+      // buzón no ha cambiado ni un byte, y luego se abre con la clave propia.
       const cuadra = keccak256(toBytes(text)).toLowerCase() === task.resultHash.toLowerCase();
       setVerified(cuadra);
+      const esCifrada = esTextoCifrado(text);
+      setCifrada(esCifrada);
+      const legible = esCifrada
+        ? descifrarTexto(
+            text,
+            address as Address,
+            (await miClave(address as Address, (mensaje) => signMessageAsync({ message: mensaje }))).secreta,
+          )
+        : text;
+      setResultText(legible);
       // Y se guarda para la próxima vez. `guardarEntrega` vuelve a comprobar el
       // hash y solo guarda si cuadra: una entrega que no cuadre con la cadena
       // no se archiva como si fuera lo que se pagó.
-      guardarEntrega(task.id.toString(), text, task.resultHash);
+      guardarEntrega(task.id.toString(), text, task.resultHash, esCifrada ? legible : undefined);
       setDeCopia(false);
       // Los archivos van anunciados DENTRO del texto, así que su hash queda
       // cubierto por el mismo resultHash que se acaba de comprobar arriba.
-      setFiles(parseFilesManifest(text));
+      setFiles(parseFilesManifest(legible));
       setPhase('done');
     } catch (err) {
       // El usuario rechazó la firma: volvemos al estado listo sin error ruidoso.
@@ -198,7 +215,21 @@ export default function ResultDialog({ task }: { task: RealTask }) {
     try {
       // Aquí puede pedirse la firma por primera vez: leyendo una copia guardada
       // no ha hecho falta ninguna hasta ahora.
-      const blob = await downloadDeliveredFile(file, botUrl, address, await conFirma());
+      const bajado = await downloadDeliveredFile(file, botUrl, address, await conFirma());
+      // Los bytes ya están comprobados contra el hash de la entrega; si van
+      // cifrados, se abren aquí, en el navegador.
+      const blob = cifrada
+        ? new Blob(
+            [
+              abrirArchivo(
+                new Uint8Array(await bajado.arrayBuffer()),
+                address as Address,
+                await miClave(address as Address, (mensaje) => signMessageAsync({ message: mensaje })),
+              ) as BlobPart,
+            ],
+            { type: file.mime || 'application/octet-stream' },
+          )
+        : bajado;
       const href = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = href;
@@ -334,6 +365,12 @@ export default function ResultDialog({ task }: { task: RealTask }) {
             {verified ? <BadgeCheck size={13} /> : <ShieldX size={13} />}
             {verified ? t('tasks.resultVerified') : t('tasks.resultMismatch')}
           </div>
+          {cifrada && (
+            <p className="inline-flex items-center gap-1.5 self-start text-[0.75rem] text-olive">
+              <Lock size={12} aria-hidden />
+              {t('tasks.cifrado.entrega')}
+            </p>
+          )}
 
           {/* De dónde salió esto. Importa decirlo: una copia de este navegador
               se lee aunque el agente haya apagado su bot, y por eso mismo puede

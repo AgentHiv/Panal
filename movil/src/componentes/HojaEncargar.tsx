@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSignMessage, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { keccak256, parseEventLogs, toBytes } from 'viem';
+import { keccak256, parseEventLogs, toBytes, type Address } from 'viem';
 import {
   PANAL_ESCROW_V2_ADDRESS,
   PANAL_TOKEN_ADDRESS,
@@ -9,7 +9,8 @@ import {
   activeChain,
 } from '@/contracts/config';
 import { panalEscrowV2Abi, panalTokenAbi } from '@/contracts/abis';
-import { saveTaskBrief } from '@/lib/taskBriefs';
+import { saveTaskBrief, saveTaskSobre } from '@/lib/taskBriefs';
+import { clavePublicaDe, nombreEnBuzon, publicarMiClave } from '@/lib/cifrado';
 import { respondeElAgente } from '@/lib/reachability';
 import { permitirEncargo } from '~/lib/signingPolicy';
 import {
@@ -17,6 +18,7 @@ import {
   buildBriefUrl,
   buildUploadUrl,
   enviarBriefConReintento,
+  esBuzon,
   leerCapacidades,
   type CapacidadesAgente,
 } from '@/lib/botEndpoint';
@@ -29,7 +31,7 @@ import {
   tamanoLegible,
   type Adjunto,
 } from '@/lib/adjuntos';
-import { conEjemplosDeLaFicha, conTextoDeLaFicha, type Nivel } from '@panal/sdk';
+import { cifrarArchivo, cifrarTexto, conEjemplosDeLaFicha, conTextoDeLaFicha, type Nivel } from '@panal/sdk';
 import { useWallet } from '@/hooks/useWallet';
 import type { DatosAgente } from '~/lib/agente';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
@@ -125,6 +127,24 @@ export default function HojaEncargar({
    * cliente se queda con el pago bloqueado hasta que venza el plazo.
    */
   const briefFirmado = useRef<string | null>(null);
+  /**
+   * Lo que se sube después de pagar, tal y como se anunció: cifrado y con
+   * nombre opaco si el encargo va cifrado. Fijado al crear, como el texto:
+   * cifrar es aleatorio y otra vuelta daría otros bytes.
+   */
+  const archivosASubir = useRef<{ name: string; bytes: Uint8Array<ArrayBuffer> }[] | null>(null);
+  /**
+   * La clave de quien recibe, si recibe en el buzón de Panal y la publicó; y la
+   * de quien contrata, si ya la publicó. Se piden al abrir para que pagar no
+   * espere a nada: con la wallet del teléfono, una firma que no nace del toque
+   * se puede perder.
+   */
+  const [claveDelAgente, setClaveDelAgente] = useState<string | null | undefined>(undefined);
+  const [miClavePublicada, setMiClavePublicada] = useState<string | null>(null);
+  /** Por qué no se pudo preparar el cifrado, antes de pagar nada. */
+  const [avisoCifrado, setAvisoCifrado] = useState<string | null>(null);
+  /** El encargo ya preparado —cifrado o no— al pulsar, antes de firmar ningún pago. */
+  const preparado = useRef<{ anclado: string; enClaro: string } | null>(null);
 
   const { address } = useWallet();
   const { signMessageAsync } = useSignMessage();
@@ -207,6 +227,36 @@ export default function HojaEncargar({
       vigente = false;
     };
   }, [datos?.botUrl]);
+
+  /* ── ¿se le puede escribir cifrado? ───────────────────────────────────── */
+
+  useEffect(() => {
+    const botUrl = datos?.botUrl;
+    if (!botUrl) return;
+    // Un servidor propio ya es quien lo lee: solo se pregunta por el buzón.
+    if (!esBuzon(botUrl)) return;
+    let vigente = true;
+    void clavePublicaDe(agente as Address).then((c) => {
+      if (vigente) setClaveDelAgente(c);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [datos?.botUrl, agente]);
+
+  /** La que vale: solo si recibe en el buzón; con servidor propio, ninguna. */
+  const claveCifrado = esBuzon(datos?.botUrl) ? claveDelAgente : null;
+
+  useEffect(() => {
+    if (!address || !claveCifrado) return;
+    let vigente = true;
+    void clavePublicaDe(address as Address).then((c) => {
+      if (vigente) setMiClavePublicada(c);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [address, claveCifrado]);
 
   /* ── ¿acepta archivos? ¿vende niveles? ─────────────────────────────────── */
 
@@ -307,9 +357,41 @@ export default function HojaEncargar({
 
   /* ── pagar ─────────────────────────────────────────────────────────────── */
 
+  /**
+   * El encargo que se ancla, cifrado si quien lo recibe publicó su clave: para
+   * él y para quien lo pide. La primera vez, quien pide publica también la
+   * suya (dos firmas, una sola vez).
+   */
+  const preparar = async (): Promise<{ anclado: string; enClaro: string }> => {
+    const claveDelAgente = claveCifrado;
+    if (!claveDelAgente || !address) {
+      archivosASubir.current = null;
+      const texto = componer();
+      return { anclado: texto, enClaro: texto };
+    }
+    const yo = address as Address;
+    const miPublica =
+      miClavePublicada ??
+      (await publicarMiClave(yo, (mensaje) => signMessageAsync({ message: mensaje }))).clave.publica;
+    setMiClavePublicada(miPublica);
+    const para = [
+      { cuenta: agente as Address, clave: claveDelAgente },
+      { cuenta: yo, clave: miPublica },
+    ];
+    const cifrados = adjuntos.map((a) => {
+      const bytes = new Uint8Array(cifrarArchivo(a.bytes, para));
+      const hash = keccak256(bytes);
+      return { ...a, bytes, hash, size: bytes.byteLength };
+    });
+    archivosASubir.current = cifrados.map((c) => ({ name: nombreEnBuzon(c.hash), bytes: c.bytes }));
+    const enClaro = appendAttachmentsManifest(brief.trim(), cifrados);
+    return { anclado: cifrarTexto(enClaro, para), enClaro };
+  };
+
   const crear = () => {
-    if (!datos || !brief.trim()) return;
-    const texto = componer();
+    const listo = preparado.current;
+    if (!datos || !listo) return;
+    const texto = listo.anclado;
     const taskHash = keccak256(toBytes(texto));
 
     // Se guarda AQUÍ, antes de pedir la firma del pago, y no al entregarlo:
@@ -318,7 +400,8 @@ export default function HojaEncargar({
     // delante. Lo que se ancla en la cadena es este hash, así que el texto que
     // se guarda es exactamente el que el agente va a aceptar; si no, no habría
     // servido de nada. Lo lee `Expediente` para poder reenviarlo.
-    saveTaskBrief(taskHash, texto);
+    saveTaskBrief(taskHash, listo.enClaro);
+    if (texto !== listo.enClaro) saveTaskSobre(taskHash, texto);
     briefFirmado.current = texto;
     const plazo = BigInt(Math.floor(Date.now() / 1000) + horas * 3600);
 
@@ -345,8 +428,20 @@ export default function HojaEncargar({
     });
   };
 
-  const empezar = () => {
+  const empezar = async () => {
     if (!datos || !brief.trim()) return;
+    // Antes de cualquier pago, y en el mismo toque: en $PANAL son dos
+    // transacciones, y la segunda no puede depender de una firma más.
+    try {
+      preparado.current = await preparar();
+    } catch (err) {
+      // Sin cifrado preparado no se paga: mandárselo en claro a quien publicó
+      // su clave sería lo contrario de lo que pidió.
+      const msg = err instanceof Error ? err.message : String(err);
+      setAvisoCifrado(/reject|denied|user/i.test(msg) ? T.encargar.firmaCancelada : T.encargar.cifradoFallo);
+      return;
+    }
+    setAvisoCifrado(null);
     if (!enPanal) return crear();
     aprobar({
       address: PANAL_TOKEN_ADDRESS,
@@ -399,7 +494,7 @@ export default function HojaEncargar({
    */
   const subir = async (botUrl: string, taskId: bigint, firma: string, quien: string): Promise<number> => {
     let fallos = 0;
-    for (const a of adjuntos) {
+    for (const a of archivosASubir.current ?? adjuntos) {
       try {
         const res = await fetch(buildUploadUrl(botUrl, taskId), {
           method: 'POST',
@@ -786,9 +881,15 @@ export default function HojaEncargar({
           ) : (
             <Nota>{T.encargar.retenido}</Nota>
           )}
+          {avisoCifrado && <Nota tono="miel">{avisoCifrado}</Nota>}
+          {claveCifrado ? (
+            <Nota>{T.encargar.cifrado}</Nota>
+          ) : claveCifrado === null && esBuzon(datos?.botUrl) ? (
+            <Nota>{T.encargar.sinCifrar}</Nota>
+          ) : null}
 
           <div className="mt-[18px] pb-1">
-            <Boton onClick={empezar} disabled={!brief.trim() || trabajando || responde === false}>
+            <Boton onClick={() => void empezar()} disabled={!brief.trim() || trabajando || responde === false}>
               {aprobando
                 ? T.encargar.aprobandoToken
                 : pagando

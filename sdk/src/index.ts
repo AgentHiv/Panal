@@ -277,3 +277,25 @@ export type {
   PublicarEnElTablon,
   SituacionEnElTablon,
 } from './tablon-reglas.js';
+
+// Encargos cifrados de punta a punta: la clave sale de una firma, el sobre se
+// abre solo con la de sus destinatarios, y el buzón guarda lo que no sabe leer.
+export {
+  CIFRADO_V1,
+  aBase64,
+  claveDesdeFirma,
+  cifrarArchivo,
+  cifrarTexto,
+  comprobarClavePublicada,
+  deBase64,
+  descifrarArchivo,
+  descifrarTexto,
+  destinatariosDe,
+  esArchivoCifrado,
+  esTextoCifrado,
+  mensajeParaDerivarClave,
+  mensajeParaPublicarClave,
+  type ClaveDeCifrado,
+  type ClavePublicada,
+  type Destinatario,
+} from './cifrado.js';

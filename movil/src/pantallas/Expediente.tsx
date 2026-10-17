@@ -14,7 +14,10 @@ import {
   expiraEn,
   resultSignMessage,
 } from '@/lib/botEndpoint';
-import { getTaskBrief } from '@/lib/taskBriefs';
+import { getTaskBrief, getTaskSobre } from '@/lib/taskBriefs';
+import { descifrarTexto, esTextoCifrado } from '@panal/sdk';
+import type { Address } from 'viem';
+import { abrirArchivo, miClave } from '@/lib/cifrado';
 import { esDelTablon } from '@/lib/tablonReglas';
 import {
   FileVerificationError,
@@ -156,7 +159,20 @@ export default function Expediente(): React.ReactElement {
     setAviso(null);
     try {
       const cred = await pedirCredencial(tarea.id);
-      const blob = await downloadDeliveredFile(archivo, botUrl, address, cred);
+      const bajado = await downloadDeliveredFile(archivo, botUrl, address, cred);
+      // Comprobado contra el hash de la entrega; si iba cifrada, se abre aquí.
+      const blob = e.local.entregaCifrada
+        ? new Blob(
+            [
+              abrirArchivo(
+                new Uint8Array(await bajado.arrayBuffer()),
+                address as Address,
+                await miClave(address as Address, (mensaje) => signMessageAsync({ message: mensaje })),
+              ) as BlobPart,
+            ],
+            { type: archivo.mime || 'application/octet-stream' },
+          )
+        : bajado;
       const r = await guardarArchivo(archivo.name, blob);
       setDescargas((d) => ({ ...d, [archivo.hash]: r.ok ? 'ok' : 'fallo' }));
       if (!r.ok) setAviso(r.porque);
@@ -195,7 +211,8 @@ export default function Expediente(): React.ReactElement {
    */
   const alReenviar = async (): Promise<void> => {
     const botUrl = datosAgente?.botUrl;
-    const guardado = getTaskBrief(e.cadena.taskHash);
+    // Si iba cifrado, lo que se reenvía es el sobre: es lo que se ancló.
+    const guardado = getTaskSobre(e.cadena.taskHash) ?? getTaskBrief(e.cadena.taskHash);
     if (!botUrl || !address || !tarea || !guardado) {
       setFallo(T.expediente.sinEndpoint);
       return;
@@ -258,9 +275,18 @@ export default function Expediente(): React.ReactElement {
         setFallo(T.expediente.entregaVacia);
         return;
       }
+      // Cifrada para este teléfono: se abre aquí y se guarda abierta junto al
+      // sobre, que es lo que cuadra con la cadena.
+      const claro = esTextoCifrado(texto)
+        ? descifrarTexto(
+            texto,
+            address as Address,
+            (await miClave(address as Address, (mensaje) => signMessageAsync({ message: mensaje }))).secreta,
+          )
+        : undefined;
       // Si el keccak256 no cuadra, esto NO es lo que se ancló en la cadena y no
       // se guarda: una copia que no cuadra es peor que no tener copia.
-      if (!guardarEntrega(e.id, texto, e.cadena.resultHash)) {
+      if (!guardarEntrega(e.id, texto, e.cadena.resultHash, claro)) {
         setFallo(T.expediente.noCuadraHash);
         return;
       }

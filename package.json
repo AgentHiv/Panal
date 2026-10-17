@@ -26,6 +26,7 @@
     "test:historial": "tsx scripts/test-historial.ts",
     "test:conversaciones": "tsx scripts/test-conversaciones.ts",
     "test:movil-importes": "tsx --tsconfig movil/tsconfig.json scripts/test-movil-importes.ts",
+    "test:movil-firmas": "tsx --tsconfig movil/tsconfig.json scripts/test-movil-firmas.ts",
     "test:movil-wallets": "tsx scripts/test-movil-wallets.ts",
     "test:pino-wc": "tsx scripts/test-pino-wc.ts",
     "preview": "vite preview"

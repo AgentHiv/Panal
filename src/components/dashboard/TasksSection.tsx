@@ -10,10 +10,10 @@
  * tras minarse la tx se hace refetch de las tareas.
  */
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { AlertTriangle, ExternalLink, Hexagon, Loader2, Paperclip, RefreshCw, Star } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Hexagon, Loader2, Lock, Paperclip, RefreshCw, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { formatEther, keccak256, toBytes } from 'viem';
@@ -48,7 +48,8 @@ import {
 } from '@/lib/botEndpoint';
 import { appendFilesManifest, type DeliveredFile } from '@/lib/deliveredFiles';
 import { describirArchivo, tamanoLegible, MAX_ADJUNTOS, type Adjunto } from '@/lib/adjuntos';
-import { parseAttachmentsManifest } from '@panal/sdk';
+import { cifrarArchivo, cifrarTexto, descifrarTexto, esTextoCifrado, parseAttachmentsManifest, type Destinatario } from '@panal/sdk';
+import { abrirArchivo, clavePublicaDe, miClave, nombreEnBuzon, publicarMiClave } from '@/lib/cifrado';
 import { hayEntrega } from '@/lib/expedientes';
 import { esDelTablon } from '@/lib/tablonReglas';
 import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, TASK_STATUS, useMyTasks } from '@/hooks/useMyTasks';
@@ -167,6 +168,16 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
   );
 }
 
+/**
+ * El encargo sin su bloque de adjuntos. Ese bloque es para la máquina —nombre,
+ * tamaño y un hash de 66 caracteres que desbordaba el diálogo— y los adjuntos
+ * ya salen debajo como botones para bajarlos.
+ */
+function sinBloqueDeAdjuntos(texto: string): string {
+  const i = texto.search(/^\[panal-attach\/1\]\s*$/m);
+  return i === -1 ? texto : texto.slice(0, i).trimEnd();
+}
+
 export default function TasksSection({ perspective }: { perspective: Perspective }) {
   // Su logo, si es un agente que lo publica. Ver `useLogoDeAgente`.
   const logoDe = useLogoDeAgente();
@@ -203,8 +214,44 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   const { signMessageAsync } = useSignMessage();
   /** El encargo bajado del buzón para ESTA tarea, y en qué punto va. */
   const [encargo, setEncargo] = useState<
-    { estado: 'pidiendo' | 'listo' | 'nada' | 'error'; texto?: string } | null
+    { estado: 'pidiendo' | 'listo' | 'nada' | 'error'; texto?: string; cifrado?: boolean } | null
   >(null);
+  /**
+   * Si quien recibe en el buzón ha publicado su clave de cifrado. `undefined`
+   * mientras se pregunta. Sin ella sus clientes le escriben en claro, y el
+   * panel se lo ofrece.
+   */
+  const [miClavePublicada, setMiClavePublicada] = useState<string | null | undefined>(undefined);
+  const [activandoCifrado, setActivandoCifrado] = useState(false);
+  useEffect(() => {
+    if (!miBuzon || !address) return;
+    let vigente = true;
+    void clavePublicaDe(address as Address).then((c) => {
+      if (vigente) setMiClavePublicada(c);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [miBuzon, address]);
+
+  /** Publica la clave: dos firmas, una vez. Desde entonces le escriben cifrado. */
+  const activarCifrado = async () => {
+    if (!address) return;
+    setActivandoCifrado(true);
+    try {
+      const { clave, cambio } = await publicarMiClave(address as Address, (mensaje) =>
+        signMessageAsync({ message: mensaje }),
+      );
+      setMiClavePublicada(clave.publica);
+      toast.success(t('tasks.cifrado.activado'));
+      if (cambio) toast.warning(t('tasks.cifrado.cambio'));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (!/reject|denied|user/i.test(msg)) toast.error(t('tasks.cifrado.errorActivar'));
+    } finally {
+      setActivandoCifrado(false);
+    }
+  };
   /** Cómo va el envío de la entrega al buzón, que pasa ANTES de la firma. */
   const [envio, setEnvio] = useState<{ estado: 'yendo' | 'error'; detalle?: string } | null>(null);
   /** Lo que se adjunta a la entrega, ya leído y hasheado. */
@@ -343,8 +390,16 @@ export default function TasksSection({ perspective }: { perspective: Perspective
         (await leerEncargoDelBuzon(urlDeBuzon(ZERO_ADDRESS), task.id, address, cred).catch(
           () => null,
         ));
+      if (texto !== null && esTextoCifrado(texto)) {
+        // Cifrado para esta cuenta: se abre aquí, con su clave. La primera vez
+        // de la sesión es una firma más; el texto en claro no sale del navegador.
+        const clave = await miClave(address as Address, (mensaje) => signMessageAsync({ message: mensaje }));
+        setEncargo({ estado: 'listo', texto: descifrarTexto(texto, address as Address, clave.secreta), cifrado: true });
+        return;
+      }
       setEncargo(texto === null ? { estado: 'nada' } : { estado: 'listo', texto });
-    } catch {
+    } catch (err) {
+      console.warn(`[panal] no se pudo leer el encargo: ${err instanceof Error ? err.message.split('\n')[0] : err}`);
       setEncargo({ estado: 'error' });
     }
   };
@@ -354,7 +409,28 @@ export default function TasksSection({ perspective }: { perspective: Perspective
     if (!miBuzon || !address || !credEncargo) return;
     setBajando(archivo.name);
     try {
-      const blob = await descargarArchivoDelBuzon(miBuzon, task.id, archivo, address, credEncargo);
+      // Cifrado, el buzón lo guarda con un nombre opaco y lo que baja son los
+      // bytes cifrados: se comprueban contra el hash anunciado y luego se abren.
+      const cifrado = encargo?.cifrado === true;
+      const bajado = await descargarArchivoDelBuzon(
+        miBuzon,
+        task.id,
+        cifrado ? { ...archivo, name: nombreEnBuzon(archivo.hash) } : archivo,
+        address,
+        credEncargo,
+      );
+      const blob = cifrado
+        ? new Blob(
+            [
+              abrirArchivo(
+                new Uint8Array(await bajado.arrayBuffer()),
+                address as Address,
+                await miClave(address as Address, (mensaje) => signMessageAsync({ message: mensaje })),
+              ) as BlobPart,
+            ],
+            { type: archivo.mime || 'application/octet-stream' },
+          )
+        : bajado;
       const href = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = href;
@@ -414,19 +490,34 @@ export default function TasksSection({ perspective }: { perspective: Perspective
         const cred = await credencialDeEntrega(dialog.task.id, (mensaje) =>
           signMessageAsync({ message: mensaje }),
         );
+        /**
+         * Cifrada, si su cliente publicó su clave: para él y para quien la
+         * entrega, que tiene que poder releerla. Si no la publicó, como
+         * siempre: no hay a quién cifrársela.
+         */
+        const yo = address as Address;
+        const suClave = await clavePublicaDe(dialog.task.client as Address);
+        const para: Destinatario[] | null = suClave
+          ? [
+              { cuenta: dialog.task.client as Address, clave: suClave },
+              { cuenta: yo, clave: (await miClave(yo, (mensaje) => signMessageAsync({ message: mensaje }))).publica },
+            ]
+          : null;
         const entregados: DeliveredFile[] = [];
         for (const a of adjuntos) {
+          const bytes = para ? new Uint8Array(cifrarArchivo(a.bytes, para)) : a.bytes;
+          const hash = para ? keccak256(bytes) : a.hash;
           const path = await subirArchivoDeEntrega(
             miBuzon,
             dialog.task.id,
-            { name: a.name, bytes: a.bytes, mime: a.mime },
+            { name: para ? nombreEnBuzon(hash) : a.name, bytes, ...(para ? {} : { mime: a.mime }) },
             address,
             cred,
           );
           entregados.push({
             name: a.name,
-            size: a.size,
-            hash: a.hash,
+            size: bytes.byteLength,
+            hash,
             ...(a.mime ? { mime: a.mime } : {}),
             path,
           });
@@ -435,6 +526,7 @@ export default function TasksSection({ perspective }: { perspective: Perspective
         // cada archivo queda respaldado por la cadena y el cliente puede
         // comprobar los bytes que se baje.
         texto = appendFilesManifest(deliverText, entregados);
+        if (para) texto = cifrarTexto(texto, para);
         await dejarEntregaEnBuzon(miBuzon, dialog.task.id, texto, address, cred);
       } catch (err) {
         setEnvio({
@@ -642,6 +734,26 @@ export default function TasksSection({ perspective }: { perspective: Perspective
 
   return (
     <div>
+      {/* Quien recibe en el buzón y aún no publicó su clave: sus clientes le
+          escriben en claro y Panal podría leerlo. Se le ofrece una vez aquí. */}
+      {miBuzon && miClavePublicada === null && (
+        <div className="mb-5 flex flex-col gap-3 rounded-xl border border-honey/40 bg-honey-soft px-4 py-3.5 sm:flex-row sm:items-center">
+          <Lock size={18} className="shrink-0 text-honey-deep" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="text-[0.875rem] font-semibold text-ink">{t('tasks.cifrado.titulo')}</p>
+            <p className="mt-0.5 text-[0.8125rem] leading-relaxed text-ink-2">{t('tasks.cifrado.texto')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void activarCifrado()}
+            disabled={activandoCifrado}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-honey px-4 py-2 text-[0.8125rem] font-semibold text-[#1B1814] transition-colors hover:bg-honey-deep disabled:opacity-50"
+          >
+            {activandoCifrado && <Loader2 size={14} className="animate-spin" aria-hidden />}
+            {t('tasks.cifrado.boton')}
+          </button>
+        </div>
+      )}
       <Tabs defaultValue="activas">
         <TabsList className="h-auto max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-cream p-1">
           <TabsTrigger
@@ -734,9 +846,19 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                       !brief && !!miBuzon && dialog.task.role === 'worker' && encargo?.estado !== 'nada';
                     return (
                       <div className="rounded-xl border border-monad/30 bg-monad/5 p-4">
-                        <p className="eyebrow mb-1.5 text-monad-mist">{t('tasks.briefLabel')}</p>
+                        <p className="eyebrow mb-1.5 flex items-center gap-1.5 text-monad-mist">
+                          {t('tasks.briefLabel')}
+                          {encargo?.cifrado && (
+                            <span className="inline-flex items-center gap-1 normal-case tracking-normal text-olive">
+                              <Lock size={11} aria-hidden />
+                              {t('tasks.cifrado.etiqueta')}
+                            </span>
+                          )}
+                        </p>
                         {brief ? (
-                          <p className="whitespace-pre-wrap text-[0.875rem] leading-relaxed text-ink">{brief}</p>
+                          <p className="whitespace-pre-wrap break-words text-[0.875rem] leading-relaxed text-ink">
+                            {sinBloqueDeAdjuntos(brief)}
+                          </p>
                         ) : (
                           <>
                             <p className="text-[0.8125rem] italic text-ink-3">

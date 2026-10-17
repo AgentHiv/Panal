@@ -117,7 +117,7 @@ function proveedor() {
           const cuenta = exigirCuenta();
           // El orden es [mensaje, dirección], al revés que en signTypedData.
           const [datos] = params as [Hex, Address];
-          revisarMensaje(datos);
+          revisarMensaje(datos, cuenta.address);
           return cuenta.signMessage!({ message: { raw: datos } });
         }
 

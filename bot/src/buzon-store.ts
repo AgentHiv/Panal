@@ -113,6 +113,24 @@ function nombreEnDisco(hash: string): string {
   return hash.slice(2);
 }
 
+/**
+ * La clave pública de cifrado de una cuenta, con la firma que la ata a ella.
+ * El buzón la guarda y la sirve, pero no puede cambiarla: quien la usa
+ * comprueba la firma (`sdk/src/cifrado.ts`, `comprobarClavePublicada`).
+ */
+export interface ClaveGuardada {
+  clave: string;
+  firma: string;
+  ts: number;
+}
+
+/**
+ * Las claves viven aparte y no caducan con los encargos: una persona publica
+ * la suya una vez, y si se borrara a los 30 días sus clientes volverían a
+ * escribirle en claro sin que nadie se enterara.
+ */
+const CARPETA_CLAVES = '_claves';
+
 export class BuzonStore {
   private readonly dir: string;
   private readonly retencionMs: number;
@@ -136,6 +154,29 @@ export class BuzonStore {
     const tarea = taskId.toString();
     if (!DIRECCION.test(dir) || !TAREA.test(tarea)) return null;
     return join(this.dir, dir, `${tarea}.json`);
+  }
+
+  leerClave(cuenta: string): ClaveGuardada | null {
+    const dir = cuenta.toLowerCase();
+    if (!DIRECCION.test(dir)) return null;
+    try {
+      return JSON.parse(readFileSync(join(this.dir, CARPETA_CLAVES, `${dir}.json`), 'utf8')) as ClaveGuardada;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Guarda —o sustituye— la clave de una cuenta. La firma ya viene comprobada. */
+  guardarClave(cuenta: string, clave: string, firma: string): boolean {
+    const dir = cuenta.toLowerCase();
+    if (!DIRECCION.test(dir)) return false;
+    const carpeta = join(this.dir, CARPETA_CLAVES);
+    mkdirSync(carpeta, { recursive: true });
+    const file = join(carpeta, `${dir}.json`);
+    const tmp = `${file}.tmp`;
+    writeFileSync(tmp, JSON.stringify({ clave, firma, ts: Date.now() } satisfies ClaveGuardada), 'utf8');
+    renameSync(tmp, file);
+    return true;
   }
 
   leer(agente: string, taskId: bigint): Encargo | null {
@@ -330,6 +371,7 @@ export class BuzonStore {
     if (!existsSync(this.dir)) return 0;
     let borrados = 0;
     for (const agente of readdirSync(this.dir)) {
+      if (agente === CARPETA_CLAVES) continue;
       const carpeta = join(this.dir, agente);
       let encargos: string[];
       try {

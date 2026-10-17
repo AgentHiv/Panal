@@ -426,6 +426,9 @@ export const en: Textos = {
     archivosFallaron: (n: number) => `${n} ${n === 1 ? 'file' : 'files'} failed to upload.`,
     firmaCancelada: 'You cancelled the signature.',
     noSePudoHablar: 'Could not reach the agent.',
+    cifrado: 'End-to-end encrypted: only this person and you can read the job and its files. Not even Panal.',
+    sinCifrar: 'This person hasn’t turned on encryption yet: Panal’s mailbox will be able to read the job.',
+    cifradoFallo: 'Encryption couldn’t be set up. Nothing has been paid; try again.',
   },
 
   revisar: {

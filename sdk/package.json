@@ -37,9 +37,14 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx test/sdk.test.ts && tsx test/currencies.test.ts && tsx test/x402.test.ts && tsx test/x402-server.test.ts && tsx test/envelope.test.ts && tsx test/files.test.ts && tsx test/attachments.test.ts && tsx test/llm.test.ts && tsx test/skill.test.ts && tsx test/agent-card.test.ts && tsx test/niveles.test.ts && tsx test/ejemplos.test.ts && tsx test/tablon.test.ts && tsx test/reserva.test.ts && tsx test/precios.test.ts && tsx test/tablon-reglas.test.ts",
+    "test": "tsx test/sdk.test.ts && tsx test/currencies.test.ts && tsx test/x402.test.ts && tsx test/x402-server.test.ts && tsx test/envelope.test.ts && tsx test/files.test.ts && tsx test/attachments.test.ts && tsx test/llm.test.ts && tsx test/skill.test.ts && tsx test/agent-card.test.ts && tsx test/niveles.test.ts && tsx test/ejemplos.test.ts && tsx test/tablon.test.ts && tsx test/reserva.test.ts && tsx test/precios.test.ts && tsx test/tablon-reglas.test.ts && tsx test/cifrado.test.ts",
     "test:nombres": "tsx test/nombres.test.ts",
     "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^1.3.0",
+    "@noble/curves": "^1.9.1",
+    "@noble/hashes": "^1.8.0"
   },
   "peerDependencies": {
     "viem": "^2.21.0"
