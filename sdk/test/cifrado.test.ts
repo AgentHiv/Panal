@@ -134,9 +134,18 @@ test('los archivos van cifrados en binario y vuelven igual', async () => {
   assert.throws(() => descifrarArchivo(tocado, cliente.address, kc.secreta), /dañado/);
 });
 
-test('el mensaje que se firma dice qué es y no cambia', () => {
-  const m = mensajeParaDerivarClave(persona.address);
-  assert.ok(m.startsWith('Panal · clave de cifrado · v1'));
-  assert.ok(m.includes('no mueve dinero'));
-  assert.ok(m.includes(persona.address));
+test('los mensajes que se firman no cambian, letra a letra', () => {
+  // Cambiar el primero cambia la clave de todo el mundo: lo cifrado con la de
+  // antes no se podría abrir. Una versión nueva es un mensaje nuevo.
+  assert.equal(
+    mensajeParaDerivarClave(persona.address),
+    `Panal · clave de cifrado · v1\n\nFirmar esto no mueve dinero ni autoriza nada. Con esta firma tu dispositivo calcula la clave que abre tus encargos cifrados. No compartas esta firma con nadie.\n\nCuenta: ${persona.address}`,
+  );
+  // El segundo lo comprueba también el buzón con su propia copia
+  // (bot/scripts/test-buzon.ts fija este mismo texto).
+  const clave = 'c4SRnEYLEV3MndZ45om_rIOFlmFOzQr6YndhPmsS_XY';
+  assert.equal(
+    mensajeParaPublicarClave(persona.address, clave),
+    `Panal · mi clave pública de cifrado · v1\n\nCuenta: ${persona.address}\nClave: ${clave}`,
+  );
 });
