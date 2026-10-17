@@ -72,11 +72,17 @@ export default function StatBlock({
 
   return (
     <div ref={ref} className={cn('flex flex-col gap-2', className)}>
-      <span className={cn('stat-number', dark ? 'text-coal-text' : 'text-ink')}>
-        {prefix}
-        {text}
+      {/* Si el sufijo no cabe («1950 $PANAL» en una columna estrecha), baja a
+          la línea siguiente en vez de invadir la columna de al lado. El hueco
+          es `gap`, no un margen a la izquierda: así vale también de derecha a
+          izquierda. */}
+      <span className={cn('stat-number inline-flex flex-wrap items-baseline gap-x-1', dark ? 'text-coal-text' : 'text-ink')}>
+        <span>
+          {prefix}
+          {text}
+        </span>
         {suffix && (
-          <span className={cn('ml-1 text-[0.45em] font-semibold', dark ? 'text-honey' : 'text-honey-deep')}>
+          <span className={cn('text-[0.45em] font-semibold', dark ? 'text-honey' : 'text-honey-deep')}>
             {suffix}
           </span>
         )}

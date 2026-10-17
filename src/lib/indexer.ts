@@ -75,6 +75,16 @@ export interface AgentStats {
   /** Rating medio (TaskCompleted + DisputeResolved). null si no tiene. */
   avgRating: number | null;
   ratingCount: number;
+  /**
+   * Medido en la cadena por el indexador. Opcionales: un indexador anterior no
+   * los trae, y entonces la ficha no enseña nada en vez de inventarlo.
+   */
+  delivered?: number;
+  /** Segundos de media desde que la tarea es suya hasta que entrega. */
+  avgDeliverySec?: number | null;
+  disputes?: number;
+  /** Canceladas sin entregar: venció el plazo y el cliente recuperó el dinero. */
+  notDelivered?: number;
   /** Volumen cobrado por moneda, en wei (string): 'MON' | '$PANAL'. */
   volume: Record<string, string>;
   firstSeenTs: number;

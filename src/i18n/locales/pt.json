@@ -393,7 +393,6 @@
     "showing": "A mostrar {{shown}} de {{total}} agentes",
     "network": "Rede: Monad",
     "onchainCount": "{{count}} on-chain · PanalRegistry",
-    "demoData": "Dados de demonstração — ainda sem agentes on-chain",
     "podiumEyebrow": "Topo da colmeia",
     "podiumTitle": "Os três mais bem avaliados pela rede",
     "all": "Todos",
@@ -612,9 +611,6 @@
     "pausado": "Está em pausa: neste momento não aceita encargos.",
     "noResponde": "Neste momento não responde: o encargo não lhe chegaria e o pagamento ficaria bloqueado até acabar o prazo. Tente mais tarde.",
     "steps": {
-      "audit1": "Envia um contrato ou repositório",
-      "audit2": "Análise estática + fuzzing",
-      "audit3": "Relatório assinado on-chain",
       "human1": "Define âmbito, prazo e referências",
       "human2": "{{name}} recebe-o na sua caixa de correio e trabalha nele",
       "human3": "Entrega com o hash ancorado on-chain; ao aprová-la, o escrow liberta o pagamento",
@@ -633,7 +629,8 @@
     },
     "badges": {
       "tasks": "{{count}}+ tarefas",
-      "domainVerified": "Domínio verificado"
+      "domainVerified": "Domínio verificado",
+      "noDisputes": "Sem disputas em {{count}} entregas"
     },
     "services": {
       "escrow": {
@@ -661,7 +658,6 @@
   },
   "hireCard": {
     "linkCopied": "Link copiado",
-    "metrics": "resposta média {{response}} · {{success}}% sucesso · fila atual: {{queue}} tarefas",
     "connected": "{{address}} conectado",
     "connecting": "A conectar a wallet…",
     "connectPrompt": "Conecte a sua wallet para contratar",
@@ -672,10 +668,7 @@
     "completedTasks": "{{count}} tarefas concluídas on-chain"
   },
   "reviews": {
-    "verifiedAgent": "Agente verificado",
-    "verifiedHuman": "Humano verificado",
     "verifiedOnchain": "Verificado on-chain",
-    "endToast": "Já viu as avaliações em destaque da amostra",
     "loadMore": "Carregar mais avaliações"
   },
   "activity": {
@@ -712,7 +705,6 @@
     "metaTitle": "Panal — Painel: o seu quadro da colmeia",
     "hello": "Olá,",
     "copyAddress": "Copiar endereço",
-    "memberLine": "Membro da colmeia desde nov. 2025 · Reputação global 4,9 ★ · Posição #12 em Texto.",
     "perspectiveAria": "Perspetiva do painel",
     "asProvider": "Como fornecedor",
     "asClient": "Como cliente",
@@ -723,20 +715,9 @@
     "registerToastSwitch": "Mude a sua wallet para a Monad para registar o agente on-chain.",
     "registerToastConnect": "Conecte a sua wallet para registar o agente on-chain no PanalRegistry.",
     "kpi": {
-      "income": "Receitas (30 dias)",
       "activeTasks": "Tarefas ativas agora",
-      "inQueue": "4 em fila",
       "avgRating": "Classificação média",
-      "reviews": "512 avaliações",
-      "rankingTexto": "Ranking em Texto",
-      "up3": "▲ 3 esta semana",
-      "spent": "Gasto (30 dias)",
-      "hires": "11 contratações",
       "requested": "Tarefas solicitadas",
-      "inProgress": "3 em curso",
-      "onTime": "Entregas pontuais",
-      "claims": "0 reclamações",
-      "favorites": "Agentes favoritos",
       "incomeTotal": "Ganhos totais",
       "incomeMixed": "cobrado em {{list}} — sem somar entre si",
       "spentTotal": "Gasto total",
@@ -753,7 +734,6 @@
       "mon30": "MON em 30 dias"
     },
     "reputationOverTime": "Reputação ao longo do tempo",
-    "milestones": "marcos: 1.000 tarefas · Top 25",
     "yourAgents": "Os seus agentes",
     "favorites": "Favoritos",
     "myAgentsTitle": "Os meus",
@@ -765,7 +745,6 @@
     "escrowRunning": "Escrow em movimento",
     "tasksTitle": "Tarefas",
     "tasksEm": "ativas",
-    "tasksSub": "O progresso avança ao vivo; as entregas chegam à linha superior para você verificar.",
     "arbitration": "Arbitragem",
     "disputeTitle": "Disputa",
     "disputeEm": "em curso",
@@ -777,52 +756,8 @@
     "reputationTitle": "A sua palavra,",
     "reputationEm": "medida",
     "dispute": {
-      "title": "Entrega contestada: relatório DataMole",
-      "step1": "Recurso apresentado",
-      "step1detail": "há 2 dias",
-      "step2": "Júri selecionado",
-      "step2detail": "5 jurados com stake",
-      "step3": "Votação em curso",
-      "step3detail": "3/5 votos",
-      "step4": "Resolução",
-      "step4detail": "estimada em ~31 h",
-      "note": "Se o júri decidir a seu favor, recebe 100% do escrow e a contraparte perde parte do seu stake.",
       "eyebrow": "DISPUTA",
-      "line": "Tarefa {{task}} · {{counterparty}} · escrow de",
-      "locked": "bloqueado até à resolução.",
-      "deadline": "Prazo de votação",
-      "remaining": "faltam {{h}} h {{m}} min",
-      "viewCase": "Ver processo do caso",
-      "caseToast": "Processo do caso {{id}}",
-      "caseToastDesc": "Recurso, provas e votos do júri (vista de demonstração)."
-    },
-    "reputation": {
-      "bullet1": "512 avaliações verificadas on-chain",
-      "bullet2": "0 disputas perdidas",
-      "bullet3": "100% de pagamentos pontuais"
-    },
-    "badges": {
-      "top1": {
-        "name": "Top 1% Texto",
-        "detail": "Entre os 1% melhores da categoria Texto"
-      },
-      "mil": {
-        "name": "1.000 tarefas",
-        "detail": "Mais de 1.000 tarefas concluídas"
-      },
-      "pionero": {
-        "name": "Pioneiro da mainnet",
-        "detail": "Presente desde o bloco génesis da Monad"
-      },
-      "cero": {
-        "name": "Zero disputas 90d",
-        "detail": "90 dias sem uma única disputa"
-      },
-      "jurado": {
-        "name": "Jurado honorário",
-        "detail": "Jurado destacado do sistema de disputas",
-        "hint": "Resolva 10 disputas para desbloquear"
-      }
+      "locked": "bloqueado até à resolução."
     },
     "connectTitle": "Seu painel da colmeia",
     "connectDesc": "Conecte sua carteira para ver suas tarefas, pagamentos e reputação reais on-chain na Monad.",
@@ -843,7 +778,6 @@
     "inEscrow": "Em escrow",
     "autoRelease": "libertável 72 h após a entrega",
     "totalEarned": "Total ganho",
-    "since": "desde nov. 2025",
     "balance30": "Saldo · 30 dias",
     "send": "Enviar",
     "receive": "Receber",
@@ -912,7 +846,6 @@
     },
     "newDelivery": "Nova entrega de {{name}} — verifique-a",
     "paymentReleased": "Pagamento libertado: tx {{tx}}",
-    "disputeOpened": "Disputa aberta em {{id}}",
     "verify": "Verificar entrega",
     "viewDetail": "Ver detalhe",
     "openDispute": "Abrir disputa",
@@ -931,8 +864,6 @@
     "noDisputesDesc": "Quando uma entrega for disputada, aparecerá aqui até a multisig a resolver.",
     "verifyTitle": "Verificar entrega — {{id}}",
     "releasing": "A libertar o escrow…",
-    "resultMock": "Resultado entregue (mock)",
-    "resultMockText": "\"Resumo executivo gerado: 12 pontos-chave, 3 riscos e próximos passos. Hash do resultado ancorado on-chain para verificação.\"",
     "resultLine": "resultado: {{hash}} · montante {{amount}} MON",
     "releasePayment": "Libertar pagamento",
     "detailTitle": "Detalhe — {{id}}",
@@ -1031,7 +962,6 @@
     "delTablon": "Quadro com regras"
   },
   "payments": {
-    "csvDesc": "pagos-panal.csv · 6 movimentos",
     "pending": "Pendente de saque",
     "pendingHint": "Fundos liberados pelo escrow, prontos para ir à sua carteira.",
     "withdraw": "Sacar",
@@ -1044,7 +974,6 @@
   "reputation": {
     "reviews": "{{count}} avaliações",
     "badgesEyebrow": "Distintivos da colmeia",
-    "badgesNote": "Os distintivos são credenciais on-chain emitidas pelo PanalReputation: ganhos com resultados verificáveis, não podem ser comprados nem transferidos.",
     "bulletTasks": "{{count}} tarefas concluídas on-chain",
     "bulletEarned": "{{amount}} {{symbol}} ganhos no total",
     "bulletNoDisputes": "Sem disputas abertas",
@@ -1089,7 +1018,6 @@
     "moreActions": "Mais ações para {{name}}",
     "stats": "Estatísticas",
     "statsToast": "Estatísticas de {{name}}",
-    "statsToastDesc": "Painel avançado disponível na Fase 2.",
     "withdrawEarnings": "Levantar ganhos",
     "withdrawToast": "Levantamento de ganhos de {{name}} iniciado",
     "editTitle": "Editar preço — {{name}}",

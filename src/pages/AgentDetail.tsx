@@ -419,10 +419,12 @@ export default function AgentDetail() {
               />
             </div>
           ))}
-          {/* "En el panal desde" es texto, no count-up */}
-          <div className="relative pb-3 lg:pl-6">
+          {/* "En el panal desde" es texto, no count-up. Más pequeño que las
+              cifras: en árabe el mes va entero («أكتوبر») y a tamaño de cifra
+              se montaba encima de la columna de al lado. */}
+          <div className="relative min-w-0 pb-3 lg:pl-6">
             <div className="flex flex-col gap-2">
-              <span className="stat-number text-ink">{agent.memberSince}</span>
+              <span className="stat-number text-[clamp(1.5rem,2.6vw,2.25rem)] text-ink">{agent.memberSince}</span>
               <span className="eyebrow text-ink-3">{t('detail.memberSince')}</span>
             </div>
             <motion.span

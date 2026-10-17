@@ -393,7 +393,6 @@
     "showing": "{{shown}} agents sur {{total}} affichés",
     "network": "Réseau : Monad",
     "onchainCount": "{{count}} on-chain · PanalRegistry",
-    "demoData": "Données de démo — pas encore d'agents on-chain",
     "podiumEyebrow": "Sommet de la ruche",
     "podiumTitle": "Les trois mieux notés par le réseau",
     "all": "Tous",
@@ -612,9 +611,6 @@
     "pausado": "Il est en pause : il n'accepte pas de commandes pour l'instant.",
     "noResponde": "Il ne répond pas en ce moment : la commande ne lui parviendrait pas et le paiement resterait bloqué jusqu'à l'échéance. Réessayez plus tard.",
     "steps": {
-      "audit1": "Vous envoyez un contrat ou un repo",
-      "audit2": "Analyse statique + fuzzing",
-      "audit3": "Rapport signé on-chain",
       "human1": "Vous définissez le périmètre, le délai et les références",
       "human2": "{{name}} le reçoit dans sa boîte aux lettres et s’y met",
       "human3": "Livraison avec son hash ancré on-chain ; dès que vous l'approuvez, l'escrow libère le paiement",
@@ -633,7 +629,8 @@
     },
     "badges": {
       "tasks": "{{count}}+ tâches",
-      "domainVerified": "Domaine vérifié"
+      "domainVerified": "Domaine vérifié",
+      "noDisputes": "Aucun litige sur {{count}} livraisons"
     },
     "services": {
       "escrow": {
@@ -661,7 +658,6 @@
   },
   "hireCard": {
     "linkCopied": "Lien copié",
-    "metrics": "réponse moy. {{response}} · {{success}} % de réussite · file actuelle : {{queue}} tâches",
     "connected": "{{address}} connecté",
     "connecting": "Connexion du wallet…",
     "connectPrompt": "Connectez votre wallet pour engager",
@@ -672,10 +668,7 @@
     "completedTasks": "{{count}} tâches complétées on-chain"
   },
   "reviews": {
-    "verifiedAgent": "Agent vérifié",
-    "verifiedHuman": "Humain vérifié",
     "verifiedOnchain": "Vérifié on-chain",
-    "endToast": "Vous avez vu les avis en vedette de l'échantillon",
     "loadMore": "Charger plus d'avis"
   },
   "activity": {
@@ -712,7 +705,6 @@
     "metaTitle": "Panal — Tableau de bord : votre panneau de la ruche",
     "hello": "Bonjour,",
     "copyAddress": "Copier l'adresse",
-    "memberLine": "Membre de la ruche depuis nov. 2025 · Réputation globale 4,9 ★ · Rang #12 en Texte.",
     "perspectiveAria": "Perspective du panneau",
     "asProvider": "En tant que prestataire",
     "asClient": "En tant que client",
@@ -723,20 +715,9 @@
     "registerToastSwitch": "Passez votre wallet sur Monad pour inscrire l'agent on-chain.",
     "registerToastConnect": "Connectez votre wallet pour inscrire l'agent on-chain dans PanalRegistry.",
     "kpi": {
-      "income": "Revenus (30 jours)",
       "activeTasks": "Tâches actives",
-      "inQueue": "4 en file",
       "avgRating": "Note moyenne",
-      "reviews": "512 avis",
-      "rankingTexto": "Classement en Texte",
-      "up3": "▲ 3 cette semaine",
-      "spent": "Dépensé (30 jours)",
-      "hires": "11 engagements",
       "requested": "Tâches demandées",
-      "inProgress": "3 en cours",
-      "onTime": "Livraisons à temps",
-      "claims": "0 réclamations",
-      "favorites": "Agents favoris",
       "incomeTotal": "Revenus totaux",
       "incomeMixed": "perçu en {{list}} — sans les additionner",
       "spentTotal": "Dépensé au total",
@@ -753,7 +734,6 @@
       "mon30": "MON en 30 jours"
     },
     "reputationOverTime": "Réputation dans le temps",
-    "milestones": "jalons : 1 000 tâches · Top 25",
     "yourAgents": "Vos agents",
     "favorites": "Favoris",
     "myAgentsTitle": "Mes",
@@ -765,7 +745,6 @@
     "escrowRunning": "Escrow en cours",
     "tasksTitle": "Tâches",
     "tasksEm": "actives",
-    "tasksSub": "La progression avance en direct ; les livraisons arrivent en première ligne pour être vérifiées.",
     "arbitration": "Arbitrage",
     "disputeTitle": "Litige",
     "disputeEm": "en cours",
@@ -777,52 +756,8 @@
     "reputationTitle": "Votre parole,",
     "reputationEm": "mesurée",
     "dispute": {
-      "title": "Livraison contestée : rapport de DataMole",
-      "step1": "Appel soumis",
-      "step1detail": "il y a 2 jours",
-      "step2": "Jury sélectionné",
-      "step2detail": "5 jurés avec stake",
-      "step3": "Vote en cours",
-      "step3detail": "3/5 voix",
-      "step4": "Résolution",
-      "step4detail": "estimée dans ~31 h",
-      "note": "Si le jury statue en votre faveur, vous recevez 100 % de l'escrow et la partie adverse perd une partie de son stake.",
       "eyebrow": "LITIGE",
-      "line": "Tâche {{task}} · {{counterparty}} · escrow de",
-      "locked": "verrouillé jusqu'à la résolution.",
-      "deadline": "Date limite de vote",
-      "remaining": "il reste {{h}} h {{m}} min",
-      "viewCase": "Voir le dossier",
-      "caseToast": "Dossier {{id}}",
-      "caseToastDesc": "Appel, preuves et votes du jury (vue démo)."
-    },
-    "reputation": {
-      "bullet1": "512 avis vérifiés on-chain",
-      "bullet2": "0 litige perdu",
-      "bullet3": "100 % de paiements ponctuels"
-    },
-    "badges": {
-      "top1": {
-        "name": "Top 1 % Texte",
-        "detail": "Parmi les 1 % meilleurs de la catégorie Texte"
-      },
-      "mil": {
-        "name": "1 000 tâches",
-        "detail": "Plus de 1 000 tâches accomplies"
-      },
-      "pionero": {
-        "name": "Pionnier du mainnet",
-        "detail": "Présent depuis le bloc genesis de Monad"
-      },
-      "cero": {
-        "name": "Zéro litige 90 j",
-        "detail": "90 jours sans un seul litige"
-      },
-      "jurado": {
-        "name": "Juré d'honneur",
-        "detail": "Juré émérite du système de litiges",
-        "hint": "Résolvez 10 litiges pour débloquer"
-      }
+      "locked": "verrouillé jusqu'à la résolution."
     },
     "connectTitle": "Votre tableau de bord",
     "connectDesc": "Connectez votre wallet pour voir vos tâches, paiements et réputation réels on-chain sur Monad.",
@@ -843,7 +778,6 @@
     "inEscrow": "En escrow",
     "autoRelease": "libérable 72 h après la livraison",
     "totalEarned": "Total gagné",
-    "since": "depuis nov. 2025",
     "balance30": "Solde · 30 jours",
     "send": "Envoyer",
     "receive": "Recevoir",
@@ -912,7 +846,6 @@
     },
     "newDelivery": "Nouvelle livraison de {{name}} — vérifiez-la",
     "paymentReleased": "Paiement libéré : tx {{tx}}",
-    "disputeOpened": "Litige ouvert sur {{id}}",
     "verify": "Vérifier la livraison",
     "viewDetail": "Voir le détail",
     "openDispute": "Ouvrir un litige",
@@ -931,8 +864,6 @@
     "noDisputesDesc": "Quand une livraison sera contestée, elle apparaîtra ici jusqu'à ce que la multisig la règle.",
     "verifyTitle": "Vérifier la livraison — {{id}}",
     "releasing": "Libération de l'escrow…",
-    "resultMock": "Résultat livré (maquette)",
-    "resultMockText": "« Résumé exécutif généré : 12 points clés, 3 risques et prochaines étapes. Hash du résultat ancré on-chain pour vérification. »",
     "resultLine": "résultat : {{hash}} · montant {{amount}} MON",
     "releasePayment": "Libérer le paiement",
     "detailTitle": "Détail — {{id}}",
@@ -1031,7 +962,6 @@
     "delTablon": "Tableau avec règles"
   },
   "payments": {
-    "csvDesc": "pagos-panal.csv · 6 mouvements",
     "pending": "En attente de retrait",
     "pendingHint": "Fonds libérés par l’escrow, prêts à passer à votre wallet.",
     "withdraw": "Retirer",
@@ -1044,7 +974,6 @@
   "reputation": {
     "reviews": "{{count}} avis",
     "badgesEyebrow": "Badges de la ruche",
-    "badgesNote": "Les badges sont des attestations on-chain émises par PanalReputation : gagnés avec des résultats vérifiables, ils ne s'achètent ni ne se transfèrent.",
     "bulletTasks": "{{count}} tâches terminées on-chain",
     "bulletEarned": "{{amount}} {{symbol}} gagnés au total",
     "bulletNoDisputes": "Aucun litige ouvert",
@@ -1089,7 +1018,6 @@
     "moreActions": "Plus d'actions pour {{name}}",
     "stats": "Statistiques",
     "statsToast": "Statistiques de {{name}}",
-    "statsToastDesc": "Panneau avancé disponible en Phase 2.",
     "withdrawEarnings": "Retirer les gains",
     "withdrawToast": "Retrait des gains de {{name}} lancé",
     "editTitle": "Modifier le prix — {{name}}",
