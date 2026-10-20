@@ -43,7 +43,7 @@ import { x25519 } from '@noble/curves/ed25519';
 import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha2';
 import { randomBytes } from '@noble/hashes/utils';
-import { bytesToString, getAddress, toBytes, verifyMessage, type Address, type Hex, type PublicClient } from 'viem';
+import { bytesToString, getAddress, keccak256, toBytes, verifyMessage, type Address, type Hex, type PublicClient } from 'viem';
 
 /** La versión del formato. Va dentro de todo lo que se cifra o se deriva. */
 export const CIFRADO_V1 = 'panal-cifrado-1';
@@ -157,9 +157,43 @@ interface Cabecera {
   para: { a: string; n: string; k: string }[];
 }
 
+/** Un archivo que un texto cifrado anuncia: su hash y su tamaño, sin su nombre. */
+export interface ArchivoAnunciado {
+  hash: string;
+  size: number;
+}
+
 /** Un texto cifrado: la cabecera y el contenido, en JSON. Es lo que se ancla y se guarda. */
 interface SobreDeTexto extends Cabecera {
+  /**
+   * Los adjuntos, en abierto: hash y tamaño, nada más. Hacen falta fuera porque
+   * quien guarda los bytes solo acepta los que el encargo anuncia, y no puede
+   * leer el encargo. Van dentro de lo que se ancla, así que tampoco los puede
+   * cambiar. Solo en los sobres que los llevan.
+   */
+  h?: ArchivoAnunciado[];
   c: string;
+}
+
+/**
+ * Un ACCESO: la clave de contenido de un sobre, envuelta para alguien que no
+ * estaba entre sus destinatarios.
+ *
+ * Existe porque hay a quien no se conoce al cifrar: quien coge un encargo del
+ * tablón, o quien decide una disputa. El sobre no se toca —su hash es el que
+ * está anclado—: quien ya puede abrirlo saca la clave de contenido y la envuelve
+ * para el nuevo, con una clave efímera propia. Un acceso no puede cambiar lo
+ * que dice el sobre: con otra clave, el contenido no pasa la comprobación.
+ */
+export interface Acceso {
+  /** keccak256, en minúsculas, de lo que abre: el texto anclado o los bytes del archivo. */
+  o: string;
+  /** Quién lo recibe, en minúsculas. */
+  a: string;
+  /** Su clave efímera, propia de este acceso. */
+  e: string;
+  n: string;
+  k: string;
 }
 
 const AAD = toBytes(CIFRADO_V1);
@@ -195,17 +229,34 @@ function cerrar(bytes: Uint8Array, para: Destinatario[]): { cabecera: Cabecera; 
   return { cabecera: { v: CIFRADO_V1, e: aBase64(efimera), n: aBase64(n), para: envueltas }, cifrado };
 }
 
-function abrir(cabecera: Cabecera, cifrado: Uint8Array, yo: Address, secreta: Uint8Array): Uint8Array {
-  const mia = cabecera.para.find((p) => p.a === yo.toLowerCase());
-  if (!mia) throw new Error('Este encargo no está cifrado para esta cuenta.');
-  const efimera = deBase64(cabecera.e);
+/**
+ * La clave de contenido de un sobre para `yo`: de su entrada en el sobre o, si
+ * no está entre los destinatarios, de un acceso que le hayan dado.
+ */
+function contenidoDe(cabecera: Cabecera, objeto: string, yo: Address, secreta: Uint8Array, accesos: Acceso[]): Uint8Array {
+  const a = yo.toLowerCase();
+  const propia = cabecera.para.find((p) => p.a === a);
+  const dada = propia ? undefined : accesos.find((x) => x.a === a && x.o === objeto);
+  const entrada = propia ?? dada;
+  if (!entrada) throw new Error('Este encargo no está cifrado para esta cuenta, ni le han dado acceso.');
+  const efimera = deBase64(dada ? dada.e : cabecera.e);
   const kek = claveDeEnvoltura(x25519.getSharedSecret(secreta, efimera), efimera, x25519.getPublicKey(secreta));
-  let contenido: Uint8Array;
   try {
-    contenido = xchacha20poly1305(kek, deBase64(mia.n), AAD).decrypt(deBase64(mia.k));
+    return xchacha20poly1305(kek, deBase64(entrada.n), AAD).decrypt(deBase64(entrada.k));
   } catch {
     throw new Error('No se puede abrir: la clave de esta cuenta no es la que se usó para cifrarlo.');
   }
+}
+
+function abrir(
+  cabecera: Cabecera,
+  cifrado: Uint8Array,
+  objeto: string,
+  yo: Address,
+  secreta: Uint8Array,
+  accesos: Acceso[],
+): Uint8Array {
+  const contenido = contenidoDe(cabecera, objeto, yo, secreta, accesos);
   try {
     return xchacha20poly1305(contenido, deBase64(cabecera.n), AAD).decrypt(cifrado);
   } catch {
@@ -228,18 +279,90 @@ export function esTextoCifrado(texto: string): boolean {
  * Cifra un texto para varias cuentas. Lo que devuelve es el texto que se ancla
  * (su keccak256 es el `taskHash` o el `resultHash`) y el que se le da al buzón.
  */
-export function cifrarTexto(texto: string, para: Destinatario[]): string {
+export function cifrarTexto(
+  texto: string,
+  para: Destinatario[],
+  opciones: { anunciar?: ArchivoAnunciado[] } = {},
+): string {
   const { cabecera, cifrado } = cerrar(toBytes(texto), para);
+  const h = opciones.anunciar?.map((f) => ({ hash: f.hash.toLowerCase(), size: f.size }));
   // El orden de las claves es fijo: `v` primero es lo que mira `esTextoCifrado`.
-  const sobre: SobreDeTexto = { v: cabecera.v, e: cabecera.e, n: cabecera.n, para: cabecera.para, c: aBase64(cifrado) };
+  const sobre: SobreDeTexto = {
+    v: cabecera.v,
+    e: cabecera.e,
+    n: cabecera.n,
+    para: cabecera.para,
+    ...(h && h.length > 0 ? { h } : {}),
+    c: aBase64(cifrado),
+  };
   return JSON.stringify(sobre);
 }
 
-/** Abre un texto cifrado con la clave de `yo`. Falla con un motivo claro si no puede. */
-export function descifrarTexto(sobre: string, yo: Address, secreta: Uint8Array): string {
+/** El identificador con el que un acceso señala lo que abre. */
+function objetoDe(cosa: string | Uint8Array): string {
+  return keccak256(typeof cosa === 'string' ? toBytes(cosa) : cosa).toLowerCase();
+}
+
+/**
+ * Abre un texto cifrado con la clave de `yo`: como destinatario o con un
+ * acceso de `accesos` (los demás se ignoran). Falla con un motivo claro.
+ */
+export function descifrarTexto(sobre: string, yo: Address, secreta: Uint8Array, accesos: Acceso[] = []): string {
   if (!esTextoCifrado(sobre)) throw new Error('Esto no es un encargo cifrado.');
   const s = JSON.parse(sobre) as SobreDeTexto;
-  return bytesToString(abrir(s, deBase64(s.c), yo, secreta));
+  return bytesToString(abrir(s, deBase64(s.c), objetoDe(sobre), yo, secreta, accesos));
+}
+
+/** Los adjuntos que anuncia en abierto un texto cifrado (hash y tamaño). */
+export function archivosAnunciadosEnSobre(sobre: string): ArchivoAnunciado[] {
+  if (!esTextoCifrado(sobre)) return [];
+  const h = (JSON.parse(sobre) as SobreDeTexto).h;
+  return Array.isArray(h) ? h.filter((f) => typeof f?.hash === 'string' && typeof f?.size === 'number') : [];
+}
+
+/**
+ * Da acceso a `para` a un texto o un archivo cifrado que `yo` ya puede abrir
+ * —como destinatario o por otro acceso—. El sobre no cambia.
+ */
+export function concederAcceso(
+  objeto: string | Uint8Array,
+  yo: Address,
+  secreta: Uint8Array,
+  para: Destinatario,
+  accesos: Acceso[] = [],
+): Acceso {
+  const cabecera = typeof objeto === 'string' ? cabeceraDeTexto(objeto) : cabeceraDeArchivo(objeto).cabecera;
+  const o = objetoDe(objeto);
+  const contenido = contenidoDe(cabecera, o, yo, secreta, accesos);
+  const destino = deBase64(para.clave);
+  if (destino.length !== 32) throw new Error(`La clave de ${para.cuenta} no tiene 32 bytes.`);
+  const efimeraSecreta = randomBytes(32);
+  const efimera = x25519.getPublicKey(efimeraSecreta);
+  const kek = claveDeEnvoltura(x25519.getSharedSecret(efimeraSecreta, destino), efimera, destino);
+  const n = randomBytes(24);
+  return {
+    o,
+    a: para.cuenta.toLowerCase(),
+    e: aBase64(efimera),
+    n: aBase64(n),
+    k: aBase64(xchacha20poly1305(kek, n, AAD).encrypt(contenido)),
+  };
+}
+
+/**
+ * Si `yo` puede abrirlo, sin abrirlo: está entre sus destinatarios o tiene un
+ * acceso para ESE objeto. Sirve para enseñar «esperando acceso» sin pedir firmas.
+ */
+export function puedeAbrir(objeto: string | Uint8Array, yo: Address, accesos: Acceso[] = []): boolean {
+  const cabecera = typeof objeto === 'string' ? cabeceraDeTexto(objeto) : cabeceraDeArchivo(objeto).cabecera;
+  const a = yo.toLowerCase();
+  const o = objetoDe(objeto);
+  return cabecera.para.some((p) => p.a === a) || accesos.some((x) => x.a === a && x.o === o);
+}
+
+function cabeceraDeTexto(sobre: string): Cabecera {
+  if (!esTextoCifrado(sobre)) throw new Error('Esto no es un encargo cifrado.');
+  return JSON.parse(sobre) as SobreDeTexto;
 }
 
 /** Para quién va cifrado un texto: sus cuentas, en minúsculas. */
@@ -273,12 +396,17 @@ export function cifrarArchivo(bytes: Uint8Array, para: Destinatario[]): Uint8Arr
   return out;
 }
 
-export function descifrarArchivo(bytes: Uint8Array, yo: Address, secreta: Uint8Array): Uint8Array {
+function cabeceraDeArchivo(bytes: Uint8Array): { cabecera: Cabecera; inicio: number } {
   if (!esArchivoCifrado(bytes)) throw new Error('Este archivo no está cifrado.');
   const largo = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(MARCA_ARCHIVO.length);
   const inicio = MARCA_ARCHIVO.length + 4;
   if (inicio + largo > bytes.length) throw new Error('El archivo cifrado está cortado.');
   const cabecera = JSON.parse(bytesToString(bytes.subarray(inicio, inicio + largo))) as Cabecera;
   if (cabecera.v !== CIFRADO_V1) throw new Error('Versión de cifrado desconocida.');
-  return abrir(cabecera, bytes.subarray(inicio + largo), yo, secreta);
+  return { cabecera, inicio: inicio + largo };
+}
+
+export function descifrarArchivo(bytes: Uint8Array, yo: Address, secreta: Uint8Array, accesos: Acceso[] = []): Uint8Array {
+  const { cabecera, inicio } = cabeceraDeArchivo(bytes);
+  return abrir(cabecera, bytes.subarray(inicio), objetoDe(bytes), yo, secreta, accesos);
 }

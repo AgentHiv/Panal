@@ -28,14 +28,31 @@
  * Quien confirma aprueba algo que escribió otro. Cada propuesta se muestra en
  * lenguaje llano (cuánto al agente, cuánto al cliente, qué nota) para que nadie
  * firme un hexadecimal a ciegas.
+ *
+ * EL EXPEDIENTE
+ * Con una persona que recibe en el buzón —o con un encargo del tablón—, el
+ * encargo y la entrega están en el buzón de Panal, y un firmante los pide con
+ * su firma mientras dure la disputa. Si van cifrados, solo los abre con el
+ * acceso que le dé una parte: para eso tiene que haber activado su clave. Con
+ * un agente que tiene servidor propio, lo suyo está en su máquina y aquí no
+ * hay nada que enseñar.
  */
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Check, ExternalLink, Gavel, Loader2, Plus, Scale, Undo2 } from 'lucide-react';
+import { AlertTriangle, Check, Download, ExternalLink, FileSearch, Gavel, Loader2, Lock, Plus, Scale, Undo2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { decodeFunctionData, encodeFunctionData, formatEther, type Address } from 'viem';
-import { useAccount, useReadContract, useReadContracts } from 'wagmi';
+import { toast } from 'sonner';
+import { decodeFunctionData, encodeFunctionData, formatEther, type Address, type Hex } from 'viem';
+import { useAccount, useReadContract, useReadContracts, useSignMessage } from 'wagmi';
+import { stripFilesManifest, type HashedFile } from '@panal/sdk';
+import { usePanalAgents } from '@/hooks/usePanalAgents';
+import { bajarDelExpediente, leerExpediente, type ExpedienteDeDisputa, type TextoDelExpediente } from '@/lib/accesos';
+import { guardarComoArchivo } from '@/lib/archivosTablon';
+import { esBuzon } from '@/lib/botEndpoint';
+import { clavePublicaDe, publicarMiClave } from '@/lib/cifrado';
+import { hayEntrega } from '@/lib/expedientes';
+import { BUZON_DEL_TABLON, esDelTablon, leerEncargos } from '@/lib/tablonReglas';
 import { useContractAction } from '@/hooks/useContractAction';
 import { shortAddress } from '@/hooks/useWallet';
 import { panalEscrowV2Abi, panalMultisigAbi, panalResolveDisputeAbi } from '@/contracts/abis';
@@ -80,6 +97,8 @@ interface DisputedTask {
   worker: Address;
   amount: bigint;
   currency: Address;
+  taskHash: Hex;
+  resultHash: Hex;
 }
 
 interface Proposal {
@@ -162,6 +181,8 @@ export default function ArbitrationCard() {
         amount: bigint;
         status: number;
         currency: Address;
+        taskHash: Hex;
+        resultHash: Hex;
       };
       if (Number(task.status) !== STATUS_DISPUTED) return;
       out.push({
@@ -170,6 +191,8 @@ export default function ArbitrationCard() {
         worker: task.worker,
         amount: task.amount,
         currency: task.currency,
+        taskHash: task.taskHash,
+        resultHash: task.resultHash,
       });
     });
     return out;
@@ -280,6 +303,8 @@ export default function ArbitrationCard() {
         )}
       </header>
 
+      {me && <MiClaveDeArbitro me={me as Address} />}
+
       {disputed.length === 0 ? (
         <p className="mt-6 rounded-xl border border-line bg-paper px-4 py-6 text-center text-[0.875rem] text-ink-3">
           {t('dashReal.arbitration.empty')}
@@ -382,6 +407,8 @@ function DisputeRow({
         </div>
       </div>
 
+      <Expediente dispute={dispute} />
+
       <div className="mt-5 border-t border-line pt-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="eyebrow text-ink-3">
@@ -435,6 +462,208 @@ function DisputeRow({
         )}
       </div>
     </article>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+/**
+ * La clave de cifrado de quien decide. Sin ella publicada, una parte no tiene
+ * a quién darle acceso a un encargo cifrado, y la disputa se decidiría sin
+ * poder leerlo.
+ */
+function MiClaveDeArbitro({ me }: { me: Address }) {
+  const { t } = useTranslation();
+  const { signMessageAsync } = useSignMessage();
+  const [publicada, setPublicada] = useState<boolean | null>(null);
+  const [activando, setActivando] = useState(false);
+  useEffect(() => {
+    let vigente = true;
+    void clavePublicaDe(me).then((c) => {
+      if (vigente) setPublicada(c !== null);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [me]);
+
+  if (publicada !== false) return null;
+  const activar = async () => {
+    setActivando(true);
+    try {
+      await publicarMiClave(me, (message) => signMessageAsync({ message }));
+      setPublicada(true);
+      toast.success(t('dashReal.arbitration.claveActivada'));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (!/reject|denied|user/i.test(msg)) toast.error(t('dashReal.arbitration.claveError'));
+    } finally {
+      setActivando(false);
+    }
+  };
+  return (
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-honey/50 bg-honey-soft/50 px-4 py-3">
+      <p className="max-w-xl text-[0.8125rem] leading-relaxed text-ink-2">{t('dashReal.arbitration.claveFalta')}</p>
+      <button
+        type="button"
+        onClick={() => void activar()}
+        disabled={activando}
+        className="inline-flex items-center gap-2 rounded-full border border-honey px-4 py-2 text-[0.8125rem] font-semibold text-honey-deep transition-colors hover:bg-honey-soft disabled:opacity-50"
+      >
+        {activando ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <Lock size={13} aria-hidden />}
+        {t('dashReal.arbitration.activarClave')}
+      </button>
+    </div>
+  );
+}
+
+/** Dónde guarda el buzón lo de esta disputa, si lo guarda. */
+type Fuente = { base: string; id: bigint; esTablon: boolean } | 'fuera' | 'sinEncargo';
+
+/**
+ * El expediente de una disputa: el encargo y la entrega, con sus archivos.
+ * Con un botón: pedirlo es una firma, y una ventana de wallet que salta sola
+ * por mirar una disputa enseña a firmar sin leer.
+ */
+function Expediente({ dispute }: { dispute: DisputedTask }) {
+  const { t } = useTranslation();
+  const { address } = useAccount();
+  const { agents } = usePanalAgents();
+  const { signMessageAsync } = useSignMessage();
+  const [leyendo, setLeyendo] = useState(false);
+  const [exp, setExp] = useState<ExpedienteDeDisputa | 'vacio' | 'fuera' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [bajando, setBajando] = useState<string | null>(null);
+  const firmar = (message: string) => signMessageAsync({ message });
+
+  const fuente = async (): Promise<Fuente> => {
+    if (esDelTablon(dispute.client)) {
+      // El escrow no sabe de qué encargo del tablón viene: se busca entre los últimos.
+      const job = (await leerEncargos()).find((j) => j.escrowTaskId === dispute.id);
+      return job ? { base: BUZON_DEL_TABLON, id: job.id, esTablon: true } : 'sinEncargo';
+    }
+    const botUrl = agents.find((a) => a.workerAddress.toLowerCase() === dispute.worker.toLowerCase())?.botUrl ?? null;
+    return esBuzon(botUrl) ? { base: botUrl!, id: dispute.id, esTablon: false } : 'fuera';
+  };
+
+  const abrir = async () => {
+    if (!address) return;
+    setLeyendo(true);
+    setError(null);
+    try {
+      const f = await fuente();
+      if (f === 'fuera') {
+        setExp('fuera');
+        return;
+      }
+      if (f === 'sinEncargo') {
+        setError(t('dashReal.arbitration.expedienteSinEncargo'));
+        return;
+      }
+      const leido = await leerExpediente({
+        ...f,
+        taskHash: dispute.taskHash,
+        resultHash: hayEntrega(dispute.resultHash) ? dispute.resultHash : null,
+        yo: address,
+        firmar,
+      });
+      setExp(leido ?? 'vacio');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(/user (rejected|denied)/i.test(msg) ? t('hire.step3.rejected') : t('dashReal.arbitration.expedienteError', { detalle: msg.split('\n')[0] }));
+    } finally {
+      setLeyendo(false);
+    }
+  };
+
+  const bajar = async (e: ExpedienteDeDisputa, texto: TextoDelExpediente, archivo: HashedFile) => {
+    if (!address) return;
+    setBajando(archivo.hash);
+    try {
+      guardarComoArchivo(archivo.name, await bajarDelExpediente(e, archivo, texto, address, firmar), archivo.mime);
+    } catch (err) {
+      toast.error(t('dashReal.arbitration.archivoError', { name: archivo.name }), {
+        description: err instanceof Error ? err.message.split('\n')[0] : undefined,
+      });
+    } finally {
+      setBajando(null);
+    }
+  };
+
+  if (exp === null) {
+    return (
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => void abrir()}
+          disabled={leyendo || !address}
+          className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-monad hover:text-monad disabled:opacity-50"
+        >
+          {leyendo ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <FileSearch size={13} aria-hidden />}
+          {t('dashReal.arbitration.verExpediente')}
+        </button>
+        {error && <p className="mt-2 text-[0.8125rem] text-terra">{error}</p>}
+      </div>
+    );
+  }
+  if (exp === 'fuera' || exp === 'vacio') {
+    return (
+      <p className="mt-4 rounded-xl border border-line bg-cream px-4 py-3 text-[0.8125rem] leading-relaxed text-ink-3">
+        {t(exp === 'fuera' ? 'dashReal.arbitration.expedienteFuera' : 'dashReal.arbitration.expedienteVacio')}
+      </p>
+    );
+  }
+
+  const bloque = (titulo: string, texto: TextoDelExpediente | null, vacio: string) => (
+    <div className="rounded-xl border border-line bg-cream p-4">
+      <p className="eyebrow flex items-center gap-1.5 text-ink-3">
+        {titulo}
+        {texto?.cifrado && <Lock size={11} aria-label={t('dashReal.arbitration.cifrado')} />}
+      </p>
+      {texto === null ? (
+        <p className="mt-2 text-[0.8125rem] text-ink-3">{vacio}</p>
+      ) : (
+        <>
+          {!texto.cuadra && (
+            <p className="mt-2 flex items-start gap-1.5 text-[0.8125rem] leading-relaxed text-terra">
+              <AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden />
+              {t('dashReal.arbitration.noCuadra')}
+            </p>
+          )}
+          {texto.legible === null ? (
+            <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-2">{t('dashReal.arbitration.sinAcceso')}</p>
+          ) : (
+            <p className="mt-2 max-h-72 overflow-y-auto whitespace-pre-wrap break-words text-[0.875rem] leading-relaxed text-ink">
+              {stripFilesManifest(texto.legible)}
+            </p>
+          )}
+          {texto.archivos.length > 0 && (
+            <ul className="mt-3 flex flex-col gap-1.5">
+              {texto.archivos.map((a) => (
+                <li key={a.hash}>
+                  <button
+                    type="button"
+                    onClick={() => void bajar(exp, texto, a)}
+                    disabled={bajando !== null}
+                    className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-line px-3 py-1 text-[0.75rem] text-ink-2 transition-colors hover:border-monad hover:text-monad disabled:opacity-50"
+                  >
+                    {bajando === a.hash ? <Loader2 size={12} className="animate-spin" aria-hidden /> : <Download size={12} aria-hidden />}
+                    <span className="truncate">{a.name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="mt-4 grid gap-3 md:grid-cols-2">
+      {bloque(t('dashReal.arbitration.encargo'), exp.encargo, t('dashReal.arbitration.sinEncargo'))}
+      {bloque(t('dashReal.arbitration.entrega'), exp.entrega, t('dashReal.arbitration.sinEntrega'))}
+    </div>
   );
 }
 

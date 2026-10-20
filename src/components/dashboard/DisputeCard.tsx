@@ -8,7 +8,7 @@
  */
 
 import { motion } from 'framer-motion';
-import { AlertTriangle, ExternalLink, Gavel, Loader2 } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Gavel, Loader2, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatEther } from 'viem';
 import { useReadContract } from 'wagmi';
@@ -16,11 +16,11 @@ import HexAvatar from '@/components/HexAvatar';
 import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import { useWallet, shortAddress } from '@/hooks/useWallet';
 import { useAhora } from '@/hooks/useAhora';
-import type { RealTask } from '@/hooks/useMyTasks';
+import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, type RealTask } from '@/hooks/useMyTasks';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
 import { useContractAction } from '@/hooks/useContractAction';
-import { EXPLORER_TX, PANAL_ESCROW_ADDRESS, activeChain, currencySymbol } from '@/contracts/config';
-import { panalEscrowAbi } from '@/contracts/abis';
+import { useAccesoEnDisputa } from '@/hooks/useAccesoEnDisputa';
+import { EXPLORER_TX, activeChain, currencySymbol } from '@/contracts/config';
 import { formatMonEs } from './data';
 
 function DisputeEntry({
@@ -38,10 +38,14 @@ function DisputeEntry({
   const logoDe = useLogoDeAgente();
   const { t, i18n } = useTranslation();
   const action = useContractAction({ onMined: onResolved });
+  const acceso = useAccesoEnDisputa();
+  // Solo con quien recibe en el buzón: lo suyo puede ir cifrado, y quien
+  // decide no lo leería sin que una parte le diera acceso.
+  const conBuzon = acceso.buzonDe(task) !== null;
 
   const { data: disputedAt } = useReadContract({
-    address: PANAL_ESCROW_ADDRESS,
-    abi: panalEscrowAbi,
+    address: ACTIVE_ESCROW_ADDRESS,
+    abi: ACTIVE_ESCROW_ABI,
     functionName: 'disputedAt',
     args: [task.id],
     chainId: activeChain.id,
@@ -139,8 +143,8 @@ function DisputeEntry({
                 type="button"
                 onClick={() =>
                   void action.run({
-                    address: PANAL_ESCROW_ADDRESS,
-                    abi: panalEscrowAbi,
+                    address: ACTIVE_ESCROW_ADDRESS,
+                    abi: ACTIVE_ESCROW_ABI,
                     functionName: 'resolveStuckDispute',
                     args: [task.id],
                   })
@@ -154,6 +158,20 @@ function DisputeEntry({
           <p className="max-w-[260px] text-[0.8125rem] leading-relaxed text-ink-2 lg:text-right">
             {t('dashReal.dispute.note')}
           </p>
+          {conBuzon && (
+            <div className="flex max-w-[260px] flex-col items-start gap-2 lg:items-end">
+              <button
+                type="button"
+                onClick={() => void acceso.dar(task)}
+                disabled={acceso.dando !== null}
+                className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep disabled:opacity-50"
+              >
+                {acceso.dando === task.id ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <Lock size={13} aria-hidden />}
+                {t('dashReal.dispute.darAcceso')}
+              </button>
+              <p className="text-[0.75rem] leading-relaxed text-ink-3 lg:text-right">{t('dashReal.dispute.darAccesoPista')}</p>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
@@ -170,8 +188,8 @@ export default function DisputeCard({
   const { address } = useWallet();
   const { agents } = usePanalAgents();
   const { data: timeoutSec } = useReadContract({
-    address: PANAL_ESCROW_ADDRESS,
-    abi: panalEscrowAbi,
+    address: ACTIVE_ESCROW_ADDRESS,
+    abi: ACTIVE_ESCROW_ABI,
     functionName: 'DISPUTE_TIMEOUT',
     chainId: activeChain.id,
     query: { staleTime: 300_000, retry: 1 },

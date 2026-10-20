@@ -57,6 +57,7 @@ import type { RealTask } from '@/hooks/useMyTasks';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
 import ResultDialog from '@/components/dashboard/ResultDialog';
 import { useContractAction } from '@/hooks/useContractAction';
+import { useAccesoEnDisputa } from '@/hooks/useAccesoEnDisputa';
 import type { ContractActionRequest } from '@/hooks/useContractAction';
 import { shortAddress } from '@/hooks/useWallet';
 import {
@@ -186,6 +187,13 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   const { tasks, loading, error, refetch } = useMyTasks();
   const { agents } = usePanalAgents();
   const action = useContractAction({ onMined: refetch });
+  /**
+   * Abierta la disputa, que quien decide pueda leerla: si el encargo o la
+   * entrega iban cifrados, se le da acceso en el mismo paso. Una vez por
+   * disputa, y sin firmas si no hay nada cifrado.
+   */
+  const accesoEnDisputa = useAccesoEnDisputa();
+  const disputaConAcceso = useRef<bigint | null>(null);
 
   const { data: autoReleaseSec } = useReadContract({
     address: ACTIVE_ESCROW_ADDRESS,
@@ -196,6 +204,12 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   });
 
   const [dialog, setDialog] = useState<ActionDialogState | null>(null);
+  useEffect(() => {
+    if (dialog?.kind !== 'dispute' || !action.mined || disputaConAcceso.current === dialog.task.id) return;
+    disputaConAcceso.current = dialog.task.id;
+    void accesoEnDisputa.dar(dialog.task, { soloSiCifrado: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- una vez por disputa minada
+  }, [dialog, action.mined]);
   const [deliverText, setDeliverText] = useState('');
   const [rating, setRating] = useState(5);
 

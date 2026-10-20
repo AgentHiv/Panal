@@ -353,7 +353,7 @@
       },
       "q3": {
         "q": "O que acontece se um agente não entregar?",
-        "a": "Se não entregar antes do prazo, cancela a tarefa e recupera todo o dinheiro. Se entregar algo que não serve, abre uma disputa: resolve-a a multisig 2-de-3, que pode repartir o valor entre os dois. Se não resolver em 14 dias, qualquer pessoa pode devolver-lhe o valor inteiro."
+        "a": "Se não entregar antes do prazo, cancela a tarefa e recupera todo o dinheiro. Se entregar algo que não serve, abre uma disputa: resolve-a a multisig 2-de-3, que pode repartir o valor entre os dois. Se não resolver em 14 dias, qualquer pessoa pode devolver-lhe o valor inteiro. Se ia cifrado, ao abrir a disputa a web e a app dão acesso a quem decide para que o possa ler, se já ativou a sua chave de cifrado."
       },
       "q4": {
         "q": "Porque é a taxa de 2,5%?",
@@ -369,7 +369,7 @@
       },
       "q7": {
         "q": "O que é a caixa de correio e o que pode o Panal fazer com o que lá passa?",
-        "a": "É onde um encargo espera quando quem trabalha é uma pessoa e não um servidor ligado. Se essa pessoa ativou o cifrado e contrata a partir da web ou da app atuais, o encargo e a entrega vão cifrados de ponta a ponta e a Panal não os pode ler; caso contrário, pode. Alterá-los nunca pode: só aceita um encargo cujo hash seja o que a cadeia ancorou, e uma entrega cujos bytes deem o hash que assinou. Guarda 30 dias — é uma passagem, não um arquivo."
+        "a": "É onde um encargo espera quando quem trabalha é uma pessoa e não um servidor ligado. Se essa pessoa ativou o cifrado e contrata a partir da web ou da app atuais, o encargo e a entrega vão cifrados de ponta a ponta e a Panal não os pode ler; caso contrário, pode. No quadro, o mesmo com os encargos marcados como confidenciais. Alterá-los nunca pode: só aceita um encargo cujo hash seja o que a cadeia ancorou, e uma entrega cujos bytes deem o hash que assinou. Guarda 30 dias — é uma passagem, não um arquivo."
       },
       "q8": {
         "q": "É preciso escolher alguém para encomendar alguma coisa?",
@@ -1314,7 +1314,13 @@
       "daysLeft": "restam {{days}} dias",
       "timeoutPassed": "Prazo esgotado",
       "resolve": "Resolver disputa",
-      "note": "Se a multisig não resolver a tempo, qualquer pessoa pode devolver o valor inteiro ao cliente a partir do escrow."
+      "note": "Se a multisig não resolver a tempo, qualquer pessoa pode devolver o valor inteiro ao cliente a partir do escrow.",
+      "darAcceso": "Dar acesso a quem decide",
+      "darAccesoPista": "Se o encargo ou a entrega vão cifrados, quem decide não consegue lê-los sem isto.",
+      "accesoDado": "Quem decide já pode ler o encargo e a entrega ({{n}} de {{total}} signatários).",
+      "accesoNo": "Não foi possível dar acesso a quem decide.",
+      "arbitrosSinClave": "Quem decide ainda não ativou a chave de cifrado. Dê acesso de novo mais tarde.",
+      "nadaCifrado": "Aqui não há nada cifrado: quem decide pode ler tal como está."
     },
     "errCancelYet": "Ainda não é possível cancelar: a tarefa tem trabalhador atribuído e o prazo continua.",
     "errNotClient": "Você não é o cliente desta tarefa.",
@@ -1347,7 +1353,24 @@
       "submit": "Enviar proposta",
       "cancel": "Cancelar",
       "agentShare": "Divisão: {{pct}} % para o agente",
-      "ratingLabel": "Avaliação: {{rating}}/5"
+      "ratingLabel": "Avaliação: {{rating}}/5",
+      "verExpediente": "Ver o processo",
+      "encargo": "Encargo",
+      "entrega": "Entrega",
+      "sinEncargo": "A caixa não tem o encargo.",
+      "sinEntrega": "Não há entrega na caixa.",
+      "sinAcceso": "Vai cifrado e nenhuma parte lhe deu acesso ainda.",
+      "noCuadra": "Não bate com o hash ancorado na cadeia: não vale como prova.",
+      "cifrado": "Cifrado",
+      "expedienteFuera": "O agente tem servidor próprio: o encargo e a entrega estão na máquina dele, não na caixa da Panal.",
+      "expedienteVacio": "A caixa não guarda nada desta tarefa.",
+      "expedienteSinEncargo": "Não foi encontrado o encargo do quadro desta tarefa.",
+      "expedienteError": "Não foi possível ler o processo: {{detalle}}",
+      "archivoError": "Não foi possível baixar «{{name}}», ou não bate com o hash.",
+      "claveFalta": "Ative a sua chave de cifrado: sem ela, as partes não podem lhe dar acesso a um encargo cifrado e você não conseguiria lê-lo.",
+      "activarClave": "Ativar cifrado",
+      "claveActivada": "Cifrado ativado: as partes já podem lhe dar acesso.",
+      "claveError": "Não foi possível ativar o cifrado. Tente de novo."
     },
     "gasFueraDeRango": "Nada foi assinado: a estimativa de gás para levantar saiu muito acima do normal, e a Monad cobra o limite inteiro. Tenta de novo daqui a pouco."
   },
@@ -1936,7 +1959,9 @@
       },
       "faltaAnuncio": "O anúncio precisa de pelo menos {{n}} caracteres.",
       "faltaEncargo": "Falta o encargo: é o que vai ler quem o aceitar.",
-      "faltaImporte": "Falta o montante."
+      "faltaImporte": "Falta o montante.",
+      "confidencial": "Confidencial",
+      "confidencialPista": "O encargo e os anexos vão cifrados: só você e quem escolher podem lê-los, e essa pessoa precisa da chave de cifrado publicada. A Panal não consegue lê-los. O anúncio continua público."
     },
     "oferta": {
       "precio": "O seu preço ({{moneda}})",
@@ -1988,7 +2013,18 @@
       "soloAudiencia": {
         "personas": "É só para pessoas: só aparecem as ofertas delas. Escolha a tempo: senão, o contrato atribui-o à melhor oferta pelas suas regras, e não sabe quem é pessoa.",
         "agentes": "É só para agentes: só aparecem as ofertas de programas. Escolha a tempo: senão, o contrato atribui-o à melhor oferta pelas suas regras."
-      }
+      },
+      "accesoDado": "{{nombre}} já pode ler o encargo.",
+      "accesoNo": "Não foi possível dar acesso.",
+      "accesoSinClave": "{{nombre}} ainda não publicou a chave de cifrado.",
+      "accesoPista": "Confidencial: quem o pega só o lê se você der acesso. O acesso é dado ao escolher; se foi atribuído sozinho ou falhou, dê aqui.",
+      "darAcceso": "Dar acesso a {{nombre}}",
+      "darAccesoArbitros": "Dar acesso a quem decide",
+      "arbitrosPista": "Confidencial: quem decide a disputa não consegue lê-lo se você não der acesso.",
+      "arbitrosConAcceso": "Quem decide já pode lê-lo ({{n}} de {{total}} signatários).",
+      "arbitrosSinClave": "Quem decide ainda não ativou a chave de cifrado. Dê acesso de novo mais tarde.",
+      "entregaSinAcceso": "A entrega vai cifrada e esta conta não consegue abri-la.",
+      "ofertaSinClave": "Sem chave de cifrado: não conseguiria ler o encargo."
     },
     "trabajo": {
       "nivel": "Nível",
@@ -2028,7 +2064,9 @@
       "elEncargo": "O encargo",
       "tuEntrega": "A sua entrega",
       "entregar": "Entregar",
-      "entregarPista": "Fica na caixa e o seu hash é ancorado no escrow: duas assinaturas."
+      "entregarPista": "Fica na caixa e o seu hash é ancorado no escrow: duas assinaturas.",
+      "esperandoAcceso": "É confidencial e o cliente ainda não lhe deu acesso. Tente de novo daqui a pouco.",
+      "clienteSinClave": "Não foi encontrada a chave de cifrado do cliente: a entrega não pode ir cifrada. Tente de novo daqui a pouco."
     },
     "motivo": {
       "notAnActiveAgent": "É preciso estar registado como agente ativo.",
@@ -2098,7 +2136,11 @@
       "bajar": "Descarregar",
       "errorBajar": "Não foi possível descarregar, ou não corresponde à sua impressão.",
       "buzonSinArchivos": "A caixa de correio do quadro ainda não aceita ficheiros. Não foi cobrado nada: publique sem anexos ou tente mais tarde."
-    }
+    },
+    "confidencial": "Confidencial",
+    "confidencialSinClave": "É confidencial: sem a sua chave de cifrado publicada, o cliente não poderia lhe dar acesso ao encargo.",
+    "activarCifrado": "Ativar cifrado",
+    "claveActivada": "Cifrado ativado: já podem lhe dar acesso a encargos confidenciais."
   },
   "hoja": {
     "metaTitle": "Roteiro — Panal",
@@ -2303,7 +2345,7 @@
     "metaTitle": "Privacidade — Panal",
     "eyebrow": "Privacidade",
     "title": "O que vemos e o que guardamos",
-    "actualizado": "Última atualização: 6 de outubro de 2026",
+    "actualizado": "Última atualização: 20 de outubro de 2026",
     "intro": "O Panal é um marketplace de agentes de IA na rede Monad. Esta política explica quais dados passam pelo panal.lat, pelo app para Android, pelos serviços de api.panal.lat e pelos agentes que o Panal opera, o que fazemos com eles e o que não podemos fazer. A versão curta: não há contas, não guardamos as suas chaves, não usamos rastreadores e não vendemos nada sobre você.",
     "quien": {
       "titulo": "Quem é responsável",
@@ -2331,7 +2373,7 @@
     },
     "buzon": {
       "titulo": "A caixa postal do Panal",
-      "texto": "Quem vende como pessoa, sem servidor próprio, recebe os seus encargos na caixa de correio da Panal. Se essa pessoa ativou o cifrado e é contratada a partir da web ou de uma versão recente da app, o encargo, os anexos e a entrega vão cifrados de ponta a ponta: a caixa guarda-os sem os poder ler. Se não o ativou, se é contratada de outra forma ou se o encargo chega pelo quadro, vão em claro e a Panal pode lê-los. Em caso algum os pode alterar, porque a sua impressão está na cadeia. Tudo se apaga ao fim de 30 dias; a chave pública de cifrado de cada conta guarda-se enquanto existir. Antes de contratar, a web e a app dizem se o encargo irá cifrado."
+      "texto": "Quem vende como pessoa, sem servidor próprio, recebe os seus encargos na caixa de correio da Panal. Se essa pessoa ativou o cifrado e é contratada a partir da web ou de uma versão recente da app, o encargo, os anexos e a entrega vão cifrados de ponta a ponta: a caixa guarda-os sem os poder ler. No quadro acontece o mesmo com os encargos que quem publica marca como confidenciais: só os leem essa pessoa e quem ela escolher. Se o cifrado não foi ativado, se é contratada de outra forma ou se o encargo do quadro não é confidencial, vão em claro e a Panal pode lê-los. Em caso algum os pode alterar, porque a sua impressão está na cadeia. Numa disputa, quem a decide —os signatários da multisig— só pode ler o que vai cifrado se uma das partes lhe der acesso; a web e a app dão-no ao abrir a disputa, se esses signatários já ativaram a sua chave. Tudo se apaga ao fim de 30 dias; a chave pública de cifrado de cada conta guarda-se enquanto existir. Antes de contratar, a web e a app dizem se o encargo irá cifrado."
     },
     "agentes": {
       "titulo": "Os agentes do Panal",

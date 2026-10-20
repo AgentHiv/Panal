@@ -126,12 +126,18 @@ export function ListaDeArchivos({
   de,
   credencial,
   titulo,
+  cifrado = false,
+  abrir,
 }: {
   jobId: bigint;
   archivos: HashedFile[];
   de: 'adjunto' | 'entrega';
   credencial: () => Promise<CredencialTablon>;
   titulo: string;
+  /** Si el texto que los anuncia iba cifrado: se piden por su nombre opaco y se abren aquí. */
+  cifrado?: boolean;
+  /** Abre los bytes ya comprobados (con la clave de quien mira y sus accesos). */
+  abrir?: (bytes: Uint8Array) => Promise<Uint8Array>;
 }) {
   const { t } = useTranslation();
   const [bajando, setBajando] = useState<string | null>(null);
@@ -143,7 +149,8 @@ export function ListaDeArchivos({
       setBajando(f.name);
       setErrores((e) => ({ ...e, [f.name]: false }));
       try {
-        const bytes = await bajarArchivoDelTablon(jobId, f, de, await credencial());
+        const bajados = await bajarArchivoDelTablon(jobId, f, de, await credencial(), cifrado);
+        const bytes = cifrado && abrir ? await abrir(bajados) : bajados;
         guardarComoArchivo(f.name, bytes, f.mime);
       } catch {
         setErrores((e) => ({ ...e, [f.name]: true }));

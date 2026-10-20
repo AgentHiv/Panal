@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSignMessage } from 'wagmi';
 import type { Address } from 'viem';
@@ -28,6 +28,8 @@ import {
 } from '@/hooks/useTablonReglas';
 import { claveDeMotivo, credencialTablon, enTablon, firmarYEsperar, leerEntregaConFirma, MONEDAS_TABLON, simboloDe } from '@/lib/tablonReglas';
 import { hayEntrega } from '@/lib/expedientes';
+import { abrirTexto, clavePublicaDe, publicarMiClave } from '@/lib/cifrado';
+import { darAccesoAlElegido, darAccesoALosArbitrosDelTablon } from '@/lib/accesos';
 import Menu from '~/componentes/Menu';
 import Icono from '~/componentes/Icono';
 import HojasDelTablon, { type HojaAbierta } from '~/componentes/tablon/Hojas';
@@ -77,6 +79,21 @@ export default function Tablon(): React.ReactElement {
     [datos],
   );
   const { data: permisos } = usePermisosEnElTablon(esAgente ? yo : null, publicados);
+  /**
+   * Si quien trabaja tiene su clave de cifrado publicada. Un encargo
+   * confidencial solo se lo puede dar a leer su cliente a quien la tenga.
+   */
+  const [tengoClave, setTengoClave] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!yo || !esAgente) return;
+    let vigente = true;
+    void clavePublicaDe(yo).then((c) => {
+      if (vigente) setTengoClave(c !== null);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [yo, esAgente]);
 
   const beta = useMemo(() => {
     if (!reglas) return null;
@@ -154,6 +171,8 @@ export default function Tablon(): React.ReactElement {
             miTipo={miTipo}
             misCategorias={situacion?.categorias ?? []}
             permisos={permisos}
+            tengoClave={tengoClave}
+            onClaveActivada={() => setTengoClave(true)}
             firma={firma}
             abrir={abrir}
             T={T}
@@ -186,6 +205,8 @@ function Abiertos({
   miTipo,
   misCategorias,
   permisos,
+  tengoClave,
+  onClaveActivada,
   firma,
   abrir,
   T,
@@ -197,12 +218,31 @@ function Abiertos({
   miTipo: TipoDeAgente | null;
   misCategorias: number[];
   permisos: Map<string, { ok: boolean; motivo: string }> | undefined;
+  /** Si tiene publicada su clave de cifrado; `null` mientras se pregunta. */
+  tengoClave: boolean | null;
+  onClaveActivada: () => void;
   firma: Firma;
   abrir: Abrir;
   T: Textos;
 }) {
   const ahora = useAhora();
+  const { signMessageAsync } = useSignMessage();
   const [filtro, setFiltro] = useState<string>('todas');
+  const [activando, setActivando] = useState(false);
+  const [errorClave, setErrorClave] = useState<string | null>(null);
+  const activarClave = async () => {
+    if (!yo) return;
+    setActivando(true);
+    setErrorClave(null);
+    try {
+      await publicarMiClave(yo, (message) => signMessageAsync({ message }));
+      onClaveActivada();
+    } catch (err) {
+      setErrorClave(explicarFallo(err, T));
+    } finally {
+      setActivando(false);
+    }
+  };
   const lista = datos.encargos.filter((j) => {
     if (j.estado !== EstadoTablon.Publicado || ahora > j.caducaEn) return false;
     if (j.modo === ModoTablon.Seleccion && ahora >= j.publicadoEn + j.ventanaOfertasS) return false;
@@ -244,9 +284,14 @@ function Abiertos({
           // persona no coge uno «solo agentes», ni un programa uno «solo personas».
           const audiencia = datos.audiencias.get(id) ?? 'todos';
           const fuera = esAgente && miTipo !== null && !audienciaAdmite(audiencia, miTipo);
-          const puede = !!permiso?.ok && !fuera;
+          // Confidencial y sin clave: si le eligieran, no podría leer el encargo.
+          const confidencial = datos.confidenciales.has(id);
+          const sinClave = confidencial && esAgente && tengoClave === false;
+          const puede = !!permiso?.ok && !fuera && !sinClave;
           const motivo = fuera
             ? T.tablon.audienciaNo[audiencia as 'personas' | 'agentes']
+            : sinClave
+              ? T.tablon.cifrado.sinClave
             : esAgente && permiso && !permiso.ok && permiso.motivo !== 'own job'
               ? ((T.tablon.motivo as Record<string, string>)[claveDeMotivo(permiso.motivo)] ?? permiso.motivo)
               : null;
@@ -263,6 +308,7 @@ function Abiertos({
                 <Categoria numero={j.categoria} />
                 <Etiqueta>{seleccion ? T.tablon.seleccion : T.tablon.inmediato}</Etiqueta>
                 {audiencia !== 'todos' && <Etiqueta tono="oliva">{T.tablon.audiencia[audiencia]}</Etiqueta>}
+                {confidencial && <Etiqueta tono="oliva">{T.tablon.cifrado.etiqueta}</Etiqueta>}
                 {j.soloConExperiencia && <Etiqueta tono="oliva">{T.tablon.conExperiencia}</Etiqueta>}
                 {esMio && <Etiqueta tono="miel">{T.tablon.esTuyo}</Etiqueta>}
               </div>
@@ -274,6 +320,14 @@ function Abiertos({
               </p>
               {seleccion && <p className="mt-1 text-[11px] text-ink-3">{T.tablon.presupuesto}</p>}
               {motivo && <p className="mt-2 text-[12px] leading-[1.45] text-terra">{motivo}</p>}
+              {sinClave && (
+                <div className="mt-2">
+                  <Accion onClick={() => void activarClave()} disabled={activando}>
+                    {activando ? '…' : T.tablon.cifrado.activar}
+                  </Accion>
+                  {errorClave && <p className="mt-1.5 text-[12px] text-terra">{errorClave}</p>}
+                </div>
+              )}
               {!esMio && yo && esAgente && (
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
                   {mia && (
@@ -413,8 +467,31 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
   const [soloPersonas, setSoloPersonas] = useState(false);
   const [leyendo, setLeyendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [dandoAcceso, setDandoAcceso] = useState<'elegido' | 'arbitros' | null>(null);
   const M = T.tablon.mios;
+  const C = T.tablon.cifrado;
   const id = job.id.toString();
+  const firmar = (message: string) => signMessageAsync({ message });
+  /**
+   * Confidencial: el encargo va cifrado para quien lo publicó, y quien lo
+   * coge solo lo lee si se le da acceso. Por eso solo se elige a quien tenga
+   * su clave publicada.
+   */
+  const confidencial = datos.confidenciales.has(id);
+  const ofertantes = (datos.ofertas.get(id) ?? []).map((o) => o.agente).join(',');
+  const [conClave, setConClave] = useState<Map<string, boolean>>(new Map());
+  useEffect(() => {
+    if (!confidencial || job.estado !== EstadoTablon.Publicado || !ofertantes) return;
+    let vigente = true;
+    const cuentas = ofertantes.split(',') as Address[];
+    void Promise.all(cuentas.map(async (a) => [a.toLowerCase(), (await clavePublicaDe(a)) !== null] as const)).then((pares) => {
+      if (vigente) setConClave(new Map(pares));
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [confidencial, job.estado, ofertantes]);
   /**
    * Solo personas o solo agentes: se enseñan y se eligen solo esas ofertas. El
    * contrato dejaría elegir cualquiera; quien publicó dijo para quién era.
@@ -442,19 +519,61 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
     );
   };
 
+  /** Da acceso al encargo a quien lo cogió. Se puede repetir: no duplica nada. */
+  const darAccesoAQuienLoCogio = async () => {
+    setDandoAcceso('elegido');
+    setError(null);
+    setAviso(null);
+    try {
+      await darAccesoAlElegido(job, job.agente, yo, firmar);
+      setAviso(C.accesoDado(nombreDe(job.agente)));
+    } catch (err) {
+      setError(err instanceof Error && err.message === 'sin clave' ? C.accesoSinClave(nombreDe(job.agente)) : explicarFallo(err, T));
+    } finally {
+      setDandoAcceso(null);
+    }
+  };
+  /** Da acceso a quien decide la disputa: sin él, no podría leer nada de esto. */
+  const darAccesoAQuienDecide = async () => {
+    if (!tarea) return;
+    setDandoAcceso('arbitros');
+    setError(null);
+    setAviso(null);
+    try {
+      const r = await darAccesoALosArbitrosDelTablon(job, hayEntrega(tarea.resultHash) ? tarea.resultHash : null, yo, firmar);
+      if (r.arbitros > 0) setAviso(C.arbitrosConAcceso(r.arbitros, r.arbitros + r.sinClave.length));
+      else if (r.sinClave.length > 0) setError(C.arbitrosSinClave);
+    } catch (err) {
+      setError(explicarFallo(err, T));
+    } finally {
+      setDandoAcceso(null);
+    }
+  };
+  const botonAcceso = (a: 'elegido' | 'arbitros') => (
+    <Accion
+      key={`acceso-${a}`}
+      onClick={() => void (a === 'elegido' ? darAccesoAQuienLoCogio() : darAccesoAQuienDecide())}
+      disabled={firma.ocupado !== null || dandoAcceso !== null}
+    >
+      {dandoAcceso === a ? C.dandoAcceso : a === 'elegido' ? C.darAcceso(nombreDe(job.agente)) : C.darAccesoArbitros}
+    </Accion>
+  );
+
   const verEntrega = async () => {
     if (!tarea) return;
     setLeyendo(true);
     setError(null);
     try {
       // La misma firma abre la entrega y sus archivos: se pasa a la hoja.
-      const { texto, cred } = await leerEntregaConFirma(
-        job.id,
-        tarea.resultHash,
-        await credencialTablon('resultado', job.id, yo, (message) => signMessageAsync({ message })),
-      );
-      if (texto === null) setError(M.entregaNoEsta);
-      else abrir({ tipo: 'entrega', job, texto, cred });
+      const { texto, cred, accesos } = await leerEntregaConFirma(job.id, tarea.resultHash, await credencialTablon('resultado', job.id, yo, firmar));
+      if (texto === null) {
+        setError(M.entregaNoEsta);
+        return;
+      }
+      // Cifrada para el cliente y para quien entregó: se abre aquí.
+      const { legible, cifrado } = await abrirTexto(texto, yo, firmar, accesos);
+      if (legible === null) setError(C.entregaSinAcceso);
+      else abrir({ tipo: 'entrega', job, texto: legible, cred, cifrado, accesos });
     } catch (err) {
       setError(err instanceof Error && /no cuadra|HTTP/.test(err.message) ? M.entregaError : explicarFallo(err, T));
     } finally {
@@ -497,7 +616,11 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
       if (ahora > tarea.plazo) {
         estado = M.noEntrego;
         acciones.push(directa('recuperar', 'settle'));
-      } else estado = M.trabajando(fecha(tarea.plazo));
+      } else {
+        estado = M.trabajando(fecha(tarea.plazo));
+        // Se le dio al elegirle; si se asignó sola o aquello falló, aquí.
+        if (confidencial) acciones.push(botonAcceso('elegido'));
+      }
     } else if (tarea.estado === ESCROW.entregada) {
       const libre = reglas ? tarea.entregadaEn + reglas.liberacionS : null;
       estado = libre !== null && ahora >= libre ? M.entregadaLibre : M.entregada(libre ? fecha(libre) : '…');
@@ -506,7 +629,12 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
         <Accion key="aprobar" tono="miel" onClick={() => abrir({ tipo: 'aprobar', job })} disabled={firma.ocupado !== null}>
           {M.aprobar}
         </Accion>,
-        <Accion key="disputar" tono="peligro" onClick={() => abrir({ tipo: 'disputar', job })} disabled={firma.ocupado !== null}>
+        <Accion
+          key="disputar"
+          tono="peligro"
+          onClick={() => abrir({ tipo: 'disputar', job, confidencial, resultHash: tarea.resultHash })}
+          disabled={firma.ocupado !== null}
+        >
           {M.disputar}
         </Accion>,
       );
@@ -514,6 +642,7 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
     } else if (tarea.estado === ESCROW.enDisputa) {
       estado = M.enDisputa;
       if (botonEntrega) acciones.push(botonEntrega);
+      if (confidencial) acciones.push(botonAcceso('arbitros'));
       if (reglas && ahora >= tarea.disputadaEn + reglas.disputaS) acciones.push(directa('recuperar', 'settle'));
     } else {
       estado = tarea.estado === ESCROW.completada ? M.pagadaSinCerrar : M.canceladaSinCerrar;
@@ -543,6 +672,7 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
         <Categoria numero={job.categoria} />
         <Etiqueta>{seleccion ? T.tablon.seleccion : T.tablon.inmediato}</Etiqueta>
         {audiencia !== 'todos' && <Etiqueta tono="oliva">{T.tablon.audiencia[audiencia]}</Etiqueta>}
+        {confidencial && <Etiqueta tono="oliva">{C.etiqueta}</Etiqueta>}
         <span className="font-mono text-[11px] text-ink-3">#{id}</span>
       </div>
       {job.estado >= EstadoTablon.Asignado && job.estado <= EstadoTablon.Cerrado && (
@@ -552,6 +682,10 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
         </p>
       )}
       <p className="mt-1.5 text-[12.5px] leading-[1.45] text-ink-2">{estado}</p>
+      {confidencial && job.estado === EstadoTablon.Asignado && tarea?.estado === ESCROW.abierta && ahora <= tarea.plazo && (
+        <p className="mt-1 text-[11.5px] leading-[1.45] text-ink-3">{C.accesoPista}</p>
+      )}
+      {confidencial && tarea?.estado === ESCROW.enDisputa && <p className="mt-1 text-[11.5px] leading-[1.45] text-ink-3">{C.arbitrosPista}</p>}
 
       {ofertas.length > 0 && audiencia !== 'todos' && (
         <p className="mt-2.5 text-[11.5px] leading-[1.45] text-ink-3">{M.soloAudiencia[audiencia]}</p>
@@ -580,7 +714,9 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
             const diferencia = o.precio > job.importe ? o.precio - job.importe : 0n;
             const nombre = nombreDe(o.agente);
             // En Play no se paga una diferencia desde la app: esa oferta no se elige aquí.
-            const elegible = puedeElegir && !(SIN_PAGOS && diferencia > 0n);
+            // Confidencial: sin clave publicada no se le podría dar acceso.
+            const sinClave = confidencial && conClave.get(o.agente.toLowerCase()) === false;
+            const elegible = puedeElegir && !(SIN_PAGOS && diferencia > 0n) && !sinClave;
             return (
               <li key={o.agente} className="flex items-center gap-2.5 px-3 py-2.5">
                 <div className="min-w-0 grow">
@@ -592,10 +728,11 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
                   </p>
                   <p className="mt-0.5 font-mono text-[11px] text-ink-3">{T.tablon.entregaEn(duracion(o.plazoEntregaS))}</p>
                   {diferencia > 0n && <p className="mt-0.5 text-[11.5px] text-honey">{M.diferencia(monto(diferencia), simboloDe(job.moneda))}</p>}
+                  {sinClave && <p className="mt-0.5 text-[11.5px] text-terra">{C.ofertaSinClave}</p>}
                 </div>
                 <Importe wei={o.precio} moneda={job.moneda} />
                 {elegible && (
-                  <Accion tono="miel" onClick={() => abrir({ tipo: 'elegir', job, oferta: o, nombre })} disabled={firma.ocupado !== null}>
+                  <Accion tono="miel" onClick={() => abrir({ tipo: 'elegir', job, oferta: o, nombre, confidencial })} disabled={firma.ocupado !== null}>
                     {M.elegir}
                   </Accion>
                 )}
@@ -606,6 +743,7 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
       )}
 
       {acciones.length > 0 && <div className="mt-2.5 flex flex-wrap gap-2">{acciones}</div>}
+      {aviso && <p className="mt-2 text-[12px] text-olive">{aviso}</p>}
       {error && <p className="mt-2 text-[12px] text-terra">{error}</p>}
     </li>
   );
@@ -692,6 +830,7 @@ function Trabajo({ datos, yo, esAgente, firma, abrir, T }: { datos: DatosDelTabl
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <Categoria numero={j.categoria} />
+                {datos.confidenciales.has(id) && <Etiqueta tono="oliva">{T.tablon.cifrado.etiqueta}</Etiqueta>}
                 <span className="font-mono text-[11px] text-ink-3">#{id}</span>
               </div>
               <p className={`mt-1.5 text-[12.5px] leading-[1.45] ${tarea?.estado === ESCROW.abierta && !puedeEntregar ? 'text-terra' : 'text-ink-2'}`}>
@@ -699,7 +838,7 @@ function Trabajo({ datos, yo, esAgente, firma, abrir, T }: { datos: DatosDelTabl
               </p>
               <div className="mt-2.5 flex flex-wrap gap-2">
                 {puedeEntregar && (
-                  <Accion tono="miel" onClick={() => abrir({ tipo: 'entregar', job: j })} disabled={firma.ocupado !== null}>
+                  <Accion tono="miel" onClick={() => abrir({ tipo: 'entregar', job: j, confidencial: datos.confidenciales.has(id) })} disabled={firma.ocupado !== null}>
                     {W.entregar}
                   </Accion>
                 )}

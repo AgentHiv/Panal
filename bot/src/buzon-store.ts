@@ -71,7 +71,28 @@ export interface Encargo {
    * el mismo archivo mandado dos veces ocupa una.
    */
   archivos?: ArchivoGuardado[];
+  /**
+   * Los accesos a lo cifrado de este encargo (`sdk/src/cifrado.ts`, `Acceso`):
+   * la clave de un sobre envuelta para quien no estaba entre sus
+   * destinatarios —quien coge un encargo del tablón, quien decide una
+   * disputa—. El buzón los guarda y los sirve; no puede usarlos, y uno falso
+   * no abre nada: el contenido no pasa la comprobación con otra clave.
+   */
+  accesos?: AccesoGuardado[];
 }
+
+export interface AccesoGuardado {
+  /** keccak256 de lo que abre, en minúsculas. */
+  o: string;
+  /** Quién lo recibe, en minúsculas. */
+  a: string;
+  e: string;
+  n: string;
+  k: string;
+}
+
+/** Cuántos accesos se guardan por encargo: de sobra para un agente y tres árbitros. */
+export const MAX_ACCESOS_POR_ENCARGO = 200;
 
 /**
  * Cuánto se guarda. Treinta días.
@@ -223,6 +244,23 @@ export class BuzonStore {
     writeFileSync(tmp, JSON.stringify(nuevo), 'utf8');
     renameSync(tmp, file);
     return true;
+  }
+
+  /**
+   * Añade accesos. El mismo objeto para la misma cuenta se sustituye: dar
+   * acceso dos veces no deja dos. Devuelve cuántos hay, o null si no caben.
+   */
+  guardarAccesos(agente: string, taskId: bigint, nuevos: AccesoGuardado[]): number | null {
+    let total: number | null = null;
+    const ok = this.escribir(agente, taskId, (p) => {
+      const clave = (x: AccesoGuardado) => `${x.o}|${x.a}`;
+      const porClave = new Map((p.accesos ?? []).map((x) => [clave(x), x]));
+      for (const x of nuevos) porClave.set(clave(x), x);
+      if (porClave.size > MAX_ACCESOS_POR_ENCARGO) return p;
+      total = porClave.size;
+      return { ...p, accesos: [...porClave.values()] };
+    });
+    return ok ? total : null;
   }
 
   /* ── el tablón ────────────────────────────────────────────────────────── */

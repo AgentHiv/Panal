@@ -70,6 +70,17 @@ export function entregaSignMessage(taskId: bigint, expira: number): string {
 }
 
 /**
+ * Una parte da acceso a lo cifrado de su tarea a quien decide la disputa. Y
+ * un firmante de la multisig lee la disputa. Iguales a los del buzón.
+ */
+export function accesoSignMessage(taskId: bigint, expira: number): string {
+  return `Panal acceso #${taskId.toString()} · ${expira}`;
+}
+export function disputaSignMessage(taskId: bigint, expira: number): string {
+  return `Panal disputa #${taskId.toString()} · ${expira}`;
+}
+
+/**
  * Una firma y su caducidad, para reusarla en toda una operación.
  *
  * Entregar son varias llamadas —un archivo, otro archivo, el texto— y con una

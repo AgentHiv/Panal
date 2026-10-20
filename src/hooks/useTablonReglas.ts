@@ -36,6 +36,11 @@ export interface DatosDelTablon {
   ofertas: Map<string, OfertaConReglas[]>;
   /** Por id de tarea del escrow; solo las de encargos tuyos (cliente o agente). */
   tareas: Map<string, TareaDelTablon>;
+  /**
+   * Por número de encargo, los CONFIDENCIALES: su encargo va cifrado, y solo
+   * lo lee su cliente y quien él elija (que tiene que tener su clave publicada).
+   */
+  confidenciales: Set<string>;
 }
 
 const CLAVE = ['tablon-reglas', activeChain.id] as const;
@@ -68,7 +73,7 @@ export function useTablonReglas(yo: Address | null) {
         : [];
       const [crudos, ofertas, tareas] = await Promise.all([
         // Sin buzón el tablón sigue: los encargos salen sin su texto.
-        leerAnuncios(encargos).catch(() => new Map<string, string>()),
+        leerAnuncios(encargos).catch(() => ({ anuncios: new Map<string, string>(), confidenciales: new Set<string>() })),
         leerOfertas(deSeleccion),
         leerTareas(misTareas),
       ]);
@@ -76,12 +81,12 @@ export function useTablonReglas(yo: Address | null) {
       // quién es y lo que se enseña.
       const anuncios = new Map<string, string>();
       const audiencias = new Map<string, AudienciaTablon>();
-      for (const [id, anuncio] of crudos) {
+      for (const [id, anuncio] of crudos.anuncios) {
         const { audiencia, texto } = leerAnuncio(anuncio);
         anuncios.set(id, texto);
         if (audiencia !== 'todos') audiencias.set(id, audiencia);
       }
-      return { encargos, anuncios, audiencias, ofertas, tareas };
+      return { encargos, anuncios, audiencias, ofertas, tareas, confidenciales: crudos.confidenciales };
     },
   });
 }

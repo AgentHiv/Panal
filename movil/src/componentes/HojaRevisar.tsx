@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { PANAL_ESCROW_V2_ADDRESS, activeChain } from '@/contracts/config';
+import { useSignMessage, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import type { Address, Hex } from 'viem';
+import { esTextoCifrado } from '@panal/sdk';
+import { PANAL_ESCROW_V2_ADDRESS, activeChain, publicClient } from '@/contracts/config';
 import { panalEscrowV2Abi } from '@/contracts/abis';
+import { usePanalAgents } from '@/hooks/usePanalAgents';
+import { useWallet } from '@/hooks/useWallet';
+import { darAccesoALosArbitrosDeUnaTarea } from '@/lib/accesos';
+import { esBuzon } from '@/lib/botEndpoint';
+import { clavePublicaDe } from '@/lib/cifrado';
 import type { EncargoEnHilo } from '@/lib/conversaciones';
+import { hayEntrega } from '@/lib/expedientes';
+import { getTaskSobre } from '@/lib/taskBriefs';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
 import Dolares from '~/componentes/Dolares';
 import { monto, restante } from '~/lib/formato';
@@ -19,6 +28,10 @@ import { useTextos } from '~/i18n/idiomas';
  * Y la cuenta atrás va arriba del todo porque callarse NO es neutral: a los
  * tres días de la entrega `autoRelease` lo cobra cualquiera y deja un 5
  * registrado. No decir nada es pagar y poner sobresaliente.
+ *
+ * Abierta la disputa con alguien que recibe en el buzón de Panal, si algo va
+ * cifrado se le da acceso a quien decide en el mismo paso: sin él no podría
+ * leer el encargo ni la entrega, y Panal tampoco.
  */
 export default function HojaRevisar({
   encargo,
@@ -34,11 +47,60 @@ export default function HojaRevisar({
   const T = useTextos();
   const { writeContract, data: hash, isPending } = useWriteContract();
   const recibo = useWaitForTransactionReceipt({ hash });
+  const { address } = useWallet();
+  const { agents } = usePanalAgents();
+  const { signMessageAsync } = useSignMessage();
+  // Tras la disputa: cómo fue darle acceso a quien decide. `null` mientras se da.
+  const [acceso, setAcceso] = useState<string | null>(null);
+  // Solo con quien recibe en el buzón hay algo que pueda ir cifrado.
+  const buzon = encargo ? (agents.find((a) => a.workerAddress.toLowerCase() === encargo.agente.toLowerCase())?.botUrl ?? null) : null;
+  const conBuzon = esBuzon(buzon) && !!address;
+
+  /**
+   * Da acceso a quien decide, si hay a qué. Devuelve qué decir, o `null` si
+   * no hay nada que decir (nada va cifrado).
+   */
+  const darAccesoAQuienDecide = async (e: EncargoEnHilo): Promise<string | null> => {
+    const yo = address as Address;
+    const sobre = getTaskSobre(e.taskHash);
+    // Sin el sobre cifrado guardado ni clave propia publicada, nada va cifrado: ni una firma.
+    if (!(sobre && esTextoCifrado(sobre)) && !(await clavePublicaDe(yo))) return null;
+    try {
+      const tarea = (await publicClient.readContract({
+        address: PANAL_ESCROW_V2_ADDRESS,
+        abi: panalEscrowV2Abi,
+        functionName: 'tasks',
+        args: [BigInt(e.id)],
+      })) as unknown as { resultHash: Hex };
+      const r = await darAccesoALosArbitrosDeUnaTarea({
+        botUrl: buzon!,
+        taskId: BigInt(e.id),
+        taskHash: e.taskHash as Hex,
+        resultHash: hayEntrega(tarea.resultHash) ? tarea.resultHash : null,
+        rol: 'client',
+        sobreGuardado: sobre,
+        yo,
+        firmar: (message) => signMessageAsync({ message }),
+      });
+      if (r.objetos === 0) return null;
+      return r.arbitros > 0 ? T.revisar.accesoDado : T.revisar.accesoSinClave;
+    } catch {
+      return T.revisar.accesoNo;
+    }
+  };
 
   // Solo avisar al padre: la hoja se desmonta al cerrarse, asi que las
   // estrellas y la vista de disputa se reinician solas.
   useEffect(() => {
-    if (recibo.isSuccess) onHecho();
+    if (!recibo.isSuccess) return;
+    if (!disputando || !encargo || !conBuzon) {
+      onHecho();
+      return;
+    }
+    void darAccesoAQuienDecide(encargo).then((texto) => {
+      if (texto === null) onHecho();
+      else setAcceso(texto);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo.isSuccess]);
 
@@ -68,6 +130,21 @@ export default function HojaRevisar({
       chainId: activeChain.id,
     });
   };
+
+  if (disputando && recibo.isSuccess && conBuzon) {
+    return (
+      <Hoja abierta titulo={T.revisar.disputaTitulo} onCerrar={onHecho} bloqueada={acceso === null}>
+        <Nota>{acceso ?? T.revisar.dandoAcceso}</Nota>
+        {acceso !== null && (
+          <div className="mt-[18px] pb-1">
+            <Boton variante="secundario" onClick={onHecho}>
+              {T.comun.cerrar}
+            </Boton>
+          </div>
+        )}
+      </Hoja>
+    );
+  }
 
   if (disputando) {
     return (

@@ -42,6 +42,7 @@ import {
   tablonEntregaSignMessage,
   tablonResultadoSignMessage,
   verifyFileBytes,
+  type Acceso,
   type ArchivoParaSubir,
   type EncargoConReglas,
   type HashedFile,
@@ -58,9 +59,10 @@ import {
 } from '@/contracts/config';
 import { panalEscrowV2Abi } from '@/contracts/abis';
 import { BUZON_BASE, cabecerasFirma, expiraEn } from '@/lib/botEndpoint';
+import { nombreEnBuzon } from '@/lib/cifrado';
 
 const TABLON = PANAL_TABLON_ADDRESS as Address;
-const BUZON_DEL_TABLON = `${BUZON_BASE}/${PANAL_TABLON_ADDRESS}`;
+export const BUZON_DEL_TABLON = `${BUZON_BASE}/${PANAL_TABLON_ADDRESS}`;
 const ABI = panalTablonAbi as unknown as Abi;
 
 /** Encargos por llamada a Multicall3. Cincuenta structs caben de sobra. */
@@ -247,17 +249,24 @@ export async function leerPermisos(agente: Address, ids: bigint[]): Promise<Map<
  * Los anuncios, comprobados contra el `advertHash` de cada encargo. Uno que no
  * cuadre no sale: el buzón puede dejar de servir, pero no inventarse un anuncio.
  */
-export async function leerAnuncios(encargos: EncargoConReglas[]): Promise<Map<string, string>> {
+export async function leerAnuncios(
+  encargos: EncargoConReglas[],
+): Promise<{ anuncios: Map<string, string>; confidenciales: Set<string> }> {
   const out = new Map<string, string>();
+  const confidenciales = new Set<string>();
   const res = await fetch(`${BUZON_DEL_TABLON}/lista`, { signal: AbortSignal.timeout(10_000) });
-  if (!res.ok) return out;
-  const { anuncios = [] } = (await res.json()) as { anuncios?: { jobId: string; anuncio: string }[] };
+  if (!res.ok) return { anuncios: out, confidenciales };
+  const { anuncios = [] } = (await res.json()) as { anuncios?: { jobId: string; anuncio: string; cifrado?: boolean }[] };
   const hashes = new Map(encargos.map((j) => [j.id.toString(), j.advertHash.toLowerCase()]));
   for (const a of anuncios) {
     if (typeof a.anuncio !== 'string') continue;
-    if (hashes.get(a.jobId) === keccak256(toBytes(a.anuncio)).toLowerCase()) out.set(a.jobId, a.anuncio);
+    if (hashes.get(a.jobId) !== keccak256(toBytes(a.anuncio)).toLowerCase()) continue;
+    out.set(a.jobId, a.anuncio);
+    // Lo dice el buzón y no la cadena: si mintiera, lo que cambia es un aviso,
+    // y quien coja el encargo lo verá al abrirlo.
+    if (a.cifrado === true) confidenciales.add(a.jobId);
   }
-  return out;
+  return { anuncios: out, confidenciales };
 }
 
 /**
@@ -356,18 +365,23 @@ export function credencialVigente(c: CredencialTablon | null): c is CredencialTa
 }
 
 /** El encargo privado con una credencial ya firmada (la de `encargo`). */
-export async function leerEncargoConFirma(job: EncargoConReglas, cred: CredencialTablon): Promise<{ brief: string | null; cred: CredencialTablon }> {
+export async function leerEncargoConFirma(
+  job: EncargoConReglas,
+  cred: CredencialTablon,
+): Promise<{ brief: string | null; cred: CredencialTablon; accesos: Acceso[] }> {
   const res = await fetch(`${BUZON_DEL_TABLON}/encargo/${job.id.toString()}`, {
     headers: cabecerasFirma(cred.yo, cred.firma, cred.expira),
     signal: AbortSignal.timeout(15_000),
   });
-  if (res.status === 404) return { brief: null, cred };
+  if (res.status === 404) return { brief: null, cred, accesos: [] };
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const { brief } = (await res.json()) as { brief?: unknown };
+  const { brief, accesos } = (await res.json()) as { brief?: unknown; accesos?: unknown };
   if (typeof brief !== 'string' || keccak256(toBytes(brief)).toLowerCase() !== job.taskHash.toLowerCase()) {
     throw new Error('no cuadra con el taskHash');
   }
-  return { brief, cred };
+  // Los accesos que te han dado, si el encargo va cifrado y no eras de sus
+  // destinatarios —el cliente te lo dio al elegirte—.
+  return { brief, cred, accesos: Array.isArray(accesos) ? (accesos as Acceso[]) : [] };
 }
 
 /**
@@ -399,18 +413,18 @@ export async function leerEntregaConFirma(
   jobId: bigint,
   resultHash: Hex,
   cred: CredencialTablon,
-): Promise<{ texto: string | null; cred: CredencialTablon }> {
+): Promise<{ texto: string | null; cred: CredencialTablon; accesos: Acceso[] }> {
   const res = await fetch(`${BUZON_DEL_TABLON}/result/${jobId.toString()}`, {
     headers: cabecerasFirma(cred.yo, cred.firma, cred.expira),
     signal: AbortSignal.timeout(15_000),
   });
-  if (res.status === 404) return { texto: null, cred };
+  if (res.status === 404) return { texto: null, cred, accesos: [] };
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const { resultText } = (await res.json()) as { resultText?: unknown };
+  const { resultText, accesos } = (await res.json()) as { resultText?: unknown; accesos?: unknown };
   if (typeof resultText !== 'string' || keccak256(toBytes(resultText)).toLowerCase() !== resultHash.toLowerCase()) {
     throw new Error('no cuadra con el resultHash');
   }
-  return { texto: resultText, cred };
+  return { texto: resultText, cred, accesos: Array.isArray(accesos) ? (accesos as Acceso[]) : [] };
 }
 
 /* ── archivos ─────────────────────────────────────────────────────────── */
@@ -460,8 +474,11 @@ export async function bajarArchivoDelTablon(
   archivo: HashedFile,
   de: 'adjunto' | 'entrega',
   cred: CredencialTablon,
+  cifrado = false,
 ): Promise<Uint8Array> {
-  const nombre = sanitizeFileName(archivo.name);
+  // Si el texto que lo anuncia iba cifrado, el buzón lo guarda con un nombre
+  // opaco: el de verdad solo lo sabe quien leyó ese texto.
+  const nombre = cifrado ? nombreEnBuzon(archivo.hash) : sanitizeFileName(archivo.name);
   const res = await fetch(
     `${BUZON_DEL_TABLON}/archivo/${jobId.toString()}/${encodeURIComponent(nombre)}?de=${de}`,
     { headers: cabecerasFirma(cred.yo, cred.firma, cred.expira), signal: AbortSignal.timeout(180_000) },

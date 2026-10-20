@@ -379,6 +379,19 @@ export function tablonArchivoSignMessage(jobId: bigint, expira: number): string 
   return `Panal tablón con reglas · archivo #${jobId.toString()} · ${expira}`;
 }
 
+/**
+ * Una parte da acceso a lo cifrado de su encargo: a quien lo cogió o a quien
+ * decide una disputa (`concederAcceso`, en cifrado.ts).
+ */
+export function tablonAccesoSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · acceso #${jobId.toString()} · ${expira}`;
+}
+
+/** Un firmante de la multisig lee una disputa: el encargo, la entrega y sus archivos. */
+export function tablonDisputaSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · disputa #${jobId.toString()} · ${expira}`;
+}
+
 /*
  * Archivos en el tablón.
  *

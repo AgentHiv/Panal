@@ -21,6 +21,7 @@ import {
   defineChain,
   http,
   getAddress,
+  parseAbi,
   type Address,
   type Hex,
   type PublicClient,
@@ -387,6 +388,37 @@ export async function getTask(clients: ChainClients, cfg: BotConfig, taskId: big
     }),
   );
   return { ...raw, status: Number(raw.status) as TaskStatus };
+}
+
+/**
+ * Quiénes deciden las disputas del escrow: su `arbitrator` y, si es una
+ * multisig, sus firmantes (`owners(i)` hasta que revierta). El propio
+ * arbitrator va en la lista: si algún día es una cuenta, es ella quien decide.
+ */
+export async function getArbitros(clients: ChainClients, cfg: BotConfig): Promise<Address[]> {
+  const arbitrator = (await withRetry('arbitrator()', () =>
+    clients.publicClient.readContract({
+      address: cfg.escrowAddress,
+      abi: parseAbi(['function arbitrator() view returns (address)']),
+      functionName: 'arbitrator',
+    }),
+  )) as Address;
+  const out: Address[] = [arbitrator];
+  for (let i = 0; i < 10; i++) {
+    try {
+      out.push(
+        (await clients.publicClient.readContract({
+          address: arbitrator,
+          abi: parseAbi(['function owners(uint256) view returns (address)']),
+          functionName: 'owners',
+          args: [BigInt(i)],
+        })) as Address,
+      );
+    } catch {
+      break; // no hay más firmantes, o no es una multisig
+    }
+  }
+  return out;
 }
 
 export async function getPendingWithdrawal(
