@@ -25,6 +25,7 @@ import {
   esTextoCifrado,
   mensajeParaDerivarClave,
   mensajeParaPublicarClave,
+  nombreEnBuzon,
   puedeAbrir,
   tablonAccesoSignMessage,
   type Acceso,
@@ -101,13 +102,8 @@ export async function publicarMiClave(
   return { clave, cambio: publicada !== null };
 }
 
-/**
- * Con qué nombre se guarda un archivo cifrado en el buzón. El de verdad va
- * dentro del texto cifrado; en la URL, que el buzón ve, solo va su hash.
- */
-export function nombreEnBuzon(hash: string): string {
-  return `cifrado-${hash.toLowerCase().replace(/^0x/, '').slice(0, 16)}.bin`;
-}
+/** Con qué nombre se guarda un archivo cifrado en el buzón: el del SDK. */
+export { nombreEnBuzon };
 
 /**
  * Abre un archivo bajado del buzón, si va cifrado. Los bytes ya vienen

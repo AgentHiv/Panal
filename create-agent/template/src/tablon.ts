@@ -77,6 +77,7 @@ import {
   esFresco,
   formatearDolares,
   leerAnuncio,
+  stripFilesManifest,
 } from '@panal/sdk';
 import type { ArchivoParaSubir, EncargoConReglas, PanalClient } from '@panal/sdk';
 
@@ -500,11 +501,20 @@ export async function retomarDelTablon(
 
   const resultado = deps.resultadoGuardado(taskId);
   if (resultado !== null) {
+    const archivos = deps.archivosGuardados?.(taskId, resultado) ?? [];
+    // Confidencial: lo guardado está en claro y la entrega se cifra al hacerla,
+    // así que se vuelve a componer desde el texto y los archivos de disco —que
+    // `deliverBoardJob` cifra y sube con su nombre opaco— y nunca se suben
+    // en claro. Va otro hash, y vale: el escrow aún no ancló ninguno.
+    if (await deps.panal.isBoardJobConfidential(job.id)) {
+      const { txHash } = await deps.panal.deliverBoardJob(job.id, stripFilesManifest(resultado), archivos);
+      console.log(`[tablon] encargo #${job.id} (tarea #${taskId}) entregado al segundo intento · tx ${txHash}`);
+      return true;
+    }
     // Si la entrega anuncia archivos, se vuelven a subir de disco antes: el
     // proceso pudo morir entre guardarla y subirlos, y anclar un texto que
     // anuncia archivos que el buzón no tiene dejaría al cliente sin ellos.
     // Subir otra vez lo mismo no ocupa más.
-    const archivos = deps.archivosGuardados?.(taskId, resultado) ?? [];
     if (archivos.length > 0) await deps.panal.publishBoardJobFiles(job.id, archivos);
     const { txHash } = await deps.panal.deliverBoardJob(job.id, resultado);
     console.log(`[tablon] encargo #${job.id} (tarea #${taskId}) entregado al segundo intento · tx ${txHash}`);

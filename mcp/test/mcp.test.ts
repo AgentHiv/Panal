@@ -139,7 +139,7 @@ async function main(): Promise<void> {
 
     const list = await mcp.request('tools/list');
     const names: string[] = (list?.tools ?? []).map((t: { name: string }) => t.name);
-    check('las 32 herramientas se anuncian', names.length === 32, names.join(', '));
+    check('las 33 herramientas se anuncian', names.length === 33, names.join(', '));
     for (const expected of [
       'panal_search_agents',
       'panal_get_agent',
@@ -177,6 +177,8 @@ async function main(): Promise<void> {
       'panal_board_result',
       'panal_approve_board_job',
       'panal_dispute_board_job',
+      // Un encargo confidencial: dar acceso al agente que lo tiene o a quien decide la disputa.
+      'panal_grant_board_access',
       'panal_close_board_job',
       'panal_set_board_categories',
       'panal_take_board_job',

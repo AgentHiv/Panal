@@ -19,3 +19,6 @@ movil/tsconfig.tsbuildinfo
 *.p12
 *.jks
 *.keystore
+
+# Datos del servidor MCP si se arranca desde el repo: gasto del día y encargos sellados.
+.panal-mcp/

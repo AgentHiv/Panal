@@ -307,6 +307,13 @@ export interface PublicarEnElTablon {
    * buzón del tablón después.
    */
   adjuntos?: ArchivoParaSubir[];
+  /**
+   * Confidencial: el encargo y sus adjuntos se cifran para quien publica, y al
+   * elegir una oferta se le da acceso solo a quien se elige (que tiene que
+   * tener su clave publicada). El anuncio sigue siendo público. Solo en
+   * selección: en inmediato lo cogería cualquiera sin que nadie le diera acceso.
+   */
+  confidencial?: boolean;
 }
 
 /**
@@ -328,6 +335,9 @@ export function problemaAlPublicar(p: PublicarEnElTablon): string | null {
   // primero que pase las reglas, y la cadena no sabe quién es persona.
   if (leerAnuncio(p.anuncio).audiencia === 'personas' && p.modo !== ModoTablon.Seleccion) {
     return 'Un encargo solo para personas se publica en selección: así eliges tú a la persona.';
+  }
+  if (p.confidencial && p.modo !== ModoTablon.Seleccion) {
+    return 'Un encargo confidencial se publica en selección: a quien lo coge se le da acceso al elegirlo.';
   }
   if (p.modo === ModoTablon.Seleccion) {
     const ofertas = p.ventanaOfertasS ?? 0;

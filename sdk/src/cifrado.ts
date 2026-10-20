@@ -139,6 +139,26 @@ export async function comprobarClavePublicada(c: ClavePublicada, publicClient?: 
   }
 }
 
+/**
+ * Con qué nombre se guarda un archivo cifrado en el buzón. El de verdad va
+ * dentro del texto cifrado; en la URL, que el buzón ve, solo va su hash.
+ */
+export function nombreEnBuzon(hash: string): string {
+  return `cifrado-${hash.toLowerCase().replace(/^0x/, '').slice(0, 16)}.bin`;
+}
+
+/**
+ * Las firmas de las rutas de accesos y disputas del buzón de cada agente
+ * (`POST /access/:id`, `GET /dispute/:id`). Las del tablón con reglas están en
+ * `tablon-reglas.ts`. Iguales letra a letra a las del buzón y la web.
+ */
+export function accesoSignMessage(taskId: bigint, expira: number): string {
+  return `Panal acceso #${taskId.toString()} · ${expira}`;
+}
+export function disputaSignMessage(taskId: bigint, expira: number): string {
+  return `Panal disputa #${taskId.toString()} · ${expira}`;
+}
+
 /* ── el sobre ─────────────────────────────────────────────────────────── */
 
 /** Para quién se cifra: una cuenta y su clave pública ya comprobada. */

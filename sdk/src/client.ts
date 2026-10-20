@@ -16,7 +16,7 @@
  * y en uso: el caso de "quiero probar esto ahora" no debería exigir un .env.
  */
 
-import { createPublicClient, createWalletClient, formatEther, getAddress, http, keccak256, parseEventLogs, toBytes, verifyMessage } from 'viem';
+import { createPublicClient, createWalletClient, formatEther, getAddress, http, keccak256, parseAbi, parseEventLogs, toBytes, verifyMessage } from 'viem';
 import type { Abi, Account, Address, Hex, PublicClient, TransactionReceipt, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, namesAbi, registryAbi } from './abis.js';
 import { leerX402 } from './agent-card.js';
@@ -25,10 +25,32 @@ import {
   MAX_FILE_BYTES,
   appendAttachmentsManifest,
   attachmentFrom,
+  parseAttachmentsManifest,
+  parseFilesManifest,
   sanitizeFileName,
   verifyFileBytes,
+  type AttachedFile,
   type HashedFile,
 } from './files.js';
+import {
+  accesoSignMessage,
+  cifrarArchivo,
+  cifrarTexto,
+  claveDesdeFirma,
+  comprobarClavePublicada,
+  concederAcceso,
+  descifrarArchivo,
+  descifrarTexto,
+  esArchivoCifrado,
+  esTextoCifrado,
+  mensajeParaDerivarClave,
+  mensajeParaPublicarClave,
+  nombreEnBuzon,
+  puedeAbrir,
+  type Acceso,
+  type ClaveDeCifrado,
+  type Destinatario,
+} from './cifrado.js';
 import { X402Error, payAndAsk, quoteAsk, type AskResult, type X402Accept } from './x402.js';
 import { descend, newEnvelope, remainingBudget, type CallEnvelope } from './envelope.js';
 import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type PanalNetwork } from './chains.js';
@@ -44,6 +66,7 @@ import {
   problemaAlPublicar,
   problemaConArchivos,
   situacionDe,
+  tablonAccesoSignMessage,
   tablonArchivoSignMessage,
   tablonEncargoSignMessage,
   tablonEntregaSignMessage,
@@ -348,6 +371,230 @@ export class PanalClient {
     if (recibo.status !== 'success') {
       throw new Error(`${que} revirtió (tx ${hash}): se cobró el gas y no cambió nada.`);
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Cifrado
+  // -------------------------------------------------------------------------
+
+  /** La clave de cifrado de esta cuenta, una vez sacada: no se vuelve a firmar. */
+  private clave?: ClaveDeCifrado;
+
+  /**
+   * Si lo de un encargo del tablón va cifrado y con qué accesos se abre, por
+   * `jobId:adjunto` o `jobId:entrega`. Se aprende al leer el encargo o la
+   * entrega y lo usa `downloadBoardJobFiles`, que sin esto pediría los
+   * archivos por su nombre de verdad y el buzón los guarda con uno opaco.
+   */
+  private readonly cifradoDelTablon = new Map<string, { cifrado: boolean; accesos: Acceso[] }>();
+
+  /**
+   * La clave de cifrado de esta cuenta. Sale de la firma de un mensaje fijo
+   * —la misma cuenta firma siempre lo mismo (RFC 6979)—, así que es la misma
+   * que en la web y en la app, y no se guarda en ningún sitio.
+   */
+  async encryptionKey(): Promise<ClaveDeCifrado> {
+    if (this.clave) return this.clave;
+    const firma = await this.wallet().signMessage({ account: this.account!, message: mensajeParaDerivarClave(this.account!.address) });
+    this.clave = claveDesdeFirma(this.account!.address, firma);
+    return this.clave;
+  }
+
+  /**
+   * La clave pública de una cuenta, comprobada contra la firma que la ata a
+   * ella. `null` si no ha publicado ninguna, o si lo que sirve el buzón no es
+   * suyo: cifrar para una clave falsa sería entregarle el encargo a quien la puso.
+   */
+  async getPublicKey(cuenta: Address): Promise<string | null> {
+    try {
+      const { status, text } = await fetchLimited(`${this.buzonUrl}/${getAddress(cuenta)}/clave`, { timeoutMs: 10_000, maxBytes: 10_000 });
+      if (status !== 200) return null;
+      const b = JSON.parse(text) as { clave?: unknown; firma?: unknown };
+      if (typeof b.clave !== 'string' || typeof b.firma !== 'string') return null;
+      const ok = await comprobarClavePublicada({ cuenta, clave: b.clave, firma: b.firma as Hex }, this.publicClient);
+      return ok ? b.clave : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Deja publicada la clave de esta cuenta (dos firmas, sin gas, una vez). Si
+   * ya estaba, no firma nada más. Si había OTRA, la sustituye y `cambio` lo
+   * dice: lo cifrado para la anterior ya no se abrirá con esta.
+   */
+  async publishEncryptionKey(): Promise<{ publica: string; cambio: boolean }> {
+    const clave = await this.encryptionKey();
+    const yo = this.account!.address;
+    const publicada = await this.getPublicKey(yo);
+    if (publicada === clave.publica) return { publica: clave.publica, cambio: false };
+    const firma = await this.wallet().signMessage({ account: this.account!, message: mensajeParaPublicarClave(yo, clave.publica) });
+    const { status, text } = await fetchLimited(`${this.buzonUrl}/${yo}/clave`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ clave: clave.publica, firma }),
+      timeoutMs: 15_000,
+      maxBytes: 10_000,
+    });
+    if (status !== 200) throw new Error(`El buzón no aceptó la clave de cifrado (${status}: ${text.slice(0, 160)}).`);
+    return { publica: clave.publica, cambio: publicada !== null };
+  }
+
+  /**
+   * Un texto, abierto: tal cual si va en claro; con la clave de esta cuenta y
+   * sus `accesos` si va cifrado. Falla diciendo que no hay acceso, sin pedir
+   * ninguna firma, si esta cuenta todavía no puede abrirlo.
+   */
+  async decryptText(texto: string, accesos: Acceso[] = []): Promise<string> {
+    if (!esTextoCifrado(texto)) return texto;
+    this.wallet();
+    if (!puedeAbrir(texto, this.account!.address, accesos)) {
+      throw new Error('Va cifrado y esta cuenta todavía no tiene acceso: nadie se lo ha dado.');
+    }
+    return descifrarTexto(texto, this.account!.address, (await this.encryptionKey()).secreta, accesos);
+  }
+
+  /** Los bytes de un archivo, abiertos si van cifrados. */
+  async decryptFile(bytes: Uint8Array, accesos: Acceso[] = []): Promise<Uint8Array> {
+    if (!esArchivoCifrado(bytes)) return bytes;
+    this.wallet();
+    return descifrarArchivo(bytes, this.account!.address, (await this.encryptionKey()).secreta, accesos);
+  }
+
+  /**
+   * El encargo de una tarea DIRECTA, cifrado de punta a punta para quien lo
+   * hace y para esta cuenta, que tiene que poder releerlo y recibir la entrega
+   * cifrada (por eso publica también su clave, la primera vez).
+   *
+   * Solo tiene sentido con quien recibe en el buzón de Panal: a un agente con
+   * servidor propio el encargo le llega a SU máquina, y cifrárselo sería
+   * cifrar para el mismo que lo va a leer. Eso lo decide quien llama.
+   *
+   * Devuelve `null` si quien lo hace no ha publicado su clave: no hay a quién
+   * cifrar. Si no, el texto que se hashea y se manda —con el manifiesto de
+   * adjuntos dentro, con su nombre de verdad— y los adjuntos tal como se suben:
+   * cifrados y con su nombre opaco, que es lo único que ve el buzón.
+   */
+  async encryptBriefFor(
+    worker: Address,
+    texto: string,
+    adjuntos: ArchivoParaSubir[] = [],
+  ): Promise<{ brief: string; archivos: { file: AttachedFile; bytes: Uint8Array }[] } | null> {
+    this.wallet();
+    const suya = await this.getPublicKey(worker);
+    if (!suya) return null;
+    const mia = (await this.publishEncryptionKey()).publica;
+    const para: Destinatario[] = [
+      { cuenta: getAddress(worker), clave: suya },
+      { cuenta: this.account!.address, clave: mia },
+    ];
+    const cifrados = adjuntos.map((a) => ({ ...a, bytes: cifrarArchivo(a.bytes, para) }));
+    const enClaro = appendAttachmentsManifest(
+      texto,
+      cifrados.map((a) => attachmentFrom(a.name, a.bytes, a.mime)),
+    );
+    return {
+      brief: cifrarTexto(enClaro, para),
+      archivos: cifrados.map((a) => ({ file: attachmentFrom(nombreEnBuzon(keccak256(a.bytes)), a.bytes), bytes: a.bytes })),
+    };
+  }
+
+  /**
+   * Quiénes deciden las disputas: los firmantes de la multisig que es el
+   * `arbitrator` del escrow. Si el árbitro fuera una cuenta y no una
+   * multisig, es él.
+   */
+  async getArbitrators(): Promise<Address[]> {
+    const arbitrator = (await this.publicClient.readContract({
+      address: this.addresses.escrow,
+      abi: parseAbi(['function arbitrator() view returns (address)']),
+      functionName: 'arbitrator',
+    })) as Address;
+    const firmantes: Address[] = [];
+    for (let i = 0; i < 10; i++) {
+      try {
+        firmantes.push(
+          (await this.publicClient.readContract({
+            address: arbitrator,
+            abi: parseAbi(['function owners(uint256) view returns (address)']),
+            functionName: 'owners',
+            args: [BigInt(i)],
+          })) as Address,
+        );
+      } catch {
+        break;
+      }
+    }
+    return firmantes.length > 0 ? firmantes : [arbitrator];
+  }
+
+  /**
+   * Deja accesos en un buzón —el de un agente (`base` = su URL de buzón) o el
+   * del tablón— con una firma para todos. El buzón solo los acepta de una
+   * parte, y solo para la otra parte o para quien decide; van en trozos de
+   * 40, que es lo que admite por petición.
+   */
+  private async dejarAccesos(base: string, id: bigint, esTablon: boolean, accesos: Acceso[]): Promise<void> {
+    if (accesos.length === 0) return;
+    const expira = Math.floor(Date.now() / 1000) + VENTANA_FIRMA_S;
+    const signature = await this.wallet().signMessage({
+      account: this.account!,
+      message: esTablon ? tablonAccesoSignMessage(id, expira) : accesoSignMessage(id, expira),
+    });
+    for (let i = 0; i < accesos.length; i += 40) {
+      const { status, text } = await fetchLimited(`${base.replace(/\/+$/, '')}/access/${id}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ accesos: accesos.slice(i, i + 40), address: this.account!.address, signature, expira }),
+        timeoutMs: 15_000,
+        maxBytes: 10_000,
+      });
+      if (status !== 200) throw new Error(`El buzón no aceptó los accesos del #${id} (${status}: ${text.slice(0, 160)}).`);
+    }
+  }
+
+  /**
+   * Da acceso a quien decide la disputa a todo lo cifrado de `objetos` que
+   * esta cuenta puede abrir: textos anclados y bytes de archivos, tal como
+   * están en el buzón. Lo que va en claro se salta (eso ya lo lee).
+   *
+   * `base` es el buzón de quien trabaja (tarea directa, `id` = la tarea) o el
+   * del tablón (`tablon: true`, `id` = el encargo). Devuelve a cuántos
+   * firmantes se les dio y quiénes no tienen clave todavía: a esos no se les
+   * puede dar hasta que la publiquen.
+   */
+  async grantArbitratorsAccess(o: {
+    base: string;
+    id: bigint;
+    tablon?: boolean;
+    objetos: (string | Uint8Array)[];
+    accesos?: Acceso[];
+  }): Promise<{ arbitros: number; sinClave: Address[]; objetos: number }> {
+    this.wallet();
+    const cifrados = o.objetos.filter((x) => (typeof x === 'string' ? esTextoCifrado(x) : esArchivoCifrado(x)));
+    if (cifrados.length === 0) return { arbitros: 0, sinClave: [], objetos: 0 };
+    const conClave: Destinatario[] = [];
+    const sinClave: Address[] = [];
+    for (const a of await this.getArbitrators()) {
+      const clave = await this.getPublicKey(a);
+      if (clave) conClave.push({ cuenta: a, clave });
+      else sinClave.push(a);
+    }
+    if (conClave.length === 0) return { arbitros: 0, sinClave, objetos: cifrados.length };
+    const mia = await this.encryptionKey();
+    const nuevos: Acceso[] = [];
+    for (const objeto of cifrados) {
+      for (const d of conClave) {
+        // Lo que esta cuenta no puede abrir no lo puede compartir: se salta.
+        try {
+          nuevos.push(concederAcceso(objeto, this.account!.address, mia.secreta, d, o.accesos ?? []));
+        } catch {
+          /* no es de los suyos */
+        }
+      }
+    }
+    await this.dejarAccesos(o.base, o.id, o.tablon === true, nuevos);
+    return { arbitros: conClave.length, sinClave, objetos: cifrados.length };
   }
 
   // -------------------------------------------------------------------------
@@ -1574,6 +1821,12 @@ export class PanalClient {
     advertHash: Hex;
     /** El encargo tal como se hasheó, con los adjuntos anunciados: para reintentar. */
     encargo: string;
+    /**
+     * Los adjuntos tal como se suben: para reintentar. Si es confidencial van
+     * cifrados y con su nombre opaco, y no se pueden volver a componer (el
+     * cifrado es aleatorio): hay que guardar estos.
+     */
+    archivos: ArchivoParaSubir[];
     textosGuardados: boolean;
     /** Si los adjuntos están en el buzón. Sin adjuntos, `true`. */
     archivosGuardados: boolean;
@@ -1593,10 +1846,28 @@ export class PanalClient {
     if (adjuntos.length > 0 && !(await this.buzonAceptaArchivos())) {
       throw new Error('El buzón del tablón todavía no acepta archivos: no se ha publicado nada. Publica sin adjuntos o inténtalo más tarde.');
     }
-    const encargo = appendAttachmentsManifest(
+    let encargo = appendAttachmentsManifest(
       p.encargo,
       adjuntos.map((a) => attachmentFrom(a.name, a.bytes, a.mime)),
     );
+    // Lo que se sube: los adjuntos tal cual, o cifrados y con nombre opaco.
+    let aSubir = adjuntos;
+    if (p.confidencial) {
+      /*
+       * Cifrado solo para quien publica, antes de pagar nada: a quien coja el
+       * encargo se le da acceso al elegirlo (`chooseBoardOffer`). Los adjuntos
+       * se anuncian en abierto por su hash y su tamaño: el buzón solo acepta
+       * los que el encargo anuncia, y no puede leerlo.
+       */
+      const para: Destinatario[] = [{ cuenta: this.account!.address, clave: (await this.publishEncryptionKey()).publica }];
+      const cifrados = adjuntos.map((a) => ({ ...a, bytes: cifrarArchivo(a.bytes, para) }));
+      encargo = cifrarTexto(
+        appendAttachmentsManifest(p.encargo, cifrados.map((a) => attachmentFrom(a.name, a.bytes, a.mime))),
+        para,
+        { anunciar: cifrados.map((a) => ({ hash: keccak256(a.bytes), size: a.bytes.byteLength })) },
+      );
+      aSubir = cifrados.map((a) => ({ name: nombreEnBuzon(keccak256(a.bytes)), bytes: a.bytes }));
+    }
     const taskHash = keccak256(toBytes(encargo));
     const advertHash = keccak256(toBytes(p.anuncio));
     const seleccion = p.modo === ModoTablon.Seleccion;
@@ -1624,7 +1895,7 @@ export class PanalClient {
     // Los textos van DESPUÉS de la cadena: hasta que el encargo existe, el buzón
     // no tiene hash con qué comprobarlos. Si fallan, el encargo está pagado y
     // sin anunciar: se dice y se reintenta con `publishBoardJobTexts`.
-    const base = { jobId, txHash: hash, taskHash, advertHash, encargo };
+    const base = { jobId, txHash: hash, taskHash, advertHash, encargo, archivos: aSubir };
     try {
       await this.publishBoardJobTexts(jobId, { anuncio: p.anuncio, encargo });
     } catch (err) {
@@ -1633,7 +1904,7 @@ export class PanalClient {
     }
     // Los bytes, después del encargo: el buzón solo acepta los que anuncia.
     try {
-      await this.publishBoardJobFiles(jobId, adjuntos);
+      await this.publishBoardJobFiles(jobId, aSubir);
       return { ...base, textosGuardados: true, archivosGuardados: true };
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
@@ -1691,7 +1962,19 @@ export class PanalClient {
    * El hash viene del texto anclado —`readBoardJobBrief` o
    * `readBoardJobResult`—, nunca del buzón. Una firma para todos.
    */
-  async downloadBoardJobFiles(jobId: bigint, archivos: HashedFile[], de: 'adjunto' | 'entrega'): Promise<Uint8Array[]> {
+  async downloadBoardJobFiles(
+    jobId: bigint,
+    archivos: HashedFile[],
+    de: 'adjunto' | 'entrega',
+    opciones: {
+      /**
+       * `false`: devolverlos tal como están en el buzón —cifrados, si lo
+       * están—, que son los bytes que su hash cubre. Para quien los guarda y
+       * los vuelve a comprobar; se abren luego con `openBoardJobFile`.
+       */
+      abrir?: boolean;
+    } = {},
+  ): Promise<Uint8Array[]> {
     if (archivos.length === 0) return [];
     const job = await this.getBoardJob(jobId);
     const yo = this.wallet() && this.account!.address.toLowerCase();
@@ -1699,14 +1982,46 @@ export class PanalClient {
     if (!esCliente && yo !== job.agente.toLowerCase()) {
       throw new Error(`Los archivos del #${jobId} solo los bajan su cliente y su agente.`);
     }
+    // Si el texto que los anuncia iba cifrado, el buzón los guarda con su
+    // nombre opaco y hay que abrirlos. Si no se ha leído aún, se lee: un agente
+    // que retoma un encargo tras reiniciarse no lo tiene en memoria.
+    const estado = await this.estadoDeCifrado(jobId, de === 'entrega' && esCliente ? 'entrega' : 'adjunto');
+    const crudos = await this.bajarDelTablon(jobId, archivos, de, estado.cifrado, esCliente);
+    if (opciones.abrir === false) return crudos;
+    const out: Uint8Array[] = [];
+    for (const bytes of crudos) out.push(await this.decryptFile(bytes, estado.accesos));
+    return out;
+  }
+
+  /**
+   * Abre un archivo de un encargo del tablón bajado con `abrir: false`: con
+   * la clave de esta cuenta y sus accesos. Si no va cifrado, lo devuelve tal cual.
+   */
+  async openBoardJobFile(jobId: bigint, bytes: Uint8Array, de: 'adjunto' | 'entrega' = 'adjunto'): Promise<Uint8Array> {
+    if (!esArchivoCifrado(bytes)) return bytes;
+    const job = await this.getBoardJob(jobId);
+    const esCliente = this.account?.address.toLowerCase() === job.cliente.toLowerCase();
+    const estado = await this.estadoDeCifrado(jobId, de === 'entrega' && esCliente ? 'entrega' : 'adjunto');
+    return this.decryptFile(bytes, estado.accesos);
+  }
+
+  /** Los bytes de unos archivos del tablón, comprobados contra su hash y SIN abrir. */
+  private async bajarDelTablon(
+    jobId: bigint,
+    archivos: HashedFile[],
+    de: 'adjunto' | 'entrega',
+    cifrado: boolean,
+    esCliente: boolean,
+  ): Promise<Uint8Array[]> {
     // El cliente abre la entrega con la firma de llevársela; lo demás, con la de leer el encargo.
     const cabeceras = await this.credencialesDeBuzon((e) =>
       de === 'entrega' && esCliente ? tablonResultadoSignMessage(jobId, e) : tablonEncargoSignMessage(jobId, e),
     );
     const out: Uint8Array[] = [];
     for (const f of archivos) {
+      const nombre = cifrado ? nombreEnBuzon(f.hash) : sanitizeFileName(f.name);
       const { status, bytes } = await fetchBytesLimited(
-        `${this.buzonUrl}/${this.tablon()}/archivo/${jobId}/${encodeURIComponent(sanitizeFileName(f.name))}?de=${de}`,
+        `${this.buzonUrl}/${this.tablon()}/archivo/${jobId}/${encodeURIComponent(nombre)}?de=${de}`,
         { headers: cabeceras, timeoutMs: 180_000, maxBytes: Math.min(MAX_FILE_BYTES, f.size + 1024) },
       );
       if (status === 404) throw new Error(`«${f.name}» no está en el buzón del tablón.`);
@@ -1715,6 +2030,22 @@ export class PanalClient {
       out.push(bytes);
     }
     return out;
+  }
+
+  /**
+   * Si el encargo (`adjunto`) o la entrega (`entrega`) de un encargo del
+   * tablón va cifrado, y los accesos de esta cuenta. Lo recuerda de la última
+   * lectura; si no hay, lee. La entrega solo la lee su cliente: un agente
+   * cifra la suya si el encargo iba cifrado, así que mira el encargo.
+   */
+  private async estadoDeCifrado(jobId: bigint, de: 'adjunto' | 'entrega'): Promise<{ cifrado: boolean; accesos: Acceso[] }> {
+    const clave = `${jobId}:${de}`;
+    const ya = this.cifradoDelTablon.get(clave);
+    if (ya) return ya;
+    const leido = de === 'entrega' ? await this.leerEntregaDelTablon(jobId) : await this.leerEncargoDelTablon(jobId);
+    const estado = { cifrado: esTextoCifrado(leido.texto), accesos: leido.accesos };
+    this.cifradoDelTablon.set(clave, estado);
+    return estado;
   }
 
   /**
@@ -1752,20 +2083,40 @@ export class PanalClient {
    * El anuncio de cada encargo publicado, comprobado contra su `advertHash`.
    * Un anuncio que no cuadre no se devuelve: el buzón no puede inventarse uno.
    */
-  async listBoardJobAdverts(opciones: { limit?: number } = {}): Promise<(EncargoConReglas & { anuncio: string })[]> {
-    const [encargos, respuesta] = await Promise.all([
-      this.listBoardJobs({ limit: opciones.limit }),
-      fetchLimited(`${this.buzonUrl}/${this.tablon()}/lista`, { timeoutMs: 15_000, maxBytes: 2_000_000 }),
-    ]);
-    if (respuesta.status !== 200) throw new Error(`El buzón respondió ${respuesta.status} al pedir los anuncios.`);
-    const { anuncios = [] } = JSON.parse(respuesta.text) as { anuncios?: { jobId: string; anuncio: string }[] };
-    const porId = new Map(anuncios.map((a) => [a.jobId, a.anuncio]));
+  async listBoardJobAdverts(
+    opciones: { limit?: number } = {},
+  ): Promise<(EncargoConReglas & { anuncio: string; confidencial: boolean })[]> {
+    const [encargos, anuncios] = await Promise.all([this.listBoardJobs({ limit: opciones.limit }), this.anunciosDelBuzon()]);
     return encargos.flatMap((j) => {
-      const anuncio = porId.get(j.id.toString());
-      if (typeof anuncio !== 'string') return [];
-      if (keccak256(toBytes(anuncio)).toLowerCase() !== j.advertHash.toLowerCase()) return [];
-      return [{ ...j, anuncio }];
+      const a = anuncios.get(j.id.toString());
+      if (!a) return [];
+      if (keccak256(toBytes(a.anuncio)).toLowerCase() !== j.advertHash.toLowerCase()) return [];
+      return [{ ...j, anuncio: a.anuncio, confidencial: a.cifrado }];
     });
+  }
+
+  /**
+   * Los anuncios que guarda el buzón del tablón, con si su encargo va cifrado
+   * (confidencial). Eso lo dice el buzón y no la cadena: si mintiera, lo que
+   * cambia es un aviso, y quien coja el encargo lo verá al abrirlo.
+   */
+  private async anunciosDelBuzon(): Promise<Map<string, { anuncio: string; cifrado: boolean }>> {
+    const respuesta = await fetchLimited(`${this.buzonUrl}/${this.tablon()}/lista`, { timeoutMs: 15_000, maxBytes: 2_000_000 });
+    if (respuesta.status !== 200) throw new Error(`El buzón respondió ${respuesta.status} al pedir los anuncios.`);
+    const { anuncios = [] } = JSON.parse(respuesta.text) as { anuncios?: { jobId: string; anuncio: string; cifrado?: boolean }[] };
+    return new Map(
+      anuncios
+        .filter((a) => typeof a.anuncio === 'string')
+        .map((a) => [a.jobId, { anuncio: a.anuncio, cifrado: a.cifrado === true }]),
+    );
+  }
+
+  /**
+   * Si un encargo del tablón es confidencial: su encargo va cifrado y solo lo
+   * lee quien su cliente elija, que tiene que tener su clave publicada.
+   */
+  async isBoardJobConfidential(jobId: bigint): Promise<boolean> {
+    return (await this.anunciosDelBuzon()).get(jobId.toString())?.cifrado === true;
   }
 
   /**
@@ -1773,6 +2124,25 @@ export class PanalClient {
    * se comprueba contra el `taskHash` de la cadena antes de devolverlo.
    */
   async readBoardJobBrief(jobId: bigint): Promise<string> {
+    const { texto, accesos } = await this.leerEncargoDelTablon(jobId);
+    const cifrado = esTextoCifrado(texto);
+    this.cifradoDelTablon.set(`${jobId}:adjunto`, { cifrado, accesos });
+    // Confidencial: se abre con la clave de esta cuenta y el acceso que da su
+    // cliente al elegirla. Sin acceso todavía, se dice, sin pedir firmas.
+    if (cifrado && !puedeAbrir(texto, this.account!.address, accesos)) {
+      throw new Error(
+        `El encargo #${jobId} es confidencial y su cliente todavía no le ha dado acceso a esta cuenta ` +
+          '(se lo da al elegirla). Vuelve a intentarlo en un rato.',
+      );
+    }
+    return this.decryptText(texto, accesos);
+  }
+
+  /**
+   * El encargo del tablón tal como está anclado —en claro o cifrado—, con los
+   * accesos que tiene esta cuenta. Comprobado contra el `taskHash`.
+   */
+  private async leerEncargoDelTablon(jobId: bigint): Promise<{ texto: string; accesos: Acceso[] }> {
     const job = await this.getBoardJob(jobId);
     const yo = this.account?.address.toLowerCase();
     if (yo !== job.cliente.toLowerCase() && yo !== job.agente.toLowerCase()) {
@@ -1785,11 +2155,11 @@ export class PanalClient {
     });
     if (status === 404) throw new Error(`El buzón no tiene el encargo #${jobId}: su cliente no llegó a dejarlo.`);
     if (status !== 200) throw new Error(`El buzón respondió ${status} al pedir el encargo #${jobId}.`);
-    const { brief } = JSON.parse(text) as { brief?: string };
+    const { brief, accesos } = JSON.parse(text) as { brief?: string; accesos?: unknown };
     if (typeof brief !== 'string' || keccak256(toBytes(brief)).toLowerCase() !== job.taskHash.toLowerCase()) {
       throw new Error(`El encargo #${jobId} del buzón no cuadra con el taskHash de la cadena: no se trabaja sobre él.`);
     }
-    return brief;
+    return { texto: brief, accesos: Array.isArray(accesos) ? (accesos as Acceso[]) : [] };
   }
 
   /**
@@ -1808,16 +2178,41 @@ export class PanalClient {
       throw new Error(`El encargo #${jobId} lo tiene ${job.agente}, no tú.`);
     }
     if (job.estado !== EstadoTablon.Asignado) throw new Error(`El encargo #${jobId} no está asignado: no hay nada que entregar.`);
+    if (archivos.length > 0) {
+      const problema = problemaConArchivos(archivos);
+      if (problema) throw new Error(problema);
+    }
+    /*
+     * Confidencial: la entrega y sus archivos van cifrados para el cliente y
+     * para quien entrega. Sin la clave del cliente no se entrega en claro: el
+     * encargo era confidencial, y su entrega también.
+     */
+    let para: Destinatario[] | null = null;
+    if (esTextoCifrado((await this.leerEncargoDelTablon(jobId)).texto)) {
+      const delCliente = await this.getPublicKey(job.cliente);
+      if (!delCliente) {
+        throw new Error(
+          `El encargo #${jobId} es confidencial y su cliente no tiene clave de cifrado publicada: la entrega no ` +
+            'puede ir cifrada, y en claro no se entrega. No se ha anclado nada; vuelve a intentarlo en un rato.',
+        );
+      }
+      para = [
+        { cuenta: job.cliente, clave: delCliente },
+        { cuenta: this.account!.address, clave: (await this.publishEncryptionKey()).publica },
+      ];
+    }
+    // Lo que va en el manifiesto (nombre de verdad) y lo que se sube (cifrado y con nombre opaco).
+    const anunciar = para ? archivos.map((a) => ({ ...a, bytes: cifrarArchivo(a.bytes, para!) })) : archivos;
+    const subir = para ? anunciar.map((a) => ({ name: nombreEnBuzon(keccak256(a.bytes)), bytes: a.bytes })) : archivos;
     // Los archivos primero, y su hash dentro del texto que se ancla: si el
     // buzón no los acepta, no se ancla nada.
     let texto = textoEscrito;
     if (archivos.length > 0) {
-      const problema = problemaConArchivos(archivos);
-      if (problema) throw new Error(problema);
       const cabecerasArchivos = await this.credencialesDeBuzon((e) => tablonArchivoSignMessage(jobId, e));
-      for (const a of archivos) await this.subirArchivoAlTablon(jobId, a, cabecerasArchivos);
-      texto = entregaConArchivos(jobId, textoEscrito, archivos);
+      for (const a of subir) await this.subirArchivoAlTablon(jobId, a, cabecerasArchivos);
+      texto = entregaConArchivos(jobId, textoEscrito, anunciar);
     }
+    if (para) texto = cifrarTexto(texto, para);
     const hashEntrega = keccak256(toBytes(texto));
     const cabeceras = await this.credencialesDeBuzon((e) => tablonEntregaSignMessage(jobId, hashEntrega, e));
     const { status, text } = await fetchLimited(`${this.buzonUrl}/${this.tablon()}/entrega/${jobId}`, {
@@ -1844,6 +2239,14 @@ export class PanalClient {
    * en el escrow: el buzón no puede cambiarla.
    */
   async readBoardJobResult(jobId: bigint): Promise<string> {
+    const { texto, accesos } = await this.leerEntregaDelTablon(jobId);
+    this.cifradoDelTablon.set(`${jobId}:entrega`, { cifrado: esTextoCifrado(texto), accesos });
+    // Cifrada para el cliente y para quien entregó: se abre con la clave de esta cuenta.
+    return this.decryptText(texto, accesos);
+  }
+
+  /** La entrega tal como está anclada, con los accesos de esta cuenta. */
+  private async leerEntregaDelTablon(jobId: bigint): Promise<{ texto: string; accesos: Acceso[] }> {
     const job = await this.getBoardJob(jobId);
     if (this.account?.address.toLowerCase() !== job.cliente.toLowerCase()) {
       throw new Error(`La entrega del #${jobId} solo la descarga su cliente.`);
@@ -1855,12 +2258,12 @@ export class PanalClient {
     });
     if (status === 404) throw new Error(`El encargo #${jobId} todavía no tiene entrega en el buzón.`);
     if (status !== 200) throw new Error(`El buzón respondió ${status} al pedir la entrega del #${jobId}.`);
-    const { resultText } = JSON.parse(text) as { resultText?: string };
+    const { resultText, accesos } = JSON.parse(text) as { resultText?: string; accesos?: unknown };
     const tarea = await this.getTask(job.escrowTaskId);
     if (typeof resultText !== 'string' || keccak256(toBytes(resultText)).toLowerCase() !== tarea.resultHash.toLowerCase()) {
       throw new Error(`La entrega del #${jobId} no cuadra con el resultHash anclado en el escrow.`);
     }
-    return resultText;
+    return { texto: resultText, accesos: Array.isArray(accesos) ? (accesos as Acceso[]) : [] };
   }
 
   /** Coger un encargo inmediato. Antes de firmar pregunta si se puede, y por qué no. */
@@ -1881,6 +2284,9 @@ export class PanalClient {
     this.wallet();
     const { ok, motivo } = await this.canTakeBoardJob(this.account!.address, jobId);
     if (!ok) throw new Error(`No se puede ofertar en el encargo #${jobId}: ${motivo}.`);
+    // Confidencial: sin clave publicada, el cliente no podría darle acceso al
+    // elegirla y no podría leer lo que tiene que hacer. Se publica antes.
+    if (await this.isBoardJobConfidential(jobId)) await this.publishEncryptionKey();
     return (await this.firmarEnTablon('La oferta', 'applyFor', [jobId, precio, BigInt(plazoEntregaS)])).hash;
   }
 
@@ -1893,10 +2299,22 @@ export class PanalClient {
    * diferencia exacta (en $PANAL, con su `approve` exacto); si pide menos, la
    * diferencia queda para cobrar con `claimBoardRefund`.
    */
-  async chooseBoardOffer(jobId: bigint, agent: Address): Promise<{ txHash: Hex; escrowTaskId: bigint }> {
+  async chooseBoardOffer(
+    jobId: bigint,
+    agent: Address,
+  ): Promise<{ txHash: Hex; escrowTaskId: bigint; acceso?: { ok: true; accesos: number } | { ok: false; error: string } }> {
     const [job, ofertas] = await Promise.all([this.getBoardJob(jobId), this.getBoardOffers(jobId)]);
     const oferta = ofertas.find((o) => o.agente.toLowerCase() === agent.toLowerCase());
     if (!oferta) throw new Error(`${agent} no tiene oferta en el encargo #${jobId}.`);
+    // Confidencial: solo se elige a quien se le pueda dar acceso. Se mira antes
+    // de pagar nada; elegir a quien no puede leer el encargo es pagar por nada.
+    const confidencial = esTextoCifrado((await this.leerEncargoDelTablon(jobId)).texto);
+    if (confidencial && !(await this.getPublicKey(agent))) {
+      throw new Error(
+        `El encargo #${jobId} es confidencial y ${agent} no ha publicado su clave de cifrado: no se le podría dar ` +
+          'acceso y no podría leerlo. No se ha elegido nada; elige otra oferta.',
+      );
+    }
     const diferencia = oferta.precio > job.importe ? oferta.precio - job.importe : 0n;
     const nativa = job.moneda.toLowerCase() === NATIVE_CURRENCY.toLowerCase();
     if (diferencia > 0n) {
@@ -1904,7 +2322,79 @@ export class PanalClient {
       if (!nativa) await this.aprobarAlTablon(job.moneda, diferencia);
     }
     const { hash } = await this.firmarEnTablon('Elegir la oferta', 'choose', [jobId, getAddress(agent)], nativa ? diferencia : 0n);
-    return { txHash: hash, escrowTaskId: (await this.getBoardJob(jobId)).escrowTaskId };
+    const escrowTaskId = (await this.getBoardJob(jobId)).escrowTaskId;
+    if (!confidencial) return { txHash: hash, escrowTaskId };
+    // Elegido en la cadena: ahora, que pueda leer lo que tiene que hacer. Si
+    // falla, el encargo ya es suyo; se reintenta con `grantBoardJobAccess`.
+    try {
+      return { txHash: hash, escrowTaskId, acceso: { ok: true, accesos: await this.grantBoardJobAccess(jobId, agent) } };
+    } catch (err) {
+      return { txHash: hash, escrowTaskId, acceso: { ok: false, error: err instanceof Error ? err.message : String(err) } };
+    }
+  }
+
+  /**
+   * El cliente de un encargo confidencial da acceso al encargo y a sus
+   * adjuntos a quien lo tiene (o a `agent`). Se hace solo al elegir; esto es
+   * para un encargo que se asignó solo o un acceso que falló. Repetirlo no
+   * duplica nada. Devuelve cuántos accesos dejó.
+   */
+  async grantBoardJobAccess(jobId: bigint, agent?: Address): Promise<number> {
+    const job = await this.getBoardJob(jobId);
+    const para = getAddress(agent ?? job.agente);
+    if (para === getAddress(NATIVE_CURRENCY)) throw new Error(`El encargo #${jobId} no lo tiene nadie todavía.`);
+    const clave = await this.getPublicKey(para);
+    if (!clave) throw new Error(`${para} no ha publicado su clave de cifrado: no se le puede dar acceso.`);
+    const { objetos, accesos } = await this.reunirDelTablon(jobId, false);
+    if (objetos.length === 0) return 0;
+    const mia = await this.encryptionKey();
+    const nuevos = objetos.map((o) => concederAcceso(o, this.account!.address, mia.secreta, { cuenta: para, clave }, accesos));
+    await this.dejarAccesos(`${this.buzonUrl}/${this.tablon()}`, jobId, true, nuevos);
+    return nuevos.length;
+  }
+
+  /**
+   * Da acceso a quien decide la disputa de un encargo del tablón (los
+   * firmantes de la multisig) a lo cifrado que esta cuenta puede bajarse: el
+   * encargo y sus adjuntos y, si es su cliente, la entrega y sus archivos. Sin
+   * esto no podrían leerlo —ni Panal puede— y decidirían a ciegas.
+   * `disputeBoardJob` no lo hace solo: es otra firma, y puede faltarles la clave.
+   */
+  async grantBoardDisputeAccess(jobId: bigint): Promise<{ arbitros: number; sinClave: Address[]; objetos: number }> {
+    const { objetos, accesos } = await this.reunirDelTablon(jobId, true);
+    return this.grantArbitratorsAccess({ base: `${this.buzonUrl}/${this.tablon()}`, id: jobId, tablon: true, objetos, accesos });
+  }
+
+  /**
+   * Todo lo cifrado de un encargo del tablón que esta cuenta puede bajarse,
+   * tal como está en el buzón, y sus accesos. Con `conEntrega`, también la
+   * entrega y sus archivos si es su cliente y ya la hay.
+   */
+  private async reunirDelTablon(jobId: bigint, conEntrega: boolean): Promise<{ objetos: (string | Uint8Array)[]; accesos: Acceso[] }> {
+    const job = await this.getBoardJob(jobId);
+    const esCliente = this.account?.address.toLowerCase() === job.cliente.toLowerCase();
+    const objetos: (string | Uint8Array)[] = [];
+    const accesos: Acceso[] = [];
+    const encargo = await this.leerEncargoDelTablon(jobId);
+    accesos.push(...encargo.accesos);
+    if (esTextoCifrado(encargo.texto)) {
+      objetos.push(encargo.texto);
+      const claro = await this.decryptText(encargo.texto, accesos);
+      objetos.push(...(await this.bajarDelTablon(jobId, parseAttachmentsManifest(claro), 'adjunto', true, esCliente)));
+    }
+    if (conEntrega && esCliente && (job.estado === EstadoTablon.Asignado || job.estado === EstadoTablon.Cerrado)) {
+      const tarea = await this.getTask(job.escrowTaskId);
+      if (!/^0x0+$/.test(tarea.resultHash)) {
+        const entrega = await this.leerEntregaDelTablon(jobId);
+        accesos.push(...entrega.accesos);
+        if (esTextoCifrado(entrega.texto)) {
+          objetos.push(entrega.texto);
+          const claro = await this.decryptText(entrega.texto, accesos);
+          objetos.push(...(await this.bajarDelTablon(jobId, parseFilesManifest(claro), 'entrega', true, true)));
+        }
+      }
+    }
+    return { objetos, accesos };
   }
 
   /** Asignar un encargo de selección cuyo cliente no eligió. Lo puede llamar cualquiera. */

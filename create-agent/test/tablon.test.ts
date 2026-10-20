@@ -25,7 +25,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { keccak256, toBytes, type Address, type Hex } from 'viem';
-import { EstadoTablon, ModoTablon, TaskStatus, type EncargoConReglas } from '@panal/sdk';
+import { EstadoTablon, ModoTablon, TaskStatus, entregaConArchivos, type EncargoConReglas } from '@panal/sdk';
 import {
   buscarEncargoDeTarea,
   candidatos,
@@ -373,11 +373,17 @@ console.log('\nel vigilante retoma lo del tablón');
 
   const hecho: string[] = [];
   const anotados: bigint[] = [];
-  const deps = (o: { resultado?: string | null; brief?: string | null; archivos?: { name: string; bytes: Uint8Array }[] }) => ({
+  const deps = (o: {
+    resultado?: string | null;
+    brief?: string | null;
+    archivos?: { name: string; bytes: Uint8Array }[];
+    confidencial?: boolean;
+  }) => ({
     panal: {
       ...panalBusca,
-      deliverBoardJob: async (id: bigint, texto: string) => {
-        hecho.push(`entregar #${id} «${texto}»`);
+      isBoardJobConfidential: async () => o.confidencial === true,
+      deliverBoardJob: async (id: bigint, texto: string, archivos: { name: string }[] = []) => {
+        hecho.push(`entregar #${id} «${texto}»${archivos.length ? ` con ${archivos.map((a) => a.name).join(',')}` : ''}`);
         return { txHash: '0x9' as Hex, resultHash: '0x9' as Hex };
       },
       publishBoardJobFiles: async (id: bigint, archivos: { name: string }[]) => {
@@ -406,6 +412,21 @@ console.log('\nel vigilante retoma lo del tablón');
   check(
     'si la entrega guardada lleva archivos, los vuelve a subir ANTES de entregar',
     hecho.join(' → ') === 'subir #3 informe.pdf → entregar #3 «hecho con archivo»',
+    hecho.join(' → '),
+  );
+  hecho.length = 0;
+  await retomarDelTablon(
+    deps({
+      // Lo que guarda work(): el texto con el manifiesto de los archivos en claro.
+      resultado: entregaConArchivos(3n, 'hecho con archivo', [{ name: 'informe.pdf', bytes: new Uint8Array([1, 2]) }]),
+      archivos: [{ name: 'informe.pdf', bytes: new Uint8Array([1, 2]) }],
+      confidencial: true,
+    }),
+    703n,
+  );
+  check(
+    'confidencial: no sube nada en claro, y entrega el texto y los archivos para que se cifren',
+    !hecho.some((h) => h.startsWith('subir')) && hecho.join() === 'entregar #3 «hecho con archivo» con informe.pdf',
     hecho.join(' → '),
   );
   hecho.length = 0;

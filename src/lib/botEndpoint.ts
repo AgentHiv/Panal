@@ -71,14 +71,9 @@ export function entregaSignMessage(taskId: bigint, expira: number): string {
 
 /**
  * Una parte da acceso a lo cifrado de su tarea a quien decide la disputa. Y
- * un firmante de la multisig lee la disputa. Iguales a los del buzón.
+ * un firmante de la multisig lee la disputa. Los del SDK, iguales a los del buzón.
  */
-export function accesoSignMessage(taskId: bigint, expira: number): string {
-  return `Panal acceso #${taskId.toString()} · ${expira}`;
-}
-export function disputaSignMessage(taskId: bigint, expira: number): string {
-  return `Panal disputa #${taskId.toString()} · ${expira}`;
-}
+export { accesoSignMessage, disputaSignMessage } from '@panal/sdk';
 
 /**
  * Una firma y su caducidad, para reusarla en toda una operación.
