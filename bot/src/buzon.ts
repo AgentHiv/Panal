@@ -72,7 +72,7 @@
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { getAddress, isAddress, isHex, keccak256, toBytes, verifyMessage, type Address, type Hex } from 'viem';
-import { allowedOrigin, clientIp } from './net.js';
+import { allowedOrigin, clientIp, sinBarraFinal } from './net.js';
 import { leerEjemplosDeMetadata } from './ejemplos.js';
 import { leerNivelesDeMetadata } from './niveles.js';
 import {
@@ -1365,7 +1365,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     const niveles = leerNivelesDeMetadata(agent.metadataURI);
     // Sin traducir: el buzón no tiene modelo. Van como su dueño los escribió.
     const ejemplos = leerEjemplosDeMetadata(agent.metadataURI);
-    const base = deps.urlPublica ? `${deps.urlPublica.replace(/\/+$/, '')}/${agente}` : null;
+    const base = deps.urlPublica ? `${sinBarraFinal(deps.urlPublica)}/${agente}` : null;
 
     const ficha: AgentJson = {
       name: meta.name ?? `Agente Panal ${agente}`,

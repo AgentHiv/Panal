@@ -54,6 +54,19 @@ function normalizeIp(addr: string): string {
  * Se toma la ENTRADA MÁS A LA DERECHA de la cadena porque es la única que
  * escribió nuestro proxy; las de la izquierda las controla el cliente.
  */
+/**
+ * Una URL sin las barras del final. Con un bucle y no con `/\/+$/`: esa
+ * expresión, sobre un texto lleno de barras que no acaba en barra, vuelve a
+ * probar desde cada una y tarda un tiempo cuadrático. Y la URL de un agente la
+ * escribe él en su ficha: con unos miles de barras pararía este proceso. La
+ * misma que `sinBarraFinal` del SDK, que el bot no puede importar.
+ */
+export function sinBarraFinal(url: string): string {
+  let fin = url.length;
+  while (fin > 0 && url.charCodeAt(fin - 1) === 47) fin--;
+  return url.slice(0, fin);
+}
+
 export function clientIp(req: IncomingMessage): string {
   const socketAddr = req.socket.remoteAddress;
   if (!isLoopback(socketAddr)) return normalizeIp(socketAddr ?? 'unknown');

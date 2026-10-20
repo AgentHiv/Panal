@@ -64,7 +64,7 @@ import {
 } from './chain.js';
 import { chatWithSystem, generateResult } from './llm.js';
 import { resultSignMessage } from './http.js';
-import { assertPublicUrl, fetchJsonLimited } from './net.js';
+import { assertPublicUrl, fetchJsonLimited, sinBarraFinal } from './net.js';
 import type { A2aSubTaskRecord, Store } from './store.js';
 import type { Telegram } from './telegram.js';
 
@@ -148,7 +148,7 @@ export function parseBotUrl(metadataURI: string): string | null {
     if (m) {
       try {
         const u = new URL(m[1]!.trim());
-        if (u.protocol === 'http:' || u.protocol === 'https:') return u.toString().replace(/\/+$/, '');
+        if (u.protocol === 'http:' || u.protocol === 'https:') return sinBarraFinal(u.toString());
       } catch {
         // URL inválida: ignorar
       }

@@ -11,6 +11,7 @@ import { keccak256, toBytes } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import {
   aBase64,
+  accesoSignMessage,
   archivosAnunciadosEnSobre,
   claveDesdeFirma,
   concederAcceso,
@@ -21,13 +22,16 @@ import {
   descifrarArchivo,
   descifrarTexto,
   destinatariosDe,
+  disputaSignMessage,
   esArchivoCifrado,
   esTextoCifrado,
   mensajeParaDerivarClave,
   mensajeParaPublicarClave,
+  nombreEnBuzon,
   puedeAbrir,
   type ClaveDeCifrado,
 } from '../src/cifrado.js';
+import { ModoTablon, problemaAlPublicar } from '../src/tablon-reglas.js';
 
 const cliente = privateKeyToAccount('0x0123456789012345678901234567890123456789012345678901234567890123');
 const persona = privateKeyToAccount('0x1123456789012345678901234567890123456789012345678901234567890123');
@@ -221,4 +225,33 @@ test('un sobre puede anunciar sus adjuntos en abierto, sin sus nombres', async (
   assert.deepEqual(archivosAnunciadosEnSobre(sobre), [{ hash: '0x' + 'ab'.repeat(32), size: 506 }]);
   assert.equal(descifrarTexto(sobre, cliente.address, kc.secreta), 'con adjunto');
   assert.deepEqual(archivosAnunciadosEnSobre(cifrarTexto('sin', [{ cuenta: cliente.address, clave: kc.publica }])), []);
+});
+
+test('el nombre opaco de un archivo cifrado es el de la web y el buzón', () => {
+  // La web, la app, el SDK y quien baja del buzón tienen que dar el mismo: es
+  // como se pide el archivo. Fijado letra a letra.
+  assert.equal(nombreEnBuzon('0xABCDEF0123456789aaaa'), 'cifrado-abcdef0123456789.bin');
+});
+
+test('los mensajes de acceso y disputa son los del buzón, letra a letra', () => {
+  // El buzón (bot/src/buzon.ts) y la política de firma de la app tienen los
+  // mismos: si cambia uno, el buzón deja de aceptar la firma.
+  assert.equal(accesoSignMessage(12n, 1_900_000_000), 'Panal acceso #12 · 1900000000');
+  assert.equal(disputaSignMessage(12n, 1_900_000_000), 'Panal disputa #12 · 1900000000');
+});
+
+test('un encargo confidencial del tablón solo se publica en selección', () => {
+  const base = {
+    encargo: 'el encargo',
+    anuncio: 'un anuncio',
+    categoria: 2,
+    importe: 1n,
+    plazoEntregaS: 3600,
+    caducaEnS: 3 * 86_400,
+    ventanaOfertasS: 3600,
+    ventanaEleccionS: 86_400,
+    confidencial: true,
+  };
+  assert.match(problemaAlPublicar({ ...base, modo: ModoTablon.Inmediato }) ?? '', /confidencial se publica en selección/);
+  assert.equal(problemaAlPublicar({ ...base, modo: ModoTablon.Seleccion }), null);
 });

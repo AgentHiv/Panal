@@ -20,6 +20,8 @@
  *     sin pasar por nada de Panal: es la que decide si se deja pagar.
  */
 
+import { sinBarraFinal } from '@panal/sdk';
+
 /**
  * Los motivos del indexador que dicen «no hay nadie al otro lado».
  *
@@ -60,7 +62,7 @@ export function noRespondeSegunIndexador(f: VerificacionDelIndexador, ahoraS = D
  */
 export async function respondeElAgente(botUrl: string, timeoutMs = 8_000): Promise<boolean> {
   try {
-    await fetch(`${botUrl.replace(/\/+$/, '')}/agent.json`, {
+    await fetch(`${sinBarraFinal(botUrl)}/agent.json`, {
       mode: 'no-cors',
       cache: 'no-store',
       signal: AbortSignal.timeout(timeoutMs),

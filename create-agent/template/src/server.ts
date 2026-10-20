@@ -70,6 +70,7 @@ import {
   verifyNativePayment,
   x402Currencies,
   x402CurrencyByName,
+  sinBarraFinal,
 } from '@panal/sdk';
 import { comoAdjunto } from './salida.js';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -870,8 +871,14 @@ interface ComoEntregar {
   jobId: bigint;
   /** Deja la entrega en el buzón del tablón —con sus archivos, si hay— y ancla su hash. */
   entregar: (texto: string, archivos: ArchivoParaSubir[]) => Promise<{ txHash: Hex }>;
-  /** Los adjuntos del encargo, del buzón del tablón y comprobados contra su hash. */
+  /**
+   * Los adjuntos del encargo, del buzón del tablón y comprobados contra su
+   * hash, TAL COMO ESTÁN: cifrados si el encargo es confidencial. Son los
+   * bytes que su hash cubre, y así se guardan y se vuelven a comprobar.
+   */
   bajarAdjuntos: (archivos: AttachedFile[]) => Promise<Uint8Array[]>;
+  /** Abre un adjunto guardado, si va cifrado (con el acceso que dio el cliente). */
+  abrirAdjunto: (bytes: Uint8Array) => Promise<Uint8Array>;
 }
 
 /** Los archivos de la salida de `handleTask`, como se suben al tablón. */
@@ -937,6 +944,11 @@ async function work(
       // dándola por resuelta, una tarea cuyo adjunto llega tras un reinicio se
       // quedaba esperando para siempre sin que nadie volviera a mirarla.
       return 'esperando';
+    }
+    // Un encargo confidencial los trae cifrados: se abren justo antes de
+    // trabajar, que en disco quedan como los cubre su hash.
+    if (delTablon && recibidos.length > 0) {
+      recibidos = await Promise.all(recibidos.map(async (r) => ({ ...r, bytes: await delTablon.abrirAdjunto(r.bytes) })));
     }
     if (recibidos.length > 0) console.log(`[panal] #${taskId} con ${recibidos.length} adjunto(s) del cliente`);
 
@@ -1396,7 +1408,7 @@ const server = createServer((req, res) => {
     // LexPanal tuvo x402 funcionando y nadie lo usó, sencillamente porque no
     // salía en su tarjeta: un cobro que nadie puede descubrir no existe.
     if (url.pathname === '/agent.json' && req.method === 'GET') {
-      const base = process.env.PUBLIC_URL?.trim().replace(/\/+$/, '') || null;
+      const base = sinBarraFinal(process.env.PUBLIC_URL?.trim() ?? '') || null;
       /**
        * `?lang=fr`: la misma ficha con las frases en francés.
        *
@@ -2071,9 +2083,11 @@ const trabajarDelTablon = async (job: EncargoConReglas, brief: string): Promise<
   (await work(job.escrowTaskId, brief, null, {
     cliente: job.cliente,
     jobId: job.id,
-    // Compone el mismo texto que se guardó (`entregaConArchivos`): su hash es el que se ancla.
+    // Compone el mismo texto que se guardó (`entregaConArchivos`): su hash es el
+    // que se ancla. Salvo en uno confidencial, que se cifra al entregar.
     entregar: (texto, archivos) => panal.deliverBoardJob(job.id, texto, archivos),
-    bajarAdjuntos: (archivos) => panal.downloadBoardJobFiles(job.id, archivos, 'adjunto'),
+    bajarAdjuntos: (archivos) => panal.downloadBoardJobFiles(job.id, archivos, 'adjunto', { abrir: false }),
+    abrirAdjunto: (bytes) => panal.openBoardJobFile(job.id, bytes),
   })) === 'entregada';
 
 // El vigilante. Va DESPUÉS de escuchar: su primer repaso puede tardar unos

@@ -178,5 +178,19 @@ export async function fetchLimited(
  * rutas se hace en un sitio y no a mano en cada llamada.
  */
 export function rutaDeAgente(base: string, ruta: string): string {
-  return `${base.replace(/\/+$/, '')}/${ruta.replace(/^\/+/, '')}`;
+  return `${sinBarraFinal(base)}/${ruta.replace(/^\/+/, '')}`;
+}
+
+/**
+ * Una URL sin las barras del final.
+ *
+ * Con un bucle y no con `replace(/\/+$/, '')`: esa expresión, sobre un texto
+ * lleno de barras que no acaba en barra, vuelve a probar desde cada una y
+ * tarda un tiempo cuadrático. Y la URL de un agente la escribe él en su
+ * ficha: con unos miles de barras bastaría para colgar a quien la lea.
+ */
+export function sinBarraFinal(url: string): string {
+  let fin = url.length;
+  while (fin > 0 && url.charCodeAt(fin - 1) === 47) fin--;
+  return url.slice(0, fin);
 }

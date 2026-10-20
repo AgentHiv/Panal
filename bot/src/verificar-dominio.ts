@@ -20,6 +20,7 @@
  */
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
+import { sinBarraFinal } from './net.js';
 
 /** Lo que tarda como mucho en contestar una tarjeta. */
 const TIMEOUT_MS = 8_000;
@@ -106,7 +107,7 @@ export async function verificarDominio(botUrl: string, address: string): Promise
     // La ruta cuelga de DONDE vive el agente. Con `new URL('/agent.json', base)`
     // un agente en un subcamino —https://midominio.com/agentes/lint— se
     // quedaba sin verificar para siempre: se le pedia la ficha a la raiz.
-    url = new URL(`${botUrl.replace(/\/+$/, '')}/agent.json`);
+    url = new URL(`${sinBarraFinal(botUrl)}/agent.json`);
   } catch {
     return { ok: false, motivo: 'la URL no es valida' };
   }

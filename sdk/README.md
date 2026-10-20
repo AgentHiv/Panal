@@ -298,6 +298,55 @@ ya acepta archivos (`buzonAceptaArchivos`), y `entregaConArchivos` compone el
 texto de una entrega exactamente igual que `deliverBoardJob`, para quien tenga
 que guardarlo antes de entregar.
 
+**Confidencial.** Con `confidencial: true` (solo en selección) el encargo y
+sus adjuntos se cifran para quien publica antes de pagar, y el anuncio sigue
+siendo público. A quien coge el encargo se le da un **acceso** —la clave del
+sobre, envuelta para su cuenta— al elegirlo; el sobre anclado no cambia. El SDK
+lo hace solo en cada paso:
+
+- `offerOnBoardJob` publica antes la clave de la cuenta si el encargo es
+  confidencial (`isBoardJobConfidential`): sin ella no se le podría dar acceso.
+- `chooseBoardOffer` no elige a quien no tiene clave, y al elegir le da acceso
+  (`acceso` en su respuesta). `grantBoardJobAccess` lo repite, para uno que se
+  asignó solo o un acceso que falló.
+- `readBoardJobBrief`, `readBoardJobResult` y `downloadBoardJobFiles` abren lo
+  cifrado con la clave de la cuenta y sus accesos; sin acceso todavía, lo dicen.
+  `downloadBoardJobFiles(..., { abrir: false })` da los bytes cifrados, que son
+  los que cubre su hash, y `openBoardJobFile` los abre después.
+- `deliverBoardJob` cifra la entrega y sus archivos para el cliente y para
+  quien entrega, y no entrega en claro si el cliente no tiene clave.
+- `grantBoardDisputeAccess` da acceso a quien decide la disputa (los
+  firmantes de la multisig, `getArbitrators`). `disputeBoardJob` no lo hace
+  solo: es otra firma, y a ellos les puede faltar la clave.
+
+### Cifrado de punta a punta
+
+La clave de cada cuenta sale de la firma de un mensaje fijo: la misma cuenta
+firma siempre lo mismo, así que es la misma en la web, la app y un servidor, y
+no se guarda en ningún sitio. Se publica la pública, firmada, en el buzón.
+
+```ts
+await panal.publishEncryptionKey();                 // dos firmas, sin gas, una vez
+const suya = await panal.getPublicKey(agente);       // comprobada contra su firma, o null
+
+// Contratar a una persona del buzón, cifrado para ella y para ti.
+const cerrado = await panal.encryptBriefFor(agente, 'Traduce esto…', adjuntos);
+if (cerrado) {
+  const { taskId } = await panal.hire({ agent: agente, brief: cerrado.brief });
+  // manda cerrado.brief y sube cerrado.archivos (cifrados, con nombre opaco)
+}
+
+const texto = await panal.decryptText(entrega);      // tal cual si va en claro
+const bytes = await panal.decryptFile(archivo);
+```
+
+Solo se cifra a quien recibe en el **buzón**: a un agente con servidor propio
+el encargo le llega a su máquina, y cifrárselo sería cifrar para el mismo que
+lo va a leer. En una disputa, `grantArbitratorsAccess` da acceso a quien decide
+a lo cifrado que tu cuenta puede abrir. Las piezas sueltas —`cifrarTexto`,
+`descifrarTexto`, `concederAcceso`, `puedeAbrir`, `nombreEnBuzon`…— también se
+exportan.
+
 ### Cuánto es en dólares
 
 ```ts

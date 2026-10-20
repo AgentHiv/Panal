@@ -252,16 +252,50 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
     (args.confirmed_by_user === true ? null : `I will not ${que} without confirmed_by_user: true.`);
 
   /** Los anuncios del buzón del tablón, por número, comprobados contra la cadena. */
+  /**
+   * Los encargos CONFIDENCIALES vistos en la última lectura de anuncios: su
+   * encargo va cifrado y solo lo lee quien su cliente elija. Lo dice el buzón;
+   * si mintiera, lo que cambia es un aviso.
+   */
+  const confidenciales = new Set<string>();
+
+  /**
+   * Lo publicado como confidencial, tal como se subió: para reintentar si los
+   * textos o los archivos no llegaron. No se puede volver a componer —el
+   * cifrado es aleatorio— y por eso se guarda. En memoria: tras reiniciar, un
+   * reintento ya no es posible y el encargo se retira y se vuelve a publicar.
+   */
+  const publicadosCifrados = new Map<string, { anuncio: string; encargo: string; archivos: ArchivoParaSubir[] }>();
+
+  /**
+   * Da acceso a quien decide la disputa de un encargo del tablón, y lo dice en
+   * una línea. `null` si no había nada cifrado que dar.
+   */
+  async function accesoParaQuienDecide(id: bigint): Promise<string | null> {
+    try {
+      const r = await panal.grantBoardDisputeAccess(id);
+      if (r.objetos === 0) return null;
+      if (r.arbitros > 0) {
+        return `  The deciders (${r.arbitros} of ${r.arbitros + r.sinClave.length} multisig signers) were given access to the encrypted brief and delivery, so they can read what is disputed.`;
+      }
+      return '  WARNING: the brief or the delivery is encrypted and no multisig signer has published an encryption key yet, so they cannot read it. Call panal_grant_board_access with to "deciders" again later.';
+    } catch (err) {
+      return `  WARNING: giving the deciders access to the encrypted brief failed (${fallo(err)}). Retry with panal_grant_board_access and to "deciders".`;
+    }
+  }
+
   async function anunciosDe(encargos: EncargoConReglas[]): Promise<Map<string, string>> {
     const out = new Map<string, string>();
     try {
       const res = await fetch(`${panal.buzonUrl}/${tablon()}/lista`, { signal: AbortSignal.timeout(10_000) });
       if (!res.ok) return out;
-      const { anuncios = [] } = (await res.json()) as { anuncios?: { jobId: string; anuncio: string }[] };
+      const { anuncios = [] } = (await res.json()) as { anuncios?: { jobId: string; anuncio: string; cifrado?: boolean }[] };
       const hashes = new Map(encargos.map((j) => [j.id.toString(), j.advertHash.toLowerCase()]));
       for (const a of anuncios) {
         if (typeof a.anuncio === 'string' && hashes.get(a.jobId) === keccak256(toBytes(a.anuncio)).toLowerCase()) {
           out.set(a.jobId, a.anuncio);
+          if (a.cifrado === true) confidenciales.add(a.jobId);
+          else confidenciales.delete(a.jobId);
         }
       }
     } catch {
@@ -360,10 +394,14 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
       const crudo = anuncios.get(j.id.toString());
       const { audiencia, texto: anuncio } = crudo ? leerAnuncio(crudo) : { audiencia: 'todos' as const, texto: null };
       const fuera = fueraDeAudiencia(audiencia, tipo);
+      const confidencial = confidenciales.has(j.id.toString());
       return [
-        `\n${cabecera(j, ahora, ofertas[i]?.length)}${audiencia !== 'todos' ? `, for ${NOMBRE_AUDIENCIA[audiencia]}` : ''}`,
+        `\n${cabecera(j, ahora, ofertas[i]?.length)}${audiencia !== 'todos' ? `, for ${NOMBRE_AUDIENCIA[audiencia]}` : ''}${confidencial ? ', CONFIDENTIAL' : ''}`,
         `  "${anuncio ?? '(advert not in the mailbox)'}"`,
         `  posted by ${j.cliente}`,
+        confidencial && !tuyo
+          ? '  Confidential: the brief is encrypted, and the client gives access only to the agent it picks. Bidding publishes this wallet\'s encryption key (two signatures, no gas) so it can be given access.'
+          : null,
         tuyo
           ? '  (posted by this wallet)'
           : fuera
@@ -458,9 +496,13 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         const crudo = (await anunciosDe([j])).get(id.toString());
         const { audiencia, texto: anuncio } = crudo ? leerAnuncio(crudo) : { audiencia: 'todos' as const, texto: null };
 
+        const confidencial = confidenciales.has(id.toString());
         const lineas: (string | null)[] = [
           cabecera(j, ahora),
           `  State: ${ESTADO[j.estado]}`,
+          confidencial
+            ? '  Confidential: the brief and its files are encrypted. Only the client and the agent it picks (which needs a published encryption key) can read them; not even Panal\'s mailbox can.'
+            : null,
           audiencia !== 'todos' ? `  For: ${NOMBRE_AUDIENCIA[audiencia]} (declared in the advert; the contract cannot check who is a person)` : null,
           `  Advert: ${anuncio ? `"${anuncio}"` : '(not in the mailbox)'}`,
           `  Client: ${j.cliente}${soyCliente ? ' (this wallet)' : ''}`,
@@ -526,6 +568,9 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         } else if (j.estado === EstadoTablon.Asignado) {
           if (soyAgente) siguiente.push('read the brief with include_brief, and deliver with panal_deliver_board_job');
           if (soyCliente) {
+            if (confidencial) {
+              siguiente.push('if the agent cannot read it yet (it was assigned automatically, or the access failed), give it access with panal_grant_board_access');
+            }
             siguiente.push('read the delivery with panal_board_result, then panal_approve_board_job or panal_dispute_board_job');
           }
           siguiente.push('once the escrow is done (approved, released after 72 h, or cancelled past the deadline), panal_close_board_job settles it');
@@ -649,6 +694,11 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
           choose_hours: { type: 'number', description: 'Selection: time to choose after offers close (max 168). Default 24.' },
           experienced_only: { type: 'boolean', description: 'Only agents at level 1 or higher.' },
           relist: { type: 'boolean', description: 'If the agent does not deliver, post it again instead of refunding.' },
+          confidential: {
+            type: 'boolean',
+            description:
+              'Selection only. Encrypt the brief and its files end to end: only this wallet and the agent it picks can read them, not even Panal\'s mailbox. Only agents with a published encryption key can be picked. The advert stays public.',
+          },
           files: {
             type: 'array',
             items: { type: 'string' },
@@ -677,6 +727,18 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         const reintento = args.retry_job_id === undefined ? null : parseJobId(args.retry_job_id);
         if (args.retry_job_id !== undefined) {
           if (reintento === null) return 'retry_job_id must be a board job number.';
+          // Uno confidencial no se puede volver a componer —el cifrado es
+          // aleatorio—: se reenvía la copia que se guardó al publicarlo.
+          const guardado = publicadosCifrados.get(reintento.toString());
+          if (guardado) {
+            try {
+              await panal.publishBoardJobTexts(reintento, { anuncio: guardado.anuncio, encargo: guardado.encargo });
+              await panal.publishBoardJobFiles(reintento, guardado.archivos);
+              return `Texts${guardado.archivos.length ? ' and files' : ''} of confidential board job #${reintento} are in the mailbox now. Nothing was charged.`;
+            } catch (err) {
+              return `The mailbox still did not take them: ${fallo(err)}. Nothing was charged. Try again in a while.`;
+            }
+          }
           try {
             // El mismo encargo que se hasheó: el texto con los adjuntos anunciados.
             const encargoFinal = appendAttachmentsManifest(encargo, adjuntos.map((a) => attachmentFrom(a.name, a.bytes, a.mime)));
@@ -714,6 +776,7 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
           soloConExperiencia: args.experienced_only === true,
           republicar: args.relist === true,
           adjuntos,
+          confidencial: args.confidential === true,
         };
         const problema = problemaAlPublicar(p);
         if (problema) return `Not posted, nothing was spent: ${problema}`;
@@ -732,6 +795,7 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
 
         try {
           const r = await panal.postBoardJob(p);
+          if (p.confidencial) publicadosCifrados.set(r.jobId.toString(), { anuncio, encargo: r.encargo, archivos: r.archivos });
           d.registrarGasto(moneda, cuanto);
           d.log(`publicado en el tablón #${r.jobId} por ${formatEther(cuanto)} ${simbolo}`);
           return [
@@ -740,10 +804,15 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
             r.textosGuardados && r.archivosGuardados
               ? `  Advert and brief${adjuntos.length ? ` and ${adjuntos.length} file(s)` : ''} are in the mailbox.`
               : `  WARNING: the ${r.textosGuardados ? 'files' : 'texts'} did NOT reach the mailbox (${r.error}). Call panal_post_board_job again with retry_job_id ${r.jobId} and the same advert, brief and files: that only re-sends them.`,
+            p.confidencial
+              ? '  Confidential: the brief and its files are encrypted for this wallet. Only agents with a published encryption key can be chosen, and choosing one gives it access.'
+              : null,
             modo === ModoTablon.Seleccion
               ? `Agents can bid for ${duracion(p.ventanaOfertasS!)}. Follow it with panal_board_job ${r.jobId}.`
               : `The first agent that passes the rules takes it. Follow it with panal_board_job ${r.jobId}.`,
-          ].join('\n');
+          ]
+            .filter(Boolean)
+            .join('\n');
         } catch (err) {
           return `Could not post: ${fallo(err)}`;
         }
@@ -799,6 +868,11 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
               ? `  You added ${importe(diferencia, j.moneda)} to cover an offer above the budget.`
               : o.precio < j.importe
                 ? `  ${importe(j.importe - o.precio, j.moneda)} was left over: collect it with panal_withdraw.`
+                : null,
+            r.acceso?.ok === true
+              ? '  Confidential: the agent was given access to the brief and its files.'
+              : r.acceso?.ok === false
+                ? `  WARNING: the job is the agent's, but giving it access to the confidential brief failed (${r.acceso.error}). Retry with panal_grant_board_access ${id}: until then it cannot read what to do.`
                 : null,
             `The agent has ${duracion(o.plazoEntregaS)} to deliver. Then read it with panal_board_result.`,
           ]
@@ -889,9 +963,50 @@ export function herramientasDelTablon(d: DepsTablon): { lectura: Herramienta[]; 
         if (id === null) return 'job_id must be a board job number.';
         try {
           const hash = await panal.disputeBoardJob(id);
-          return `Dispute opened on board job #${id}. The multisig resolves it; follow it with panal_board_job.\n  tx: ${tx(hash)}`;
+          return [
+            `Dispute opened on board job #${id}. The multisig resolves it; follow it with panal_board_job.`,
+            `  tx: ${tx(hash)}`,
+            await accesoParaQuienDecide(id),
+          ]
+            .filter(Boolean)
+            .join('\n');
         } catch (err) {
           return `Could not open the dispute: ${fallo(err)}`;
+        }
+      },
+    },
+    {
+      name: 'panal_grant_board_access',
+      description:
+        'For a CONFIDENTIAL board job (its brief is encrypted): give access to whoever has to read it. to "agent": ' +
+        'as the client, give the assigned agent access to the brief and its files — it happens when choosing an ' +
+        'offer; this is for a job assigned automatically or an access that failed. to "deciders": as a party in a ' +
+        'dispute, give the multisig signers access to what this wallet can read, so they can decide. Repeating it ' +
+        'does not duplicate anything. Signs messages only: no transaction, no money.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          job_id: { type: 'string', description: 'The board job number.' },
+          to: { type: 'string', description: '"agent" (default) or "deciders".' },
+        },
+        required: ['job_id'],
+      },
+      handler: async (args) => {
+        const no = disponible();
+        if (no) return no;
+        if (!d.cuenta) return 'Giving access needs this server\'s wallet (MCP_PRIVATE_KEY) to sign: there is none.';
+        const id = parseJobId(args.job_id);
+        if (id === null) return 'job_id must be a board job number.';
+        const a = (texto(args.to) ?? 'agent').toLowerCase();
+        if (a === 'deciders') return (await accesoParaQuienDecide(id))?.trim() ?? `Nothing in board job #${id} is encrypted: the deciders can read it as it is.`;
+        if (a !== 'agent') return 'to is "agent" or "deciders".';
+        try {
+          const n = await panal.grantBoardJobAccess(id);
+          return n === 0
+            ? `Nothing in board job #${id} is encrypted: its agent can read it as it is.`
+            : `The agent of board job #${id} was given access to the brief and its files (${n} item(s)). It can read them now.`;
+        } catch (err) {
+          return `Could not give access: ${fallo(err)}`;
         }
       },
     },

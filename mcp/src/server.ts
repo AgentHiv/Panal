@@ -45,12 +45,14 @@ import { formatEther, formatUnits, isAddress, keccak256, parseEther, toBytes } f
 import { privateKeyToAccount } from 'viem/accounts';
 import type { Address } from 'viem';
 import {
+  BUZON_URL,
   NATIVE_CURRENCY,
   TaskStatus,
   appendAttachmentsManifest,
   conEjemplosDeLaFicha,
   createPanalClient,
   downloadDeliveredFile,
+  esTextoCifrado,
   enDolares,
   formatearDolares,
   erc20Abi,
@@ -65,6 +67,7 @@ import {
   type Nivel,
   type PanalClient,
   type Precios,
+  sinBarraFinal,
 } from '@panal/sdk';
 import {
   MAX_ADJUNTOS,
@@ -84,6 +87,7 @@ import {
   renderNiveles,
 } from './niveles.js';
 import { QuoteBook, SpendLedger, limitFor, limitsFromEnv } from './limits.js';
+import { Sellados } from './sellados.js';
 import { deudaDelTablon, herramientasDelTablon } from './tablon.js';
 import {
   briefSignMessage,
@@ -125,6 +129,14 @@ function log(msg: string): void {
 
 const limits = limitsFromEnv();
 const quotes = new QuoteBook();
+
+/**
+ * Lo contratado CIFRADO, tal como se ancló y se subió, por tarea: para
+ * reenviarlo si no llegó, y para dar acceso a quien decide si se disputa. No
+ * se puede volver a componer —el cifrado es aleatorio— y por eso se guarda,
+ * en disco junto al registro de gasto (ver `sellados.ts`).
+ */
+const encargosCifrados = new Sellados(SpendLedger.defaultFile());
 const ledger = new SpendLedger(SpendLedger.defaultFile(), (m) => log(`⚠️  ${m}`));
 
 const writesRequested = (process.env.MCP_ENABLE_WRITES ?? '').trim().toLowerCase() === 'true';
@@ -145,6 +157,16 @@ const panal: PanalClient = createPanalClient({
   buzonUrl: process.env.BUZON_URL?.trim() || undefined,
   account,
 });
+
+/**
+ * ¿Ese endpoint es el buzón de Panal, y no la máquina del agente? Solo ahí se
+ * cifra: es donde el encargo espera en un sitio que no es de quien lo hace.
+ */
+function recibeEnElBuzon(botUrl: string | null | undefined): boolean {
+  if (!botUrl) return false;
+  const url = sinBarraFinal(botUrl).toLowerCase();
+  return [BUZON_URL, panal.buzonUrl].some((b) => url.startsWith(sinBarraFinal(b).toLowerCase()));
+}
 
 /** Motivo por el que no se puede escribir, o null si sí se puede. */
 function writesBlockedReason(): string | null {
@@ -392,7 +414,12 @@ interface Tool {
 const str = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
 
 interface Entrega {
+  /** La entrega, ya abierta si iba cifrada. */
   text: string;
+  /** Si iba cifrada: sus archivos también, y se abren al bajarlos. */
+  cifrado: boolean;
+  /** El texto tal como se ancló (el sobre, si iba cifrada). */
+  anclado: string;
   archivos: DeliveredFile[];
   botUrl: string;
   signature: string;
@@ -454,7 +481,52 @@ async function recogerEntrega(taskId: bigint): Promise<Entrega | { error: string
     };
   }
 
-  return { text, archivos: parseFilesManifest(text), botUrl: agent.metadata.botUrl, signature, expira };
+  // Cifrada para esta wallet y para quien la entregó (porque esta wallet
+  // publicó su clave): se abre aquí, con su clave, y nunca sale en claro.
+  const cifrado = esTextoCifrado(text);
+  const claro = cifrado ? await panal.decryptText(text) : text;
+  return { text: claro, cifrado, anclado: text, archivos: parseFilesManifest(claro), botUrl: agent.metadata.botUrl, signature, expira };
+}
+
+/**
+ * Abierta la disputa de una tarea con alguien que recibe en el buzón, da
+ * acceso a quien decide (los firmantes de la multisig) a lo cifrado que esta
+ * wallet puede abrir: el encargo, si guarda el sobre, y la entrega con sus
+ * archivos. Sin esto no podrían leerlo —ni Panal puede— y decidirían a
+ * ciegas. Devuelve una línea para la respuesta, o null si no había nada cifrado.
+ */
+async function accesoEnDisputa(taskId: bigint): Promise<string | null> {
+  try {
+    const task = await panal.getTask(taskId);
+    const botUrl = (await panal.getAgent(task.worker)).metadata.botUrl;
+    if (!botUrl || !recibeEnElBuzon(botUrl)) return null;
+    const objetos: (string | Uint8Array)[] = [];
+    const sellado = encargosCifrados.leer(taskId);
+    if (sellado) objetos.push(sellado.brief, ...sellado.archivos.map((a) => a.bytes));
+    if (!/^0x0+$/.test(task.resultHash)) {
+      const entrega = await recogerEntrega(taskId);
+      if (!('error' in entrega) && entrega.cifrado) {
+        objetos.push(entrega.anclado);
+        for (const f of entrega.archivos) {
+          objetos.push(
+            await downloadDeliveredFile(f, { baseUrl: entrega.botUrl, address: account!.address, signature: entrega.signature, expira: entrega.expira }),
+          );
+        }
+      }
+    }
+    const r = await panal.grantArbitratorsAccess({ base: botUrl, id: taskId, objetos });
+    if (r.objetos === 0) return null;
+    if (r.arbitros > 0) {
+      return (
+        `  The deciders (${r.arbitros} of ${r.arbitros + r.sinClave.length} multisig signers) were given access to the encrypted ` +
+        `${sellado ? 'job and ' : ''}delivery, so they can read what is disputed.` +
+        (sellado ? '' : ' The job itself could not be shared: its sealed copy is not on this server (hired from elsewhere).')
+      );
+    }
+    return '  WARNING: what is disputed is encrypted and no multisig signer has published an encryption key yet, so they cannot read it.';
+  } catch (err) {
+    return `  WARNING: giving the deciders access to the encrypted job failed (${err instanceof Error ? err.message.split('\n')[0] : String(err)}).`;
+  }
 }
 
 const READ_TOOLS: Tool[] = [
@@ -603,6 +675,9 @@ const READ_TOOLS: Tool[] = [
         // Una consulta x402 se resuelve en una sola llamada HTTP: no hay tarea,
         // ni taskId, ni sitio donde anunciar un adjunto. Aquí siempre va vacío.
         adjuntos: [],
+        // Va a la máquina del agente, que es quien la lee: no hay buzón en medio.
+        cifrado: false,
+        briefPedido: prompt,
       });
 
       return [
@@ -913,6 +988,11 @@ const WRITE_TOOLS: Tool[] = [
         );
       }
 
+      // Con quien recibe en el buzón de Panal y publicó su clave, el encargo,
+      // sus archivos y la entrega van cifrados de punta a punta, como desde la
+      // web. A un agente con servidor propio le llega a SU máquina: no se cifra.
+      const enBuzon = recibeEnElBuzon(agent.metadata.botUrl);
+      const cifrado = enBuzon && !!account && (await panal.getPublicKey(agent.address)) !== null;
       const quote = quotes.issue({
         kind: 'hire',
         worker: agent.address,
@@ -924,6 +1004,8 @@ const WRITE_TOOLS: Tool[] = [
         symbol,
         botUrl: agent.metadata.botUrl,
         adjuntos: adjuntos.map((a) => ({ file: a.file, ruta: a.ruta })),
+        cifrado,
+        briefPedido,
       });
 
       return [
@@ -942,6 +1024,11 @@ const WRITE_TOOLS: Tool[] = [
           : []),
         `  Deadline: ${limits.deadlineHours} h from the moment it is hired`,
         `  Job: ${briefPedido.length > 200 ? `${briefPedido.slice(0, 200)}…` : briefPedido}`,
+        cifrado
+          ? `  Privacy: end-to-end encrypted — only ${quote.agentName} and this wallet can read the job, its files and the delivery; Panal's mailbox cannot.`
+          : enBuzon
+            ? `  Privacy: NOT encrypted — ${quote.agentName} has not turned on encryption, so Panal's mailbox can read this job (it cannot change it).`
+            : null,
         // Se listan uno a uno, con su ruta real. Lo que se adjunta sale de esta
         // máquina y no vuelve, así que la persona tiene que poder ver QUÉ
         // archivos son antes de decir que sí — no un «3 adjuntos».
@@ -956,7 +1043,9 @@ const WRITE_TOOLS: Tool[] = [
         '',
         'Show this price to the person. Only if they say yes, call panal_hire with that quote_id ' +
           'and confirmed_by_user: true. This moves real money.',
-      ].join('\n');
+      ]
+        .filter((l) => l !== null)
+        .join('\n');
     },
   },
   {
@@ -1086,12 +1175,37 @@ const WRITE_TOOLS: Tool[] = [
         // haber cambiado en los cinco minutos que vive un presupuesto: se
         // gastaría de más sin que nadie lo hubiera aprobado y por encima del
         // tope, que se comprobó contra el importe viejo.
+        /*
+         * Cifrado, si se presupuestó así: el encargo y sus adjuntos se cierran
+         * AHORA para quien lo hace y para esta wallet. El hash que va a la
+         * cadena es el del sobre, y los adjuntos viajan cifrados con nombre
+         * opaco. Si el agente retiró su clave desde el presupuesto, no se
+         * contrata en claro sin que nadie lo haya aprobado.
+         */
+        let brief = quote.brief;
+        let aSubir = subidas.map((s) => ({ file: s.file, bytes: s.bytes }));
+        if (quote.cifrado) {
+          const cerrado = await panal.encryptBriefFor(
+            quote.worker,
+            quote.briefPedido,
+            subidas.map((s) => ({ name: s.file.name, bytes: s.bytes, ...(s.file.mime ? { mime: s.file.mime } : {}) })),
+          );
+          if (!cerrado) {
+            return (
+              `Not hired, nothing was spent: ${quote.agentName} no longer publishes an encryption key, and this ` +
+              'quote promised an encrypted job. Ask for a fresh quote: it will say whether it goes encrypted.'
+            );
+          }
+          brief = cerrado.brief;
+          aSubir = cerrado.archivos;
+        }
         const result = await panal.hire({
           agent: quote.worker,
-          brief: quote.brief,
+          brief,
           amount: quote.amount,
           deadline,
         });
+        if (quote.cifrado) encargosCifrados.guardar(result.taskId, { brief, archivos: aSubir });
         ledger.record(quote.currency, result.amount);
         log(`contratada #${result.taskId} a ${quote.worker} por ${formatEther(result.amount)} ${quote.symbol}`);
 
@@ -1104,7 +1218,7 @@ const WRITE_TOOLS: Tool[] = [
           entregaBrief = 'That agent publishes no endpoint: get the job to them through whatever channel you use.';
         } else {
           const firma = await account!.signMessage({ message: briefSignMessage(result.taskId) });
-          const fallo = await pushBrief(quote.botUrl, result.taskId, quote.brief, account!.address, firma);
+          const fallo = await pushBrief(quote.botUrl, result.taskId, brief, account!.address, firma);
           if (fallo === null) {
             entregaBrief = `Job delivered to ${quote.botUrl}: the agent is already working on it.`;
             log(`brief #${result.taskId} entregado en ${quote.botUrl}`);
@@ -1116,7 +1230,9 @@ const WRITE_TOOLS: Tool[] = [
             // que la cadena ya cubre.
             if (subidas.length > 0) {
               const fallidos: string[] = [];
-              for (const adj of subidas) {
+              // El nombre de verdad para decirlo; el que se sube, opaco si va cifrado.
+              for (const [i, adj] of aSubir.entries()) {
+                const nombre = subidas[i]!.file.name;
                 const malo = await subirAdjunto(
                   quote.botUrl,
                   result.taskId,
@@ -1125,8 +1241,8 @@ const WRITE_TOOLS: Tool[] = [
                   account!.address,
                   firma,
                 );
-                if (malo) fallidos.push(`${adj.file.name} (${malo})`);
-                else log(`adjunto "${adj.file.name}" subido a #${result.taskId}`);
+                if (malo) fallidos.push(`${nombre} (${malo})`);
+                else log(`adjunto "${nombre}" subido a #${result.taskId}`);
               }
               if (fallidos.length === 0) {
                 entregaBrief += `\n${subidas.length} attachment(s) uploaded: ${subidas.map((a) => a.file.name).join(', ')}.`;
@@ -1159,6 +1275,7 @@ const WRITE_TOOLS: Tool[] = [
           `  Agent: ${quote.agentName}`,
           `  Amount: ${formatEther(result.amount)} ${quote.symbol}${quote.tier ? ` — size "${quote.tier}"` : ''}`,
           `  tx: ${EXPLORER}/tx/${result.txHash}`,
+          ...(quote.cifrado ? ['  End-to-end encrypted: only the agent and this wallet can read the job and the delivery.'] : []),
           '',
           entregaBrief,
           '',
@@ -1272,7 +1389,8 @@ const WRITE_TOOLS: Tool[] = [
               signature: entrega.signature,
               expira: entrega.expira,
             });
-            guardados.push(guardarDescarga(archivo.name, bytes));
+            // Comprobados contra su hash cifrados, que es lo que se anunció; se abren después.
+            guardados.push(guardarDescarga(archivo.name, entrega.cifrado ? await panal.decryptFile(bytes) : bytes));
           } catch (err) {
             fallidos.push(`${archivo.name} (${err instanceof Error ? err.message : String(err)})`);
           }
@@ -1337,6 +1455,29 @@ const WRITE_TOOLS: Tool[] = [
         return `Task #${id} is ${TaskStatus[task.status]}: it no longer accepts the job.`;
       }
 
+      // Contratado cifrado: se reenvía el sobre que se ancló y sus adjuntos
+      // cifrados, tal cual. Con el texto en claro no se puede volver a
+      // componer: el cifrado es aleatorio y daría otro hash.
+      const sellado = encargosCifrados.leer(BigInt(id));
+      if (sellado) {
+        const destino = (await panal.getAgent(task.worker)).metadata.botUrl;
+        if (!destino) return 'That agent publishes no endpoint: there is nowhere to send the job.';
+        const firma = await account!.signMessage({ message: briefSignMessage(BigInt(id)) });
+        const fallo = await pushBrief(destino, BigInt(id), sellado.brief, account!.address, firma);
+        if (fallo !== null) {
+          return `It still does not arrive (${fallo}). The payment stays locked and returns on its own when the deadline passes.`;
+        }
+        const fallidos: string[] = [];
+        for (const adj of sellado.archivos) {
+          const malo = await subirAdjunto(destino, BigInt(id), adj.file, adj.bytes, account!.address, firma);
+          if (malo) fallidos.push(malo);
+        }
+        if (fallidos.length > 0) {
+          return `The encrypted job arrived but ${fallidos.length} attachment(s) did not: ${fallidos.join('; ')}. The agent waits for all of them before starting.`;
+        }
+        return `Encrypted job${sellado.archivos.length ? ` and ${sellado.archivos.length} attachment(s)` : ''} delivered again. The agent is already working on task #${id}.`;
+      }
+
       const rutas = Array.isArray(args.files) ? args.files.map(str).filter((r): r is string => !!r) : [];
       const leidos: AdjuntoLocal[] = [];
       for (const ruta of rutas) {
@@ -1367,6 +1508,16 @@ const WRITE_TOOLS: Tool[] = [
       // Se comprueba aquí antes de molestar al agente: así el error dice que el
       // texto no es el mismo, en vez de un 409 sin contexto desde el endpoint.
       if (keccak256(toBytes(brief)) !== task.taskHash) {
+        const agenteDeLaTarea = await panal.getAgent(task.worker).catch(() => null);
+        if (recibeEnElBuzon(agenteDeLaTarea?.metadata.botUrl)) {
+          return (
+            `The hash does not match. If task #${id} was hired END-TO-END ENCRYPTED, what is on the chain is the hash ` +
+            'of the sealed job, and it cannot be rebuilt from the text (encryption is random). This server keeps the ' +
+            'sealed copy on disk next to its spend file, and it is not there (another machine, or the folder was ' +
+            'deleted). The payment returns on its own when the deadline passes, or cancel it then with ' +
+            'panal_cancel_task and hire again.'
+          );
+        }
         return [
           'That text is NOT the one hired: its hash does not match the one on the chain.',
           `  hired hash: ${task.taskHash}`,
@@ -1531,9 +1682,11 @@ const WRITE_TOOLS: Tool[] = [
 
       try {
         const hash = await panal.openDispute(BigInt(id));
+        const acceso = await accesoEnDisputa(BigInt(id));
         return [
           `Dispute opened on task #${id}. The automatic release is stopped.`,
           `  tx: ${EXPLORER}/tx/${hash}`,
+          ...(acceso ? [acceso] : []),
           '',
           'An arbitrator decides how to split it. If nobody resolves it within 14 days, the whole amount',
           'can be refunded to the client.',

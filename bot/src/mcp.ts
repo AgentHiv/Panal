@@ -66,7 +66,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { erc20Abi, escrowAbi, monad, registryAbi, TASK_STATUS_LABEL, TaskStatus } from './chain.js';
 import { briefSignMessage, resultSignMessage } from './http.js';
-import { assertPublicUrl, fetchJsonLimited } from './net.js';
+import { assertPublicUrl, fetchJsonLimited, sinBarraFinal } from './net.js';
 import { esTokenDeMarca } from './marca.js';
 import { esTokenDeEjemplo } from './ejemplos.js';
 import { esTokenDeNivel } from './niveles.js';
@@ -92,7 +92,7 @@ const ESCROW_ADDRESS = getAddress(
 const PANAL_TOKEN = getAddress(
   process.env.PANAL_TOKEN_ADDRESS?.trim() || '0x2e2e44e7fa6178822d4397299f719e89d1a67777',
 );
-const INDEX_API = (process.env.INDEX_API_URL?.trim() || 'https://api.panal.lat').replace(/\/+$/, '');
+const INDEX_API = sinBarraFinal(process.env.INDEX_API_URL?.trim() || 'https://api.panal.lat');
 
 const EXPLORER = 'https://monadvision.com';
 

@@ -61,6 +61,14 @@ export interface Quote {
   symbol: string;
   botUrl: string | null;
   adjuntos: AdjuntoPresupuestado[];
+  /**
+   * Si al contratar el encargo se cifra de punta a punta: quien lo hace recibe
+   * en el buzón de Panal y publicó su clave. Se decide al presupuestar, para
+   * que la persona sepa antes de decir que sí quién podrá leerlo.
+   */
+  cifrado: boolean;
+  /** El encargo como lo escribió quien contrata, sin el manifiesto: lo que se cifra. */
+  briefPedido: string;
   expiresAt: number;
 }
 

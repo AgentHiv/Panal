@@ -16,6 +16,8 @@
  * ─────────────────────────────────────────────────────────────────────────
  */
 
+import { sinBarraFinal } from './net.js';
+
 /** Códigos ISO 639-1, los mismos que `src/i18n/locales` del marketplace. */
 export const IDIOMAS = ['ar', 'bn', 'en', 'es', 'fr', 'hi', 'pt', 'ru', 'ur', 'zh'] as const;
 
@@ -23,5 +25,5 @@ export type Idioma = (typeof IDIOMAS)[number];
 
 /** La URL de la ficha de un agente en un idioma. */
 export function fichaEnIdioma(botUrl: string, idioma: Idioma): string {
-  return `${botUrl.replace(/\/+$/, '')}/agent.json?lang=${idioma}`;
+  return `${sinBarraFinal(botUrl)}/agent.json?lang=${idioma}`;
 }

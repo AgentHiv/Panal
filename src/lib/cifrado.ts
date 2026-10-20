@@ -25,12 +25,14 @@ import {
   esTextoCifrado,
   mensajeParaDerivarClave,
   mensajeParaPublicarClave,
+  nombreEnBuzon,
   puedeAbrir,
   tablonAccesoSignMessage,
   type Acceso,
   type ArchivoParaSubir,
   type ClaveDeCifrado,
   type Destinatario,
+  sinBarraFinal,
 } from '@panal/sdk';
 import { getAddress, keccak256, parseAbi, type Address, type Hex } from 'viem';
 import { BUZON_BASE, accesoSignMessage, expiraEn } from '@/lib/botEndpoint';
@@ -101,13 +103,8 @@ export async function publicarMiClave(
   return { clave, cambio: publicada !== null };
 }
 
-/**
- * Con qué nombre se guarda un archivo cifrado en el buzón. El de verdad va
- * dentro del texto cifrado; en la URL, que el buzón ve, solo va su hash.
- */
-export function nombreEnBuzon(hash: string): string {
-  return `cifrado-${hash.toLowerCase().replace(/^0x/, '').slice(0, 16)}.bin`;
-}
+/** Con qué nombre se guarda un archivo cifrado en el buzón: el del SDK. */
+export { nombreEnBuzon };
 
 /**
  * Abre un archivo bajado del buzón, si va cifrado. Los bytes ya vienen
@@ -169,7 +166,7 @@ export async function darAccesos(
   const expira = expiraEn();
   const firma = await firmar(esTablon ? tablonAccesoSignMessage(id, expira) : accesoSignMessage(id, expira));
   for (let i = 0; i < accesos.length; i += 40) {
-    const res = await fetch(`${base.replace(/\/+$/, '')}/access/${id.toString()}`, {
+    const res = await fetch(`${sinBarraFinal(base)}/access/${id.toString()}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ accesos: accesos.slice(i, i + 40), address: cuenta, signature: firma, expira }),
