@@ -47,7 +47,7 @@ import { esTokenDeEjemplo, leerEjemplosDeMetadata } from './ejemplos.js';
 import { esTokenDeNivel, leerNivelesDeMetadata } from './niveles.js';
 import { esTokenDeTipo } from './tipo.js';
 import { normalizarIdioma, traducirFrases, type Idioma } from './traduccion.js';
-import { allowedOrigin, clientIp } from './net.js';
+import { allowedOrigin, clientIp, sinBarraFinal } from './net.js';
 import { generateResult } from './llm.js';
 import {
   buildQuote,
@@ -384,7 +384,7 @@ export async function buildAgentJson(
     );
   }
   const meta = parseMetadataURI(agent?.metadataURI ?? '');
-  const base = cfg.httpPublicUrl?.replace(/\/+$/, '') ?? null;
+  const base = cfg.httpPublicUrl ? sinBarraFinal(cfg.httpPublicUrl) : null;
   const basePath = base ?? '<BOT_URL>';
 
   // Los niveles que este agente publica EN LA CADENA. Vacío es lo normal, y

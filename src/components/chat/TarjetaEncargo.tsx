@@ -29,6 +29,7 @@
  */
 
 import { useCallback, useState } from 'react';
+import { sinBarraFinal } from '@panal/sdk';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -169,7 +170,7 @@ export default function TarjetaEncargo({ encargo, botUrl }: TarjetaEncargoProps)
             // agente comprueba keccak256(brief) contra el taskHash. Su propia
             // página de reenvío acepta que lo pegues a mano.
             <a
-              href={`${botUrl.replace(/\/+$/, '')}/reenviar?task=${encargo.id}`}
+              href={`${sinBarraFinal(botUrl)}/reenviar?task=${encargo.id}`}
               target="_blank"
               rel="noreferrer"
               className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-line px-3.5 py-1.5 text-[0.75rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-ink"

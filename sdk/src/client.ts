@@ -20,7 +20,7 @@ import { createPublicClient, createWalletClient, formatEther, getAddress, http, 
 import type { Abi, Account, Address, Hex, PublicClient, TransactionReceipt, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, namesAbi, registryAbi } from './abis.js';
 import { leerX402 } from './agent-card.js';
-import { assertPublicUrl, fetchBytesLimited, fetchLimited, rutaDeAgente } from './net.js';
+import { assertPublicUrl, fetchBytesLimited, fetchLimited, rutaDeAgente, sinBarraFinal } from './net.js';
 import {
   MAX_FILE_BYTES,
   appendAttachmentsManifest,
@@ -272,7 +272,7 @@ export class PanalClient {
     }
 
     this.indexerUrl = options.indexerUrl === undefined ? 'https://api.panal.lat' : options.indexerUrl;
-    this.buzonUrl = (options.buzonUrl ?? BUZON_URL).replace(/\/+$/, '');
+    this.buzonUrl = sinBarraFinal(options.buzonUrl ?? BUZON_URL);
 
     const transport = http(options.rpcUrl ?? chain.rpcUrls.default.http[0]);
     this.publicClient = createPublicClient({ chain, transport });
@@ -542,7 +542,7 @@ export class PanalClient {
       message: esTablon ? tablonAccesoSignMessage(id, expira) : accesoSignMessage(id, expira),
     });
     for (let i = 0; i < accesos.length; i += 40) {
-      const { status, text } = await fetchLimited(`${base.replace(/\/+$/, '')}/access/${id}`, {
+      const { status, text } = await fetchLimited(`${sinBarraFinal(base)}/access/${id}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ accesos: accesos.slice(i, i + 40), address: this.account!.address, signature, expira }),
@@ -1365,7 +1365,7 @@ export class PanalClient {
     }
 
     const ficha = await this.leerAgente(yo);
-    const canal = ficha.metadata.botUrl?.replace(/\/+$/, '') ?? '';
+    const canal = ficha.metadata.botUrl ? sinBarraFinal(ficha.metadata.botUrl) : '';
     if (!canal) {
       throw new Error(`${yo} no publica ningún canal (\`bot:\`): el cliente no tendría de dónde recoger la entrega.`);
     }

@@ -67,6 +67,7 @@ import {
   type Nivel,
   type PanalClient,
   type Precios,
+  sinBarraFinal,
 } from '@panal/sdk';
 import {
   MAX_ADJUNTOS,
@@ -163,8 +164,8 @@ const panal: PanalClient = createPanalClient({
  */
 function recibeEnElBuzon(botUrl: string | null | undefined): boolean {
   if (!botUrl) return false;
-  const url = botUrl.replace(/\/+$/, '').toLowerCase();
-  return [BUZON_URL, panal.buzonUrl].some((b) => url.startsWith(b.replace(/\/+$/, '').toLowerCase()));
+  const url = sinBarraFinal(botUrl).toLowerCase();
+  return [BUZON_URL, panal.buzonUrl].some((b) => url.startsWith(sinBarraFinal(b).toLowerCase()));
 }
 
 /** Motivo por el que no se puede escribir, o null si sí se puede. */

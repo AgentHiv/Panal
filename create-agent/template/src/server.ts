@@ -70,6 +70,7 @@ import {
   verifyNativePayment,
   x402Currencies,
   x402CurrencyByName,
+  sinBarraFinal,
 } from '@panal/sdk';
 import { comoAdjunto } from './salida.js';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -1407,7 +1408,7 @@ const server = createServer((req, res) => {
     // LexPanal tuvo x402 funcionando y nadie lo usó, sencillamente porque no
     // salía en su tarjeta: un cobro que nadie puede descubrir no existe.
     if (url.pathname === '/agent.json' && req.method === 'GET') {
-      const base = process.env.PUBLIC_URL?.trim().replace(/\/+$/, '') || null;
+      const base = sinBarraFinal(process.env.PUBLIC_URL?.trim() ?? '') || null;
       /**
        * `?lang=fr`: la misma ficha con las frases en francés.
        *

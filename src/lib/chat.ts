@@ -25,7 +25,7 @@
  * en dos sitios es garantizar que un día se validen distinto.
  */
 
-import { payAndAsk, quoteAsk, x402Currency, X402Error, type X402Accept, type X402Currency } from '@panal/sdk';
+import { payAndAsk, quoteAsk, sinBarraFinal, x402Currency, X402Error, type X402Accept, type X402Currency } from '@panal/sdk';
 import { isAddress, isAddressEqual } from 'viem';
 import type { Account, Address, WalletClient } from 'viem';
 
@@ -70,7 +70,7 @@ export async function leerCobroPorLlamada(
   timeoutMs = 6_000,
 ): Promise<CobroPorLlamada | null> {
   try {
-    const res = await fetch(`${botUrl.replace(/\/+$/, '')}/agent.json`, {
+    const res = await fetch(`${sinBarraFinal(botUrl)}/agent.json`, {
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) return null;
@@ -85,7 +85,7 @@ export async function leerCobroPorLlamada(
     // La URL absoluta que publica el agente, y si no la trae, su ruta contra
     // el endpoint que tiene REGISTRADO en la cadena. Nunca contra otra cosa:
     // así una tarjeta manipulada no puede mandar el pago a un tercero.
-    const endpoint = x.url ?? (x.path ? `${botUrl.replace(/\/+$/, '')}${x.path}` : null);
+    const endpoint = x.url ?? (x.path ? `${sinBarraFinal(botUrl)}${x.path}` : null);
     if (!endpoint) return null;
 
     const amount = BigInt(x.amount);

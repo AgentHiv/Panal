@@ -201,7 +201,7 @@ export {
 // propio agente y no un servicio de Panal.
 // Unir una ruta con la URL de un agente. Ver por qué en `net.ts`: un agente
 // puede vivir en un subcamino, y `new URL('/x', base)` se lo come.
-export { rutaDeAgente } from './net.js';
+export { rutaDeAgente, sinBarraFinal } from './net.js';
 
 // El tablón: encargos sin dueño para que los coja un programa. Los mensajes de
 // firma se exportan porque cualquiera que hable con el buzón sin este cliente

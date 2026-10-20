@@ -9,6 +9,7 @@
 import 'dotenv/config';
 import { isAddress, getAddress, type Address } from 'viem';
 import { BOT_LANGS, DEFAULT_LANG, isBotLang, type BotLang } from './i18n.js';
+import { sinBarraFinal } from './net.js';
 
 export type BotMode = 'notifier' | 'worker' | 'indexer' | 'buzon';
 
@@ -308,7 +309,7 @@ export function loadConfig(): BotConfig {
     telegramChatId,
     botPrivateKey,
     llm: {
-      baseUrl: llmBaseUrl.replace(/\/+$/, ''),
+      baseUrl: sinBarraFinal(llmBaseUrl),
       apiKey: llmApiKey,
       model: llmModel,
       systemPrompt: env('SYSTEM_PROMPT') ?? DEFAULT_SYSTEM_PROMPT,

@@ -17,7 +17,7 @@
 
 import { verificarDominio } from '../src/verificar-dominio.js';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
-import { allowedOrigin, assertPublicUrl, clientIp, fetchJsonLimited } from '../src/net.js';
+import { allowedOrigin, assertPublicUrl, clientIp, fetchJsonLimited, sinBarraFinal } from '../src/net.js';
 import { untrustedBlock } from '../src/a2a.js';
 import { ContractFunctionRevertedError } from 'viem';
 import { esRevert, withRetry } from '../src/chain.js';
@@ -116,6 +116,17 @@ async function main(): Promise<void> {
     assertPublicUrl('http://203.0.113.7/x', { requireHttps: false }),
   );
   await resolves('permite una IP pública por https', () => assertPublicUrl('https://203.0.113.7/result/1'));
+
+  console.log('\n── 2b. Una URL llena de barras no cuelga el proceso ──');
+  {
+    // La URL de un agente la escribe él en su ficha. Con `replace(/\/+$/, '')`,
+    // cien mil barras que no acaban en barra tardaban segundos.
+    const trampa = `https://x.y/${'/'.repeat(100_000)}z`;
+    const t0 = performance.now();
+    const r = sinBarraFinal(trampa);
+    check('sinBarraFinal es lineal', r === trampa && performance.now() - t0 < 50, `${(performance.now() - t0).toFixed(1)} ms`);
+    check('  y quita solo las del final', sinBarraFinal('https://a.b/c///') === 'https://a.b/c' && sinBarraFinal('///') === '');
+  }
 
   console.log('\n── 3. fetchJsonLimited: respuesta ajena acotada ──');
 

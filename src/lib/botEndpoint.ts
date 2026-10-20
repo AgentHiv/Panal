@@ -13,7 +13,7 @@
  */
 
 import { keccak256, toBytes } from 'viem';
-import { fichaEnIdioma, leerEjemplos, leerNiveles } from '@panal/sdk';
+import { fichaEnIdioma, leerEjemplos, leerNiveles, sinBarraFinal } from '@panal/sdk';
 import { FileVerificationError } from '@/lib/deliveredFiles';
 import type { Nivel } from '@panal/sdk';
 
@@ -119,7 +119,7 @@ export async function leerEncargoDelBuzon(
   credencial: Credencial,
   timeoutMs = 10_000,
 ): Promise<string | null> {
-  const res = await fetch(`${botUrl.replace(/\/+$/, '')}/encargo/${taskId.toString()}`, {
+  const res = await fetch(`${sinBarraFinal(botUrl)}/encargo/${taskId.toString()}`, {
     headers: cabecerasFirma(address, credencial.firma, credencial.expira),
     signal: AbortSignal.timeout(timeoutMs),
   });
@@ -143,7 +143,7 @@ export async function descargarArchivoDelBuzon(
   address: string,
   credencial: Credencial,
 ): Promise<Blob> {
-  const url = `${botUrl.replace(/\/+$/, '')}/archivo/${taskId.toString()}/${encodeURIComponent(archivo.name)}`;
+  const url = `${sinBarraFinal(botUrl)}/archivo/${taskId.toString()}/${encodeURIComponent(archivo.name)}`;
   const res = await fetch(url, {
     redirect: 'error',
     headers: cabecerasFirma(address, credencial.firma, credencial.expira),
@@ -171,7 +171,7 @@ export async function subirArchivoDeEntrega(
   address: string,
   credencial: Credencial,
 ): Promise<string> {
-  const res = await fetch(`${botUrl.replace(/\/+$/, '')}/entrega-archivo/${taskId.toString()}`, {
+  const res = await fetch(`${sinBarraFinal(botUrl)}/entrega-archivo/${taskId.toString()}`, {
     method: 'POST',
     headers: {
       'content-type': archivo.mime || 'application/octet-stream',
@@ -211,7 +211,7 @@ export async function dejarEntregaEnBuzon(
   credencial: Credencial,
   timeoutMs = 20_000,
 ): Promise<void> {
-  const res = await fetch(`${botUrl.replace(/\/+$/, '')}/entrega/${taskId.toString()}`, {
+  const res = await fetch(`${sinBarraFinal(botUrl)}/entrega/${taskId.toString()}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -254,7 +254,7 @@ export async function publicarOferta(
   timeoutMs = 15_000,
 ): Promise<void> {
   const signature = await firmar(ofertaSignMessage(taskId, publico));
-  const res = await fetch(`${tablonUrl.replace(/\/+$/, '')}/oferta/${taskId.toString()}`, {
+  const res = await fetch(`${sinBarraFinal(tablonUrl)}/oferta/${taskId.toString()}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ publico, address, signature }),
@@ -303,7 +303,7 @@ export function urlDeBuzon(address: string): string {
 
 /** ¿Este endpoint es el buzón de Panal, y no una máquina de su dueño? */
 export function esBuzon(botUrl: string | null | undefined): boolean {
-  return !!botUrl && botUrl.replace(/\/+$/, '').toLowerCase().startsWith(BUZON_BASE.toLowerCase());
+  return !!botUrl && sinBarraFinal(botUrl).toLowerCase().startsWith(BUZON_BASE.toLowerCase());
 }
 
 /**
@@ -339,7 +339,7 @@ export function canalDeFicha(metadataURI: string | undefined): Canal {
  * cualquier intermediario. Ahora van en cabeceras, que no se registran.
  */
 export function buildResultUrl(botUrl: string, taskId: bigint): string {
-  return `${botUrl.replace(/\/+$/, '')}/result/${taskId.toString()}`;
+  return `${sinBarraFinal(botUrl)}/result/${taskId.toString()}`;
 }
 
 /** Las cabeceras con las que el cliente demuestra que la tarea es suya. */
@@ -353,7 +353,7 @@ export function cabecerasFirma(address: string, signature: string, expira: numbe
 
 /** Construye la URL de envío del brief firmado (POST /brief/:taskId). */
 export function buildBriefUrl(botUrl: string, taskId: bigint): string {
-  return `${botUrl.replace(/\/+$/, '')}/brief/${taskId.toString()}`;
+  return `${sinBarraFinal(botUrl)}/brief/${taskId.toString()}`;
 }
 
 /**
@@ -456,7 +456,7 @@ export async function leerCapacidades(
  * perder el encargo.
  */
 export function buildUploadUrl(botUrl: string, taskId: bigint): string {
-  return `${botUrl.replace(/\/+$/, '')}/upload/${taskId.toString()}`;
+  return `${sinBarraFinal(botUrl)}/upload/${taskId.toString()}`;
 }
 
 /**

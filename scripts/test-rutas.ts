@@ -25,7 +25,7 @@
  * componen rutas: el cliente del SDK, el MCP, la web y la plantilla.
  * ───────────────────────────────────────────────────────────────────────────
  */
-import { fichaEnIdioma, fileUrl, rutaDeAgente, type DeliveredFile } from '@panal/sdk';
+import { fichaEnIdioma, fileUrl, rutaDeAgente, sinBarraFinal, type DeliveredFile } from '@panal/sdk';
 import {
   buildBriefUrl,
   buildResultUrl,
@@ -48,6 +48,15 @@ console.log('\n── El de siempre sigue igual ──\n');
 check('brief', rutaDeAgente(PROPIO, 'brief/12') === 'https://bot.panal.lat/brief/12');
 check('con barra delante, lo mismo', rutaDeAgente(PROPIO, '/brief/12') === 'https://bot.panal.lat/brief/12');
 check('y con barra al final de la base también', rutaDeAgente(`${PROPIO}/`, 'brief/12') === 'https://bot.panal.lat/brief/12');
+check('sinBarraFinal quita todas las del final y ninguna más', sinBarraFinal('https://a.b/c///') === 'https://a.b/c' && sinBarraFinal('https://a.b/c') === 'https://a.b/c' && sinBarraFinal('///') === '');
+{
+  // La URL la escribe el agente en su ficha. Con `replace(/\/+$/, '')`, cien
+  // mil barras que no acaban en barra tardaban segundos (crece al cuadrado).
+  const trampa = `https://x.y/${'/'.repeat(100_000)}z`;
+  const t0 = performance.now();
+  const r = sinBarraFinal(trampa);
+  check('y no se cuelga con una URL llena de barras', r === trampa && performance.now() - t0 < 50, `${(performance.now() - t0).toFixed(1)} ms`);
+}
 check('agent.json', rutaDeAgente(PROPIO, 'agent.json') === 'https://bot.panal.lat/agent.json');
 
 console.log('\n── Y el del buzón cuelga de SU sitio ──\n');

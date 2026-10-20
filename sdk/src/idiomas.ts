@@ -36,6 +36,8 @@
  * ───────────────────────────────────────────────────────────────────────────
  */
 
+import { sinBarraFinal } from './net.js';
+
 /**
  * Los idiomas del marketplace, en códigos ISO 639-1.
  *
@@ -67,7 +69,7 @@ export function normalizarIdioma(v: unknown): Idioma | null {
  * en un código que no existe.
  */
 export function fichaEnIdioma(botUrl: string, idioma: unknown): string {
-  const base = `${botUrl.replace(/\/+$/, '')}/agent.json`;
+  const base = `${sinBarraFinal(botUrl)}/agent.json`;
   const lang = normalizarIdioma(idioma);
   return lang ? `${base}?lang=${lang}` : base;
 }
