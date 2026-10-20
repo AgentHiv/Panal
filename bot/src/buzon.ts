@@ -40,6 +40,13 @@
  *                                           archivo de la entrega de su agente
  *     GET  /buzon/:tablon/archivo/:jobId/:nombre  lo bajan su cliente y su agente
  *
+ *   Cifrado, accesos y disputas, en el de cada agente y en el del tablón:
+ *     GET  /buzon/:cuenta/clave             la clave pública de una cuenta
+ *     POST /buzon/:cuenta/clave             la publica su dueño
+ *     POST /buzon/:agente/access/:id        una parte deja accesos a lo cifrado
+ *     GET  /buzon/:agente/dispute/:id       un árbitro lee una tarea en disputa
+ *     GET  /buzon/:agente/dispute/:id/file/:nombre  y un archivo suyo
+ *
  * QUÉ NO PUEDE HACER
  *
  * Ni cobrar, ni entregar, ni mover un encargo: todo eso lo firma una wallet, y
@@ -594,7 +601,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     (deps.store.leer(agente, id)?.accesos ?? []).filter((x) => x.a === cuenta.toLowerCase());
 
   /**
-   * POST /acceso/:id — una PARTE da acceso a lo cifrado de su encargo.
+   * POST /access/:id — una PARTE da acceso a lo cifrado de su encargo.
    *
    * Solo a quien tiene que leerlo: la otra parte (en el tablón, quien lo cogió)
    * o un árbitro. Dar acceso es sacar la clave de un sobre que ya se puede
@@ -622,7 +629,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
     const lista = leerAccesos(body.accesos);
     if (!lista) {
-      json(res, 400, { error: 'bad accesos' });
+      json(res, 400, { error: 'bad grants' });
       return;
     }
     if (typeof body.address !== 'string' || !isAddress(body.address) || typeof body.signature !== 'string' || !isHex(body.signature)) {
@@ -660,7 +667,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
     const total = deps.store.guardarAccesos(agente, id, lista);
     if (total === null) {
-      json(res, 409, { error: 'too many accesos' });
+      json(res, 409, { error: 'too many grants' });
       return;
     }
     console.log(`[buzon] ${lista.length} acceso(s) en #${id}${esTablon ? ' del tablón' : ''}`);
@@ -668,10 +675,10 @@ export function createBuzonServer(deps: BuzonDeps): Server {
   };
 
   /**
-   * GET /disputa/:id — un firmante de la multisig lee una disputa.
+   * GET /dispute/:id — un firmante de la multisig lee una disputa.
    *
    * El encargo, la entrega, la lista de archivos y SUS accesos; con
-   * `/archivo/<nombre>`, los bytes de uno. Solo mientras la tarea esté en
+   * `/file/<nombre>`, los bytes de uno. Solo mientras la tarea esté en
    * disputa: un árbitro no tiene por qué leer encargos que nadie le ha traído.
    * Si va cifrado, sin un acceso que le haya dado una parte no lo puede abrir.
    */
@@ -765,12 +772,12 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     req: IncomingMessage,
     res: ServerResponse,
   ): Promise<boolean> => {
-    const deAcceso = /^acceso\/(\d{1,20})$/.exec(resto);
+    const deAcceso = /^access\/(\d{1,20})$/.exec(resto);
     if (deAcceso && req.method === 'POST') {
       await recibirAccesos(agente, BigInt(deAcceso[1]!), esTablon, req, res);
       return true;
     }
-    const deDisputa = /^disputa\/(\d{1,20})(?:\/archivo\/(.+))?$/.exec(resto);
+    const deDisputa = /^dispute\/(\d{1,20})(?:\/file\/(.+))?$/.exec(resto);
     if (deDisputa && req.method === 'GET') {
       let nombre: string | null = null;
       if (deDisputa[2]) {

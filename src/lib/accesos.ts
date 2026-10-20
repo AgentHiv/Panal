@@ -228,7 +228,7 @@ export async function leerExpediente(o: {
   const expira = expiraEn();
   const firma = await o.firmar(o.esTablon ? tablonDisputaSignMessage(o.id, expira) : disputaSignMessage(o.id, expira));
   const cred = { firma, expira };
-  const res = await fetch(`${o.base.replace(/\/+$/, '')}/disputa/${o.id.toString()}`, {
+  const res = await fetch(`${o.base.replace(/\/+$/, '')}/dispute/${o.id.toString()}`, {
     headers: cabecerasFirma(o.yo, firma, expira),
     signal: AbortSignal.timeout(15_000),
   });
@@ -275,7 +275,7 @@ export async function bajarDelExpediente(
 ): Promise<Uint8Array> {
   const nombre = texto.cifrado ? nombreEnBuzon(archivo.hash) : archivo.name;
   const res = await fetch(
-    `${exp.base.replace(/\/+$/, '')}/disputa/${exp.id.toString()}/archivo/${encodeURIComponent(nombre)}?de=${texto.de}`,
+    `${exp.base.replace(/\/+$/, '')}/dispute/${exp.id.toString()}/file/${encodeURIComponent(nombre)}?de=${texto.de}`,
     { headers: cabecerasFirma(yo, exp.cred.firma, exp.cred.expira), signal: AbortSignal.timeout(180_000) },
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

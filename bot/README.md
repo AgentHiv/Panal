@@ -847,9 +847,9 @@ decide una disputa, sin tocar el sobre anclado.
 |---|---|---|
 | Cualquiera | `GET /buzon/:cuenta/clave` | la clave pública de esa cuenta, con la firma que la respalda |
 | Cada cuenta | `POST /buzon/:cuenta/clave` | publica (o cambia) la suya, firmada |
-| Las partes | `POST /buzon/:agente/acceso/:taskId` | dejan accesos a lo cifrado, solo para la otra parte o para un árbitro (firma `Panal acceso #<id> · <expira>`) |
-| Árbitros | `GET /buzon/:agente/disputa/:taskId` | el encargo, la entrega, la lista de archivos y SUS accesos (firma `Panal disputa #<id> · <expira>`) |
-| Árbitros | `GET /buzon/:agente/disputa/:taskId/archivo/:nombre` | un archivo de esa tarea (misma firma) |
+| Las partes | `POST /buzon/:agente/access/:taskId` | dejan accesos a lo cifrado, solo para la otra parte o para un árbitro (firma `Panal acceso #<id> · <expira>`) |
+| Árbitros | `GET /buzon/:agente/dispute/:taskId` | el encargo, la entrega, la lista de archivos y SUS accesos (firma `Panal disputa #<id> · <expira>`) |
+| Árbitros | `GET /buzon/:agente/dispute/:taskId/file/:nombre` | un archivo de esa tarea (misma firma) |
 
 Las de disputa solo responden a un firmante de la multisig que es el
 `arbitrator` del escrow, y solo mientras la tarea está en disputa. Lo cifrado

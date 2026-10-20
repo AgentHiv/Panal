@@ -854,7 +854,7 @@ async function main(): Promise<void> {
     const acceso = (para: string) => ({ o: objeto, a: para.toLowerCase(), e: 'ZWZpbWVyYQ', n: 'bm9uY2U', k: 'Y2xhdmU' });
     const dar = async (quien: typeof cliente, accesos: unknown[], taskId = 6n) => {
       const expira = enUnMinuto();
-      return fetch(`${base}/acceso/${taskId}`, {
+      return fetch(`${base}/access/${taskId}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...otraIp },
         body: JSON.stringify({ accesos, address: quien.address, signature: await quien.signMessage({ message: accesoSignMessage(taskId, expira) }), expira }),
@@ -887,7 +887,7 @@ async function main(): Promise<void> {
     store.guardarArchivo(AGENTE, 8n, 'cifrado-0123456789abcdef.bin', new TextEncoder().encode('bytes'), 'trabajador');
     const leer = async (quien: typeof cliente, taskId: bigint, archivo = '') => {
       const expira = enUnMinuto();
-      return fetch(`${base}/disputa/${taskId}${archivo ? `/archivo/${archivo}` : ''}`, {
+      return fetch(`${base}/dispute/${taskId}${archivo ? `/file/${archivo}` : ''}`, {
         headers: { ...otraIp, 'x-panal-address': quien.address, 'x-panal-signature': await quien.signMessage({ message: disputaSignMessage(taskId, expira) }), 'x-panal-expira': String(expira) },
       });
     };
@@ -900,6 +900,8 @@ async function main(): Promise<void> {
     check('200 el árbitro lee el encargo, la entrega y la lista de archivos', r3.status === 200 && b3.brief === 'encargo en disputa' && b3.entrega === 'entrega en disputa' && b3.archivos?.length === 1, `status=${r3.status}`);
     const r4 = await leer(arbitro, 8n, 'cifrado-0123456789abcdef.bin');
     check('y baja sus archivos', r4.status === 200 && (await r4.text()) === 'bytes', `status=${r4.status}`);
+    const viejas = await Promise.all([`${base}/disputa/8`, `${base}/acceso/8`].map((u) => fetch(u, { headers: otraIp }).then((r) => r.status)));
+    check('las rutas van en inglés: /disputa y /acceso no existen', viejas.every((x) => x === 404), JSON.stringify(viejas));
   }
 
   console.log('\n── El tablón acepta los adjuntos que un sobre anuncia ──\n');

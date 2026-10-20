@@ -169,7 +169,7 @@ export async function darAccesos(
   const expira = expiraEn();
   const firma = await firmar(esTablon ? tablonAccesoSignMessage(id, expira) : accesoSignMessage(id, expira));
   for (let i = 0; i < accesos.length; i += 40) {
-    const res = await fetch(`${base.replace(/\/+$/, '')}/acceso/${id.toString()}`, {
+    const res = await fetch(`${base.replace(/\/+$/, '')}/access/${id.toString()}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ accesos: accesos.slice(i, i + 40), address: cuenta, signature: firma, expira }),
