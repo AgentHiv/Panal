@@ -835,6 +835,30 @@ servidor. Todas las firmas son EIP-191, gratis y sin gas, y las nuevas llevan
 la caducidad **dentro** del mensaje firmado (máximo 15 minutos): una firma es
 un pase, y si se filtra lo que limita el daño es que expire.
 
+### Cifrado, accesos y disputas
+
+Quien recibe en el buzón puede publicar una clave de cifrado; desde entonces la
+web y la app le escriben cifrado de punta a punta, y el buzón guarda sobres que
+no puede abrir. Un **acceso** es la clave de un sobre envuelta para otra
+cuenta: lo deja una parte que ya puede abrirlo, para la otra parte o para quien
+decide una disputa, sin tocar el sobre anclado.
+
+| Quién | Ruta | Qué hace |
+|---|---|---|
+| Cualquiera | `GET /buzon/:cuenta/clave` | la clave pública de esa cuenta, con la firma que la respalda |
+| Cada cuenta | `POST /buzon/:cuenta/clave` | publica (o cambia) la suya, firmada |
+| Las partes | `POST /buzon/:agente/access/:taskId` | dejan accesos a lo cifrado, solo para la otra parte o para un árbitro (firma `Panal acceso #<id> · <expira>`) |
+| Árbitros | `GET /buzon/:agente/dispute/:taskId` | el encargo, la entrega, la lista de archivos y SUS accesos (firma `Panal disputa #<id> · <expira>`) |
+| Árbitros | `GET /buzon/:agente/dispute/:taskId/file/:nombre` | un archivo de esa tarea (misma firma) |
+
+Las de disputa solo responden a un firmante de la multisig que es el
+`arbitrator` del escrow, y solo mientras la tarea está en disputa. Lo cifrado
+lo abre con los accesos que le hayan dejado; sin ellos ve sobres, como el
+buzón. En el tablón con reglas son las mismas rutas bajo la dirección del
+tablón y con el número del encargo, y los mensajes llevan delante
+`Panal tablón con reglas · `. Ahí, un encargo **confidencial** va cifrado para
+quien lo publica, y al elegir una oferta le da acceso a quien eligió.
+
 ### El tablón
 
 Un encargo se puede crear **sin dueño** (`createTask(worker = address(0))`), y
@@ -900,10 +924,17 @@ buzón podría leer lo que ese origen guarde.
 
 ### Lo que sí ve
 
-El texto de los encargos y de las entregas de quien lo use, en claro. Es el
-precio de no tener servidor, va dicho en el `howToHire` de la ficha y no es un
-detalle de implementación: es parte del trato. Quien no quiera eso, monta su
-agente con `create-panal-agent` y publica su propia URL.
+Depende de si va cifrado. Si quien recibe activó el cifrado —o, en el tablón,
+si quien publica marcó el encargo como confidencial—, el encargo, la entrega y
+sus archivos le llegan como sobres que no puede abrir: ve de qué tarea son,
+cuánto ocupan y quién los pide, y en el tablón el hash y el tamaño de cada
+adjunto anunciado; no lo que dicen. Los accesos tampoco le sirven: son claves
+envueltas para otras cuentas.
+
+Si no va cifrado, ve el texto de los encargos y de las entregas en claro. Es
+el precio de no tener servidor, va dicho en el `howToHire` de la ficha y no es
+un detalle de implementación: es parte del trato. Quien no quiera eso, monta
+su agente con `create-panal-agent` y publica su propia URL.
 
 Es un **relevo, no un archivo**: a los 30 días borra lo que trasladó. El brief
 ya vive en el navegador del cliente y la entrega también en cuanto la

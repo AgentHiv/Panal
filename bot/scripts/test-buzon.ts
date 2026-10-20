@@ -42,7 +42,9 @@ import {
   entregaSignMessage,
   ofertaSignMessage,
   resultSignMessageConCaducidad,
+  accesoSignMessage,
   adjuntosAnunciados,
+  disputaSignMessage,
   esTextoCifrado,
   mensajeParaPublicarClave,
   tablonArchivoSignMessage,
@@ -57,6 +59,7 @@ import { NATIVE_CURRENCY, TaskStatus, tablonAbi, type RegistryAgent, type Task, 
 const cliente = privateKeyToAccount('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
 const persona = privateKeyToAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d');
 const intruso = privateKeyToAccount('0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a');
+const arbitro = privateKeyToAccount('0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6');
 
 const AGENTE = persona.address;
 const OTRO_AGENTE = getAddress('0x0000000000000000000000000000000000000042');
@@ -166,6 +169,7 @@ async function main(): Promise<void> {
     indexer: 'https://api.panal.lat',
     allowLocalhostOrigin: true,
     tablon: TABLON_V2,
+    fetchArbitros: async () => [arbitro.address],
     fetchJob: async (jobId) => {
       lecturas.trabajos++;
       // El #98 revierte como en producción con un ABI que no conoce el error:
@@ -349,6 +353,11 @@ async function main(): Promise<void> {
       ?.path === '/upload/:taskId',
   );
   check('y dice quién es', ficha.agent === AGENTE);
+  check(
+    'sin clave publicada, avisa de que el buzón puede leerlo',
+    JSON.stringify(ficha.howToHire ?? '').includes('en claro por api.panal.lat'),
+    JSON.stringify(ficha.howToHire),
+  );
 
   /* ── lo que no es una ruta ────────────────────────────────────────────── */
   console.log('\n── Lo que no tiene forma de encargo no toca el disco ──\n');
@@ -801,6 +810,15 @@ async function main(): Promise<void> {
       await verifyMessage({ address: leida.cuenta, message: mensajeParaPublicarClave(leida.cuenta, leida.clave), signature: leida.firma }),
     );
 
+    // Y su ficha deja de decir que su encargo va en claro.
+    const fichaConClave = (await (await fetch(`${base}/agent.json`)).json()) as { howToHire?: string[] };
+    check(
+      'con clave publicada, la ficha dice que va cifrado',
+      JSON.stringify(fichaConClave.howToHire ?? '').includes('Ha activado el cifrado') &&
+        !JSON.stringify(fichaConClave.howToHire ?? '').includes('pasan en claro'),
+      JSON.stringify(fichaConClave.howToHire),
+    );
+
     // La limpieza de los 30 días no se la lleva.
     store.limpiar(Date.now() + 400 * 86_400_000);
     check('la limpieza de encargos no borra las claves', store.leerClave(persona.address)?.clave === clave);
@@ -824,6 +842,73 @@ async function main(): Promise<void> {
     const r7 = await dejarBrief(7n, { brief: enClaro, address: cliente.address, signature: await cliente.signMessage({ message: briefSignMessage(7n) }) });
     check('400 un texto en claro sigue con su tope', r7.status === 400, `status=${r7.status}`);
     check('un texto que solo empieza como un sobre no cuenta como sobre', !esTextoCifrado('{"v":"panal-cifrado-1","c":3}'));
+  }
+
+  /* ── accesos y disputas ───────────────────────────────────────────────── */
+  console.log('\n── Accesos: solo las partes, y solo a la otra parte o a un árbitro ──\n');
+  // Otra «IP», tras el proxy de confianza: las secciones de arriba ya gastan
+  // casi todo el cupo de 60 peticiones por minuto de la de siempre.
+  const otraIp = { 'x-forwarded-for': '10.9.9.9' };
+  {
+    const objeto = keccak256(toBytes('un sobre cualquiera')).toLowerCase();
+    const acceso = (para: string) => ({ o: objeto, a: para.toLowerCase(), e: 'ZWZpbWVyYQ', n: 'bm9uY2U', k: 'Y2xhdmU' });
+    const dar = async (quien: typeof cliente, accesos: unknown[], taskId = 6n) => {
+      const expira = enUnMinuto();
+      return fetch(`${base}/access/${taskId}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...otraIp },
+        body: JSON.stringify({ accesos, address: quien.address, signature: await quien.signMessage({ message: accesoSignMessage(taskId, expira) }), expira }),
+      });
+    };
+    const rI = await dar(intruso, [acceso(intruso.address)]);
+    check('403 quien no es parte no da accesos', rI.status === 403, `status=${rI.status}`);
+    const rX = await dar(cliente, [acceso(intruso.address)]);
+    check('400 una parte no le da acceso a un tercero', rX.status === 400, `status=${rX.status}`);
+    const rB = await dar(cliente, [{ o: 'no', a: 'tampoco' }]);
+    check('400 un acceso sin forma de acceso', rB.status === 400, `status=${rB.status}`);
+    const rC = await dar(cliente, [acceso(persona.address), acceso(arbitro.address)]);
+    check('200 el cliente da acceso al trabajador y a un árbitro', rC.status === 200, `status=${rC.status}`);
+    const rD = await dar(cliente, [acceso(persona.address)]);
+    const bD = (await rD.json()) as { total?: number };
+    check('dar el mismo acceso dos veces no lo duplica', rD.status === 200 && bD.total === 2, JSON.stringify(bD));
+    const expira = enUnMinuto();
+    const rE = await fetch(`${base}/encargo/6`, {
+      headers: { ...otraIp, 'x-panal-address': persona.address, 'x-panal-signature': await persona.signMessage({ message: encargoSignMessage(6n, expira) }), 'x-panal-expira': String(expira) },
+    });
+    const bE = (await rE.json()) as { accesos?: { a: string }[] };
+    check('el trabajador recibe SUS accesos con el encargo', rE.status === 200 && bE.accesos?.length === 1 && bE.accesos[0]!.a === persona.address.toLowerCase(), JSON.stringify(bE.accesos));
+  }
+
+  console.log('\n── Una disputa la lee un árbitro, y solo mientras es disputa ──\n');
+  {
+    TAREAS['8'] = tarea(TaskStatus.Disputed, keccak256(toBytes('entrega en disputa')));
+    store.guardarBrief(AGENTE, 8n, 'encargo en disputa');
+    store.guardarEntrega(AGENTE, 8n, 'entrega en disputa');
+    store.guardarArchivo(AGENTE, 8n, 'cifrado-0123456789abcdef.bin', new TextEncoder().encode('bytes'), 'trabajador');
+    const leer = async (quien: typeof cliente, taskId: bigint, archivo = '') => {
+      const expira = enUnMinuto();
+      return fetch(`${base}/dispute/${taskId}${archivo ? `/file/${archivo}` : ''}`, {
+        headers: { ...otraIp, 'x-panal-address': quien.address, 'x-panal-signature': await quien.signMessage({ message: disputaSignMessage(taskId, expira) }), 'x-panal-expira': String(expira) },
+      });
+    };
+    const r1 = await leer(cliente, 8n);
+    check('403 una parte no entra por la puerta del árbitro', r1.status === 403, `status=${r1.status}`);
+    const r2 = await leer(arbitro, 6n);
+    check('409 una tarea que no está en disputa no se enseña ni al árbitro', r2.status === 409, `status=${r2.status}`);
+    const r3 = await leer(arbitro, 8n);
+    const b3 = (await r3.json()) as { brief?: string; entrega?: string; archivos?: { name: string }[] };
+    check('200 el árbitro lee el encargo, la entrega y la lista de archivos', r3.status === 200 && b3.brief === 'encargo en disputa' && b3.entrega === 'entrega en disputa' && b3.archivos?.length === 1, `status=${r3.status}`);
+    const r4 = await leer(arbitro, 8n, 'cifrado-0123456789abcdef.bin');
+    check('y baja sus archivos', r4.status === 200 && (await r4.text()) === 'bytes', `status=${r4.status}`);
+    const viejas = await Promise.all([`${base}/disputa/8`, `${base}/acceso/8`].map((u) => fetch(u, { headers: otraIp }).then((r) => r.status)));
+    check('las rutas van en inglés: /disputa y /acceso no existen', viejas.every((x) => x === 404), JSON.stringify(viejas));
+  }
+
+  console.log('\n── El tablón acepta los adjuntos que un sobre anuncia ──\n');
+  {
+    const h = [{ hash: '0x' + 'ab'.repeat(32), size: 506 }];
+    const sobre = JSON.stringify({ v: 'panal-cifrado-1', e: 'e', n: 'n', para: [{ a: cliente.address.toLowerCase(), n: 'n', k: 'k' }], h, c: 'AAAA' });
+    check('los adjuntos de un sobre se leen de su lista en abierto', JSON.stringify(adjuntosAnunciados(sobre)) === JSON.stringify(h));
   }
 
   server.close();

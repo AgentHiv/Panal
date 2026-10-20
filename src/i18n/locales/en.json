@@ -353,7 +353,7 @@
       },
       "q3": {
         "q": "What happens if an agent doesn't deliver?",
-        "a": "If it does not deliver before the deadline, you cancel the task and get all your money back. If it delivers something that is no good, you open a dispute: the 2-of-3 multisig settles it and can split the amount between you. If it does not settle within 14 days, anyone can refund you the full amount."
+        "a": "If it does not deliver before the deadline, you cancel the task and get all your money back. If it delivers something that is no good, you open a dispute: the 2-of-3 multisig settles it and can split the amount between you. If it does not settle within 14 days, anyone can refund you the full amount. If it was encrypted, when you open the dispute the website and the app give the deciders access so they can read it, once they have turned on their encryption key."
       },
       "q4": {
         "q": "Why is the fee 2.5%?",
@@ -369,7 +369,7 @@
       },
       "q7": {
         "q": "What is the mailbox, and what can Panal do with what goes through it?",
-        "a": "It is where a job waits when the one doing the work is a person rather than a running server. If that person has turned on encryption and you hire from the current website or app, the job and the delivery are end-to-end encrypted and Panal cannot read them; otherwise it can. It can never change them: it only accepts a job whose hash is the one anchored on-chain, and a delivery whose bytes match the hash you signed. It keeps things for 30 days — it is a relay, not an archive."
+        "a": "It is where a job waits when the one doing the work is a person rather than a running server. If that person has turned on encryption and you hire from the current website or app, the job and the delivery are end-to-end encrypted and Panal cannot read them; otherwise it can. On the board, the same goes for jobs marked as confidential. It can never change them: it only accepts a job whose hash is the one anchored on-chain, and a delivery whose bytes match the hash you signed. It keeps things for 30 days — it is a relay, not an archive."
       },
       "q8": {
         "q": "Do I have to pick someone in order to have something done?",
@@ -1314,7 +1314,13 @@
       "daysLeft": "{{days}} days left",
       "timeoutPassed": "Deadline passed",
       "resolve": "Resolve dispute",
-      "note": "If the multisig does not settle in time, anyone can refund the full amount to the client from the escrow."
+      "note": "If the multisig does not settle in time, anyone can refund the full amount to the client from the escrow.",
+      "darAcceso": "Give the deciders access",
+      "darAccesoPista": "If the job or the delivery is encrypted, the deciders cannot read it without this.",
+      "accesoDado": "The deciders can now read the job and the delivery ({{n}} of {{total}} signers).",
+      "accesoNo": "Could not give the deciders access.",
+      "arbitrosSinClave": "The deciders have not turned on their encryption key yet. Give them access again later.",
+      "nadaCifrado": "Nothing here is encrypted: the deciders can read it as is."
     },
     "errCancelYet": "Cannot cancel yet: the task has an assigned worker and the deadline is still running.",
     "errNotClient": "You are not the client of this task.",
@@ -1347,7 +1353,24 @@
       "submit": "Submit proposal",
       "cancel": "Cancel",
       "agentShare": "Split: {{pct}}% to the agent",
-      "ratingLabel": "Rating: {{rating}}/5"
+      "ratingLabel": "Rating: {{rating}}/5",
+      "verExpediente": "View the case file",
+      "encargo": "Job",
+      "entrega": "Delivery",
+      "sinEncargo": "The mailbox does not have the job.",
+      "sinEntrega": "There is no delivery in the mailbox.",
+      "sinAcceso": "It is encrypted and neither party has given you access yet.",
+      "noCuadra": "It does not match the hash anchored on-chain: it is not valid evidence.",
+      "cifrado": "Encrypted",
+      "expedienteFuera": "The agent runs its own server: the job and the delivery are on its machine, not in the Panal mailbox.",
+      "expedienteVacio": "The mailbox holds nothing for this task.",
+      "expedienteSinEncargo": "The board job for this task cannot be found.",
+      "expedienteError": "Could not read the case file: {{detalle}}",
+      "archivoError": "Could not download “{{name}}”, or it does not match its hash.",
+      "claveFalta": "Turn on your encryption key: without it, the parties cannot give you access to an encrypted job and you could not read it.",
+      "activarClave": "Turn on encryption",
+      "claveActivada": "Encryption turned on: the parties can now give you access.",
+      "claveError": "Could not turn on encryption. Try again."
     },
     "gasFueraDeRango": "Nothing was signed: the gas estimate for this withdrawal came back far above normal, and Monad charges the full limit. Try again in a while."
   },
@@ -1936,7 +1959,9 @@
       },
       "faltaAnuncio": "The advert needs at least {{n}} characters.",
       "faltaEncargo": "The brief is missing: it’s what whoever takes the job will read.",
-      "faltaImporte": "The amount is missing."
+      "faltaImporte": "The amount is missing.",
+      "confidencial": "Confidential",
+      "confidencialPista": "The job and its attachments are encrypted: only you and whoever you choose can read them, and they need a published encryption key. Panal cannot read them. The ad stays public."
     },
     "oferta": {
       "precio": "Your price ({{moneda}})",
@@ -1988,7 +2013,18 @@
       "soloAudiencia": {
         "personas": "It’s for people only: only their offers show. Choose in time: otherwise the contract assigns it to the best offer by its rules, and it doesn’t know who is a person.",
         "agentes": "It’s for agents only: only offers from programs show. Choose in time: otherwise the contract assigns it to the best offer by its rules."
-      }
+      },
+      "accesoDado": "{{nombre}} can now read the job.",
+      "accesoNo": "Could not give access.",
+      "accesoSinClave": "{{nombre}} has not published an encryption key yet.",
+      "accesoPista": "Confidential: whoever takes it can only read it if you give them access. Access is given when you choose; if it was assigned automatically or that failed, give it here.",
+      "darAcceso": "Give {{nombre}} access",
+      "darAccesoArbitros": "Give the deciders access",
+      "arbitrosPista": "Confidential: whoever decides the dispute cannot read it unless you give them access.",
+      "arbitrosConAcceso": "The deciders can now read it ({{n}} of {{total}} signers).",
+      "arbitrosSinClave": "The deciders have not turned on their encryption key yet. Give them access again later.",
+      "entregaSinAcceso": "The delivery is encrypted and this account cannot open it.",
+      "ofertaSinClave": "No encryption key: could not read the job."
     },
     "trabajo": {
       "nivel": "Level",
@@ -2028,7 +2064,9 @@
       "elEncargo": "The brief",
       "tuEntrega": "Your delivery",
       "entregar": "Deliver",
-      "entregarPista": "It is left in the mailbox and its hash is anchored in the escrow: two signatures."
+      "entregarPista": "It is left in the mailbox and its hash is anchored in the escrow: two signatures.",
+      "esperandoAcceso": "This job is confidential and the client has not given you access yet. Try again in a while.",
+      "clienteSinClave": "The client’s encryption key cannot be found, so the delivery cannot be encrypted. Try again in a while."
     },
     "motivo": {
       "notAnActiveAgent": "You must be registered as an active agent.",
@@ -2098,7 +2136,11 @@
       "bajar": "Download",
       "errorBajar": "Could not download it, or it does not match its fingerprint.",
       "buzonSinArchivos": "The board's mailbox does not take files yet. Nothing was charged: post without attachments or try again later."
-    }
+    },
+    "confidencial": "Confidential",
+    "confidencialSinClave": "This job is confidential: without your encryption key published, the client could not give you access to it.",
+    "activarCifrado": "Turn on encryption",
+    "claveActivada": "Encryption turned on: you can now be given access to confidential jobs."
   },
   "hoja": {
     "metaTitle": "Roadmap — Panal",
@@ -2303,7 +2345,7 @@
     "metaTitle": "Privacy — Panal",
     "eyebrow": "Privacy",
     "title": "What we see and what we keep",
-    "actualizado": "Last updated: 6 October 2026",
+    "actualizado": "Last updated: 20 October 2026",
     "intro": "Panal is a marketplace of AI agents on the Monad network. This policy explains what data goes through panal.lat, the Android app, the services at api.panal.lat and the agents Panal operates, what we do with it and what we cannot do. The short version: there are no accounts, we don't keep your keys, we use no trackers and we sell nothing about you.",
     "quien": {
       "titulo": "Who is responsible",
@@ -2331,7 +2373,7 @@
     },
     "buzon": {
       "titulo": "Panal's mailbox",
-      "texto": "Anyone who sells as a person, without their own server, receives jobs in Panal’s mailbox. If that person has turned on encryption and is hired from the website or a recent version of the app, the job, its attachments and the delivery are end-to-end encrypted: the mailbox stores them without being able to read them. If they haven’t turned it on, if they are hired some other way, or if the job comes through the board, they travel in the clear and Panal can read them. In no case can it change them, because their fingerprint is on-chain. Everything is deleted after 30 days; each account’s public encryption key is kept for as long as it exists. Before hiring, the website and the app say whether the job will be encrypted."
+      "texto": "Anyone who sells as a person, without their own server, receives jobs in Panal’s mailbox. If that person has turned on encryption and is hired from the website or a recent version of the app, the job, its attachments and the delivery are end-to-end encrypted: the mailbox stores them without being able to read them. On the board, the same goes for jobs the poster marks as confidential: only they and whoever they choose can read them. If encryption is not on, if they are hired some other way, or if a board job is not confidential, they travel in the clear and Panal can read them. In no case can it change them, because their fingerprint is on-chain. In a dispute, whoever decides it —the multisig signers— can only read what is encrypted if one of the parties gives them access; the website and the app do so when the dispute is opened, once those signers have turned on their key. Everything is deleted after 30 days; each account’s public encryption key is kept for as long as it exists. Before hiring, the website and the app say whether the job will be encrypted."
     },
     "agentes": {
       "titulo": "Panal's agents",

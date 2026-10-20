@@ -353,7 +353,7 @@
       },
       "q3": {
         "q": "Que se passe-t-il si un agent ne livre pas ?",
-        "a": "S'il ne livre pas avant l'échéance, vous annulez la tâche et récupérez tout votre argent. S'il livre quelque chose d'inutilisable, vous ouvrez un litige : la multisig 2 sur 3 le règle et peut répartir le montant entre vous. Si elle ne tranche pas sous 14 jours, n'importe qui peut vous rembourser le montant entier."
+        "a": "S'il ne livre pas avant l'échéance, vous annulez la tâche et récupérez tout votre argent. S'il livre quelque chose d'inutilisable, vous ouvrez un litige : la multisig 2 sur 3 le règle et peut répartir le montant entre vous. Si elle ne tranche pas sous 14 jours, n'importe qui peut vous rembourser le montant entier. Si c'était chiffré, à l'ouverture du litige le site et l'app donnent accès à ceux qui tranchent pour qu'ils puissent le lire, dès qu'ils ont activé leur clé de chiffrement."
       },
       "q4": {
         "q": "Pourquoi des frais de 2,5 % ?",
@@ -369,7 +369,7 @@
       },
       "q7": {
         "q": "Qu’est-ce que la boîte aux lettres, et que peut faire Panal de ce qui y passe ?",
-        "a": "C’est là qu’attend une commande quand celui qui travaille est une personne et non un serveur allumé. Si cette personne a activé le chiffrement et que vous engagez depuis le site ou l’app à jour, la commande et la livraison sont chiffrées de bout en bout et Panal ne peut pas les lire ; sinon, elle le peut. Les modifier, jamais : elle n’accepte qu’une commande dont le hash est celui ancré on-chain, et une livraison dont les octets donnent le hash que vous avez signé. Elle garde 30 jours — c’est un relais, pas une archive."
+        "a": "C’est là qu’attend une commande quand celui qui travaille est une personne et non un serveur allumé. Si cette personne a activé le chiffrement et que vous engagez depuis le site ou l’app à jour, la commande et la livraison sont chiffrées de bout en bout et Panal ne peut pas les lire ; sinon, elle le peut. Sur le tableau, il en va de même pour les commandes marquées comme confidentielles. Les modifier, jamais : elle n’accepte qu’une commande dont le hash est celui ancré on-chain, et une livraison dont les octets donnent le hash que vous avez signé. Elle garde 30 jours — c’est un relais, pas une archive."
       },
       "q8": {
         "q": "Faut-il choisir quelqu’un pour faire faire quelque chose ?",
@@ -1314,7 +1314,13 @@
       "daysLeft": "reste {{days}} jours",
       "timeoutPassed": "Délai dépassé",
       "resolve": "Résoudre le litige",
-      "note": "Si la multisig ne tranche pas à temps, n'importe qui peut rembourser le montant entier au client depuis l'escrow."
+      "note": "Si la multisig ne tranche pas à temps, n'importe qui peut rembourser le montant entier au client depuis l'escrow.",
+      "darAcceso": "Donner accès à ceux qui tranchent",
+      "darAccesoPista": "Si la commande ou la livraison est chiffrée, ceux qui tranchent ne peuvent pas la lire sans cela.",
+      "accesoDado": "Ceux qui tranchent peuvent maintenant lire la commande et la livraison ({{n}} signataires sur {{total}}).",
+      "accesoNo": "Impossible de donner accès à ceux qui tranchent.",
+      "arbitrosSinClave": "Ceux qui tranchent n’ont pas encore activé leur clé de chiffrement. Redonnez-leur accès plus tard.",
+      "nadaCifrado": "Rien n’est chiffré ici : ceux qui tranchent peuvent le lire tel quel."
     },
     "errCancelYet": "Impossible d'annuler pour l'instant : la tâche a un travailleur assigné et le délai court encore.",
     "errNotClient": "Vous n'êtes pas le client de cette tâche.",
@@ -1347,7 +1353,24 @@
       "submit": "Soumettre la proposition",
       "cancel": "Annuler",
       "agentShare": "Répartition : {{pct}} % pour l'agent",
-      "ratingLabel": "Évaluation : {{rating}}/5"
+      "ratingLabel": "Évaluation : {{rating}}/5",
+      "verExpediente": "Voir le dossier",
+      "encargo": "Commande",
+      "entrega": "Livraison",
+      "sinEncargo": "La boîte n’a pas la commande.",
+      "sinEntrega": "Il n’y a pas de livraison dans la boîte.",
+      "sinAcceso": "C’est chiffré et aucune des parties ne vous a encore donné accès.",
+      "noCuadra": "Ne correspond pas au hash ancré sur la chaîne : ce n’est pas une preuve valable.",
+      "cifrado": "Chiffré",
+      "expedienteFuera": "L’agent a son propre serveur : la commande et la livraison sont sur sa machine, pas dans la boîte de Panal.",
+      "expedienteVacio": "La boîte ne garde rien pour cette tâche.",
+      "expedienteSinEncargo": "La commande du tableau liée à cette tâche est introuvable.",
+      "expedienteError": "Impossible de lire le dossier : {{detalle}}",
+      "archivoError": "Impossible de télécharger « {{name}} », ou il ne correspond pas à son hash.",
+      "claveFalta": "Activez votre clé de chiffrement : sans elle, les parties ne peuvent pas vous donner accès à une commande chiffrée et vous ne pourriez pas la lire.",
+      "activarClave": "Activer le chiffrement",
+      "claveActivada": "Chiffrement activé : les parties peuvent maintenant vous donner accès.",
+      "claveError": "Impossible d’activer le chiffrement. Réessayez."
     },
     "gasFueraDeRango": "Rien n'a été signé : l'estimation de gas pour ce retrait est bien au-dessus de la normale, et Monad facture la limite entière. Réessayez dans un moment."
   },
@@ -1936,7 +1959,9 @@
       },
       "faltaAnuncio": "L’annonce doit faire au moins {{n}} caractères.",
       "faltaEncargo": "Il manque la commande : c’est ce que lira qui la prendra.",
-      "faltaImporte": "Il manque le montant."
+      "faltaImporte": "Il manque le montant.",
+      "confidencial": "Confidentiel",
+      "confidencialPista": "La commande et ses pièces jointes sont chiffrées : seuls vous et la personne choisie pouvez les lire, et elle doit avoir publié sa clé de chiffrement. Panal ne peut pas les lire. L’annonce reste publique."
     },
     "oferta": {
       "precio": "Votre prix ({{moneda}})",
@@ -1988,7 +2013,18 @@
       "soloAudiencia": {
         "personas": "Réservée aux personnes : seules leurs offres s’affichent. Choisissez à temps : sinon le contrat l’attribue à la meilleure offre selon ses règles, et il ne sait pas qui est une personne.",
         "agentes": "Réservée aux agents : seules les offres de programmes s’affichent. Choisissez à temps : sinon le contrat l’attribue à la meilleure offre selon ses règles."
-      }
+      },
+      "accesoDado": "{{nombre}} peut maintenant lire la commande.",
+      "accesoNo": "Impossible de donner l’accès.",
+      "accesoSinClave": "{{nombre}} n’a pas encore publié de clé de chiffrement.",
+      "accesoPista": "Confidentiel : qui la prend ne peut la lire que si vous lui donnez accès. L’accès est donné au moment du choix ; si elle a été attribuée automatiquement ou si cela a échoué, donnez-le ici.",
+      "darAcceso": "Donner accès à {{nombre}}",
+      "darAccesoArbitros": "Donner accès à ceux qui tranchent",
+      "arbitrosPista": "Confidentiel : ceux qui tranchent le litige ne peuvent pas le lire si vous ne leur donnez pas accès.",
+      "arbitrosConAcceso": "Ceux qui tranchent peuvent maintenant le lire ({{n}} signataires sur {{total}}).",
+      "arbitrosSinClave": "Ceux qui tranchent n’ont pas encore activé leur clé de chiffrement. Redonnez-leur accès plus tard.",
+      "entregaSinAcceso": "La livraison est chiffrée et ce compte ne peut pas l’ouvrir.",
+      "ofertaSinClave": "Pas de clé de chiffrement : ne pourrait pas lire la commande."
     },
     "trabajo": {
       "nivel": "Niveau",
@@ -2028,7 +2064,9 @@
       "elEncargo": "La commande",
       "tuEntrega": "Votre livraison",
       "entregar": "Livrer",
-      "entregarPista": "Elle est déposée dans la boîte et son hash est ancré dans le séquestre : deux signatures."
+      "entregarPista": "Elle est déposée dans la boîte et son hash est ancré dans le séquestre : deux signatures.",
+      "esperandoAcceso": "Cette commande est confidentielle et le client ne vous a pas encore donné accès. Réessayez dans un moment.",
+      "clienteSinClave": "La clé de chiffrement du client est introuvable : la livraison ne peut pas être chiffrée. Réessayez dans un moment."
     },
     "motivo": {
       "notAnActiveAgent": "Il faut être inscrit comme agent actif.",
@@ -2098,7 +2136,11 @@
       "bajar": "Télécharger",
       "errorBajar": "Téléchargement impossible, ou il ne correspond pas à son empreinte.",
       "buzonSinArchivos": "La boîte du tableau n’accepte pas encore de fichiers. Rien n’a été débité : publiez sans pièces jointes ou réessayez plus tard."
-    }
+    },
+    "confidencial": "Confidentiel",
+    "confidencialSinClave": "Cette commande est confidentielle : sans votre clé de chiffrement publiée, le client ne pourrait pas vous y donner accès.",
+    "activarCifrado": "Activer le chiffrement",
+    "claveActivada": "Chiffrement activé : on peut désormais vous donner accès aux commandes confidentielles."
   },
   "hoja": {
     "metaTitle": "Feuille de route — Panal",
@@ -2303,7 +2345,7 @@
     "metaTitle": "Confidentialité — Panal",
     "eyebrow": "Confidentialité",
     "title": "Ce que nous voyons et ce que nous gardons",
-    "actualizado": "Dernière mise à jour : 6 octobre 2026",
+    "actualizado": "Dernière mise à jour : 20 octobre 2026",
     "intro": "Panal est une marketplace d’agents d’IA sur le réseau Monad. Cette politique explique quelles données passent par panal.lat, par l’appli Android, par les services d’api.panal.lat et par les agents que Panal exploite, ce que nous en faisons et ce que nous ne pouvons pas faire. En bref : pas de comptes, nous ne gardons pas vos clés, aucun traceur, et nous ne vendons rien sur vous.",
     "quien": {
       "titulo": "Qui est responsable",
@@ -2331,7 +2373,7 @@
     },
     "buzon": {
       "titulo": "La boîte aux lettres de Panal",
-      "texto": "Qui vend en tant que personne, sans serveur à soi, reçoit ses commandes dans la boîte aux lettres de Panal. Si cette personne a activé le chiffrement et qu’on l’engage depuis le site ou une version récente de l’app, la commande, ses pièces jointes et la livraison sont chiffrées de bout en bout : la boîte les garde sans pouvoir les lire. Si elle ne l’a pas activé, si on l’engage autrement ou si la commande passe par le tableau, elles circulent en clair et Panal peut les lire. Dans aucun cas il ne peut les modifier, car leur empreinte est on-chain. Tout est effacé au bout de 30 jours ; la clé publique de chiffrement de chaque compte est gardée tant qu’il existe. Avant d’engager, le site et l’app indiquent si la commande sera chiffrée."
+      "texto": "Qui vend en tant que personne, sans serveur à soi, reçoit ses commandes dans la boîte aux lettres de Panal. Si cette personne a activé le chiffrement et qu’on l’engage depuis le site ou une version récente de l’app, la commande, ses pièces jointes et la livraison sont chiffrées de bout en bout : la boîte les garde sans pouvoir les lire. Sur le tableau, il en va de même pour les commandes que leur auteur marque comme confidentielles : seuls lui et la personne choisie peuvent les lire. Si le chiffrement n’est pas activé, si on l’engage autrement ou si la commande du tableau n’est pas confidentielle, elles circulent en clair et Panal peut les lire. Dans aucun cas il ne peut les modifier, car leur empreinte est on-chain. En cas de litige, ceux qui tranchent —les signataires de la multisig— ne peuvent lire ce qui est chiffré que si l’une des parties leur donne accès ; le site et l’app le font à l’ouverture du litige, dès que ces signataires ont activé leur clé. Tout est effacé au bout de 30 jours ; la clé publique de chiffrement de chaque compte est gardée tant qu’il existe. Avant d’engager, le site et l’app indiquent si la commande sera chiffrée."
     },
     "agentes": {
       "titulo": "Les agents de Panal",

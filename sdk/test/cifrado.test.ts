@@ -11,7 +11,9 @@ import { keccak256, toBytes } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import {
   aBase64,
+  archivosAnunciadosEnSobre,
   claveDesdeFirma,
+  concederAcceso,
   cifrarArchivo,
   cifrarTexto,
   comprobarClavePublicada,
@@ -23,6 +25,7 @@ import {
   esTextoCifrado,
   mensajeParaDerivarClave,
   mensajeParaPublicarClave,
+  puedeAbrir,
   type ClaveDeCifrado,
 } from '../src/cifrado.js';
 
@@ -148,4 +151,74 @@ test('los mensajes que se firman no cambian, letra a letra', () => {
     mensajeParaPublicarClave(persona.address, clave),
     `Panal · mi clave pública de cifrado · v1\n\nCuenta: ${persona.address}\nClave: ${clave}`,
   );
+});
+
+const arbitro = privateKeyToAccount('0x3123456789012345678901234567890123456789012345678901234567890123');
+
+test('un encargo cifrado solo para su cliente: le da acceso a quien lo coge, sin tocar el sobre', async () => {
+  const kc = await claveDe(cliente);
+  const kp = await claveDe(persona);
+  const sobre = cifrarTexto(BRIEF, [{ cuenta: cliente.address, clave: kc.publica }]);
+  const anclado = keccak256(toBytes(sobre));
+  assert.ok(!puedeAbrir(sobre, persona.address));
+  assert.throws(() => descifrarTexto(sobre, persona.address, kp.secreta), /ni le han dado acceso/);
+  const acceso = concederAcceso(sobre, cliente.address, kc.secreta, { cuenta: persona.address, clave: kp.publica });
+  assert.equal(acceso.o, anclado.toLowerCase());
+  assert.ok(puedeAbrir(sobre, persona.address, [acceso]));
+  assert.equal(descifrarTexto(sobre, persona.address, kp.secreta, [acceso]), BRIEF);
+  // El sobre es el mismo: el hash anclado no cambia.
+  assert.equal(keccak256(toBytes(sobre)), anclado);
+});
+
+test('un acceso no sirve a otra cuenta, ni para otro objeto', async () => {
+  const kc = await claveDe(cliente);
+  const kp = await claveDe(persona);
+  const kx = await claveDe(curioso);
+  const sobre = cifrarTexto(BRIEF, [{ cuenta: cliente.address, clave: kc.publica }]);
+  const otro = cifrarTexto('otro encargo', [{ cuenta: cliente.address, clave: kc.publica }]);
+  const acceso = concederAcceso(sobre, cliente.address, kc.secreta, { cuenta: persona.address, clave: kp.publica });
+  assert.throws(() => descifrarTexto(sobre, curioso.address, kx.secreta, [acceso]), /ni le han dado acceso/);
+  // Se lo cambia de nombre: con la clave del curioso no abre.
+  assert.throws(() => descifrarTexto(sobre, curioso.address, kx.secreta, [{ ...acceso, a: curioso.address.toLowerCase() }]), /no es la que se usó/);
+  assert.throws(() => descifrarTexto(otro, persona.address, kp.secreta, [acceso]), /ni le han dado acceso/);
+});
+
+test('quien tiene acceso puede dárselo a quien decide una disputa', async () => {
+  const kc = await claveDe(cliente);
+  const kp = await claveDe(persona);
+  const ka = await claveDe(arbitro);
+  const sobre = cifrarTexto(BRIEF, [{ cuenta: cliente.address, clave: kc.publica }]);
+  const aPersona = concederAcceso(sobre, cliente.address, kc.secreta, { cuenta: persona.address, clave: kp.publica });
+  const aArbitro = concederAcceso(sobre, persona.address, kp.secreta, { cuenta: arbitro.address, clave: ka.publica }, [aPersona]);
+  assert.equal(descifrarTexto(sobre, arbitro.address, ka.secreta, [aArbitro]), BRIEF);
+});
+
+test('un acceso manipulado no abre ni puede cambiar lo que dice el sobre', async () => {
+  const kc = await claveDe(cliente);
+  const kp = await claveDe(persona);
+  const sobre = cifrarTexto(BRIEF, [{ cuenta: cliente.address, clave: kc.publica }]);
+  // Un acceso hecho con OTRA clave de contenido —la de otro sobre— y pegado a este.
+  const ajeno = cifrarTexto('lo que el buzón querría que leyeras', [{ cuenta: cliente.address, clave: kc.publica }]);
+  const trucado = { ...concederAcceso(ajeno, cliente.address, kc.secreta, { cuenta: persona.address, clave: kp.publica }), o: keccak256(toBytes(sobre)).toLowerCase() };
+  assert.throws(() => descifrarTexto(sobre, persona.address, kp.secreta, [trucado]), /dañado o lo han cambiado/);
+});
+
+test('los archivos también se abren con un acceso', async () => {
+  const kc = await claveDe(cliente);
+  const kp = await claveDe(persona);
+  const pdf = Uint8Array.from({ length: 5_000 }, (_, i) => (i * 13) & 255);
+  const cifrado = cifrarArchivo(pdf, [{ cuenta: cliente.address, clave: kc.publica }]);
+  const acceso = concederAcceso(cifrado, cliente.address, kc.secreta, { cuenta: persona.address, clave: kp.publica });
+  assert.deepEqual(descifrarArchivo(cifrado, persona.address, kp.secreta, [acceso]), pdf);
+  assert.throws(() => descifrarArchivo(cifrado, persona.address, kp.secreta), /ni le han dado acceso/);
+});
+
+test('un sobre puede anunciar sus adjuntos en abierto, sin sus nombres', async () => {
+  const kc = await claveDe(cliente);
+  const h = [{ hash: '0x' + 'AB'.repeat(32), size: 506 }];
+  const sobre = cifrarTexto('con adjunto', [{ cuenta: cliente.address, clave: kc.publica }], { anunciar: h });
+  assert.ok(esTextoCifrado(sobre));
+  assert.deepEqual(archivosAnunciadosEnSobre(sobre), [{ hash: '0x' + 'ab'.repeat(32), size: 506 }]);
+  assert.equal(descifrarTexto(sobre, cliente.address, kc.secreta), 'con adjunto');
+  assert.deepEqual(archivosAnunciadosEnSobre(cifrarTexto('sin', [{ cuenta: cliente.address, clave: kc.publica }])), []);
 });

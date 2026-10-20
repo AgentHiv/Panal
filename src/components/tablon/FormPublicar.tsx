@@ -17,9 +17,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { Hexagon } from 'lucide-react';
+import { Hexagon, Lock } from 'lucide-react';
 import { keccak256, parseEther, parseEventLogs, toBytes, type Address, type Hex } from 'viem';
 import { useSignMessage } from 'wagmi';
+import { cifrarArchivos, publicarMiClave } from '@/lib/cifrado';
 import {
   CATEGORIAS_TABLON,
   MAX_TEXTO_ANUNCIO,
@@ -27,6 +28,7 @@ import {
   anuncioPara,
   appendAttachmentsManifest,
   attachmentFrom,
+  cifrarTexto,
   panalTablonAbi,
   problemaConArchivos,
   type ArchivoParaSubir,
@@ -150,6 +152,13 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
   const [caduca, setCaduca] = useState<number>(3 * DIA);
   const [experiencia, setExperiencia] = useState(false);
   const [republicar, setRepublicar] = useState(false);
+  /**
+   * Confidencial: el encargo y sus adjuntos se cifran para quien publica, y al
+   * elegir una oferta se le da acceso solo a quien se elige. Solo en selección:
+   * en inmediato lo cogería el primero que pasara las reglas, sin que nadie le
+   * diera acceso.
+   */
+  const [confidencial, setConfidencial] = useState(false);
   const [paso, setPaso] = useState<'permiso' | 'publicando' | 'textos' | 'archivos' | null>(null);
   const [hecho, setHecho] = useState<Hecho | null>(null);
 
@@ -219,11 +228,33 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
       const textoAnuncio = anuncioPara(audiencia, anuncioT);
       // Los adjuntos se anuncian DENTRO del encargo, con su hash: el taskHash
       // que va a la cadena los cubre desde el momento del pago.
-      const archivos = adjuntos;
-      const textoEncargo = appendAttachmentsManifest(
+      let archivos = adjuntos;
+      let textoEncargo = appendAttachmentsManifest(
         encargoT,
         archivos.map((a) => attachmentFrom(a.name, a.bytes, a.mime)),
       );
+      if (confidencial && seleccion) {
+        /*
+         * Cifrado solo para quien publica: a quien coja el encargo se le da
+         * acceso al elegirlo. Antes de pagar nada; la primera vez publica
+         * también la clave (dos firmas, una vez). Los adjuntos se anuncian en
+         * abierto por su hash y su tamaño: el buzón solo acepta los que el
+         * encargo anuncia, y no puede leerlo.
+         */
+        const firmar = (message: string) => signMessageAsync({ message });
+        // La de esta sesión, publicada: con ella se abrirá luego el encargo.
+        const miPublica = (await publicarMiClave(cuenta, firmar)).clave.publica;
+        const para = [{ cuenta, clave: miPublica }];
+        const { anunciar, subir } = cifrarArchivos(adjuntos, para);
+        const enClaro = appendAttachmentsManifest(
+          encargoT,
+          anunciar.map((a) => attachmentFrom(a.name, a.bytes, a.mime)),
+        );
+        textoEncargo = cifrarTexto(enClaro, para, {
+          anunciar: anunciar.map((a) => ({ hash: keccak256(a.bytes), size: a.bytes.byteLength })),
+        });
+        archivos = subir;
+      }
       try {
         // Antes de cobrar nada: sin buzón, el encargo quedaría pagado y mudo.
         if (!(await buzonAceptaElTablon())) throw new Error(t('tablon.pub.buzonNoListo'));
@@ -480,6 +511,20 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
 
       {seleccion && (
         <>
+          <label className="flex items-start gap-2.5 text-[0.8125rem] leading-relaxed text-ink-2">
+            <Checkbox
+              checked={confidencial}
+              onCheckedChange={(v) => setConfidencial(v === true)}
+              className="mt-0.5 border-line data-[state=checked]:border-honey data-[state=checked]:bg-honey data-[state=checked]:text-ink"
+            />
+            <span>
+              <span className="inline-flex items-center gap-1 font-medium text-ink">
+                <Lock size={12} aria-hidden />
+                {t('tablon.pub.confidencial')}
+              </span>
+              <span className="block text-ink-3">{t('tablon.pub.confidencialPista')}</span>
+            </span>
+          </label>
           <div className="flex flex-col gap-1.5">
             <span className="text-[0.8125rem] font-medium text-ink-2">{t('tablon.pub.ventanaOfertas')}</span>
             <Opciones valores={VENTANAS_OFERTAS} valor={ofertas as (typeof VENTANAS_OFERTAS)[number]} onChange={setOfertas} etiqueta={duracion} />

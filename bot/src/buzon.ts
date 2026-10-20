@@ -40,6 +40,13 @@
  *                                           archivo de la entrega de su agente
  *     GET  /buzon/:tablon/archivo/:jobId/:nombre  lo bajan su cliente y su agente
  *
+ *   Cifrado, accesos y disputas, en el de cada agente y en el del tablón:
+ *     GET  /buzon/:cuenta/clave             la clave pública de una cuenta
+ *     POST /buzon/:cuenta/clave             la publica su dueño
+ *     POST /buzon/:agente/access/:id        una parte deja accesos a lo cifrado
+ *     GET  /buzon/:agente/dispute/:id       un árbitro lee una tarea en disputa
+ *     GET  /buzon/:agente/dispute/:id/file/:nombre  y un archivo suyo
+ *
  * QUÉ NO PUEDE HACER
  *
  * Ni cobrar, ni entregar, ni mover un encargo: todo eso lo firma una wallet, y
@@ -72,6 +79,7 @@ import {
   currencySymbol,
   getRegistryAgent,
   esRevert,
+  getArbitros,
   getTablonJob,
   getTask,
   monad,
@@ -83,7 +91,7 @@ import {
 } from './chain.js';
 import { MAX_BRIEF_CHARS, parseMetadataURI, type AgentJson } from './http.js';
 import type { BotConfig } from './config.js';
-import { MAX_ARCHIVO_BYTES, type BuzonStore } from './buzon-store.js';
+import { MAX_ARCHIVO_BYTES, type AccesoGuardado, type BuzonStore } from './buzon-store.js';
 
 /* ── lo que se firma ──────────────────────────────────────────────────────
  *
@@ -154,11 +162,47 @@ export function tablonArchivoSignMessage(jobId: bigint, expira: number): string 
 }
 
 /**
+ * Una parte da acceso a lo cifrado de su encargo: a quien lo coge del tablón,
+ * o a quien decide una disputa. Iguales a los del SDK y la web.
+ */
+export function tablonAccesoSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · acceso #${jobId.toString()} · ${expira}`;
+}
+export function accesoSignMessage(taskId: bigint, expira: number): string {
+  return `Panal acceso #${taskId.toString()} · ${expira}`;
+}
+
+/** Un firmante de la multisig lee una disputa: el encargo, la entrega y sus archivos. */
+export function tablonDisputaSignMessage(jobId: bigint, expira: number): string {
+  return `Panal tablón con reglas · disputa #${jobId.toString()} · ${expira}`;
+}
+export function disputaSignMessage(taskId: bigint, expira: number): string {
+  return `Panal disputa #${taskId.toString()} · ${expira}`;
+}
+
+/**
  * Los adjuntos que anuncia un encargo: su hash y su tamaño, del bloque
  * `[panal-attach/1]` que escribe el SDK (`appendAttachmentsManifest`). Solo lo
  * necesario para reconocer unos bytes; el resto del formato es del SDK.
  */
 export function adjuntosAnunciados(brief: string): { hash: string; size: number }[] {
+  // Cifrado, la lista va en abierto al lado del contenido (`h`), dentro de lo
+  // que se ancla: el buzón no puede leer el encargo, pero sí qué bytes cubre.
+  if (esTextoCifrado(brief)) {
+    try {
+      const h = (JSON.parse(brief) as { h?: unknown }).h;
+      return Array.isArray(h)
+        ? h
+            .filter(
+              (f): f is { hash: string; size: number } =>
+                typeof f?.hash === 'string' && /^0x[0-9a-fA-F]{64}$/.test(f.hash) && Number.isInteger(f?.size),
+            )
+            .map((f) => ({ hash: f.hash.toLowerCase(), size: f.size }))
+        : [];
+    } catch {
+      return [];
+    }
+  }
   const out: { hash: string; size: number }[] = [];
   let actual: { hash?: string; size?: number } | null = null;
   const cerrar = () => {
@@ -421,6 +465,12 @@ export interface BuzonDeps {
    */
   tablon?: Address | null;
   fetchJob?: (jobId: bigint) => Promise<TrabajoTablon>;
+  /**
+   * Quiénes deciden las disputas: los firmantes de la multisig que es el
+   * `arbitrator` del escrow (o el propio arbitrator si es una cuenta). Sin
+   * esto, las rutas de disputa no existen.
+   */
+  fetchArbitros?: () => Promise<Address[]>;
 }
 
 /**
@@ -516,6 +566,235 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     deps.store.guardarClave(cuenta, clave, firma);
     console.log(`[buzon] clave de cifrado de ${cuenta}`);
     json(res, 200, { ok: true });
+  };
+
+  /* ── accesos y disputas ───────────────────────────────────────────────── */
+
+  /** Un acceso con forma de acceso. El buzón no lo interpreta, pero tampoco guarda basura. */
+  const leerAccesos = (x: unknown): AccesoGuardado[] | null => {
+    if (!Array.isArray(x) || x.length === 0 || x.length > 40) return null;
+    const out: AccesoGuardado[] = [];
+    for (const item of x) {
+      if (!item || typeof item !== 'object') return null;
+      const { o, a, e, n, k } = item as Record<string, unknown>;
+      if (typeof o !== 'string' || !/^0x[0-9a-f]{64}$/.test(o)) return null;
+      if (typeof a !== 'string' || !/^0x[0-9a-f]{40}$/.test(a)) return null;
+      if (![e, n, k].every((v) => typeof v === 'string' && /^[A-Za-z0-9_-]{1,200}$/.test(v))) return null;
+      out.push({ o, a, e: e as string, n: n as string, k: k as string });
+    }
+    return out;
+  };
+
+  /** Los árbitros, en minúsculas. Vacío si no se saben: entonces nadie lo es. */
+  const arbitros = async (): Promise<string[]> => {
+    if (!deps.fetchArbitros) return [];
+    try {
+      return (await deps.fetchArbitros()).map((a) => a.toLowerCase());
+    } catch (err) {
+      console.warn(`[buzon] no se pudo leer la multisig: ${err instanceof Error ? err.message.split('\n')[0] : err}`);
+      return [];
+    }
+  };
+
+  /** Los accesos que una cuenta tiene en un encargo. */
+  const accesosDe = (agente: Address, id: bigint, cuenta: string): AccesoGuardado[] =>
+    (deps.store.leer(agente, id)?.accesos ?? []).filter((x) => x.a === cuenta.toLowerCase());
+
+  /**
+   * POST /access/:id — una PARTE da acceso a lo cifrado de su encargo.
+   *
+   * Solo a quien tiene que leerlo: la otra parte (en el tablón, quien lo cogió)
+   * o un árbitro. Dar acceso es sacar la clave de un sobre que ya se puede
+   * abrir; el buzón no puede hacerlo ni sacarle partido, y uno inventado no
+   * abre nada.
+   */
+  const recibirAccesos = async (
+    agente: Address,
+    id: bigint,
+    esTablon: boolean,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> => {
+    const raw = await readBody(req, 64_000);
+    if (raw === null) {
+      json(res, 413, { error: 'body too large' });
+      return;
+    }
+    let body: Record<string, unknown>;
+    try {
+      body = JSON.parse(raw || '{}') as Record<string, unknown>;
+    } catch {
+      json(res, 400, { error: 'bad json' });
+      return;
+    }
+    const lista = leerAccesos(body.accesos);
+    if (!lista) {
+      json(res, 400, { error: 'bad grants' });
+      return;
+    }
+    if (typeof body.address !== 'string' || !isAddress(body.address) || typeof body.signature !== 'string' || !isHex(body.signature)) {
+      json(res, 400, { error: 'bad credentials' });
+      return;
+    }
+    const address = getAddress(body.address);
+    const expira = body.expira === undefined ? null : String(body.expira);
+    const firmaOk = await firmaVigente(address, body.signature as Hex, expira, (e) =>
+      esTablon ? tablonAccesoSignMessage(id, e) : accesoSignMessage(id, e),
+    );
+    if (!firmaOk) {
+      json(res, 403, { error: 'bad signature' });
+      return;
+    }
+    let partes: string[];
+    if (esTablon) {
+      const job = await trabajoDe(id, res);
+      if (!job) return;
+      partes = [job.client, ...(job.agent.toLowerCase() !== TABLON.toLowerCase() ? [job.agent] : [])];
+    } else {
+      const task = await tareaDe(agente, id, res);
+      if (!task) return;
+      partes = [task.client, task.worker];
+    }
+    partes = partes.map((x) => x.toLowerCase());
+    if (!partes.includes(address.toLowerCase())) {
+      json(res, 403, { error: 'not a party' });
+      return;
+    }
+    const permitidos = new Set([...partes, ...(await arbitros())]);
+    if (lista.some((x) => !permitidos.has(x.a))) {
+      json(res, 400, { error: 'recipient not allowed' });
+      return;
+    }
+    const total = deps.store.guardarAccesos(agente, id, lista);
+    if (total === null) {
+      json(res, 409, { error: 'too many grants' });
+      return;
+    }
+    console.log(`[buzon] ${lista.length} acceso(s) en #${id}${esTablon ? ' del tablón' : ''}`);
+    json(res, 200, { ok: true, total });
+  };
+
+  /**
+   * GET /dispute/:id — un firmante de la multisig lee una disputa.
+   *
+   * El encargo, la entrega, la lista de archivos y SUS accesos; con
+   * `/file/<nombre>`, los bytes de uno. Solo mientras la tarea esté en
+   * disputa: un árbitro no tiene por qué leer encargos que nadie le ha traído.
+   * Si va cifrado, sin un acceso que le haya dado una parte no lo puede abrir.
+   */
+  const darDisputa = async (
+    agente: Address,
+    id: bigint,
+    esTablon: boolean,
+    nombre: string | null,
+    url: URL,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> => {
+    const { address: addressParam, signature, expira } = credenciales(req, url);
+    if (!isAddress(addressParam) || !isHex(signature)) {
+      json(res, 400, { error: 'bad credentials' });
+      return;
+    }
+    const address = getAddress(addressParam);
+    const firmaOk = await firmaVigente(address, signature as Hex, expira, (e) =>
+      esTablon ? tablonDisputaSignMessage(id, e) : disputaSignMessage(id, e),
+    );
+    if (!firmaOk) {
+      json(res, 403, { error: 'bad signature' });
+      return;
+    }
+    const lista = await arbitros();
+    if (lista.length === 0) {
+      json(res, 503, { error: 'arbitrators unknown' });
+      return;
+    }
+    if (!lista.includes(address.toLowerCase())) {
+      json(res, 403, { error: 'not an arbitrator' });
+      return;
+    }
+    let estado: TaskStatus;
+    if (esTablon) {
+      const job = await trabajoDe(id, res);
+      if (!job) return;
+      try {
+        estado = (await deps.fetchTask(job.escrowTaskId)).status;
+      } catch {
+        json(res, 502, { error: 'rpc error' });
+        return;
+      }
+    } else {
+      const task = await tareaDe(agente, id, res);
+      if (!task) return;
+      estado = task.status;
+    }
+    if (estado !== TaskStatus.Disputed) {
+      json(res, 409, { error: 'not disputed' });
+      return;
+    }
+    if (nombre) {
+      const de = url.searchParams.get('de');
+      const guardado = deps.store.leerArchivo(
+        agente,
+        id,
+        nombre,
+        de === 'cliente' || de === 'trabajador' ? de : undefined,
+      );
+      if (!guardado) {
+        json(res, 404, { error: 'file not here' });
+        return;
+      }
+      res.writeHead(200, {
+        'content-type': guardado.archivo.mime || 'application/octet-stream',
+        'content-length': String(guardado.bytes.byteLength),
+        'content-disposition': 'attachment',
+        'x-content-type-options': 'nosniff',
+      });
+      res.end(guardado.bytes);
+      return;
+    }
+    const g = deps.store.leer(agente, id);
+    json(res, 200, {
+      id: id.toString(),
+      brief: g?.brief ?? null,
+      entrega: g?.entrega ?? null,
+      archivos: (g?.archivos ?? []).map(({ name, hash, size, mime, de }) => ({ name, hash, size, ...(mime ? { mime } : {}), de })),
+      accesos: (g?.accesos ?? []).filter((x) => x.a === address.toLowerCase()),
+    });
+  };
+
+  /** Las rutas de accesos y disputas, iguales en el buzón de un agente y en el tablón. */
+  const rutaDeAccesoODisputa = async (
+    agente: Address,
+    resto: string,
+    esTablon: boolean,
+    url: URL,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<boolean> => {
+    const deAcceso = /^access\/(\d{1,20})$/.exec(resto);
+    if (deAcceso && req.method === 'POST') {
+      await recibirAccesos(agente, BigInt(deAcceso[1]!), esTablon, req, res);
+      return true;
+    }
+    const deDisputa = /^dispute\/(\d{1,20})(?:\/file\/(.+))?$/.exec(resto);
+    if (deDisputa && req.method === 'GET') {
+      let nombre: string | null = null;
+      if (deDisputa[2]) {
+        try {
+          nombre = sanearNombre(decodeURIComponent(deDisputa[2]));
+        } catch {
+          nombre = '';
+        }
+        if (!nombre) {
+          json(res, 400, { error: 'bad filename' });
+          return true;
+        }
+      }
+      await darDisputa(agente, BigInt(deDisputa[1]!), esTablon, nombre, url, req, res);
+      return true;
+    }
+    return false;
   };
 
   // ---- POST /brief/:taskId — el cliente deja el encargo ---------------------
@@ -642,7 +921,9 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
     const task = await tareaDe(agente, taskId, res);
     if (!task) return;
-    if (address.toLowerCase() !== task.client.toLowerCase()) {
+    // Su cliente, y también quien la entregó: si abre una disputa sobre una
+    // entrega cifrada, es quien puede darle acceso a quien decide.
+    if (address.toLowerCase() !== task.client.toLowerCase() && address.toLowerCase() !== task.worker.toLowerCase()) {
       json(res, 403, { error: 'not client' });
       return;
     }
@@ -658,6 +939,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       taskId: taskId.toString(),
       resultText: encargo.entrega,
       resultHash: keccak256(toBytes(encargo.entrega)),
+      accesos: accesosDe(agente, taskId, address),
     });
   };
 
@@ -720,6 +1002,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       brief: encargo.brief,
       taskHash: task.taskHash,
       recibido: encargo.briefTs ?? null,
+      accesos: accesosDe(agente, taskId, address),
     });
   };
 
@@ -1141,7 +1424,11 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       },
       howToHire: [
         'Este agente no tiene servidor propio: recibe y entrega por el buzón de Panal.',
-        'El encargo y la entrega pasan en claro por api.panal.lat, que puede leerlos.',
+        // Lo que de verdad pasa con SU encargo: con clave publicada, la web y
+        // la app lo cifran; sin ella, va en claro.
+        deps.store.leerClave(agente)
+          ? 'Ha activado el cifrado: desde la web y la app de Panal, el encargo y la entrega van cifrados de punta a punta y api.panal.lat no puede leerlos. Si se le escribe en claro por otra vía, sí puede.'
+          : 'El encargo y la entrega pasan en claro por api.panal.lat, que puede leerlos.',
         'No puede cambiarlos: el brief debe dar el taskHash y la entrega el resultHash de la cadena.',
         'Contrátalo desde panal.lat como a cualquier otro: el pago queda en PanalEscrow.',
       ],
@@ -1181,7 +1468,9 @@ export function createBuzonServer(deps: BuzonDeps): Server {
 
   /** El texto de un POST del tablón, con su tope. */
   const textoDe = async (req: IncomingMessage, campo: string, max: number, res: ServerResponse) => {
-    const raw = await readBody(req, max * 4 + 4_096);
+    // Un sobre cifrado ocupa más que su texto: se le deja el mismo margen que
+    // en el buzón de cada agente (ver `topeDe`).
+    const raw = await readBody(req, max * 6 + 4_096);
     if (raw === null) {
       json(res, 413, { error: 'body too large' });
       return null;
@@ -1189,7 +1478,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     try {
       const body = JSON.parse(raw || '{}') as Record<string, unknown>;
       const texto = typeof body[campo] === 'string' ? (body[campo] as string) : '';
-      if (texto.trim().length === 0 || texto.length > max) {
+      if (texto.trim().length === 0 || texto.length > topeDe(texto, max, max * 6)) {
         json(res, 400, { error: `${campo} requerido, máx. ${max} caracteres` });
         return null;
       }
@@ -1363,6 +1652,9 @@ export function createBuzonServer(deps: BuzonDeps): Server {
           anuncio: o.oferta.publico,
           cliente: o.oferta.cliente,
           publicado: o.oferta.ts,
+          // Si el encargo va cifrado: solo eso, no lo que dice. Quien vaya a
+          // ofertar necesita su clave publicada para poder leerlo.
+          cifrado: esTextoCifrado(deps.store.leer(tablon, BigInt(o.taskId))?.brief ?? ''),
         })),
         comprobacion: 'keccak256(anuncio) == getJob(jobId).advertHash',
       });
@@ -1393,6 +1685,8 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       json(res, 405, { error: 'method not allowed' });
       return;
     }
+
+    if (await rutaDeAccesoODisputa(tablon, resto, true, url, req, res)) return;
 
     const m = /^(anuncio|brief|encargo|entrega|result)\/(\d{1,20})$/.exec(resto);
     if (!m) {
@@ -1462,7 +1756,12 @@ export function createBuzonServer(deps: BuzonDeps): Server {
           json(res, 404, { error: 'brief not here', taskHash: job.taskHash });
           return;
         }
-        json(res, 200, { jobId: jobId.toString(), brief: guardado.brief, taskHash: job.taskHash });
+        json(res, 200, {
+          jobId: jobId.toString(),
+          brief: guardado.brief,
+          taskHash: job.taskHash,
+          accesos: accesosDe(tablon, jobId, address),
+        });
         return;
       }
       if (!guardado?.entrega) {
@@ -1474,6 +1773,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
         escrowTaskId: job.escrowTaskId.toString(),
         resultText: guardado.entrega,
         resultHash: keccak256(toBytes(guardado.entrega)),
+        accesos: accesosDe(tablon, jobId, address),
       });
       return;
     }
@@ -1626,6 +1926,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       await publicarClave(agente, req, res);
       return;
     }
+    if (await rutaDeAccesoODisputa(agente, resto, false, url, req, res)) return;
 
     const ruta = /^(brief|result|encargo|entrega|upload|entrega-archivo)\/(\d{1,20})$/.exec(resto);
     if (!ruta) {
@@ -1666,6 +1967,24 @@ export function createBuzonServer(deps: BuzonDeps): Server {
   });
 }
 
+/**
+ * La lista de árbitros cambia una vez en años —cambiar los firmantes es
+ * desplegar otra multisig—, así que se lee cada diez minutos y no en cada
+ * petición. Si la lectura falla se sigue con la última buena.
+ */
+function arbitrosConCache(leer: () => Promise<Address[]>): () => Promise<Address[]> {
+  let ultima: { lista: Address[]; ts: number } | null = null;
+  return async () => {
+    if (ultima && Date.now() - ultima.ts < 10 * 60_000) return ultima.lista;
+    try {
+      ultima = { lista: await leer(), ts: Date.now() };
+    } catch (err) {
+      if (!ultima) throw err;
+    }
+    return ultima.lista;
+  };
+}
+
 /** Arranca el buzón con los clientes y el store de verdad. */
 export function startBuzonServer(cfg: BotConfig, clients: ChainClients, store: BuzonStore): Server {
   const server = createBuzonServer({
@@ -1683,6 +2002,7 @@ export function startBuzonServer(cfg: BotConfig, clients: ChainClients, store: B
     allowLocalhostOrigin: process.env.NODE_ENV !== 'production',
     tablon: cfg.tablonAddress,
     fetchJob: cfg.tablonAddress ? (jobId) => getTablonJob(clients, cfg.tablonAddress!, jobId) : undefined,
+    fetchArbitros: arbitrosConCache(() => getArbitros(clients, cfg)),
   });
   server.listen(cfg.buzonHttpPort, () => {
     console.log(`   Buzón: http://localhost:${cfg.buzonHttpPort}/buzon/<agente>/{agent.json,brief,result,encargo,entrega}`);

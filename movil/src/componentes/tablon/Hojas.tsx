@@ -15,11 +15,13 @@ import {
   anuncioPara,
   appendAttachmentsManifest,
   attachmentFrom,
+  cifrarTexto,
   panalTablonAbi,
   parseAttachmentsManifest,
   parseFilesManifest,
   problemaConArchivos,
   stripFilesManifest,
+  type Acceso,
   type ArchivoParaSubir,
   type AudienciaTablon,
   type EncargoConReglas,
@@ -45,6 +47,8 @@ import {
   subirArchivosDelTablon,
   type CredencialTablon,
 } from '@/lib/tablonReglas';
+import { abrirBytes, abrirTexto, cifrarArchivos, clavePublicaDe, publicarMiClave } from '@/lib/cifrado';
+import { darAccesoAlElegido, darAccesoALosArbitrosDelTablon } from '@/lib/accesos';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
 import Icono from '~/componentes/Icono';
 import { SIN_PAGOS } from '~/lib/canal';
@@ -62,13 +66,19 @@ type Firma = ReturnType<typeof useFirmaTablon>;
 export type HojaAbierta =
   | { tipo: 'coger'; job: EncargoConReglas }
   | { tipo: 'oferta'; job: EncargoConReglas; previa?: OfertaConReglas }
-  | { tipo: 'elegir'; job: EncargoConReglas; oferta: OfertaConReglas; nombre: string }
+  /** `confidencial`: al elegir, se le da acceso al encargo a quien se elige. */
+  | { tipo: 'elegir'; job: EncargoConReglas; oferta: OfertaConReglas; nombre: string; confidencial?: boolean }
   | { tipo: 'aprobar'; job: EncargoConReglas }
-  | { tipo: 'disputar'; job: EncargoConReglas }
+  /** `confidencial`: al disputar, se le da acceso a quien decide. */
+  | { tipo: 'disputar'; job: EncargoConReglas; confidencial?: boolean; resultHash?: Hex }
   | { tipo: 'texto'; titulo: string; texto: string }
-  /** La entrega, para su cliente, con sus archivos y la firma con que se leyó. */
-  | { tipo: 'entrega'; job: EncargoConReglas; texto: string; cred: CredencialTablon }
-  | { tipo: 'entregar'; job: EncargoConReglas }
+  /**
+   * La entrega, para su cliente, ya abierta si iba cifrada, con sus archivos
+   * y la firma con que se leyó. Si iba cifrada, sus archivos también.
+   */
+  | { tipo: 'entrega'; job: EncargoConReglas; texto: string; cred: CredencialTablon; cifrado?: boolean; accesos?: Acceso[] }
+  /** `confidencial`: el encargo se lee con el acceso del cliente, y se entrega cifrado. */
+  | { tipo: 'entregar'; job: EncargoConReglas; confidencial?: boolean }
   | { tipo: 'publicar' };
 
 const CAMPO =
@@ -96,17 +106,17 @@ export default function HojasDelTablon({
     case 'oferta':
       return <HojaOferta job={hoja.job} previa={hoja.previa} firma={firma} onCerrar={onCerrar} />;
     case 'elegir':
-      return <HojaElegir job={hoja.job} oferta={hoja.oferta} nombre={hoja.nombre} firma={firma} onCerrar={onCerrar} />;
+      return <HojaElegir job={hoja.job} oferta={hoja.oferta} nombre={hoja.nombre} confidencial={!!hoja.confidencial} firma={firma} onCerrar={onCerrar} />;
     case 'aprobar':
       return <HojaAprobar job={hoja.job} firma={firma} onCerrar={onCerrar} />;
     case 'disputar':
-      return <HojaDisputar job={hoja.job} firma={firma} onCerrar={onCerrar} />;
+      return <HojaDisputar job={hoja.job} confidencial={!!hoja.confidencial} resultHash={hoja.resultHash ?? null} firma={firma} onCerrar={onCerrar} />;
     case 'texto':
       return <HojaTexto titulo={hoja.titulo} texto={hoja.texto} onCerrar={onCerrar} />;
     case 'entrega':
-      return <HojaEntrega job={hoja.job} texto={hoja.texto} cred={hoja.cred} onCerrar={onCerrar} />;
+      return <HojaEntrega job={hoja.job} texto={hoja.texto} cred={hoja.cred} cifrado={!!hoja.cifrado} accesos={hoja.accesos ?? []} onCerrar={onCerrar} />;
     case 'entregar':
-      return <HojaEntregar job={hoja.job} firma={firma} onCerrar={onCerrar} />;
+      return <HojaEntregar job={hoja.job} confidencial={!!hoja.confidencial} firma={firma} onCerrar={onCerrar} />;
     case 'publicar':
       // En Play no existe: con `SIN_PAGOS` fijado al compilar, la hoja ni
       // siquiera viaja dentro del paquete.
@@ -202,20 +212,40 @@ function HojaElegir({
   job,
   oferta,
   nombre,
+  confidencial,
   firma,
   onCerrar,
 }: {
   job: EncargoConReglas;
   oferta: OfertaConReglas;
   nombre: string;
+  confidencial: boolean;
   firma: Firma;
   onCerrar: () => void;
 }) {
   const T = useTextos();
+  const C = T.tablon.cifrado;
+  const { signMessageAsync } = useSignMessage();
   const diferencia = oferta.precio > job.importe ? oferta.precio - job.importe : 0n;
   const nativa = simboloDe(job.moneda) === 'MON';
   const clave = `elegir:${job.id}`;
   const ocupado = firma.ocupado === clave;
+  // Elegido en la cadena y falta el acceso: la hoja se queda para reintentarlo.
+  const [elegido, setElegido] = useState(false);
+  const [dando, setDando] = useState(false);
+  const [errorAcceso, setErrorAcceso] = useState<string | null>(null);
+  const darAcceso = async () => {
+    setDando(true);
+    setErrorAcceso(null);
+    try {
+      await darAccesoAlElegido(job, oferta.agente, job.cliente, (message) => signMessageAsync({ message }));
+      onCerrar();
+    } catch (err) {
+      setErrorAcceso(err instanceof Error && err.message === 'sin clave' ? C.accesoSinClave(nombre) : explicarFallo(err, T));
+    } finally {
+      setDando(false);
+    }
+  };
   const elegir = async () => {
     const hecho = await firma.ejecutar(clave, async (e, c) => {
       // Lo que esta hoja enseña, y nada más: la wallet del teléfono no firma otro.
@@ -224,8 +254,36 @@ function HojaElegir({
       await firmarYEsperar(e, c, enTablon('choose', [job.id, oferta.agente], nativa && diferencia > 0n ? diferencia : undefined));
       return true;
     });
-    if (hecho) onCerrar();
+    if (!hecho) return;
+    // Confidencial: que pueda leer lo que tiene que hacer.
+    if (!confidencial) {
+      onCerrar();
+      return;
+    }
+    setElegido(true);
+    await darAcceso();
   };
+  if (elegido) {
+    return (
+      <Hoja abierta titulo={T.tablon.elegir.titulo} onCerrar={onCerrar} bloqueada={dando}>
+        <Nota tono={errorAcceso ? 'miel' : 'gris'}>{dando ? C.dandoAcceso : (errorAcceso ?? C.dandoAcceso)}</Nota>
+        {errorAcceso && (
+          <div className="mt-4 flex gap-2.5 pb-4">
+            <div className="grow">
+              <Boton variante="secundario" onClick={onCerrar}>
+                {T.comun.cerrar}
+              </Boton>
+            </div>
+            <div className="grow">
+              <Boton onClick={() => void darAcceso()} disabled={dando}>
+                {C.darAcceso(nombre)}
+              </Boton>
+            </div>
+          </div>
+        )}
+      </Hoja>
+    );
+  }
   return (
     <Hoja abierta titulo={T.tablon.elegir.titulo} onCerrar={onCerrar} bloqueada={ocupado}>
       <Tarjeta>
@@ -287,17 +345,67 @@ function HojaAprobar({ job, firma, onCerrar }: { job: EncargoConReglas; firma: F
   );
 }
 
-function HojaDisputar({ job, firma, onCerrar }: { job: EncargoConReglas; firma: Firma; onCerrar: () => void }) {
+function HojaDisputar({
+  job,
+  confidencial,
+  resultHash,
+  firma,
+  onCerrar,
+}: {
+  job: EncargoConReglas;
+  confidencial: boolean;
+  resultHash: Hex | null;
+  firma: Firma;
+  onCerrar: () => void;
+}) {
   const T = useTextos();
+  const C = T.tablon.cifrado;
+  const { signMessageAsync } = useSignMessage();
   const clave = `disputar:${job.id}`;
   const ocupado = firma.ocupado === clave;
+  // Abierta la disputa de un confidencial: cómo fue darle acceso a quien decide.
+  const [acceso, setAcceso] = useState<{ texto: string; bien: boolean } | 'dando' | null>(null);
+  const darAcceso = async () => {
+    setAcceso('dando');
+    try {
+      const r = await darAccesoALosArbitrosDelTablon(job, resultHash, job.cliente, (message) => signMessageAsync({ message }));
+      if (r.arbitros > 0) setAcceso({ texto: C.arbitrosConAcceso(r.arbitros, r.arbitros + r.sinClave.length), bien: true });
+      else if (r.sinClave.length > 0) setAcceso({ texto: C.arbitrosSinClave, bien: false });
+      else onCerrar();
+    } catch (err) {
+      setAcceso({ texto: `${C.accesoNo} ${explicarFallo(err, T)}`, bien: false });
+    }
+  };
   const disputar = async () => {
     const hecho = await firma.ejecutar(clave, async (e, c) => {
       await firmarYEsperar(e, c, enTablon('dispute', [job.id]));
       return true;
     });
-    if (hecho) onCerrar();
+    if (!hecho) return;
+    if (confidencial) await darAcceso();
+    else onCerrar();
   };
+  if (acceso !== null) {
+    return (
+      <Hoja abierta titulo={T.tablon.disputar.titulo} onCerrar={onCerrar} bloqueada={acceso === 'dando'}>
+        <Nota tono={acceso !== 'dando' && !acceso.bien ? 'miel' : 'gris'}>{acceso === 'dando' ? C.dandoAcceso : acceso.texto}</Nota>
+        {acceso !== 'dando' && (
+          <div className="mt-4 flex gap-2.5 pb-4">
+            <div className="grow">
+              <Boton variante="secundario" onClick={onCerrar}>
+                {T.comun.cerrar}
+              </Boton>
+            </div>
+            {!acceso.bien && (
+              <div className="grow">
+                <Boton onClick={() => void darAcceso()}>{C.darAccesoArbitros}</Boton>
+              </div>
+            )}
+          </div>
+        )}
+      </Hoja>
+    );
+  }
   return (
     <Hoja abierta titulo={T.tablon.disputar.titulo} onCerrar={onCerrar} bloqueada={ocupado}>
       <Nota>{T.tablon.disputar.nota}</Nota>
@@ -328,7 +436,21 @@ function HojaTexto({ titulo, texto, onCerrar }: { titulo: string; texto: string;
 }
 
 /** La entrega, para su cliente: el texto sin el manifiesto y sus archivos para bajar. */
-function HojaEntrega({ job, texto, cred, onCerrar }: { job: EncargoConReglas; texto: string; cred: CredencialTablon; onCerrar: () => void }) {
+function HojaEntrega({
+  job,
+  texto,
+  cred,
+  cifrado,
+  accesos,
+  onCerrar,
+}: {
+  job: EncargoConReglas;
+  texto: string;
+  cred: CredencialTablon;
+  cifrado: boolean;
+  accesos: Acceso[];
+  onCerrar: () => void;
+}) {
   const T = useTextos();
   const { signMessageAsync } = useSignMessage();
   const [firmaVigente, setFirmaVigente] = useState(cred);
@@ -344,7 +466,15 @@ function HojaEntrega({ job, texto, cred, onCerrar }: { job: EncargoConReglas; te
       <p className="seleccionable mt-3 max-h-[45vh] overflow-y-auto whitespace-pre-wrap break-words rounded-xl bg-sand px-3.5 py-3 text-[13.5px] leading-[1.55] text-ink">
         {stripFilesManifest(texto)}
       </p>
-      <ListaDeArchivos jobId={job.id} archivos={parseFilesManifest(texto)} de="entrega" credencial={credencial} titulo={T.tablon.archivos.deLaEntrega} />
+      <ListaDeArchivos
+        jobId={job.id}
+        archivos={parseFilesManifest(texto)}
+        de="entrega"
+        credencial={credencial}
+        titulo={T.tablon.archivos.deLaEntrega}
+        cifrado={cifrado}
+        abrir={(bytes) => abrirBytes(bytes, cred.yo, (message) => signMessageAsync({ message }), accesos)}
+      />
       <div className="mt-4 pb-4">
         <Boton variante="secundario" onClick={onCerrar}>
           {T.comun.cerrar}
@@ -354,8 +484,11 @@ function HojaEntrega({ job, texto, cred, onCerrar }: { job: EncargoConReglas; te
   );
 }
 
-function HojaEntregar({ job, firma, onCerrar }: { job: EncargoConReglas; firma: Firma; onCerrar: () => void }) {
+function HojaEntregar({ job, confidencial, firma, onCerrar }: { job: EncargoConReglas; confidencial: boolean; firma: Firma; onCerrar: () => void }) {
   const T = useTextos();
+  // Si el encargo venía cifrado, sus adjuntos también: se abren con esto.
+  const [encargoCifrado, setEncargoCifrado] = useState(false);
+  const [accesos, setAccesos] = useState<Acceso[]>([]);
   const { signMessageAsync } = useSignMessage();
   const [encargo, setEncargo] = useState<string | null>(null);
   // La firma con que se leyó el encargo: abre también sus adjuntos.
@@ -375,8 +508,19 @@ function HojaEntregar({ job, firma, onCerrar }: { job: EncargoConReglas; firma: 
       const leido = await leerEncargoConFirma(job, await credencialTablon('encargo', job.id, cuenta, firmar));
       setCred(leido.cred);
       const brief = leido.brief;
-      if (brief === null) setError(T.tablon.trabajo.encargoNoEsta);
-      else setEncargo(brief);
+      if (brief === null) {
+        setError(T.tablon.trabajo.encargoNoEsta);
+        return;
+      }
+      // Sin acceso todavía no se pide la firma de la clave: no serviría.
+      const { legible, cifrado } = await abrirTexto(brief, cuenta, firmar, leido.accesos);
+      if (legible === null) {
+        setError(T.tablon.cifrado.esperandoAcceso);
+        return;
+      }
+      setEncargoCifrado(cifrado);
+      setAccesos(leido.accesos);
+      setEncargo(legible);
     } catch (err) {
       // Un «no cuadra» o un fallo del buzón es del encargo; lo demás (firma
       // cancelada, bloqueada) se dice como cualquier otra firma.
@@ -387,10 +531,26 @@ function HojaEntregar({ job, firma, onCerrar }: { job: EncargoConReglas; firma: 
   };
   const entregar = async () => {
     const hecho = await firma.ejecutar(clave, async (e, c) => {
+      // Confidencial: la entrega y sus archivos, cifrados para el cliente y
+      // para quien entrega. Sin la clave del cliente no se entrega en claro.
+      let subir = archivos;
+      let anunciar = archivos;
+      let para: { cuenta: Address; clave: string }[] | null = null;
+      if (confidencial || encargoCifrado) {
+        const delCliente = await clavePublicaDe(job.cliente);
+        if (!delCliente) throw new Error(T.tablon.cifrado.clienteSinClave);
+        const mia = (await publicarMiClave(c, firmar)).clave.publica;
+        para = [
+          { cuenta: job.cliente, clave: delCliente },
+          { cuenta: c, clave: mia },
+        ];
+        ({ anunciar, subir } = cifrarArchivos(archivos, para));
+      }
       // Los archivos primero, y su hash dentro del texto que se ancla: si el
       // buzón no los acepta, no se ancla nada.
-      await subirArchivosDelTablon(job.id, archivos, c, firmar);
-      const final = archivos.length > 0 ? entregaConArchivos(job.id, texto.trim(), archivos) : texto.trim();
+      await subirArchivosDelTablon(job.id, subir, c, firmar);
+      const enClaro = anunciar.length > 0 ? entregaConArchivos(job.id, texto.trim(), anunciar) : texto.trim();
+      const final = para ? cifrarTexto(enClaro, para) : enClaro;
       const hash = await dejarEntrega(job.id, final, c, firmar);
       await firmarYEsperar(e, c, entregarEnEscrow(job.escrowTaskId, hash));
       return true;
@@ -425,6 +585,8 @@ function HojaEntregar({ job, firma, onCerrar }: { job: EncargoConReglas; firma: 
             de="adjunto"
             credencial={credencialDelEncargo}
             titulo={T.tablon.archivos.delEncargo}
+            cifrado={encargoCifrado}
+            abrir={(bytes) => abrirBytes(bytes, job.agente, firmar, accesos)}
           />
         </div>
       )}
@@ -505,6 +667,13 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
   const [caduca, setCaduca] = useState(3 * DIA);
   const [experiencia, setExperiencia] = useState(false);
   const [republicar, setRepublicar] = useState(false);
+  /**
+   * Confidencial: el encargo y sus adjuntos se cifran para quien publica, y al
+   * elegir una oferta se le da acceso solo a quien se elige. Solo en selección:
+   * en inmediato lo cogería el primero que pasara las reglas, sin que nadie le
+   * diera acceso.
+   */
+  const [confidencial, setConfidencial] = useState(false);
   const [paso, setPaso] = useState<'permiso' | 'publicando' | 'textos' | 'archivos' | null>(null);
   const [adjuntos, setAdjuntos] = useState<ArchivoParaSubir[]>([]);
   const { address } = useWallet();
@@ -565,13 +734,33 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
     const textoAnuncio = anuncioPara(audiencia, anuncioT);
     // Los adjuntos se anuncian DENTRO del encargo, con su hash: el taskHash
     // que va a la cadena los cubre desde el momento del pago.
-    const archivos = adjuntos;
-    const textoEncargo = appendAttachmentsManifest(
+    let archivos = adjuntos;
+    let textoEncargo = appendAttachmentsManifest(
       encargoT,
       archivos.map((a) => attachmentFrom(a.name, a.bytes, a.mime)),
     );
     await firma.ejecutar('publicar', async (e, c) => {
       try {
+        if (confidencial && seleccion) {
+          /*
+           * Cifrado solo para quien publica, antes de pagar nada; la primera
+           * vez publica también la clave. Los adjuntos se anuncian en abierto
+           * por su hash y su tamaño: el buzón solo acepta los que el encargo
+           * anuncia, y no puede leerlo.
+           */
+          const firmar = (message: string) => signMessageAsync({ message });
+          const miPublica = (await publicarMiClave(c, firmar)).clave.publica;
+          const para = [{ cuenta: c, clave: miPublica }];
+          const { anunciar, subir } = cifrarArchivos(adjuntos, para);
+          const enClaro = appendAttachmentsManifest(
+            encargoT,
+            anunciar.map((a) => attachmentFrom(a.name, a.bytes, a.mime)),
+          );
+          textoEncargo = cifrarTexto(enClaro, para, {
+            anunciar: anunciar.map((a) => ({ hash: keccak256(a.bytes), size: a.bytes.byteLength })),
+          });
+          archivos = subir;
+        }
         // Antes de cobrar nada: sin buzón, el encargo quedaría pagado y mudo.
         if (!(await buzonAceptaElTablon())) throw new Error(P.buzonNoListo);
         if (archivos.length > 0 && !(await buzonAceptaArchivos())) throw new Error(T.tablon.archivos.buzonSinArchivos);
@@ -779,6 +968,15 @@ function HojaPublicar({ firma, onCerrar }: { firma: Firma; onCerrar: () => void 
           <Opciones valores={CADUCIDADES} valor={caduca} onChange={setCaduca} />
           <span className="px-1 text-[11.5px] text-ink-3">{P.caducaPista}</span>
         </Campo>
+        {seleccion && (
+          <label className="flex items-start gap-2.5 px-1 text-[13px] leading-[1.45] text-ink-2">
+            <input type="checkbox" checked={confidencial} onChange={(e) => setConfidencial(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#E29A2E]" />
+            <span>
+              <span className="font-medium text-ink">{T.tablon.cifrado.publicar}</span>
+              <span className="block text-[11.5px] text-ink-3">{T.tablon.cifrado.publicarPista}</span>
+            </span>
+          </label>
+        )}
         {[
           [experiencia, setExperiencia, P.experiencia] as const,
           [republicar, setRepublicar, P.republicar] as const,

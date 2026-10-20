@@ -7,10 +7,12 @@
  * sí, la cadena dice que sí.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { TriangleAlert } from 'lucide-react';
+import { useSignMessage } from 'wagmi';
+import { toast } from 'sonner';
+import { Lock, TriangleAlert } from 'lucide-react';
 import { parseEther, type Address } from 'viem';
 import {
   CATEGORIAS_TABLON,
@@ -29,6 +31,7 @@ import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import { useFirmaDelTablon } from '@/hooks/useFirmaDelTablon';
 import type { DatosDelTablon } from '@/hooks/useTablonReglas';
 import { claveDeMotivo, enTablon, firmarYEsperar, simboloDe } from '@/lib/tablonReglas';
+import { clavePublicaDe, publicarMiClave } from '@/lib/cifrado';
 import { cn } from '@/lib/utils';
 import { Chip, Girando, Importe, NombreDeCategoria } from './comun';
 import { BOTON_LINEA, BOTON_MIEL, BOTON_PELIGRO, CAMPO, cantidad, useDuracion } from './util';
@@ -57,6 +60,22 @@ export default function ListaAbiertos({ datos, yo, esAgente, misCategorias, miTi
   const { t } = useTranslation();
   const ahora = useAhora();
   const [categoria, setCategoria] = useState<Filtro>('todas');
+  /**
+   * Si quien mira tiene su clave publicada. Hace falta para un encargo
+   * confidencial: si le eligen sin ella, su cliente no puede darle acceso y
+   * no podría leer lo que tiene que hacer.
+   */
+  const [tengoClave, setTengoClave] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!yo) return;
+    let vigente = true;
+    void clavePublicaDe(yo).then((c) => {
+      if (vigente) setTengoClave(c !== null);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [yo]);
 
   const abiertos = useMemo(
     () =>
@@ -108,6 +127,9 @@ export default function ListaAbiertos({ datos, yo, esAgente, misCategorias, miTi
               job={j}
               anuncio={datos.anuncios.get(j.id.toString())}
               audiencia={datos.audiencias.get(j.id.toString()) ?? 'todos'}
+              confidencial={datos.confidenciales.has(j.id.toString())}
+              tengoClave={tengoClave}
+              onClaveActivada={() => setTengoClave(true)}
               miTipo={miTipo}
               ofertas={datos.ofertas.get(j.id.toString()) ?? []}
               yo={yo}
@@ -139,6 +161,9 @@ function TarjetaAbierta({
   job,
   anuncio,
   audiencia,
+  confidencial,
+  tengoClave,
+  onClaveActivada,
   miTipo,
   ofertas,
   yo,
@@ -150,6 +175,9 @@ function TarjetaAbierta({
   job: EncargoConReglas;
   anuncio: string | undefined;
   audiencia: AudienciaTablon;
+  confidencial: boolean;
+  tengoClave: boolean | null;
+  onClaveActivada: () => void;
   miTipo: TipoDeAgente | null;
   ofertas: OfertaConReglas[];
   yo: Address | null;
@@ -168,6 +196,23 @@ function TarjetaAbierta({
   const esMio = !!yo && job.cliente.toLowerCase() === yo.toLowerCase();
   const miOferta = yo ? ofertas.find((o) => o.agente.toLowerCase() === yo.toLowerCase()) : undefined;
   const [ofertando, setOfertando] = useState(false);
+  const { signMessageAsync } = useSignMessage();
+  const [activando, setActivando] = useState(false);
+  /** Publica la clave de cifrado: dos firmas, una vez. Desde entonces se le puede dar acceso. */
+  const activarClave = async () => {
+    if (!yo) return;
+    setActivando(true);
+    try {
+      await publicarMiClave(yo, (message) => signMessageAsync({ message }));
+      onClaveActivada();
+      toast.success(t('tablon.claveActivada'));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (!/reject|denied|user/i.test(msg)) toast.error(t('tasks.cifrado.errorActivar'));
+    } finally {
+      setActivando(false);
+    }
+  };
 
   const coger = () =>
     void ejecutar(`coger:${id}`, async (escribir, cuenta) => {
@@ -184,9 +229,13 @@ function TarjetaAbierta({
    * personas». Va antes que el permiso del contrato, que diría que sí.
    */
   const fueraDeAudiencia = esAgente && miTipo !== null && !audienciaAdmite(audiencia, miTipo);
-  const puede = !!permiso?.ok && !fueraDeAudiencia;
+  // Confidencial y sin clave: si le eligieran, no podría leer el encargo.
+  const sinClave = confidencial && esAgente && tengoClave === false;
+  const puede = !!permiso?.ok && !fueraDeAudiencia && !sinClave;
   const motivo = fueraDeAudiencia
     ? t(`tablon.audienciaNo.${audiencia}`)
+    : sinClave
+      ? t('tablon.confidencialSinClave')
     : esAgente && permiso && !permiso.ok && permiso.motivo !== 'own job'
       ? t(`tablon.motivo.${claveDeMotivo(permiso.motivo)}`, { defaultValue: permiso.motivo })
       : null;
@@ -207,6 +256,14 @@ function TarjetaAbierta({
             </Chip>
             <Chip>{seleccion ? t('tablon.modo.seleccion') : t('tablon.modo.inmediato')}</Chip>
             {audiencia !== 'todos' && <Chip tono="oliva">{t(`tablon.audiencia.${audiencia}`)}</Chip>}
+            {confidencial && (
+              <Chip tono="oliva">
+                <span className="inline-flex items-center gap-1">
+                  <Lock size={11} aria-hidden />
+                  {t('tablon.confidencial')}
+                </span>
+              </Chip>
+            )}
             {job.soloConExperiencia && <Chip tono="oliva">{t('tablon.soloExperiencia')}</Chip>}
             {esMio && <Chip tono="miel">{t('tablon.esTuyo')}</Chip>}
           </div>
@@ -263,6 +320,12 @@ function TarjetaAbierta({
       </div>
 
       {motivo && <p className="mt-3 text-[0.75rem] leading-relaxed text-terra">{motivo}</p>}
+      {sinClave && (
+        <button type="button" onClick={() => void activarClave()} disabled={activando} className={cn(BOTON_LINEA, 'mt-2')}>
+          {activando ? <Girando /> : <Lock size={13} aria-hidden />}
+          {t('tablon.activarCifrado')}
+        </button>
+      )}
 
       {ofertando && seleccion && (
         <FormOferta

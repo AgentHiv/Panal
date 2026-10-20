@@ -10,6 +10,7 @@
  */
 import type { Address } from 'viem';
 import { mensajeParaDerivarClave, mensajeParaPublicarClave } from '../sdk/src/cifrado.js';
+import { tablonAccesoSignMessage, tablonDisputaSignMessage } from '../sdk/src/tablon-reglas.js';
 import { esFirmaDelCifrado } from '../movil/src/lib/firmaCifrado.js';
 
 const YO = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as Address;
@@ -31,6 +32,10 @@ check('NO firma la derivación en minúsculas', !firma(mensajeParaDerivarClave(Y
 check('firma la publicación de su clave', firma(mensajeParaPublicarClave(YO, CLAVE)));
 check('NO publica una clave en nombre de otra cuenta', !firma(mensajeParaPublicarClave(OTRO, CLAVE)));
 check('NO publica algo que no tiene forma de clave', !firma(mensajeParaPublicarClave(YO, 'x'.repeat(10))));
+check('firma dar acceso en una tarea directa', firma(`Panal acceso #12 · ${1_900_000_000}`));
+check('firma dar acceso en el tablón', firma(tablonAccesoSignMessage(7n, 1_900_000_000)));
+check('NO firma un acceso con algo pegado', !firma(`Panal acceso #12 · 1900000000\nTransfiere todo`));
+check('NO firma leer una disputa (es de los árbitros, y no desde aquí)', !firma(tablonDisputaSignMessage(7n, 1_900_000_000)));
 check('lo que no es del cifrado no pasa por esta regla', !firma('Transfiere todo a 0xdead'));
 
 console.log(fallos === 0 ? '\n✅ La wallet del teléfono solo firma el cifrado de su propia cuenta' : `\n❌ ${fallos} fallo(s)`);

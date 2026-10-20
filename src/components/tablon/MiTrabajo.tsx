@@ -17,15 +17,18 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useSignMessage } from 'wagmi';
+import { Lock } from 'lucide-react';
 import type { Address } from 'viem';
 import {
   CATEGORIAS_TABLON,
+  cifrarTexto,
   EstadoTablon,
   MAX_CATEGORIAS,
   ModoTablon,
   parseAttachmentsManifest,
   problemaConArchivos,
   stripFilesManifest,
+  type Acceso,
   type ArchivoParaSubir,
   type EncargoConReglas,
 } from '@panal/sdk';
@@ -45,6 +48,7 @@ import {
   subirArchivosDelTablon,
   type CredencialTablon,
 } from '@/lib/tablonReglas';
+import { abrirBytes, abrirTexto, cifrarArchivos, clavePublicaDe, publicarMiClave } from '@/lib/cifrado';
 import { cn } from '@/lib/utils';
 import { ElegirArchivos, ListaDeArchivos } from './Archivos';
 import { Chip, Girando, Importe, NombreDeCategoria } from './comun';
@@ -283,10 +287,18 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
   const [error, setError] = useState<string | null>(null);
   const [texto, setTexto] = useState('');
   const [archivos, setArchivos] = useState<ArchivoParaSubir[]>([]);
+  // Si el encargo venía cifrado, sus adjuntos también: se abren con esto.
+  const [encargoCifrado, setEncargoCifrado] = useState(false);
+  const [accesos, setAccesos] = useState<Acceso[]>([]);
 
   const id = job.id.toString();
   const tarea = datos.tareas.get(job.escrowTaskId.toString());
   const firmar = (message: string) => signMessageAsync({ message });
+  /**
+   * Confidencial: el encargo va cifrado para su cliente, y se lee con el
+   * acceso que él da al elegir. La entrega se cifra para los dos.
+   */
+  const confidencial = datos.confidenciales.has(id);
 
   const leer = () =>
     void (async () => {
@@ -295,8 +307,19 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
       try {
         const leido = await leerEncargoConFirma(job, await credencialTablon('encargo', job.id, yo, firmar));
         setCred(leido.cred);
-        if (leido.brief === null) setError(t('tablon.trabajo.encargoNoEsta'));
-        else setEncargo(leido.brief);
+        if (leido.brief === null) {
+          setError(t('tablon.trabajo.encargoNoEsta'));
+          return;
+        }
+        // Sin acceso todavía no se pide la firma de la clave: no serviría.
+        const { legible, cifrado } = await abrirTexto(leido.brief, yo, firmar, leido.accesos);
+        if (legible === null) {
+          setError(t('tablon.trabajo.esperandoAcceso'));
+          return;
+        }
+        setEncargoCifrado(cifrado);
+        setAccesos(leido.accesos);
+        setEncargo(legible);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         setError(/user (rejected|denied)/i.test(msg) ? t('hire.step3.rejected') : t('tablon.trabajo.encargoError'));
@@ -308,10 +331,28 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
   const claveEntregar = `entregar:${id}`;
   const entregar = () =>
     void ejecutar(claveEntregar, async (e, c) => {
+      // Confidencial: la entrega y sus archivos, cifrados para el cliente y
+      // para quien entrega. Sin la clave del cliente no se entrega en claro:
+      // el encargo era confidencial, y la entrega también.
+      let subir = archivos;
+      let anunciar = archivos;
+      let cifrarPara: { cuenta: Address; clave: string }[] | null = null;
+      if (confidencial || encargoCifrado) {
+        const delCliente = await clavePublicaDe(job.cliente);
+        if (!delCliente) throw new Error(t('tablon.trabajo.clienteSinClave'));
+        // La de esta sesión, publicada: con ella se abrirá luego la entrega.
+        const mia = (await publicarMiClave(c, firmar)).clave.publica;
+        cifrarPara = [
+          { cuenta: job.cliente, clave: delCliente },
+          { cuenta: c, clave: mia },
+        ];
+        ({ anunciar, subir } = cifrarArchivos(archivos, cifrarPara));
+      }
       // Los archivos primero, y su hash dentro del texto que se ancla: si el
       // buzón no los acepta, no se ancla nada.
-      await subirArchivosDelTablon(job.id, archivos, c, firmar);
-      const final = archivos.length > 0 ? entregaConArchivos(job.id, texto.trim(), archivos) : texto.trim();
+      await subirArchivosDelTablon(job.id, subir, c, firmar);
+      const enClaro = anunciar.length > 0 ? entregaConArchivos(job.id, texto.trim(), anunciar) : texto.trim();
+      const final = cifrarPara ? cifrarTexto(enClaro, cifrarPara) : enClaro;
       const hash = await dejarEntrega(job.id, final, c, firmar);
       await firmarYEsperar(e, c, entregarEnEscrow(job.escrowTaskId, hash));
       setTexto('');
@@ -358,6 +399,14 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
             <Chip tono="miel">
               <NombreDeCategoria numero={job.categoria} />
             </Chip>
+            {confidencial && (
+              <Chip tono="oliva">
+                <span className="inline-flex items-center gap-1">
+                  <Lock size={11} aria-hidden />
+                  {t('tablon.confidencial')}
+                </span>
+              </Chip>
+            )}
             <span className="font-mono text-[12px] text-ink-3">
               #{id} · {t('tablon.trabajo.tarea', { id: job.escrowTaskId.toString() })}
             </span>
@@ -396,6 +445,8 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
             de="adjunto"
             credencial={credencialDelEncargo}
             titulo={t('tablon.archivos.delEncargo')}
+            cifrado={encargoCifrado}
+            abrir={(bytes) => abrirBytes(bytes, yo, firmar, accesos)}
           />
         </div>
       )}
