@@ -18,6 +18,7 @@ import {
   encodeDeployData,
   encodeFunctionData,
   getAddress,
+  keccak256,
   parseAbi,
   type Address,
   type Hex,
@@ -268,6 +269,201 @@ export async function analizar(cliente: PublicClient, direccion: Address): Promi
         : null,
     clave: clave ?? null,
   };
+}
+
+/* ------------------------------------------------------------------ datos del token */
+
+const DEAD: Address = '0x000000000000000000000000000000000000dEaD';
+
+/** El PoolManager de Uniswap V4 en Monad: el mismo que mira la sonda (`CiProbe.poolManager`). */
+export const POOL_MANAGER_V4: Address = '0x188d586Ddcf52439676Ca21A244753fA19F9Ea8e';
+
+const ABI_TOKEN = parseAbi([
+  'function totalSupply() view returns (uint256)',
+  'function decimals() view returns (uint8)',
+  'function balanceOf(address) view returns (uint256)',
+  'function owner() view returns (address)',
+]);
+const ABI_RIESGO = parseAbi([
+  'function pairOf(address) view returns (address)',
+  'function v3PoolsOf(address) view returns (address[4])',
+]);
+const ABI_PAR = parseAbi([
+  'function getReserves() view returns (uint112, uint112, uint32)',
+  'function token0() view returns (address)',
+  'function totalSupply() view returns (uint256)',
+  'function balanceOf(address) view returns (uint256)',
+]);
+const ABI_POOL_V3 = parseAbi(['function fee() view returns (uint24)']);
+
+/** Un mercado donde el token tiene liquidez, con lo que guarda. */
+export interface Mercado {
+  tipo: 'v2' | 'v3' | 'v4' | 'nadfun';
+  direccion: Address;
+  /** Comisión de un pool V3, en centésimas de punto básico (3000 = 0,3 %). */
+  comision?: number;
+  /** WMON (o MON) que hay en el mercado: la profundidad. `null` si no se puede saber de ese mercado. */
+  wmon: bigint | null;
+  /** Del token, cuánto guarda el mercado. */
+  tokens: bigint;
+  /** Solo el par V2: del LP, la parte en 0x0 y 0xdead. */
+  lpQuemadoBps?: number;
+  /** La profundidad sale de la API de nad.fun, no de la cadena: se dice. */
+  wmonDeApi?: boolean;
+}
+
+export interface DatosToken {
+  supply: bigint | null;
+  decimales: number | null;
+  /** `owner()`: una cuenta, renunciado (0x0 o 0xdead), o el contrato no tiene esa función. */
+  dueno: { tipo: 'cuenta'; direccion: Address } | { tipo: 'renunciado' } | { tipo: 'sin' };
+  bytes: number;
+  codehash: Hex;
+  /** ¿Está su código fuente publicado y verificado en Sourcify? `null` si no se pudo preguntar. */
+  verificado: boolean | null;
+  mercados: Mercado[];
+  /** Dónde está el supply, por quién lo tiene. `null` sin supply. */
+  reparto: { mercados: bigint; dueno: bigint; quemado: bigint; contrato: bigint; resto: bigint } | null;
+  /** Las 256 features que lee el modelo para este contrato (`Ci.featuresOf`). */
+  features: number[];
+}
+
+/**
+ * Todo lo exacto que se puede leer de un token, para enseñar los números de
+ * los que sale el veredicto y el riesgo: supply, dueño, código, mercados con lo
+ * que guarda cada uno y dónde está el supply. Todo de la cadena, salvo dos
+ * cosas que la cadena no puede decir y se piden fuera, con su nombre: si el
+ * código está verificado (Sourcify) y el mercado de la curva de nad.fun.
+ */
+export async function datosDelToken(cliente: PublicClient, direccion: Address): Promise<DatosToken> {
+  const tk = { address: direccion, abi: ABI_TOKEN } as const;
+  const saldo = (a: Address) => intentar(() => cliente.readContract({ ...tk, functionName: 'balanceOf', args: [a] }));
+
+  const [codigo, supply, decimales, dueno, par, poolsV3, featuresHex, verificado, nadfun] = await Promise.all([
+    cliente.getCode({ address: direccion }),
+    intentar(() => cliente.readContract({ ...tk, functionName: 'totalSupply' })),
+    intentar(() => cliente.readContract({ ...tk, functionName: 'decimals' })),
+    intentar(() => cliente.readContract({ ...tk, functionName: 'owner' })),
+    intentar(() => cliente.readContract({ address: CIK.risk, abi: ABI_RIESGO, functionName: 'pairOf', args: [direccion] })),
+    intentar(() => cliente.readContract({ address: CIK.risk, abi: ABI_RIESGO, functionName: 'v3PoolsOf', args: [direccion] })),
+    intentar(() => cliente.readContract({ address: CIK.ci, abi: ciAbi, functionName: 'featuresOf', args: [direccion] })),
+    enSourcify(direccion),
+    mercadoNadfun(direccion),
+  ]);
+
+  // Los mercados: el par V2, los pools V3 de cada comisión, el PoolManager de V4
+  // y la curva de nad.fun. De cada uno, cuánto token y cuánto WMON guarda.
+  const mercados: Mercado[] = [];
+  if (par && par !== CERO) {
+    const p = { address: par, abi: ABI_PAR } as const;
+    const [reservas, token0, lpTotal, lpMuerto, lpCero, tokens] = await Promise.all([
+      cliente.readContract({ ...p, functionName: 'getReserves' }),
+      cliente.readContract({ ...p, functionName: 'token0' }),
+      cliente.readContract({ ...p, functionName: 'totalSupply' }),
+      cliente.readContract({ ...p, functionName: 'balanceOf', args: [DEAD] }),
+      cliente.readContract({ ...p, functionName: 'balanceOf', args: [CERO] }),
+      saldo(par),
+    ]);
+    const esToken0 = getAddress(token0) === getAddress(direccion);
+    mercados.push({
+      tipo: 'v2',
+      direccion: par,
+      wmon: esToken0 ? reservas[1] : reservas[0],
+      tokens: tokens ?? (esToken0 ? reservas[0] : reservas[1]),
+      lpQuemadoBps: lpTotal > 0n ? Number(((lpMuerto + lpCero) * 10_000n) / lpTotal) : 0,
+    });
+  }
+  for (const pool of poolsV3 ?? []) {
+    if (pool === CERO) continue;
+    const [comision, wmon, tokens] = await Promise.all([
+      intentar(() => cliente.readContract({ address: pool, abi: ABI_POOL_V3, functionName: 'fee' })),
+      intentar(() => cliente.readContract({ address: WMON, abi: ABI_TOKEN, functionName: 'balanceOf', args: [pool] })),
+      saldo(pool),
+    ]);
+    mercados.push({ tipo: 'v3', direccion: pool, comision, wmon: wmon ?? null, tokens: tokens ?? 0n });
+  }
+  const enV4 = await saldo(POOL_MANAGER_V4);
+  // El PoolManager guarda los saldos de todos sus pools juntos: se sabe cuánto
+  // token tiene, no cuánto WMON hay emparejado con él.
+  if (enV4 && enV4 > 0n) mercados.push({ tipo: 'v4', direccion: POOL_MANAGER_V4, wmon: null, tokens: enV4 });
+  if (nadfun) {
+    const tokens = await saldo(nadfun.mercado);
+    mercados.push({ tipo: 'nadfun', direccion: nadfun.mercado, wmon: nadfun.reservaMon, tokens: tokens ?? 0n, wmonDeApi: true });
+  }
+
+  // Dónde está el supply. El dueño solo cuenta si es una cuenta de verdad, y lo
+  // que no es de nadie conocido queda en «resto»: la cadena no deja listar holders.
+  const tipoDueno: DatosToken['dueno'] =
+    dueno === undefined
+      ? { tipo: 'sin' }
+      : getAddress(dueno) === CERO || getAddress(dueno) === getAddress(DEAD)
+        ? { tipo: 'renunciado' }
+        : { tipo: 'cuenta', direccion: dueno };
+  const [muerto, cero, propio, delDueno] = await Promise.all([
+    saldo(DEAD),
+    saldo(CERO),
+    saldo(direccion),
+    tipoDueno.tipo === 'cuenta' && getAddress(tipoDueno.direccion) !== getAddress(direccion)
+      ? saldo(tipoDueno.direccion)
+      : Promise.resolve(0n),
+  ]);
+  let reparto: DatosToken['reparto'] = null;
+  if (supply && supply > 0n) {
+    const enMercados = mercados.reduce((s, m) => s + m.tokens, 0n);
+    const quemado = (muerto ?? 0n) + (cero ?? 0n);
+    const conocido = enMercados + quemado + (propio ?? 0n) + (delDueno ?? 0n);
+    reparto = {
+      mercados: enMercados,
+      dueno: delDueno ?? 0n,
+      quemado,
+      contrato: propio ?? 0n,
+      resto: supply > conocido ? supply - conocido : 0n,
+    };
+  }
+
+  const features: number[] = [];
+  if (featuresHex) for (let i = 2; i < featuresHex.length; i += 2) features.push(parseInt(featuresHex.slice(i, i + 2), 16));
+
+  return {
+    supply: supply ?? null,
+    decimales: decimales ?? null,
+    dueno: tipoDueno,
+    bytes: codigo ? (codigo.length - 2) / 2 : 0,
+    codehash: keccak256(codigo ?? '0x'),
+    verificado,
+    mercados,
+    reparto,
+    features,
+  };
+}
+
+/** ¿Tiene el contrato su código verificado en Sourcify? 200 sí, 404 no; otra cosa, no se sabe. */
+async function enSourcify(direccion: Address): Promise<boolean | null> {
+  try {
+    const r = await fetch(`https://sourcify.dev/server/v2/contract/143/${direccion}`, { signal: AbortSignal.timeout(8_000) });
+    return r.status === 200 ? true : r.status === 404 ? false : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * El mercado del token en la curva de nad.fun, si lo tiene. La cadena no dice
+ * qué contrato es la curva de cada token ni cuánto MON tiene detrás, así que se
+ * pregunta a su API. Solo responde a panal.lat: en otro sitio, no hay dato.
+ */
+async function mercadoNadfun(direccion: Address): Promise<{ mercado: Address; reservaMon: bigint | null } | null> {
+  try {
+    const r = await fetch(`https://api.nad.fun/agent/market/${direccion}`, { signal: AbortSignal.timeout(6_000) });
+    if (!r.ok) return null;
+    const j = (await r.json()) as { market_info?: { market_id?: string; reserve_native?: string } };
+    const id = j.market_info?.market_id;
+    if (!id || !/^0x[0-9a-fA-F]{40}$/.test(id)) return null;
+    const reserva = j.market_info?.reserve_native;
+    return { mercado: getAddress(id), reservaMon: reserva && /^\d+$/.test(reserva) ? BigInt(reserva) : null };
+  } catch {
+    return null;
+  }
 }
 
 /** Lo que dice cik de un bytecode suelto, sin desplegarlo. */

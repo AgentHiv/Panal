@@ -274,3 +274,57 @@ export function DesgloseRiesgo({ motivos, score }: { motivos: Motivo[]; score: n
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ features */
+
+/** Los tramos del vector de features, por posición: así se lee qué mira el modelo. */
+const GRUPOS = [
+  { clave: 'opcodes', desde: 0, hasta: 64 },
+  { clave: 'selectores', desde: 64, hasta: 128 },
+  { clave: 'exactos', desde: 128, hasta: 192 },
+  { clave: 'banderas', desde: 192, hasta: 224 },
+  { clave: 'estadisticas', desde: 224, hasta: 242 },
+  { clave: 'nombre', desde: 242, hasta: 256 },
+] as const;
+
+/**
+ * Las 256 features que lee la red, por tramos: una casilla por byte (0..127),
+ * más oscura cuanto más alta. Una sola escala de un tono (morado): es magnitud.
+ * El valor exacto de cada casilla sale al pasar por encima.
+ */
+export function MapaFeatures({ features }: { features: number[] }) {
+  const { t } = useTranslation();
+  if (features.length !== 256) return null;
+  return (
+    <div>
+      <p className="text-[0.8125rem] font-medium text-ink-2">{t('cik.codigo.features')}</p>
+      <p className="mt-1 text-[0.75rem] text-ink-3">{t('cik.codigo.featuresPista')}</p>
+      <div className="mt-3 flex flex-col gap-3">
+        {GRUPOS.map((g) => {
+          const tramo = features.slice(g.desde, g.hasta);
+          const activas = tramo.filter((v) => v > 0).length;
+          return (
+            <div key={g.clave}>
+              <p className="mb-1 flex justify-between gap-3 font-mono text-[0.6875rem] text-ink-3">
+                <span>
+                  [{g.desde}..{g.hasta - 1}] {t(`cik.codigo.grupo.${g.clave}`)}
+                </span>
+                <span>{t('cik.graf.activas', { n: activas, total: tramo.length })}</span>
+              </p>
+              <div className="flex flex-wrap gap-[2px]">
+                {tramo.map((v, i) => (
+                  <span
+                    key={i}
+                    title={`[${g.desde + i}] = ${v}`}
+                    className="h-3.5 w-3.5 rounded-[2px] border border-line"
+                    style={{ backgroundColor: v ? `rgba(131, 110, 249, ${0.15 + (0.85 * v) / 127})` : 'transparent' }}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
