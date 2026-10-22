@@ -2518,7 +2518,18 @@
       "atestVentana": "可挑战至 {{hora}}",
       "recalcula": "自己重新计算",
       "recalculaTexto": "结论不是 Panal 给的，而是合约返回的。任何人用下面的命令都能得到同样的结果：",
-      "copiar": "复制"
+      "copiar": "复制",
+      "enWeb": "也可以直接在这里验证，无需终端：你的浏览器会直接询问另一个 Monad 节点，不经过 Panal。",
+      "otroNodo": "其他节点…",
+      "nodoHueco": "https://…（你的节点 RPC 地址）",
+      "preguntar": "查询",
+      "respondio": "{{nodo}} 在 {{ms}} 毫秒内回答：「{{clase}}」",
+      "coincide": "与上面的结论一致。",
+      "noCoincide": "与上面的结论不一致：两次读取之间可能有变化。请重新分析。",
+      "nodoFalla": "{{nodo}} 没有从浏览器返回结果：可能宕机、拒绝来自其他网站的调用，或限制了 gas。",
+      "nodoMalo": "地址必须以 https:// 开头。",
+      "verPeticion": "查看原始请求和响应",
+      "peticionPista": "这与上面的命令是同一个调用：你可以复制它，发送给任意 Monad 节点。"
     },
     "codigo": {
       "sub": "粘贴十六进制字节码（0x…）。cik 无需部署即可分类；没有地址时，名称和符号不计入。",

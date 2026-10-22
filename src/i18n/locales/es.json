@@ -2518,7 +2518,18 @@
       "atestVentana": "se puede retar hasta las {{hora}}",
       "recalcula": "Recalcúlalo tú",
       "recalculaTexto": "El veredicto no es de Panal: es lo que devuelve el contrato. Cualquiera obtiene el mismo con:",
-      "copiar": "Copiar"
+      "copiar": "Copiar",
+      "enWeb": "O compruébalo aquí mismo, sin terminal: tu navegador le pregunta a otro nodo de Monad directamente, sin pasar por Panal.",
+      "otroNodo": "Otro nodo…",
+      "nodoHueco": "https://… (la URL RPC de tu nodo)",
+      "preguntar": "Preguntar",
+      "respondio": "{{nodo}} respondió en {{ms}} ms: «{{clase}}»",
+      "coincide": "Coincide con el veredicto de arriba.",
+      "noCoincide": "No coincide con el veredicto de arriba: puede que algo haya cambiado entre las dos lecturas. Vuelve a analizar.",
+      "nodoFalla": "{{nodo}} no respondió desde el navegador: puede estar caído, no aceptar llamadas de otras webs o limitar el gas.",
+      "nodoMalo": "La URL tiene que empezar por https://.",
+      "verPeticion": "Ver la petición y la respuesta en crudo",
+      "peticionPista": "Es la misma llamada que el comando de arriba: puedes copiarla y mandarla a cualquier nodo de Monad."
     },
     "codigo": {
       "sub": "Pega bytecode en hexadecimal (0x…). cik lo clasifica sin desplegarlo; sin dirección, el nombre y el símbolo no cuentan.",

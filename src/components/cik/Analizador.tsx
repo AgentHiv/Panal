@@ -16,13 +16,16 @@ import { CIK } from '@/contracts/cik';
 import {
   analizar,
   analizarCodigo,
+  checkEnNodo,
   CLASES,
   corta,
   motivosDeRiesgo,
   NIVELES,
+  NODOS,
   type Analisis,
   type AnalisisCodigo,
   type Parametros,
+  type RespuestaNodo,
 } from '@/lib/cik';
 import { cn } from '@/lib/utils';
 import { BOTON_MIEL, CAMPO } from '@/components/tablon/util';
@@ -209,7 +212,7 @@ function Resultado({ a, parametros }: { a: Analisis; parametros: Parametros | nu
 
         <Sonda a={a} />
         <Atestacion a={a} parametros={parametros} />
-        <Recalcula direccion={a.direccion} />
+        <Recalcula direccion={a.direccion} clase={a.clase} />
       </div>
 
       {/* Riesgo */}
@@ -318,13 +321,26 @@ function Atestacion({ a, parametros }: { a: Analisis; parametros: Parametros | n
   );
 }
 
-function Recalcula({ direccion }: { direccion: Address }) {
+function Recalcula({ direccion, clase }: { direccion: Address; clase: number | null }) {
+  const { t } = useTranslation();
+  const comando = `cast call ${CIK.ci} 'check(address)(uint8)' ${direccion} --rpc-url https://rpc.monad.xyz`;
+  return (
+    <div className="mt-5 border-t border-line pt-4">
+      <p className="text-[0.8125rem] font-medium text-ink-2">{t('cik.res.recalcula')}</p>
+      <p className="mt-1 text-[0.75rem] leading-relaxed text-ink-3">{t('cik.res.recalculaTexto')}</p>
+      <Copiable texto={comando} className="mt-2" />
+      <EnOtroNodo direccion={direccion} clase={clase} />
+    </div>
+  );
+}
+
+/** Un bloque de código con su botón de copiar. */
+function Copiable({ texto, className }: { texto: string; className?: string }) {
   const { t } = useTranslation();
   const [copiado, setCopiado] = useState(false);
-  const comando = `cast call ${CIK.ci} 'check(address)(uint8)' ${direccion} --rpc-url https://rpc.monad.xyz`;
   const copiar = async () => {
     try {
-      await navigator.clipboard.writeText(comando);
+      await navigator.clipboard.writeText(texto);
       setCopiado(true);
       window.setTimeout(() => setCopiado(false), 1500);
     } catch {
@@ -332,20 +348,120 @@ function Recalcula({ direccion }: { direccion: Address }) {
     }
   };
   return (
-    <div className="mt-5 border-t border-line pt-4">
-      <p className="text-[0.8125rem] font-medium text-ink-2">{t('cik.res.recalcula')}</p>
-      <p className="mt-1 text-[0.75rem] leading-relaxed text-ink-3">{t('cik.res.recalculaTexto')}</p>
-      <div className="mt-2 flex items-start gap-2 rounded-xl bg-ink px-3 py-2.5">
-        <code className="min-w-0 flex-1 break-all font-mono text-[0.6875rem] leading-relaxed text-cream">{comando}</code>
-        <button
-          type="button"
-          onClick={() => void copiar()}
-          aria-label={t('cik.res.copiar')}
-          className="shrink-0 text-cream/70 transition-colors hover:text-cream"
-        >
-          {copiado ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+    <div className={cn('flex items-start gap-2 rounded-xl bg-ink px-3 py-2.5', className)}>
+      <code className="min-w-0 flex-1 break-all font-mono text-[0.6875rem] leading-relaxed text-cream">{texto}</code>
+      <button
+        type="button"
+        onClick={() => void copiar()}
+        aria-label={t('cik.res.copiar')}
+        className="shrink-0 text-cream/70 transition-colors hover:text-cream"
+      >
+        {copiado ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Lo mismo que el comando, sin terminal: el navegador le pregunta `check` a
+ * otro nodo de Monad directamente, sin pasar por Panal, y se compara con el
+ * veredicto de arriba. La petición y la respuesta se enseñan en crudo.
+ */
+function EnOtroNodo({ direccion, clase }: { direccion: Address; clase: number | null }) {
+  const { t } = useTranslation();
+  const [propio, setPropio] = useState('');
+  const [abierto, setAbierto] = useState(false);
+  const [preguntando, setPreguntando] = useState<string | null>(null);
+  const [r, setR] = useState<{ nodo: string; res: RespuestaNodo } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const preguntar = async (url: string) => {
+    let nodo: string;
+    try {
+      const u = new URL(url.trim());
+      const local = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
+      if (u.protocol !== 'https:' && !(local && u.protocol === 'http:')) throw new Error('protocolo');
+      nodo = u.host;
+    } catch {
+      setError(t('cik.res.nodoMalo'));
+      return;
+    }
+    setPreguntando(url);
+    setError(null);
+    setR(null);
+    try {
+      setR({ nodo, res: await checkEnNodo(url.trim(), direccion) });
+    } catch {
+      setError(t('cik.res.nodoFalla', { nodo }));
+    } finally {
+      setPreguntando(null);
+    }
+  };
+
+  const boton =
+    'inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-[0.75rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-ink disabled:opacity-40';
+
+  return (
+    <div className="mt-4">
+      <p className="text-[0.75rem] leading-relaxed text-ink-3">{t('cik.res.enWeb')}</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {NODOS.map((n) => (
+          <button key={n.url} type="button" disabled={!!preguntando} onClick={() => void preguntar(n.url)} className={boton}>
+            {preguntando === n.url && <Loader2 size={12} className="animate-spin" aria-hidden />}
+            {n.nombre}
+          </button>
+        ))}
+        <button type="button" disabled={!!preguntando} onClick={() => setAbierto((v) => !v)} className={boton}>
+          {t('cik.res.otroNodo')}
         </button>
       </div>
+
+      {abierto && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void preguntar(propio);
+          }}
+          className="mt-2 flex gap-2"
+        >
+          <input
+            value={propio}
+            onChange={(e) => setPropio(e.target.value)}
+            placeholder={t('cik.res.nodoHueco')}
+            spellCheck={false}
+            className={cn(CAMPO, 'py-1.5 font-mono text-[0.75rem]')}
+          />
+          <button type="submit" disabled={!!preguntando || !propio.trim()} className={cn(boton, 'shrink-0')}>
+            {preguntando === propio && <Loader2 size={12} className="animate-spin" aria-hidden />}
+            {t('cik.res.preguntar')}
+          </button>
+        </form>
+      )}
+
+      {error && <p className="mt-2 text-[0.75rem] leading-relaxed text-terra">{error}</p>}
+
+      {r && (
+        <div className="mt-3 rounded-xl border border-line px-3 py-2.5">
+          <p className="text-[0.8125rem] text-ink">
+            {t('cik.res.respondio', {
+              nodo: r.nodo,
+              ms: r.res.ms,
+              clase: t(`cik.res.clase.${CLASES[r.res.clase] ?? 'ok'}`),
+            })}
+          </p>
+          {clase !== null && (
+            <p className={cn('mt-1 text-[0.75rem]', r.res.clase === clase ? 'text-olive' : 'text-terra')}>
+              {r.res.clase === clase ? t('cik.res.coincide') : t('cik.res.noCoincide')}
+            </p>
+          )}
+          <details className="mt-2">
+            <summary className="cursor-pointer text-[0.75rem] text-ink-3 hover:text-ink-2">{t('cik.res.verPeticion')}</summary>
+            <p className="mt-2 text-[0.75rem] leading-relaxed text-ink-3">{t('cik.res.peticionPista')}</p>
+            <Copiable texto={r.res.peticion} className="mt-2" />
+            <p className="mt-2 break-all font-mono text-[0.6875rem] text-ink-2">result: {r.res.resultado}</p>
+          </details>
+        </div>
+      )}
     </div>
   );
 }

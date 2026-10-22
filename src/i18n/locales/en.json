@@ -2518,7 +2518,18 @@
       "atestVentana": "can be challenged until {{hora}}",
       "recalcula": "Recompute it yourself",
       "recalculaTexto": "The verdict is not Panal's: it is what the contract returns. Anyone gets the same one with:",
-      "copiar": "Copy"
+      "copiar": "Copy",
+      "enWeb": "Or check it right here, no terminal needed: your browser asks another Monad node directly, without going through Panal.",
+      "otroNodo": "Another node…",
+      "nodoHueco": "https://… (your node’s RPC URL)",
+      "preguntar": "Ask",
+      "respondio": "{{nodo}} answered in {{ms}} ms: “{{clase}}”",
+      "coincide": "It matches the verdict above.",
+      "noCoincide": "It does not match the verdict above: something may have changed between the two reads. Analyse again.",
+      "nodoFalla": "{{nodo}} did not answer from the browser: it may be down, refuse calls from other sites or cap the gas.",
+      "nodoMalo": "The URL has to start with https://.",
+      "verPeticion": "See the raw request and response",
+      "peticionPista": "It is the same call as the command above: you can copy it and send it to any Monad node."
     },
     "codigo": {
       "sub": "Paste hexadecimal bytecode (0x…). cik classifies it without deploying it; with no address, the name and symbol do not count.",
