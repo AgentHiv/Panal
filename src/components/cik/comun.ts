@@ -16,14 +16,6 @@ export const TONO_CLASE: Record<(typeof CLASES)[number], string> = {
   sospechoso: 'border-honey/50 bg-honey-soft text-honey-deep',
 };
 
-/** Riesgo 0..3: el mismo reparto de color, del más tranquilo al más alarmante. */
-export const TONO_NIVEL = [
-  'text-olive',
-  'text-honey-deep',
-  'text-terra',
-  'text-terra',
-] as const;
-
 /** «8», «0.01», «2.75»: MON con cuatro decimales como mucho y sin ceros de cola. */
 export function mon(wei: bigint, decimales = 4): string {
   const n = Number(formatEther(wei));

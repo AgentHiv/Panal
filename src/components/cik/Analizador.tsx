@@ -20,7 +20,6 @@ import {
   CLASES,
   corta,
   motivosDeRiesgo,
-  NIVELES,
   NODOS,
   type Analisis,
   type AnalisisCodigo,
@@ -29,7 +28,8 @@ import {
 } from '@/lib/cik';
 import { cn } from '@/lib/utils';
 import { BOTON_MIEL, CAMPO } from '@/components/tablon/util';
-import { codigoPegado, direccionPegada, EJEMPLOS, mon, porcentaje, TONO_CLASE, TONO_NIVEL } from './comun';
+import { codigoPegado, direccionPegada, EJEMPLOS, mon, porcentaje, TONO_CLASE } from './comun';
+import { CaminoDecision, DesgloseRiesgo, EscalaVeredicto, MedidorRiesgo, PruebaSonda } from './Graficas';
 
 type Pestana = 'direccion' | 'codigo';
 
@@ -187,18 +187,11 @@ function Resultado({ a, parametros }: { a: Analisis; parametros: Parametros | nu
           <ArrowUpRight size={12} aria-hidden />
         </a>
 
-        {clase ? (
+        {clase && a.clase !== null ? (
           <div className="mt-5">
-            <span
-              className={cn(
-                'inline-flex rounded-full border px-3.5 py-1 font-mono text-[0.9375rem] font-semibold uppercase tracking-wide',
-                TONO_CLASE[clase],
-              )}
-            >
-              {t(`cik.res.clase.${clase}`)}
-            </span>
+            <EscalaVeredicto clase={a.clase} />
             <p className="mt-3 text-[0.9375rem] leading-relaxed text-ink-2">{t(`cik.res.claseDesc.${clase}`)}</p>
-            {a.fuente && <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-3">{t(`cik.res.fuente.${a.fuente}`)}</p>}
+            <CaminoDecision a={a} />
           </div>
         ) : (
           <p className="mt-5 text-[0.875rem] text-terra">{t('cik.analizar.error')}</p>
@@ -210,7 +203,7 @@ function Resultado({ a, parametros }: { a: Analisis; parametros: Parametros | nu
           </p>
         )}
 
-        <Sonda a={a} />
+        <PruebaSonda s={a.sonda} honeypot={a.sondaHoneypot} />
         <Atestacion a={a} parametros={parametros} />
         <Recalcula direccion={a.direccion} clase={a.clase} />
       </div>
@@ -219,21 +212,10 @@ function Resultado({ a, parametros }: { a: Analisis; parametros: Parametros | nu
       {inf && (
         <div className="rounded-2xl border border-line bg-paper p-6 shadow-card">
           <p className="eyebrow text-ink-3">{t('cik.res.riesgo')}</p>
-          <p className="mt-2 flex items-baseline gap-2">
-            <span className={cn('font-mono text-[2.25rem] font-medium leading-none', TONO_NIVEL[inf.riskLevel] ?? 'text-ink')}>
-              {inf.riskScore}
-            </span>
-            <span className="text-ink-3">/ 100 · {t(`cik.res.nivel.${NIVELES[inf.riskLevel] ?? 'bajo'}`)}</span>
-          </p>
-          <ul className="mt-4 flex flex-col gap-1.5 text-[0.8125rem] text-ink-2">
-            {motivos.length === 0 && <li className="text-ink-3">{t('cik.res.sinMotivos')}</li>}
-            {motivos.map((m) => (
-              <li key={m.clave} className="flex items-baseline justify-between gap-3">
-                <span>{t(`cik.res.motivo.${m.clave}`)}</span>
-                <span className="shrink-0 font-mono text-ink-3">+{m.puntos}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-2">
+            <MedidorRiesgo score={inf.riskScore} nivel={inf.riskLevel} />
+          </div>
+          <DesgloseRiesgo motivos={motivos} score={inf.riskScore} />
 
           <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-line pt-4 text-[0.8125rem]">
             <div>
@@ -255,35 +237,6 @@ function Resultado({ a, parametros }: { a: Analisis; parametros: Parametros | nu
           </dl>
           <p className="mt-4 text-[0.75rem] leading-relaxed text-ink-3">{t('cik.res.concentracion')}</p>
         </div>
-      )}
-    </div>
-  );
-}
-
-function Sonda({ a }: { a: Analisis }) {
-  const { t } = useTranslation();
-  const s = a.sonda;
-  if (!s) return null;
-  const mercado = ['', 'Uniswap V2', 'Uniswap V3', 'Uniswap V4'][s.venue] ?? '';
-  const pierde = (kept: number) => porcentaje(Math.max(0, 10_000 - kept));
-  return (
-    <div className="mt-5 border-t border-line pt-4">
-      <p className="text-[0.8125rem] font-medium text-ink-2">
-        {t('cik.res.sonda')}
-        {s.hasPair && mercado ? ` · ${t('cik.res.sondaMercado', { mercado })}` : ''}
-      </p>
-      {s.hasPair ? (
-        <p className="mt-1 text-[0.8125rem] leading-relaxed text-ink-2">
-          {t('cik.res.compra')}{' '}
-          <span className={s.bought ? 'text-olive' : 'text-terra'}>{s.bought ? t('cik.res.bien') : t('cik.res.falla')}</span>
-          {' · '}
-          {t('cik.res.venta')}{' '}
-          <span className={s.sold ? 'text-olive' : 'text-terra'}>{s.sold ? t('cik.res.bien') : t('cik.res.falla')}</span>
-          {' · '}
-          {t('cik.res.pierde', { compra: pierde(s.buyKeptBps), venta: pierde(s.sellKeptBps) })}
-        </p>
-      ) : (
-        <p className="mt-1 text-[0.8125rem] leading-relaxed text-ink-3">{t('cik.res.sondaSin')}</p>
       )}
     </div>
   );
