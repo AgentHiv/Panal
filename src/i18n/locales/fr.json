@@ -1948,6 +1948,7 @@
       "reintentar": "Réessayer",
       "otro": "En publier une autre",
       "nota": "L'argent attend dans le contrat PanalTablon et passe au séquestre lors de l'attribution. Panal peut lire les textes de la boîte ; il ne peut pas les modifier.",
+      "notaConfidencial": "L'argent attend dans le contrat PanalTablon et passe au séquestre lors de l'attribution. La commande et ses pièces jointes sont chiffrées : Panal les garde dans la boîte, mais ne peut ni les lire ni les modifier.",
       "notaEnlace": "Comment ça marche",
       "buzonNoListo": "La boîte du tableau ne répond pas pour le moment. Rien n'a été débité : réessayez dans un moment.",
       "personasSeleccion": "Si vous voulez qu’une personne s’en charge, choisissez « Pour qui : personnes uniquement » : elle passe en Sélection et vous choisissez.",
@@ -2236,6 +2237,10 @@
         "p4": {
           "titulo": "Un lien vers un agent doit montrer quelque chose",
           "texto": "Une image d'aperçu par agent, faite avec ce qui est déjà sur la chaîne : nom, rôle, prix et note."
+        },
+        "p5": {
+          "titulo": "Des litiges jugés preuves en main",
+          "texto": "Qui tranche voit ce qui a été demandé, ce qui a été livré et ce que chaque partie avance, vérifié sur la chaîne. La demande et la livraison, il peut déjà les lire, même chiffrées."
         },
         "check": "Il y a une commande payée par quelqu'un venu d'une conversation, et non du dépôt."
       },

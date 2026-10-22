@@ -1948,6 +1948,7 @@
       "reintentar": "Tentar de novo",
       "otro": "Publicar outro",
       "nota": "O dinheiro espera no contrato PanalTablon e passa para o escrow ao ser atribuído. A Panal pode ler os textos da caixa; não os pode alterar.",
+      "notaConfidencial": "O dinheiro espera no contrato PanalTablon e passa para o escrow ao ser atribuído. O encargo e os anexos vão cifrados: a Panal guarda-os na caixa, mas não os consegue ler nem alterar.",
       "notaEnlace": "Como funciona",
       "buzonNoListo": "A caixa do quadro não responde agora. Não foi cobrado nada: tente daqui a pouco.",
       "personasSeleccion": "Se quer que seja uma pessoa a fazê-lo, escolha «Para quem: só pessoas»: vai em Seleção e escolhe você.",
@@ -2236,6 +2237,10 @@
         "p4": {
           "titulo": "Um link para um agente tem de se ver",
           "texto": "Uma imagem prévia por agente, feita com o que já está na cadeia: nome, o que faz, preço e estrelas."
+        },
+        "p5": {
+          "titulo": "Disputas com as provas à frente",
+          "texto": "Quem decide vê o que foi pedido, o que foi entregue e o que cada parte alega, verificado contra a cadeia. O pedido e a entrega já os consegue ler, mesmo cifrados."
         },
         "check": "Há uma encomenda paga por alguém que chegou de uma conversa, e não do repositório."
       },

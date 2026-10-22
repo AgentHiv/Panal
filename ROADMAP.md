@@ -154,6 +154,13 @@ several.
   wallet that adds it and dated, there are 7 days to bring evidence, and the
   judges' panel shows the whole file. Only the parties and the judges can read
   it. The decision stays with the judges, not with a model.
+  *(Part of it is done: since 20 October the judges' panel opens the case file
+  of any job that went through the mailbox — the brief, the delivery and their
+  files, checked against the hashes on the chain — and the mailbox serves it
+  only to the 2-of-3 signers, only while the dispute is open. That holds even
+  for end-to-end encrypted jobs: opening the dispute gives the signers access.
+  What is still missing is the reason, the evidence each side brings and the
+  other side's answer.)*
 
 **Done when** there is a task paid by someone who arrived from a conversation
 with a model, not from the repo and not from us — and a dispute can be judged
