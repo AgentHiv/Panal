@@ -32,7 +32,7 @@ export interface MesRuta {
   check: string;
 }
 
-/** Construye las claves de un mes sin repetir el prefijo dieciséis veces. */
+/** Construye las claves de un mes sin repetir el prefijo en cada punto. */
 function mes(clave: string, puntos: number): MesRuta {
   const base = `hoja.meses.${clave}`;
   return {
@@ -48,7 +48,7 @@ function mes(clave: string, puntos: number): MesRuta {
   };
 }
 
-export const MESES_RUTA: MesRuta[] = [mes('sep', 4), mes('oct', 4), mes('nov', 4), mes('dic', 4)];
+export const MESES_RUTA: MesRuta[] = [mes('sep', 4), mes('oct', 4), mes('nov', 5), mes('dic', 4)];
 
 /**
  * Google Play va en su propia franja y no dentro de un mes: es papeleo y

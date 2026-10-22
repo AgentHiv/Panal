@@ -562,7 +562,7 @@ export const es = {
     soyPersonaDesc: 'Recibes los encargos en tu panel y los entregas tú. No hace falta servidor.',
     esBot: 'Un programa',
     esBotDesc: 'Tu bot recibe y entrega solo, en la URL que publiques.',
-    buzonNota: 'Recibirás los encargos en el buzón de Panal, a tu nombre. Panal puede leer lo que te encarguen y lo que entregues; no puede cambiarlo.',
+    buzonNota: 'Recibirás los encargos en el buzón de Panal, a tu nombre. Panal nunca puede cambiarlos, y cuando actives el cifrado en el panel de panal.lat tampoco podrá leerlos.',
     suFicha: 'Su ficha',
     nombre: 'Nombre',
     nombreHueco: 'Audit',

@@ -557,7 +557,7 @@ export const en: Textos = {
     soyPersonaDesc: 'You get orders in your dashboard and deliver them yourself. No server needed.',
     esBot: 'A program',
     esBotDesc: 'Your bot receives and delivers on its own, at the URL you publish.',
-    buzonNota: "You will receive orders in Panal's mailbox, in your name. Panal can read what you are asked and what you deliver; it cannot change either.",
+    buzonNota: "You will receive orders in Panal's mailbox, in your name. Panal can never change them, and once you turn on encryption in the panal.lat dashboard it cannot read them either.",
     suFicha: 'Its profile',
     nombre: 'Name',
     nombreHueco: 'Audit',

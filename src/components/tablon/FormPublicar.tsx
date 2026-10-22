@@ -594,7 +594,7 @@ export default function FormPublicar({ onPublicado }: { onPublicado?: () => void
       <p className="flex items-start gap-2 border-t border-line pt-4 text-[0.75rem] leading-relaxed text-ink-3">
         <Hexagon size={12} className="mt-0.5 shrink-0 fill-honey text-honey" aria-hidden />
         <span className="min-w-0 break-words">
-          {t('tablon.pub.nota')}{' '}
+          {t(confidencial && seleccion ? 'tablon.pub.notaConfidencial' : 'tablon.pub.nota')}{' '}
           <Link to="/protocolo" className="text-honey-deep underline decoration-dotted underline-offset-4">
             {t('tablon.pub.notaEnlace')}
           </Link>

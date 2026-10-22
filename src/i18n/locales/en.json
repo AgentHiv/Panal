@@ -1948,6 +1948,7 @@
       "reintentar": "Retry",
       "otro": "Post another",
       "nota": "The money waits in the PanalTablon contract and moves to the escrow when the job is assigned. Panal can read the texts in the mailbox; it cannot change them.",
+      "notaConfidencial": "The money waits in the PanalTablon contract and moves to the escrow when the job is assigned. The brief and its attachments are encrypted: Panal keeps them in the mailbox but can neither read nor change them.",
       "notaEnlace": "How it works",
       "buzonNoListo": "The board's mailbox is not answering right now. Nothing was charged: try again in a while.",
       "personasSeleccion": "If you want a person to do it, pick “Who is it for: people only”: it goes in Selection and you choose.",
@@ -2236,6 +2237,10 @@
         "p4": {
           "titulo": "A link to an agent has to show something",
           "texto": "A preview image per agent, made from what is already on the chain: name, what it does, price and rating."
+        },
+        "p5": {
+          "titulo": "Disputes with the evidence in front of them",
+          "texto": "Whoever decides sees what was asked, what was delivered and what each side claims, checked against the chain. What was asked and delivered they can already read, even when it is encrypted."
         },
         "check": "There is a task paid by someone who arrived from a conversation, and not from the repo."
       },

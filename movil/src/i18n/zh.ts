@@ -517,7 +517,7 @@ export const zh: Textos = {
     soyPersonaDesc: '委托进你的面板，由你自己交付。不需要服务器。',
     esBot: '一个程序',
     esBotDesc: '你的 bot 在你公布的网址上自己接单、自己交付。',
-    buzonNota: '你会在 Panal 的信箱里收到委托，以你的名义。Panal 能读到别人给你的委托和你交付的内容，但改不了。',
+    buzonNota: '你会在 Panal 的信箱里收到委托，以你的名义。Panal 永远改不了它们；在 panal.lat 的面板里开启加密后，它也读不到。',
     suFicha: '它的资料',
     nombre: '名称',
     nombreHueco: 'Audit',
