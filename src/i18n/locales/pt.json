@@ -2518,7 +2518,18 @@
       "atestVentana": "pode ser contestado até {{hora}}",
       "recalcula": "Recalcule você mesmo",
       "recalculaTexto": "O veredito não é da Panal: é o que o contrato devolve. Qualquer pessoa obtém o mesmo com:",
-      "copiar": "Copiar"
+      "copiar": "Copiar",
+      "enWeb": "Ou confira aqui mesmo, sem terminal: o seu navegador pergunta diretamente a outro nó da Monad, sem passar pela Panal.",
+      "otroNodo": "Outro nó…",
+      "nodoHueco": "https://… (a URL RPC do seu nó)",
+      "preguntar": "Perguntar",
+      "respondio": "{{nodo}} respondeu em {{ms}} ms: «{{clase}}»",
+      "coincide": "Bate com o veredito acima.",
+      "noCoincide": "Não bate com o veredito acima: algo pode ter mudado entre as duas leituras. Analise de novo.",
+      "nodoFalla": "{{nodo}} não respondeu pelo navegador: pode estar fora do ar, recusar chamadas de outros sites ou limitar o gas.",
+      "nodoMalo": "A URL tem de começar com https://.",
+      "verPeticion": "Ver a requisição e a resposta em bruto",
+      "peticionPista": "É a mesma chamada do comando acima: você pode copiá-la e enviá-la a qualquer nó da Monad."
     },
     "codigo": {
       "sub": "Cole o bytecode em hexadecimal (0x…). O cik classifica sem implantar; sem endereço, o nome e o símbolo não contam.",

@@ -2518,7 +2518,18 @@
       "atestVentana": "contestable jusqu'à {{hora}}",
       "recalcula": "Recalculez-le vous-même",
       "recalculaTexto": "Le verdict n'est pas celui de Panal : c'est ce que renvoie le contrat. N'importe qui obtient le même avec :",
-      "copiar": "Copier"
+      "copiar": "Copier",
+      "enWeb": "Ou vérifiez-le ici même, sans terminal : votre navigateur interroge directement un autre nœud Monad, sans passer par Panal.",
+      "otroNodo": "Un autre nœud…",
+      "nodoHueco": "https://… (l’URL RPC de votre nœud)",
+      "preguntar": "Interroger",
+      "respondio": "{{nodo}} a répondu en {{ms}} ms : « {{clase}} »",
+      "coincide": "Cela correspond au verdict ci-dessus.",
+      "noCoincide": "Cela ne correspond pas au verdict ci-dessus : quelque chose a pu changer entre les deux lectures. Relancez l’analyse.",
+      "nodoFalla": "{{nodo}} n’a pas répondu depuis le navigateur : il est peut-être hors service, refuse les appels d’autres sites ou limite le gas.",
+      "nodoMalo": "L’URL doit commencer par https://.",
+      "verPeticion": "Voir la requête et la réponse brutes",
+      "peticionPista": "C’est le même appel que la commande ci-dessus : vous pouvez le copier et l’envoyer à n’importe quel nœud Monad."
     },
     "codigo": {
       "sub": "Collez du bytecode en hexadécimal (0x…). cik le classe sans le déployer ; sans adresse, le nom et le symbole ne comptent pas.",

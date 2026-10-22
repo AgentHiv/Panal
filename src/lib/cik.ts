@@ -14,6 +14,7 @@
 import {
   BaseError,
   decodeErrorResult,
+  decodeFunctionResult,
   encodeDeployData,
   encodeFunctionData,
   getAddress,
@@ -402,6 +403,58 @@ export function motivosDeRiesgo(inf: Informe, minLiquidez: bigint, direccion: Ad
   if (inf.lpBurnedBps < 5000n) m.push({ clave: 'lp', puntos: 10 });
   for (const p of PERMISOS) if (inf.riskFlags & p.bit) m.push({ clave: `permiso.${p.clave}`, puntos: p.puntos });
   return m;
+}
+
+/**
+ * Nodos públicos de Monad a los que se puede preguntar desde el navegador
+ * (dejan llamadas de otras webs y no recortan el gas de un `eth_call`, que
+ * `check` necesita: ~8 M). Distintos del que usa la web, y de operadores
+ * distintos entre sí, para que comprobar no sea preguntarle otra vez a lo mismo.
+ * Probados el 2026-10-22, con varias llamadas seguidas. No valen: drpc (corta
+ * el gas), thirdweb (sin clave de cliente responde 429), Tatum (eth_call solo
+ * de pago) y los de BlockPI y Alchemy (piden clave).
+ */
+export const NODOS = [
+  { nombre: 'Monad Foundation', url: 'https://rpc-mainnet.monadinfra.com' },
+  { nombre: 'Ankr', url: 'https://rpc.ankr.com/monad_mainnet' },
+  { nombre: 'Sentio', url: 'https://rpc.sentio.xyz/monad-mainnet' },
+] as const;
+
+/** Lo que respondió un nodo a `Ci.check(direccion)`, con la petición tal cual se mandó. */
+export interface RespuestaNodo {
+  /** El cuerpo JSON-RPC exacto: se puede copiar y mandar a cualquier otro nodo. */
+  peticion: string;
+  /** El `result` en crudo, sin decodificar. */
+  resultado: Hex;
+  clase: number;
+  ms: number;
+}
+
+/**
+ * Pregunta `Ci.check(direccion)` a un nodo concreto, con un `fetch` directo y
+ * sin cliente de por medio: el navegador habla con ese nodo, no con Panal. Se
+ * enseña la petición y la respuesta en crudo para que quien desconfíe de esta
+ * página pueda repetirla en otro sitio.
+ */
+export async function checkEnNodo(url: string, direccion: Address): Promise<RespuestaNodo> {
+  const data = encodeFunctionData({ abi: ciAbi, functionName: 'check', args: [direccion] });
+  const peticion = JSON.stringify({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'eth_call',
+    params: [{ to: CIK.ci, data }, 'latest'],
+  });
+  const t0 = performance.now();
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: peticion,
+    signal: AbortSignal.timeout(20_000),
+  });
+  const j = (await r.json()) as { result?: Hex; error?: { message?: string } };
+  if (!j.result) throw new Error(j.error?.message ?? `HTTP ${r.status}`);
+  const clase = decodeFunctionResult({ abi: ciAbi, functionName: 'check', data: j.result });
+  return { peticion, resultado: j.result, clase, ms: Math.round(performance.now() - t0) };
 }
 
 /** «0x12ab…cdef», o la dirección entera si es corta. */
