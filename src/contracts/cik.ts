@@ -37,6 +37,23 @@ export const SOURCIFY = (a: Address) => `https://repo.sourcify.dev/143/${a}`;
 export const ciAbi = [
   {
     'type': 'function',
+    'name': 'featuresOf',
+    'inputs': [
+      {
+        'name': 'target',
+        'type': 'address'
+      }
+    ],
+    'outputs': [
+      {
+        'name': 'f',
+        'type': 'bytes'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
     'name': 'MODEL_HASH',
     'inputs': [],
     'outputs': [

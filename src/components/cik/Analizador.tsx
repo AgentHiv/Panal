@@ -29,7 +29,8 @@ import {
 import { cn } from '@/lib/utils';
 import { BOTON_MIEL, CAMPO } from '@/components/tablon/util';
 import { codigoPegado, direccionPegada, EJEMPLOS, mon, porcentaje, TONO_CLASE } from './comun';
-import { CaminoDecision, DesgloseRiesgo, EscalaVeredicto, MedidorRiesgo, PruebaSonda } from './Graficas';
+import DatosDelToken from './Datos';
+import { CaminoDecision, DesgloseRiesgo, EscalaVeredicto, MapaFeatures, MedidorRiesgo, PruebaSonda } from './Graficas';
 
 type Pestana = 'direccion' | 'codigo';
 
@@ -172,73 +173,76 @@ function Resultado({ a, parametros }: { a: Analisis; parametros: Parametros | nu
   const titulo = a.nombre || a.simbolo ? `${a.nombre}${a.simbolo && a.simbolo !== a.nombre ? ` · ${a.simbolo}` : ''}` : corta(a.direccion);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-      {/* Veredicto */}
-      <div className="rounded-2xl border border-line bg-paper p-6 shadow-card">
-        <p className="eyebrow text-ink-3">{t('cik.res.veredicto')}</p>
-        <p className="mt-2 break-words text-[1.125rem] font-semibold text-ink">{titulo}</p>
-        <a
-          href={EXPLORER_ADDRESS(a.direccion)}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-1 inline-flex items-center gap-1 break-all font-mono text-[0.75rem] text-ink-3 hover:text-honey-deep"
-        >
-          {a.direccion}
-          <ArrowUpRight size={12} aria-hidden />
-        </a>
-
-        {clase && a.clase !== null ? (
-          <div className="mt-5">
-            <EscalaVeredicto clase={a.clase} />
-            <p className="mt-3 text-[0.9375rem] leading-relaxed text-ink-2">{t(`cik.res.claseDesc.${clase}`)}</p>
-            <CaminoDecision a={a} />
-          </div>
-        ) : (
-          <p className="mt-5 text-[0.875rem] text-terra">{t('cik.analizar.error')}</p>
-        )}
-
-        {a.implementacion && (
-          <p className="mt-4 rounded-xl border border-line bg-cream px-4 py-3 text-[0.8125rem] leading-relaxed text-ink-2">
-            {t('cik.res.proxy', { impl: corta(a.implementacion) })}
-          </p>
-        )}
-
-        <PruebaSonda s={a.sonda} honeypot={a.sondaHoneypot} />
-        <Atestacion a={a} parametros={parametros} />
-        <Recalcula direccion={a.direccion} clase={a.clase} />
-      </div>
-
-      {/* Riesgo */}
-      {inf && (
+    <>
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
+        {/* Veredicto */}
         <div className="rounded-2xl border border-line bg-paper p-6 shadow-card">
-          <p className="eyebrow text-ink-3">{t('cik.res.riesgo')}</p>
-          <div className="mt-2">
-            <MedidorRiesgo score={inf.riskScore} nivel={inf.riskLevel} />
-          </div>
-          <DesgloseRiesgo motivos={motivos} score={inf.riskScore} />
+          <p className="eyebrow text-ink-3">{t('cik.res.veredicto')}</p>
+          <p className="mt-2 break-words text-[1.125rem] font-semibold text-ink">{titulo}</p>
+          <a
+            href={EXPLORER_ADDRESS(a.direccion)}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 inline-flex items-center gap-1 break-all font-mono text-[0.75rem] text-ink-3 hover:text-honey-deep"
+          >
+            {a.direccion}
+            <ArrowUpRight size={12} aria-hidden />
+          </a>
 
-          <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-line pt-4 text-[0.8125rem]">
-            <div>
-              <dt className="text-ink-3">{t('cik.res.liquidez')}</dt>
-              <dd className="mt-0.5 font-mono text-ink">{mon(inf.liquidity, 2)} MON</dd>
+          {clase && a.clase !== null ? (
+            <div className="mt-5">
+              <EscalaVeredicto clase={a.clase} />
+              <p className="mt-3 text-[0.9375rem] leading-relaxed text-ink-2">{t(`cik.res.claseDesc.${clase}`)}</p>
+              <CaminoDecision a={a} />
             </div>
-            <div>
-              <dt className="text-ink-3">{t('cik.res.lpQuemado')}</dt>
-              <dd className="mt-0.5 font-mono text-ink">{porcentaje(inf.lpBurnedBps)}</dd>
-            </div>
-            <div className="col-span-2">
-              <dt className="text-ink-3">{t('cik.res.nombre')}</dt>
-              <dd className="mt-0.5 text-ink">
-                {[inf.scamWord && t('cik.res.senalEstafa'), inf.nonAscii && t('cik.res.senalNoAscii')]
-                  .filter(Boolean)
-                  .join(' · ') || t('cik.res.senalNinguna')}
-              </dd>
-            </div>
-          </dl>
-          <p className="mt-4 text-[0.75rem] leading-relaxed text-ink-3">{t('cik.res.concentracion')}</p>
+          ) : (
+            <p className="mt-5 text-[0.875rem] text-terra">{t('cik.analizar.error')}</p>
+          )}
+
+          {a.implementacion && (
+            <p className="mt-4 rounded-xl border border-line bg-cream px-4 py-3 text-[0.8125rem] leading-relaxed text-ink-2">
+              {t('cik.res.proxy', { impl: corta(a.implementacion) })}
+            </p>
+          )}
+
+          <PruebaSonda s={a.sonda} honeypot={a.sondaHoneypot} />
+          <Atestacion a={a} parametros={parametros} />
+          <Recalcula direccion={a.direccion} clase={a.clase} />
         </div>
-      )}
-    </div>
+
+        {/* Riesgo */}
+        {inf && (
+          <div className="rounded-2xl border border-line bg-paper p-6 shadow-card">
+            <p className="eyebrow text-ink-3">{t('cik.res.riesgo')}</p>
+            <div className="mt-2">
+              <MedidorRiesgo score={inf.riskScore} nivel={inf.riskLevel} />
+            </div>
+            <DesgloseRiesgo motivos={motivos} score={inf.riskScore} />
+
+            <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-line pt-4 text-[0.8125rem]">
+              <div>
+                <dt className="text-ink-3">{t('cik.res.liquidez')}</dt>
+                <dd className="mt-0.5 font-mono text-ink">{mon(inf.liquidity, 2)} MON</dd>
+              </div>
+              <div>
+                <dt className="text-ink-3">{t('cik.res.lpQuemado')}</dt>
+                <dd className="mt-0.5 font-mono text-ink">{porcentaje(inf.lpBurnedBps)}</dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-ink-3">{t('cik.res.nombre')}</dt>
+                <dd className="mt-0.5 text-ink">
+                  {[inf.scamWord && t('cik.res.senalEstafa'), inf.nonAscii && t('cik.res.senalNoAscii')]
+                    .filter(Boolean)
+                    .join(' · ') || t('cik.res.senalNinguna')}
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-4 text-[0.75rem] leading-relaxed text-ink-3">{t('cik.res.concentracion')}</p>
+          </div>
+        )}
+      </div>
+      <DatosDelToken a={a} />
+    </>
   );
 }
 
@@ -421,16 +425,6 @@ function EnOtroNodo({ direccion, clase }: { direccion: Address; clase: number | 
 
 /* ------------------------------------------------------------------ bytecode */
 
-/** Los tramos del vector de features, por posición: así se lee qué mira el modelo. */
-const GRUPOS = [
-  { clave: 'opcodes', desde: 0, hasta: 64 },
-  { clave: 'selectores', desde: 64, hasta: 128 },
-  { clave: 'exactos', desde: 128, hasta: 192 },
-  { clave: 'banderas', desde: 192, hasta: 224 },
-  { clave: 'estadisticas', desde: 224, hasta: 242 },
-  { clave: 'nombre', desde: 242, hasta: 256 },
-] as const;
-
 function PorCodigo() {
   const { t } = useTranslation();
   const [texto, setTexto] = useState('');
@@ -505,26 +499,8 @@ function PorCodigo() {
           </div>
           {r.enRegistro && <p className="mt-3 text-[0.8125rem] text-ink-2">{t('cik.codigo.enRegistro')}</p>}
 
-          <p className="mt-6 text-[0.8125rem] font-medium text-ink-2">{t('cik.codigo.features')}</p>
-          <p className="mt-1 text-[0.75rem] text-ink-3">{t('cik.codigo.featuresPista')}</p>
-          <div className="mt-3 flex flex-col gap-3">
-            {GRUPOS.map((g) => (
-              <div key={g.clave}>
-                <p className="mb-1 font-mono text-[0.6875rem] text-ink-3">
-                  [{g.desde}..{g.hasta - 1}] {t(`cik.codigo.grupo.${g.clave}`)}
-                </p>
-                <div className="flex flex-wrap gap-[2px]">
-                  {r.features.slice(g.desde, g.hasta).map((v, i) => (
-                    <span
-                      key={i}
-                      title={`[${g.desde + i}] = ${v}`}
-                      className="h-3.5 w-3.5 rounded-[2px] border border-line"
-                      style={{ backgroundColor: v ? `rgba(131, 110, 249, ${0.15 + (0.85 * v) / 127})` : 'transparent' }}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="mt-6">
+            <MapaFeatures features={r.features} />
           </div>
         </div>
       )}
