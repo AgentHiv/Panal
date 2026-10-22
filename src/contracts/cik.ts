@@ -725,6 +725,57 @@ export const ciRiskAbi = [
   }
 ] as const;
 
+/** La regla de honeypot de la sonda, sobre su resultado: así la decide la cadena, no la web. */
+export const ciProbeAbi = [
+  {
+    'type': 'function',
+    'name': 'honeypot',
+    'inputs': [
+      {
+        'name': 'r',
+        'type': 'tuple',
+        'components': [
+          {
+            'name': 'hasPair',
+            'type': 'bool'
+          },
+          {
+            'name': 'bought',
+            'type': 'bool'
+          },
+          {
+            'name': 'sold',
+            'type': 'bool'
+          },
+          {
+            'name': 'movable',
+            'type': 'bool'
+          },
+          {
+            'name': 'buyKeptBps',
+            'type': 'uint16'
+          },
+          {
+            'name': 'sellKeptBps',
+            'type': 'uint16'
+          },
+          {
+            'name': 'venue',
+            'type': 'uint8'
+          }
+        ]
+      }
+    ],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'bool'
+      }
+    ],
+    'stateMutability': 'pure'
+  }
+] as const;
+
 export const ciGuardAbi = [
   {
     'type': 'constructor',

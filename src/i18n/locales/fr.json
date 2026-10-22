@@ -2457,20 +2457,10 @@
         "honeypot": "On peut l'acheter mais pas le revendre (ou on perd plus de la moitié en le faisant).",
         "sospechoso": "Il présente des signaux de risque, sans être un drainer ni un honeypot."
       },
-      "fuente": {
-        "sonda": "C'est la sonde qui a tranché : le test d'achat et de vente sur la blockchain.",
-        "registro": "C'est le registre de clones qui a tranché : son code est identique à celui d'un contrat déjà étiqueté.",
-        "modelo": "C'est le modèle d'IA qui a tranché, à partir du bytecode, du nom et du symbole."
-      },
       "proxy": "C'est un proxy minimal (EIP-1167) : cik juge le code de son implémentation, {{impl}}.",
       "sonda": "Test d'achat et de vente",
       "sondaMercado": "sur {{mercado}}",
       "sondaSin": "Aucun marché avec de la liquidité face à WMON : le test n'a pas pu être fait.",
-      "compra": "achat",
-      "venta": "vente",
-      "bien": "fonctionne",
-      "falla": "échoue",
-      "pierde": "perd {{compra}} à l'achat et {{venta}} à la vente",
       "riesgo": "Risque",
       "nivel": {
         "bajo": "faible",
@@ -2530,6 +2520,31 @@
       "nodoMalo": "L’URL doit commencer par https://.",
       "verPeticion": "Voir la requête et la réponse brutes",
       "peticionPista": "C’est le même appel que la commande ci-dessus : vous pouvez le copier et l’envoyer à n’importe quel nœud Monad."
+    },
+    "graf": {
+      "posibles": "Verdicts possibles",
+      "camino": "Comment il a tranché",
+      "decidio": "a tranché ici",
+      "noHizoFalta": "pas nécessaire",
+      "paso": {
+        "sonda": "Sonde d’achat et de vente",
+        "registro": "Registre de clones",
+        "modelo": "Modèle d’IA"
+      },
+      "sondaPasa": "on peut l’acheter et le vendre",
+      "sondaHoneypot": "impossible de le vendre : honeypot",
+      "sondaSinMercado": "aucun marché : pas d’avis",
+      "registroSi": "code déjà étiqueté : « {{clase}} »",
+      "registroNo": "code nouveau : absent",
+      "modeloDice": "dit « {{clase}} »",
+      "sonda": {
+        "compra": "À l’achat, arrive",
+        "venta": "À la vente, arrive",
+        "viaje": "Aller-retour : acheter et vendre"
+      },
+      "sondaRegla": "La ligne est à 50 % : si moins de la moitié arrive sur l’aller-retour, ou si l’achat ou la vente échoue, la sonde dit honeypot.",
+      "deDonde": "D’où vient ce chiffre",
+      "tope": "Les points font {{suma}} ; le risque s’arrête à 100."
     },
     "codigo": {
       "sub": "Collez du bytecode en hexadécimal (0x…). cik le classe sans le déployer ; sans adresse, le nom et le symbole ne comptent pas.",

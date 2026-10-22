@@ -2457,20 +2457,10 @@
         "honeypot": "It can be bought but not sold (or more than half is lost doing so).",
         "sospechoso": "It shows risk signals without being a drainer or a honeypot."
       },
-      "fuente": {
-        "sonda": "Decided by the probe: the on-chain buy and sell test.",
-        "registro": "Decided by the clone registry: its code is identical to an already labelled contract.",
-        "modelo": "Decided by the AI model, from the bytecode, the name and the symbol."
-      },
       "proxy": "It is a minimal proxy (EIP-1167): cik judges the code of its implementation, {{impl}}.",
       "sonda": "Buy and sell test",
       "sondaMercado": "on {{mercado}}",
       "sondaSin": "It has no market with liquidity against WMON: it could not be tested.",
-      "compra": "buy",
-      "venta": "sell",
-      "bien": "works",
-      "falla": "fails",
-      "pierde": "loses {{compra}} on buying and {{venta}} on selling",
       "riesgo": "Risk",
       "nivel": {
         "bajo": "low",
@@ -2530,6 +2520,31 @@
       "nodoMalo": "The URL has to start with https://.",
       "verPeticion": "See the raw request and response",
       "peticionPista": "It is the same call as the command above: you can copy it and send it to any Monad node."
+    },
+    "graf": {
+      "posibles": "Possible verdicts",
+      "camino": "How it decided",
+      "decidio": "decided here",
+      "noHizoFalta": "not needed",
+      "paso": {
+        "sonda": "Buy and sell probe",
+        "registro": "Clone registry",
+        "modelo": "AI model"
+      },
+      "sondaPasa": "it can be bought and sold",
+      "sondaHoneypot": "it cannot be sold: honeypot",
+      "sondaSinMercado": "no market: no opinion",
+      "registroSi": "code already labelled: “{{clase}}”",
+      "registroNo": "new code: not there",
+      "modeloDice": "says “{{clase}}”",
+      "sonda": {
+        "compra": "On buying, arrives",
+        "venta": "On selling, arrives",
+        "viaje": "Round trip: buy and sell"
+      },
+      "sondaRegla": "The line is 50 %: if less than half arrives over the round trip, or the buy or the sell fails, the probe says honeypot.",
+      "deDonde": "Where the number comes from",
+      "tope": "The points add up to {{suma}}; the risk stops at 100."
     },
     "codigo": {
       "sub": "Paste hexadecimal bytecode (0x…). cik classifies it without deploying it; with no address, the name and symbol do not count.",

@@ -2457,20 +2457,10 @@
         "honeypot": "Dá para comprar, mas não para vender (ou se perde mais da metade ao vender).",
         "sospechoso": "Tem sinais de risco, sem chegar a drainer nem a honeypot."
       },
-      "fuente": {
-        "sonda": "Quem decidiu foi a sonda: o teste de compra e venda na blockchain.",
-        "registro": "Quem decidiu foi o registro de clones: o código é idêntico ao de um contrato já rotulado.",
-        "modelo": "Quem decidiu foi o modelo de IA, a partir do bytecode, do nome e do símbolo."
-      },
       "proxy": "É um proxy mínimo (EIP-1167): o cik julga o código da sua implementação, {{impl}}.",
       "sonda": "Teste de compra e venda",
       "sondaMercado": "na {{mercado}}",
       "sondaSin": "Não tem mercado com liquidez contra WMON: não foi possível testar.",
-      "compra": "compra",
-      "venta": "venda",
-      "bien": "funciona",
-      "falla": "falha",
-      "pierde": "perde {{compra}} ao comprar e {{venta}} ao vender",
       "riesgo": "Risco",
       "nivel": {
         "bajo": "baixo",
@@ -2530,6 +2520,31 @@
       "nodoMalo": "A URL tem de começar com https://.",
       "verPeticion": "Ver a requisição e a resposta em bruto",
       "peticionPista": "É a mesma chamada do comando acima: você pode copiá-la e enviá-la a qualquer nó da Monad."
+    },
+    "graf": {
+      "posibles": "Vereditos possíveis",
+      "camino": "Como decidiu",
+      "decidio": "decidiu aqui",
+      "noHizoFalta": "não foi preciso olhar",
+      "paso": {
+        "sonda": "Sonda de compra e venda",
+        "registro": "Registro de clones",
+        "modelo": "Modelo de IA"
+      },
+      "sondaPasa": "dá para comprar e vender",
+      "sondaHoneypot": "não dá para vender: honeypot",
+      "sondaSinMercado": "sem mercado: não opina",
+      "registroSi": "código já rotulado: «{{clase}}»",
+      "registroNo": "código novo: não está",
+      "modeloDice": "diz «{{clase}}»",
+      "sonda": {
+        "compra": "Ao comprar, chega",
+        "venta": "Ao vender, chega",
+        "viaje": "Ida e volta: comprar e vender"
+      },
+      "sondaRegla": "A linha é 50 %: se na ida e volta chega menos da metade, ou a compra ou a venda falham, a sonda diz honeypot.",
+      "deDonde": "De onde sai o número",
+      "tope": "Os pontos somam {{suma}}; o risco fica em 100."
     },
     "codigo": {
       "sub": "Cole o bytecode em hexadecimal (0x…). O cik classifica sem implantar; sem endereço, o nome e o símbolo não contam.",

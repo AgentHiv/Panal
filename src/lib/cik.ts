@@ -23,7 +23,7 @@ import {
   type Hex,
   type PublicClient,
 } from 'viem';
-import { CIK, CI_GUARD_BYTECODE, ciAbi, ciGuardAbi, ciRiskAbi, ciViewAbi } from '@/contracts/cik';
+import { CIK, CI_GUARD_BYTECODE, ciAbi, ciGuardAbi, ciProbeAbi, ciRiskAbi, ciViewAbi } from '@/contracts/cik';
 
 /** El token base de los mercados que mira la sonda (WMON): no tiene par consigo mismo. */
 export const WMON: Address = '0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A';
@@ -96,6 +96,8 @@ export interface Analisis {
   fuente: Fuente | null;
   informe: Informe | null;
   sonda: Sonda | null;
+  /** La regla de la sonda sobre su resultado (`CiProbe.honeypot`): `null` si no se pudo leer. */
+  sondaHoneypot: boolean | null;
   nombre: string;
   simbolo: string;
   /** El hash que pide `attest(target, clase, evidenceHash)`: protege de un cambio a última hora. */
@@ -185,6 +187,7 @@ export async function analizar(cliente: PublicClient, direccion: Address): Promi
     fuente: null,
     informe: null,
     sonda: null,
+    sondaHoneypot: null,
     nombre: '',
     simbolo: '',
     evidencia: null,
@@ -208,10 +211,26 @@ export async function analizar(cliente: PublicClient, direccion: Address): Promi
   ]);
 
   const inf = informe as Informe | undefined;
-  // La verdad de `Ci`: honeypot si la sonda lo vio; si no, registro + modelo,
-  // que es justo la clase del informe. Si no coinciden, decidió la sonda.
+  const sonda = evidencia ? (evidencia[1] as Sonda) : null;
+  // La regla la aplica la propia sonda (es `pure`): así es la cadena, y no esta
+  // web, la que dice si el resultado de la compra y la venta es un honeypot.
+  const sondaHoneypot = sonda
+    ? ((await intentar(() =>
+        cliente.readContract({ address: CIK.probe, abi: ciProbeAbi, functionName: 'honeypot', args: [sonda] }),
+      )) ?? null)
+    : null;
+  // El orden de `Ci._truth`: primero la sonda; si no ve un honeypot, el registro
+  // de clones y, si el código no está en él, el modelo. La clase del informe es
+  // esa misma de registro + modelo, así que dice cuál de los dos contestó. Que
+  // el modelo diga también honeypot no cambia nada: la sonda va antes.
   const fuente: Fuente | null =
-    clase === undefined || !inf ? null : clase !== inf.modelClass ? 'sonda' : inf.cloneHit ? 'registro' : 'modelo';
+    clase === undefined || !inf
+      ? null
+      : sondaHoneypot || clase !== inf.modelClass
+        ? 'sonda'
+        : inf.cloneHit
+          ? 'registro'
+          : 'modelo';
 
   let nombre = evidencia ? deBytes32(evidencia[0].name, evidencia[0].nameLen) : '';
   let simbolo = evidencia ? deBytes32(evidencia[0].symbol, evidencia[0].symLen) : '';
@@ -230,7 +249,8 @@ export async function analizar(cliente: PublicClient, direccion: Address): Promi
     clase: clase ?? null,
     fuente,
     informe: inf ?? null,
-    sonda: evidencia ? (evidencia[1] as Sonda) : null,
+    sonda,
+    sondaHoneypot,
     nombre,
     simbolo,
     evidencia: evidencia ? evidencia[2] : null,

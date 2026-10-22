@@ -2457,20 +2457,10 @@
         "honeypot": "能买不能卖（或卖出时损失超过一半）。",
         "sospechoso": "有风险信号，但够不上盗币合约或蜜罐。"
       },
-      "fuente": {
-        "sonda": "由探针决定：链上的买卖测试。",
-        "registro": "由克隆登记表决定：它的代码与一个已标注的合约完全相同。",
-        "modelo": "由 AI 模型根据字节码、名称和符号决定。"
-      },
       "proxy": "这是一个最小代理（EIP-1167）：cik 判断的是其实现合约的代码，{{impl}}。",
       "sonda": "买卖测试",
       "sondaMercado": "在 {{mercado}}",
       "sondaSin": "没有与 WMON 配对且有流动性的市场：无法测试。",
-      "compra": "买入",
-      "venta": "卖出",
-      "bien": "正常",
-      "falla": "失败",
-      "pierde": "买入损失 {{compra}}，卖出损失 {{venta}}",
       "riesgo": "风险",
       "nivel": {
         "bajo": "低",
@@ -2530,6 +2520,31 @@
       "nodoMalo": "地址必须以 https:// 开头。",
       "verPeticion": "查看原始请求和响应",
       "peticionPista": "这与上面的命令是同一个调用：你可以复制它，发送给任意 Monad 节点。"
+    },
+    "graf": {
+      "posibles": "可能的结论",
+      "camino": "如何得出结论",
+      "decidio": "在此决定",
+      "noHizoFalta": "无需查看",
+      "paso": {
+        "sonda": "买卖探针",
+        "registro": "克隆登记表",
+        "modelo": "AI 模型"
+      },
+      "sondaPasa": "可以买入和卖出",
+      "sondaHoneypot": "无法卖出：蜜罐",
+      "sondaSinMercado": "没有市场：不作判断",
+      "registroSi": "代码已标注：「{{clase}}」",
+      "registroNo": "新代码：不在其中",
+      "modeloDice": "判定为「{{clase}}」",
+      "sonda": {
+        "compra": "买入时到账",
+        "venta": "卖出时到账",
+        "viaje": "往返：买入再卖出"
+      },
+      "sondaRegla": "线在 50%：如果往返到账不足一半，或买入、卖出失败，探针就判定为蜜罐。",
+      "deDonde": "这个数字从何而来",
+      "tope": "各项相加为 {{suma}}；风险上限为 100。"
     },
     "codigo": {
       "sub": "粘贴十六进制字节码（0x…）。cik 无需部署即可分类；没有地址时，名称和符号不计入。",
