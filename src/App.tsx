@@ -30,6 +30,7 @@ const CrearAgente = lazy(() => import('@/pages/CrearAgente'));
 const Protocolo = lazy(() => import('@/pages/Protocolo'));
 const HojaDeRuta = lazy(() => import('@/pages/HojaDeRuta'));
 const Token = lazy(() => import('@/pages/Token'));
+const Cik = lazy(() => import('@/pages/Cik'));
 const Descargar = lazy(() => import('@/pages/Descargar'));
 const Nosotros = lazy(() => import('@/pages/Nosotros'));
 const Privacidad = lazy(() => import('@/pages/Privacidad'));
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="protocolo" element={<Protocolo />} />
         <Route path="hoja-de-ruta" element={<HojaDeRuta />} />
         <Route path="token" element={<Token />} />
+        <Route path="cik" element={<Cik />} />
         {/* `/app` y no `/descargar`: es la ruta que se dice en voz alta y
             la que alguien teclea de memoria en el móvil. */}
         <Route path="app" element={<Descargar />} />
