@@ -32,6 +32,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; to?: string;
     links: [
       { label: 'footer.howItWorks', to: '/protocolo' },
       { label: 'footer.token', to: '/token' },
+      { label: 'footer.cik', to: '/cik' },
       { label: 'footer.contracts', to: '/protocolo' },
       { label: 'footer.disputes', to: '/protocolo' },
       { label: 'footer.fees', to: '/protocolo' },

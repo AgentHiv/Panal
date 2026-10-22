@@ -13,8 +13,8 @@
  *   el toast de `dashReal.txReverted` sin llamar a `onMined` (ver useTxReceipt).
  *
  * Usado por: TasksSection (claim/deliver/approve/dispute/autoRelease/cancel),
- * OwnAgentCard (updatePrice/setActive), PaymentsSection (withdraw) y
- * DisputeCard (resolveStuckDispute).
+ * OwnAgentCard (updatePrice/setActive), PaymentsSection (withdraw),
+ * DisputeCard (resolveStuckDispute) y la página de cik (attest/challenge/withdraw).
  */
 
 import { useEffect, useRef } from 'react';
@@ -41,6 +41,8 @@ export interface ContractActionRequest {
    * entero. Ver `gasDeRetirada` en lib/reservaDeGas.ts.
    */
   gas?: bigint;
+  /** MON que se envían con la llamada (funciones payable: el stake y el bond de cik). */
+  value?: bigint;
 }
 
 export interface ContractAction {
@@ -124,6 +126,7 @@ export function useContractAction(opts?: { onMined?: () => void }): ContractActi
         functionName: req.functionName,
         args: req.args,
         ...(req.gas !== undefined ? { gas: req.gas } : {}),
+        ...(req.value !== undefined ? { value: req.value } : {}),
         chainId: activeChain.id,
       },
       {
