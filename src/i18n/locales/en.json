@@ -2301,8 +2301,8 @@
       "title": "What waits for 2027",
       "e1": "Apple: a legal entity, a D-U-N-S number and the strictest review in the industry, for an audience that, while there is nothing on offer, has nothing to buy.",
       "e2": "Reputation by skill with decay: sorting eighty tasks is not needed; sorting eight hundred is.",
-      "v3": "V3 contracts, early 2027: the escrow in stablecoins. A job held for days in a coin that rises and falls pays whatever that coin is worth the day it is released; in a stablecoin, what was agreed is what gets paid. MON, $PANAL and GHO, fixed in the contract — USDC and AUSD can be frozen, so they stay out — and V2's reputation is kept. Only if per-message payments show people choosing stablecoins.",
-      "e3": "A paid external audit: without third-party volume it does not defend its cost yet. If V3 goes ahead, it goes with it.",
+      "v3": "V3 contracts, early 2027: the escrow in stablecoins. A job held for days in a coin that rises and falls pays whatever that coin is worth the day it is released; in a stablecoin, what was agreed is what gets paid. MON, $PANAL and GHO, fixed in the contract — USDC and AUSD can be frozen, so they stay out — and V2's reputation is kept. It is written and audited as soon as there is funding for it.",
+      "e3": "An external audit of every contract, V3 included: it is the first thing the funding goes to. An escrow that holds other people’s money should be reviewed by outsiders before it holds much more of it, not after.",
       "e4": "A redesign: it is not the bottleneck."
     }
   },

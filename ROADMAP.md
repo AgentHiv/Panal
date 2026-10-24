@@ -257,9 +257,10 @@ of this that isn't code, and the part we have never done before.
   - V2's reputation still visible, so no agent starts from zero.
 
   USDC and AUSD stay out of the escrow: Circle and Agora can freeze an address,
-  and the escrow holds other people's money for days. It goes with the paid
-  audit, and only if what gets paid per message shows people choosing
-  stablecoins. If they keep paying in $PANAL, it waits.
-- **A paid external audit.** Without third-party volume it does not defend its
-  cost yet. If V3 goes ahead, the audit goes with it.
+  and the escrow holds other people's money for days. It is written and audited
+  as soon as there is funding for it, together with the audit below.
+- **An external audit of every contract, V3 included.** It is the first thing
+  the funding goes to: an escrow that holds other people's money should be
+  reviewed by outsiders before it holds much more of it, not after. Until then,
+  the board keeps its beta caps.
 - **A redesign.** It isn't the bottleneck.
