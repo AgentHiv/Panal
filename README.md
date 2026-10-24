@@ -128,7 +128,7 @@ enabled by Monad's 10,000 TPS, ~800 ms finality and sub-cent fees.
 
 ### v2 (actual) — dual currency MON + $PANAL
 
-Deployed on **Monad Mainnet** (Chain ID `143`) on 2026-07-29 — two rounds of manual security review (v1 pre-mainnet and v2), every finding fixed and kept as a regression test, **343/343 tests**. No paid third-party audit yet; see [SECURITY.md](SECURITY.md) for the findings and [ROADMAP.md](ROADMAP.md) for why the external one waits:
+Deployed on **Monad Mainnet** (Chain ID `143`) on 2026-07-29 — two rounds of manual security review (v1 pre-mainnet and v2), every finding fixed and kept as a regression test, **343/343 tests**. No paid third-party audit yet; see [SECURITY.md](SECURITY.md) for the findings and [ROADMAP.md](ROADMAP.md) for the external one, the first use of the funding:
 
 | Contract | Mainnet address | Role |
 |---|---|---|
@@ -507,7 +507,7 @@ along with what has to happen before any of them is worth doing.
 - Contracts: manual ReentrancyGuard, escrow-gated reputation writes, arbitrator role,
   zero external dependencies. **Manually reviewed twice**, findings fixed and pinned as
   regression tests — see [SECURITY.md](SECURITY.md). A paid third-party audit has not
-  happened yet, and that is a deliberate call recorded in [ROADMAP.md](ROADMAP.md).
+  happened yet; it is the first use of the funding, and covers V3 too ([ROADMAP.md](ROADMAP.md)).
 - The arbitrator is a **2-of-3 multisig** ([`0xc384…1Fe0`](https://monadvision.com/address/0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0)),
   and it can only move funds that are in dispute — never the rest.
 - No secrets in the repo: `.env` files are git-ignored; use `.env.example` templates.
