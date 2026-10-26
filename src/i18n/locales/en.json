@@ -2475,7 +2475,7 @@
           "honeypot": "model verdict: honeypot",
           "sospechoso": "model verdict: suspicious"
         },
-        "sinLiquidez": "no V2 or V3 liquidity (V4 is not measured)",
+        "sinLiquidez": "no liquidity on V2, V3 or the nad.fun curve (V4 is not measured)",
         "base": "base token: it has no pair with itself",
         "pocaLiquidez": "low liquidity",
         "liquidezJusta": "thin liquidity",
@@ -2490,10 +2490,11 @@
           "transferOwnership": "ownership can be transferred",
           "upgradeTo": "upgradeable (upgradeTo)",
           "delegatecall": "DELEGATECALL",
-          "selfdestruct": "SELFDESTRUCT"
+          "selfdestruct": "SELFDESTRUCT",
+          "proxy": "upgradeable proxy"
         }
       },
-      "liquidez": "Liquidity (V2 + V3)",
+      "liquidez": "Liquidity (V2 + V3 + nad.fun)",
       "lpQuemado": "LP burned",
       "concentracion": "Holder concentration is only measured with a list of holders: try it in your policy, further down.",
       "nombre": "Name and symbol",
@@ -2537,6 +2538,8 @@
       "registroSi": "code already labelled: “{{clase}}”",
       "registroNo": "new code: not there",
       "modeloDice": "says “{{clase}}”",
+      "confianza": "The network sees it about {{veces}} times more likely than “{{segunda}}”.",
+      "confianzaPista": "Margin {{margen}}: the class logit minus the runner-up’s, in last-layer units. CiGuardV2 can require a minimum.",
       "sonda": {
         "compra": "On buying, arrives",
         "venta": "On selling, arrives",
@@ -2582,11 +2585,10 @@
       "m_v3": "Uniswap V3 · {{comision}} %",
       "m_v4": "Uniswap V4 · PoolManager",
       "m_nadfun": "nad.fun curve",
-      "deApi": "nad.fun API",
       "guarda": "holds {{parte}} of the supply",
       "lpQuemado": "LP burned {{pct}} %",
       "v4Pista": "V4 keeps all its pools together: its MON per token cannot be known",
-      "mercadosPista": "Depth: the MON (WMON) in each market, read from the chain just now; nad.fun’s comes from its API. A shallow market moves with little money."
+      "mercadosPista": "Depth: the MON (WMON) in each market, read from the chain just now; for the nad.fun curve, the real MON that CiRisk counts, without the virtual reserve. A shallow market moves with little money."
     },
     "codigo": {
       "sub": "Paste hexadecimal bytecode (0x…). cik classifies it without deploying it; with no address, the name and symbol do not count.",
@@ -2603,7 +2605,9 @@
         "exactos": "known selectors",
         "banderas": "flags",
         "estadisticas": "statistics",
-        "nombre": "name and symbol"
+        "nombre": "name and symbol",
+        "recuentos": "counts (CALLER, ORIGIN, TIMESTAMP + NUMBER, PUSH20)",
+        "libres": "unused"
       }
     },
     "politica": {
@@ -2617,6 +2621,9 @@
       "maxTop10": "Maximum for ten holders (%)",
       "bloquearSospechoso": "Reject what is suspicious",
       "bloquearEstafa": "Reject scam words in the name or symbol",
+      "bloquearActualizable": "Reject upgradeable proxies (their code can change after the check)",
+      "minMargen": "Minimum margin when the network says ok",
+      "minMargenPista": "0 = not required. 141 means the network sees “ok” about 9 times more likely than the runner-up class. It does not apply to what the clone registry decides.",
       "conSonda": "With the buy and sell probe (requireSafeWithProbe)",
       "holders": "Holders to check (optional)",
       "holdersPista": "One address per line, up to {{n}}. CiRisk checks their balances on-chain; without a list, concentration does not count.",
@@ -2633,7 +2640,9 @@
         "m7": "One holder has more than the maximum.",
         "m8": "Ten holders have more than the maximum.",
         "m9": "There is a scam word in the name or symbol.",
-        "m10": "The probe says honeypot."
+        "m10": "The probe says honeypot.",
+        "m11": "It is an upgradeable proxy: its code can change after the check.",
+        "m12": "The network says ok, but with a margin below the minimum."
       },
       "malHolders": "One of the lines is not an address.",
       "demasiados": "At most {{n}} holders.",
@@ -2675,15 +2684,15 @@
     "detras": {
       "title": "What is behind it, and its limits",
       "p1t": "A whole model on-chain",
-      "p1": "A 256 → 512 → 256 → 4 neural network with 263,168 8-bit weights, stored in five data contracts. Ci runs it over the bytecode, with no oracles or APIs: the same contract gives the same answer to anyone.",
+      "p1": "A {{red}} neural network with {{pesos}} 8-bit weights, stored in three data contracts. Ci runs it over the bytecode, with no oracles or APIs: the same contract gives the same answer to anyone.",
       "p2t": "Three sources, in order",
       "p2": "First the probe: it borrows a little of the token from the Uniswap V2, V3 and V4 markets, returns it and measures what arrives, in a call that always reverts. Then the clone registry, with {{clones}} contracts already labelled. And if it is not there, the model.",
       "p3t": "What it does not do",
-      "l1": "It is not an audit. On contracts it did not see in training, the model catches about 2 in 3 malicious ones and raises a false alarm on about 6 in 100 legitimate ones; with the probe, nearly every honeypot is caught.",
+      "l1": "It is not an audit. On code it never saw in training, the model recognises almost every known scam template on Monad; on new code it catches about 6 in 10 malicious tokens and raises a false alarm on about 3 in 10 legitimate ones. With the probe, almost every honeypot is caught.",
       "l2": "It was trained on Ethereum contracts: Monad has kinds of token it has not seen.",
       "l3": "It follows minimal proxies (EIP-1167) but not upgradeable ones (EIP-1967): for those it judges the proxy, not its implementation.",
-      "l4": "CiRisk does not measure Uniswap V4 liquidity, which keeps all its pools together: a token that only trades on V4 shows “no liquidity” even when the probe buys and sells it.",
-      "contratos": "The contracts (v1.1), with their verified code",
+      "l4": "CiRisk does not measure Uniswap V4 liquidity, which keeps all its pools together: a token that only trades on V4 shows “no liquidity” even when the probe buys and sells it. Liquidity on the nad.fun curve does count.",
+      "contratos": "The contracts (v2), with their verified code",
       "verificado": "code on Sourcify"
     }
   }

@@ -2475,7 +2475,7 @@
           "honeypot": "模型结论：蜜罐",
           "sospechoso": "模型结论：可疑"
         },
-        "sinLiquidez": "V2、V3 无流动性（V4 不计入）",
+        "sinLiquidez": "V2、V3 和 nad.fun 曲线均无流动性（V4 不计入）",
         "base": "基础代币：没有与自身的交易对",
         "pocaLiquidez": "流动性低",
         "liquidezJusta": "流动性偏低",
@@ -2490,10 +2490,11 @@
           "transferOwnership": "所有权可转移",
           "upgradeTo": "可升级（upgradeTo）",
           "delegatecall": "DELEGATECALL",
-          "selfdestruct": "SELFDESTRUCT"
+          "selfdestruct": "SELFDESTRUCT",
+          "proxy": "可升级代理"
         }
       },
-      "liquidez": "流动性（V2 + V3）",
+      "liquidez": "流动性（V2 + V3 + nad.fun）",
       "lpQuemado": "LP 已销毁",
       "concentracion": "持有者集中度只有在提供持有者名单时才会计算：可在下方的策略中测试。",
       "nombre": "名称和符号",
@@ -2537,6 +2538,8 @@
       "registroSi": "代码已标注：「{{clase}}」",
       "registroNo": "新代码：不在其中",
       "modeloDice": "判定为「{{clase}}」",
+      "confianza": "网络认为它的可能性约为「{{segunda}}」的 {{veces}} 倍。",
+      "confianzaPista": "裕度 {{margen}}：该类别的 logit 减去第二名的 logit，以最后一层的单位计。CiGuardV2 可以要求一个最低值。",
       "sonda": {
         "compra": "买入时到账",
         "venta": "卖出时到账",
@@ -2582,11 +2585,10 @@
       "m_v3": "Uniswap V3 · {{comision}} %",
       "m_v4": "Uniswap V4 · PoolManager",
       "m_nadfun": "nad.fun 曲线",
-      "deApi": "nad.fun API",
       "guarda": "持有供应量的 {{parte}}",
       "lpQuemado": "LP 已销毁 {{pct}} %",
       "v4Pista": "V4 把所有池子放在一起：无法知道该代币对应的 MON",
-      "mercadosPista": "深度：每个市场中的 MON（WMON），刚从链上读取；nad.fun 的来自其 API。深度浅的市场少量资金就能撬动。"
+      "mercadosPista": "深度：每个市场中的 MON（WMON），刚从链上读取；nad.fun 曲线显示的是 CiRisk 计入的真实 MON，不含虚拟储备。深度浅的市场少量资金就能撬动。"
     },
     "codigo": {
       "sub": "粘贴十六进制字节码（0x…）。cik 无需部署即可分类；没有地址时，名称和符号不计入。",
@@ -2603,7 +2605,9 @@
         "exactos": "已知选择器",
         "banderas": "标志位",
         "estadisticas": "统计量",
-        "nombre": "名称和符号"
+        "nombre": "名称和符号",
+        "recuentos": "计数（CALLER、ORIGIN、TIMESTAMP + NUMBER、PUSH20）",
+        "libres": "未使用"
       }
     },
     "politica": {
@@ -2617,6 +2621,9 @@
       "maxTop10": "前十持有者上限（%）",
       "bloquearSospechoso": "拒绝可疑代币",
       "bloquearEstafa": "拒绝名称或符号中含诈骗词的代币",
+      "bloquearActualizable": "拒绝可升级代理（检查之后其代码仍可能改变）",
+      "minMargen": "网络判定 ok 时的最低裕度",
+      "minMargenPista": "0 = 不要求。141 表示网络认为「ok」的可能性约为第二类别的 9 倍。不适用于克隆注册表的判定。",
       "conSonda": "加上买卖探针（requireSafeWithProbe）",
       "holders": "要检查的持有者（可选）",
       "holdersPista": "每行一个地址，最多 {{n}} 个。CiRisk 会在链上核对余额；不提供名单，集中度不计入。",
@@ -2633,7 +2640,9 @@
         "m7": "单个持有者超过上限。",
         "m8": "前十持有者超过上限。",
         "m9": "名称或符号中有诈骗词。",
-        "m10": "探针判定为蜜罐。"
+        "m10": "探针判定为蜜罐。",
+        "m11": "这是可升级代理：检查之后其代码仍可能改变。",
+        "m12": "网络判定为 ok，但裕度低于最低值。"
       },
       "malHolders": "有一行不是地址。",
       "demasiados": "最多 {{n}} 个持有者。",
@@ -2675,15 +2684,15 @@
     "detras": {
       "title": "背后是什么，以及它的局限",
       "p1t": "整个模型都在链上",
-      "p1": "一个 256 → 512 → 256 → 4 的神经网络，共 263,168 个 8 位权重，存放在五个数据合约中。Ci 在字节码上运行它，不需要预言机或 API：同一个合约对任何人给出相同的答案。",
+      "p1": "一个 {{red}} 的神经网络，共 {{pesos}} 个 8 位权重，存放在三个数据合约中。Ci 在字节码上运行它，不需要预言机或 API：同一个合约对任何人给出相同的答案。",
       "p2t": "三个来源，依次判断",
       "p2": "先是探针：在 Uniswap V2、V3 和 V4 市场借出少量代币，归还并测量到账数量，整个调用最后总会回滚。然后是克隆登记表，含 {{clones}} 个已标注合约。如果不在其中，就交给模型。",
       "p3t": "它做不到的事",
-      "l1": "它不是审计。对训练时没见过的合约，模型大约能识别三分之二的恶意合约，对每 100 个正常合约约有 6 个误报；加上探针，几乎所有蜜罐都能被识别。",
+      "l1": "这不是审计。在训练时未见过的代码上，模型几乎能识别 Monad 上所有已知的骗局模板；对新代码，它能识别约十分之六的恶意代币，并对约十分之三的正常代币误报。加上探针，蜜罐几乎都能被发现。",
       "l2": "它用以太坊合约训练：Monad 上有它没见过的代币类型。",
       "l3": "它会追踪最小代理（EIP-1167），但不追踪可升级代理（EIP-1967）：对后者，它判断的是代理本身，而不是实现合约。",
-      "l4": "CiRisk 不计算 Uniswap V4 的流动性，因为 V4 把所有池子放在一起：只在 V4 交易的代币会显示「无流动性」，即使探针能买卖它。",
-      "contratos": "合约（v1.1）及其已验证代码",
+      "l4": "CiRisk 不计算 Uniswap V4 的流动性，因为 V4 把所有池子放在一起：只在 V4 交易的代币会显示「无流动性」，即使探针能买卖它。nad.fun 曲线上的流动性则会计入。",
+      "contratos": "合约（v2）及其已验证代码",
       "verificado": "Sourcify 上的代码"
     }
   }

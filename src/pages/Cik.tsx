@@ -6,7 +6,7 @@
  * o retirar con la wallet. Los veredictos los dan los contratos; la página no
  * calcula ninguno, y cada número dice de dónde sale.
  *
- * Los parámetros de la portada (registro, stake, ventana, MODEL_HASH) se leen
+ * Los parámetros de la portada (registro, pesos, stake, ventana, MODEL_HASH) se leen
  * de `Ci` al abrir, no van escritos: si cambiaran, la página lo diría sola.
  */
 
@@ -21,9 +21,6 @@ import Analizador from '@/components/cik/Analizador';
 import Politica from '@/components/cik/Politica';
 import Atestar from '@/components/cik/Atestar';
 import { mon } from '@/components/cik/comun';
-
-/** 256·512 + 512·256 + 256·4: los pesos de la red, fijos en sus contratos de datos. */
-const PESOS = 263_168;
 
 export default function Cik() {
   useTituloDePagina('cik.metaTitle');
@@ -64,7 +61,7 @@ function Portada({ parametros }: { parametros: Parametros | null }) {
   const n = (v: number) => v.toLocaleString(i18n.language);
   const cifras = [
     { valor: parametros ? n(parametros.clones) : '…', etiqueta: t('cik.hero.stats.clones') },
-    { valor: n(PESOS), etiqueta: t('cik.hero.stats.pesos') },
+    { valor: parametros ? n(parametros.pesos) : '…', etiqueta: t('cik.hero.stats.pesos') },
     { valor: parametros ? `${mon(parametros.minStake)} MON` : '…', etiqueta: t('cik.hero.stats.stake') },
     { valor: parametros ? `${Math.round(parametros.challengeWindow / 60)} min` : '…', etiqueta: t('cik.hero.stats.ventana') },
   ];
@@ -116,7 +113,12 @@ function Detras({ parametros }: { parametros: Parametros | null }) {
         <div className="mt-8 grid gap-6 md:grid-cols-2">
           <div>
             <h3 className="text-[1.0625rem] font-semibold text-ink">{t('cik.detras.p1t')}</h3>
-            <p className="mt-2 leading-[1.65] text-ink-2">{t('cik.detras.p1')}</p>
+            <p className="mt-2 leading-[1.65] text-ink-2">
+              {t('cik.detras.p1', {
+                red: parametros ? parametros.capas.map((c) => c.toLocaleString(i18n.language)).join(' → ') : '…',
+                pesos: parametros ? parametros.pesos.toLocaleString(i18n.language) : '…',
+              })}
+            </p>
           </div>
           <div>
             <h3 className="text-[1.0625rem] font-semibold text-ink">{t('cik.detras.p2t')}</h3>

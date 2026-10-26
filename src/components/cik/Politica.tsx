@@ -27,6 +27,7 @@ export default function Politica({ analisis }: { analisis: Analisis | null }) {
   const [minLiq, setMinLiq] = useState('0');
   const [top1, setTop1] = useState('100');
   const [top10, setTop10] = useState('100');
+  const [margen, setMargen] = useState('0');
   const [holders, setHolders] = useState('');
   const [sonda, setSonda] = useState(false);
   const [cargando, setCargando] = useState(false);
@@ -65,11 +66,15 @@ export default function Politica({ analisis }: { analisis: Analisis | null }) {
     let politica: PoliticaGuard;
     try {
       const bps = (v: string) => Math.round(Math.min(100, Math.max(0, Number(v.replace(',', '.')))) * 100);
+      // El margen es un entero de la última capa de la red, sin decimales.
+      const textoMargen = margen.trim() || '0';
+      if (!/^\d{1,9}$/.test(textoMargen)) throw new Error('margen');
       politica = {
         ...p,
         minLiquidity: parseEther((minLiq.trim() || '0').replace(',', '.') as `${number}`),
         maxTop1Bps: bps(top1),
         maxTop10Bps: bps(top10),
+        minOkMargin: BigInt(textoMargen),
       };
       if (Number.isNaN(politica.maxTop1Bps) || Number.isNaN(politica.maxTop10Bps)) throw new Error('bps');
     } catch {
@@ -152,6 +157,15 @@ export default function Politica({ analisis }: { analisis: Analisis | null }) {
             <label className="flex items-start gap-2.5 text-[0.8125rem] leading-relaxed text-ink-2">
               <Checkbox checked={p.blockSymbolScam} onCheckedChange={(v) => setP({ ...p, blockSymbolScam: v === true })} className={casilla} />
               {t('cik.politica.bloquearEstafa')}
+            </label>
+            <label className="flex items-start gap-2.5 text-[0.8125rem] leading-relaxed text-ink-2">
+              <Checkbox checked={p.blockUpgradeable} onCheckedChange={(v) => setP({ ...p, blockUpgradeable: v === true })} className={casilla} />
+              {t('cik.politica.bloquearActualizable')}
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={etiqueta}>{t('cik.politica.minMargen')}</span>
+              <input value={margen} onChange={(e) => setMargen(e.target.value)} inputMode="numeric" className={cn(CAMPO, 'max-w-[10rem] font-mono')} />
+              <span className="text-[0.75rem] leading-relaxed text-ink-3">{t('cik.politica.minMargenPista')}</span>
             </label>
             <label className="flex items-start gap-2.5 text-[0.8125rem] leading-relaxed text-ink-2">
               <Checkbox checked={sonda} onCheckedChange={(v) => setSonda(v === true)} className={casilla} />
