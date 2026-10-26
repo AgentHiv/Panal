@@ -60,6 +60,12 @@ export interface Informe {
   riskLevel: number;
   riskFlags: number;
   modelHash: Hex;
+  /** Quién dio `modelClass`: 0 la red, 1 el registro de clones. */
+  source: number;
+  /** Con la red, la segunda clase; con el registro, la misma. */
+  runnerUp: number;
+  /** Con la red, logit de la clase menos el de la segunda (ver `vecesMasProbable`); con el registro, 0. */
+  margin: bigint;
 }
 
 /** La prueba de compra y venta de `CiProbe`, tal como la devuelve `evidenceOf`. */
@@ -119,6 +125,10 @@ export interface Parametros {
   clones: number;
   simbolos: number;
   minLiquidez: bigint;
+  /** El tamaño de cada capa de la red, de la entrada a la salida (256, 384, 192, 4). */
+  capas: number[];
+  /** Los pesos de la red: entrada × salida de cada capa. */
+  pesos: number;
 }
 
 /** La implementación de un proxy mínimo EIP-1167, o `null`. Misma regla que `Ci.codeOf`. */
@@ -155,7 +165,7 @@ async function intentar<T>(f: () => Promise<T>): Promise<T | undefined> {
 
 export async function leerParametros(cliente: PublicClient): Promise<Parametros> {
   const ci = { address: CIK.ci, abi: ciAbi } as const;
-  const [modelHash, minStake, challengeBond, challengeWindow, clones, simbolos, minLiquidez] = await Promise.all([
+  const [modelHash, minStake, challengeBond, challengeWindow, clones, simbolos, minLiquidez, ...forma] = await Promise.all([
     cliente.readContract({ ...ci, functionName: 'MODEL_HASH' }),
     cliente.readContract({ ...ci, functionName: 'minStake' }),
     cliente.readContract({ ...ci, functionName: 'challengeBond' }),
@@ -163,7 +173,15 @@ export async function leerParametros(cliente: PublicClient): Promise<Parametros>
     cliente.readContract({ ...ci, functionName: 'cloneCount' }),
     cliente.readContract({ ...ci, functionName: 'symbolCount' }),
     cliente.readContract({ address: CIK.risk, abi: ciRiskAbi, functionName: 'minLiquidity' }),
+    // La forma de la red la dice el propio `Ci`: entrada y salida de cada capa.
+    cliente.readContract({ ...ci, functionName: 'IN0' }),
+    cliente.readContract({ ...ci, functionName: 'OUT0' }),
+    cliente.readContract({ ...ci, functionName: 'IN1' }),
+    cliente.readContract({ ...ci, functionName: 'OUT1' }),
+    cliente.readContract({ ...ci, functionName: 'IN2' }),
+    cliente.readContract({ ...ci, functionName: 'OUT2' }),
   ]);
+  const [in0, out0, in1, out1, in2, out2] = forma.map(Number);
   return {
     modelHash,
     minStake,
@@ -172,7 +190,18 @@ export async function leerParametros(cliente: PublicClient): Promise<Parametros>
     clones: Number(clones),
     simbolos: Number(simbolos),
     minLiquidez,
+    capas: [in0, out0, out1, out2],
+    pesos: in0 * out0 + in1 * out1 + in2 * out2,
   };
+}
+
+/**
+ * Cuántas veces más probable ve la red su clase que la segunda. `Ci` escala los
+ * logits por 2^S2 = 64 (la temperatura del entrenamiento), así que el margen
+ * entre 64 es el logaritmo natural de esa razón: 141 son unas 9 veces.
+ */
+export function vecesMasProbable(margen: bigint): number {
+  return Math.exp(Number(margen) / 64);
 }
 
 /**
@@ -288,6 +317,7 @@ const ABI_RIESGO = parseAbi([
   'function pairOf(address) view returns (address)',
   'function v3PoolsOf(address) view returns (address[4])',
 ]);
+const riesgo = { address: CIK.risk, abi: ciRiskAbi } as const;
 const ABI_PAR = parseAbi([
   'function getReserves() view returns (uint112, uint112, uint32)',
   'function token0() view returns (address)',
@@ -308,8 +338,6 @@ export interface Mercado {
   tokens: bigint;
   /** Solo el par V2: del LP, la parte en 0x0 y 0xdead. */
   lpQuemadoBps?: number;
-  /** La profundidad sale de la API de nad.fun, no de la cadena: se dice. */
-  wmonDeApi?: boolean;
 }
 
 export interface DatosToken {
@@ -331,15 +359,15 @@ export interface DatosToken {
 /**
  * Todo lo exacto que se puede leer de un token, para enseñar los números de
  * los que sale el veredicto y el riesgo: supply, dueño, código, mercados con lo
- * que guarda cada uno y dónde está el supply. Todo de la cadena, salvo dos
- * cosas que la cadena no puede decir y se piden fuera, con su nombre: si el
- * código está verificado (Sourcify) y el mercado de la curva de nad.fun.
+ * que guarda cada uno y dónde está el supply. Todo de la cadena, salvo una cosa
+ * que la cadena no puede decir y se pide fuera, con su nombre: si el código
+ * está verificado (Sourcify).
  */
 export async function datosDelToken(cliente: PublicClient, direccion: Address): Promise<DatosToken> {
   const tk = { address: direccion, abi: ABI_TOKEN } as const;
   const saldo = (a: Address) => intentar(() => cliente.readContract({ ...tk, functionName: 'balanceOf', args: [a] }));
 
-  const [codigo, supply, decimales, dueno, par, poolsV3, featuresHex, verificado, nadfun] = await Promise.all([
+  const [codigo, supply, decimales, dueno, par, poolsV3, featuresHex, verificado, curva, enCurva] = await Promise.all([
     cliente.getCode({ address: direccion }),
     intentar(() => cliente.readContract({ ...tk, functionName: 'totalSupply' })),
     intentar(() => cliente.readContract({ ...tk, functionName: 'decimals' })),
@@ -348,11 +376,14 @@ export async function datosDelToken(cliente: PublicClient, direccion: Address): 
     intentar(() => cliente.readContract({ address: CIK.risk, abi: ABI_RIESGO, functionName: 'v3PoolsOf', args: [direccion] })),
     intentar(() => cliente.readContract({ address: CIK.ci, abi: ciAbi, functionName: 'featuresOf', args: [direccion] })),
     enSourcify(direccion),
-    mercadoNadfun(direccion),
+    intentar(() => cliente.readContract({ ...riesgo, functionName: 'nadfunCurve' })),
+    intentar(() => cliente.readContract({ ...riesgo, functionName: 'nadfunLiquidity', args: [direccion] })),
   ]);
 
   // Los mercados: el par V2, los pools V3 de cada comisión, el PoolManager de V4
-  // y la curva de nad.fun. De cada uno, cuánto token y cuánto WMON guarda.
+  // y la curva de nad.fun. De cada uno, cuánto token y cuánto WMON guarda. El MON
+  // de la curva es el real que da `CiRisk` (la reserva virtual menos la inicial,
+  // la que suma a la liquidez del riesgo), no la reserva virtual que da la API.
   const mercados: Mercado[] = [];
   if (par && par !== CERO) {
     const p = { address: par, abi: ABI_PAR } as const;
@@ -386,9 +417,12 @@ export async function datosDelToken(cliente: PublicClient, direccion: Address): 
   // El PoolManager guarda los saldos de todos sus pools juntos: se sabe cuánto
   // token tiene, no cuánto WMON hay emparejado con él.
   if (enV4 && enV4 > 0n) mercados.push({ tipo: 'v4', direccion: POOL_MANAGER_V4, wmon: null, tokens: enV4 });
-  if (nadfun) {
-    const tokens = await saldo(nadfun.mercado);
-    mercados.push({ tipo: 'nadfun', direccion: nadfun.mercado, wmon: nadfun.reservaMon, tokens: tokens ?? 0n, wmonDeApi: true });
+  // Una sola curva guarda lo que queda por vender de todos sus tokens, y también
+  // WMON y lo que le manden: que tenga saldo no hace de ella un mercado del token.
+  // Lo es si `CiRisk` le ve MON real, que solo cuenta la curva de este token.
+  if (curva && curva !== CERO && enCurva && enCurva > 0n) {
+    const tokens = await saldo(curva);
+    mercados.push({ tipo: 'nadfun', direccion: curva, wmon: enCurva, tokens: tokens ?? 0n });
   }
 
   // Dónde está el supply. El dueño solo cuenta si es una cuenta de verdad, y lo
@@ -447,25 +481,6 @@ async function enSourcify(direccion: Address): Promise<boolean | null> {
   }
 }
 
-/**
- * El mercado del token en la curva de nad.fun, si lo tiene. La cadena no dice
- * qué contrato es la curva de cada token ni cuánto MON tiene detrás, así que se
- * pregunta a su API. Solo responde a panal.lat: en otro sitio, no hay dato.
- */
-async function mercadoNadfun(direccion: Address): Promise<{ mercado: Address; reservaMon: bigint | null } | null> {
-  try {
-    const r = await fetch(`https://api.nad.fun/agent/market/${direccion}`, { signal: AbortSignal.timeout(6_000) });
-    if (!r.ok) return null;
-    const j = (await r.json()) as { market_info?: { market_id?: string; reserve_native?: string } };
-    const id = j.market_info?.market_id;
-    if (!id || !/^0x[0-9a-fA-F]{40}$/.test(id)) return null;
-    const reserva = j.market_info?.reserve_native;
-    return { mercado: getAddress(id), reservaMon: reserva && /^\d+$/.test(reserva) ? BigInt(reserva) : null };
-  } catch {
-    return null;
-  }
-}
-
 /** Lo que dice cik de un bytecode suelto, sin desplegarlo. */
 export interface AnalisisCodigo {
   /** `verifyCode`: registro + modelo (si es un proxy EIP-1167, sobre su implementación). */
@@ -506,6 +521,10 @@ export interface Politica {
   blockSuspicious: boolean;
   /** Rechazar una palabra de estafa en el nombre o el símbolo (9). */
   blockSymbolScam: boolean;
+  /** Rechazar un proxy actualizable (11): su código puede cambiar después de mirarlo. */
+  blockUpgradeable: boolean;
+  /** Margen mínimo cuando la red dice ok (12); 0 = no se exige. No se aplica al registro. */
+  minOkMargin: bigint;
 }
 
 /** Más o menos lo que pondría un DEX prudente: la política con la que abre la página. */
@@ -516,11 +535,13 @@ export const POLITICA_INICIAL: Politica = {
   maxTop10Bps: 10_000,
   blockSuspicious: true,
   blockSymbolScam: true,
+  blockUpgradeable: false,
+  minOkMargin: 0n,
 };
 
 export interface ResultadoGuard {
   pasa: boolean;
-  /** 0 si pasa; si no, el código de `Unsafe(reason)`: 1..10. */
+  /** 0 si pasa; si no, el código de `Unsafe(reason)`: 1..12. */
   motivo: number;
 }
 
@@ -547,6 +568,8 @@ export async function probarPolitica(
       BigInt(politica.maxTop10Bps),
       politica.blockSuspicious,
       politica.blockSymbolScam,
+      politica.blockUpgradeable,
+      politica.minOkMargin,
     ],
   });
   if (!sonda) {
@@ -600,6 +623,7 @@ export const PERMISOS = [
   { bit: 32, clave: 'upgradeTo', puntos: 10 },
   { bit: 64, clave: 'delegatecall', puntos: 10 },
   { bit: 128, clave: 'selfdestruct', puntos: 20 },
+  { bit: 256, clave: 'proxy', puntos: 10 },
 ] as const;
 
 /**
@@ -624,7 +648,7 @@ export function motivosDeRiesgo(inf: Informe, minLiquidez: bigint, direccion: Ad
 /**
  * Nodos públicos de Monad a los que se puede preguntar desde el navegador
  * (dejan llamadas de otras webs y no recortan el gas de un `eth_call`, que
- * `check` necesita: ~8 M). Distintos del que usa la web, y de operadores
+ * `check` necesita: ~6 M). Distintos del que usa la web, y de operadores
  * distintos entre sí, para que comprobar no sea preguntarle otra vez a lo mismo.
  * Probados el 2026-10-22, con varias llamadas seguidas. No valen: drpc (corta
  * el gas), thirdweb (sin clave de cliente responde 429), Tatum (eth_call solo

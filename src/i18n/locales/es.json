@@ -2475,7 +2475,7 @@
           "honeypot": "veredicto del modelo: honeypot",
           "sospechoso": "veredicto del modelo: sospechoso"
         },
-        "sinLiquidez": "sin liquidez en V2 ni en V3 (la de V4 no se mide)",
+        "sinLiquidez": "sin liquidez en V2, V3 ni en la curva de nad.fun (la de V4 no se mide)",
         "base": "token base: no tiene par consigo mismo",
         "pocaLiquidez": "poca liquidez",
         "liquidezJusta": "liquidez justa",
@@ -2490,10 +2490,11 @@
           "transferOwnership": "el dueño se puede transferir",
           "upgradeTo": "actualizable (upgradeTo)",
           "delegatecall": "DELEGATECALL",
-          "selfdestruct": "SELFDESTRUCT"
+          "selfdestruct": "SELFDESTRUCT",
+          "proxy": "proxy actualizable"
         }
       },
-      "liquidez": "Liquidez (V2 + V3)",
+      "liquidez": "Liquidez (V2 + V3 + nad.fun)",
       "lpQuemado": "LP quemado",
       "concentracion": "La concentración de holders solo se mide con una lista de holders: pruébala en tu política, más abajo.",
       "nombre": "Nombre y símbolo",
@@ -2537,6 +2538,8 @@
       "registroSi": "código ya etiquetado: «{{clase}}»",
       "registroNo": "código nuevo: no está",
       "modeloDice": "dice «{{clase}}»",
+      "confianza": "La red lo ve unas {{veces}} veces más probable que «{{segunda}}».",
+      "confianzaPista": "Margen {{margen}}: el logit de la clase menos el de la segunda, en unidades de la última capa. CiGuardV2 puede exigir un mínimo.",
       "sonda": {
         "compra": "Al comprar, llega",
         "venta": "Al vender, llega",
@@ -2582,11 +2585,10 @@
       "m_v3": "Uniswap V3 · {{comision}} %",
       "m_v4": "Uniswap V4 · PoolManager",
       "m_nadfun": "Curva de nad.fun",
-      "deApi": "API de nad.fun",
       "guarda": "guarda {{parte}} del supply",
       "lpQuemado": "LP quemado {{pct}} %",
       "v4Pista": "V4 guarda todos sus pools juntos: no se sabe su MON por token",
-      "mercadosPista": "Profundidad: el MON (WMON) que hay en cada mercado, leído ahora de la cadena; el de nad.fun lo da su API. Un mercado poco profundo se mueve con poco dinero."
+      "mercadosPista": "Profundidad: el MON (WMON) que hay en cada mercado, leído ahora de la cadena; en la curva de nad.fun, el MON real que cuenta CiRisk, sin la reserva virtual. Un mercado poco profundo se mueve con poco dinero."
     },
     "codigo": {
       "sub": "Pega bytecode en hexadecimal (0x…). cik lo clasifica sin desplegarlo; sin dirección, el nombre y el símbolo no cuentan.",
@@ -2603,7 +2605,9 @@
         "exactos": "selectores conocidos",
         "banderas": "banderas",
         "estadisticas": "estadísticas",
-        "nombre": "nombre y símbolo"
+        "nombre": "nombre y símbolo",
+        "recuentos": "recuentos (CALLER, ORIGIN, TIMESTAMP + NUMBER, PUSH20)",
+        "libres": "sin usar"
       }
     },
     "politica": {
@@ -2617,6 +2621,9 @@
       "maxTop10": "Máximo de diez holders (%)",
       "bloquearSospechoso": "Rechazar lo sospechoso",
       "bloquearEstafa": "Rechazar palabras de estafa en el nombre o el símbolo",
+      "bloquearActualizable": "Rechazar proxies actualizables (su código puede cambiar después de mirarlo)",
+      "minMargen": "Margen mínimo cuando la red dice ok",
+      "minMargenPista": "0 = no se exige. 141 es que la red ve «ok» unas 9 veces más probable que la segunda clase. No se aplica a lo que decide el registro de clones.",
       "conSonda": "Con la sonda de compra y venta (requireSafeWithProbe)",
       "holders": "Holders que comprobar (opcional)",
       "holdersPista": "Una dirección por línea, hasta {{n}}. CiRisk comprueba sus saldos en la cadena; sin lista, la concentración no cuenta.",
@@ -2633,7 +2640,9 @@
         "m7": "Un holder tiene más del máximo.",
         "m8": "Diez holders tienen más del máximo.",
         "m9": "Hay una palabra de estafa en el nombre o el símbolo.",
-        "m10": "La sonda dice honeypot."
+        "m10": "La sonda dice honeypot.",
+        "m11": "Es un proxy actualizable: su código puede cambiar después de mirarlo.",
+        "m12": "La red dice ok, pero con un margen menor que el mínimo."
       },
       "malHolders": "Hay una línea que no es una dirección.",
       "demasiados": "Como mucho {{n}} holders.",
@@ -2675,15 +2684,15 @@
     "detras": {
       "title": "Qué hay detrás, y sus límites",
       "p1t": "Un modelo entero en la cadena",
-      "p1": "Una red neuronal de 256 → 512 → 256 → 4 con 263.168 pesos de 8 bits, guardados en cinco contratos de datos. Ci la ejecuta sobre el bytecode, sin oráculos ni APIs: el mismo contrato da la misma respuesta a cualquiera.",
+      "p1": "Una red neuronal de {{red}} con {{pesos}} pesos de 8 bits, guardados en tres contratos de datos. Ci la ejecuta sobre el bytecode, sin oráculos ni APIs: el mismo contrato da la misma respuesta a cualquiera.",
       "p2t": "Tres fuentes, en orden",
       "p2": "Primero la sonda: pide prestado un poco del token en los mercados de Uniswap V2, V3 y V4, lo devuelve y mide lo que llega, en una llamada que revierte siempre. Después, el registro de clones, con {{clones}} contratos ya etiquetados. Y si no está ahí, el modelo.",
       "p3t": "Lo que no hace",
-      "l1": "No es una auditoría. En contratos que no vio al entrenar, el modelo detecta unos 2 de cada 3 maliciosos y da falsa alarma en unos 6 de cada 100 legítimos; con la sonda, los honeypots caen casi todos.",
+      "l1": "No es una auditoría. En código que no vio al entrenar, el modelo reconoce casi todas las plantillas de estafa ya conocidas en Monad; con código nuevo detecta unos 6 de cada 10 tokens maliciosos y da falsa alarma en unos 3 de cada 10 legítimos. Con la sonda, los honeypots caen casi todos.",
       "l2": "Se entrenó con contratos de Ethereum: en Monad hay tipos de token que no vio.",
       "l3": "Sigue los proxies mínimos (EIP-1167), pero no los actualizables (EIP-1967): de esos juzga el proxy, no su implementación.",
-      "l4": "CiRisk no mide la liquidez de Uniswap V4, que guarda todos sus pools juntos: un token que solo cotiza en V4 sale «sin liquidez» aunque la sonda lo compre y lo venda.",
-      "contratos": "Los contratos (v1.1), con su código verificado",
+      "l4": "CiRisk no mide la liquidez de Uniswap V4, que guarda todos sus pools juntos: un token que solo cotiza en V4 sale «sin liquidez» aunque la sonda lo compre y lo venda. La de la curva de nad.fun sí cuenta.",
+      "contratos": "Los contratos (v2), con su código verificado",
       "verificado": "código en Sourcify"
     }
   }

@@ -13,7 +13,7 @@
 import { useTranslation } from 'react-i18next';
 import { Check, CircleSlash, ShieldAlert, ShieldCheck, ShieldX, X } from 'lucide-react';
 import type { ComponentType } from 'react';
-import { CLASES, NIVELES, type Analisis, type Motivo, type Sonda } from '@/lib/cik';
+import { CLASES, NIVELES, vecesMasProbable, type Analisis, type Motivo, type Sonda } from '@/lib/cik';
 import { cn } from '@/lib/utils';
 import { porcentaje } from './comun';
 
@@ -76,7 +76,7 @@ export function EscalaVeredicto({ clase }: { clase: number }) {
  * que decidió va resaltado; los de después no hizo falta mirarlos.
  */
 export function CaminoDecision({ a }: { a: Analisis }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (!a.fuente || !a.informe) return null;
   const inf = a.informe;
   const s = a.sonda;
@@ -95,6 +95,19 @@ export function CaminoDecision({ a }: { a: Analisis }) {
     }
     return t('cik.graf.modeloDice', { clase: t(`cik.res.clase.${CLASES[inf.modelClass] ?? 'ok'}`) });
   };
+
+  // La confianza de la red: solo cuando decidió ella (la sonda y el registro no dudan).
+  const veces = a.fuente === 'modelo' ? vecesMasProbable(inf.margin) : null;
+  const confianza =
+    veces === null
+      ? null
+      : t('cik.graf.confianza', {
+          veces:
+            veces >= 1000
+              ? `${(1000).toLocaleString(i18n.language)}+`
+              : veces.toLocaleString(i18n.language, { maximumFractionDigits: veces < 10 ? 1 : 0 }),
+          segunda: t(`cik.res.clase.${CLASES[inf.runnerUp] ?? 'ok'}`),
+        });
 
   return (
     <div className="mt-5">
@@ -119,6 +132,11 @@ export function CaminoDecision({ a }: { a: Analisis }) {
               <p className="mt-1 text-[0.8125rem] leading-snug text-ink">
                 {despues ? t('cik.graf.noHizoFalta') : resultado(paso)}
               </p>
+              {esEste && paso === 'modelo' && confianza && (
+                <p className="mt-1 text-[0.75rem] leading-snug text-ink-2" title={t('cik.graf.confianzaPista', { margen: inf.margin.toString() })}>
+                  {confianza}
+                </p>
+              )}
               {esEste && (
                 <span className="mt-1.5 inline-flex rounded-full bg-honey px-2 py-0.5 text-[0.6875rem] font-semibold text-[#1B1814]">
                   {t('cik.graf.decidio')}
@@ -284,7 +302,9 @@ const GRUPOS = [
   { clave: 'exactos', desde: 128, hasta: 192 },
   { clave: 'banderas', desde: 192, hasta: 224 },
   { clave: 'estadisticas', desde: 224, hasta: 242 },
-  { clave: 'nombre', desde: 242, hasta: 256 },
+  { clave: 'nombre', desde: 242, hasta: 248 },
+  { clave: 'recuentos', desde: 248, hasta: 252 },
+  { clave: 'libres', desde: 252, hasta: 256 },
 ] as const;
 
 /**

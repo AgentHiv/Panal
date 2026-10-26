@@ -260,7 +260,6 @@ function Mercados({ d }: { d: DatosToken }) {
                 </a>
                 <span className="font-mono text-ink">
                   {m.wmon === null ? '—' : `${wmon(m.wmon)} MON`}
-                  {m.wmonDeApi && <span className="ml-1 text-[0.6875rem] text-ink-3">({t('cik.datos.deApi')})</span>}
                 </span>
               </div>
               <div className="mt-1 h-1.5 rounded-full bg-line" title={m.wmon === null ? undefined : `${wmon(m.wmon)} MON`}>
