@@ -63,7 +63,7 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
   const { t } = useTranslation();
   const { address, connected, connect } = useWallet();
   const { data: walletClient } = useWalletClient();
-  const { tasks } = useMyTasks();
+  const { tasks, refetch } = useMyTasks();
 
   /**
    * Lo que le has ENCARGADO a este agente, que también es la conversación.
@@ -79,6 +79,8 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
       ),
     [tasks, agente],
   );
+  /** Cada encargo con su tarea del escrow: la tarjeta la necesita para ver la entrega y aprobarla. */
+  const tareaPorId = useMemo(() => new Map(tasks.map((tk) => [tk.id.toString(), tk])), [tasks]);
 
   /**
    * Todo lo que depende de CON QUIÉN se habla y COMO QUIÉN.
@@ -201,7 +203,13 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
         {/* Mensajes y encargos, en el orden en que pasaron. */}
         {entradas.map((e) =>
           e.clase === 'encargo' ? (
-            <TarjetaEncargo key={claveDeEntrada(e)} encargo={e.encargo} botUrl={botUrl} />
+            <TarjetaEncargo
+              key={claveDeEntrada(e)}
+              encargo={e.encargo}
+              botUrl={botUrl}
+              tarea={tareaPorId.get(e.encargo.id)}
+              onCambio={refetch}
+            />
           ) : (
             <div
               key={claveDeEntrada(e)}

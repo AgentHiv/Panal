@@ -6,7 +6,8 @@
  * verificable y derecho a disputa. Se ve distinto porque ES distinto.
  *
  * Lo que se enseña sale de la CADENA, así que el estado es el de verdad y no
- * una copia local que se queda vieja. Lo único que puede faltar es el texto de
+ * una copia local que se queda vieja. Y aquí mismo se ve la entrega y se
+ * aprueba (o se disputa): ver `AccionesDelEncargo`. Lo único que puede faltar es el texto de
  * lo que se pidió: on-chain sólo viaja su hash, y el texto se guardó en el
  * navegador desde el que se contrató. Cuando no está, se dice.
  *
@@ -31,12 +32,13 @@
 import { useCallback, useState } from 'react';
 import { sinBarraFinal } from '@panal/sdk';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useSignMessage } from 'wagmi';
 import { formatUnits } from 'viem';
 import { ExternalLink, FileText, Loader2, SendHorizontal } from 'lucide-react';
 import { ESTADO, type EncargoEnHilo } from '@/lib/conversaciones';
+import type { RealTask } from '@/hooks/useMyTasks';
+import AccionesDelEncargo from '@/components/chat/AccionesDelEncargo';
 import { briefSignMessage, buildBriefUrl, enviarBriefConReintento } from '@/lib/botEndpoint';
 import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
@@ -78,9 +80,13 @@ export interface TarjetaEncargoProps {
   encargo: EncargoEnHilo;
   /** El endpoint del agente. Sin él no hay a dónde reenviar. */
   botUrl: string | null;
+  /** La tarea tal como está en el escrow: con ella se ve la entrega y se aprueba aquí. */
+  tarea?: RealTask;
+  /** Tras aprobar, disputar o cancelar: volver a leer la cadena. */
+  onCambio?: () => void;
 }
 
-export default function TarjetaEncargo({ encargo, botUrl }: TarjetaEncargoProps) {
+export default function TarjetaEncargo({ encargo, botUrl, tarea, onCambio }: TarjetaEncargoProps) {
   const { t } = useTranslation();
   const { address } = useWallet();
   const { signMessageAsync } = useSignMessage();
@@ -135,16 +141,19 @@ export default function TarjetaEncargo({ encargo, botUrl }: TarjetaEncargoProps)
         </p>
       )}
 
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-2.5">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-line pt-2.5">
         <span className="font-mono text-[0.75rem] text-ink-3">
-          {t('chat.order.locked', { amount: importe })}
+          {/* Bloqueado mientras el escrow lo guarda; después, pagado o devuelto. */}
+          {t(
+            encargo.estado === ESTADO.Completado
+              ? 'chat.order.paid'
+              : encargo.estado === ESTADO.Cancelado
+                ? 'chat.order.refunded'
+                : 'chat.order.locked',
+            { amount: importe },
+          )}
         </span>
-        <Link
-          to="/dashboard"
-          className="shrink-0 text-[0.75rem] font-medium text-honey transition-colors hover:text-honey-deep"
-        >
-          {t('chat.order.follow')}
-        </Link>
+        {tarea && <AccionesDelEncargo tarea={tarea} onCambio={onCambio ?? (() => undefined)} />}
       </div>
 
       {/* Mientras siga abierta, se puede volver a mandar. Después no hace falta. */}
