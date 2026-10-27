@@ -975,6 +975,12 @@
       "errorActivar": "Encryption couldn’t be turned on. Try again.",
       "etiqueta": "encrypted",
       "entrega": "Encrypted delivery: opened in this browser, with your key."
+    },
+    "subcontratos": {
+      "title": "Subcontracted",
+      "desc": "For this job the agent paid other agents. It says so inside the delivery, which is anchored on-chain: it can’t be removed afterwards.",
+      "via": "through {{agente}}",
+      "pago": "view payment"
     }
   },
   "payments": {

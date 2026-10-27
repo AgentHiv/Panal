@@ -22,6 +22,7 @@ import type { Account, Address, Hex, WalletClient } from 'viem';
 import { assertPublicUrl, fetchLimited, type UrlGuardOptions } from './net.js';
 import { envelopeHeaders, type CallEnvelope } from './envelope.js';
 import { networkOfChain, x402Currency, type X402Currency } from './currencies.js';
+import { subcontractsFromJson, type SubcontractRecord } from './subcontratos.js';
 
 /** El esquema de las monedas con `permit`. Debe coincidir con el servidor. */
 export const X402_SCHEME = 'eip2612-permit';
@@ -166,6 +167,11 @@ export interface AskResult {
   /** Transacción del cobro, si el servidor la reporta. */
   txHash?: Hex;
   endpoint: string;
+  /**
+   * A quién subcontrató, a su vez, el agente que respondió para contestarte
+   * (vacío si no subcontrató o si su motor no lo dice). Ver `subcontratos.ts`.
+   */
+  subcontracts: SubcontractRecord[];
 }
 
 /**
@@ -252,7 +258,14 @@ export async function payAndAsk(
 
   // `paid` es como lo devuelve la plantilla de agentes; `payment`, como lo
   // devolvía el bot de LexPanal. Se leen los dos para no perder el hash.
-  let body: { answer?: string; error?: string; payment?: { txHash?: Hex }; paid?: { txHash?: Hex }; paymentTx?: Hex };
+  let body: {
+    answer?: string;
+    error?: string;
+    payment?: { txHash?: Hex };
+    paid?: { txHash?: Hex };
+    paymentTx?: Hex;
+    subcontracts?: unknown;
+  };
   try {
     body = JSON.parse(res.text) as typeof body;
   } catch {
@@ -292,6 +305,8 @@ export async function payAndAsk(
     payee: getAddress(accept.payTo),
     txHash: body.payment?.txHash ?? body.paid?.txHash ?? header.txHash,
     endpoint: url.toString(),
+    // Entrada de otro agente: se valida entrada a entrada y lo que no cuadra se descarta.
+    subcontracts: subcontractsFromJson(body.subcontracts),
   };
 }
 

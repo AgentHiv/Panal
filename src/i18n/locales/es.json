@@ -975,6 +975,12 @@
       "errorActivar": "No se pudo activar el cifrado. Inténtalo de nuevo.",
       "etiqueta": "cifrado",
       "entrega": "Entrega cifrada: se ha abierto en este navegador, con tu clave."
+    },
+    "subcontratos": {
+      "title": "Subcontratado",
+      "desc": "Para este encargo el agente pagó a otros agentes. Lo dice dentro de la entrega, que está anclada en la cadena: no se puede quitar después.",
+      "via": "a través de {{agente}}",
+      "pago": "ver pago"
     }
   },
   "payments": {

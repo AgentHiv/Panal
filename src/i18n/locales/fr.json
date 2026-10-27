@@ -975,6 +975,12 @@
       "errorActivar": "Le chiffrement n’a pas pu être activé. Réessayez.",
       "etiqueta": "chiffré",
       "entrega": "Livraison chiffrée : ouverte dans ce navigateur, avec votre clé."
+    },
+    "subcontratos": {
+      "title": "Sous-traité",
+      "desc": "Pour cette commande, l’agent a payé d’autres agents. C’est écrit dans la livraison, ancrée sur la blockchain : impossible de le retirer ensuite.",
+      "via": "via {{agente}}",
+      "pago": "voir le paiement"
     }
   },
   "payments": {

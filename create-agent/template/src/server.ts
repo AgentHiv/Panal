@@ -28,6 +28,10 @@ import { fileURLToPath } from 'node:url';
 import {
   MAX_FILE_BYTES,
   appendFilesManifest,
+  appendSubcontractsManifest,
+  subcontractsOfAnswer,
+  subcontractsToJson,
+  type SubcontractRecord,
   assertCanServe,
   buildQuote,
   createPanalClient,
@@ -792,6 +796,12 @@ function contexto(
     historial: Turno[];
   },
   sobre: CallEnvelope | null,
+  /**
+   * Donde se apunta cada subcontratación, para decírselo a quien encargó: va en
+   * la entrega (anclada con ella) o en la respuesta x402. Lo apunta el motor y
+   * no tu `handleTask`, para que ningún agente pueda olvidarse de decirlo.
+   */
+  subcontratos: SubcontractRecord[] = [],
 ): TaskContext {
   // Se resuelve aquí y no en cada llamador para que no haya dos maneras de
   // decidirlo. En x402 es SIEMPRE null: no hay escrow, y el importe de una
@@ -839,6 +849,19 @@ function contexto(
       });
       console.log(
         `[panal] consulta a ${res.agent} por ${formatX402Amount(res.paid, res.currency)} ${res.currency.symbol} (${skill}) · trace ${sobre?.trace ?? 'nuevo'}`,
+      );
+      // A quién se pagó, y detrás a quién pagó él a su vez para responder.
+      subcontratos.push(
+        ...subcontractsOfAnswer(
+          {
+            agent: res.agent,
+            skill: res.skill,
+            amount: res.paid,
+            currency: { symbol: res.currency.symbol, address: res.currency.address, decimals: res.currency.decimals },
+            ...(res.txHash ? { txHash: res.txHash } : {}),
+          },
+          res.subcontracts,
+        ),
       );
       return res.answer;
     },
@@ -953,6 +976,7 @@ async function work(
     if (recibidos.length > 0) console.log(`[panal] #${taskId} con ${recibidos.length} adjunto(s) del cliente`);
 
     const task = await leerTarea(taskId);
+    const subcontratos: SubcontractRecord[] = [];
     const salida = await handleTask(
       brief,
       contexto(
@@ -967,13 +991,18 @@ async function work(
           historial: [],
         },
         sobre,
+        subcontratos,
       ),
     );
 
     // Tu handleTask puede devolver un texto a secas —lo normal— o un texto con
     // archivos. Los archivos se escriben en disco y su hash se cuela en el
     // texto: lo que se ancla en la cadena pasa a cubrirlos también.
-    const { text: cuerpo, files } = normalizarSalida(salida);
+    const { text: textoDelAgente, files } = normalizarSalida(salida);
+    // Si subcontrató, se dice en la entrega: a quién, para qué, cuánto y con qué
+    // pago. Va dentro del texto que se ancla, así que no se puede quitar después.
+    if (subcontratos.length) console.log(`[panal] #${taskId} lleva ${subcontratos.length} subcontratación(es) en la entrega`);
+    const cuerpo = appendSubcontractsManifest(textoDelAgente, subcontratos);
     // En el tablón los archivos van por SU buzón, que solo los da al cliente
     // que publicó. Se guardan también en disco: si el proceso muere antes de
     // subirlos, retomar los vuelve a subir de ahí.
@@ -1656,6 +1685,7 @@ const server = createServer((req, res) => {
       // Ya está cobrado: pase lo que pase a partir de aquí, hay que responder
       // algo. Si el modelo revienta, se dice; callarse sería quedarse el dinero.
       try {
+        const subcontratos: SubcontractRecord[] = [];
         const salida = await handleTask(
           prompt,
           contexto(
@@ -1674,6 +1704,7 @@ const server = createServer((req, res) => {
               historial: historialParaElModelo(DATA_DIR, leido.payment.payer),
             },
             sobre,
+            subcontratos,
           ),
         );
         // En una llamada x402 no hay tarea, así que no hay nada que anclar ni
@@ -1688,7 +1719,12 @@ const server = createServer((req, res) => {
           );
         }
         res.setHeader('x-payment-tx', cobro.txHash);
-        json(res, 200, { answer, paid: { txHash: cobro.txHash, amount: cobro.amount.toString(), asset: X402_TOKEN } });
+        json(res, 200, {
+          answer,
+          paid: { txHash: cobro.txHash, amount: cobro.amount.toString(), asset: X402_TOKEN },
+          // A quién se pagó para contestarte: quien pregunta lo pasa a SU cliente.
+          ...(subcontratos.length ? { subcontracts: subcontractsToJson(subcontratos) } : {}),
+        });
 
         // El turno se guarda AQUÍ, con las dos mitades y sólo si hubo
         // respuesta. Guardarlo antes de trabajar dejaría preguntas sin

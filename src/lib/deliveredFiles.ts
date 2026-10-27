@@ -131,13 +131,20 @@ export function parseFilesManifest(text: string): DeliveredFile[] {
   return out;
 }
 
-/** El texto sin los bloques: lo que se le enseña a una persona. */
+/**
+ * Cualquier cabecera de bloque de Panal (`[panal-files/1]`,
+ * `[panal-subcontracts/1]`…), como en el SDK: un bloque nuevo no debe salirle
+ * a nadie como texto de su entrega.
+ */
+const CABECERA_DE_BLOQUE = /^\[panal-[a-z]+\/\d+\]$/;
+
+/** El texto sin los bloques: lo que se le enseña a una persona. Lo que dicen se enseña aparte. */
 export function stripFilesManifest(text: string): string {
   const fuera: string[] = [];
   let dentro = false;
 
   for (const linea of text.split(/\r?\n/)) {
-    if (linea.trim() === FILES_BLOCK) {
+    if (CABECERA_DE_BLOQUE.test(linea.trim())) {
       dentro = true;
       continue;
     }

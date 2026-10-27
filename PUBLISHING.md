@@ -2,7 +2,13 @@
 
 ## Pendiente ahora
 
-Nada. Lo último publicado: `@panal/sdk` 0.26.0, `create-panal-agent` 0.27.0 y
+Publicar, en este orden: `@panal/sdk` **0.27.0**, después `panal-mcp` **0.20.0** y
+`create-panal-agent` **0.28.0**. Lo nuevo: el apartado «Subcontratado» —a qué
+agentes pagó uno para hacer un encargo, anclado dentro de la entrega— y la lista
+`subcontracts` en las respuestas x402. Después, Lint y Spec (los que
+subcontratan) tienen que llevar el motor nuevo.
+
+Lo último publicado: `@panal/sdk` 0.26.0, `create-panal-agent` 0.27.0 y
 `panal-mcp` 0.19.0 (cifrado de punta a punta: encargos del buzón, tablón
 confidencial y disputas), y el APK 2.26.0. El buzón de producción ya sirve
 `/clave`, `/access` y `/dispute`, y los cinco agentes llevan el motor de la 0.27.0.

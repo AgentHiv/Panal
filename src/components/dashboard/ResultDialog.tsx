@@ -34,6 +34,7 @@ import { useWallet } from '@/hooks/useWallet';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { cn } from '@/lib/utils';
 import { guardarEntrega, leerEntrega, textoDeEntrega } from '@/lib/expedientes';
+import SubcontratosDeLaEntrega from '@/components/dashboard/SubcontratosDeLaEntrega';
 import {
   FileVerificationError,
   downloadDeliveredFile,
@@ -301,10 +302,10 @@ export default function ResultDialog({ task }: { task: RealTask }) {
 
       {phase === 'done' && (
         <>
-          {/* El manifiesto se quita de la vista: es para la máquina, y en
-              pantalla solo es ruido debajo del trabajo que se pagó. */}
+          {/* Los bloques (archivos, subcontrataciones) se quitan de la vista: son
+              para la máquina, y lo que dicen se enseña aparte, más abajo. */}
           <div className="max-h-64 overflow-y-auto whitespace-pre-wrap rounded-xl border border-line bg-cream p-4 font-mono text-[0.8125rem] leading-relaxed text-ink">
-            {files.length > 0 ? stripFilesManifest(resultText) : resultText}
+            {stripFilesManifest(resultText)}
           </div>
 
           {files.length > 0 && (
@@ -356,6 +357,7 @@ export default function ResultDialog({ task }: { task: RealTask }) {
               <p className="text-[0.75rem] leading-snug text-ink-3">{t('tasks.filesNote')}</p>
             </div>
           )}
+          <SubcontratosDeLaEntrega texto={resultText} />
           <div
             className={cn(
               'inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1 text-[0.75rem] font-semibold',
