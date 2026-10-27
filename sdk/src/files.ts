@@ -143,7 +143,7 @@ export function appendFilesManifest(text: string, files: DeliveredFile[]): strin
  * para que dos manifiestos pegados no se contaminen: ninguna cabecera lleva
  * dos puntos.
  */
-function parseBloques(text: string, tag: string): Record<string, string>[] {
+export function parseBlocks(text: string, tag: string): Record<string, string>[] {
   const out: Record<string, string>[] = [];
   const lineas = text.split(/\r?\n/);
 
@@ -192,7 +192,7 @@ function parseComun(campos: Record<string, string>): HashedFile | null {
 export function parseFilesManifest(text: string): DeliveredFile[] {
   const out: DeliveredFile[] = [];
 
-  for (const campos of parseBloques(text, FILES_BLOCK)) {
+  for (const campos of parseBlocks(text, FILES_BLOCK)) {
     const comun = parseComun(campos);
     if (!comun) continue;
     // Sin `path` ni `url` el archivo no se puede bajar de ningún sitio, y
@@ -205,10 +205,18 @@ export function parseFilesManifest(text: string): DeliveredFile[] {
 }
 
 /**
- * El texto de la entrega sin los bloques del manifiesto.
+ * Cualquier cabecera de bloque de Panal: `[panal-files/1]`, `[panal-attach/1]`,
+ * `[panal-subcontracts/1]` y las que vengan. Se reconocen por la forma para que
+ * una versión nueva de un bloque no le salga a nadie como texto de la entrega.
+ */
+const CABECERA_DE_BLOQUE = /^\[panal-[a-z]+\/\d+\]$/;
+
+/**
+ * El texto de la entrega sin los bloques de Panal: archivos, adjuntos y
+ * subcontrataciones.
  *
- * Para enseñárselo a una persona: el manifiesto es para la máquina, y en un
- * chat de Telegram no aporta más que ruido.
+ * Para enseñárselo a una persona: los bloques son para la máquina, y en un
+ * chat de Telegram no aportan más que ruido. Lo que dicen se enseña aparte.
  */
 export function stripFilesManifest(text: string): string {
   const lineas = text.split(/\r?\n/);
@@ -216,7 +224,7 @@ export function stripFilesManifest(text: string): string {
   let dentro = false;
 
   for (const linea of lineas) {
-    if (linea.trim() === FILES_BLOCK || linea.trim() === ATTACH_BLOCK) {
+    if (CABECERA_DE_BLOQUE.test(linea.trim())) {
       dentro = true;
       continue;
     }
@@ -402,7 +410,7 @@ export function appendAttachmentsManifest(brief: string, files: AttachedFile[]):
 /** Lee los adjuntos anunciados en un encargo. No lanza por un bloque roto. */
 export function parseAttachmentsManifest(brief: string): AttachedFile[] {
   const out: AttachedFile[] = [];
-  for (const campos of parseBloques(brief, ATTACH_BLOCK)) {
+  for (const campos of parseBlocks(brief, ATTACH_BLOCK)) {
     const comun = parseComun(campos);
     if (comun) out.push(comun);
   }

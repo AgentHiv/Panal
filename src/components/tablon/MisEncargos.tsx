@@ -53,6 +53,7 @@ import { cn } from '@/lib/utils';
 import { ListaDeArchivos } from './Archivos';
 import { Chip, Girando, Importe, NombreDeCategoria } from './comun';
 import { BOTON_LINEA, BOTON_MIEL, BOTON_OLIVA, BOTON_PELIGRO, cantidad, useAgenteDe, useDuracion, useFecha } from './util';
+import SubcontratosDeLaEntrega from '@/components/dashboard/SubcontratosDeLaEntrega';
 
 /** Estados del escrow (PanalEscrowV2.Status). */
 const ABIERTA = 0;
@@ -584,6 +585,9 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
             cifrado={entregaCifrada}
             abrir={(bytes) => abrirBytes(bytes, yo, firmar, accesosEntrega)}
           />
+          <div className="mt-3">
+            <SubcontratosDeLaEntrega texto={entrega} />
+          </div>
           <button type="button" onClick={descargar} className={cn(BOTON_LINEA, 'mt-3')}>
             {t('tablon.mios.descargar')}
           </button>

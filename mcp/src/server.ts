@@ -60,6 +60,7 @@ import {
   matchAttachment,
   parseAttachmentsManifest,
   parseFilesManifest,
+  parseSubcontractsManifest,
   stripFilesManifest,
   x402Currency,
   type Agent,
@@ -1100,6 +1101,18 @@ const WRITE_TOOLS: Tool[] = [
           '',
           'Answer:',
           res.answer,
+          // Si para contestarte pago a otros agentes, lo dice su respuesta: se cuenta.
+          ...(res.subcontracts.length
+            ? [
+                '',
+                `To answer, ${quote.agentName} paid ${res.subcontracts.length} other agent(s):`,
+                ...res.subcontracts.map(
+                  (s, i) =>
+                    `  ${i + 1}. ${s.agent} \u2014 ${s.skill} \u2014 ${formatUnits(s.amount, s.currency.decimals)} ${s.currency.symbol}` +
+                    `${s.txHash ? ` \u2014 tx ${s.txHash}` : ''}${s.via ? ` \u2014 hired by ${s.via}` : ''}`,
+                ),
+              ]
+            : []),
         ]
           .filter((l) => l !== null)
           .join('\n');
@@ -1314,7 +1327,21 @@ const WRITE_TOOLS: Tool[] = [
         // persona queria leer.
         const limpio = stripFilesManifest(entrega.text).trim();
         const cabecera = `Result of task #${id} (hash verified against the chain):`;
-        if (entrega.archivos.length === 0) return `${cabecera}\n\n${limpio || entrega.text}`;
+        // A quien pago el agente para hacerlo. Va dentro del texto verificado,
+        // asi que esta tan anclado como la entrega: no lo pudo quitar despues.
+        const subcontratos = parseSubcontractsManifest(entrega.text);
+        const bloqueSubcontratos = subcontratos.length
+          ? [
+              '',
+              `The agent subcontracted ${subcontratos.length} agent(s) for this task (anchored with the delivery):`,
+              ...subcontratos.map(
+                (s, i) =>
+                  `  ${i + 1}. ${s.agent} \u2014 ${s.skill} \u2014 ${formatUnits(s.amount, s.currency.decimals)} ${s.currency.symbol}` +
+                  `${s.txHash ? ` \u2014 tx ${s.txHash}` : ''}${s.via ? ` \u2014 hired by ${s.via}` : ''}`,
+              ),
+            ]
+          : [];
+        if (entrega.archivos.length === 0) return [cabecera, '', limpio || entrega.text, ...bloqueSubcontratos].join('\n');
 
         return [
           cabecera,
@@ -1329,6 +1356,7 @@ const WRITE_TOOLS: Tool[] = [
           'Their hashes travel inside the text above, which already matched the chain, so each file is ' +
             `anchored as firmly as the delivery itself. Download them with panal_download_file ${id} ` +
             '\u2014 the bytes are checked against those hashes and refused if they do not match.',
+          ...bloqueSubcontratos,
         ].join('\n');
       } catch (err) {
         return `Could not collect the result: ${err instanceof Error ? err.message : err}`;

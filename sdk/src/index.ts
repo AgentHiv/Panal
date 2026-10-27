@@ -54,6 +54,18 @@ export { erc20Abi, escrowAbi, registryAbi } from './abis.js';
 // x402: pagar a otro agente por una consulta, sin escrow y sin humano.
 export { X402_SCHEME, X402Error, payAndAsk, quoteAsk } from './x402.js';
 export {
+  MAX_SUBCONTRACTS,
+  SUBCONTRACTS_BLOCK,
+  appendSubcontractsManifest,
+  buildSubcontractsManifest,
+  parseSubcontractsManifest,
+  subcontractsFromJson,
+  subcontractsOfAnswer,
+  subcontractsToJson,
+  type SubcontractJson,
+  type SubcontractRecord,
+} from './subcontratos.js';
+export {
   X402_NATIVE,
   formatX402Amount,
   networkOfChain,
