@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { AlertTriangle, ExternalLink, Hexagon, Loader2, Lock, Paperclip, RefreshCw, Star } from 'lucide-react';
+import { AlertTriangle, Hexagon, Loader2, Lock, Paperclip, RefreshCw, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { formatEther, keccak256, toBytes } from 'viem';
@@ -56,12 +56,12 @@ import { ACTIVE_ESCROW_ABI, ACTIVE_ESCROW_ADDRESS, TASK_STATUS, useMyTasks } fro
 import type { RealTask } from '@/hooks/useMyTasks';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
 import ResultDialog from '@/components/dashboard/ResultDialog';
+import TxProgress from '@/components/dashboard/TxProgress';
 import { useContractAction } from '@/hooks/useContractAction';
 import { useAccesoEnDisputa } from '@/hooks/useAccesoEnDisputa';
 import type { ContractActionRequest } from '@/hooks/useContractAction';
 import { shortAddress } from '@/hooks/useWallet';
 import {
-  EXPLORER_TX,
   NATIVE_CURRENCY,
   PANAL_TOKEN_ADDRESS,
   V2_ENABLED,
@@ -104,59 +104,6 @@ type DialogKind = 'deliver' | 'approve' | 'dispute' | 'cancel' | 'autoRelease' |
 interface ActionDialogState {
   kind: DialogKind;
   task: RealTask;
-}
-
-/** Vista de progreso/éxito de tx dentro de los diálogos. */
-function TxProgress({
-  action,
-  onClose,
-}: {
-  action: ReturnType<typeof useContractAction>;
-  onClose: () => void;
-}) {
-  const { t } = useTranslation();
-  if (action.mined && action.txHash) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-4 text-center">
-        <p className="font-display text-ink">{t('dashReal.txConfirmed')}</p>
-        <a
-          href={EXPLORER_TX(action.txHash)}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 font-mono text-[12px] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
-        >
-          {t('hire.step3.viewTx')}
-          <ExternalLink size={13} />
-        </a>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey"
-        >
-          {t('common.close')}
-        </button>
-      </div>
-    );
-  }
-  return (
-    <div className="flex flex-col items-center gap-3 py-6 text-center">
-      <Loader2 size={28} className="animate-spin text-honey-deep" aria-hidden />
-      <p className="text-[0.875rem] font-medium text-ink">
-        {action.signing ? t('hire.step3.signing') : t('hire.step3.confirming')}
-      </p>
-      {action.txHash && (
-        <a
-          href={EXPLORER_TX(action.txHash)}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 font-mono text-[12px] text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
-        >
-          {t('hire.step3.viewTx')}
-          <ExternalLink size={13} />
-        </a>
-      )}
-    </div>
-  );
 }
 
 function EmptyTab({ title, desc }: { title: string; desc: string }) {
