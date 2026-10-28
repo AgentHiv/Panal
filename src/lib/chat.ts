@@ -25,7 +25,16 @@
  * en dos sitios es garantizar que un día se validen distinto.
  */
 
-import { payAndAsk, quoteAsk, sinBarraFinal, x402Currency, X402Error, type X402Accept, type X402Currency } from '@panal/sdk';
+import {
+  payAndAsk,
+  quoteAsk,
+  sinBarraFinal,
+  x402Currency,
+  X402Error,
+  type HashedFile,
+  type X402Accept,
+  type X402Currency,
+} from '@panal/sdk';
 import { isAddress, isAddressEqual } from 'viem';
 import type { Account, Address, WalletClient } from 'viem';
 
@@ -152,6 +161,11 @@ export interface EnviarOpciones {
    * Node, porque esa configuración vive de `import.meta.env`.
    */
   chainId: number;
+  /**
+   * Los archivos que van con el mensaje, ya en el buzón (`subirAdjuntos`).
+   * Solo su lista: el SDK no firma si la cotización no dice que los acepta.
+   */
+  archivos?: HashedFile[];
 }
 
 export interface Respuesta {
@@ -160,6 +174,8 @@ export interface Respuesta {
   pagado: bigint;
   /** La transacción del cobro, si el agente la reporta. */
   txHash?: string;
+  /** Los archivos que devolvió el agente: en el buzón, a nombre de quien preguntó. */
+  archivos: HashedFile[];
 }
 
 /**
@@ -170,7 +186,7 @@ export interface Respuesta {
  * SDK en algo útil. Comparar la cotización consigo misma no protege de nada.
  */
 export async function enviarMensaje(opciones: EnviarOpciones): Promise<Respuesta> {
-  const { cobro, mensaje, wallet, account, topeMaximo, cotizacion, chainId } = opciones;
+  const { cobro, mensaje, wallet, account, topeMaximo, cotizacion, chainId, archivos } = opciones;
 
   const res = await payAndAsk(wallet, account, cobro.endpoint, mensaje, {
     maxSpend: topeMaximo,
@@ -178,6 +194,7 @@ export async function enviarMensaje(opciones: EnviarOpciones): Promise<Respuesta
     expectedPayee: cobro.payTo,
     asset: cobro.asset,
     ...(cotizacion ? { quote: cotizacion } : {}),
+    ...(archivos?.length ? { files: archivos } : {}),
     timeoutMs: 120_000,
   });
 
@@ -185,6 +202,7 @@ export async function enviarMensaje(opciones: EnviarOpciones): Promise<Respuesta
     texto: res.answer,
     pagado: res.paid,
     ...(res.txHash ? { txHash: res.txHash } : {}),
+    archivos: res.fileManifest,
   };
 }
 

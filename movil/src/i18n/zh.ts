@@ -345,6 +345,10 @@ export const zh: Textos = {
     sinConstancia: '对话不会在链上留下记录。如果你想要可验证的交付和申诉权，就按委托来下单。',
     esperando: '等待中…',
     firmarYEnviar: '签名并发送',
+    archivos: '文件',
+    archivosNota:
+      '付款前，文件会先上传到 Panal 信箱；如果代理公布了密钥，会为它加密。代理在收费前核对文件：没收到就不收费。',
+    subiendo: '正在上传文件…',
   },
 
   encargar: {
@@ -443,7 +447,17 @@ export const zh: Textos = {
     trabajando: '正在写回复…',
     piePrecio: (cantidad: string, moneda: string) => `每条 ${cantidad} ${moneda} · 一次签名，不烧 gas`,
     sinCobroPie: '没有公布按条计费的价格',
-    cabeceraEncargo: '委托 · 款项已锁定',
+    cabeceraBloqueado: '委托 · 款项已锁定',
+    cabeceraPagado: '委托 · 款项已支付',
+    cabeceraDevuelto: '委托 · 款项已退回',
+    adjuntar: '添加文件',
+    quitarAdjunto: (nombre: string) => `移除 ${nombre}`,
+    demasiados: (max: number) => `每条消息最多 ${max} 个文件。`,
+    muyGrande: (nombre: string, mb: number) => `“${nombre}”超过 ${mb} MB。`,
+    noSeLee: (nombre: string) => `无法读取“${nombre}”。如果它在云端，请先下载到手机。`,
+    noAceptaArchivos: (agente: string) => `${agente} 不接受随消息发送的文件。请移除文件，或改为委托任务。`,
+    bajarAdjunto: (nombre: string) => `下载 ${nombre}`,
+    adjuntoFallo: '无法下载。文件在信箱中保留七天。',
     encargoNumero: (id: string) => `委托 #${id}`,
     precio: '价格',
     numero: '编号',
@@ -648,6 +662,12 @@ export const zh: Textos = {
     adjuntoGuardado: '已保存',
     adjuntoNoCuadra: '字节与哈希不一致，不予保存。',
     adjuntoFallo: '无法从该代理下载。',
+    subcontratado: '已转包',
+    subcontratadoPie:
+      '为完成这项委托，该代理向这些代理付了费。这写在交付内容本身里，并已锚定在链上：事后无法删除。',
+    subcontratadoVia: (agente: string) => `经由 ${agente}`,
+    subcontratadoArchivos: (n: number) => `收到的文件：${n}`,
+    subcontratadoPago: '查看付款',
     entregaNoLaTienes:
       '你手上没有。只要代理还在，就可以再要一次；否则上面那个哈希单独已经证明不了什么。',
     pidiendola: '正在索取…',
@@ -905,6 +925,11 @@ export const zh: Textos = {
     archivos: '交付内容声明的文件',
     archivosAviso:
       '这些文件不在这份副本里：要从代理的服务器下载。留在这里的是它们的哈希，可以用来核对你手上的字节是不是当初交付的那些。',
+    subcontratos: '该代理转包给了谁',
+    subcontratosAviso:
+      '这写在交付内容本身里，而交付内容正是锚定在链上的那部分。每笔付款都可以凭交易在区块浏览器上核对。',
+    subcontratosVia: '经由',
+    subcontratosArchivos: '收到的文件',
     laConversacion: '对话记录',
     tu: '你',
     elAgente: '代理',

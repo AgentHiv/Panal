@@ -14,6 +14,10 @@
  *      escribe el mensaje, y lo que se enseña tiene que ser lo que se firma.
  *   3. SI FALLA, SE DICE SI SE COBRÓ. Es siempre la primera pregunta de quien
  *      ve un error, y callarla es lo que convierte un fallo en desconfianza.
+ *
+ * Con el mensaje pueden ir archivos (ver `lib/archivosDelChat.ts`). Se suben
+ * al buzón ANTES de firmar el pago, y el agente los comprueba antes de cobrar:
+ * si algo falla por el camino, no se ha pagado nada.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -21,8 +25,8 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useWalletClient } from 'wagmi';
 import { formatUnits } from 'viem';
-import { FileText, Loader2, Send, TriangleAlert } from 'lucide-react';
-import type { X402Accept } from '@panal/sdk';
+import { Download, FileText, Loader2, Paperclip, Send, TriangleAlert, X } from 'lucide-react';
+import { FileVerificationError, type HashedFile, type X402Accept } from '@panal/sdk';
 import {
   cotizar,
   enviarMensaje,
@@ -30,6 +34,17 @@ import {
   motivoLegible,
   type CobroPorLlamada,
 } from '@/lib/chat';
+import {
+  MAX_ADJUNTOS,
+  MAX_BYTES_ADJUNTO,
+  bajarAdjunto,
+  problemaConAdjuntos,
+  subirAdjuntos,
+  type Adjunto,
+  type ProblemaConAdjuntos,
+} from '@/lib/archivosDelChat';
+import { formatBytes } from '@/lib/deliveredFiles';
+import { guardarComoArchivo } from '@/lib/archivosTablon';
 import { anadirMensaje, leerHilo, nuevoId, type Mensaje } from '@/lib/historial';
 import { claveDeEntrada, encargosDelCliente, fusionarHilo } from '@/lib/conversaciones';
 import { getTaskBrief } from '@/lib/taskBriefs';
@@ -39,7 +54,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
 import FirmarMensajeDialog from '@/components/chat/FirmarMensajeDialog';
 import TarjetaEncargo from '@/components/chat/TarjetaEncargo';
-import type { Address } from 'viem';
+import { keccak256, type Address } from 'viem';
 
 export interface HiloChatProps {
   /** Dirección on-chain del agente. Es la mitad de la clave del hilo. */
@@ -100,13 +115,20 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
   const [cotizacion, setCotizacion] = useState<X402Accept | null>(null);
   const [pidiendo, setPidiendo] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [adjuntos, setAdjuntos] = useState<Adjunto[]>([]);
+  /** Mientras se suben los archivos, antes de firmar el pago. */
+  const [subiendo, setSubiendo] = useState(false);
+  /** El hash del archivo que se está bajando, para el spinner de su botón. */
+  const [bajando, setBajando] = useState<string | null>(null);
   const finRef = useRef<HTMLDivElement>(null);
+  const elegirRef = useRef<HTMLInputElement>(null);
 
   if (clavePrevia !== claveHilo) {
     setClavePrevia(claveHilo);
     setMensajes(address ? leerHilo(address, agente) : []);
     setCobro(botUrl ? undefined : null);
     setCotizacion(null);
+    setAdjuntos([]);
   }
 
   const entradas = useMemo(() => fusionarHilo(mensajes, encargos), [mensajes, encargos]);
@@ -133,41 +155,130 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
 
   const precio = cobro ? `${formatUnits(cobro.amount, cobro.decimales)} ${cobro.simbolo}` : '';
 
+  const textoDelProblema = useCallback(
+    (p: ProblemaConAdjuntos): string => {
+      if (p.tipo === 'noAcepta') return t('chat.files.noAccept', { name: nombre });
+      if (p.tipo === 'demasiados') return t('chat.files.tooMany', { max: p.max });
+      return t('chat.files.tooBig', { name: p.nombre, mb: Math.floor(p.maxBytes / 1024 / 1024) });
+    },
+    [t, nombre],
+  );
+
   /** Paso 1: pedir el precio de ESTE mensaje. Gratis, y no compromete a nada. */
   const pedirCotizacion = useCallback(async () => {
     if (!cobro || !address || !borrador.trim()) return;
     setPidiendo(true);
     try {
-      setCotizacion(await cotizar(cobro, borrador.trim(), address as `0x${string}`));
+      const cot = await cotizar(cobro, borrador.trim(), address as `0x${string}`);
+      // Si no acepta estos archivos, se dice aquí: sin subir nada ni pedir firmas.
+      const problema = problemaConAdjuntos(cot, adjuntos);
+      if (problema) toast.error(t('chat.files.cantSend'), { description: textoDelProblema(problema) });
+      else setCotizacion(cot);
     } catch (err) {
       toast.error(t('chat.quoteFailed'), { description: motivoLegible(err) });
     } finally {
       setPidiendo(false);
     }
-  }, [cobro, address, borrador, t]);
+  }, [cobro, address, borrador, adjuntos, textoDelProblema, t]);
+
+  /** Lo elegido se lee entero aquí: lo que pasa de los topes ni se añade. */
+  const alElegir = async (lista: FileList | null) => {
+    if (!lista?.length) return;
+    const nuevos: Adjunto[] = [];
+    for (const f of Array.from(lista)) {
+      if (adjuntos.length + nuevos.length >= MAX_ADJUNTOS) {
+        toast.error(t('chat.files.tooMany', { max: MAX_ADJUNTOS }));
+        break;
+      }
+      if (f.size === 0) continue;
+      if (f.size > MAX_BYTES_ADJUNTO) {
+        toast.error(t('chat.files.tooBig', { name: f.name, mb: Math.floor(MAX_BYTES_ADJUNTO / 1024 / 1024) }));
+        continue;
+      }
+      nuevos.push({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()), ...(f.type ? { mime: f.type } : {}) });
+    }
+    setAdjuntos((a) => [...a, ...nuevos]);
+  };
+
+  /** Un archivo que devolvió el agente: se baja del buzón, se comprueba y se guarda. */
+  const bajar = async (archivo: HashedFile) => {
+    if (!walletClient || !address) return;
+    setBajando(archivo.hash);
+    try {
+      const bytes = await bajarAdjunto({
+        yo: address as Address,
+        archivo,
+        firmar: (message) => walletClient.signMessage({ account: walletClient.account, message }),
+      });
+      guardarComoArchivo(archivo.name, bytes, archivo.mime);
+    } catch (err) {
+      toast.error(
+        err instanceof FileVerificationError ? t('chat.files.notMatch') : t('chat.files.downloadFailed'),
+        { description: motivoLegible(err) },
+      );
+    } finally {
+      setBajando(null);
+    }
+  };
 
   /** Paso 2: firmar y enviar. Aquí es donde se cobra. */
   const confirmar = useCallback(async () => {
     if (!cobro || !cotizacion || !walletClient || !address) return;
     const texto = borrador.trim();
+    const conArchivos = adjuntos;
     setCotizacion(null);
     setEnviando(true);
 
     // El mensaje propio se pinta y se guarda ANTES de la respuesta: si el
     // agente tarda o falla, lo que se escribió no se pierde de la pantalla.
-    const mio: Mensaje = { id: nuevoId(), de: 'yo', texto, cuando: Date.now() };
+    // De los archivos queda la lista, con el hash de lo que tú tenías.
+    const mio: Mensaje = {
+      id: nuevoId(),
+      de: 'yo',
+      texto,
+      cuando: Date.now(),
+      ...(conArchivos.length
+        ? {
+            archivos: conArchivos.map((a) => ({
+              name: a.name,
+              size: a.bytes.byteLength,
+              hash: keccak256(a.bytes),
+              ...(a.mime ? { mime: a.mime } : {}),
+            })),
+          }
+        : {}),
+    };
     setMensajes(anadirMensaje(address, agente, mio));
     setBorrador('');
+    setAdjuntos([]);
 
     try {
+      // Primero los archivos, al buzón: si esto falla, todavía no se ha
+      // firmado el pago.
+      let archivos: HashedFile[] = [];
+      if (conArchivos.length) {
+        setSubiendo(true);
+        archivos = await subirAdjuntos({
+          agente: agente as Address,
+          yo: address as Address,
+          adjuntos: conArchivos,
+          firmar: (message) => walletClient.signMessage({ account: walletClient.account, message }),
+        });
+        setSubiendo(false);
+      }
       const res = await enviarMensaje({
         cobro,
         mensaje: texto,
         wallet: walletClient,
         account: walletClient.account,
-        topeMaximo: cobro.amount,
+        // Lo que enseñó la hoja de firmar, como en la app. Con el precio de la
+        // tarjeta, un agente que cobra en MON no se podía pagar nunca: su
+        // cotización lleva unos wei de más para reconocer el pago, y el SDK
+        // la rechazaba por pasarse del tope.
+        topeMaximo: BigInt(cotizacion.amount),
         cotizacion,
         chainId: activeChain.id,
+        archivos,
       });
       setMensajes(
         anadirMensaje(address, agente, {
@@ -177,16 +288,19 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
           cuando: Date.now(),
           pagado: res.pagado.toString(),
           simbolo: cobro.simbolo,
+          ...(res.archivos.length ? { archivos: res.archivos } : {}),
         }),
       );
     } catch (err) {
       toast.error(t('chat.sendFailed'), { description: motivoLegible(err) });
-      // El borrador vuelve para que no haya que reescribirlo.
+      // El borrador vuelve para que no haya que reescribirlo, y los archivos con él.
       setBorrador(texto);
+      setAdjuntos(conArchivos);
     } finally {
+      setSubiendo(false);
       setEnviando(false);
     }
-  }, [cobro, cotizacion, walletClient, address, borrador, agente, t]);
+  }, [cobro, cotizacion, walletClient, address, borrador, adjuntos, agente, t]);
 
   const puedeEnviar = estadoCobro === 'listo' && connected && borrador.trim().length > 0 && !enviando && !pidiendo;
 
@@ -221,6 +335,39 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
               )}
             >
               <p className="whitespace-pre-wrap break-words">{e.mensaje.texto}</p>
+              {e.mensaje.archivos?.length ? (
+                <ul className="mt-2 flex flex-col gap-1.5">
+                  {e.mensaje.archivos.map((a) =>
+                    // Los tuyos solo se enumeran: los tienes tú, y en el buzón
+                    // van cifrados para el agente. Los del agente se bajan.
+                    e.mensaje.de === 'agente' ? (
+                      <li key={a.hash}>
+                        <button
+                          type="button"
+                          onClick={() => void bajar(a)}
+                          disabled={bajando !== null}
+                          aria-label={t('chat.files.download', { name: a.name })}
+                          className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-line bg-paper px-3 py-1 text-[0.75rem] text-ink-2 transition-colors hover:border-monad hover:text-monad disabled:opacity-50"
+                        >
+                          {bajando === a.hash ? (
+                            <Loader2 size={12} className="animate-spin" aria-hidden />
+                          ) : (
+                            <Download size={12} aria-hidden />
+                          )}
+                          <span className="truncate">{a.name}</span>
+                          <span className="shrink-0 text-ink-3">{formatBytes(a.size)}</span>
+                        </button>
+                      </li>
+                    ) : (
+                      <li key={a.hash} className="flex items-center gap-1.5 text-[0.75rem] text-ink-2">
+                        <Paperclip size={12} className="shrink-0" aria-hidden />
+                        <span className="truncate">{a.name}</span>
+                        <span className="shrink-0 text-ink-3">{formatBytes(a.size)}</span>
+                      </li>
+                    ),
+                  )}
+                </ul>
+              ) : null}
             </div>
           ),
         )}
@@ -228,7 +375,7 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
         {enviando && (
           <div className="mr-auto flex max-w-[82%] items-center gap-2 rounded-2xl rounded-bl-sm border border-line bg-cream px-3.5 py-2.5 text-[0.8125rem] text-ink-3">
             <Loader2 className="size-3.5 animate-spin" aria-hidden />
-            {t('chat.working', { name: nombre })}
+            {subiendo ? t('chat.files.uploading') : t('chat.working', { name: nombre })}
           </div>
         )}
         <div ref={finRef} />
@@ -255,7 +402,50 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
           </div>
         ) : (
           <>
+            {adjuntos.length > 0 && (
+              <ul className="mb-2 flex flex-wrap gap-1.5 px-1">
+                {adjuntos.map((a, i) => (
+                  <li
+                    key={`${a.name}-${i}`}
+                    className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-line bg-sand py-1 pl-3 pr-1 text-[0.75rem] text-ink-2"
+                  >
+                    <Paperclip size={12} className="shrink-0" aria-hidden />
+                    <span className="truncate">{a.name}</span>
+                    <span className="shrink-0 text-ink-3">{formatBytes(a.bytes.byteLength)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setAdjuntos((l) => l.filter((_, j) => j !== i))}
+                      disabled={enviando}
+                      aria-label={t('chat.files.remove', { name: a.name })}
+                      className="flex size-5 shrink-0 items-center justify-center rounded-full text-ink-3 transition-colors hover:text-ink"
+                    >
+                      <X size={12} aria-hidden />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="flex items-end gap-2">
+              <input
+                ref={elegirRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  void alElegir(e.target.files);
+                  e.target.value = '';
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => elegirRef.current?.click()}
+                disabled={estadoCobro !== 'listo' || enviando || adjuntos.length >= MAX_ADJUNTOS}
+                aria-label={t('chat.files.attach')}
+                title={t('chat.files.attach')}
+                className="flex size-11 shrink-0 items-center justify-center rounded-full border border-line text-ink-2 transition-colors hover:border-honey hover:text-ink disabled:opacity-40"
+              >
+                <Paperclip className="size-4" aria-hidden />
+              </button>
               <textarea
                 value={borrador}
                 onChange={(e) => setBorrador(e.target.value)}
@@ -307,6 +497,7 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
         onOpenChange={(abierto) => !abierto && setCotizacion(null)}
         cotizacion={cotizacion}
         nombre={nombre}
+        archivos={adjuntos.length}
         onConfirmar={() => void confirmar()}
       />
     </div>

@@ -1,4 +1,4 @@
-import type { X402Accept } from '@panal/sdk';
+import { X402_NATIVE_SCHEME, type X402Accept } from '@panal/sdk';
 import type { CobroPorLlamada } from '@/lib/chat';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
 import { monto } from '~/lib/formato';
@@ -19,6 +19,8 @@ export default function HojaFirmar({
   cobro,
   cotizacion,
   enviando,
+  archivos = 0,
+  subiendo = false,
   onCerrar,
   onConfirmar,
 }: {
@@ -26,6 +28,10 @@ export default function HojaFirmar({
   cobro: CobroPorLlamada | null;
   cotizacion: X402Accept | null;
   enviando: boolean;
+  /** Cuántos archivos van con el mensaje. Se suben antes de firmar el pago. */
+  archivos?: number;
+  /** Mientras se suben: la hoja sigue puesta, y dice qué está pasando. */
+  subiendo?: boolean;
   onCerrar: () => void;
   onConfirmar: () => void;
 }): React.ReactElement | null {
@@ -33,7 +39,11 @@ export default function HojaFirmar({
   if (!cobro || !cotizacion) return null;
 
   const importe = BigInt(cotizacion.amount);
-  const subio = importe > cobro.amount;
+  // En MON la cotización lleva unos wei de más, como mucho 2²⁰, para reconocer
+  // el pago (`buildNativeQuote` del SDK). Eso no es subir el precio, y avisarlo
+  // salía en todos los mensajes a un agente que cobra en MON.
+  const cola = cotizacion.scheme === X402_NATIVE_SCHEME ? 1n << 20n : 0n;
+  const subio = importe > cobro.amount + cola;
 
   return (
     <Hoja abierta={abierta} titulo={T.firmar.titulo} onCerrar={onCerrar} bloqueada={enviando}>
@@ -46,6 +56,7 @@ export default function HojaFirmar({
           color="text-ink"
         />
         <Fila etiqueta={T.firmar.gas} valor={T.firmar.gasLoPaga} color="text-olive" />
+        {archivos > 0 && <Fila etiqueta={T.firmar.archivos} valor={String(archivos)} color="text-ink" />}
       </Tarjeta>
 
       {/* Si el precio subió respecto a la tarjeta, se dice. El SDK no firmaría
@@ -56,6 +67,7 @@ export default function HojaFirmar({
         </Nota>
       )}
 
+      {archivos > 0 && <Nota>{T.firmar.archivosNota}</Nota>}
       <Nota>{T.firmar.sinConstancia}</Nota>
 
       <div className="mt-[18px] flex gap-2.5 pb-1">
@@ -66,7 +78,7 @@ export default function HojaFirmar({
         </div>
         <div className="grow-[1.6]">
           <Boton onClick={onConfirmar} disabled={enviando}>
-            {enviando ? T.firmar.esperando : T.firmar.firmarYEnviar}
+            {subiendo ? T.firmar.subiendo : enviando ? T.firmar.esperando : T.firmar.firmarYEnviar}
           </Boton>
         </div>
       </div>

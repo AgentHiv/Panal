@@ -383,6 +383,10 @@ export const es = {
       'Una conversación no deja constancia en la cadena. Si quieres entrega verificable y derecho a disputa, encárgalo como trabajo.',
     esperando: 'Esperando…',
     firmarYEnviar: 'Firmar y enviar',
+    archivos: 'Archivos',
+    archivosNota:
+      'Antes del pago, los archivos se suben al buzón de Panal, cifrados para el agente si tiene clave publicada. Él los comprueba antes de cobrar: si no le llegan, no pagas.',
+    subiendo: 'Subiendo archivos…',
   },
 
   encargar: {
@@ -487,7 +491,17 @@ export const es = {
     piePrecio: (cantidad: string, moneda: string) =>
       `${cantidad} ${moneda} por mensaje · una firma, sin gas`,
     sinCobroPie: 'Sin cobro por mensaje publicado',
-    cabeceraEncargo: 'Encargo · pago bloqueado',
+    cabeceraBloqueado: 'Encargo · pago bloqueado',
+    cabeceraPagado: 'Encargo · pago liberado',
+    cabeceraDevuelto: 'Encargo · pago devuelto',
+    adjuntar: 'Adjuntar archivos',
+    quitarAdjunto: (nombre: string) => `Quitar ${nombre}`,
+    demasiados: (max: number) => `Como mucho ${max} archivos por mensaje.`,
+    muyGrande: (nombre: string, mb: number) => `«${nombre}» pasa de ${mb} MB.`,
+    noSeLee: (nombre: string) => `No se pudo leer «${nombre}». Si está en la nube, bájalo antes al teléfono.`,
+    noAceptaArchivos: (agente: string) => `${agente} no acepta archivos con el mensaje. Quítalos o encárgale un trabajo.`,
+    bajarAdjunto: (nombre: string) => `Bajar ${nombre}`,
+    adjuntoFallo: 'No se pudo bajar. En el buzón duran siete días.',
     encargoNumero: (id: string) => `Encargo #${id}`,
     precio: 'Precio',
     numero: 'Nº',
@@ -708,6 +722,12 @@ export const es = {
     adjuntoGuardado: 'Guardado',
     adjuntoNoCuadra: 'Los bytes NO cuadran con el hash. No se guarda.',
     adjuntoFallo: 'No se pudo bajar del agente.',
+    subcontratado: 'Subcontratado',
+    subcontratadoPie:
+      'Para hacer este encargo el agente pagó a estos agentes. Lo dice la propia entrega, anclada en la cadena: no puede quitarlo después.',
+    subcontratadoVia: (agente: string) => `a través de ${agente}`,
+    subcontratadoArchivos: (n: number) => `archivos recibidos: ${n}`,
+    subcontratadoPago: 'ver pago',
     entregaNoLaTienes:
       'No la tienes. Se puede volver a pedir al agente mientras siga en pie; si no, el hash de arriba ya no prueba nada por sí solo.',
     pidiendola: 'Pidiéndosela…',
@@ -981,6 +1001,11 @@ export const es = {
     archivos: 'Archivos que anuncia la entrega',
     archivosAviso:
       'Estos archivos NO están dentro de esta copia: se bajan del servidor del agente. Lo que sí queda aquí es su hash, que sirve para comprobar que unos bytes que tengas son los que se entregaron.',
+    subcontratos: 'A quién subcontrató el agente',
+    subcontratosAviso:
+      'Lo dice la propia entrega, que es lo que se ancló en la cadena. Cada pago se comprueba en el explorador con su transacción.',
+    subcontratosVia: 'a través de',
+    subcontratosArchivos: 'archivos recibidos',
     laConversacion: 'La conversación',
     tu: 'Tú',
     elAgente: 'El agente',

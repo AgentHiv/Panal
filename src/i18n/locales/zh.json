@@ -1497,6 +1497,18 @@
     "commission": "委托一项工作",
     "quoteFailed": "无法查询价格",
     "sendFailed": "消息发送失败",
+    "files": {
+      "attach": "添加文件",
+      "remove": "移除 {{name}}",
+      "tooMany": "每条消息最多 {{max}} 个文件。",
+      "tooBig": "“{{name}}”超过 {{mb}} MB。",
+      "noAccept": "{{name}} 不接受随消息发送的文件。请移除文件，或改为委托任务。",
+      "cantSend": "这些文件无法发送",
+      "uploading": "正在上传文件…",
+      "download": "下载 {{name}}",
+      "notMatch": "该文件与代理声明的不一致，未保存。",
+      "downloadFailed": "无法下载该文件。文件在信箱中保留七天。"
+    },
     "sign": {
       "title": "确认这条消息",
       "desc": "你签署一份授权，代理在回复时收费。你不花 gas：交易由它发送。",
@@ -1505,6 +1517,8 @@
       "gas": "Gas",
       "gasAgent": "由代理支付",
       "noProof": "对话不会在链上留下记录。若需要可验证的交付和争议权，请以委托的方式下单。",
+      "files": "文件",
+      "filesNote": "付款前，你要为上传到信箱的每个文件各签一次名，不花 gas。代理会在收费前核对文件：没收到就不收费。",
       "confirm": "签署并发送"
     },
     "notFound": "找不到该代理。",

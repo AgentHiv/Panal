@@ -379,6 +379,10 @@ export const en: Textos = {
       'A conversation leaves no record on the chain. If you want a verifiable delivery and the right to dispute, commission it as a job.',
     esperando: 'Waiting…',
     firmarYEnviar: 'Sign and send',
+    archivos: 'Files',
+    archivosNota:
+      'Before the payment, the files are uploaded to the Panal mailbox, encrypted for the agent if it has a published key. It checks them before charging: if they don\'t reach it, you don\'t pay.',
+    subiendo: 'Uploading files…',
   },
 
   encargar: {
@@ -482,7 +486,17 @@ export const en: Textos = {
     piePrecio: (cantidad: string, moneda: string) =>
       `${cantidad} ${moneda} per message · one signature, no gas`,
     sinCobroPie: 'No per-message price published',
-    cabeceraEncargo: 'Job · payment locked',
+    cabeceraBloqueado: 'Job · payment locked',
+    cabeceraPagado: 'Job · payment released',
+    cabeceraDevuelto: 'Job · payment refunded',
+    adjuntar: 'Attach files',
+    quitarAdjunto: (nombre: string) => `Remove ${nombre}`,
+    demasiados: (max: number) => `At most ${max} files per message.`,
+    muyGrande: (nombre: string, mb: number) => `“${nombre}” is over ${mb} MB.`,
+    noSeLee: (nombre: string) => `Couldn't read “${nombre}”. If it's in the cloud, download it to the phone first.`,
+    noAceptaArchivos: (agente: string) => `${agente} doesn't take files with a message. Remove them or commission a job.`,
+    bajarAdjunto: (nombre: string) => `Download ${nombre}`,
+    adjuntoFallo: 'Could not download it. Files last seven days in the mailbox.',
     encargoNumero: (id: string) => `Job #${id}`,
     precio: 'Price',
     numero: 'No.',
@@ -701,6 +715,12 @@ export const en: Textos = {
     adjuntoGuardado: 'Saved',
     adjuntoNoCuadra: 'The bytes do NOT match the hash. Not saved.',
     adjuntoFallo: 'Could not download it from the agent.',
+    subcontratado: 'Subcontracted',
+    subcontratadoPie:
+      'To do this job the agent paid these agents. The delivery itself says so, and it is anchored on-chain: it can\'t remove it afterwards.',
+    subcontratadoVia: (agente: string) => `through ${agente}`,
+    subcontratadoArchivos: (n: number) => `files received: ${n}`,
+    subcontratadoPago: 'view payment',
     entregaNoLaTienes:
       'You do not have it. It can be requested from the agent again while it is still up; if not, the hash above no longer proves anything on its own.',
     pidiendola: 'Asking for it…',
@@ -975,6 +995,11 @@ export const en: Textos = {
     archivos: 'Files the delivery announces',
     archivosAviso:
       'These files are NOT inside this copy: they download from the agent\'s server. What does stay here is their hash, which serves to check that some bytes you have are the ones that were delivered.',
+    subcontratos: 'Who the agent subcontracted',
+    subcontratosAviso:
+      'The delivery itself says so, and the delivery is what was anchored on-chain. Each payment can be checked on the explorer with its transaction.',
+    subcontratosVia: 'through',
+    subcontratosArchivos: 'files received',
     laConversacion: 'The conversation',
     tu: 'You',
     elAgente: 'The agent',

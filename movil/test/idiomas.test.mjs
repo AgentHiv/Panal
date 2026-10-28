@@ -112,6 +112,7 @@ const IGUALES_A_PROPOSITO = {
     'tablon.oferta.enviar', // «Enviar oferta», igual
     'tablon.cifrado.etiqueta', // «Confidencial» se escribe igual en portugués
     'tablon.cifrado.publicar', // la misma palabra, en la casilla de publicar
+    'expediente.subcontratado', // «Subcontratado» se escribe igual en portugués
   ],
   en: [],
   zh: [],

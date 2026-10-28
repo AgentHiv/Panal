@@ -1,12 +1,24 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useWalletClient } from 'wagmi';
-import { getAddress } from 'viem';
+import { getAddress, keccak256 } from 'viem';
+import type { Address } from 'viem';
 import { useWallet } from '@/hooks/useWallet';
 import { useMyTasks } from '@/hooks/useMyTasks';
 import { anadirMensaje, leerHilo, nuevoId } from '@/lib/historial';
 import { cotizar, enviarMensaje } from '@/lib/chat';
-import { X402Error } from '@panal/sdk';
+import {
+  MAX_ADJUNTOS,
+  MAX_BYTES_ADJUNTO,
+  bajarAdjunto,
+  problemaConAdjuntos,
+  subirAdjuntos,
+} from '@/lib/archivosDelChat';
+import type { Adjunto, ProblemaConAdjuntos } from '@/lib/archivosDelChat';
+import { formatBytes } from '@/lib/deliveredFiles';
+import type { Mensaje } from '@/lib/historial';
+import { FileVerificationError, X402Error } from '@panal/sdk';
+import type { HashedFile } from '@panal/sdk';
 import { encargosDelCliente, fusionarHilo, claveDeEntrada, ESTADO } from '@/lib/conversaciones';
 import type { Entrada } from '@/lib/conversaciones';
 import { currencySymbol, activeChain } from '@/contracts/config';
@@ -15,6 +27,7 @@ import type { X402Accept } from '@panal/sdk';
 import { useAgente } from '~/lib/agente';
 import { avisandoAlFirmar } from '~/lib/firma';
 import { permitirPago } from '~/lib/signingPolicy';
+import { guardarArchivo } from '~/lib/copia';
 import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
 import HojaFirmar from '~/componentes/HojaFirmar';
@@ -25,6 +38,9 @@ import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 
 type Abierta = null | 'firmar' | 'encargar' | 'revisar';
+
+/** Cómo va la bajada de cada archivo que devolvió el agente, por su hash. */
+type Bajada = 'bajando' | 'ok' | 'nocuadra' | 'fallo';
 
 /**
  * La conversación con un agente: los dos modelos del protocolo en un hilo.
@@ -53,6 +69,8 @@ export default function Hilo(): React.ReactElement {
   const { data: walletClient } = useWalletClient();
 
   const [mensajes, setMensajes] = useState(() => (address ? leerHilo(address, agente) : []));
+  /** Los archivos elegidos para el próximo mensaje. Viajan al buzón antes del pago. */
+  const [adjuntos, setAdjuntos] = useState<Adjunto[]>([]);
 
   /**
    * Releer el hilo cuando cambia de quién es.
@@ -73,6 +91,7 @@ export default function Hilo(): React.ReactElement {
   if (ultimoDueno !== dueno) {
     setUltimoDueno(dueno);
     setMensajes(address ? leerHilo(address, agente) : []);
+    setAdjuntos([]);
   }
   const [borrador, setBorrador] = useState('');
   const [hoja, setHoja] = useState<Abierta>(null);
@@ -96,6 +115,9 @@ export default function Hilo(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
   const T = useTextos();
   const [encargoRevisando, setEncargoRevisando] = useState<string | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [descargas, setDescargas] = useState<Record<string, Bajada>>({});
+  const elegir = useRef<HTMLInputElement>(null);
 
   /**
    * Se entró pulsando «Encargar» en la ficha del agente: se abre la hoja sola.
@@ -137,6 +159,12 @@ export default function Hilo(): React.ReactElement {
     setOcupado(true);
     try {
       const q = await cotizar(datos.cobro, borrador.trim(), address as `0x${string}`);
+      // Si no acepta estos archivos, se dice aquí: sin subir nada ni abrir la hoja.
+      const problema = problemaConAdjuntos(q, adjuntos);
+      if (problema) {
+        setError(textoDelProblema(problema, datos.nombre ?? T.copia.elAgente, T));
+        return;
+      }
       setCotizacion(q);
       setHoja('firmar');
     } catch (err) {
@@ -144,18 +172,80 @@ export default function Hilo(): React.ReactElement {
     } finally {
       setOcupado(false);
     }
-  }, [address, borrador, connect, connected, datos, T]);
+  }, [address, adjuntos, borrador, connect, connected, datos, T]);
+
+  /** Lo elegido se lee entero aquí: lo que pasa de los topes ni se añade. */
+  const alElegir = async (lista: FileList | null): Promise<void> => {
+    if (!lista?.length) return;
+    setError(null);
+    const nuevos: Adjunto[] = [];
+    for (const f of Array.from(lista)) {
+      if (adjuntos.length + nuevos.length >= MAX_ADJUNTOS) {
+        setError(T.hilo.demasiados(MAX_ADJUNTOS));
+        break;
+      }
+      if (f.size > MAX_BYTES_ADJUNTO) {
+        setError(T.hilo.muyGrande(f.name, Math.floor(MAX_BYTES_ADJUNTO / 1024 / 1024)));
+        continue;
+      }
+      try {
+        // Uno de Drive que aún no está en el teléfono tiene nombre pero no se
+        // deja leer: se dice en vez de mandarlo vacío.
+        const bytes = new Uint8Array(await f.arrayBuffer());
+        if (bytes.byteLength === 0) throw new Error('vacío');
+        nuevos.push({ name: f.name, bytes, ...(f.type ? { mime: f.type } : {}) });
+      } catch {
+        setError(T.hilo.noSeLee(f.name));
+      }
+    }
+    setAdjuntos((a) => [...a, ...nuevos]);
+  };
+
+  /** Un archivo que devolvió el agente: del buzón, comprobado, y al teléfono. */
+  const bajar = async (archivo: HashedFile): Promise<void> => {
+    if (!walletClient || !address) return;
+    setDescargas((d) => ({ ...d, [archivo.hash]: 'bajando' }));
+    try {
+      const bytes = await bajarAdjunto({
+        yo: address as Address,
+        archivo,
+        firmar: (message) => walletClient.signMessage({ account: walletClient.account, message }),
+      });
+      const r = await guardarArchivo(
+        archivo.name,
+        new Blob([bytes as BlobPart], { type: archivo.mime || 'application/octet-stream' }),
+      );
+      setDescargas((d) => ({ ...d, [archivo.hash]: r.ok ? 'ok' : 'fallo' }));
+    } catch (err) {
+      setDescargas((d) => ({ ...d, [archivo.hash]: err instanceof FileVerificationError ? 'nocuadra' : 'fallo' }));
+    }
+  };
 
   const confirmarFirma = useCallback(async () => {
     if (!datos?.cobro || !walletClient || !address || !cotizacion) return;
     setOcupado(true);
     setError(null);
     const texto = borrador.trim();
+    const conArchivos = adjuntos;
     /** Cuándo salió. Lo pone el aviso de la firma; hasta entonces, ahora. */
     let mandado = Date.now();
     try {
+      // Primero los archivos, al buzón, y con la wallet SIN el aviso de la
+      // firma: esas firmas no son el pago. Si esto falla, no se ha pagado nada.
+      let archivos: HashedFile[] = [];
+      if (conArchivos.length) {
+        setSubiendo(true);
+        archivos = await subirAdjuntos({
+          agente: getAddress(agente),
+          yo: address as Address,
+          adjuntos: conArchivos,
+          firmar: (message) => walletClient.signMessage({ account: walletClient.account, message }),
+        });
+        setSubiendo(false);
+      }
       // El permit que esta hoja enseña: a quién y cuánto. Con la wallet del
-      // teléfono, es lo único que el conector acepta firmar como pago.
+      // teléfono, es lo único que el conector acepta firmar como pago. Después
+      // de subir: el permiso caduca, y unos vídeos tardan en subir.
       permitirPago({
         spender: getAddress(cotizacion.payTo),
         value: BigInt(cotizacion.amount),
@@ -172,6 +262,7 @@ export default function Hilo(): React.ReactElement {
           setHoja(null);
           setCotizacion(null);
           setBorrador('');
+          setAdjuntos([]);
           mandado = Date.now();
           setEnVuelo(texto);
         }),
@@ -181,6 +272,7 @@ export default function Hilo(): React.ReactElement {
         topeMaximo: BigInt(cotizacion.amount),
         cotizacion,
         chainId: activeChain.id,
+        archivos,
       });
 
       let lista = anadirMensaje(address, agente, {
@@ -193,12 +285,24 @@ export default function Hilo(): React.ReactElement {
         cuando: mandado,
         pagado: res.pagado.toString(),
         simbolo: datos.cobro.simbolo,
+        // De lo que mandaste queda la lista, con el hash de lo que tú tenías.
+        ...(conArchivos.length
+          ? {
+              archivos: conArchivos.map((a) => ({
+                name: a.name,
+                size: a.bytes.byteLength,
+                hash: keccak256(a.bytes),
+                ...(a.mime ? { mime: a.mime } : {}),
+              })),
+            }
+          : {}),
       });
       lista = anadirMensaje(address, agente, {
         id: nuevoId(),
         de: 'agente',
         texto: res.texto,
         cuando: Date.now(),
+        ...(res.archivos.length ? { archivos: res.archivos } : {}),
       });
       setMensajes(lista);
       setHoja(null);
@@ -209,11 +313,14 @@ export default function Hilo(): React.ReactElement {
       // El borrador vuelve al hueco si ya se había vaciado al firmar: sin esto,
       // un fallo después de la firma se lleva por delante lo que escribiste.
       setBorrador((b) => (b.trim() ? b : texto));
+      // Y los archivos con él, si se habían quitado al firmar.
+      setAdjuntos((a) => (a.length ? a : conArchivos));
     } finally {
+      setSubiendo(false);
       setOcupado(false);
       setEnVuelo(null);
     }
-  }, [address, agente, borrador, cotizacion, datos, walletClient, T]);
+  }, [address, adjuntos, agente, borrador, cotizacion, datos, walletClient, T]);
 
   const enRevision = encargos.find((e) => e.id === encargoRevisando) ?? null;
 
@@ -293,6 +400,8 @@ export default function Hilo(): React.ReactElement {
             {cambiaElDia(entradas[i - 1], e) && <Dia cuando={e.cuando} />}
             <EntradaHilo
               entrada={e}
+              descargas={descargas}
+              onBajar={(a) => void bajar(a)}
               onRevisar={() => setEncargoRevisando(e.clase === 'encargo' ? e.encargo.id : null)}
               onVerExpediente={() => {
                 if (e.clase === 'encargo') navegar(`/expediente/${e.encargo.id}`);
@@ -315,7 +424,50 @@ export default function Hilo(): React.ReactElement {
       )}
 
       <div className="con-barra-abajo shrink-0 border-t border-line bg-noche px-3 pt-2.5">
+        {adjuntos.length > 0 && (
+          <ul className="mb-2 flex flex-col gap-1.5">
+            {adjuntos.map((a, i) => (
+              <li
+                key={`${a.name}-${i}`}
+                className="flex items-center gap-2 rounded-[11px] border border-line bg-sand px-3 py-2"
+              >
+                <Icono nombre="hoja" tamano={15} color="#948DAE" grosor={1.8} />
+                <span className="min-w-0 grow truncate text-[12.5px] text-ink">{a.name}</span>
+                <span className="shrink-0 font-mono text-[11px] text-ink-3">{formatBytes(a.bytes.byteLength)}</span>
+                <button
+                  type="button"
+                  onClick={() => setAdjuntos((l) => l.filter((_, j) => j !== i))}
+                  disabled={ocupado || enVuelo !== null}
+                  aria-label={T.hilo.quitarAdjunto(a.name)}
+                  className="pulsable -mr-1 shrink-0 p-1"
+                >
+                  <Icono nombre="cerrar" tamano={14} color="#948DAE" grosor={2} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="flex items-center gap-2.5">
+          <input
+            ref={elegir}
+            type="file"
+            multiple
+            hidden
+            onChange={(ev) => {
+              void alElegir(ev.target.files);
+              // Para que elegir el MISMO archivo otra vez vuelva a disparar el evento.
+              ev.target.value = '';
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => elegir.current?.click()}
+            disabled={!datos?.cobro || ocupado || enVuelo !== null || adjuntos.length >= MAX_ADJUNTOS}
+            aria-label={T.hilo.adjuntar}
+            className="pulsable flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line disabled:opacity-40"
+          >
+            <Icono nombre="eslabon" tamano={18} color="#C8C3DC" grosor={2} />
+          </button>
           <input
             value={borrador}
             onChange={(ev) => setBorrador(ev.target.value)}
@@ -347,6 +499,8 @@ export default function Hilo(): React.ReactElement {
         cobro={datos?.cobro ?? null}
         cotizacion={cotizacion}
         enviando={ocupado}
+        archivos={adjuntos.length}
+        subiendo={subiendo}
         onCerrar={() => setHoja(null)}
         onConfirmar={confirmarFirma}
       />
@@ -416,11 +570,15 @@ function Esperando({ texto, T }: { texto: string; T: Textos }): React.ReactEleme
 
 function EntradaHilo({
   entrada,
+  descargas,
+  onBajar,
   onRevisar,
   onVerExpediente,
   T,
 }: {
   entrada: Entrada;
+  descargas: Record<string, Bajada>;
+  onBajar: (archivo: HashedFile) => void;
   onRevisar: () => void;
   /** Abrir el expediente del encargo: lo pedido, el estado y lo entregado. */
   onVerExpediente: () => void;
@@ -442,6 +600,9 @@ function EntradaHilo({
         <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.5]">
           {entrada.mensaje.texto}
         </p>
+        {entrada.mensaje.archivos?.length ? (
+          <ArchivosDelMensaje mensaje={entrada.mensaje} descargas={descargas} onBajar={onBajar} T={T} />
+        ) : null}
       </div>
         {/* La hora, fuera de la burbuja y en pequeño: se consulta, no se lee. */}
         <span className="px-1 font-mono text-[10.5px] text-ink-3">
@@ -486,6 +647,16 @@ function EntradaHilo({
   };
   const st = estados[e.estado] ?? estados[ESTADO.Abierto];
 
+  // La cabecera dice dónde está el dinero. En el escrow mientras quede algo por
+  // decidir —también entregado o en disputa—; al cerrarse, pagado al agente o
+  // devuelto. Antes decía «pago bloqueado» siempre, también de uno ya pagado.
+  const cabecera =
+    e.estado === ESTADO.Completado
+      ? { texto: T.hilo.cabeceraPagado, icono: 'check' as const, color: 'text-olive' }
+      : e.estado === ESTADO.Cancelado
+        ? { texto: T.hilo.cabeceraDevuelto, icono: 'recargar' as const, color: 'text-ink-3' }
+        : { texto: T.hilo.cabeceraBloqueado, icono: 'candado' as const, color: 'text-honey' };
+
   return (
     /* `shrink-0` NO es de adorno, y este es el caso que lo demuestra.
        En una columna flex los hijos llevan `min-height: auto`, que los protege
@@ -511,10 +682,10 @@ function EntradaHilo({
       onClick={onVerExpediente}
       className="pulsable shrink-0 self-stretch overflow-hidden rounded-2xl border border-honey bg-cream"
     >
-      <div className="flex items-center gap-2 bg-honey-soft px-3.5 py-2.5">
-        <Icono nombre="candado" tamano={15} color="#E29A2E" grosor={2} />
-        <span className="text-[12px] font-semibold uppercase tracking-[0.04em] text-honey">
-          {T.hilo.cabeceraEncargo}
+      <div className={`flex items-center gap-2 bg-honey-soft px-3.5 py-2.5 ${cabecera.color}`}>
+        <Icono nombre={cabecera.icono} tamano={15} grosor={2} />
+        <span className="text-[12px] font-semibold uppercase tracking-[0.04em]">
+          {cabecera.texto}
         </span>
       </div>
       <div className="px-3.5 py-3">
@@ -557,6 +728,84 @@ function EntradaHilo({
         </button>
       </div>
     </article>
+  );
+}
+
+/** Por qué estos archivos no van con este mensaje, en el idioma de la app. */
+function textoDelProblema(p: ProblemaConAdjuntos, agente: string, T: Textos): string {
+  if (p.tipo === 'noAcepta') return T.hilo.noAceptaArchivos(agente);
+  if (p.tipo === 'demasiados') return T.hilo.demasiados(p.max);
+  return T.hilo.muyGrande(p.nombre, Math.floor(p.maxBytes / 1024 / 1024));
+}
+
+/**
+ * Los archivos de un mensaje. Los tuyos solo se enumeran: los tienes tú, y en
+ * el buzón van cifrados para el agente. Los del agente se bajan al tocarlos.
+ */
+function ArchivosDelMensaje({
+  mensaje,
+  descargas,
+  onBajar,
+  T,
+}: {
+  mensaje: Mensaje;
+  descargas: Record<string, Bajada>;
+  onBajar: (archivo: HashedFile) => void;
+  T: Textos;
+}): React.ReactElement {
+  const delAgente = mensaje.de === 'agente';
+  return (
+    <ul className="mt-2 flex flex-col gap-1.5">
+      {(mensaje.archivos ?? []).map((a) => {
+        const bajada = descargas[a.hash];
+        const fila = (
+          <>
+            <Icono nombre="hoja" tamano={15} color="#B7A8FC" className="shrink-0" />
+            <div className="min-w-0 grow">
+              <p className="truncate text-[12.5px] font-medium">{a.name}</p>
+              <p
+                className={`mt-0.5 text-[11px] ${
+                  bajada === 'ok' ? 'text-olive' : bajada === 'nocuadra' || bajada === 'fallo' ? 'text-terra' : 'text-ink-3'
+                }`}
+              >
+                {bajada === 'bajando'
+                  ? T.expediente.adjuntoBajando
+                  : bajada === 'ok'
+                    ? T.expediente.adjuntoGuardado
+                    : bajada === 'nocuadra'
+                      ? T.expediente.adjuntoNoCuadra
+                      : bajada === 'fallo'
+                        ? T.hilo.adjuntoFallo
+                        : formatBytes(a.size)}
+              </p>
+            </div>
+          </>
+        );
+        return (
+          <li key={a.hash}>
+            {delAgente ? (
+              <button
+                type="button"
+                onClick={() => onBajar(a)}
+                disabled={bajada === 'bajando'}
+                aria-label={T.hilo.bajarAdjunto(a.name)}
+                className="pulsable flex w-full items-center gap-2.5 rounded-[11px] border border-line bg-sand px-3 py-2 text-left disabled:opacity-60"
+              >
+                {fila}
+                <Icono
+                  nombre={bajada === 'ok' ? 'check' : 'bajar'}
+                  tamano={15}
+                  color={bajada === 'ok' ? '#92A268' : '#948DAE'}
+                  className="shrink-0"
+                />
+              </button>
+            ) : (
+              <div className="flex items-center gap-2.5 rounded-[11px] border border-[#4A3E75] px-3 py-2">{fila}</div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

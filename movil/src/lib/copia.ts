@@ -68,6 +68,23 @@ export function aHtml(e: Expediente): string {
         .join('')}</ul>`
     : '';
 
+  // Con la dirección entera y la transacción, no con el nombre del mercado:
+  // esta copia es para guardarla, y un nombre puede cambiar; la dirección no.
+  const subcontratos = e.local.subcontratos.length
+    ? `<h2>${escapar(T.subcontratos)}</h2>
+<p class="aviso">${escapar(T.subcontratosAviso)}</p>
+<ul>${e.local.subcontratos
+        .map(
+          (s) =>
+            `<li><b>${escapar(s.skill)}</b> · ${escapar(monto(s.importe, s.moneda.decimales))} ${escapar(s.moneda.simbolo)}${
+              s.archivos ? ` · ${escapar(T.subcontratosArchivos)}: ${s.archivos}` : ''
+            }<br><span class="mono peq">${escapar(s.agente)}</span>${
+              s.via ? `<br><span class="peq">${escapar(T.subcontratosVia)} <span class="mono">${escapar(s.via)}</span></span>` : ''
+            }${s.tx ? `<br><span class="mono peq">tx ${escapar(s.tx)}</span>` : ''}</li>`,
+        )
+        .join('')}</ul>`
+    : '';
+
   const hilo = e.local.hilo.length
     ? `<h2>${escapar(T.laConversacion)}</h2>
 <div class="hilo">${e.local.hilo
@@ -136,6 +153,7 @@ ${
 }
 
 ${adjuntos}
+${subcontratos}
 ${hilo}
 
 <footer>${escapar(T.pie)}</footer>

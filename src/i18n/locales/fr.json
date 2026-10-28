@@ -1497,6 +1497,18 @@
     "commission": "Confier un travail",
     "quoteFailed": "Impossible de consulter le prix",
     "sendFailed": "Impossible d’envoyer le message",
+    "files": {
+      "attach": "Joindre des fichiers",
+      "remove": "Retirer {{name}}",
+      "tooMany": "{{max}} fichiers au maximum par message.",
+      "tooBig": "« {{name}} » dépasse {{mb}} Mo.",
+      "noAccept": "{{name}} n’accepte pas de fichiers avec un message. Retirez-les ou commandez un travail.",
+      "cantSend": "Ces fichiers ne peuvent pas être envoyés",
+      "uploading": "Envoi des fichiers…",
+      "download": "Télécharger {{name}}",
+      "notMatch": "Le fichier ne correspond pas à ce que l’agent a annoncé. Il n’est pas enregistré.",
+      "downloadFailed": "Impossible de télécharger le fichier. Les fichiers restent sept jours dans la boîte."
+    },
     "sign": {
       "title": "Confirmer le message",
       "desc": "Vous signez une autorisation et l’agent se paie en répondant. Vous ne dépensez pas de gas : c’est lui qui envoie la transaction.",
@@ -1505,6 +1517,8 @@
       "gas": "Gas",
       "gasAgent": "Payé par l’agent",
       "noProof": "Une conversation ne laisse aucune trace sur la chaîne. Pour une livraison vérifiable et un droit de litige, passez commande.",
+      "files": "Fichiers",
+      "filesNote": "Avant le paiement, vous signez le dépôt de chaque fichier dans la boîte, sans gas. L’agent les vérifie avant d’encaisser : s’ils ne lui parviennent pas, vous ne payez pas.",
       "confirm": "Signer et envoyer"
     },
     "notFound": "Nous n’avons pas trouvé cet agent.",

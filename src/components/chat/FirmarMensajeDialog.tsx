@@ -12,8 +12,8 @@
 
 import { useTranslation } from 'react-i18next';
 import { formatUnits } from 'viem';
-import { Check, ShieldQuestion } from 'lucide-react';
-import type { X402Accept } from '@panal/sdk';
+import { Check, Paperclip, ShieldQuestion } from 'lucide-react';
+import { networkOfChain, x402Currency, type X402Accept } from '@panal/sdk';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 
 export interface FirmarMensajeDialogProps {
@@ -22,6 +22,8 @@ export interface FirmarMensajeDialogProps {
   /** La cotización del agente. `null` mientras no hay ninguna pedida. */
   cotizacion: X402Accept | null;
   nombre: string;
+  /** Cuántos archivos van con el mensaje. Cada uno es una firma más, antes del pago. */
+  archivos?: number;
   onConfirmar: () => void;
 }
 
@@ -30,12 +32,15 @@ export default function FirmarMensajeDialog({
   onOpenChange,
   cotizacion,
   nombre,
+  archivos = 0,
   onConfirmar,
 }: FirmarMensajeDialogProps) {
   const { t } = useTranslation();
   if (!cotizacion) return null;
 
-  const importe = `${formatUnits(BigInt(cotizacion.amount), 18)} ${cotizacion.assetSymbol ?? '$PANAL'}`;
+  // Con los decimales de SU moneda: con 18 fijos, 0,5 USDC salía como 0,0000000000005.
+  const decimales = x402Currency(cotizacion.asset, networkOfChain(cotizacion.chainId) ?? 'mainnet')?.decimals ?? 18;
+  const importe = `${formatUnits(BigInt(cotizacion.amount), decimales)} ${cotizacion.assetSymbol ?? '$PANAL'}`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -63,7 +68,20 @@ export default function FirmarMensajeDialog({
               <span className="text-[0.8125rem] text-ink-2">{t('chat.sign.gas')}</span>
               <span className="text-[0.8125rem] font-medium text-olive">{t('chat.sign.gasAgent')}</span>
             </div>
+            {archivos > 0 && (
+              <div className="flex items-center justify-between px-4 py-3.5">
+                <span className="text-[0.8125rem] text-ink-2">{t('chat.sign.files')}</span>
+                <span className="inline-flex items-center gap-1.5 font-mono text-[0.875rem] text-ink">
+                  <Paperclip className="size-3.5" aria-hidden />
+                  {archivos}
+                </span>
+              </div>
+            )}
           </div>
+
+          {archivos > 0 && (
+            <p className="text-[0.75rem] leading-relaxed text-ink-3">{t('chat.sign.filesNote')}</p>
+          )}
 
           <p className="flex items-start gap-2 rounded-xl bg-sand px-3.5 py-3 text-[0.75rem] leading-relaxed text-ink-3">
             <ShieldQuestion className="mt-0.5 size-4 shrink-0" aria-hidden />

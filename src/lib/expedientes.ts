@@ -21,6 +21,8 @@ import { leerHilo } from '@/lib/historial';
 import type { Mensaje } from '@/lib/historial';
 import { parseFilesManifest, stripFilesManifest } from '@/lib/deliveredFiles';
 import type { DeliveredFile } from '@/lib/deliveredFiles';
+import { leerSubcontratos } from '@/lib/subcontratos';
+import type { Subcontrato } from '@/lib/subcontratos';
 
 /** Los mismos topes que las capas de las que se lee, para poder avisar antes. */
 const MAX_BRIEFS = 200;
@@ -148,6 +150,8 @@ export interface Expediente {
     entregaCifrada: boolean;
     /** Los archivos que ANUNCIA la entrega. No están en el teléfono. */
     adjuntos: DeliveredFile[];
+    /** A quién pagó el agente para hacerlo. Lo dice la entrega, así que cuadra con ella. */
+    subcontratos: Subcontrato[];
     hilo: Mensaje[];
   };
 }
@@ -189,6 +193,7 @@ export function armar(
       entregaGuardada: guardada?.guardada ?? null,
       entregaCifrada: guardada?.claro !== undefined,
       adjuntos: entregaLegible !== null ? parseFilesManifest(entregaLegible) : [],
+      subcontratos: entregaLegible !== null ? leerSubcontratos(entregaLegible) : [],
       hilo,
     },
   };

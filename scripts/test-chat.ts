@@ -17,6 +17,8 @@ import { leerCobroPorLlamada, cotizar, motivoLegible } from '../src/lib/chat.js'
 import { X402Error } from '@panal/sdk';
 
 const AGENTE = 'https://lint.panal.lat';
+/** La dirección de Lint en la cadena: quien cobra tiene que ser ella. */
+const DIRECCION = '0x1558cF6aed695F3F8AafE488058EfE28d216E69C' as const;
 /** Una dirección cualquiera: cotizar no compromete a quien pregunta. */
 const PAGADOR = '0x69D084926e68af78cDa512eF1Bf2c3e7B4307CBf' as const;
 
@@ -28,7 +30,7 @@ const check = (nombre: string, ok: boolean, detalle = ''): void => {
 
 console.log('\n── La tarjeta del agente ──\n');
 
-const cobro = await leerCobroPorLlamada(AGENTE);
+const cobro = await leerCobroPorLlamada(AGENTE, DIRECCION);
 if (!cobro) {
   console.log(`❌ ${AGENTE} no anuncia cobro por llamada; sin eso no hay nada que probar`);
   process.exit(1);
@@ -70,7 +72,11 @@ check(
 
 console.log('\n── Lo que no se puede pagar, no se ofrece ──\n');
 
-check('un endpoint que no existe devuelve null', (await leerCobroPorLlamada('https://no-existe.panal.lat')) === null);
+check('un endpoint que no existe devuelve null', (await leerCobroPorLlamada('https://no-existe.panal.lat', DIRECCION)) === null);
+check(
+  'una tarjeta que cobra a otra dirección que la del registro, tampoco',
+  (await leerCobroPorLlamada(AGENTE, '0x0000000000000000000000000000000000000001')) === null,
+);
 check(
   'y un mensaje de error se traduce a algo legible',
   motivoLegible(new X402Error('La cotización caduca de inmediato: pide otra.')).length > 10,

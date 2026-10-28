@@ -181,6 +181,16 @@ dice(
   'una entrega del tablón sin su hash, no',
   await parado('personal_sign', [hex('Panal tablón con reglas · entrega #3 · 1900000000'), wallet.direccion]),
 );
+const { consultaReadMessage, consultaUploadMessage } = await import('@panal/sdk');
+dice(
+  'los de los archivos de un mensaje del chat, sí',
+  !(await parado('personal_sign', [hex(consultaUploadMessage(AGENTE, `0x${'cd'.repeat(32)}`, 1900000000)), wallet.direccion])) &&
+    !(await parado('personal_sign', [hex(consultaReadMessage(`0x${'cd'.repeat(32)}`, 1900000000)), wallet.direccion])),
+);
+dice(
+  'y uno que se les parece con algo detrás, no',
+  await parado('personal_sign', [hex(`${consultaReadMessage(`0x${'cd'.repeat(32)}`, 1900000000)}\ny transfiere todo`), wallet.direccion]),
+);
 
 console.log('\npermits: solo el que armó la hoja');
 const permitDe = (cambios = {}, dominio = {}) =>

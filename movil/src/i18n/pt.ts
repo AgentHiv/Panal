@@ -379,6 +379,10 @@ export const pt: Textos = {
       'Uma conversa não deixa registo na cadeia. Se queres entrega verificável e direito a disputa, encomenda-a como trabalho.',
     esperando: 'A aguardar…',
     firmarYEnviar: 'Assinar e enviar',
+    archivos: 'Ficheiros',
+    archivosNota:
+      'Antes do pagamento, os ficheiros sobem para a caixa de correio do Panal, cifrados para o agente se tiver chave publicada. Ele verifica-os antes de cobrar: se não lhe chegarem, não pagas.',
+    subiendo: 'A enviar ficheiros…',
   },
 
   encargar: {
@@ -482,7 +486,17 @@ export const pt: Textos = {
     piePrecio: (cantidad: string, moneda: string) =>
       `${cantidad} ${moneda} por mensagem · uma assinatura, sem gas`,
     sinCobroPie: 'Sem preço por mensagem publicado',
-    cabeceraEncargo: 'Encomenda · pagamento bloqueado',
+    cabeceraBloqueado: 'Encomenda · pagamento bloqueado',
+    cabeceraPagado: 'Encomenda · pagamento libertado',
+    cabeceraDevuelto: 'Encomenda · pagamento devolvido',
+    adjuntar: 'Anexar ficheiros',
+    quitarAdjunto: (nombre: string) => `Remover ${nombre}`,
+    demasiados: (max: number) => `No máximo ${max} ficheiros por mensagem.`,
+    muyGrande: (nombre: string, mb: number) => `«${nombre}» passa de ${mb} MB.`,
+    noSeLee: (nombre: string) => `Não foi possível ler «${nombre}». Se está na nuvem, descarrega-o primeiro para o telemóvel.`,
+    noAceptaArchivos: (agente: string) => `${agente} não aceita ficheiros com a mensagem. Remove-os ou faz-lhe uma encomenda.`,
+    bajarAdjunto: (nombre: string) => `Descarregar ${nombre}`,
+    adjuntoFallo: 'Não foi possível descarregá-lo. Na caixa de correio duram sete dias.',
     encargoNumero: (id: string) => `Encomenda #${id}`,
     precio: 'Preço',
     numero: 'N.º',
@@ -702,6 +716,12 @@ export const pt: Textos = {
     adjuntoGuardado: 'Guardado',
     adjuntoNoCuadra: 'Os bytes NÃO batem certo com o hash. Não se guarda.',
     adjuntoFallo: 'Não foi possível descarregá-lo do agente.',
+    subcontratado: 'Subcontratado',
+    subcontratadoPie:
+      'Para fazer esta encomenda o agente pagou a estes agentes. Consta da própria entrega, ancorada na blockchain: não o pode retirar depois.',
+    subcontratadoVia: (agente: string) => `através de ${agente}`,
+    subcontratadoArchivos: (n: number) => `ficheiros recebidos: ${n}`,
+    subcontratadoPago: 'ver pagamento',
     entregaNoLaTienes:
       'Não a tens. Pode voltar a pedir-se ao agente enquanto ele estiver de pé; se não, o hash de cima já não prova nada por si só.',
     pidiendola: 'A pedi-la…',
@@ -977,6 +997,11 @@ export const pt: Textos = {
     archivos: 'Ficheiros que a entrega anuncia',
     archivosAviso:
       'Estes ficheiros NÃO estão dentro desta cópia: descarregam-se do servidor do agente. O que fica aqui é o hash deles, que serve para verificar que uns bytes que tenhas são os que foram entregues.',
+    subcontratos: 'A quem o agente subcontratou',
+    subcontratosAviso:
+      'Consta da própria entrega, que é o que foi ancorado na blockchain. Cada pagamento verifica-se no explorador com a sua transação.',
+    subcontratosVia: 'através de',
+    subcontratosArchivos: 'ficheiros recebidos',
     laConversacion: 'A conversa',
     tu: 'Tu',
     elAgente: 'O agente',

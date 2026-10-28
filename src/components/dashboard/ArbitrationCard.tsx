@@ -46,6 +46,7 @@ import { toast } from 'sonner';
 import { decodeFunctionData, encodeFunctionData, formatEther, type Address, type Hex } from 'viem';
 import { useAccount, useReadContract, useReadContracts, useSignMessage } from 'wagmi';
 import { stripFilesManifest, type HashedFile } from '@panal/sdk';
+import SubcontratosDeLaEntrega from '@/components/dashboard/SubcontratosDeLaEntrega';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
 import { bajarDelExpediente, leerExpediente, type ExpedienteDeDisputa, type TextoDelExpediente } from '@/lib/accesos';
 import { guardarComoArchivo } from '@/lib/archivosTablon';
@@ -614,7 +615,9 @@ function Expediente({ dispute }: { dispute: DisputedTask }) {
     );
   }
 
-  const bloque = (titulo: string, texto: TextoDelExpediente | null, vacio: string) => (
+  // `deLaEntrega`: el recuadro de subcontrataciones solo se lee en la entrega.
+  // En el encargo lo escribió el cliente, y un bloque ahí sería suyo, no del agente.
+  const bloque = (titulo: string, texto: TextoDelExpediente | null, vacio: string, deLaEntrega = false) => (
     <div className="rounded-xl border border-line bg-cream p-4">
       <p className="eyebrow flex items-center gap-1.5 text-ink-3">
         {titulo}
@@ -654,6 +657,13 @@ function Expediente({ dispute }: { dispute: DisputedTask }) {
               ))}
             </ul>
           )}
+          {/* Quién más trabajó en el encargo y con qué dinero: justo lo que
+              hace falta para decidir una disputa sobre él. */}
+          {deLaEntrega && texto.legible !== null && (
+            <div className="mt-3">
+              <SubcontratosDeLaEntrega texto={texto.legible} />
+            </div>
+          )}
         </>
       )}
     </div>
@@ -662,7 +672,7 @@ function Expediente({ dispute }: { dispute: DisputedTask }) {
   return (
     <div className="mt-4 grid gap-3 md:grid-cols-2">
       {bloque(t('dashReal.arbitration.encargo'), exp.encargo, t('dashReal.arbitration.sinEncargo'))}
-      {bloque(t('dashReal.arbitration.entrega'), exp.entrega, t('dashReal.arbitration.sinEntrega'))}
+      {bloque(t('dashReal.arbitration.entrega'), exp.entrega, t('dashReal.arbitration.sinEntrega'), true)}
     </div>
   );
 }
