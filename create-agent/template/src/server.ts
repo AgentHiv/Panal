@@ -58,6 +58,10 @@ import {
   type ArchivoParaSubir,
   type AttachedFile,
   type CallEnvelope,
+  CONSULTA_FILES_CAPABILITY,
+  MAX_CONSULTA_FILES,
+  parseConsultaFiles,
+  type HashedFile,
   type DeliveredFile,
   type FichaNivel,
   type LlmConfig,
@@ -83,7 +87,7 @@ import type { Address, Hex } from 'viem';
 import type { EncargoConReglas } from '@panal/sdk';
 import { handleTask, NIVELES, SUBCONTRATA_SKILLS } from './agent.js';
 import { frasesGuardadas, pedirTraduccion } from './traduccion.js';
-import type { AdjuntoRecibido, NivelPropio, TaskContext, TaskFile, TaskResult } from './agent.js';
+import type { AdjuntoRecibido, ArchivoParaConsultar, NivelPropio, TaskContext, TaskFile, TaskResult } from './agent.js';
 import { arrancarVigilante } from './vigilante.js';
 import { arrancarRetirada, opcionesDelEntorno } from './retirada.js';
 import { arrancarTablon, EncargosPropios, opcionesDelEntorno as opcionesTablon, retomarDelTablon } from './tablon.js';
@@ -239,6 +243,15 @@ const panal = createPanalClient({
 });
 
 console.log(`Agente ${account.address} escuchando en :${PORT}`);
+
+// Tu clave de cifrado, publicada: así otro agente que te pregunte con archivos
+// (una foto, un PDF) te los manda cifrados y ni el buzón los puede leer. Sale
+// de una firma de tu propia clave: es siempre la misma y no se guarda. Que
+// falle no para nada: te los mandarían en claro.
+void panal
+  .publishEncryptionKey()
+  .then(({ cambio }) => cambio && console.log('[panal] clave de cifrado publicada (sustituye a otra anterior)'))
+  .catch((err) => console.error(`[panal] no se pudo publicar la clave de cifrado: ${err instanceof Error ? err.message : err}`));
 
 // ---------------------------------------------------------------------------
 // Los niveles de la CADENA mandan sobre los de `agent.ts`.
@@ -813,57 +826,76 @@ function contexto(
   // agente sin niveles note ningún cambio.
   const presupuesto = nivel?.subcontrata ?? SUBCONTRATA_MAX;
 
+  /**
+   * Busca, cotiza, paga y pregunta; y apunta a quién se pagó, para decirlo en
+   * la entrega. Lo usan `consultar` y `consultarConArchivos`.
+   */
+  async function subcontratar(skill: string, pregunta: string, archivos: ArchivoParaConsultar[]) {
+    if (presupuesto <= 0n) {
+      throw new Error(
+        nivel
+          ? `El nivel "${nivel.name}" no tiene presupuesto para subcontratar: ponle \`subcontrata\` en agent.ts.`
+          : 'Este agente no tiene presupuesto para subcontratar: pon SUBCONTRATA_MAX en el .env si quieres que delegue.',
+      );
+    }
+    // Dinero Y permiso. Sin lista no se compra nada, aunque haya dinero: el
+    // buscador generaliza cuando no encuentra a nadie, y sin lista esa
+    // generalización no tiene dónde parar.
+    if (SUBCONTRATA_SKILLS.length === 0) {
+      throw new Error(
+        'Este agente no tiene ninguna skill permitida: rellena SUBCONTRATA_SKILLS en agent.ts si quieres que delegue.',
+      );
+    }
+    const res = await panal.ask(skill, pregunta, {
+      maxSpend: presupuesto,
+      // En la moneda del presupuesto, que es la del x402: solo se cotiza con
+      // quien cobre en ella.
+      asset: X402_TOKEN,
+      skillsPermitidas: SUBCONTRATA_SKILLS,
+      depth: SUBCONTRATA_SALTOS,
+      // El sobre recibido, si lo hay. Sin él se abre una cadena nueva.
+      envelope: sobre,
+      // Sin esto un agente que busca su propia skill se contrataría a sí
+      // mismo, se pagaría a sí mismo y se quedaría esperando su respuesta.
+      exclude: [account.address],
+      // Si hay archivos, solo entre los que los aceptan; se le cifran si
+      // publicó su clave, y en la pregunta solo va su lista.
+      ...(archivos.length ? { files: archivos } : {}),
+    });
+    console.log(
+      `[panal] consulta a ${res.agent} por ${formatX402Amount(res.paid, res.currency)} ${res.currency.symbol} (${skill}) · trace ${sobre?.trace ?? 'nuevo'}`,
+    );
+    // A quién se pagó, y detrás a quién pagó él a su vez para responder.
+    subcontratos.push(
+      ...subcontractsOfAnswer(
+        {
+          agent: res.agent,
+          skill: res.skill,
+          amount: res.paid,
+          currency: { symbol: res.currency.symbol, address: res.currency.address, decimals: res.currency.decimals },
+          ...(res.txHash ? { txHash: res.txHash } : {}),
+          // Tu información pasó por él: también se dice cuántos archivos.
+          ...(archivos.length ? { files: archivos.length } : {}),
+        },
+        res.subcontracts,
+      ),
+    );
+    return res;
+  }
+
   return {
     ...base,
     nivel,
     envelope: sobre,
     presupuesto,
-    consultar: async (skill: string, pregunta: string) => {
-      if (presupuesto <= 0n) {
-        throw new Error(
-          nivel
-            ? `El nivel "${nivel.name}" no tiene presupuesto para subcontratar: ponle \`subcontrata\` en agent.ts.`
-            : 'Este agente no tiene presupuesto para subcontratar: pon SUBCONTRATA_MAX en el .env si quieres que delegue.',
-        );
-      }
-      // Dinero Y permiso. Sin lista no se compra nada, aunque haya dinero: el
-      // buscador generaliza cuando no encuentra a nadie, y sin lista esa
-      // generalización no tiene dónde parar.
-      if (SUBCONTRATA_SKILLS.length === 0) {
-        throw new Error(
-          'Este agente no tiene ninguna skill permitida: rellena SUBCONTRATA_SKILLS en agent.ts si quieres que delegue.',
-        );
-      }
-      const res = await panal.ask(skill, pregunta, {
-        maxSpend: presupuesto,
-        // En la moneda del presupuesto, que es la del x402: solo se cotiza con
-        // quien cobre en ella.
-        asset: X402_TOKEN,
-        skillsPermitidas: SUBCONTRATA_SKILLS,
-        depth: SUBCONTRATA_SALTOS,
-        // El sobre recibido, si lo hay. Sin él se abre una cadena nueva.
-        envelope: sobre,
-        // Sin esto un agente que busca su propia skill se contrataría a sí
-        // mismo, se pagaría a sí mismo y se quedaría esperando su respuesta.
-        exclude: [account.address],
-      });
-      console.log(
-        `[panal] consulta a ${res.agent} por ${formatX402Amount(res.paid, res.currency)} ${res.currency.symbol} (${skill}) · trace ${sobre?.trace ?? 'nuevo'}`,
-      );
-      // A quién se pagó, y detrás a quién pagó él a su vez para responder.
-      subcontratos.push(
-        ...subcontractsOfAnswer(
-          {
-            agent: res.agent,
-            skill: res.skill,
-            amount: res.paid,
-            currency: { symbol: res.currency.symbol, address: res.currency.address, decimals: res.currency.decimals },
-            ...(res.txHash ? { txHash: res.txHash } : {}),
-          },
-          res.subcontracts,
-        ),
-      );
-      return res.answer;
+    consultar: async (skill: string, pregunta: string, opciones?: { archivos?: ArchivoParaConsultar[] }) =>
+      (await subcontratar(skill, pregunta, opciones?.archivos ?? [])).answer,
+    consultarConArchivos: async (skill: string, pregunta: string, opciones?: { archivos?: ArchivoParaConsultar[] }) => {
+      const res = await subcontratar(skill, pregunta, opciones?.archivos ?? []);
+      return {
+        respuesta: res.answer,
+        archivos: res.files.map((f) => ({ name: f.name, bytes: f.bytes, ...(f.mime ? { mime: f.mime } : {}) })),
+      };
     },
   };
 }
@@ -1571,10 +1603,17 @@ const server = createServer((req, res) => {
         json(res, 404, { error: 'this agent does not charge per call; hire it through the escrow' });
         return;
       }
-      const body = JSON.parse(await readBody(req)) as { prompt?: string };
+      const body = JSON.parse(await readBody(req)) as { prompt?: string; files?: unknown };
       const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
       if (!prompt || prompt.length > 2000) {
         json(res, 400, { error: 'prompt required, max 2000 characters' });
+        return;
+      }
+      // Archivos que acompañan a la pregunta: en el buzón a tu nombre, aquí
+      // solo su lista. Una lista mal formada se rechaza entera, sin cotizar.
+      const anunciados = parseConsultaFiles(body.files);
+      if (anunciados === null) {
+        json(res, 400, { error: `bad files: at most ${MAX_CONSULTA_FILES}, each with name, size and keccak256 hash` });
         return;
       }
 
@@ -1619,6 +1658,7 @@ const server = createServer((req, res) => {
               resource: recurso,
               description: X402_DESCRIPTION,
               payer,
+              files: CONSULTA_FILES_CAPABILITY,
             }),
           );
           return;
@@ -1639,6 +1679,7 @@ const server = createServer((req, res) => {
             description: X402_DESCRIPTION,
             domain,
             payerNonce: nonce,
+            files: CONSULTA_FILES_CAPABILITY,
           }),
         );
         return;
@@ -1652,6 +1693,24 @@ const server = createServer((req, res) => {
       if ((leido.payment.scheme === X402_NATIVE_SCHEME) !== X402_EN_MON) {
         json(res, 400, { error: `this agent charges in ${X402_SYMBOL}: ask for a new quote` });
         return;
+      }
+
+      // Los archivos de la pregunta, ANTES de cobrar: si no se pueden bajar o no
+      // cuadran con su hash, no se cobra una respuesta que no los habría mirado.
+      let adjuntosDeLaPregunta: AdjuntoRecibido[] = [];
+      if (anunciados.length) {
+        try {
+          adjuntosDeLaPregunta = (await panal.receiveFiles(anunciados)).map((f) => ({
+            name: f.name,
+            bytes: f.bytes,
+            ...(f.mime ? { mime: f.mime } : {}),
+          }));
+          console.log(`[x402] ${adjuntosDeLaPregunta.length} archivo(s) con la pregunta, comprobados`);
+        } catch (err) {
+          console.error(`[x402] no se pudieron bajar los archivos de la pregunta: ${err instanceof Error ? err.message : err}`);
+          json(res, 400, { error: 'could not fetch the attached files from the Panal buzón; nothing was charged' });
+          return;
+        }
       }
 
       // SE COBRA ANTES DE SERVIR. Si se sirviera primero y el cobro fallara, el
@@ -1694,9 +1753,8 @@ const server = createServer((req, res) => {
               client: leido.payment.payer,
               amount: cobro.amount,
               deadline: 0n,
-              // Una llamada x402 es una pregunta y una respuesta: no hay tarea
-              // donde anclar un adjunto, así que tampoco hay adjuntos.
-              adjuntos: [],
+              // Los que mandó quien pregunta, ya bajados y comprobados.
+              adjuntos: adjuntosDeLaPregunta,
               // Lo que ya se habló con ESTA persona. Quién es lo dice el pago:
               // firmó un permiso y el cobro se ejecutó en la cadena, así que
               // nadie puede continuar la conversación de otro sin pagar como
@@ -1707,16 +1765,27 @@ const server = createServer((req, res) => {
             subcontratos,
           ),
         );
-        // En una llamada x402 no hay tarea, así que no hay nada que anclar ni
-        // ninguna firma con la que proteger una descarga: los archivos no
-        // tienen dónde agarrarse. Se responde el texto y se avisa en el log en
-        // vez de callarlo, que si no el autor busca el fallo donde no está.
+        // Los archivos de la respuesta van al buzón a nombre de quien pagó
+        // (cifrados si publicó su clave), y en la respuesta solo su lista con
+        // el hash de cada uno: quien los baja comprueba que son esos.
         const { text: answer, files } = normalizarSalida(salida);
+        let devueltos: HashedFile[] = [];
         if (files.length) {
-          console.error(
-            `[x402] tu handleTask devolvió ${files.length} archivo(s) y una llamada x402 no puede entregarlos: ` +
-              'no hay tarea que los ancle ni firma que proteja la descarga. Solo va el texto.',
-          );
+          if (files.length > MAX_CONSULTA_FILES) {
+            console.error(`[x402] tu handleTask devolvió ${files.length} archivos y caben ${MAX_CONSULTA_FILES}: van los primeros.`);
+          }
+          try {
+            devueltos = await panal.uploadFilesFor(
+              leido.payment.payer,
+              files.slice(0, MAX_CONSULTA_FILES).map((f) => ({
+                name: f.name,
+                bytes: typeof f.data === 'string' ? new TextEncoder().encode(f.data) : new Uint8Array(f.data),
+                ...(f.mime ? { mime: f.mime } : {}),
+              })),
+            );
+          } catch (err) {
+            console.error(`[x402] no se pudieron dejar los archivos de la respuesta: ${err instanceof Error ? err.message : err}. Va solo el texto.`);
+          }
         }
         res.setHeader('x-payment-tx', cobro.txHash);
         json(res, 200, {
@@ -1724,6 +1793,7 @@ const server = createServer((req, res) => {
           paid: { txHash: cobro.txHash, amount: cobro.amount.toString(), asset: X402_TOKEN },
           // A quién se pagó para contestarte: quien pregunta lo pasa a SU cliente.
           ...(subcontratos.length ? { subcontracts: subcontractsToJson(subcontratos) } : {}),
+          ...(devueltos.length ? { files: devueltos } : {}),
         });
 
         // El turno se guarda AQUÍ, con las dos mitades y sólo si hubo

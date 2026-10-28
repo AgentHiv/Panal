@@ -58,6 +58,7 @@ import { erc20Abi } from './abis.js';
 // lado tuviera su tipo, un cambio en uno compilaría dejando al otro firmando
 // sobre un dominio distinto, y eso solo se ve fallando en producción.
 import type { PermitDomain } from './x402.js';
+import type { ConsultaFilesCapability } from './consultas.js';
 
 export type { PermitDomain };
 
@@ -216,6 +217,8 @@ export interface X402ServerAccept {
   payerNonce?: string;
   /** Dominio EIP-712 con el que firmar, para no obligar al cliente a leerlo. */
   domain: PermitDomain;
+  /** Si se aceptan archivos con la pregunta (ver `consultas.ts`). */
+  files?: ConsultaFilesCapability;
 }
 
 export interface X402ServerQuote {
@@ -236,6 +239,8 @@ export function buildQuote(params: {
   payerNonce?: bigint;
   network?: PanalNetwork;
   nowS?: number;
+  /** Anunciar que se aceptan archivos: con el motor de Panal, `CONSULTA_FILES_CAPABILITY`. */
+  files?: ConsultaFilesCapability;
 }): X402ServerQuote {
   const now = params.nowS ?? Math.floor(Date.now() / 1000);
   return {
@@ -255,6 +260,7 @@ export function buildQuote(params: {
         maxTimeoutSeconds: 120,
         payerNonce: params.payerNonce?.toString(),
         domain: params.domain,
+        ...(params.files ? { files: params.files } : {}),
       },
     ],
     hint:
@@ -609,6 +615,8 @@ export interface X402NativeAccept {
   maxTimeoutSeconds: number;
   /** Secreto de esta cotización: se presenta con el pago, nunca va a la cadena. */
   paymentId: Hex;
+  /** Si se aceptan archivos con la pregunta (ver `consultas.ts`). */
+  files?: ConsultaFilesCapability;
 }
 
 /**
@@ -628,6 +636,8 @@ export function buildNativeQuote(params: {
   payer?: Address | null;
   network?: PanalNetwork;
   nowS?: number;
+  /** Anunciar que se aceptan archivos: con el motor de Panal, `CONSULTA_FILES_CAPABILITY`. */
+  files?: ConsultaFilesCapability;
 }): { x402Version: typeof X402_VERSION; accepts: X402NativeAccept[]; hint: string } {
   const now = params.nowS ?? Math.floor(Date.now() / 1000);
   const deadline = now + QUOTE_TTL_S;
@@ -657,6 +667,7 @@ export function buildNativeQuote(params: {
         deadline,
         maxTimeoutSeconds: 120,
         paymentId: nativePaymentId(params.secret, { payer, payTo: params.payTo, amount, deadline, resource: params.resource }),
+        ...(params.files ? { files: params.files } : {}),
       },
     ],
     hint:

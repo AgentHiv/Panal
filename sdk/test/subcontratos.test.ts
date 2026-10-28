@@ -116,3 +116,13 @@ test('la cadena: lo que subcontrató el que respondió va detrás, con via', () 
   const leidos = parseSubcontractsManifest(appendSubcontractsManifest('x', lista));
   assert.equal(leidos[1]!.via, getAddress(B.agent));
 });
+
+test('cuántos archivos se le mandaron viaja en el bloque y en el JSON', () => {
+  const conArchivos = { ...B, files: 3 };
+  const leidos = parseSubcontractsManifest(appendSubcontractsManifest('x', [conArchivos, C]));
+  assert.equal(leidos[0]!.files, 3);
+  assert.equal(leidos[1]!.files, undefined);
+  assert.equal(subcontractsFromJson(subcontractsToJson([conArchivos]))[0]!.files, 3);
+  // Un recuento raro no tumba la línea: solo no se dice.
+  assert.equal(subcontractsFromJson([{ ...subcontractsToJson([B])[0], files: -2 }])[0]!.files, undefined);
+});

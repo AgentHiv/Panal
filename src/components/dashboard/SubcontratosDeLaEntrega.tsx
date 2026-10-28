@@ -11,7 +11,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink, Network } from 'lucide-react';
+import { ExternalLink, Network, Paperclip } from 'lucide-react';
 import { formatUnits } from 'viem';
 import HexAvatar from '@/components/HexAvatar';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
@@ -63,6 +63,12 @@ export default function SubcontratosDeLaEntrega({ texto }: { texto: string }) {
               <span className="font-mono text-[0.75rem] text-ink-2">
                 {importe(s.importe, s.moneda.decimales)} {s.moneda.simbolo}
               </span>
+              {s.archivos && (
+                <span className="inline-flex items-center gap-1 text-[0.75rem] text-ink-2">
+                  <Paperclip size={11} aria-hidden />
+                  {t('tasks.subcontratos.archivos', { count: s.archivos })}
+                </span>
+              )}
               {s.tx && (
                 <a
                   href={EXPLORER_TX(s.tx)}

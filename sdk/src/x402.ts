@@ -23,6 +23,8 @@ import { assertPublicUrl, fetchLimited, type UrlGuardOptions } from './net.js';
 import { envelopeHeaders, type CallEnvelope } from './envelope.js';
 import { networkOfChain, x402Currency, type X402Currency } from './currencies.js';
 import { subcontractsFromJson, type SubcontractRecord } from './subcontratos.js';
+import { parseConsultaFiles, type ConsultaFilesCapability, type ReceivedFile } from './consultas.js';
+import type { HashedFile } from './files.js';
 
 /** El esquema de las monedas con `permit`. Debe coincidir con el servidor. */
 export const X402_SCHEME = 'eip2612-permit';
@@ -67,6 +69,12 @@ export interface X402Accept {
   domain?: PermitDomain;
   /** Solo en MON: el código de esta cotización, que se presenta con el pago. */
   paymentId?: Hex;
+  /**
+   * Si el agente acepta archivos con la pregunta, cuántos y de qué tamaño.
+   * Sin esto, no se le mandan: un agente que no los espera los ignoraría y
+   * cobraría igual una respuesta que no los ha mirado. Ver `consultas.ts`.
+   */
+  files?: ConsultaFilesCapability;
 }
 
 export interface X402Quote {
@@ -154,6 +162,12 @@ export interface PayAndAskOptions extends UrlGuardOptions {
    * ha gastado su salto. Ver `descend()` en envelope.ts.
    */
   envelope?: CallEnvelope;
+  /**
+   * Archivos que acompañan a la pregunta, YA en el buzón a nombre del agente
+   * (ver `uploadConsultaFile`): aquí solo va su lista. Si la cotización no
+   * dice que el agente los acepta, no se firma nada.
+   */
+  files?: HashedFile[];
 }
 
 export interface AskResult {
@@ -172,6 +186,14 @@ export interface AskResult {
    * (vacío si no subcontrató o si su motor no lo dice). Ver `subcontratos.ts`.
    */
   subcontracts: SubcontractRecord[];
+  /** Los archivos que devolvió, tal y como los anunció: dejados en el buzón a tu nombre. */
+  fileManifest: HashedFile[];
+  /**
+   * Esos archivos ya bajados, comprobados y abiertos. Los rellena el cliente
+   * (`ask`, `askAgent`); con `payAndAsk` a pelo va vacío y la lista está en
+   * `fileManifest`, para bajarlos con `downloadConsultaFile`.
+   */
+  files: ReceivedFile[];
 }
 
 /**
@@ -211,6 +233,18 @@ export async function payAndAsk(
     throw new X402Error(
       `La cotización cobra a ${accept.payTo} y esperabas a ${options.expectedPayee}: no se firma.`,
     );
+  }
+  const enviados = options.files ?? [];
+  if (enviados.length) {
+    const puede = accept.files;
+    if (!puede) {
+      throw new X402Error('Este agente no acepta archivos con la pregunta: no se firma.');
+    }
+    if (enviados.length > puede.max) {
+      throw new X402Error(`Este agente acepta ${puede.max} archivo(s) por pregunta y mandas ${enviados.length}.`);
+    }
+    const grande = enviados.find((f) => f.size > puede.maxBytes);
+    if (grande) throw new X402Error(`"${grande.name}" pasa del tamaño que acepta este agente.`);
   }
   if (options.asset && getAddress(accept.asset) !== getAddress(options.asset)) {
     throw new X402Error(`La cotización pide pagar en ${accept.asset} y esperabas ${options.asset}.`);
@@ -252,7 +286,7 @@ export async function payAndAsk(
       'x-payment': header.value,
       ...(options.envelope ? envelopeHeaders(options.envelope) : {}),
     },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify(enviados.length ? { prompt, files: enviados } : { prompt }),
     timeoutMs: options.timeoutMs ?? (accept.maxTimeoutSeconds ?? 120) * 1000,
   });
 
@@ -265,6 +299,7 @@ export async function payAndAsk(
     paid?: { txHash?: Hex };
     paymentTx?: Hex;
     subcontracts?: unknown;
+    files?: unknown;
   };
   try {
     body = JSON.parse(res.text) as typeof body;
@@ -307,6 +342,9 @@ export async function payAndAsk(
     endpoint: url.toString(),
     // Entrada de otro agente: se valida entrada a entrada y lo que no cuadra se descarta.
     subcontracts: subcontractsFromJson(body.subcontracts),
+    // Una lista de archivos mal formada se ignora entera: no hay a medias.
+    fileManifest: parseConsultaFiles(body.files) ?? [],
+    files: [],
   };
 }
 

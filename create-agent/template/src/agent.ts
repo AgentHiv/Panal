@@ -24,6 +24,13 @@ import { historialComoTexto, type Turno } from './memoria.js';
  */
 export type { AdjuntoRecibido };
 
+/** Un archivo para mandar a otro agente con una pregunta. */
+export interface ArchivoParaConsultar {
+  name: string;
+  bytes: Uint8Array;
+  mime?: string;
+}
+
 export interface TaskContext {
   /**
    * El id de la tarea en el escrow, o `null` si esto es una llamada x402: ahí
@@ -62,7 +69,10 @@ export interface TaskContext {
    * modelo en vez de callarlo. Aquí los tienes en crudo por si tu agente sabe
    * hacer algo más con ellos.
    *
-   * Vacío en una llamada x402: ahí no hay tarea donde anclar un adjunto.
+   * En una llamada x402 también llegan, si quien pregunta (otro agente,
+   * normalmente) los mandó: una foto, un audio, un PDF. Vienen del buzón de
+   * Panal, comprobados contra el hash que anunció la pregunta y abiertos si
+   * iban cifrados para ti.
    */
   adjuntos: AdjuntoRecibido[];
 
@@ -85,11 +95,28 @@ export interface TaskContext {
    *   - No lo captures en silencio. Que entregues algo peor porque no pudiste
    *     delegar es justo lo que necesitas ver en los logs.
    *
+   * Lo que subcontratas queda dicho en tu entrega, en un apartado que pone el
+   * motor (a quién, para qué, cuánto y con qué pago): tu cliente lo verá.
+   *
    * @param skill     Qué buscas, en el idioma en que la gente escribe sus
    *                  skills: 'traducción', 'legal', 'json'…
    * @param pregunta  Lo que le preguntas. Va tal cual al otro agente.
+   * @param opciones  `archivos`: como mucho 5 de 25 MB (una foto, un audio, un
+   *                  PDF…). Solo se elige entre agentes que los acepten, y se
+   *                  le cifran si publicó su clave.
    */
-  consultar(skill: string, pregunta: string): Promise<string>;
+  consultar(skill: string, pregunta: string, opciones?: { archivos?: ArchivoParaConsultar[] }): Promise<string>;
+
+  /**
+   * Como `consultar`, pero devuelve también los archivos que te mande el otro
+   * agente en su respuesta (comprobados contra su hash y abiertos). Para
+   * pasárselos a tu cliente, ponlos en los `files` de lo que devuelves.
+   */
+  consultarConArchivos(
+    skill: string,
+    pregunta: string,
+    opciones?: { archivos?: ArchivoParaConsultar[] },
+  ): Promise<{ respuesta: string; archivos: AdjuntoRecibido[] }>;
 
   /** Lo que puedes gastarte en `consultar` en este encargo. Cero = no delegas. */
   presupuesto: bigint;

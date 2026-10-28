@@ -13,6 +13,7 @@
  *     decimals: 18
  *     tx: 0x51ab…
  *     via: 0x…            (solo si lo contrató uno de sus subcontratados)
+ *     files: 2            (si se le mandaron archivos con la pregunta)
  *
  * ─────────────────────────────────────────────────────────────────────────
  * El formato lo define `sdk/src/subcontratos.ts`, que es la fuente de la
@@ -38,6 +39,8 @@ export interface Subcontrato {
   tx?: Hex;
   /** Si lo contrató uno de los subcontratados, cuál. */
   via?: Address;
+  /** Cuántos archivos se le mandaron con la pregunta. */
+  archivos?: number;
 }
 
 /**
@@ -60,7 +63,7 @@ export function leerSubcontratos(texto: string): Subcontrato[] {
       c[linea.slice(0, sep).trim().toLowerCase()] = linea.slice(sep + 1).trim();
     }
 
-    const { agent, skill, amount, currency, asset, decimals, tx, via } = c;
+    const { agent, skill, amount, currency, asset, decimals, tx, via, files } = c;
     if (!agent || !isAddress(agent) || !asset || !isAddress(asset)) continue;
     if (!skill || !currency || !amount || !/^\d{1,78}$/.test(amount)) continue;
     const dec = Number(decimals);
@@ -75,6 +78,7 @@ export function leerSubcontratos(texto: string): Subcontrato[] {
       moneda: { simbolo: currency.slice(0, 16), direccion: getAddress(asset), decimales: dec },
       ...(tx ? { tx: tx.toLowerCase() as Hex } : {}),
       ...(via ? { via: getAddress(via) } : {}),
+      ...(files && /^\d{1,4}$/.test(files) && Number(files) > 0 ? { archivos: Number(files) } : {}),
     });
   }
   return out;

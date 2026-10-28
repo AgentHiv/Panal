@@ -980,7 +980,8 @@
       "title": "Subcontratado",
       "desc": "Para este encargo el agente pagó a otros agentes. Lo dice dentro de la entrega, que está anclada en la cadena: no se puede quitar después.",
       "via": "a través de {{agente}}",
-      "pago": "ver pago"
+      "pago": "ver pago",
+      "archivos": "archivos recibidos: {{count}}"
     }
   },
   "payments": {

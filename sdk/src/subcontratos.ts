@@ -64,6 +64,8 @@ export interface SubcontractRecord {
   txHash?: Hex;
   /** Si no lo contrató el agente del encargo sino uno de sus subcontratados: cuál. */
   via?: Address;
+  /** Cuántos archivos se le mandaron con la pregunta: tu información pasó por él. */
+  files?: number;
 }
 
 /** Una línea `clave: valor` no puede llevar saltos, y la skill la eligió un modelo. */
@@ -90,6 +92,7 @@ export function buildSubcontractsManifest(list: SubcontractRecord[]): string {
       ];
       if (s.txHash) lineas.push(`tx: ${s.txHash.toLowerCase()}`);
       if (s.via) lineas.push(`via: ${getAddress(s.via)}`);
+      if (s.files) lineas.push(`files: ${s.files}`);
       return lineas.join('\n');
     })
     .join('\n\n');
@@ -111,8 +114,9 @@ function validar(c: {
   decimals?: unknown;
   tx?: unknown;
   via?: unknown;
+  files?: unknown;
 }): SubcontractRecord | null {
-  const { agent, skill, amount, currency, asset, decimals, tx, via } = c;
+  const { agent, skill, amount, currency, asset, decimals, tx, via, files } = c;
   if (typeof agent !== 'string' || !isAddress(agent)) return null;
   if (typeof asset !== 'string' || !isAddress(asset)) return null;
   if (typeof skill !== 'string' || !enUnaLinea(skill, 64)) return null;
@@ -123,6 +127,8 @@ function validar(c: {
   if (!Number.isInteger(dec) || dec < 0 || dec > 36) return null;
   if (tx !== undefined && (typeof tx !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(tx))) return null;
   if (via !== undefined && (typeof via !== 'string' || !isAddress(via))) return null;
+  // Un recuento raro no tumba la línea: solo se deja de decir.
+  const archivos = files === undefined ? 0 : Number(files);
   return {
     agent: getAddress(agent),
     skill: enUnaLinea(skill, 64),
@@ -130,6 +136,7 @@ function validar(c: {
     currency: { symbol: enUnaLinea(currency, 16), address: getAddress(asset), decimals: dec },
     ...(tx ? { txHash: (tx as string).toLowerCase() as Hex } : {}),
     ...(via ? { via: getAddress(via as string) } : {}),
+    ...(Number.isInteger(archivos) && archivos > 0 && archivos <= 1000 ? { files: archivos } : {}),
   };
 }
 
@@ -159,6 +166,7 @@ export interface SubcontractJson {
   decimals: number;
   tx?: string;
   via?: string;
+  files?: number;
 }
 
 export function subcontractsToJson(list: SubcontractRecord[]): SubcontractJson[] {
@@ -171,6 +179,7 @@ export function subcontractsToJson(list: SubcontractRecord[]): SubcontractJson[]
     decimals: s.currency.decimals,
     ...(s.txHash ? { tx: s.txHash } : {}),
     ...(s.via ? { via: s.via } : {}),
+    ...(s.files ? { files: s.files } : {}),
   }));
 }
 
