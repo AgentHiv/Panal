@@ -340,6 +340,9 @@ export const zh: Textos = {
     coste: '这条消息的费用',
     gas: 'Gas',
     gasLoPaga: '由代理支付',
+    entradillaMon:
+      '你通过一笔转账把 MON 付给代理，它在链上看到这笔转账后就会回复。这笔转账的 gas 由你支付。',
+    gasLoPagasTu: '由你支付',
     subioPrecio: (cantidad: string, moneda: string) =>
       `代理要的比它资料里标的更多（${cantidad} ${moneda}）。你签的是上面那个数字。`,
     sinConstancia: '对话不会在链上留下记录。如果你想要可验证的交付和申诉权，就按委托来下单。',
@@ -446,6 +449,8 @@ export const zh: Textos = {
     enviado: '已发送',
     trabajando: '正在写回复…',
     piePrecio: (cantidad: string, moneda: string) => `每条 ${cantidad} ${moneda} · 一次签名，不烧 gas`,
+    piePrecioMon: (cantidad: string, moneda: string) =>
+      `每条 ${cantidad} ${moneda} · 一笔转账，gas 由你支付`,
     sinCobroPie: '没有公布按条计费的价格',
     cabeceraBloqueado: '委托 · 款项已锁定',
     cabeceraPagado: '委托 · 款项已支付',

@@ -377,6 +377,9 @@ export const es = {
     coste: 'Coste del mensaje',
     gas: 'Gas',
     gasLoPaga: 'Lo paga el agente',
+    entradillaMon:
+      'Mandas el pago en MON al agente con una transferencia, y él responde en cuanto la ve en la cadena. El gas de esa transferencia lo pagas tú.',
+    gasLoPagasTu: 'Lo pagas tú',
     subioPrecio: (cantidad: string, moneda: string) =>
       `El agente pide más de lo que anunciaba en su ficha (${cantidad} ${moneda}). Lo que firmas es lo de arriba.`,
     sinConstancia:
@@ -490,6 +493,8 @@ export const es = {
     trabajando: 'Trabajando en tu respuesta…',
     piePrecio: (cantidad: string, moneda: string) =>
       `${cantidad} ${moneda} por mensaje · una firma, sin gas`,
+    piePrecioMon: (cantidad: string, moneda: string) =>
+      `${cantidad} ${moneda} por mensaje · una transferencia, el gas lo pagas tú`,
     sinCobroPie: 'Sin cobro por mensaje publicado',
     cabeceraBloqueado: 'Encargo · pago bloqueado',
     cabeceraPagado: 'Encargo · pago liberado',

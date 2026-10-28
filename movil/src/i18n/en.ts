@@ -373,6 +373,9 @@ export const en: Textos = {
     coste: 'Cost of the message',
     gas: 'Gas',
     gasLoPaga: 'Paid by the agent',
+    entradillaMon:
+      'You send the payment in MON to the agent as a transfer, and it answers as soon as it sees it on-chain. You pay the gas for that transfer.',
+    gasLoPagasTu: 'Paid by you',
     subioPrecio: (cantidad: string, moneda: string) =>
       `The agent is asking more than its profile advertised (${cantidad} ${moneda}). What you sign is the figure above.`,
     sinConstancia:
@@ -485,6 +488,8 @@ export const en: Textos = {
     trabajando: 'Working on your answer…',
     piePrecio: (cantidad: string, moneda: string) =>
       `${cantidad} ${moneda} per message · one signature, no gas`,
+    piePrecioMon: (cantidad: string, moneda: string) =>
+      `${cantidad} ${moneda} per message · one transfer, you pay the gas`,
     sinCobroPie: 'No per-message price published',
     cabeceraBloqueado: 'Job · payment locked',
     cabeceraPagado: 'Job · payment released',

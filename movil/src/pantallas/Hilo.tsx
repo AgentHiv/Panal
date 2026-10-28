@@ -17,7 +17,7 @@ import {
 import type { Adjunto, ProblemaConAdjuntos } from '@/lib/archivosDelChat';
 import { formatBytes } from '@/lib/deliveredFiles';
 import type { Mensaje } from '@/lib/historial';
-import { FileVerificationError, X402Error } from '@panal/sdk';
+import { FileVerificationError, X402_NATIVE_SCHEME, X402Error } from '@panal/sdk';
 import type { HashedFile } from '@panal/sdk';
 import { encargosDelCliente, fusionarHilo, claveDeEntrada, ESTADO } from '@/lib/conversaciones';
 import type { Entrada } from '@/lib/conversaciones';
@@ -489,7 +489,10 @@ export default function Hilo(): React.ReactElement {
           {cargandoFicha
             ? '…'
             : datos?.cobro
-              ? T.hilo.piePrecio(monto(datos.cobro.amount, datos.cobro.decimales), datos.cobro.simbolo)
+              ? (datos.cobro.moneda.scheme === X402_NATIVE_SCHEME ? T.hilo.piePrecioMon : T.hilo.piePrecio)(
+                  monto(datos.cobro.amount, datos.cobro.decimales),
+                  datos.cobro.simbolo,
+                )
               : T.hilo.sinCobroPie}
         </p>
       </div>

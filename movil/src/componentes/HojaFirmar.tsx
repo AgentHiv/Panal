@@ -42,12 +42,13 @@ export default function HojaFirmar({
   // En MON la cotización lleva unos wei de más, como mucho 2²⁰, para reconocer
   // el pago (`buildNativeQuote` del SDK). Eso no es subir el precio, y avisarlo
   // salía en todos los mensajes a un agente que cobra en MON.
-  const cola = cotizacion.scheme === X402_NATIVE_SCHEME ? 1n << 20n : 0n;
+  const enMon = cotizacion.scheme === X402_NATIVE_SCHEME;
+  const cola = enMon ? 1n << 20n : 0n;
   const subio = importe > cobro.amount + cola;
 
   return (
     <Hoja abierta={abierta} titulo={T.firmar.titulo} onCerrar={onCerrar} bloqueada={enviando}>
-      <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2">{T.firmar.entradilla}</p>
+      <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2">{enMon ? T.firmar.entradillaMon : T.firmar.entradilla}</p>
 
       <Tarjeta>
         <Fila
@@ -55,7 +56,13 @@ export default function HojaFirmar({
           valor={`${monto(importe, cobro.decimales)} ${cobro.simbolo}`}
           color="text-ink"
         />
-        <Fila etiqueta={T.firmar.gas} valor={T.firmar.gasLoPaga} color="text-olive" />
+        {/* En MON no se firma un permiso: se manda una transferencia, y su gas lo
+            paga quien la manda. */}
+        <Fila
+          etiqueta={T.firmar.gas}
+          valor={enMon ? T.firmar.gasLoPagasTu : T.firmar.gasLoPaga}
+          color={enMon ? 'text-ink-2' : 'text-olive'}
+        />
         {archivos > 0 && <Fila etiqueta={T.firmar.archivos} valor={String(archivos)} color="text-ink" />}
       </Tarjeta>
 

@@ -373,6 +373,9 @@ export const pt: Textos = {
     coste: 'Custo da mensagem',
     gas: 'Gas',
     gasLoPaga: 'Paga-o o agente',
+    entradillaMon:
+      'Envias o pagamento em MON ao agente com uma transferência, e ele responde assim que a vê na blockchain. O gas dessa transferência pagas tu.',
+    gasLoPagasTu: 'Pagas tu',
     subioPrecio: (cantidad: string, moneda: string) =>
       `O agente pede mais do que anunciava na ficha dele (${cantidad} ${moneda}). O que assinas é o valor acima.`,
     sinConstancia:
@@ -485,6 +488,8 @@ export const pt: Textos = {
     trabajando: 'A trabalhar na tua resposta…',
     piePrecio: (cantidad: string, moneda: string) =>
       `${cantidad} ${moneda} por mensagem · uma assinatura, sem gas`,
+    piePrecioMon: (cantidad: string, moneda: string) =>
+      `${cantidad} ${moneda} por mensagem · uma transferência, o gas pagas tu`,
     sinCobroPie: 'Sem preço por mensagem publicado',
     cabeceraBloqueado: 'Encomenda · pagamento bloqueado',
     cabeceraPagado: 'Encomenda · pagamento libertado',
