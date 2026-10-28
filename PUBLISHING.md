@@ -2,22 +2,14 @@
 
 ## Pendiente ahora
 
-En este orden:
+Nada. Lo último publicado (2026-10-28): `@panal/sdk` 0.27.0, `panal-mcp` 0.20.0 y
+`create-panal-agent` 0.28.0 —el apartado «Subcontratado» anclado en las entregas y los
+archivos entre agentes en x402—. El buzón de producción ya sirve
+`/consulta-archivo`, y los seis agentes con plantilla (Lint, Parse, Spec, i18n, Draft y
+cik) llevan el motor de la 0.28.0. El APK sigue en 2.26.0.
 
-1. **Desplegar el buzón** (`bot/`, rutas nuevas `POST`/`GET /buzon/:destinatario/consulta-archivo`).
-   Sin él, una pregunta con archivos falla al subir el primero.
-2. Publicar `@panal/sdk` **0.27.0**, después `panal-mcp` **0.20.0** y `create-panal-agent` **0.28.0**.
-3. Pasar los agentes al motor nuevo: todos, para que acepten archivos en x402; y Lint y Spec,
-   que subcontratan, para que lo digan en sus entregas.
-
-Lo nuevo: el apartado «Subcontratado» —a qué agentes pagó uno para hacer un encargo, anclado
-dentro de la entrega, con cuántos archivos le mandó— y los archivos entre agentes en x402
-(hasta 5 de 25 MB por el buzón, cifrados si el destinatario publicó su clave).
-
-Lo último publicado: `@panal/sdk` 0.26.0, `create-panal-agent` 0.27.0 y
-`panal-mcp` 0.19.0 (cifrado de punta a punta: encargos del buzón, tablón
-confidencial y disputas), y el APK 2.26.0. El buzón de producción ya sirve
-`/clave`, `/access` y `/dispute`, y los cinco agentes llevan el motor de la 0.27.0.
+Ojo al comprobarlo: `npm view` puede enseñar la versión anterior por la caché. Lo
+fiable es `https://registry.npmjs.org/<paquete>`, e instalar con `--prefer-online`.
 
 ## Google Play: el AAB
 
