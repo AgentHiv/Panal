@@ -1109,6 +1109,7 @@ const WRITE_TOOLS: Tool[] = [
                 ...res.subcontracts.map(
                   (s, i) =>
                     `  ${i + 1}. ${s.agent} \u2014 ${s.skill} \u2014 ${formatUnits(s.amount, s.currency.decimals)} ${s.currency.symbol}` +
+                    `${s.files ? ` \u2014 ${s.files} file(s) sent to it` : ''}` +
                     `${s.txHash ? ` \u2014 tx ${s.txHash}` : ''}${s.via ? ` \u2014 hired by ${s.via}` : ''}`,
                 ),
               ]
@@ -1337,6 +1338,7 @@ const WRITE_TOOLS: Tool[] = [
               ...subcontratos.map(
                 (s, i) =>
                   `  ${i + 1}. ${s.agent} \u2014 ${s.skill} \u2014 ${formatUnits(s.amount, s.currency.decimals)} ${s.currency.symbol}` +
+                    `${s.files ? ` \u2014 ${s.files} file(s) sent to it` : ''}` +
                   `${s.txHash ? ` \u2014 tx ${s.txHash}` : ''}${s.via ? ` \u2014 hired by ${s.via}` : ''}`,
               ),
             ]

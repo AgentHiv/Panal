@@ -176,6 +176,24 @@ export function accesoSignMessage(taskId: bigint, expira: number): string {
 export function tablonDisputaSignMessage(jobId: bigint, expira: number): string {
   return `Panal tablón con reglas · disputa #${jobId.toString()} · ${expira}`;
 }
+/**
+ * Archivos de una pregunta x402 entre agentes: los mismos mensajes que
+ * `sdk/src/consultas.ts`. Si cambias uno, cambia el otro.
+ */
+export function consultaUploadMessage(para: Address, hash: Hex, expira: number): string {
+  return `Panal: dejo un archivo para ${getAddress(para)}\nhash: ${hash.toLowerCase()}\nexpira: ${expira}`;
+}
+export function consultaReadMessage(hash: Hex, expira: number): string {
+  return `Panal: leer el archivo ${hash.toLowerCase()}\nexpira: ${expira}`;
+}
+
+/**
+ * Lo que una cuenta puede dejar al día en archivos de consulta. Una pregunta
+ * lleva como mucho 5 de 25 MB; esto da para unas cuantas y no para usar el
+ * buzón de disco gratis.
+ */
+export const MAX_CONSULTA_BYTES_DIA = 300 * 1024 * 1024;
+
 export function disputaSignMessage(taskId: bigint, expira: number): string {
   return `Panal disputa #${taskId.toString()} · ${expira}`;
 }
@@ -1183,6 +1201,104 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     json(res, 200, { ok: true, hash: guardado.hash });
   };
 
+  // ---- POST /consulta-archivo — un archivo de una pregunta x402 entre agentes --
+  //
+  // No hay encargo: el archivo es de quien lo deja y de su destinatario, y de
+  // nadie más. Subirlo pide la firma de quien lo deja con el destinatario y el
+  // hash dentro; el hash se calcula aquí sobre los bytes, así que la firma
+  // autoriza ESTOS bytes y no otros. El buzón no sabe —ni le hace falta— si
+  // van cifrados: quien los baja los comprueba contra el hash anunciado.
+  const cupoDiario = new Map<string, { dia: number; bytes: number }>();
+  const recibirArchivoDeConsulta = async (para: Address, req: IncomingMessage, res: ServerResponse): Promise<void> => {
+    const url = new URL(req.url ?? '/', 'http://localhost');
+    const { address: addressParam, signature: signatureParam, expira } = credenciales(req, url);
+    if (!isAddress(addressParam) || !isHex(signatureParam)) {
+      json(res, 400, { error: 'bad credentials' });
+      return;
+    }
+    let nombre = '';
+    try {
+      nombre = sanearNombre(decodeURIComponent((req.headers['x-panal-filename'] as string | undefined) ?? ''));
+    } catch {
+      nombre = '';
+    }
+    if (!nombre) {
+      json(res, 400, { error: 'bad filename' });
+      return;
+    }
+    const de = getAddress(addressParam);
+    const bytes = await readBytes(req, MAX_ARCHIVO_BYTES);
+    if (bytes === null) {
+      json(res, 413, { error: 'file too large' });
+      return;
+    }
+    if (bytes.byteLength === 0) {
+      json(res, 400, { error: 'empty file' });
+      return;
+    }
+    const hash = keccak256(bytes);
+    if (!(await firmaVigente(de, signatureParam as Hex, expira, (e) => consultaUploadMessage(para, hash, e)))) {
+      json(res, 403, { error: 'bad signature' });
+      return;
+    }
+    const dia = Math.floor(Date.now() / 86_400_000);
+    const usado = cupoDiario.get(de);
+    const hoy = usado && usado.dia === dia ? usado.bytes : 0;
+    if (hoy + bytes.byteLength > MAX_CONSULTA_BYTES_DIA) {
+      json(res, 429, { error: 'daily quota exceeded' });
+      return;
+    }
+    const mime = (req.headers['content-type'] as string | undefined) ?? undefined;
+    const guardado = deps.store.guardarArchivoDeConsulta(
+      para,
+      de,
+      nombre,
+      bytes,
+      mime && mime !== 'application/octet-stream' ? mime.slice(0, 120) : undefined,
+    );
+    if ('error' in guardado) {
+      json(res, guardado.error === 'grande' ? 413 : 400, { error: guardado.error });
+      return;
+    }
+    cupoDiario.set(de, { dia, bytes: hoy + bytes.byteLength });
+    console.log(`[buzon] archivo de consulta de ${de} para ${para} (${bytes.byteLength} B)`);
+    json(res, 200, { ok: true, hash: guardado.hash });
+  };
+
+  // ---- GET /consulta-archivo/:hash — a su destinatario o a quien lo dejó ------
+  const darArchivoDeConsulta = async (
+    para: Address,
+    hash: Hex,
+    url: URL,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> => {
+    const { address: addressParam, signature: signatureParam, expira } = credenciales(req, url);
+    if (!isAddress(addressParam) || !isHex(signatureParam)) {
+      json(res, 400, { error: 'bad credentials' });
+      return;
+    }
+    const lector = getAddress(addressParam);
+    if (!(await firmaVigente(lector, signatureParam as Hex, expira, (e) => consultaReadMessage(hash, e)))) {
+      json(res, 403, { error: 'bad signature' });
+      return;
+    }
+    const guardado = deps.store.leerArchivoDeConsulta(para, hash);
+    // Lo mismo si no existe que si no es tuyo: no se dice qué hashes hay.
+    if (!guardado || ![para.toLowerCase(), guardado.meta.de.toLowerCase()].includes(lector.toLowerCase())) {
+      json(res, 404, { error: 'not found' });
+      return;
+    }
+    res.writeHead(200, {
+      'content-type': guardado.meta.mime || 'application/octet-stream',
+      'content-length': String(guardado.bytes.byteLength),
+      'content-disposition': 'attachment',
+      'x-content-type-options': 'nosniff',
+      'cache-control': 'private, no-store',
+    });
+    res.end(guardado.bytes);
+  };
+
   // ---- GET /archivo/:taskId/:nombre — los bytes, a quien sea de la tarea ----
   const darArchivo = async (
     agente: Address,
@@ -1924,6 +2040,16 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
     if (resto === 'clave' && req.method === 'POST') {
       await publicarClave(agente, req, res);
+      return;
+    }
+    // Archivos de una pregunta x402 entre agentes: `agente` es su destinatario.
+    if (resto === 'consulta-archivo' && req.method === 'POST') {
+      await recibirArchivoDeConsulta(agente, req, res);
+      return;
+    }
+    const deConsulta = /^consulta-archivo\/(0x[0-9a-fA-F]{64})$/.exec(resto);
+    if (deConsulta && req.method === 'GET') {
+      await darArchivoDeConsulta(agente, deConsulta[1]!.toLowerCase() as Hex, url, req, res);
       return;
     }
     if (await rutaDeAccesoODisputa(agente, resto, false, url, req, res)) return;

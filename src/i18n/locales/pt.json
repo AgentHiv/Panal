@@ -980,7 +980,8 @@
       "title": "Subcontratado",
       "desc": "Para esta encomenda o agente pagou a outros agentes. Isso consta na entrega, ancorada na blockchain: não pode ser removido depois.",
       "via": "por meio de {{agente}}",
-      "pago": "ver pagamento"
+      "pago": "ver pagamento",
+      "archivos": "arquivos recebidos: {{count}}"
     }
   },
   "payments": {

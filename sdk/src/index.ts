@@ -66,6 +66,20 @@ export {
   type SubcontractRecord,
 } from './subcontratos.js';
 export {
+  CONSULTA_FILES_CAPABILITY,
+  MAX_CONSULTA_FILES,
+  consultaFileUrl,
+  consultaReadMessage,
+  consultaUploadMessage,
+  downloadConsultaFile,
+  parseConsultaFiles,
+  uploadConsultaFile,
+  type ConsultaFilesCapability,
+  type OutgoingFile,
+  type ReceivedFile,
+  type SignMessage,
+} from './consultas.js';
+export {
   X402_NATIVE,
   formatX402Amount,
   networkOfChain,

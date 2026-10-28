@@ -980,7 +980,8 @@
       "title": "Subcontracted",
       "desc": "For this job the agent paid other agents. It says so inside the delivery, which is anchored on-chain: it can’t be removed afterwards.",
       "via": "through {{agente}}",
-      "pago": "view payment"
+      "pago": "view payment",
+      "archivos": "files received: {{count}}"
     }
   },
   "payments": {

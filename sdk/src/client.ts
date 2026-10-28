@@ -52,6 +52,13 @@ import {
   type Destinatario,
 } from './cifrado.js';
 import { X402Error, payAndAsk, quoteAsk, type AskResult, type X402Accept } from './x402.js';
+import {
+  MAX_CONSULTA_FILES,
+  downloadConsultaFile,
+  uploadConsultaFile,
+  type OutgoingFile,
+  type ReceivedFile,
+} from './consultas.js';
 import { descend, newEnvelope, remainingBudget, type CallEnvelope } from './envelope.js';
 import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type PanalNetwork } from './chains.js';
 import { leerPrecios, valorDeVenta, type OpcionesPrecios, type Precios } from './precios.js';
@@ -1436,17 +1443,92 @@ export class PanalClient {
        * heredaba ni presupuesto ni camino, y el ciclo dejaba de detectarse.
        */
       envelope?: CallEnvelope;
+      /**
+       * Archivos para el agente (una foto, un audio, un PDF…): como mucho 5 de
+       * 25 MB. Se dejan en el buzón a su nombre —cifrados si publicó clave— y
+       * en la pregunta solo va su lista. Solo si su cotización dice que los acepta.
+       */
+      files?: OutgoingFile[];
     },
   ): Promise<AskResult> {
     const wallet = this.wallet();
     const endpoint = await this.x402Endpoint(agent, options);
-    return payAndAsk(wallet, this.account!, endpoint, prompt, {
+    const archivos = options.files ?? [];
+    let quote = options.quote;
+    let manifiesto: HashedFile[] = [];
+    if (archivos.length) {
+      // Se cotiza ANTES de subir nada: si no acepta archivos, no se deja ni uno.
+      quote ??= await quoteAsk(endpoint, prompt, { payer: this.account!.address, ...options });
+      this.comprobarQueAceptaArchivos(quote, archivos);
+      manifiesto = await this.uploadFilesFor(agent, archivos);
+    }
+    const result = await payAndAsk(wallet, this.account!, endpoint, prompt, {
       ...options,
+      ...(quote ? { quote } : {}),
+      files: manifiesto,
       chainId: chainFor(this.network).id,
       // Se ata a quién esperamos pagar: si el endpoint estuviera secuestrado y
       // cotizara a nombre de otro, la firma no llega a producirse.
       expectedPayee: agent,
     });
+    return { ...result, files: await this.receiveFiles(result.fileManifest) };
+  }
+
+  /** Lanza si la cotización no admite estos archivos: sin firmar ni subir nada. */
+  private comprobarQueAceptaArchivos(accept: X402Accept, archivos: OutgoingFile[]): void {
+    if (archivos.length > MAX_CONSULTA_FILES) {
+      throw new X402Error(`Como mucho ${MAX_CONSULTA_FILES} archivos por pregunta, y mandas ${archivos.length}.`);
+    }
+    if (!accept.files) throw new X402Error('Este agente no acepta archivos con la pregunta.');
+    if (archivos.length > accept.files.max) {
+      throw new X402Error(`Este agente acepta ${accept.files.max} archivo(s) por pregunta y mandas ${archivos.length}.`);
+    }
+    const grande = archivos.find((f) => f.bytes.byteLength > accept.files!.maxBytes || f.bytes.byteLength > MAX_FILE_BYTES);
+    if (grande) throw new X402Error(`"${grande.name}" pasa del tamaño que acepta este agente.`);
+  }
+
+  /**
+   * Deja archivos en el buzón para `para`. Si publicó clave, cifrados para él
+   * y con un nombre opaco: el buzón no ve ni el contenido ni cómo se llaman, y
+   * el nombre real viaja solo en la lista que recibe el agente.
+   */
+  async uploadFilesFor(para: Address, archivos: OutgoingFile[]): Promise<HashedFile[]> {
+    const wallet = this.wallet();
+    const yo = this.account!.address;
+    const suClave = await this.getPublicKey(para);
+    const sign = (message: string) => wallet.signMessage({ account: this.account!, message });
+    const out: HashedFile[] = [];
+    for (const f of archivos) {
+      const bytes = suClave ? new Uint8Array(cifrarArchivo(f.bytes, [{ cuenta: getAddress(para), clave: suClave }])) : f.bytes;
+      const subido = await uploadConsultaFile({
+        buzonUrl: this.buzonUrl,
+        para,
+        de: yo,
+        file: { name: suClave ? nombreEnBuzon(keccak256(bytes)) : f.name, bytes, ...(suClave ? {} : f.mime ? { mime: f.mime } : {}) },
+        sign,
+      });
+      out.push({ ...subido, name: sanitizeFileName(f.name), ...(f.mime ? { mime: f.mime } : {}) });
+    }
+    return out;
+  }
+
+  /**
+   * Los archivos que alguien dejó en el buzón para esta cuenta (la respuesta
+   * de un agente, o la pregunta de otro): bajados, comprobados contra su hash
+   * y abiertos si iban cifrados.
+   */
+  async receiveFiles(manifest: HashedFile[]): Promise<ReceivedFile[]> {
+    if (!manifest.length) return [];
+    const wallet = this.wallet();
+    const yo = this.account!.address;
+    const sign = (message: string) => wallet.signMessage({ account: this.account!, message });
+    const out: ReceivedFile[] = [];
+    for (const f of manifest) {
+      const crudo = await downloadConsultaFile({ buzonUrl: this.buzonUrl, para: yo, lector: yo, file: f, sign });
+      const bytes = await this.decryptFile(crudo);
+      out.push({ name: f.name, size: bytes.byteLength, bytes, ...(f.mime ? { mime: f.mime } : {}) });
+    }
+    return out;
   }
 
   /**
@@ -1505,9 +1587,12 @@ export class PanalClient {
        * y un tope en una moneda no dice nada de otra.
        */
       asset?: Address;
+      /** Archivos para el agente que responda. Ver `askAgent`: solo se elige entre los que los aceptan. */
+      files?: OutgoingFile[];
     },
   ): Promise<AskResult & { agent: Address; skill: string }> {
     const wallet = this.wallet();
+    const archivos = options.files ?? [];
     const excluded = new Set(
       [...(options.exclude ?? []), this.account!.address].map((a) => getAddress(a).toLowerCase()),
     );
@@ -1573,6 +1658,7 @@ export class PanalClient {
           ...options,
           envelope: heredado,
         });
+        if (archivos.length) this.comprobarQueAceptaArchivos(accept, archivos);
         if (getAddress(accept.asset) !== moneda) {
           rechazos.push(`${agent.metadata.name || agent.address}: cobra en ${accept.asset}, no en ${moneda}`);
         } else if (BigInt(accept.amount) <= tope) quotes.push({ agent, endpoint, accept });
@@ -1595,8 +1681,11 @@ export class PanalClient {
     // quedan saltos, que hay presupuesto y que no estamos cerrando un ciclo.
     const siguiente = descend(heredado, this.account!.address, BigInt(elegido.accept.amount));
 
+    // Los archivos se suben SOLO para el elegido, y ya sabiendo que los acepta.
+    const manifiesto = archivos.length ? await this.uploadFilesFor(elegido.agent.address, archivos) : [];
     const result = await payAndAsk(wallet, this.account!, elegido.endpoint, prompt, {
       ...options,
+      files: manifiesto,
       maxSpend: tope,
       chainId: chainFor(this.network).id,
       expectedPayee: elegido.agent.address,
@@ -1607,7 +1696,12 @@ export class PanalClient {
     // `skill` es la que de verdad encontró al vendedor, que puede no ser la que
     // pediste: quien llama necesita poder decirlo en su log, o cada búsqueda
     // ensanchada es un cambio de comportamiento invisible.
-    return { ...result, agent: elegido.agent.address, skill: usada };
+    return {
+      ...result,
+      files: await this.receiveFiles(result.fileManifest),
+      agent: elegido.agent.address,
+      skill: usada,
+    };
   }
 
   /**

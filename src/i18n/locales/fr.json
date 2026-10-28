@@ -980,7 +980,8 @@
       "title": "Sous-traité",
       "desc": "Pour cette commande, l’agent a payé d’autres agents. C’est écrit dans la livraison, ancrée sur la blockchain : impossible de le retirer ensuite.",
       "via": "via {{agente}}",
-      "pago": "voir le paiement"
+      "pago": "voir le paiement",
+      "archivos": "fichiers reçus : {{count}}"
     }
   },
   "payments": {

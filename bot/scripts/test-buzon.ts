@@ -47,6 +47,8 @@ import {
   disputaSignMessage,
   esTextoCifrado,
   mensajeParaPublicarClave,
+  consultaReadMessage,
+  consultaUploadMessage,
   tablonArchivoSignMessage,
   tablonEncargoSignMessage,
   tablonEntregaSignMessage,
@@ -909,6 +911,75 @@ async function main(): Promise<void> {
     const h = [{ hash: '0x' + 'ab'.repeat(32), size: 506 }];
     const sobre = JSON.stringify({ v: 'panal-cifrado-1', e: 'e', n: 'n', para: [{ a: cliente.address.toLowerCase(), n: 'n', k: 'k' }], h, c: 'AAAA' });
     check('los adjuntos de un sobre se leen de su lista en abierto', JSON.stringify(adjuntosAnunciados(sobre)) === JSON.stringify(h));
+  }
+
+  console.log('\n── Archivos entre agentes (preguntas x402): solo de quien los deja y de quien los recibe ──\n');
+  {
+    const ip = { 'x-forwarded-for': '10.8.8.8' };
+    const para = persona.address;
+    const raiz = base.replace(`/${AGENTE}`, '');
+    const bytes = new TextEncoder().encode('%PDF-1.7 la foto de un recibo');
+    const hash = keccak256(bytes);
+    const subir = async (quien: typeof cliente, firmaPara: string, h: Hex, cuerpo: Uint8Array) => {
+      const expira = enUnMinuto();
+      return fetch(`${raiz}/${firmaPara}/consulta-archivo`, {
+        method: 'POST',
+        headers: {
+          ...ip,
+          'content-type': 'application/pdf',
+          'x-panal-address': quien.address,
+          'x-panal-signature': await quien.signMessage({ message: consultaUploadMessage(para, h, expira) }),
+          'x-panal-expira': String(expira),
+          'x-panal-filename': encodeURIComponent('recibo ñ.pdf'),
+        },
+        body: cuerpo,
+      });
+    };
+    const bajar = async (quien: typeof cliente, h: Hex) => {
+      const expira = enUnMinuto();
+      return fetch(`${raiz}/${para}/consulta-archivo/${h}`, {
+        headers: {
+          ...ip,
+          'x-panal-address': quien.address,
+          'x-panal-signature': await quien.signMessage({ message: consultaReadMessage(h, expira) }),
+          'x-panal-expira': String(expira),
+        },
+      });
+    };
+
+    const r1 = await subir(cliente, para, hash, bytes);
+    const b1 = (await r1.json()) as { hash?: string };
+    check('200 un agente deja un archivo para otro, firmado con el destinatario y el hash', r1.status === 200 && b1.hash === hash.toLowerCase(), `status=${r1.status}`);
+    const r2 = await subir(cliente, para, hash, new TextEncoder().encode('otros bytes'));
+    check('403 con la firma de unos bytes no se suben otros', r2.status === 403, `status=${r2.status}`);
+    const r3 = await subir(cliente, OTRO_AGENTE, hash, bytes);
+    check('403 la firma es para un destinatario: no vale para otro', r3.status === 403, `status=${r3.status}`);
+
+    const r4 = await bajar(persona, hash);
+    const bajado = new Uint8Array(await r4.arrayBuffer());
+    check('200 el destinatario lo baja, con sus bytes exactos', r4.status === 200 && keccak256(bajado) === hash, `status=${r4.status}`);
+    check('  y con el tipo con el que se subió', r4.headers.get('content-type') === 'application/pdf');
+    const r5 = await bajar(cliente, hash);
+    check('200 quien lo dejó también lo puede leer', r5.status === 200, `status=${r5.status}`);
+    const r6 = await bajar(intruso, hash);
+    check('404 un tercero no, y no se le dice si existe', r6.status === 404, `status=${r6.status}`);
+    const r7 = await bajar(persona, ('0x' + 'cd'.repeat(32)) as Hex);
+    check('404 un hash que no está', r7.status === 404, `status=${r7.status}`);
+    const r8 = await fetch(`${raiz}/${para}/consulta-archivo/${hash}`, { headers: ip });
+    check('400 sin firma no se lee nada', r8.status === 400, `status=${r8.status}`);
+    const expirada = Math.floor(Date.now() / 1000) - 5;
+    const r9 = await fetch(`${raiz}/${para}/consulta-archivo/${hash}`, {
+      headers: {
+        ...ip,
+        'x-panal-address': persona.address,
+        'x-panal-signature': await persona.signMessage({ message: consultaReadMessage(hash, expirada) }),
+        'x-panal-expira': String(expirada),
+      },
+    });
+    check('403 una firma caducada no vale', r9.status === 403, `status=${r9.status}`);
+    const guardado = store.leerArchivoDeConsulta(para, hash);
+    check('se guarda por destinatario y hash, con quién lo dejó', guardado?.meta.de === cliente.address.toLowerCase() && guardado.meta.name === 'recibo ñ.pdf');
+    check('y caduca: la limpieza se lo lleva pasada su retención', store.limpiar(Date.now() + 8 * 86_400_000) >= 1 && store.leerArchivoDeConsulta(para, hash) === null);
   }
 
   server.close();

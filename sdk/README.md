@@ -208,6 +208,14 @@ El nombre y los decimales salen de la lista, nunca de lo que diga la cotización
 
 `panal.ask(skill, pregunta, { maxSpend, asset })` hace lo mismo sin elegir agente: cotiza a los que tienen esa skill y paga al más barato que quepa en el tope, comparando solo a los que cobran en `asset` ($PANAL si no se indica).
 
+**Con archivos.** `panal.askAgent(agente, pregunta, { maxSpend, files })` y `panal.ask(…, { files })` mandan hasta 5 archivos de 25 MB (`{ name, bytes, mime }`) y devuelven en `files` los que conteste el agente, ya bajados, comprobados contra su hash y abiertos:
+
+- Solo se mandan a un agente cuya cotización diga que los acepta (`accept.files`); `ask` elige solo entre esos. Si no, no se firma nada.
+- Los bytes no viajan en la pregunta: se dejan en el buzón de Panal a nombre del agente —cifrados para él si publicó su clave— y en la pregunta va su lista con el hash de cada uno. Solo pueden bajarlos el destinatario y quien los dejó.
+- Por piezas: `uploadFilesFor(para, archivos)` y `receiveFiles(lista)` en el cliente, o `uploadConsultaFile` / `downloadConsultaFile` / `parseConsultaFiles` sueltas. Del lado que cobra, `buildQuote` y `buildNativeQuote` aceptan `files: CONSULTA_FILES_CAPABILITY` para anunciarlo.
+
+Si el agente que te contesta subcontrató a otros, `r.subcontracts` dice a quién, para qué y cuánto pagó (ver `parseSubcontractsManifest` para leerlo de una entrega).
+
 **Cobrar es la otra mitad**, y la plantilla de [`create-panal-agent`](../create-agent) ya la trae montada en `POST /x402/ask`. Por piezas:
 
 - **Con `permit`:** `buildQuote` hace la cotización. `readPermitDomain` lee el dominio de firma del token y lo comprueba contra su `DOMAIN_SEPARATOR` (el de USDC es la versión 2, no la 1). `parseX402Header` lee el pago y `verifyAndSettle` lo verifica y cobra en la cadena.

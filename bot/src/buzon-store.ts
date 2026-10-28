@@ -152,14 +152,86 @@ export interface ClaveGuardada {
  */
 const CARPETA_CLAVES = '_claves';
 
+/**
+ * Los archivos que un agente le deja a otro con una pregunta x402 (y los que
+ * le devuelve). No son de ningún encargo: van por destinatario y por hash.
+ */
+const CARPETA_CONSULTAS = '_consultas';
+
+/**
+ * Lo que dura un archivo de consulta. Una pregunta x402 se contesta en
+ * segundos o minutos: una semana da para reintentos y para que quien recibe
+ * una respuesta con archivos los baje, y no convierte el buzón en un disco.
+ */
+export const RETENCION_CONSULTAS_DIAS = 7;
+
+/** Lo que el buzón apunta de un archivo de consulta. */
+export interface ArchivoDeConsulta {
+  /** Quién lo dejó: la otra cuenta que puede leerlo, además del destinatario. */
+  de: string;
+  name: string;
+  size: number;
+  mime?: string;
+  ts: number;
+}
+
 export class BuzonStore {
   private readonly dir: string;
   private readonly retencionMs: number;
 
-  constructor(dir: string, retencionDias: number = RETENCION_DIAS) {
+  private readonly retencionConsultasMs: number;
+
+  constructor(dir: string, retencionDias: number = RETENCION_DIAS, retencionConsultasDias: number = RETENCION_CONSULTAS_DIAS) {
     this.dir = resolve(dir);
     this.retencionMs = retencionDias * 86_400_000;
+    this.retencionConsultasMs = retencionConsultasDias * 86_400_000;
     mkdirSync(this.dir, { recursive: true });
+  }
+
+  /** La carpeta de los archivos de consulta de `para`, o `null` si no es una dirección. */
+  private carpetaConsultas(para: string): string | null {
+    return DIRECCION.test(para) ? join(this.dir, CARPETA_CONSULTAS, para.toLowerCase()) : null;
+  }
+
+  /**
+   * Guarda un archivo que `de` deja para `para`. El hash se calcula AQUÍ sobre
+   * los bytes recibidos: es su nombre en disco y lo que se sirve luego.
+   */
+  guardarArchivoDeConsulta(
+    para: string,
+    de: string,
+    nombre: string,
+    bytes: Uint8Array,
+    mime?: string,
+  ): { hash: string } | { error: 'clave' | 'grande' } {
+    const carpeta = this.carpetaConsultas(para);
+    if (!carpeta || !nombre || !DIRECCION.test(de)) return { error: 'clave' };
+    if (bytes.byteLength === 0 || bytes.byteLength > MAX_ARCHIVO_BYTES) return { error: 'grande' };
+    const hash = keccak256(bytes).toLowerCase();
+    mkdirSync(carpeta, { recursive: true });
+    const base = join(carpeta, nombreEnDisco(hash));
+    writeFileSync(`${base}.bin.tmp`, bytes);
+    renameSync(`${base}.bin.tmp`, `${base}.bin`);
+    const meta: ArchivoDeConsulta = { de: de.toLowerCase(), name: nombre, size: bytes.byteLength, ...(mime ? { mime } : {}), ts: Date.now() };
+    writeFileSync(`${base}.json.tmp`, JSON.stringify(meta));
+    renameSync(`${base}.json.tmp`, `${base}.json`);
+    return { hash };
+  }
+
+  /** Un archivo de consulta por su hash, o `null`. De la URL solo sale el hash, validado. */
+  leerArchivoDeConsulta(para: string, hash: string): { meta: ArchivoDeConsulta; bytes: Buffer } | null {
+    const carpeta = this.carpetaConsultas(para);
+    const h = hash.toLowerCase();
+    if (!carpeta || !HASH.test(h)) return null;
+    const base = join(carpeta, nombreEnDisco(h));
+    try {
+      return {
+        meta: JSON.parse(readFileSync(`${base}.json`, 'utf8')) as ArchivoDeConsulta,
+        bytes: readFileSync(`${base}.bin`),
+      };
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -408,8 +480,9 @@ export class BuzonStore {
   limpiar(ahora: number = Date.now()): number {
     if (!existsSync(this.dir)) return 0;
     let borrados = 0;
+    borrados += this.limpiarConsultas(ahora);
     for (const agente of readdirSync(this.dir)) {
-      if (agente === CARPETA_CLAVES) continue;
+      if (agente === CARPETA_CLAVES || agente === CARPETA_CONSULTAS) continue;
       const carpeta = join(this.dir, agente);
       let encargos: string[];
       try {
@@ -431,6 +504,36 @@ export class BuzonStore {
           }
         } catch {
           /* desapareció por el camino: ya está borrado */
+        }
+      }
+    }
+    return borrados;
+  }
+
+  /** Borra los archivos de consulta que pasaron de su retención (más corta). */
+  private limpiarConsultas(ahora: number): number {
+    const raiz = join(this.dir, CARPETA_CONSULTAS);
+    if (!existsSync(raiz)) return 0;
+    let borrados = 0;
+    for (const para of readdirSync(raiz)) {
+      const carpeta = join(raiz, para);
+      let nombres: string[];
+      try {
+        nombres = readdirSync(carpeta);
+      } catch {
+        continue;
+      }
+      for (const nombre of nombres) {
+        if (!nombre.endsWith('.bin')) continue;
+        const file = join(carpeta, nombre);
+        try {
+          if (ahora - statSync(file).mtimeMs > this.retencionConsultasMs) {
+            rmSync(file);
+            rmSync(file.replace(/\.bin$/, '.json'), { force: true });
+            borrados++;
+          }
+        } catch {
+          /* desapareció por el camino */
         }
       }
     }
