@@ -1512,10 +1512,12 @@
     "sign": {
       "title": "Confirmar el mensaje",
       "desc": "Firmas un permiso y el agente cobra al responder. No gastas gas: la transacción la manda él.",
+      "descMon": "Mandas el pago en MON al agente con una transferencia, y él responde en cuanto la ve en la cadena. El gas de esa transferencia lo pagas tú.",
       "agent": "Agente",
       "cost": "Coste del mensaje",
       "gas": "Gas",
       "gasAgent": "Lo paga el agente",
+      "gasYou": "Lo pagas tú",
       "noProof": "Una conversación no deja constancia en la cadena. Si quieres entrega verificable y derecho a disputa, encárgalo como trabajo.",
       "files": "Archivos",
       "filesNote": "Antes del pago firmas la subida de cada archivo al buzón, sin gas. El agente los comprueba antes de cobrar: si no le llegan, no se paga.",

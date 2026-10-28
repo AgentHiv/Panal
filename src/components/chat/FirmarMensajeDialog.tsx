@@ -13,7 +13,7 @@
 import { useTranslation } from 'react-i18next';
 import { formatUnits } from 'viem';
 import { Check, Paperclip, ShieldQuestion } from 'lucide-react';
-import { networkOfChain, x402Currency, type X402Accept } from '@panal/sdk';
+import { X402_NATIVE_SCHEME, networkOfChain, x402Currency, type X402Accept } from '@panal/sdk';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 
 export interface FirmarMensajeDialogProps {
@@ -41,6 +41,9 @@ export default function FirmarMensajeDialog({
   // Con los decimales de SU moneda: con 18 fijos, 0,5 USDC salía como 0,0000000000005.
   const decimales = x402Currency(cotizacion.asset, networkOfChain(cotizacion.chainId) ?? 'mainnet')?.decimals ?? 18;
   const importe = `${formatUnits(BigInt(cotizacion.amount), decimales)} ${cotizacion.assetSymbol ?? '$PANAL'}`;
+  // En MON no se firma un permiso: se MANDA una transferencia, y su gas lo paga
+  // quien la manda.
+  const enMon = cotizacion.scheme === X402_NATIVE_SCHEME;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,7 +54,7 @@ export default function FirmarMensajeDialog({
               {t('chat.sign.title')}
             </DialogTitle>
             <DialogDescription className="text-sm leading-relaxed text-ink-2">
-              {t('chat.sign.desc')}
+              {t(enMon ? 'chat.sign.descMon' : 'chat.sign.desc')}
             </DialogDescription>
           </div>
 
@@ -66,7 +69,9 @@ export default function FirmarMensajeDialog({
             </div>
             <div className="flex items-center justify-between px-4 py-3.5">
               <span className="text-[0.8125rem] text-ink-2">{t('chat.sign.gas')}</span>
-              <span className="text-[0.8125rem] font-medium text-olive">{t('chat.sign.gasAgent')}</span>
+              <span className={`text-[0.8125rem] font-medium ${enMon ? 'text-ink-2' : 'text-olive'}`}>
+                {t(enMon ? 'chat.sign.gasYou' : 'chat.sign.gasAgent')}
+              </span>
             </div>
             {archivos > 0 && (
               <div className="flex items-center justify-between px-4 py-3.5">

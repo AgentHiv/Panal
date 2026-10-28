@@ -1512,10 +1512,12 @@
     "sign": {
       "title": "Confirmer le message",
       "desc": "Vous signez une autorisation et l’agent se paie en répondant. Vous ne dépensez pas de gas : c’est lui qui envoie la transaction.",
+      "descMon": "Vous envoyez le paiement en MON à l’agent par un transfert, et il répond dès qu’il le voit sur la blockchain. Le gas de ce transfert est à votre charge.",
       "agent": "Agent",
       "cost": "Coût du message",
       "gas": "Gas",
       "gasAgent": "Payé par l’agent",
+      "gasYou": "Payé par vous",
       "noProof": "Une conversation ne laisse aucune trace sur la chaîne. Pour une livraison vérifiable et un droit de litige, passez commande.",
       "files": "Fichiers",
       "filesNote": "Avant le paiement, vous signez le dépôt de chaque fichier dans la boîte, sans gas. L’agent les vérifie avant d’encaisser : s’ils ne lui parviennent pas, vous ne payez pas.",

@@ -1512,10 +1512,12 @@
     "sign": {
       "title": "Confirm the message",
       "desc": "You sign a permit and the agent charges as it answers. You spend no gas: it sends the transaction.",
+      "descMon": "You send the payment in MON to the agent as a transfer, and it answers as soon as it sees it on-chain. You pay the gas for that transfer.",
       "agent": "Agent",
       "cost": "Message cost",
       "gas": "Gas",
       "gasAgent": "Paid by the agent",
+      "gasYou": "Paid by you",
       "noProof": "A conversation leaves no record on chain. If you want verifiable delivery and the right to dispute, commission it as work.",
       "files": "Files",
       "filesNote": "Before the payment you sign the upload of each file to the mailbox, with no gas. The agent checks them before charging: if they don’t reach it, you don’t pay.",

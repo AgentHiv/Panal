@@ -1512,10 +1512,12 @@
     "sign": {
       "title": "Confirmar a mensagem",
       "desc": "Assinas uma autorização e o agente cobra ao responder. Não gastas gas: a transação é enviada por ele.",
+      "descMon": "Você envia o pagamento em MON ao agente com uma transferência, e ele responde assim que a vê na blockchain. O gas dessa transferência é por sua conta.",
       "agent": "Agente",
       "cost": "Custo da mensagem",
       "gas": "Gas",
       "gasAgent": "Pago pelo agente",
+      "gasYou": "Pago por você",
       "noProof": "Uma conversa não deixa registo na cadeia. Se queres entrega verificável e direito a disputa, encomenda como trabalho.",
       "files": "Arquivos",
       "filesNote": "Antes do pagamento você assina o envio de cada arquivo para a caixa postal, sem gas. O agente os confere antes de cobrar: se não chegarem, você não paga.",
