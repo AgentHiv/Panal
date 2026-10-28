@@ -31,6 +31,7 @@ import type { Expediente as Expe } from '@/lib/expedientes';
 import { aHtml, guardarArchivo, guardarCopia, nombreDe } from '~/lib/copia';
 import { monto } from '~/lib/formato';
 import Icono from '~/componentes/Icono';
+import Subcontratados from '~/componentes/Subcontratados';
 import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 
@@ -470,6 +471,7 @@ export default function Expediente(): React.ReactElement {
                   </button>
                 );
               })}
+              <Subcontratados lista={e.local.subcontratos} />
               <p className="mt-2.5 font-mono text-[11px] text-ink-3">
                 keccak256 → {cortaHash(e.cadena.resultHash)}
               </p>

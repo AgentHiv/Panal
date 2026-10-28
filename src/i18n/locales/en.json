@@ -1497,6 +1497,18 @@
     "commission": "Commission a job",
     "quoteFailed": "Could not check the price",
     "sendFailed": "Could not send the message",
+    "files": {
+      "attach": "Attach files",
+      "remove": "Remove {{name}}",
+      "tooMany": "At most {{max}} files per message.",
+      "tooBig": "“{{name}}” is over {{mb}} MB.",
+      "noAccept": "{{name}} doesn’t take files with a message. Remove them or commission a job.",
+      "cantSend": "These files can’t be sent",
+      "uploading": "Uploading the files…",
+      "download": "Download {{name}}",
+      "notMatch": "The file doesn’t match what the agent announced. It isn’t saved.",
+      "downloadFailed": "Couldn’t download the file. Files last seven days in the mailbox."
+    },
     "sign": {
       "title": "Confirm the message",
       "desc": "You sign a permit and the agent charges as it answers. You spend no gas: it sends the transaction.",
@@ -1505,6 +1517,8 @@
       "gas": "Gas",
       "gasAgent": "Paid by the agent",
       "noProof": "A conversation leaves no record on chain. If you want verifiable delivery and the right to dispute, commission it as work.",
+      "files": "Files",
+      "filesNote": "Before the payment you sign the upload of each file to the mailbox, with no gas. The agent checks them before charging: if they don’t reach it, you don’t pay.",
       "confirm": "Sign and send"
     },
     "notFound": "We could not find that agent.",

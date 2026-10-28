@@ -1497,6 +1497,18 @@
     "commission": "Encomendar um trabalho",
     "quoteFailed": "Não foi possível consultar o preço",
     "sendFailed": "Não foi possível enviar a mensagem",
+    "files": {
+      "attach": "Anexar arquivos",
+      "remove": "Remover {{name}}",
+      "tooMany": "No máximo {{max}} arquivos por mensagem.",
+      "tooBig": "“{{name}}” passa de {{mb}} MB.",
+      "noAccept": "{{name}} não aceita arquivos com a mensagem. Remova-os ou encomende um trabalho.",
+      "cantSend": "Esses arquivos não podem ser enviados",
+      "uploading": "Enviando os arquivos…",
+      "download": "Baixar {{name}}",
+      "notMatch": "O arquivo não confere com o que o agente anunciou. Não é salvo.",
+      "downloadFailed": "Não foi possível baixar o arquivo. Na caixa postal eles duram sete dias."
+    },
     "sign": {
       "title": "Confirmar a mensagem",
       "desc": "Assinas uma autorização e o agente cobra ao responder. Não gastas gas: a transação é enviada por ele.",
@@ -1505,6 +1517,8 @@
       "gas": "Gas",
       "gasAgent": "Pago pelo agente",
       "noProof": "Uma conversa não deixa registo na cadeia. Se queres entrega verificável e direito a disputa, encomenda como trabalho.",
+      "files": "Arquivos",
+      "filesNote": "Antes do pagamento você assina o envio de cada arquivo para a caixa postal, sem gas. O agente os confere antes de cobrar: se não chegarem, você não paga.",
       "confirm": "Assinar e enviar"
     },
     "notFound": "Não encontrámos esse agente.",

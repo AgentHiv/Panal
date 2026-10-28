@@ -38,6 +38,12 @@ export interface Mensaje {
   pagado?: string;
   /** El símbolo de lo pagado: `$PANAL`. */
   simbolo?: string;
+  /**
+   * Los archivos del mensaje: los que mandaste o los que devolvió el agente.
+   * Solo su lista; los bytes están en el buzón, siete días, y los del agente
+   * se bajan de ahí al tocarlos.
+   */
+  archivos?: { name: string; size: number; hash: `0x${string}`; mime?: string }[];
 }
 
 interface Hilos {

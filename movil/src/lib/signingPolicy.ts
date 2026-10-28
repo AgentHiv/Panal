@@ -28,8 +28,9 @@
  *     llamada al escrow que pone dinero a favor de un tercero; uno hacia un
  *     desconocido le bloquearía el saldo, y si nadie disputa, a los tres días
  *     de «entregar» lo cobra.
- *   - Mensajes, solo los de Panal: `Panal brief #12`, `Panal resultado #12 · …`
- *     y los del buzón del tablón con reglas.
+ *   - Mensajes, solo los de Panal: `Panal brief #12`, `Panal resultado #12 · …`,
+ *     los del buzón del tablón con reglas y los de subir y leer los archivos
+ *     de un mensaje del chat.
  *   - Datos tipados, solo el permit de x402 en una moneda que Panal acepta
  *     ($PANAL, GHO, USDC o AUSD), al agente, por el importe y EN LA MONEDA que
  *     enseñó la hoja del chat, y que caduque pronto.
@@ -78,6 +79,17 @@ export const PLAZO_MAX_PERMIT_S = 15 * 60;
  */
 const MENSAJES_DE_PANAL =
   /^Panal (brief #\d+|(resultado|encargo|entrega) #\d+ · \d+|tablón con reglas · ((encargo|resultado|archivo) #\d+|entrega #\d+ · 0x[0-9a-f]{64}) · \d+)$/;
+
+/**
+ * Los del buzón para los archivos de un mensaje del chat (x402): dejar uno a
+ * nombre del agente y leer los que devolvió. Los arma el SDK
+ * (`sdk/src/consultas.ts`). No mueven dinero ni abren nada que no sea de esta
+ * cuenta o vaya para ella, y caducan a los pocos minutos.
+ */
+const MENSAJES_DE_ARCHIVOS = [
+  /^Panal: dejo un archivo para 0x[0-9a-fA-F]{40}\nhash: 0x[0-9a-f]{64}\nexpira: \d+$/,
+  /^Panal: leer el archivo 0x[0-9a-f]{64}\nexpira: \d+$/,
+];
 
 /** Lo que se firma en PanalTablon sin hoja: nada de esto pone dinero a favor de nadie. */
 const TABLON_SIN_HOJA = new Set([
@@ -280,6 +292,7 @@ export function revisarMensaje(datos: string, dueno: Address): void {
   const texto = isHex(datos) ? hexToString(datos) : datos;
   // Las del cifrado, solo para la cuenta de este llavero: ver `firmaCifrado.ts`.
   if (MENSAJES_DE_PANAL.test(texto) || esFirmaDelCifrado(texto, dueno)) return;
+  if (MENSAJES_DE_ARCHIVOS.some((r) => r.test(texto))) return;
   bloquear(`un mensaje que no es de Panal: «${texto.slice(0, 80)}»`);
 }
 

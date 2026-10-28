@@ -119,6 +119,19 @@ const htmlMalo = cp.aHtml(malo);
 dice('un brief con etiquetas no se convierte en HTML', !htmlMalo.includes('<script>alert'));
 dice('sale escapado', htmlMalo.includes('&lt;script&gt;'));
 
+console.log('\nuna entrega en la que el agente subcontrató');
+const SUBCONTRATADO = '0x8E9c1Cf58c1F510e22022ebE1Bfd65c4cd6C0308';
+const CON_SUB = `${ENTREGA}\n\n[panal-subcontracts/1]\nagent: ${SUBCONTRATADO}\nskill: tests\namount: 150000000000000000\ncurrency: $PANAL\nasset: 0x2E2e44E7FA6178822D4397299F719e89d1a67777\ndecimals: 18\ntx: 0x${'ab'.repeat(32)}\nfiles: 2\n`;
+const hashConSub = keccak256(toBytes(CON_SUB));
+ex.guardarEntrega('14', CON_SUB, hashConSub);
+const sub = ex.armar({ ...tarea, id: 14n, resultHash: hashConSub }, 'MON', YO);
+dice('salen sus subcontrataciones', sub.local.subcontratos.length === 1 && sub.local.subcontratos[0].agente === SUBCONTRATADO);
+dice('con lo pagado y los archivos', sub.local.subcontratos[0].importe === 150000000000000000n && sub.local.subcontratos[0].archivos === 2);
+dice('y el texto que se enseña ya no lleva el bloque', sub.local.entrega === ENTREGA);
+const htmlSub = cp.aHtml(sub);
+dice('la copia lo cuenta con la dirección entera y su pago', htmlSub.includes(SUBCONTRATADO) && htmlSub.includes(`tx 0x${'ab'.repeat(32)}`));
+dice('una entrega sin subcontratar no trae ninguna', e.local.subcontratos.length === 0 && !html.includes(SUBCONTRATADO));
+
 console.log('\nla copia de todo');
 const todo = cp.todoAHtml([e, malo], YO);
 dice('lleva los dos encargos', todo.includes('Encargo #12') && todo.includes('Encargo #13'));
