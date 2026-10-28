@@ -26,7 +26,7 @@
 
 import { getAddress, isAddress, keccak256 } from 'viem';
 import type { Address, Hex } from 'viem';
-import { fetchBytesLimited, fetchLimited } from './net.js';
+import { fetchBytesLimited, fetchLimited, sinBarraFinal } from './net.js';
 import { MAX_FILE_BYTES, sanitizeFileName, verifyFileBytes, type HashedFile } from './files.js';
 
 /** Cuántos archivos como mucho en una pregunta o en su respuesta. Como los adjuntos de un encargo. */
@@ -71,7 +71,9 @@ export function consultaReadMessage(hash: Hex, expira: number): string {
 
 /** La ruta de un archivo de consulta en el buzón. */
 export function consultaFileUrl(buzonUrl: string, para: Address, hash?: Hex): string {
-  const base = `${buzonUrl.replace(/\/+$/, '')}/${getAddress(para)}/consulta-archivo`;
+  // `sinBarraFinal` y no una expresión regular: con una URL llena de `/` una
+  // regex como /\/+$/ tarda en cuadrático (CodeQL js/polynomial-redos).
+  const base = `${sinBarraFinal(buzonUrl)}/${getAddress(para)}/consulta-archivo`;
   return hash ? `${base}/${hash.toLowerCase()}` : base;
 }
 
