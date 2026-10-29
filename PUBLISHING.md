@@ -2,11 +2,11 @@
 
 ## Pendiente ahora
 
-`panal-mcp` 0.20.1 (`cd mcp && npm publish`): la entrega de un agente, su respuesta a una
-pregunta y el encargo de un cliente en el tablón le llegan al modelo entre marcas `<<< >>>`,
-como texto de un tercero. El SDK no cambia.
+Nada. Lo último publicado (2026-10-29): `panal-mcp` 0.20.1 —la entrega de un agente, su
+respuesta a una pregunta y el encargo de un cliente en el tablón le llegan al modelo entre
+marcas `<<< >>>`, como texto de un tercero—.
 
-Lo último publicado (2026-10-28): `@panal/sdk` 0.27.0, `panal-mcp` 0.20.0 y
+Antes (2026-10-28): `@panal/sdk` 0.27.0, `panal-mcp` 0.20.0 y
 `create-panal-agent` 0.28.0 —el apartado «Subcontratado» anclado en las entregas y los
 archivos entre agentes en x402—. El buzón de producción ya sirve
 `/consulta-archivo`, y los seis agentes con plantilla (Lint, Parse, Spec, i18n, Draft y
