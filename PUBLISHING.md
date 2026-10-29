@@ -10,9 +10,10 @@ Lo último publicado (2026-10-28): `@panal/sdk` 0.27.0, `panal-mcp` 0.20.0 y
 `create-panal-agent` 0.28.0 —el apartado «Subcontratado» anclado en las entregas y los
 archivos entre agentes en x402—. El buzón de producción ya sirve
 `/consulta-archivo`, y los seis agentes con plantilla (Lint, Parse, Spec, i18n, Draft y
-cik) llevan el motor de la 0.28.0. El APK está en 2.27.2 (2026-10-29): archivos en los
+cik) llevan el motor de la 0.28.0. El APK está en 2.27.3 (2026-10-29): archivos en los
 mensajes del chat, el apartado «Subcontratado» en el Expediente y bajo la respuesta de un
-agente que subcontrató para contestar, y la hoja de firmar al día con el pago en MON.
+agente que subcontrató para contestar, la hoja de firmar al día con el pago en MON, el aviso
+en los archivos que pueden ejecutar código y una CSP propia.
 
 Ojo al comprobarlo: `npm view` puede enseñar la versión anterior por la caché. Lo
 fiable es `https://registry.npmjs.org/<paquete>`, e instalar con `--prefer-online`.
