@@ -111,6 +111,7 @@ async function main(): Promise<void> {
   const CLAVES = [
     'AGENT_PRIVATE_KEY=',
     'PORT=',
+    'HOST=',
     'LLM_PROVIDER=',
     'LLM_API_KEY=',
     'RPC_URL=',
@@ -129,6 +130,10 @@ async function main(): Promise<void> {
   // Y traducidas: si una variable nueva se documenta solo en español, el
   // usuario chino recibe un comentario que no entiende.
   check('con los comentarios nuevos traducidos', envZh.includes('转包') && envZh.includes('守望者'));
+  // HOST va comentado: sin él se escucha en todas las interfaces, como siempre.
+  check('HOST viene comentado y explicado', envZh.includes('# HOST=127.0.0.1') && envZh.includes('监听地址'));
+  const servidorZh = readFileSync(join(destZh, 'src', 'server.ts'), 'utf8');
+  check('y el servidor escucha donde diga HOST', servidorZh.includes('server.listen(PORT, HOST)'));
 
   console.log('\n── 2. Se genera el proyecto ──');
 
