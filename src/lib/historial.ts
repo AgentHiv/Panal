@@ -21,6 +21,8 @@
  * ───────────────────────────────────────────────────────────────────────────
  */
 
+import type { SubcontractJson } from '@panal/sdk';
+
 const CLAVE = 'panal:hilos:v1';
 /** Mensajes por hilo. Pasado esto se tiran los más viejos. */
 const MAX_MENSAJES = 300;
@@ -44,6 +46,11 @@ export interface Mensaje {
    * se bajan de ahí al tocarlos.
    */
   archivos?: { name: string; size: number; hash: `0x${string}`; mime?: string }[];
+  /**
+   * A quién pagó el agente para contestar, como lo dijo en su respuesta (la forma
+   * JSON del SDK). Se lee con `subcontratosDeJson`, que lo vuelve a validar.
+   */
+  subcontratos?: SubcontractJson[];
 }
 
 interface Hilos {

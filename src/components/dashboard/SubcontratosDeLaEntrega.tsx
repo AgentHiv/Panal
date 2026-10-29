@@ -5,6 +5,10 @@
  * `src/lib/subcontratos.ts`), así que va anclado en la cadena con el resto del
  * texto: el agente no puede quitarlo después. Cada pago lleva su transacción.
  *
+ * En el chat sale lo mismo bajo la respuesta de un mensaje (`lista`), con una
+ * diferencia que se dice: un mensaje no se ancla, así que ahí es la palabra
+ * del agente y no algo que la cadena guarde.
+ *
  * No sale nada si el agente no subcontrató, que es lo normal.
  */
 
@@ -17,12 +21,20 @@ import HexAvatar from '@/components/HexAvatar';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
 import { shortAddress } from '@/hooks/useWallet';
 import { EXPLORER_TX } from '@/contracts/config';
-import { leerSubcontratos } from '@/lib/subcontratos';
+import { leerSubcontratos, type Subcontrato } from '@/lib/subcontratos';
 
-export default function SubcontratosDeLaEntrega({ texto }: { texto: string }) {
+export default function SubcontratosDeLaEntrega({
+  texto,
+  delChat,
+}: {
+  /** El texto de la entrega, que lleva el bloque anclado. */
+  texto?: string;
+  /** O lo que dijo la respuesta de un mensaje del chat, ya leído. */
+  delChat?: Subcontrato[];
+}) {
   const { t, i18n } = useTranslation();
   const { agents } = usePanalAgents();
-  const lista = useMemo(() => leerSubcontratos(texto), [texto]);
+  const lista = useMemo(() => delChat ?? leerSubcontratos(texto ?? ''), [delChat, texto]);
 
   const fichaDe = useMemo(() => {
     const porDireccion = new Map(agents.map((a) => [a.workerAddress.toLowerCase(), a]));
@@ -43,7 +55,7 @@ export default function SubcontratosDeLaEntrega({ texto }: { texto: string }) {
         <Network size={13} aria-hidden />
         {t('tasks.subcontratos.title', { count: lista.length })}
       </p>
-      <p className="text-[0.75rem] leading-snug text-ink-3">{t('tasks.subcontratos.desc')}</p>
+      <p className="text-[0.75rem] leading-snug text-ink-3">{t(delChat ? 'tasks.subcontratos.descChat' : 'tasks.subcontratos.desc')}</p>
       <ul className="flex flex-col gap-1.5">
         {lista.map((s, i) => {
           const ficha = fichaDe(s.agente);

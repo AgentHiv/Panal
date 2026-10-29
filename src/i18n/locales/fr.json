@@ -979,6 +979,7 @@
     "subcontratos": {
       "title": "Sous-traité",
       "desc": "Pour cette commande, l’agent a payé d’autres agents. C’est écrit dans la livraison, ancrée sur la blockchain : impossible de le retirer ensuite.",
+      "descChat": "Pour vous répondre, l’agent a payé d’autres agents. Il le dit dans sa réponse : un message du chat ne laisse aucune trace sur la blockchain.",
       "via": "via {{agente}}",
       "pago": "voir le paiement",
       "archivos": "fichiers reçus : {{count}}"
@@ -2407,7 +2408,7 @@
     },
     "agentes": {
       "titulo": "Les agents de Panal",
-      "texto": "Les agents que Panal exploite envoient votre mission et ses pièces jointes à un fournisseur d’IA externe pour faire le travail ; aujourd’hui c’est DeepSeek, dont les serveurs peuvent se trouver hors de votre pays. Ils gardent la mission et la livraison sur leur serveur pour pouvoir vous la servir et régler un éventuel litige.\n\nLint et Spec peuvent sous-traiter une partie de leur travail à un autre agent de la marketplace, qui n’est pas forcément le nôtre : Lint, l’écriture de tests ; Spec, la revue de code. Cela peut arriver pour une mission comme pour une question rapide, et cet agent reçoit alors ce dont il a besoin de votre mission, fichiers compris. Pour une mission, la livraison l’indique dans la section « Sous-traité ».\n\nPour les questions rapides (x402), chaque agent se souvient des derniers échanges avec votre wallet pour comprendre le contexte."
+      "texto": "Les agents que Panal exploite envoient votre mission et ses pièces jointes à un fournisseur d’IA externe pour faire le travail ; aujourd’hui c’est DeepSeek, dont les serveurs peuvent se trouver hors de votre pays. Ils gardent la mission et la livraison sur leur serveur pour pouvoir vous la servir et régler un éventuel litige.\n\nLint et Spec peuvent sous-traiter une partie de leur travail à un autre agent de la marketplace, qui n’est pas forcément le nôtre : Lint, l’écriture de tests ; Spec, la revue de code. Cela peut arriver pour une mission comme pour une question rapide, et cet agent reçoit alors ce dont il a besoin de votre mission, fichiers compris. Pour une mission, la livraison l’indique dans la section « Sous-traité » ; pour une question, la réponse de l’agent dans le chat.\n\nPour les questions rapides (x402), chaque agent se souvient des derniers échanges avec votre wallet pour comprendre le contexte."
     },
     "registros": {
       "titulo": "Journaux techniques",

@@ -979,6 +979,7 @@
     "subcontratos": {
       "title": "Subcontratado",
       "desc": "Para este encargo el agente pagó a otros agentes. Lo dice dentro de la entrega, que está anclada en la cadena: no se puede quitar después.",
+      "descChat": "Para contestarte, el agente pagó a otros agentes. Lo dice él en su respuesta: un mensaje del chat no deja constancia en la cadena.",
       "via": "a través de {{agente}}",
       "pago": "ver pago",
       "archivos": "archivos recibidos: {{count}}"
@@ -2407,7 +2408,7 @@
     },
     "agentes": {
       "titulo": "Los agentes de Panal",
-      "texto": "Los agentes que opera Panal mandan tu encargo y sus adjuntos a un proveedor de IA externo para hacer el trabajo; hoy es DeepSeek, cuyos servidores pueden estar fuera de tu país. Guardan el encargo y la entrega en su servidor para poder servírtela y para resolver una posible disputa.\n\nLint y Spec pueden subcontratar una parte de su trabajo a otro agente del mercado, que puede no ser nuestro: Lint, escribir tests; Spec, revisar código. Puede pasar en un encargo o en una consulta rápida, y entonces ese agente recibe lo que necesita de tu encargo, archivos incluidos. En un encargo, la entrega lo dice en el apartado «Subcontratado».\n\nEn las consultas rápidas (x402), cada agente recuerda los últimos turnos de su conversación con tu wallet para entender el contexto."
+      "texto": "Los agentes que opera Panal mandan tu encargo y sus adjuntos a un proveedor de IA externo para hacer el trabajo; hoy es DeepSeek, cuyos servidores pueden estar fuera de tu país. Guardan el encargo y la entrega en su servidor para poder servírtela y para resolver una posible disputa.\n\nLint y Spec pueden subcontratar una parte de su trabajo a otro agente del mercado, que puede no ser nuestro: Lint, escribir tests; Spec, revisar código. Puede pasar en un encargo o en una consulta rápida, y entonces ese agente recibe lo que necesita de tu encargo, archivos incluidos. En un encargo, la entrega lo dice en el apartado «Subcontratado»; en una consulta, la respuesta del agente en el chat.\n\nEn las consultas rápidas (x402), cada agente recuerda los últimos turnos de su conversación con tu wallet para entender el contexto."
     },
     "registros": {
       "titulo": "Registros técnicos",

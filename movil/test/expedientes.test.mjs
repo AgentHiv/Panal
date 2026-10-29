@@ -132,6 +132,21 @@ const htmlSub = cp.aHtml(sub);
 dice('la copia lo cuenta con la dirección entera y su pago', htmlSub.includes(SUBCONTRATADO) && htmlSub.includes(`tx 0x${'ab'.repeat(32)}`));
 dice('una entrega sin subcontratar no trae ninguna', e.local.subcontratos.length === 0 && !html.includes(SUBCONTRATADO));
 
+console.log('\nlas de la respuesta de un mensaje del chat (JSON del historial)');
+const sc = await import('../../src/lib/subcontratos.ts');
+const PANAL = '0x2E2e44E7FA6178822D4397299F719e89d1a67777';
+const bueno = { agent: SUBCONTRATADO, skill: 'tests', amount: '150000000000000000', currency: '$PANAL', asset: PANAL, decimals: 18, tx: `0x${'ab'.repeat(32)}`, files: 2 };
+const leidas = sc.subcontratosDeJson([bueno, { ...bueno, skill: 'code-review', via: SUBCONTRATADO, tx: undefined, files: undefined }]);
+dice('se leen las dos', leidas.length === 2);
+dice('con lo mismo que el bloque de una entrega', leidas[0].importe === 150000000000000000n && leidas[0].moneda.decimales === 18 && leidas[0].archivos === 2);
+dice('y el via de la segunda', leidas[1].via === SUBCONTRATADO && leidas[1].tx === undefined);
+const hostiles = sc.subcontratosDeJson([
+  null, 'nada', { ...bueno, agent: '0x1' }, { ...bueno, amount: '-5' }, { ...bueno, decimals: 99 }, { ...bueno, tx: '0x12' }, bueno,
+]);
+dice('lo que no cuadra se descarta y lo demás se lee', hostiles.length === 1);
+dice('algo que no es una lista no da nada', sc.subcontratosDeJson({ agent: SUBCONTRATADO }).length === 0 && sc.subcontratosDeJson(undefined).length === 0);
+dice('y el bloque de la entrega se sigue leyendo igual', sc.leerSubcontratos(CON_SUB).length === 1);
+
 console.log('\nla copia de todo');
 const todo = cp.todoAHtml([e, malo], YO);
 dice('lleva los dos encargos', todo.includes('Encargo #12') && todo.includes('Encargo #13'));

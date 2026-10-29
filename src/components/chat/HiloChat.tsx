@@ -44,6 +44,8 @@ import {
   type ProblemaConAdjuntos,
 } from '@/lib/archivosDelChat';
 import { formatBytes } from '@/lib/deliveredFiles';
+import { subcontratosDeJson } from '@/lib/subcontratos';
+import SubcontratosDeLaEntrega from '@/components/dashboard/SubcontratosDeLaEntrega';
 import { guardarComoArchivo } from '@/lib/archivosTablon';
 import { anadirMensaje, leerHilo, nuevoId, type Mensaje } from '@/lib/historial';
 import { claveDeEntrada, encargosDelCliente, fusionarHilo } from '@/lib/conversaciones';
@@ -289,6 +291,7 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
           pagado: res.pagado.toString(),
           simbolo: cobro.simbolo,
           ...(res.archivos.length ? { archivos: res.archivos } : {}),
+          ...(res.subcontratos.length ? { subcontratos: res.subcontratos } : {}),
         }),
       );
     } catch (err) {
@@ -367,6 +370,13 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
                     ),
                   )}
                 </ul>
+              ) : null}
+              {/* A quién pagó el agente para contestar. Solo en sus respuestas:
+                  uno propio no puede traerlo. */}
+              {e.mensaje.de === 'agente' && e.mensaje.subcontratos?.length ? (
+                <div className="mt-2.5">
+                  <SubcontratosDeLaEntrega delChat={subcontratosDeJson(e.mensaje.subcontratos)} />
+                </div>
               ) : null}
             </div>
           ),

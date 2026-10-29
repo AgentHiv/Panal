@@ -507,6 +507,8 @@ export const es = {
     noAceptaArchivos: (agente: string) => `${agente} no acepta archivos con el mensaje. Quítalos o encárgale un trabajo.`,
     bajarAdjunto: (nombre: string) => `Bajar ${nombre}`,
     adjuntoFallo: 'No se pudo bajar. En el buzón duran siete días.',
+    subcontratadoPie:
+      'Para contestarte, el agente pagó a estos agentes. Lo dice él en su respuesta: un mensaje no deja constancia en la cadena.',
     encargoNumero: (id: string) => `Encargo #${id}`,
     precio: 'Precio',
     numero: 'Nº',

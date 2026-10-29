@@ -16,6 +16,7 @@ import {
 } from '@/lib/archivosDelChat';
 import type { Adjunto, ProblemaConAdjuntos } from '@/lib/archivosDelChat';
 import { formatBytes } from '@/lib/deliveredFiles';
+import { subcontratosDeJson } from '@/lib/subcontratos';
 import type { Mensaje } from '@/lib/historial';
 import { FileVerificationError, X402_NATIVE_SCHEME, X402Error } from '@panal/sdk';
 import type { HashedFile } from '@panal/sdk';
@@ -30,6 +31,7 @@ import { permitirPago } from '~/lib/signingPolicy';
 import { guardarArchivo } from '~/lib/copia';
 import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
+import Subcontratados from '~/componentes/Subcontratados';
 import HojaFirmar from '~/componentes/HojaFirmar';
 import HojaEncargar from '~/componentes/HojaEncargar';
 import HojaRevisar from '~/componentes/HojaRevisar';
@@ -303,6 +305,7 @@ export default function Hilo(): React.ReactElement {
         texto: res.texto,
         cuando: Date.now(),
         ...(res.archivos.length ? { archivos: res.archivos } : {}),
+        ...(res.subcontratos.length ? { subcontratos: res.subcontratos } : {}),
       });
       setMensajes(lista);
       setHoja(null);
@@ -605,6 +608,10 @@ function EntradaHilo({
         </p>
         {entrada.mensaje.archivos?.length ? (
           <ArchivosDelMensaje mensaje={entrada.mensaje} descargas={descargas} onBajar={onBajar} T={T} />
+        ) : null}
+        {/* A quién pagó el agente para contestar. Solo en sus respuestas. */}
+        {!mio && entrada.mensaje.subcontratos?.length ? (
+          <Subcontratados lista={subcontratosDeJson(entrada.mensaje.subcontratos)} pie={T.hilo.subcontratadoPie} />
         ) : null}
       </div>
         {/* La hora, fuera de la burbuja y en pequeño: se consulta, no se lee. */}
