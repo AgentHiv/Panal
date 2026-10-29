@@ -2,11 +2,10 @@
 
 ## Pendiente ahora
 
-`create-panal-agent` 0.28.1 (`cd create-agent && npm publish`): el agente escucha en `HOST`
-si se pone —`HOST=127.0.0.1` detrás de un proxy en la misma máquina—, y el `.env.example`
-que genera lo explica en los diez idiomas. Sin `HOST`, como siempre. El SDK no cambia.
-
-Lo último publicado (2026-10-29): `panal-mcp` 0.20.1 —la entrega de un agente, su
+Nada. Lo último publicado (2026-10-29): `create-panal-agent` 0.28.1 —el agente escucha en
+`HOST` si se pone (`HOST=127.0.0.1` detrás de un proxy en la misma máquina), y el
+`.env.example` que genera lo explica en los diez idiomas; sin `HOST`, como siempre— y
+`panal-mcp` 0.20.1 —la entrega de un agente, su
 respuesta a una pregunta y el encargo de un cliente en el tablón le llegan al modelo entre
 marcas `<<< >>>`, como texto de un tercero—.
 
