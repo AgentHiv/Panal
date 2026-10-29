@@ -46,6 +46,7 @@ import {
 import { formatBytes } from '@/lib/deliveredFiles';
 import { subcontratosDeJson } from '@/lib/subcontratos';
 import SubcontratosDeLaEntrega from '@/components/dashboard/SubcontratosDeLaEntrega';
+import AvisoEjecutable from '@/components/AvisoEjecutable';
 import { guardarComoArchivo } from '@/lib/archivosTablon';
 import { anadirMensaje, leerHilo, nuevoId, type Mensaje } from '@/lib/historial';
 import { claveDeEntrada, encargosDelCliente, fusionarHilo } from '@/lib/conversaciones';
@@ -360,6 +361,7 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
                           <span className="truncate">{a.name}</span>
                           <span className="shrink-0 text-ink-3">{formatBytes(a.size)}</span>
                         </button>
+                        <AvisoEjecutable nombre={a.name} mime={a.mime} className="mt-1 px-1" />
                       </li>
                     ) : (
                       <li key={a.hash} className="flex items-center gap-1.5 text-[0.75rem] text-ink-2">

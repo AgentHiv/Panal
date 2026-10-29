@@ -6,6 +6,31 @@
          gestos de Android se come la fila de pestañas. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
+    <!--
+      Qué código puede correr dentro de la app. La web lo dice con una cabecera
+      (`public/_headers`); la app lleva sus archivos dentro del APK y no tiene
+      servidor que la mande, así que va aquí.
+
+      `script-src 'self'`: solo corre código que venga del propio paquete. Un
+      script de cualquier otro dominio no se ejecuta, que es como entra un
+      «drainer» por una librería comprometida (Ledger Connect Kit, 2023).
+
+      `'unsafe-inline'` va A PROPÓSITO, y no es lo mismo que en la web: en los
+      WebView sin `DOCUMENT_START_SCRIPT` Capacitor mete su puente como un
+      <script> dentro de este HTML (`JSInjector.getInjectedStream`), con un
+      contenido que no podemos conocer de antemano. Sin esto, en esos móviles la
+      app no arrancaría. Lo que eso deja abierto —HTML inyectado— no tiene por
+      dónde entrar: la app no pinta HTML de nadie, todo lo de fuera es texto.
+      Por eso tampoco lleva la huella del script de abajo: con una huella, los
+      navegadores ignoran `'unsafe-inline'`.
+
+      `object-src 'none'` y `base-uri 'self'`: sin plugins y sin que un <base>
+      cambie a dónde apuntan las rutas relativas. Lo comprueba test/csp.test.mjs.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'"
+    />
     <title>Panal</title>
     <!-- Las fuentes van dentro del paquete, en `src/estilos.css`. Pedirlas a
          Google en cada arranque dejaba la app en la tipografía del sistema

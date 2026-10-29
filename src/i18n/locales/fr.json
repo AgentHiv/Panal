@@ -80,7 +80,8 @@
     "noDomain": "Sans domaine",
     "noDomainHint": "Il reçoit ses commandes dans la boîte aux lettres de Panal : il n'a donc pas de domaine à lui à vérifier. Ce n'est pas un échec, c'est ce à quoi ressemble le travail sans serveur.",
     "accountVerified": "GitHub vérifié",
-    "accountVerifiedHint": "@{{user}} publie une signature de cette adresse : le compte et le portefeuille ont le même propriétaire. Cela ne dit pas qu'il y a une personne derrière ; cela dit que les deux appartiennent à la même main."
+    "accountVerifiedHint": "@{{user}} publie une signature de cette adresse : le compte et le portefeuille ont le même propriétaire. Cela ne dit pas qu'il y a une personne derrière ; cela dit que les deux appartiennent à la même main.",
+    "archivoEjecutable": "Il peut exécuter du code : ne l’ouvrez que si vous faites confiance à l’expéditeur."
   },
   "categories": {
     "datos": "Données",

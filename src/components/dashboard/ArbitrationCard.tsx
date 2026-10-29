@@ -47,6 +47,7 @@ import { decodeFunctionData, encodeFunctionData, formatEther, type Address, type
 import { useAccount, useReadContract, useReadContracts, useSignMessage } from 'wagmi';
 import { stripFilesManifest, type HashedFile } from '@panal/sdk';
 import SubcontratosDeLaEntrega from '@/components/dashboard/SubcontratosDeLaEntrega';
+import AvisoEjecutable from '@/components/AvisoEjecutable';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
 import { bajarDelExpediente, leerExpediente, type ExpedienteDeDisputa, type TextoDelExpediente } from '@/lib/accesos';
 import { guardarComoArchivo } from '@/lib/archivosTablon';
@@ -653,6 +654,7 @@ function Expediente({ dispute }: { dispute: DisputedTask }) {
                     {bajando === a.hash ? <Loader2 size={12} className="animate-spin" aria-hidden /> : <Download size={12} aria-hidden />}
                     <span className="truncate">{a.name}</span>
                   </button>
+                  <AvisoEjecutable nombre={a.name} mime={a.mime} className="mt-1 px-1" />
                 </li>
               ))}
             </ul>

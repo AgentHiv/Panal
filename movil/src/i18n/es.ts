@@ -33,6 +33,7 @@ export const es = {
     tuDireccion: 'Tu dirección',
     suDireccion: 'Su dirección',
     verEnElExplorador: 'Verla en el explorador',
+    archivoEjecutable: 'Puede ejecutar código: ábrelo solo si confías en quien lo envió.',
     menu: 'Menú',
     sinNombre: 'Sin nombre',
     walletDelTelefono: 'La wallet de este teléfono',

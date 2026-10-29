@@ -32,6 +32,7 @@ import { guardarArchivo } from '~/lib/copia';
 import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
 import Subcontratados from '~/componentes/Subcontratados';
+import AvisoEjecutable from '~/componentes/AvisoEjecutable';
 import HojaFirmar from '~/componentes/HojaFirmar';
 import HojaEncargar from '~/componentes/HojaEncargar';
 import HojaRevisar from '~/componentes/HojaRevisar';
@@ -773,6 +774,7 @@ function ArchivosDelMensaje({
             <Icono nombre="hoja" tamano={15} color="#B7A8FC" className="shrink-0" />
             <div className="min-w-0 grow">
               <p className="truncate text-[12.5px] font-medium">{a.name}</p>
+              {delAgente && <AvisoEjecutable nombre={a.name} mime={a.mime} className="mt-0.5" />}
               <p
                 className={`mt-0.5 text-[11px] ${
                   bajada === 'ok' ? 'text-olive' : bajada === 'nocuadra' || bajada === 'fallo' ? 'text-terra' : 'text-ink-3'

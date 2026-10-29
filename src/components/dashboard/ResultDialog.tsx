@@ -35,6 +35,7 @@ import type { RealTask } from '@/hooks/useMyTasks';
 import { cn } from '@/lib/utils';
 import { guardarEntrega, leerEntrega, textoDeEntrega } from '@/lib/expedientes';
 import SubcontratosDeLaEntrega from '@/components/dashboard/SubcontratosDeLaEntrega';
+import AvisoEjecutable from '@/components/AvisoEjecutable';
 import {
   FileVerificationError,
   downloadDeliveredFile,
@@ -327,6 +328,7 @@ export default function ResultDialog({ task }: { task: RealTask }) {
                         {formatBytes(file.size)}
                         {file.mime ? ` · ${file.mime}` : ''}
                       </p>
+                      <AvisoEjecutable nombre={file.name} mime={file.mime} className="mt-1" />
                       {estado === 'mismatch' && (
                         <p className="mt-1 text-[0.75rem] font-medium text-terra">{t('tasks.fileMismatch')}</p>
                       )}

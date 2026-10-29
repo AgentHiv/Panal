@@ -20,6 +20,7 @@ import {
 } from '@panal/sdk';
 import { archivosElegidos, tamano } from '@/lib/archivosTablon';
 import { bajarArchivoDelTablon, type CredencialTablon } from '@/lib/tablonReglas';
+import AvisoEjecutable from '~/componentes/AvisoEjecutable';
 import Icono from '~/componentes/Icono';
 import { guardarArchivo } from '~/lib/copia';
 import { useTextos } from '~/i18n/idiomas';
@@ -146,6 +147,7 @@ export function ListaDeArchivos({
             <Accion onClick={() => void bajar(f)} disabled={bajando !== null}>
               {bajando === f.name ? '…' : A.bajar}
             </Accion>
+            <AvisoEjecutable nombre={f.name} mime={f.mime} className="w-full" />
             {estado[f.name] && <span className="w-full text-[11.5px] text-ink-3">{estado[f.name]}</span>}
           </li>
         ))}

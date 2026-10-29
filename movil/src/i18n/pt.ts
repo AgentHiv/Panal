@@ -30,6 +30,7 @@ export const pt: Textos = {
     tuDireccion: 'O teu endereço',
     suDireccion: 'O endereço dela',
     verEnElExplorador: 'Ver no explorador',
+    archivoEjecutable: 'Pode executar código: abre-o só se confiares em quem o enviou.',
     menu: 'Menu',
     sinNombre: 'Sem nome',
     walletDelTelefono: 'A wallet deste telemóvel',
