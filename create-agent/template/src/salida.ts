@@ -15,7 +15,7 @@
  * peso y confusión.
  */
 
-import { llmChat, resolverLlm, stripFilesManifest } from '@panal/sdk';
+import { llmChat, parseAttachmentsManifest, resolverLlm, stripFilesManifest } from '@panal/sdk';
 import { textoAPdf } from './pdf.js';
 import { escribirZip } from './zip.js';
 
@@ -36,7 +36,15 @@ export interface ArchivoDeSalida {
  *
  * Devuelve `null` cuando no pide nada, que es el caso normal.
  */
-export function formatoPedido(brief: string): Formato | null {
+export function formatoPedido(
+  brief: string,
+  /**
+   * Los archivos que mandó el cliente: `ctx.adjuntos`. Hace falta para una
+   * pregunta x402, cuyos archivos no van dentro del texto; en un encargo
+   * también se leen del manifiesto del brief, así que sin esto sigue sabiendo.
+   */
+  entrada: readonly { name: string }[] = [],
+): Formato | null {
   // El manifiesto de adjuntos NO es lo que pidio el cliente: es contabilidad
   // del protocolo, y va pegada al FINAL del brief. Sin quitarla, sus lineas
   // `name:` y `mime:` son las ultimas menciones de un formato que hay en el
@@ -62,7 +70,16 @@ export function formatoPedido(brief: string): Formato | null {
   // adjunto y devuélvemelo en Word» entregaba un PDF: el primer formato que
   // aparecía era el de la entrada. Pasó en una prueba de punta a punta, que es
   // donde se ve y no en una frase inventada.
-  const deSalida = mencion.filter((x) => !esDeEntrada(t, x.en));
+  //
+  // Y las que nombran el formato de un archivo que mandó el cliente, si no
+  // van detrás de algo que pida una salida. Sin esto, «¿cuáles de los tokens
+  // de este CSV son seguros?» con un CSV adjunto se entregaba como CSV: solo
+  // contaba como entrada si decía «adjunto». Pasó con dinero real en mainnet
+  // (cik, 2026-10-29). «Sácame la tabla en CSV» sigue pidiendo un CSV.
+  const deEntrada = formatosDeEntrada(brief, entrada);
+  const deSalida = mencion.filter(
+    (x) => !esDeEntrada(t, x.en) && !(deEntrada.has(x.formato) && !pideSalida(t, x.en)),
+  );
   if (deSalida.length === 0) return null;
 
   // Si alguna viene precedida de un verbo de entrega, ésa es la buena.
@@ -98,6 +115,27 @@ function esDeEntrada(t: string, en: number): boolean {
   const despues = t.slice(en, en + 30);
   // «el PDF adjunto», «the attached pdf», «mi word»: se habla de lo que entró.
   return /\badjunt|attach|\bsub[ií]|uploaded|que te (mand|pas|envi)/.test(despues) || (ENTRADA.test(antes) && /\badjunt|attach/.test(despues));
+}
+
+/** Delante de un formato, lo que dice que se pide así: «en CSV», «as a PDF», «como Word». */
+const PIDE_SALIDA = /\b(en|a|al|to|as|in|into|como|formato|format)\s+(un|una|el|la|a|an|the)?\s*(archivo|documento|file|document)?\s*(de\s+)?\.?$/;
+
+/** Si la mención en `en` va detrás de un verbo de entrega o de un «en …», «as …». */
+function pideSalida(t: string, en: number): boolean {
+  return ENTREGA.test(t.slice(Math.max(0, en - 40), en)) || PIDE_SALIDA.test(t.slice(Math.max(0, en - 30), en));
+}
+
+/** El formato de cada archivo que entró, por su extensión: de `entrada` y del manifiesto del brief. */
+function formatosDeEntrada(brief: string, entrada: readonly { name: string }[]): Set<Formato> {
+  const nombres = [...entrada.map((a) => a.name), ...parseAttachmentsManifest(brief).map((a) => a.name)];
+  const out = new Set<Formato>();
+  for (const nombre of nombres) {
+    const ext = nombre.slice(nombre.lastIndexOf('.') + 1).toLowerCase();
+    const formato = (Object.entries(TIPOS) as [Formato, { ext: string }][]).find(([, v]) => v.ext === ext)?.[0]
+      ?? (ext === 'doc' ? 'docx' : ext === 'xls' ? 'xlsx' : ext === 'markdown' ? 'md' : null);
+    if (formato) out.add(formato);
+  }
+  return out;
 }
 
 /** La extensión y el tipo de cada formato. */

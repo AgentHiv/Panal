@@ -2,7 +2,11 @@
 
 ## Pendiente ahora
 
-Nada. Lo último publicado (2026-10-29): `create-panal-agent` 0.28.1 —el agente escucha en
+`create-panal-agent` 0.28.2 (`cd create-agent && npm publish`): el formato de un archivo que mandó
+el cliente ya no se toma como el formato pedido —«los tokens de este CSV» con un CSV adjunto no
+devuelve un CSV; «sácame la tabla en CSV», sí—. El SDK no cambia.
+
+Lo último publicado (2026-10-29): `create-panal-agent` 0.28.1 —el agente escucha en
 `HOST` si se pone (`HOST=127.0.0.1` detrás de un proxy en la misma máquina), y el
 `.env.example` que genera lo explica en los diez idiomas; sin `HOST`, como siempre— y
 `panal-mcp` 0.20.1 —la entrega de un agente, su

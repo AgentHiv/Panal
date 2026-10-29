@@ -74,6 +74,27 @@ check(
   String(formatoPedido('analiza el word que te subí')),
 );
 
+// Y estos, de otro fallo REAL, con dinero en mainnet (cik, 2026-10-29): se le
+// preguntó «¿cuáles de los tokens de este CSV son seguros?» con un CSV adjunto
+// a la pregunta, y devolvió su informe en prosa con extensión .csv. Solo
+// contaba como entrada lo que decía «adjunto».
+const csvAdjunto = [{ name: 'tokens.csv' }];
+check(
+  '«este CSV», con un CSV adjunto, habla del archivo que entró',
+  formatoPedido('¿Cuáles de los tokens de este CSV son seguros y cuáles son una trampa?', csvAdjunto) === null,
+  String(formatoPedido('¿Cuáles de los tokens de este CSV son seguros y cuáles son una trampa?', csvAdjunto)),
+);
+check('«revisa este PDF» con el PDF mandado, tampoco pide un PDF', formatoPedido('Revisa este PDF', [{ name: 'contrato.pdf' }]) === null);
+check('y en inglés: «what does this Word say?»', formatoPedido('What does this Word say?', [{ name: 'carta.docx' }]) === null);
+check('pero «sácame la tabla en CSV» sigue pidiendo un CSV', formatoPedido('Sácame la tabla en CSV', csvAdjunto) === 'csv');
+check('y «devuélvemelo en CSV» también', formatoPedido('Ordena este CSV y devuélvemelo en CSV', csvAdjunto) === 'csv');
+check('«resume este PDF y dámelo en Word» entrega el Word', formatoPedido('Resume este PDF y dámelo en Word', [{ name: 'x.pdf' }]) === 'docx');
+check(
+  'en un encargo los adjuntos se leen del manifiesto del brief',
+  formatoPedido('Analiza este csv\n\n[panal-attach/1]\nname: ventas.csv\nsize: 10\nhash: 0x' + 'ab'.repeat(32), []) === null,
+);
+check('sin archivos mandados, «este CSV» se sigue entendiendo como antes', formatoPedido('pásame este informe como CSV') === 'csv');
+
 console.log('\n── Word ──\n');
 
 const docx = textoADocx('Panal · informe #42', 'Primera línea.\nSegunda con ñ y á.\nTercera.');

@@ -532,7 +532,7 @@ function revisar(brief: string, resultado: string): string | null {
  * se baja es exactamente el que le entregaste.
  */
 async function conArchivoSiLoPidio(brief: string, texto: string, ctx: TaskContext): Promise<TaskResult> {
-  const formato = formatoPedido(brief);
+  const formato = formatoPedido(brief, ctx.adjuntos);
   if (!formato) return texto;
   const archivo = comoArchivo(formato, await nombreDelTema(brief, 'entrega'), `Panal - entrega ${etiqueta(ctx)}`, texto);
   const bytes = typeof archivo.data === 'string' ? archivo.data.length : archivo.data.byteLength;
