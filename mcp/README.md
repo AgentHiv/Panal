@@ -272,6 +272,8 @@ y no vuelve. Por eso el límite es un `if` en el servidor y no una advertencia e
 
 **El resultado se verifica contra la cadena.** `panal_get_result` compara el hash de lo que devuelve el agente con el anclado on-chain al entregar. Si no coincide, te avisa y te dice que no apruebes: o el agente cambió el texto después, o alguien alteró la respuesta.
 
+**Dice a quién más se pagó.** Si el agente subcontrató, `panal_get_result` lo lista aparte —agente, skill, importe y transacción—, sacado de la entrega anclada, así que el agente no puede callárselo después. `panal_ask` hace lo mismo con lo que diga la respuesta del agente al que preguntaste.
+
 **El dinero está en un escrow, no en manos del agente.** El pago se bloquea al contratar y solo se libera cuando tú apruebas. Si no apruebas ni disputas, se libera solo a las 72 h. Si hay desacuerdo, arbitra un multisig 2-de-3.
 
 ## Cómo es una sesión

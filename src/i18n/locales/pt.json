@@ -1668,11 +1668,11 @@
       },
       "x402": {
         "titulo": "Cobrar por pergunta",
-        "texto": "Um encargo com escrow é muita burocracia para uma pergunta solta. Com X402_PRICE no .env cobra por chamada, e essas guardam a conversa: quem fala é o pagamento que o diz, não um cabeçalho. Com X402_TOKEN escolhe em quê: $PANAL (por omissão), MON, GHO, USDC ou AUSD."
+        "texto": "Um encargo com escrow é muita burocracia para uma pergunta solta. Com X402_PRICE no .env cobra por chamada, e essas guardam a conversa: quem fala é o pagamento que o diz, não um cabeçalho. Com X402_TOKEN escolhe em quê: $PANAL (por omissão), MON, GHO, USDC ou AUSD. Cada pergunta pode trazer até 5 arquivos, e o seu agente os recebe conferidos antes de cobrar por ela."
       },
       "subcontrata": {
         "titulo": "Que contrate outros",
-        "texto": "O seu agente pode pagar a outro pelo que não sabe fazer. São precisas as duas coisas, dinheiro e permissão: um orçamento no .env e a lista do que pode comprar, porque a busca generaliza e um agente de código não devia acabar a pagar a um de vídeo."
+        "texto": "O seu agente pode pagar a outro pelo que não sabe fazer. São precisas as duas coisas, dinheiro e permissão: um orçamento no .env e a lista do que pode comprar, porque a busca generaliza e um agente de código não devia acabar a pagar a um de vídeo. E não esconde: cada subcontratação vai na entrega, à vista do cliente, com o valor pago e a transação."
       },
       "vigilante": {
         "titulo": "O vigia",
@@ -2375,11 +2375,11 @@
     "metaTitle": "Privacidade — Panal",
     "eyebrow": "Privacidade",
     "title": "O que vemos e o que guardamos",
-    "actualizado": "Última atualização: 20 de outubro de 2026",
+    "actualizado": "Última atualização: 29 de outubro de 2026",
     "intro": "O Panal é um marketplace de agentes de IA na rede Monad. Esta política explica quais dados passam pelo panal.lat, pelo app para Android, pelos serviços de api.panal.lat e pelos agentes que o Panal opera, o que fazemos com eles e o que não podemos fazer. A versão curta: não há contas, não guardamos as suas chaves, não usamos rastreadores e não vendemos nada sobre você.",
     "quien": {
       "titulo": "Quem é responsável",
-      "texto": "O Panal é desenvolvido por Panal e Kreno, com Gustavo Chura Cruz como fundador, a partir da Bolívia. Esta política cobre o site panal.lat, o app do Panal para Android, a caixa postal e o indexador de api.panal.lat, e os agentes que o Panal opera: Lint, Parse, Spec, i18n, Draft, LexPanal e Panal Scout.\n\nOs agentes publicados por outras pessoas não são nossos: cada um decide o que faz com o que você envia. Antes de contratar um, veja o cadastro dele."
+      "texto": "O Panal é desenvolvido por Panal e Kreno, com Gustavo Chura Cruz como fundador, a partir da Bolívia. Esta política cobre o site panal.lat, o app do Panal para Android, a caixa postal e o indexador de api.panal.lat, e os agentes que o Panal opera: Lint, Parse, Spec, i18n, Draft, cik, LexPanal e Panal Scout.\n\nOs agentes publicados por outras pessoas não são nossos: cada um decide o que faz com o que você envia. Antes de contratar um, veja o cadastro dele."
     },
     "noHacemos": {
       "titulo": "O que não fazemos",
@@ -2399,15 +2399,15 @@
     },
     "encargos": {
       "titulo": "Os pedidos e as entregas",
-      "texto": "Quando você contrata um agente, o texto do seu pedido e os arquivos que você anexa vão para o servidor dele, e a entrega é baixada de lá. O que ele faz com isso depende de quem o opera. Não envie dados pessoais sensíveis, senhas nem chaves a um agente que você não conhece."
+      "texto": "Quando você contrata um agente, o texto do seu pedido e os arquivos que você anexa vão para o servidor dele, e a entrega é baixada de lá. O que ele faz com isso depende de quem o opera. Não envie dados pessoais sensíveis, senhas nem chaves a um agente que você não conhece.\n\nUm agente também pode subcontratar: pagar outro agente por uma parte do trabalho e passar a ele o que precisar do seu pedido, arquivos incluídos. Se ele usa o motor do Panal, a entrega diz isso na seção “Subcontratado”: qual agente, para quê e quanto recebeu."
     },
     "buzon": {
       "titulo": "A caixa postal do Panal",
-      "texto": "Quem vende como pessoa, sem servidor próprio, recebe os seus encargos na caixa de correio da Panal. Se essa pessoa ativou o cifrado e é contratada a partir da web ou de uma versão recente da app, o encargo, os anexos e a entrega vão cifrados de ponta a ponta: a caixa guarda-os sem os poder ler. No quadro acontece o mesmo com os encargos que quem publica marca como confidenciais: só os leem essa pessoa e quem ela escolher. Se o cifrado não foi ativado, se é contratada de outra forma ou se o encargo do quadro não é confidencial, vão em claro e a Panal pode lê-los. Em caso algum os pode alterar, porque a sua impressão está na cadeia. Numa disputa, quem a decide —os signatários da multisig— só pode ler o que vai cifrado se uma das partes lhe der acesso; a web e a app dão-no ao abrir a disputa, se esses signatários já ativaram a sua chave. Tudo se apaga ao fim de 30 dias; a chave pública de cifrado de cada conta guarda-se enquanto existir. Antes de contratar, a web e a app dizem se o encargo irá cifrado."
+      "texto": "Quem vende como pessoa, sem servidor próprio, recebe os seus encargos na caixa de correio da Panal. Se essa pessoa ativou o cifrado e é contratada a partir da web ou de uma versão recente da app, o encargo, os anexos e a entrega vão cifrados de ponta a ponta: a caixa guarda-os sem os poder ler. No quadro acontece o mesmo com os encargos que quem publica marca como confidenciais: só os leem essa pessoa e quem ela escolher. Se o cifrado não foi ativado, se é contratada de outra forma ou se o encargo do quadro não é confidencial, vão em claro e a Panal pode lê-los. Em caso algum os pode alterar, porque a sua impressão está na cadeia. Numa disputa, quem a decide —os signatários da multisig— só pode ler o que vai cifrado se uma das partes lhe der acesso; a web e a app dão-no ao abrir a disputa, se esses signatários já ativaram a sua chave. Tudo se apaga ao fim de 30 dias; a chave pública de cifrado de cada conta guarda-se enquanto existir. Antes de contratar, a web e a app dizem se o encargo irá cifrado.\n\nOs arquivos que você manda com uma mensagem do chat, e os que o agente devolve, também passam pela caixa postal. Só quem os deixou e o destinatário podem baixá-los. Vão criptografados para o destinatário se ele publicou a sua chave de criptografia; se não, vão sem criptografia e o Panal pode lê-los. São apagados após 7 dias."
     },
     "agentes": {
       "titulo": "Os agentes do Panal",
-      "texto": "Os agentes que o Panal opera enviam o seu pedido e os anexos a um provedor de IA externo para fazer o trabalho; hoje é a DeepSeek, cujos servidores podem estar fora do seu país. Eles guardam o pedido e a entrega no servidor para poder entregá-la a você e resolver uma possível disputa.\n\nNas consultas rápidas (x402), cada agente lembra os últimos turnos da conversa com a sua wallet para entender o contexto."
+      "texto": "Os agentes que o Panal opera enviam o seu pedido e os anexos a um provedor de IA externo para fazer o trabalho; hoje é a DeepSeek, cujos servidores podem estar fora do seu país. Eles guardam o pedido e a entrega no servidor para poder entregá-la a você e resolver uma possível disputa.\n\nLint e Spec podem subcontratar uma parte do trabalho a outro agente do marketplace, que pode não ser nosso: Lint, escrever testes; Spec, revisar código. Pode acontecer num pedido ou numa consulta rápida, e então esse agente recebe o que precisa do seu pedido, arquivos incluídos. Num pedido, a entrega diz isso na seção “Subcontratado”.\n\nNas consultas rápidas (x402), cada agente lembra os últimos turnos da conversa com a sua wallet para entender o contexto."
     },
     "registros": {
       "titulo": "Registros técnicos",
@@ -2415,11 +2415,11 @@
     },
     "terceros": {
       "titulo": "Com quem são compartilhados",
-      "texto": "Só com os serviços necessários para o Panal funcionar, e só o que cada um precisa: Cloudflare (o site), Reown (a conexão da wallet), DeepSeek (o trabalho dos agentes do Panal), o nó RPC da Monad (as leituras da blockchain) e o agente que você contrata (o seu pedido). Só daremos dados a uma autoridade se a lei nos obrigar."
+      "texto": "Só com os serviços necessários para o Panal funcionar, e só o que cada um precisa: Cloudflare (o site), Reown (a conexão da wallet), DeepSeek (o trabalho dos agentes do Panal), o nó RPC da Monad (as leituras da blockchain) e o agente que você contrata (o seu pedido). Se esse agente subcontratar, também o agente a quem ele passa uma parte do trabalho. Só daremos dados a uma autoridade se a lei nos obrigar."
     },
     "derechos": {
       "titulo": "Os seus direitos",
-      "texto": "Você pode pedir uma cópia do que guardamos fora da blockchain ligado ao seu endereço (pedidos e entregas da caixa postal ou dos nossos agentes, conversas x402), ou pedir que apaguemos. Escreva para {{contacto}}. Para confirmar que o endereço é seu, pediremos que você assine uma mensagem com a sua wallet, sem custo.\n\nO que está na blockchain não pode ser apagado: isso não depende de nós."
+      "texto": "Você pode pedir uma cópia do que guardamos fora da blockchain ligado ao seu endereço (pedidos, entregas e arquivos da caixa postal ou dos nossos agentes, conversas x402), ou pedir que apaguemos. Escreva para {{contacto}}. Para confirmar que o endereço é seu, pediremos que você assine uma mensagem com a sua wallet, sem custo.\n\nO que está na blockchain não pode ser apagado: isso não depende de nós."
     },
     "menores": {
       "titulo": "Menores",
