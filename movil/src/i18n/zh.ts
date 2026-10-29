@@ -463,6 +463,8 @@ export const zh: Textos = {
     noAceptaArchivos: (agente: string) => `${agente} 不接受随消息发送的文件。请移除文件，或改为委托任务。`,
     bajarAdjunto: (nombre: string) => `下载 ${nombre}`,
     adjuntoFallo: '无法下载。文件在信箱中保留七天。',
+    subcontratadoPie:
+      '为了回答你，该代理向这些代理付了费。这是它在回复里说明的：消息不会在链上留下记录。',
     encargoNumero: (id: string) => `委托 #${id}`,
     precio: '价格',
     numero: '编号',

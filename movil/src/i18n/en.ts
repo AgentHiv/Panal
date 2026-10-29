@@ -502,6 +502,8 @@ export const en: Textos = {
     noAceptaArchivos: (agente: string) => `${agente} doesn't take files with a message. Remove them or commission a job.`,
     bajarAdjunto: (nombre: string) => `Download ${nombre}`,
     adjuntoFallo: 'Could not download it. Files last seven days in the mailbox.',
+    subcontratadoPie:
+      'To answer you, the agent paid these agents. It says so in its answer: a message leaves no record on-chain.',
     encargoNumero: (id: string) => `Job #${id}`,
     precio: 'Price',
     numero: 'No.',

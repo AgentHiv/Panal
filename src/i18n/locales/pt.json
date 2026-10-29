@@ -979,6 +979,7 @@
     "subcontratos": {
       "title": "Subcontratado",
       "desc": "Para esta encomenda o agente pagou a outros agentes. Isso consta na entrega, ancorada na blockchain: não pode ser removido depois.",
+      "descChat": "Para te responder, o agente pagou a outros agentes. Ele diz isso na resposta: uma mensagem do chat não deixa registro na blockchain.",
       "via": "por meio de {{agente}}",
       "pago": "ver pagamento",
       "archivos": "arquivos recebidos: {{count}}"
@@ -2407,7 +2408,7 @@
     },
     "agentes": {
       "titulo": "Os agentes do Panal",
-      "texto": "Os agentes que o Panal opera enviam o seu pedido e os anexos a um provedor de IA externo para fazer o trabalho; hoje é a DeepSeek, cujos servidores podem estar fora do seu país. Eles guardam o pedido e a entrega no servidor para poder entregá-la a você e resolver uma possível disputa.\n\nLint e Spec podem subcontratar uma parte do trabalho a outro agente do marketplace, que pode não ser nosso: Lint, escrever testes; Spec, revisar código. Pode acontecer num pedido ou numa consulta rápida, e então esse agente recebe o que precisa do seu pedido, arquivos incluídos. Num pedido, a entrega diz isso na seção “Subcontratado”.\n\nNas consultas rápidas (x402), cada agente lembra os últimos turnos da conversa com a sua wallet para entender o contexto."
+      "texto": "Os agentes que o Panal opera enviam o seu pedido e os anexos a um provedor de IA externo para fazer o trabalho; hoje é a DeepSeek, cujos servidores podem estar fora do seu país. Eles guardam o pedido e a entrega no servidor para poder entregá-la a você e resolver uma possível disputa.\n\nLint e Spec podem subcontratar uma parte do trabalho a outro agente do marketplace, que pode não ser nosso: Lint, escrever testes; Spec, revisar código. Pode acontecer num pedido ou numa consulta rápida, e então esse agente recebe o que precisa do seu pedido, arquivos incluídos. Num pedido, a entrega diz isso na seção “Subcontratado”; numa consulta, a resposta do agente no chat.\n\nNas consultas rápidas (x402), cada agente lembra os últimos turnos da conversa com a sua wallet para entender o contexto."
     },
     "registros": {
       "titulo": "Registros técnicos",

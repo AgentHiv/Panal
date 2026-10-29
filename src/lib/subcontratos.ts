@@ -44,6 +44,30 @@ export interface Subcontrato {
 }
 
 /**
+ * Una subcontratación, venga del bloque de una entrega o del JSON de una
+ * respuesta. Lo que no cuadra, `null`: se descarta y lo demás se enseña.
+ */
+function validar(c: Record<string, string | undefined>): Subcontrato | null {
+  const { agent, skill, amount, currency, asset, decimals, tx, via, files } = c;
+  if (!agent || !isAddress(agent) || !asset || !isAddress(asset)) return null;
+  if (!skill || !currency || !amount || !/^\d{1,78}$/.test(amount)) return null;
+  const dec = Number(decimals);
+  if (!Number.isInteger(dec) || dec < 0 || dec > 36) return null;
+  if (tx && !/^0x[0-9a-fA-F]{64}$/.test(tx)) return null;
+  if (via && !isAddress(via)) return null;
+
+  return {
+    agente: getAddress(agent),
+    skill: skill.slice(0, 64),
+    importe: BigInt(amount),
+    moneda: { simbolo: currency.slice(0, 16), direccion: getAddress(asset), decimales: dec },
+    ...(tx ? { tx: tx.toLowerCase() as Hex } : {}),
+    ...(via ? { via: getAddress(via) } : {}),
+    ...(files && /^\d{1,4}$/.test(files) && Number(files) > 0 ? { archivos: Number(files) } : {}),
+  };
+}
+
+/**
  * Lee las subcontrataciones de una entrega. Nunca lanza: lo que no se entiende
  * se descarta y lo demás se enseña, que el texto de la entrega es lo primero.
  */
@@ -63,23 +87,31 @@ export function leerSubcontratos(texto: string): Subcontrato[] {
       c[linea.slice(0, sep).trim().toLowerCase()] = linea.slice(sep + 1).trim();
     }
 
-    const { agent, skill, amount, currency, asset, decimals, tx, via, files } = c;
-    if (!agent || !isAddress(agent) || !asset || !isAddress(asset)) continue;
-    if (!skill || !currency || !amount || !/^\d{1,78}$/.test(amount)) continue;
-    const dec = Number(decimals);
-    if (!Number.isInteger(dec) || dec < 0 || dec > 36) continue;
-    if (tx && !/^0x[0-9a-fA-F]{64}$/.test(tx)) continue;
-    if (via && !isAddress(via)) continue;
+    const s = validar(c);
+    if (s) out.push(s);
+  }
+  return out;
+}
 
-    out.push({
-      agente: getAddress(agent),
-      skill: skill.slice(0, 64),
-      importe: BigInt(amount),
-      moneda: { simbolo: currency.slice(0, 16), direccion: getAddress(asset), decimales: dec },
-      ...(tx ? { tx: tx.toLowerCase() as Hex } : {}),
-      ...(via ? { via: getAddress(via) } : {}),
-      ...(files && /^\d{1,4}$/.test(files) && Number(files) > 0 ? { archivos: Number(files) } : {}),
-    });
+/**
+ * Las de la respuesta a un mensaje del chat (x402): el agente las manda en JSON
+ * (`subcontracts`, la forma `SubcontractJson` del SDK) y el historial las guarda
+ * tal cual. Viene del agente y luego del almacenamiento del navegador, así que
+ * se valida igual que el bloque. Un mensaje no se ancla en la cadena: lo que
+ * diga es la palabra del agente, y así lo cuenta la pantalla.
+ */
+export function subcontratosDeJson(valor: unknown): Subcontrato[] {
+  if (!Array.isArray(valor)) return [];
+  const out: Subcontrato[] = [];
+  for (const v of valor.slice(0, MAX_SUBCONTRACTS)) {
+    if (!v || typeof v !== 'object') continue;
+    const c: Record<string, string | undefined> = {};
+    for (const k of ['agent', 'skill', 'amount', 'currency', 'asset', 'decimals', 'tx', 'via', 'files']) {
+      const x = (v as Record<string, unknown>)[k];
+      if (typeof x === 'string' || typeof x === 'number') c[k] = String(x).trim();
+    }
+    const s = validar(c);
+    if (s) out.push(s);
   }
   return out;
 }

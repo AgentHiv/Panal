@@ -29,9 +29,11 @@ import {
   payAndAsk,
   quoteAsk,
   sinBarraFinal,
+  subcontractsToJson,
   x402Currency,
   X402Error,
   type HashedFile,
+  type SubcontractJson,
   type X402Accept,
   type X402Currency,
 } from '@panal/sdk';
@@ -176,6 +178,11 @@ export interface Respuesta {
   txHash?: string;
   /** Los archivos que devolvió el agente: en el buzón, a nombre de quien preguntó. */
   archivos: HashedFile[];
+  /**
+   * A quién pagó el agente para contestar, según su respuesta. En JSON, que es
+   * como lo guarda el historial; se lee con `subcontratosDeJson`.
+   */
+  subcontratos: SubcontractJson[];
 }
 
 /**
@@ -203,6 +210,7 @@ export async function enviarMensaje(opciones: EnviarOpciones): Promise<Respuesta
     pagado: res.paid,
     ...(res.txHash ? { txHash: res.txHash } : {}),
     archivos: res.fileManifest,
+    subcontratos: subcontractsToJson(res.subcontracts),
   };
 }
 

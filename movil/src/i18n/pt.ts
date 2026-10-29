@@ -502,6 +502,8 @@ export const pt: Textos = {
     noAceptaArchivos: (agente: string) => `${agente} não aceita ficheiros com a mensagem. Remove-os ou faz-lhe uma encomenda.`,
     bajarAdjunto: (nombre: string) => `Descarregar ${nombre}`,
     adjuntoFallo: 'Não foi possível descarregá-lo. Na caixa de correio duram sete dias.',
+    subcontratadoPie:
+      'Para te responder, o agente pagou a estes agentes. Di-lo ele na resposta: uma mensagem não deixa registo na blockchain.',
     encargoNumero: (id: string) => `Encomenda #${id}`,
     precio: 'Preço',
     numero: 'N.º',

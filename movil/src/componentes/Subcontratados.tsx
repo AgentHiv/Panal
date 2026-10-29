@@ -5,6 +5,9 @@
  * piezas de la app. Sale de la entrega guardada, que ya cuadró con la cadena:
  * lo que dice es lo que el agente ancló, y no puede quitarlo después.
  *
+ * En el chat sale lo mismo bajo la respuesta de un mensaje, con otro pie: un
+ * mensaje no se ancla, así que ahí es la palabra del agente.
+ *
  * No sale nada si el agente no subcontrató, que es lo normal.
  */
 
@@ -17,7 +20,14 @@ import { monto } from '~/lib/formato';
 import Icono from '~/componentes/Icono';
 import { useTextos } from '~/i18n/idiomas';
 
-export default function Subcontratados({ lista }: { lista: Subcontrato[] }): React.ReactElement | null {
+export default function Subcontratados({
+  lista,
+  pie,
+}: {
+  lista: Subcontrato[];
+  /** El texto de debajo del título. Por defecto, el del expediente (entrega anclada). */
+  pie?: string;
+}): React.ReactElement | null {
   const T = useTextos();
   const { agents } = usePanalAgents();
 
@@ -37,7 +47,7 @@ export default function Subcontratados({ lista }: { lista: Subcontrato[] }): Rea
         <Icono nombre="eslabon" tamano={13} grosor={2} />
         {T.expediente.subcontratado}
       </p>
-      <p className="mt-1 text-[11.5px] leading-[1.5] text-ink-3">{T.expediente.subcontratadoPie}</p>
+      <p className="mt-1 text-[11.5px] leading-[1.5] text-ink-3">{pie ?? T.expediente.subcontratadoPie}</p>
       <ul className="mt-2 flex flex-col gap-1.5">
         {lista.map((s, i) => (
           <li key={`${s.agente}-${i}`} className="rounded-[10px] border border-line bg-paper px-3 py-2">
