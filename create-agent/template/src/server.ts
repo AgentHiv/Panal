@@ -94,6 +94,10 @@ import { arrancarTablon, EncargosPropios, opcionesDelEntorno as opcionesTablon, 
 import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
+// Sin HOST escucha en todas las interfaces, como siempre. Detrás de un proxy en
+// la misma máquina va HOST=127.0.0.1: así el puerto no depende solo del
+// cortafuegos para no quedar abierto a internet.
+const HOST = process.env.HOST || undefined;
 const DATA_DIR = process.env.DATA_DIR ?? './data';
 
 /**
@@ -2173,7 +2177,7 @@ const server = createServer((req, res) => {
   });
 });
 
-server.listen(PORT);
+server.listen(PORT, HOST);
 
 // Mientras el tablón coge un encargo la wallet está firmando, aunque `work()`
 // todavía no haya empezado. La retirada tiene que verlo: dos transacciones
