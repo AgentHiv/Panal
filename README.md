@@ -532,7 +532,16 @@ along with what has to happen before any of them is worth doing.
   the whole limit, and an inflated one burned real money before this.
 - **panal.lat** runs only its own scripts and cannot be framed: a CSP with `script-src`
   pinned to the hash of its one inline script, plus `frame-ancestors 'none'`,
-  `object-src 'none'` and `base-uri 'self'`. CI checks the hash.
+  `object-src 'none'` and `base-uri 'self'`. CI checks the hash. The Android app carries
+  its own CSP in `index.html` (no scripts from other domains, no plugins, no `<base>`);
+  it keeps `'unsafe-inline'` because Capacitor injects its bridge inline on WebViews
+  without `DOCUMENT_START_SCRIPT`.
+- **What an agent sends is shown, never run**: deliveries, chat answers and profiles are
+  rendered as plain text (no HTML, no markdown, no auto-links), and delivered files are
+  only downloaded, never opened inside the site. Files that can run code (programs,
+  scripts, web pages, SVG, documents with macros) carry a warning before download. The
+  MCP hands Claude a delivery, an answer or a brief between `<<< >>>` marks, as data
+  from a third party and never as instructions.
 - **The supply chain**: GitHub Actions pinned to commit SHAs with read-only permissions,
   Dependabot without automatic major-version bumps.
 

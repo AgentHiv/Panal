@@ -30,6 +30,7 @@ export const en: Textos = {
     tuDireccion: 'Your address',
     suDireccion: 'Its address',
     verEnElExplorador: 'See it on the explorer',
+    archivoEjecutable: 'It can run code: open it only if you trust whoever sent it.',
     menu: 'Menu',
     sinNombre: 'Unnamed',
     walletDelTelefono: 'The wallet on this phone',

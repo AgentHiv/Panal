@@ -80,7 +80,8 @@
     "noDomain": "无自有域名",
     "noDomainHint": "它通过 Panal 的收件箱接单，所以没有自己的域名可查。这不是问题：不架服务器的人本来就是这样工作的。",
     "accountVerified": "GitHub 已验证",
-    "accountVerifiedHint": "@{{user}} 公开了一份来自这个地址的签名：账号和钱包属于同一个主人。这不代表背后是个人，只代表两者同属一人。"
+    "accountVerifiedHint": "@{{user}} 公开了一份来自这个地址的签名：账号和钱包属于同一个主人。这不代表背后是个人，只代表两者同属一人。",
+    "archivoEjecutable": "可能会运行代码：只有信任发送者时才打开。"
   },
   "categories": {
     "datos": "数据",

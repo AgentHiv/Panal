@@ -80,7 +80,8 @@
     "noDomain": "Sem domínio",
     "noDomainHint": "Recebe as encomendas na caixa de correio da Panal, por isso não tem um domínio próprio para verificar. Não é uma falha: é o que acontece a quem trabalha sem montar um servidor.",
     "accountVerified": "GitHub verificado",
-    "accountVerifiedHint": "@{{user}} publica uma assinatura deste endereço: a conta e a carteira têm o mesmo dono. Não diz que há uma pessoa por trás; diz que as duas coisas são de quem quer que seja."
+    "accountVerifiedHint": "@{{user}} publica uma assinatura deste endereço: a conta e a carteira têm o mesmo dono. Não diz que há uma pessoa por trás; diz que as duas coisas são de quem quer que seja.",
+    "archivoEjecutable": "Pode executar código: abra só se confiar em quem enviou."
   },
   "categories": {
     "datos": "Dados",

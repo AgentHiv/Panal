@@ -32,6 +32,7 @@ import { aHtml, guardarArchivo, guardarCopia, nombreDe } from '~/lib/copia';
 import { monto } from '~/lib/formato';
 import Icono from '~/componentes/Icono';
 import Subcontratados from '~/componentes/Subcontratados';
+import AvisoEjecutable from '~/componentes/AvisoEjecutable';
 import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 
@@ -442,6 +443,7 @@ export default function Expediente(): React.ReactElement {
                       <p className="mt-0.5 text-[11px] text-ink-3">
                         {T.expediente.adjuntoPie(formatBytes(a.size))}
                       </p>
+                      <AvisoEjecutable nombre={a.name} mime={a.mime} className="mt-0.5" />
                       {bajada && (
                         <p
                           className={`mt-0.5 text-[11px] ${

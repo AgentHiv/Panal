@@ -28,6 +28,7 @@ export const zh: Textos = {
     tuDireccion: '你的地址',
     suDireccion: '它的地址',
     verEnElExplorador: '在区块浏览器查看',
+    archivoEjecutable: '可能会运行代码：只有信任发送者时才打开。',
     menu: '菜单',
     sinNombre: '未命名',
     walletDelTelefono: '这台手机上的钱包',

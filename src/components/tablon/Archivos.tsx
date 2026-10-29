@@ -23,6 +23,7 @@ import { bajarArchivoDelTablon, type CredencialTablon } from '@/lib/tablonReglas
 import { cn } from '@/lib/utils';
 import { Girando } from './comun';
 import { BOTON_LINEA } from './util';
+import AvisoEjecutable from '@/components/AvisoEjecutable';
 
 export function ElegirArchivos({
   archivos,
@@ -172,6 +173,7 @@ export function ListaDeArchivos({
               {bajando === f.name ? <Girando /> : <Download size={13} aria-hidden />}
               {t('tablon.archivos.bajar')}
             </button>
+            <AvisoEjecutable nombre={f.name} mime={f.mime} className="w-full" />
             {errores[f.name] && <span className="w-full text-[0.75rem] text-terra">{t('tablon.archivos.errorBajar')}</span>}
           </li>
         ))}

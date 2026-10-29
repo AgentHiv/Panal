@@ -10,7 +10,7 @@
  * tras minarse la tx se hace refetch de las tareas.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Hexagon, Loader2, Lock, Paperclip, RefreshCw, Star } from 'lucide-react';
@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { formatEther, keccak256, toBytes } from 'viem';
 import type { Address } from 'viem';
 import { useReadContract, useSignMessage } from 'wagmi';
+import AvisoEjecutable from '@/components/AvisoEjecutable';
 import HexAvatar from '@/components/HexAvatar';
 import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -860,8 +861,8 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                           miBuzon &&
                           dialog.task.role === 'worker' &&
                           parseAttachmentsManifest(brief).map((a) => (
+                            <Fragment key={a.hash}>
                             <button
-                              key={a.hash}
                               type="button"
                               onClick={() => void bajarAdjunto(dialog.task, a)}
                               disabled={bajando === a.name || !credEncargo}
@@ -877,6 +878,8 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                                 {tamanoLegible(a.size)}
                               </span>
                             </button>
+                            <AvisoEjecutable nombre={a.name} mime={a.mime} className="mt-1 px-1" />
+                            </Fragment>
                           ))}
                       </div>
                     );

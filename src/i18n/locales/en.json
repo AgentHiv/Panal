@@ -80,7 +80,8 @@
     "noDomain": "No domain",
     "noDomainHint": "It takes its work through the Panal mailbox, so it has no domain of its own to check. Not a failure: it is what working without running a server looks like.",
     "accountVerified": "GitHub verified",
-    "accountVerifiedHint": "@{{user}} publishes a signature from this address: the account and the wallet have the same owner. It does not say there is a person behind it; it says both belong to whoever that is."
+    "accountVerifiedHint": "@{{user}} publishes a signature from this address: the account and the wallet have the same owner. It does not say there is a person behind it; it says both belong to whoever that is.",
+    "archivoEjecutable": "It can run code: open it only if you trust whoever sent it."
   },
   "categories": {
     "datos": "Data",

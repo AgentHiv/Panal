@@ -147,6 +147,15 @@ dice('lo que no cuadra se descarta y lo demás se lee', hostiles.length === 1);
 dice('algo que no es una lista no da nada', sc.subcontratosDeJson({ agent: SUBCONTRATADO }).length === 0 && sc.subcontratosDeJson(undefined).length === 0);
 dice('y el bloque de la entrega se sigue leyendo igual', sc.leerSubcontratos(CON_SUB).length === 1);
 
+console.log('\nlos archivos que pueden ejecutar código');
+const { puedeEjecutarCodigo } = await import('../../src/lib/archivosQueEjecutan.ts');
+dice('un programa, un script y una página, sí', ['setup.exe', 'arreglo.sh', 'informe.html', 'logo.svg', 'notas.docm'].every((n) => puedeEjecutarCodigo(n)));
+dice('un PDF, una foto, un CSV y un Word normal, no', ['contrato.pdf', 'foto.jpg', 'datos.csv', 'carta.docx', 'LEEME'].every((n) => !puedeEjecutarCodigo(n)));
+dice('manda la última extensión: factura.pdf.exe es un programa', puedeEjecutarCodigo('factura.pdf.exe'));
+dice('sin importar mayúsculas', puedeEjecutarCodigo('INSTALAR.BAT'));
+dice('y por el tipo, aunque el nombre no lo diga', puedeEjecutarCodigo('informe', 'text/html') && puedeEjecutarCodigo('x.bin2', 'application/x-msdownload'));
+dice('un tipo inofensivo no lo vuelve peligroso', !puedeEjecutarCodigo('foto.png', 'image/png'));
+
 console.log('\nla copia de todo');
 const todo = cp.todoAHtml([e, malo], YO);
 dice('lleva los dos encargos', todo.includes('Encargo #12') && todo.includes('Encargo #13'));
