@@ -13,9 +13,8 @@ import { defineChain } from 'viem';
 import type { Address, Chain } from 'viem';
 
 // `monad`, `monadTestnet` y `chainFor` llevan el tipo `Chain` escrito. Inferido,
-// el tipo de `defineChain`
-// arrastra tipos que viem no exporta (desde 2.57.12, el de
-// `transactionReplacement`) y el `.d.ts` del SDK deja de compilar (TS2742).
+// el tipo de `defineChain` arrastra tipos que viem no exporta (desde 2.57.12, el
+// de `transactionReplacement`) y el `.d.ts` del SDK deja de compilar (TS2742).
 
 /** Monad mainnet. Es la red por defecto: Panal está desplegado y en uso ahí. */
 export const monad: Chain = defineChain({
