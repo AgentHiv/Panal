@@ -582,6 +582,10 @@ async function main(): Promise<void> {
       check(`trae ${f}`, existsSync(join(dest, f)));
     }
     check('el despliegue lleva su nombre', !readFileSync(join(dest, 'deploy/ecosystem.config.cjs'), 'utf8').includes('__NAME__'));
+    // Con `npm start` pm2 usa el modo cluster, y la salida del agente no llega a sus registros.
+    const pm2 = readFileSync(join(dest, 'deploy/ecosystem.config.cjs'), 'utf8');
+    check('pm2 lanza tsx directo y en modo fork', pm2.includes("exec_mode: 'fork'") && !pm2.includes("script: 'npm'"));
+    check('y espera más que el apagado', pm2.includes('kill_timeout: 115000'));
     check('tiene npm run doctor', (JSON.parse(readFileSync(join(dest, 'package.json'), 'utf8')) as { scripts: Record<string, string> }).scripts.doctor === 'tsx src/doctor.ts');
     check('el README explica cómo operarlo', readFileSync(join(dest, 'README.md'), 'utf8').includes('npm run doctor'));
     if (!salida.includes('escuchando')) {
