@@ -134,14 +134,9 @@ for u in 'https://api.panal.lat/index/agents?page=0&limit=500' 'https://bot.pana
 done
 ```
 
-Después, en este orden. Hasta el último paso, volver atrás es poner la nube gris:
+Después, en este orden. Hasta el paso 5, volver atrás es poner la nube gris:
 
-1. **Certificado de origen.** Con la nube naranja, Let's Encrypt deja de ser
-   fiable. Cloudflare → SSL/TLS → Origin Server → crear uno para `*.panal.lat`,
-   guardarlo en `/etc/caddy/origen.pem` y `origen.key` (dueño `caddy`, permisos
-   600), y en cada sitio del Caddyfile añadir
-   `tls /etc/caddy/origen.pem /etc/caddy/origen.key`. Modo SSL: **Full (strict)**.
-2. **La IP real.** En el bloque `servers` del Caddyfile (rangos de
+1. **La IP real.** En el bloque `servers` del Caddyfile (rangos de
    cloudflare.com/ips; revisarlos de vez en cuando):
 
    ```caddy
@@ -151,18 +146,27 @@ Después, en este orden. Hasta el último paso, volver atrás es poner la nube g
 
    Sin esto, todas las visitas parecen una sola IP y el límite por IP se vuelve
    uno global, que cualquiera agota.
-3. **Nube naranja** en `api` y `bot`, y comprobar la web, la app y el buzón.
-4. **Caché del catálogo.** Es lo que más frena: la petición de la avalancha se
+2. **Nube naranja** en `api` y `bot`, con el modo SSL en **Full (strict)**: el
+   certificado de Let's Encrypt que ya tiene Caddy sigue valiendo. Comprobar la
+   web, la app y el buzón.
+3. **Caché del catálogo.** Es lo que más frena: la petición de la avalancha se
    contesta sin llegar a la máquina. Cloudflare → Caching → Cache Rules, cuando
    `Hostname` es `api.panal.lat`, `URI Path` es `/index/agents` y `URI Query String`
    contiene `page=`: **Eligible for cache**, Edge TTL **Use cache-control header
    if present, bypass cache if not**. Comprobar que `cf-cache-status` sale `HIT`
    a la segunda petición, y que `/buzon/` sale `DYNAMIC`.
-5. **Regla de límite** en Cloudflare → Security → WAF → Rate limiting rules, por
+4. **Regla de límite** en Cloudflare → Security → WAF → Rate limiting rules, por
    IP, sobre `/index/`. Debe dejar pasar una carga normal del mercado, y no
    tocar `/buzon/`, por donde pasan las subidas.
-6. **Probar a fondo:** la web, la app (CORS), el MCP y una subida de 25 MB al
+5. **Probar a fondo:** la web, la app (CORS), el MCP y una subida de 25 MB al
    buzón. El MCP no pasa por CORS y taparía un fallo.
+6. **Certificado de origen.** Con la nube naranja, renovar el de Let's Encrypt deja
+   de ser fiable. Cloudflare → SSL/TLS → Origin Server → crear uno para
+   `*.panal.lat`, guardarlo en `/etc/caddy/origen.pem` y `origen.key` (dueño
+   `caddy`, permisos 600) y en cada sitio del Caddyfile añadir
+   `tls /etc/caddy/origen.pem /etc/caddy/origen.key`. **Solo con la nube naranja
+   ya puesta:** los navegadores no se fían de este certificado, y a partir de
+   aquí poner la nube gris tumba la API si no se quita antes.
 7. **Cerrar el origen.** Solo con todo lo anterior bien. La IP de la máquina ya es pública, así que sin esto se
    puede atacar saltándose Cloudflare. Con una sesión SSH abierta de reserva:
 
