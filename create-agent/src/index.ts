@@ -3,6 +3,7 @@
  * create-panal-agent — genera un agente de Panal listo para funcionar.
  *
  *   npx create-panal-agent mi-agente [--lang es] [--no-input]
+ *   npx create-panal-agent upgrade [carpeta] [--check] [--yes] [--force]
  *
  * Copia la plantilla, le pone el nombre, genera una wallet dedicada nueva y
  * escribe la documentación del proyecto en el idioma de quien lo ejecuta.
@@ -19,11 +20,12 @@
  */
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { CATALOG, LANGS, fill, isLang, resolveLang, type Catalog, type Lang } from './i18n.js';
 import { logoSvg } from './logo.js';
+import { aplicar, escribirManifiesto, hayCambios, pareceUnAgente, planear } from './upgrade.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 /** La plantilla se empaqueta junto al binario (ver `files` del package.json). */
@@ -91,6 +93,11 @@ interface Args {
   version: boolean;
   /** Lo que venga por bandera; lo demás se pregunta, o se queda vacío. */
   links: Enlaces;
+  /** Segundo argumento suelto: la carpeta de `upgrade`. */
+  carpeta: string | null;
+  yes: boolean;
+  check: boolean;
+  force: boolean;
 }
 
 /**
@@ -105,12 +112,21 @@ function parseArgs(argv: string[]): Args {
     help: false,
     version: false,
     links: { ...SIN_ENLACES },
+    carpeta: null,
+    yes: false,
+    check: false,
+    force: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === '--help' || a === '-h') args.help = true;
     else if (a === '--version' || a === '-v') args.version = true;
-    else if (a === '--no-input' || a === '--yes' || a === '-y') args.noInput = true;
+    else if (a === '--no-input') args.noInput = true;
+    else if (a === '--yes' || a === '-y') {
+      args.noInput = true;
+      args.yes = true;
+    } else if (a === '--check') args.check = true;
+    else if (a === '--force') args.force = true;
     else if (a === '--lang') args.lang = argv[++i] ?? '';
     else if (a.startsWith('--lang=')) args.lang = a.slice('--lang='.length);
     else {
@@ -121,6 +137,8 @@ function parseArgs(argv: string[]): Args {
         args.links[enlace] = limpiaEnlace(crudo);
       } else if (!a.startsWith('-') && args.name === null) {
         args.name = a;
+      } else if (!a.startsWith('-') && args.carpeta === null) {
+        args.carpeta = a;
       }
     }
   }
@@ -306,10 +324,44 @@ function writeEnvExample(dest: string, t: Catalog): string {
     '# TRAS_PROXY=1',
     '# AUTH_ESTRICTA=1',
     '',
+    bloque(t.env.operacion),
+    '# X402_PLAZO_SEGUNDOS=100',
+    '# APAGADO_SEGUNDOS=110',
+    '',
   ].join('\n');
 
   writeFileSync(join(dest, '.env.example'), contenido, 'utf8');
   return contenido;
+}
+
+/** `upgrade`: el motor nuevo en un agente ya generado. Lo tuyo no se toca (ver upgrade.ts). */
+function upgrade(args: Args, t: Catalog): void {
+  const dest = resolve(process.cwd(), args.carpeta ?? '.');
+  if (!pareceUnAgente(dest)) fail(fill(t.upNotAgent, { name: dest }));
+  const { version } = JSON.parse(readFileSync(resolve(HERE, '..', 'package.json'), 'utf8')) as { version: string };
+  const plan = planear(dest, TEMPLATE, version);
+
+  if (!hayCambios(plan)) {
+    console.log(`\n${c.green('✓')} ${fill(t.upUpToDate, { to: version })}\n`);
+    return;
+  }
+  console.log(`\n${c.bold(fill(t.upPlan, { name: basename(dest), from: plan.versionActual ?? '?', to: version }))}\n`);
+  if (plan.cambian.length) console.log(`${t.upChanges}\n${plan.cambian.map((r) => `  ${r}`).join('\n')}\n`);
+  const nuevos = [...plan.nuevos, ...plan.despliegue];
+  if (nuevos.length) console.log(`${t.upNew}\n${nuevos.map((r) => `  ${r}`).join('\n')}\n`);
+  if (plan.dependencias.length) {
+    console.log(`${t.upDeps}\n${plan.dependencias.map((d) => `  ${d.nombre}: ${d.de ?? '—'} → ${d.a}`).join('\n')}\n`);
+  }
+  if (args.check) {
+    console.log(c.dim(`${t.upCheckOnly}\n`));
+    return;
+  }
+  if (plan.tocados.length && !args.force) fail(fill(t.upEdited, { files: plan.tocados.map((r) => `  ${r}`).join('\n') }));
+  if (plan.versionActual === null && !args.yes && !args.force) fail(t.upUnknown);
+
+  const copia = aplicar(dest, TEMPLATE, plan);
+  console.log(`${c.green('✓')} ${fill(t.upDone, { backup: copia })}`);
+  console.log(c.dim(`${t.upNext}\n`));
 }
 
 async function main(): Promise<void> {
@@ -326,7 +378,8 @@ async function main(): Promise<void> {
     return;
   }
   if (args.help) {
-    console.log(`\n${(pedido ? CATALOG[pedido] : CATALOG.en).usage}\n`);
+    const ayuda = pedido ? CATALOG[pedido] : CATALOG.en;
+    console.log(`\n${ayuda.usage}\n\n${ayuda.usageUpgrade}\n`);
     return;
   }
 
@@ -334,6 +387,11 @@ async function main(): Promise<void> {
   const interactivo = !args.noInput && process.stdin.isTTY === true && process.stdout.isTTY === true;
   const lang: Lang = pedido ?? (interactivo ? await askLang() : 'en');
   const t = CATALOG[lang];
+
+  if (args.name === 'upgrade') {
+    upgrade(args, t);
+    return;
+  }
 
   const name = validateName(args.name, t);
   const dest = resolve(process.cwd(), name);
@@ -369,7 +427,9 @@ async function main(): Promise<void> {
 
   // El README del proyecto, en su idioma. Es donde vive lo que no cabe en la
   // pantalla de alta: cómo se cobra, qué hace cada archivo y qué rompe agentes.
-  writeFileSync(join(dest, 'README.md'), fill(t.readme, { name, address }), 'utf8');
+  writeFileSync(join(dest, 'README.md'), `${fill(t.readme, { name, address })}\n\n${t.readmeOps}\n`, 'utf8');
+  const { version } = JSON.parse(readFileSync(resolve(HERE, '..', 'package.json'), 'utf8')) as { version: string };
+  escribirManifiesto(dest, TEMPLATE, version);
 
   console.log(`\n${c.green('✓')} ${c.bold(fill(t.created, { name }))}\n`);
   console.log(`  ${t.walletLabel} ${c.bold(address)}`);

@@ -1,0 +1,51 @@
+# __NAME__ con https, detrás de Caddy. Cambia TU-DOMINIO.example por el tuyo: tiene
+# que apuntar ya a esta máquina, y Caddy pide el certificado solo.
+#
+#   sudo mkdir -p /var/log/caddy && sudo chown caddy:caddy /var/log/caddy
+#   sudo cp deploy/Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy
+#
+# Si validas con `sudo caddy validate`, crea los registros como root y luego Caddy no
+# puede abrirlos: `sudo chown caddy:caddy /var/log/caddy/*` antes de recargar.
+{
+	# Los errores a un archivo con tope. Bajo una avalancha son miles por segundo, y
+	# pueden atascar el journal de la máquina entera.
+	log default {
+		output file /var/log/caddy/errores.log {
+			roll_size 50MiB
+			roll_keep 3
+		}
+		level WARN
+	}
+	servers {
+		timeouts {
+			read_header 10s
+			idle 2m
+		}
+		# De 1 MB por defecto a 32 KB: las firmas caben de sobra.
+		max_header_size 32KB
+	}
+}
+
+TU-DOMINIO.example {
+	# Quién pidió qué, sin cabeceras ni firmas: por aquí viajan pagos.
+	log {
+		output file /var/log/caddy/acceso.log {
+			roll_size 100MiB
+			roll_keep 5
+			roll_keep_for 168h
+		}
+		format filter {
+			request>headers delete
+			request>tls delete
+			resp_headers delete
+			request>uri query {
+				delete address
+				delete signature
+				delete expira
+			}
+			wrap json
+		}
+	}
+	# Sin `max_conns_per_host`: al llegar al tope, las peticiones esperan en memoria.
+	reverse_proxy 127.0.0.1:8787
+}

@@ -92,12 +92,14 @@ import { arrancarVigilante } from './vigilante.js';
 import { arrancarRetirada, opcionesDelEntorno } from './retirada.js';
 import { arrancarTablon, EncargosPropios, opcionesDelEntorno as opcionesTablon, retomarDelTablon } from './tablon.js';
 import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
+import { apagarEnOrden, atenderSenales, conPlazo, PlazoAgotado, plazoApagadoMs, plazoX402Ms } from './operacion.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 // Sin HOST escucha en todas las interfaces, como siempre. Detrás de un proxy en
 // la misma máquina va HOST=127.0.0.1: así el puerto no depende solo del
 // cortafuegos para no quedar abierto a internet.
 const HOST = process.env.HOST || undefined;
+const PLAZO_X402_MS = plazoX402Ms();
 const DATA_DIR = process.env.DATA_DIR ?? './data';
 
 /**
@@ -662,6 +664,10 @@ const sobrePendiente = new Map<string, CallEnvelope>();
 
 /** Tareas que se están procesando ahora mismo: evita trabajar dos veces. */
 const inFlight = new Set<string>();
+/** Preguntas x402 a medias: de ahí puede salir un cobro, o ya salió y falta responder. */
+let preguntasEnCurso = 0;
+/** Desde que llega la señal de apagar no se empieza nada nuevo (ver `apagarEnOrden`). */
+let apagando = false;
 
 // ---------------------------------------------------------------------------
 // Firmas: el cliente demuestra quién es sin gastar gas (EIP-191).
@@ -969,6 +975,9 @@ async function work(
 ): Promise<ResultadoTrabajo> {
   const key = taskId.toString();
   if (inFlight.has(key)) return 'en-curso';
+  // Sin trabajar y sin darla por hecha: el brief ya está en disco y el vigilante
+  // la retoma al arrancar.
+  if (apagando) return 'esperando';
   inFlight.add(key);
   try {
     // Lo PRIMERO, antes de trabajar: si el proceso muere a mitad, esto es lo
@@ -1400,6 +1409,28 @@ const server = createServer((req, res) => {
   void (async () => {
     const url = new URL(req.url ?? '/', 'http://localhost');
 
+    // Para quien vigile que sigues vivo: un monitor o tu proxy. Va antes del límite
+    // porque no cuesta nada, y no lee la cadena: dice si este proceso atiende.
+    if (url.pathname === '/health' && (req.method === 'GET' || req.method === 'HEAD')) {
+      res.setHeader('cache-control', 'no-store');
+      json(res, apagando ? 503 : 200, {
+        ok: !apagando,
+        agent: account.address,
+        enCurso: inFlight.size + preguntasEnCurso,
+        ...(apagando ? { apagando: true } : {}),
+      });
+      return;
+    }
+
+    // Por una conexión que ya estaba abierta puede llegar algo después de la señal.
+    // Se rechaza AQUÍ, antes de cobrar nada: empezarlo sería arriesgarse a cortarlo.
+    if (apagando) {
+      res.setHeader('retry-after', '5');
+      res.setHeader('connection', 'close');
+      json(res, 503, { error: 'restarting, try again in a moment' });
+      return;
+    }
+
     if (pasaDelLimite(req)) {
       res.setHeader('retry-after', '60');
       json(res, 429, { error: 'too many requests' });
@@ -1603,6 +1634,9 @@ const server = createServer((req, res) => {
 
     // ---- Cobro por llamada: pagas y te respondo en el acto ------------------
     if (url.pathname === '/x402/ask' && req.method === 'POST') {
+      // Desde aquí hasta responder no se apaga: el `finally` está al final de la ruta.
+      preguntasEnCurso += 1;
+      try {
       if (X402_PRICE === null) {
         json(res, 404, { error: 'this agent does not charge per call; hire it through the escrow' });
         return;
@@ -1749,7 +1783,7 @@ const server = createServer((req, res) => {
       // algo. Si el modelo revienta, se dice; callarse sería quedarse el dinero.
       try {
         const subcontratos: SubcontractRecord[] = [];
-        const salida = await handleTask(
+        const salida = await conPlazo(handleTask(
           prompt,
           contexto(
             {
@@ -1768,7 +1802,7 @@ const server = createServer((req, res) => {
             sobre,
             subcontratos,
           ),
-        );
+        ), PLAZO_X402_MS);
         // Los archivos de la respuesta van al buzón a nombre de quien pagó
         // (cifrados si publicó su clave), y en la respuesta solo su lista con
         // el hash de cada uno: quien los baja comprueba que son esos.
@@ -1807,12 +1841,16 @@ const server = createServer((req, res) => {
         recordarTurno(DATA_DIR, leido.payment.payer, { pregunta: prompt, respuesta: answer, cuando: Date.now() });
       } catch (err) {
         console.error(`[x402] cobrado pero falló al responder: ${err instanceof Error ? err.message : err}`);
-        json(res, 502, {
-          error: 'the payment went through but the agent could not answer',
+        const sinTiempo = err instanceof PlazoAgotado;
+        json(res, sinTiempo ? 504 : 502, {
+          error: sinTiempo ? 'the payment went through but the agent ran out of time' : 'the payment went through but the agent could not answer',
           paid: { txHash: cobro.txHash, amount: cobro.amount.toString() },
         });
       }
       return;
+      } finally {
+        preguntasEnCurso -= 1;
+      }
     }
 
     // Reenvío manual del brief, para cuando el envío automático del dashboard
@@ -2179,6 +2217,25 @@ const server = createServer((req, res) => {
 
 server.listen(PORT, HOST);
 
+// Reiniciar para desplegar no debe dejar a nadie cobrado y sin respuesta. Ojo: tu
+// gestor de procesos tiene que esperar más que `APAGADO_SEGUNDOS`, o matará el
+// proceso antes (`kill_timeout` en pm2, ver deploy/ecosystem.config.cjs).
+const alRecibirSenal = atenderSenales({
+  apagar: (senal) => {
+    apagando = true;
+    console.log(`[panal] ${senal}: no acepto nada nuevo y espero a lo que está en curso`);
+    apagarEnOrden({
+      server,
+      ocupado: () => inFlight.size > 0 || preguntasEnCurso > 0 || tablonFirmando,
+      plazoMs: plazoApagadoMs(),
+      salir: (codigo) => process.exit(codigo),
+    });
+  },
+  salirYa: () => process.exit(1),
+});
+process.on('SIGTERM', () => alRecibirSenal('SIGTERM'));
+process.on('SIGINT', () => alRecibirSenal('SIGINT'));
+
 // Mientras el tablón coge un encargo la wallet está firmando, aunque `work()`
 // todavía no haya empezado. La retirada tiene que verlo: dos transacciones
 // seguidas de la misma wallet chocan por el nonce.
@@ -2266,7 +2323,7 @@ if (retirada) {
     // La misma guarda que el vigilante: con un encargo en marcha la wallet
     // puede estar a punto de firmar su entrega, y dos transacciones seguidas
     // chocan por el nonce.
-    ocupado: () => inFlight.size > 0 || tablonFirmando,
+    ocupado: () => apagando || inFlight.size > 0 || tablonFirmando,
   });
 }
 
@@ -2279,7 +2336,7 @@ if (tablon) {
     panal,
     yo: account.address,
     opciones: tablon,
-    ocupado: () => inFlight.size > 0 || tablonFirmando,
+    ocupado: () => apagando || inFlight.size > 0 || tablonFirmando,
     marcar: (ocupada) => {
       tablonFirmando = ocupada;
     },

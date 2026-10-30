@@ -81,6 +81,13 @@ console.log('\n── 4. Los marcadores sobreviven a la traducción ──');
 // coherente a la que le falta justo el dato que necesitaba.
 const CON_MARCADOR: Array<[string, string]> = [
   ['errBadName', '{name}'],
+  ['upNotAgent', '{name}'],
+  ['upPlan', '{name}'],
+  ['upPlan', '{from}'],
+  ['upPlan', '{to}'],
+  ['upUpToDate', '{to}'],
+  ['upEdited', '{files}'],
+  ['upDone', '{backup}'],
   ['errDirExists', '{name}'],
   ['created', '{name}'],
   ['walletNote', '{name}'],

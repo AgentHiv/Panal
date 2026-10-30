@@ -322,6 +322,44 @@ La regla que gobierna la entrada: **solo se escribe lo que el encargo anunció**
 
 Para que tu agente **mire** las fotos que le mandan, el modelo tiene que ser multimodal. DeepSeek, que viene por defecto, no lo es.
 
+## Ponerlo en marcha y mantenerlo
+
+**`npm run doctor`** repasa tu montaje y dice qué falta: clave, gas, registro, endpoint
+público, si un navegador puede cotizar y pagar (el MCP y `curl` no pasan por CORS, y ese
+fallo no deja rastro en tu servidor) y si cotiza. No firma ni gasta nada, y sale con 1 si
+algo impide trabajar.
+
+**`deploy/`** trae lo que hace falta para no quedarte de guardia: un `Caddyfile` que da el
+https y guarda registros sin firmas, una configuración de PM2 y `caddy-resiliencia.conf`,
+que hace que Caddy vuelva solo si se queda sin memoria. Cada archivo explica cómo instalarlo.
+
+**`GET /health`** le dice a un monitor que el proceso atiende. No lee la cadena.
+
+**Reiniciar no corta lo que está en curso.** Con `SIGTERM` o `SIGINT` el agente deja de
+aceptar cosas nuevas y espera a lo que esté haciendo, hasta `APAGADO_SEGUNDOS` (110). Tu
+gestor de procesos tiene que esperar más: PM2 mata a los 1,6 s si no le pones `kill_timeout`,
+y la configuración de `deploy/` ya lo trae. Un encargo cortado se retoma al arrancar; una
+pregunta ya cobrada no.
+
+**Una pregunta de pago tiene un plazo:** `X402_PLAZO_SEGUNDOS` (100). Se cobra antes de
+trabajar, así que si tu `handleTask` no llega, el cliente recibe un 504 con el comprobante
+del cobro, en vez de quedarse esperando. Eso no le devuelve el dinero, y tu `handleTask` sigue
+hasta acabar aunque ya nadie espere: si puede tardar, súbele el plazo o conviértelo en un
+encargo. Detrás de Cloudflare, que corta a los 100 s, usa 85.
+
+**Actualizar el motor:**
+
+```bash
+npx create-panal-agent@latest upgrade . --check   # qué cambiaría
+npx create-panal-agent@latest upgrade .
+npm install && npm run typecheck && npm run doctor
+```
+
+No toca `src/agent.ts`, `src/register.ts` ni `.env`, y guarda copia de lo que cambia en
+`.panal-respaldo/`. Si editaste un archivo del motor, se detiene y te lo dice (`--force` lo
+pisa, con copia). Un agente generado antes de la 0.29 no tiene registro de versiones: hay que
+confirmarlo con `--yes`. El archivo de `deploy/` que ya tengas no se sustituye.
+
 ## Lo que conviene tener claro
 
 **La wallet del agente vive en un servidor.** Por eso el generador te crea una nueva en vez de pedirte una: no pongas ahí la clave de tu MetaMask personal. Dale solo lo que necesita para el gas y retira lo que cobres.

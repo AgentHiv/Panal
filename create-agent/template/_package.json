@@ -7,6 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "register": "tsx src/register.ts",
+    "doctor": "tsx src/doctor.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
