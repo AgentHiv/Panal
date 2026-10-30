@@ -16,7 +16,9 @@
     "mobileAria": "Móvel",
     "token": "Token",
     "chats": "Conversas",
-    "archivo": "Arquivo"
+    "archivo": "Arquivo",
+    "cikEyebrow": "Segurança na blockchain",
+    "cikDesc": "Este token é uma armadilha, ou esta conta está delegada a um varredor? Quem diz é a IA que vive na Monad."
   },
   "lang": {
     "label": "Idioma"
@@ -2466,8 +2468,55 @@
       "analizando": "Perguntando ao cik…",
       "ejemplos": "Exemplos:",
       "malaDireccion": "Isso não é um endereço: 0x e 40 caracteres hexadecimais.",
-      "noContrato": "Não há código nesse endereço: é uma carteira, não um contrato. O cik só julga contratos.",
+      "noContrato": "Não há código nesse endereço: é uma carteira sem delegação EIP-7702, não um contrato. O cik julga contratos; as delegações, mais abaixo.",
       "error": "Não foi possível ler da blockchain. Tente de novo em alguns segundos."
+    },
+    "delegacion": {
+      "title": "Delegações EIP-7702",
+      "sub": "Com EIP-7702 uma conta comum executa o código de outro contrato, que pode levar tudo o que ela tem sem pedir uma única permissão. Cole uma conta para saber a quem ela está delegada antes de enviar algo, ou o contrato ao qual pedem que você delegue antes de assinar.",
+      "hueco": "0x… uma conta ou um contrato",
+      "boton": "Verificar",
+      "error": "Não foi possível ler a blockchain. Tente de novo em instantes.",
+      "ejemploConocida": "Conta delegada à MetaMask",
+      "ejemploBarredor": "Conta de um varredor",
+      "ejemploContrato": "Contrato da MetaMask",
+      "tipo": {
+        "cuenta": "Conta delegada",
+        "delegado": "Contrato",
+        "ninguna": "Conta sem delegação"
+      },
+      "veredicto": {
+        "ninguna": "Sem delegação",
+        "conocido": "Conhecido",
+        "desconocido": "Desconhecido",
+        "barredor": "Varredor"
+      },
+      "consejo": {
+        "ninguna": "Esta conta não executa o código de ninguém: o que ela recebe fica nela.",
+        "conocido": "É o código de uma carteira conhecida, da lista fixa do CiDelegate. É a única coisa que é uma garantia.",
+        "desconocido": "Ninguém revisou este código aqui. Não assine uma delegação para ele, nem envie fundos a uma conta delegada a ele, sem saber o que ele faz.",
+        "barredor": "Este código não assina como uma conta e esvazia saldos: o que chegar a uma conta delegada a ele é levado por outro. Não envie nada nem assine uma delegação para ele. Se for sua conta, passe o que restar para uma carteira nova."
+      },
+      "delegadoA": "Delegada a",
+      "contrato": "Contrato",
+      "codigo": "Código",
+      "bytes": "{{n}} bytes",
+      "seVe": "O que se vê no código",
+      "bandera": {
+        "firma": "assina como uma conta (ERC-1271)",
+        "userop": "conta ERC-4337",
+        "call": "envia valor e chama contratos",
+        "delegatecall": "delegatecall",
+        "selfdestruct": "selfdestruct",
+        "create": "cria contratos",
+        "saldo": "lê o próprio saldo",
+        "tokens": "move tokens (transfer)",
+        "origin": "usa tx.origin",
+        "sinCodigo": "sem código: o que for implantado ali será executado na conta",
+        "cadena": "delega em outra conta delegada",
+        "grande": "mais de 24 KB"
+      },
+      "fuente": "Quem diz é o CiDelegate na Monad, com regras fixas sobre o código do delegado, não a rede do cik. Grátis, via eth_call:"
     },
     "res": {
       "veredicto": "Veredito",

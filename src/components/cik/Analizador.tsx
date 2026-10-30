@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { BOTON_MIEL, CAMPO } from '@/components/tablon/util';
 import { codigoPegado, direccionPegada, EJEMPLOS, mon, porcentaje, TONO_CLASE } from './comun';
 import DatosDelToken from './Datos';
+import { ResultadoDelegacion } from './Delegaciones';
 import { CaminoDecision, DesgloseRiesgo, EscalaVeredicto, MapaFeatures, MedidorRiesgo, PruebaSonda } from './Graficas';
 
 type Pestana = 'direccion' | 'codigo';
@@ -104,7 +105,8 @@ function PorDireccion({
     try {
       const a = await analizar(publicClient as never, direccion);
       onAnalisis(a);
-      if (!a.esContrato) setError(t('cik.analizar.noContrato'));
+      // Una cuenta delegada con EIP-7702 no es un token: sale su delegación, no un error.
+      if (!a.esContrato && !a.delegacion) setError(t('cik.analizar.noContrato'));
     } catch {
       onAnalisis(null);
       setError(t('cik.analizar.error'));
@@ -161,6 +163,7 @@ function PorDireccion({
 
       {error && <p className="text-[0.875rem] text-terra">{error}</p>}
       {analisis?.esContrato && <Resultado a={analisis} parametros={parametros} />}
+      {analisis?.delegacion && <ResultadoDelegacion direccion={analisis.direccion} d={analisis.delegacion} />}
     </div>
   );
 }

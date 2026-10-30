@@ -31,6 +31,8 @@ export const CIK = {
   probe: '0x70c9F91242ca79706E271e7e7d404f47195681ea' as Address,
   clones: '0x191E70B4Cf97B002d0c571b9CAC9789b20Cfd713' as Address,
   symbols: '0x4C19b3e2dc556191b9ACaC53C5cef3C5147D9B12' as Address,
+  /** Delegaciones EIP-7702 (30-oct-2026): a quién se entrega una cuenta y si es un barredor. */
+  delegate: '0x5d638406A55062309B84152d4Ab9092420980547' as Address,
 } as const;
 
 /** Lo que se ve en Sourcify: el código fuente de cada contrato con su bytecode. */
@@ -1313,6 +1315,387 @@ export const ciGuardAbi = [
         'type': 'uint8'
       }
     ]
+  }
+] as const;
+
+/** `CiDelegate`: el ABI sale del artefacto de raipanal (commit e56c211, el desplegado). */
+export const ciDelegateAbi = [
+  {
+    'type': 'function',
+    'name': 'FLAG_CALL',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'FLAG_CHAIN',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'FLAG_CREATE',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'FLAG_DELEGATECALL',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'FLAG_LARGE',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'FLAG_NO_CODE',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'FLAG_ORIGIN',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'FLAG_SELFBALANCE',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'FLAG_SELFDESTRUCT',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'FLAG_SIGNATURE',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'FLAG_TOKEN_MOVE',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'FLAG_USEROP',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint16'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'MAX_ONCHAIN_SCAN',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint256'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'VERDICT_KNOWN',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint8'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'VERDICT_NONE',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint8'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'VERDICT_SWEEPER',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint8'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'VERDICT_UNKNOWN',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'uint8'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'inspectAccount',
+    'inputs': [
+      {
+        'name': 'account',
+        'type': 'address'
+      }
+    ],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'tuple',
+        'components': [
+          {
+            'name': 'kind',
+            'type': 'uint8'
+          },
+          {
+            'name': 'delegate',
+            'type': 'address'
+          },
+          {
+            'name': 'verdict',
+            'type': 'uint8'
+          },
+          {
+            'name': 'flags',
+            'type': 'uint16'
+          },
+          {
+            'name': 'codeSize',
+            'type': 'uint32'
+          }
+        ]
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'inspectDelegate',
+    'inputs': [
+      {
+        'name': 'target',
+        'type': 'address'
+      }
+    ],
+    'outputs': [
+      {
+        'name': 'r',
+        'type': 'tuple',
+        'components': [
+          {
+            'name': 'kind',
+            'type': 'uint8'
+          },
+          {
+            'name': 'delegate',
+            'type': 'address'
+          },
+          {
+            'name': 'verdict',
+            'type': 'uint8'
+          },
+          {
+            'name': 'flags',
+            'type': 'uint16'
+          },
+          {
+            'name': 'codeSize',
+            'type': 'uint32'
+          }
+        ]
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'isKnown',
+    'inputs': [
+      {
+        'name': '',
+        'type': 'address'
+      }
+    ],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'bool'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'isSweeper',
+    'inputs': [
+      {
+        'name': 'account',
+        'type': 'address'
+      }
+    ],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'bool'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'knownDelegates',
+    'inputs': [],
+    'outputs': [
+      {
+        'name': '',
+        'type': 'address[]'
+      }
+    ],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'function',
+    'name': 'requireSafeAccount',
+    'inputs': [
+      {
+        'name': 'account',
+        'type': 'address'
+      },
+      {
+        'name': 'strict',
+        'type': 'bool'
+      }
+    ],
+    'outputs': [],
+    'stateMutability': 'view'
+  },
+  {
+    'type': 'error',
+    'name': 'DelegatedToSweeper',
+    'inputs': [
+      {
+        'name': 'account',
+        'type': 'address'
+      },
+      {
+        'name': 'delegate',
+        'type': 'address'
+      }
+    ]
+  },
+  {
+    'type': 'error',
+    'name': 'DelegatedToUnknown',
+    'inputs': [
+      {
+        'name': 'account',
+        'type': 'address'
+      },
+      {
+        'name': 'delegate',
+        'type': 'address'
+      }
+    ]
+  },
+  {
+    'type': 'error',
+    'name': 'ZeroDelegate',
+    'inputs': []
   }
 ] as const;
 
