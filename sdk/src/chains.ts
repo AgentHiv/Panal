@@ -10,10 +10,15 @@
  */
 
 import { defineChain } from 'viem';
-import type { Address } from 'viem';
+import type { Address, Chain } from 'viem';
+
+// `monad`, `monadTestnet` y `chainFor` llevan el tipo `Chain` escrito. Inferido,
+// el tipo de `defineChain`
+// arrastra tipos que viem no exporta (desde 2.57.12, el de
+// `transactionReplacement`) y el `.d.ts` del SDK deja de compilar (TS2742).
 
 /** Monad mainnet. Es la red por defecto: Panal está desplegado y en uso ahí. */
-export const monad = defineChain({
+export const monad: Chain = defineChain({
   id: 143,
   name: 'Monad',
   nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
@@ -22,7 +27,7 @@ export const monad = defineChain({
 });
 
 /** Monad testnet, para probar un agente sin gastar dinero real. */
-export const monadTestnet = defineChain({
+export const monadTestnet: Chain = defineChain({
   id: 10143,
   name: 'Monad Testnet',
   nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
@@ -94,7 +99,7 @@ export function addressesFor(network: PanalNetwork): PanalAddresses {
   return network === 'mainnet' ? MAINNET_ADDRESSES : TESTNET_ADDRESSES;
 }
 
-export function chainFor(network: PanalNetwork) {
+export function chainFor(network: PanalNetwork): Chain {
   return network === 'mainnet' ? monad : monadTestnet;
 }
 
