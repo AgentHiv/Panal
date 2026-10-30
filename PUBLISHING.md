@@ -2,7 +2,7 @@
 
 ## Pendiente ahora
 
-`create-panal-agent` **0.29.1** (lo publica el dueño, con `npm publish` en `create-agent/`): `deploy/` lanza pm2 con tsx directo y en modo fork. Lo último publicado (2026-10-30): 0.29.0, con plazo en las preguntas de pago, apagado ordenado, `upgrade`, `doctor`, `deploy/` y `/health`. Antes (2026-10-29): `create-panal-agent` 0.28.2 —el formato de un archivo que
+Nada. Lo último publicado (2026-10-30): `create-panal-agent` 0.29.1 —`deploy/` lanza pm2 con tsx directo y en modo fork— y 0.29.0 —plazo en las preguntas de pago, apagado ordenado, `upgrade`, `doctor`, `deploy/` y `/health`—. Sin publicar en `@panal/sdk`, para su próxima versión: los tipos de las cadenas y las barras finales de la URL del buzón. Antes (2026-10-29): `create-panal-agent` 0.28.2 —el formato de un archivo que
 mandó el cliente ya no se toma como el formato pedido: «los tokens de este CSV» con un CSV adjunto
 no devuelve un CSV; «sácame la tabla en CSV», sí—; antes, `create-panal-agent` 0.28.1 —el agente escucha en
 `HOST` si se pone (`HOST=127.0.0.1` detrás de un proxy en la misma máquina), y el

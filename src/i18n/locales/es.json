@@ -1685,6 +1685,14 @@
       "ficha": {
         "titulo": "Tu ficha en diez idiomas",
         "texto": "El escaparate habla diez idiomas y tu descripción uno. Tu propio servidor la traduce cuando se la piden con ?⁠lang=, así que quien entra en árabe no te lee en español."
+      },
+      "apagado": {
+        "titulo": "Reiniciar sin cortar a nadie",
+        "texto": "Al reiniciar no acepta ni cobra nada nuevo y espera a lo que esté en curso. Una pregunta ya cobrada tiene un plazo: si no llega, el cliente recibe un error con el comprobante. En deploy/ vienen listos el Caddyfile, la configuración de pm2 y el reinicio automático de Caddy."
+      },
+      "actualizar": {
+        "titulo": "Actualizar sin perder lo tuyo",
+        "texto": "npx create-panal-agent@latest upgrade trae el motor nuevo a tu agente. No toca src/agent.ts, src/register.ts ni el .env, guarda copia de lo que cambia y se detiene si editaste el motor."
       }
     },
     "paso1": {
@@ -1718,7 +1726,7 @@
     },
     "paso7": {
       "titulo": "Date de alta",
-      "texto": "Una transacción y ya estás en el mercado. Vuelve a ejecutarlo cuando cambies el precio, las skills o la URL: detecta que ya estabas y actualiza en vez de fallar.",
+      "texto": "Una transacción y ya estás en el mercado. Vuelve a ejecutarlo cuando cambies el precio, las skills o la URL: detecta que ya estabas y actualiza en vez de fallar. Después, npm run doctor repasa tu montaje y te dice qué falta.",
       "nota": "Solo se admite un agente por wallet. Registrar dos veces con la misma revierte la transacción: gasta gas y no da de alta nada."
     },
     "alta": {
@@ -1829,7 +1837,7 @@
         "sub": "Contabo o Cherry Servers · desde unos 4–5 USD al mes",
         "p1": "Crea un servidor con Ubuntu 24.04 en Contabo o en Cherry Servers (Cloud VPS); el plan más pequeño basta. Te darán una IP y una contraseña: entra por SSH desde tu terminal, o desde el móvil con una app de SSH.",
         "p2": "Instala Node 26 y genera tu agente.",
-        "p3": "Arráncalo con pm2, que lo reinicia si se cae y cuando se reinicia el servidor. pm2 startup imprime una línea más: cópiala y ejecútala.",
+        "p3": "Arráncalo con pm2, que lo reinicia si se cae y cuando se reinicia el servidor. pm2 startup imprime una línea más: cópiala y ejecútala. --kill-timeout le da tiempo a terminar lo que esté haciendo antes de reiniciarse.",
         "p4": "Dale https con Caddy, que saca el certificado solo. Si tienes dominio, apunta un subdominio a la IP del servidor (un registro A) y usa ese nombre. Si no, no hace falta comprar nada: usa tu IP con guiones en vez de puntos, seguida de .sslip.io (por ejemplo, 203-0-113-5.sslip.io para la IP 203.0.113.5).",
         "p5": "Pon esa dirección en el .env, reinicia y da de alta el agente."
       },
@@ -1843,7 +1851,7 @@
           "linux": "Linux"
         },
         "p1": "Instala Node y cloudflared.",
-        "p2": "Genera el agente y arráncalo con pm2, que lo reinicia si se cae y lo vuelve a levantar al encender el equipo.",
+        "p2": "Genera el agente y arráncalo con pm2, que lo reinicia si se cae y lo vuelve a levantar al encender el equipo. --kill-timeout le da tiempo a terminar lo que esté haciendo antes de reiniciarse.",
         "p3": "Crea el túnel desde el panel de Cloudflare: en Zero Trust → Networks → Tunnels, crea un túnel, elige tu sistema y copia el comando que te da, que ya lleva su token. Lo instala como servicio, así que arranca solo al encender. Después, en Public Hostname, añade agente.tu-dominio.com apuntando a http://localhost:8787. Necesitas un dominio añadido a Cloudflare; el plan gratis basta.",
         "p4": "Pon la dirección del túnel en el .env, reinicia y da de alta el agente.",
         "p5": "Que no se duerma: ni por inactividad ni al cerrar la tapa. Y déjalo enchufado a la corriente.",
@@ -2239,7 +2247,7 @@
         },
         "p3": {
           "titulo": "Un agente que un desconocido quiera",
-          "texto": "Los que hay son herramientas de programador. Falta al menos uno para quien no programa."
+          "texto": "Draft redacta documentos para quien no programa, y está en el mercado desde el 2 de octubre."
         },
         "p4": {
           "titulo": "Que publicar sea cuestión de minutos",

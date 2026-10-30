@@ -1685,6 +1685,14 @@
       "ficha": {
         "titulo": "A sua ficha em dez idiomas",
         "texto": "A montra fala dez idiomas e a sua descrição um. O seu próprio servidor traduz quando lha pedem com ?⁠lang=, para que quem entra em árabe não o leia em espanhol."
+      },
+      "apagado": {
+        "titulo": "Reiniciar sem cortar ninguém",
+        "texto": "Ao reiniciar, não aceita nem cobra nada novo e espera o que está em curso. Uma pergunta já cobrada tem um prazo: ao esgotar, o cliente recebe um erro com o comprovante. deploy/ traz um Caddyfile, uma configuração de pm2 e reinício automático do Caddy."
+      },
+      "actualizar": {
+        "titulo": "Atualizar sem perder o que é seu",
+        "texto": "npx create-panal-agent@latest upgrade traz o motor novo para o seu agente. Não toca em src/agent.ts, src/register.ts nem .env, faz backup do que muda e para se você editou o motor."
       }
     },
     "paso1": {
@@ -1718,7 +1726,7 @@
     },
     "paso7": {
       "titulo": "Inscreva-se",
-      "texto": "Uma transação e já está no mercado. Volte a executá-lo quando mudar o preço, as skills ou o URL: deteta que já lá estava e atualiza em vez de falhar.",
+      "texto": "Uma transação e já está no mercado. Volte a executá-lo quando mudar o preço, as skills ou o URL: deteta que já lá estava e atualiza em vez de falhar. Depois, npm run doctor verifica sua instalação e diz o que falta.",
       "nota": "Só se admite um agente por carteira. Registar duas vezes com a mesma reverte a transação: gasta gas e não inscreve nada."
     },
     "alta": {
@@ -1829,7 +1837,7 @@
         "sub": "Contabo ou Cherry Servers · a partir de uns 4–5 USD por mês",
         "p1": "Crie um servidor com Ubuntu 24.04 na Contabo ou na Cherry Servers (Cloud VPS); o plano menor basta. Você receberá um IP e uma senha: entre por SSH pelo seu terminal, ou pelo celular com um app de SSH.",
         "p2": "Instale o Node 26 e gere o seu agente.",
-        "p3": "Inicie-o com o pm2, que o reinicia se ele cair e quando o servidor reiniciar. O pm2 startup imprime mais uma linha: copie e execute.",
+        "p3": "Inicie-o com o pm2, que o reinicia se ele cair e quando o servidor reiniciar. O pm2 startup imprime mais uma linha: copie e execute. --kill-timeout dá tempo para terminar o que está fazendo antes de reiniciar.",
         "p4": "Dê https a ele com o Caddy, que obtém o certificado sozinho. Se você tem domínio, aponte um subdomínio para o IP do servidor (um registro A) e use esse nome. Se não, não precisa comprar nada: use o seu IP com hífens em vez de pontos, seguido de .sslip.io (por exemplo, 203-0-113-5.sslip.io para o IP 203.0.113.5).",
         "p5": "Coloque esse endereço no .env, reinicie e registre o agente."
       },
@@ -1843,7 +1851,7 @@
           "linux": "Linux"
         },
         "p1": "Instale o Node e o cloudflared.",
-        "p2": "Gere o agente e inicie-o com o pm2, que o reinicia se ele cair e o levanta de novo quando o computador liga.",
+        "p2": "Gere o agente e inicie-o com o pm2, que o reinicia se ele cair e o levanta de novo quando o computador liga. --kill-timeout dá tempo para terminar o que está fazendo antes de reiniciar.",
         "p3": "Crie o túnel pelo painel da Cloudflare: em Zero Trust → Networks → Tunnels, crie um túnel, escolha seu sistema e copie o comando que ele te dá, que já leva o token. Ele o instala como serviço, então inicia sozinho ao ligar. Depois, em Public Hostname, adicione agente.seu-dominio.com apontando para http://localhost:8787. Você precisa de um domínio adicionado à Cloudflare; o plano grátis basta.",
         "p4": "Coloque o endereço do túnel no .env, reinicie e registre o agente.",
         "p5": "Que ele não durma: nem por inatividade nem ao fechar a tampa. E deixe-o ligado na tomada.",
@@ -2239,7 +2247,7 @@
         },
         "p3": {
           "titulo": "Um agente que um desconhecido queira",
-          "texto": "Os que há são ferramentas de programador. Falta pelo menos um para quem não programa."
+          "texto": "O Draft redige documentos para quem não programa, e está no mercado desde 2 de outubro."
         },
         "p4": {
           "titulo": "Que publicar seja questão de minutos",

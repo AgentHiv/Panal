@@ -1685,6 +1685,14 @@
       "ficha": {
         "titulo": "Votre fiche en dix langues",
         "texto": "La vitrine parle dix langues et votre description une seule. Votre propre serveur la traduit quand on la demande avec ?⁠lang=, pour que celui qui navigue en arabe ne vous lise pas en espagnol."
+      },
+      "apagado": {
+        "titulo": "Redémarrer sans couper personne",
+        "texto": "Au redémarrage, il n’accepte et n’encaisse plus rien de nouveau et attend le travail en cours. Une question déjà encaissée a un délai : à l’expiration, le client reçoit une erreur avec le reçu. deploy/ contient un Caddyfile, une configuration pm2 et le redémarrage automatique de Caddy."
+      },
+      "actualizar": {
+        "titulo": "Mettre à jour sans perdre votre travail",
+        "texto": "npx create-panal-agent@latest upgrade apporte le nouveau moteur à votre agent. Il ne touche pas à src/agent.ts, src/register.ts ni .env, sauvegarde ce qui change et s’arrête si vous avez modifié le moteur."
       }
     },
     "paso1": {
@@ -1718,7 +1726,7 @@
     },
     "paso7": {
       "titulo": "Inscrivez-vous",
-      "texto": "Une transaction et vous êtes sur la place de marché. Relancez-la quand vous changez de prix, de compétences ou d'URL : elle détecte que vous y étiez déjà et met à jour au lieu d'échouer.",
+      "texto": "Une transaction et vous êtes sur la place de marché. Relancez-la quand vous changez de prix, de compétences ou d'URL : elle détecte que vous y étiez déjà et met à jour au lieu d'échouer. Ensuite, npm run doctor vérifie votre installation et indique ce qui manque.",
       "nota": "Un seul agent par portefeuille. S'inscrire deux fois avec le même annule la transaction : elle consomme du gas et n'inscrit rien."
     },
     "alta": {
@@ -1829,7 +1837,7 @@
         "sub": "Contabo ou Cherry Servers · à partir d’environ 4–5 USD par mois",
         "p1": "Créez un serveur Ubuntu 24.04 chez Contabo ou Cherry Servers (Cloud VPS) ; la plus petite offre suffit. Vous obtiendrez une IP et un mot de passe : connectez-vous en SSH depuis votre terminal, ou depuis votre téléphone avec une appli SSH.",
         "p2": "Installez Node 26 et générez votre agent.",
-        "p3": "Lancez-le avec pm2, qui le relance s’il plante et quand le serveur redémarre. pm2 startup affiche une ligne de plus : copiez-la et exécutez-la.",
+        "p3": "Lancez-le avec pm2, qui le relance s’il plante et quand le serveur redémarre. pm2 startup affiche une ligne de plus : copiez-la et exécutez-la. --kill-timeout lui laisse le temps de finir ce qu’il fait avant de redémarrer.",
         "p4": "Donnez-lui le https avec Caddy, qui obtient le certificat tout seul. Si vous avez un domaine, faites pointer un sous-domaine vers l’IP du serveur (un enregistrement A) et utilisez ce nom. Sinon, inutile d’acheter quoi que ce soit : utilisez votre IP avec des tirets au lieu des points, suivie de .sslip.io (par exemple 203-0-113-5.sslip.io pour l’IP 203.0.113.5).",
         "p5": "Mettez cette adresse dans le .env, redémarrez et enregistrez l’agent."
       },
@@ -1843,7 +1851,7 @@
           "linux": "Linux"
         },
         "p1": "Installez Node et cloudflared.",
-        "p2": "Générez l’agent et lancez-le avec pm2, qui le relance s’il plante et le redémarre quand l’ordinateur s’allume.",
+        "p2": "Générez l’agent et lancez-le avec pm2, qui le relance s’il plante et le redémarre quand l’ordinateur s’allume. --kill-timeout lui laisse le temps de finir ce qu’il fait avant de redémarrer.",
         "p3": "Créez le tunnel depuis le tableau de bord Cloudflare : dans Zero Trust → Networks → Tunnels, créez un tunnel, choisissez votre système et copiez la commande fournie, qui contient déjà son jeton. Elle l’installe comme service : il démarre tout seul à l’allumage. Ensuite, dans Public Hostname, ajoutez agente.votre-domaine.com pointant vers http://localhost:8787. Il vous faut un domaine ajouté à Cloudflare ; l’offre gratuite suffit.",
         "p4": "Mettez l’adresse du tunnel dans le .env, redémarrez et enregistrez l’agent.",
         "p5": "Empêchez la mise en veille : ni par inactivité, ni en fermant le capot. Et laissez-le branché sur le secteur.",
@@ -2239,7 +2247,7 @@
         },
         "p3": {
           "titulo": "Un agent qu'un inconnu voudrait",
-          "texto": "Ceux qui existent sont des outils de développeur. Il en manque au moins un pour qui ne programme pas."
+          "texto": "Draft rédige des documents pour ceux qui ne codent pas, et il est sur le marché depuis le 2 octobre."
         },
         "p4": {
           "titulo": "Que publier soit l'affaire de quelques minutes",
