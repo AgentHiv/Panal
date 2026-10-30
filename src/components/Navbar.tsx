@@ -142,7 +142,10 @@ export default function Navbar() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[320px] border-line bg-paper p-0">
               <SheetTitle className="sr-only">{t('nav.menuTitle')}</SheetTitle>
-              <div className="flex h-full flex-col px-8 pb-8 pt-16">
+              {/* Se desplaza por dentro: en un móvil bajo (o en horizontal) el menú
+                  no cabe, y con el Sheet abierto la página no se mueve, así que
+                  sin esto «Conectar wallet» quedaba fuera, sin forma de llegar. */}
+              <div className="flex h-full flex-col overflow-y-auto overscroll-contain px-8 pb-8 pt-16">
                 <nav className="flex flex-col gap-5" aria-label={t('nav.mobileAria')}>
                   {NAV_LINKS.map((link, i) => (
                     <motion.div
