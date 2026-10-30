@@ -16,7 +16,9 @@
     "mobileAria": "移动端",
     "token": "代币",
     "chats": "聊天",
-    "archivo": "档案"
+    "archivo": "档案",
+    "cikEyebrow": "链上安全",
+    "cikDesc": "这个代币是陷阱吗？这个账户委托给清扫者了吗？住在 Monad 上的 AI 告诉你。"
   },
   "lang": {
     "label": "语言"
@@ -2466,8 +2468,55 @@
       "analizando": "正在询问 cik…",
       "ejemplos": "示例：",
       "malaDireccion": "这不是地址：应为 0x 加 40 个十六进制字符。",
-      "noContrato": "该地址没有代码：这是钱包，不是合约。cik 只判断合约。",
+      "noContrato": "该地址没有代码：这是一个没有 EIP-7702 委托的钱包，不是合约。cik 判断合约；委托请看下方。",
       "error": "无法从链上读取，请几秒后重试。"
+    },
+    "delegacion": {
+      "title": "EIP-7702 委托",
+      "sub": "有了 EIP-7702，普通账户会执行另一个合约的代码，而那个合约无需任何授权就能拿走账户里的一切。粘贴一个账户，在给它转账前看看它委托给了谁；或者粘贴别人让你委托的合约，在签名前先查一查。",
+      "hueco": "0x… 账户或合约",
+      "boton": "检查",
+      "error": "无法读取链上数据，请稍后再试。",
+      "ejemploConocida": "委托给 MetaMask 的账户",
+      "ejemploBarredor": "清扫者的账户",
+      "ejemploContrato": "MetaMask 的合约",
+      "tipo": {
+        "cuenta": "已委托账户",
+        "delegado": "合约",
+        "ninguna": "未委托账户"
+      },
+      "veredicto": {
+        "ninguna": "未委托",
+        "conocido": "已知",
+        "desconocido": "未知",
+        "barredor": "清扫者"
+      },
+      "consejo": {
+        "ninguna": "该账户不执行任何人的代码：收到的资产会留在账户里。",
+        "conocido": "这是知名钱包的代码，在 CiDelegate 的固定名单里。只有这一点算得上保证。",
+        "desconocido": "这里没有人审查过这段代码。在不清楚它做什么之前，不要签署委托给它，也不要给委托给它的账户转账。",
+        "barredor": "这段代码不像账户那样签名，而且会清空余额：任何到达委托给它的账户的资产都会被别人拿走。不要转任何东西，也不要签署委托给它。如果这是你的账户，把剩余资产转到新钱包。"
+      },
+      "delegadoA": "委托给",
+      "contrato": "合约",
+      "codigo": "代码",
+      "bytes": "{{n}} 字节",
+      "seVe": "代码中能看到的",
+      "bandera": {
+        "firma": "像账户一样签名（ERC-1271）",
+        "userop": "ERC-4337 账户",
+        "call": "转账并调用合约",
+        "delegatecall": "delegatecall",
+        "selfdestruct": "selfdestruct",
+        "create": "创建合约",
+        "saldo": "读取自身余额",
+        "tokens": "转移代币（transfer）",
+        "origin": "使用 tx.origin",
+        "sinCodigo": "无代码：以后部署在那里的代码会在账户中执行",
+        "cadena": "委托给另一个已委托账户",
+        "grande": "超过 24 KB"
+      },
+      "fuente": "这是 Monad 上的 CiDelegate 依据委托代码的固定规则给出的结论，不是 cik 的神经网络。通过 eth_call 免费查询："
     },
     "res": {
       "veredicto": "结论",

@@ -16,7 +16,9 @@
     "mobileAria": "Mobile",
     "token": "Token",
     "chats": "Discussions",
-    "archivo": "Archives"
+    "archivo": "Archives",
+    "cikEyebrow": "Sécurité sur la blockchain",
+    "cikDesc": "Ce token est-il un piège, ou ce compte est-il délégué à un balayeur ? L’IA qui vit sur Monad vous le dit."
   },
   "lang": {
     "label": "Langue"
@@ -2466,8 +2468,55 @@
       "analizando": "cik réfléchit…",
       "ejemplos": "Exemples :",
       "malaDireccion": "Ce n'est pas une adresse : 0x suivi de 40 caractères hexadécimaux.",
-      "noContrato": "Il n'y a pas de code à cette adresse : c'est un wallet, pas un contrat. cik ne juge que des contrats.",
+      "noContrato": "Il n’y a pas de code à cette adresse : c’est un portefeuille sans délégation EIP-7702, pas un contrat. cik juge les contrats ; les délégations, plus bas.",
       "error": "Lecture impossible sur la blockchain. Réessayez dans quelques secondes."
+    },
+    "delegacion": {
+      "title": "Délégations EIP-7702",
+      "sub": "Avec EIP-7702, un compte ordinaire exécute le code d’un autre contrat, qui peut emporter tout ce qu’il détient sans demander une seule autorisation. Collez un compte pour savoir à qui il est délégué avant de lui envoyer quoi que ce soit, ou le contrat auquel on vous demande de déléguer avant de signer.",
+      "hueco": "0x… un compte ou un contrat",
+      "boton": "Vérifier",
+      "error": "Impossible de lire la blockchain. Réessayez dans un instant.",
+      "ejemploConocida": "Compte délégué à MetaMask",
+      "ejemploBarredor": "Compte d’un balayeur",
+      "ejemploContrato": "Contrat de MetaMask",
+      "tipo": {
+        "cuenta": "Compte délégué",
+        "delegado": "Contrat",
+        "ninguna": "Compte sans délégation"
+      },
+      "veredicto": {
+        "ninguna": "Sans délégation",
+        "conocido": "Connu",
+        "desconocido": "Inconnu",
+        "barredor": "Balayeur"
+      },
+      "consejo": {
+        "ninguna": "Ce compte n’exécute le code de personne : ce qu’il reçoit y reste.",
+        "conocido": "C’est le code d’un portefeuille connu, de la liste fixe de CiDelegate. C’est la seule chose qui soit une garantie.",
+        "desconocido": "Personne n’a examiné ce code ici. Ne signez pas de délégation vers lui, et n’envoyez pas de fonds à un compte délégué vers lui, sans savoir ce qu’il fait.",
+        "barredor": "Ce code ne signe pas comme un compte et vide les soldes : ce qui arrive sur un compte délégué vers lui est emporté par quelqu’un d’autre. N’envoyez rien et ne signez pas de délégation vers lui. Si c’est votre compte, transférez ce qui reste vers un nouveau portefeuille."
+      },
+      "delegadoA": "Délégué à",
+      "contrato": "Contrat",
+      "codigo": "Code",
+      "bytes": "{{n}} octets",
+      "seVe": "Ce que montre le code",
+      "bandera": {
+        "firma": "signe comme un compte (ERC-1271)",
+        "userop": "compte ERC-4337",
+        "call": "envoie de la valeur et appelle des contrats",
+        "delegatecall": "delegatecall",
+        "selfdestruct": "selfdestruct",
+        "create": "crée des contrats",
+        "saldo": "lit son propre solde",
+        "tokens": "déplace des tokens (transfer)",
+        "origin": "utilise tx.origin",
+        "sinCodigo": "sans code : ce qui y sera déployé s’exécutera dans le compte",
+        "cadena": "délègue à un autre compte délégué",
+        "grande": "plus de 24 Ko"
+      },
+      "fuente": "C’est CiDelegate sur Monad qui le dit, avec des règles fixes sur le code du délégué, pas le réseau de cik. Gratuit, via eth_call :"
     },
     "res": {
       "veredicto": "Verdict",

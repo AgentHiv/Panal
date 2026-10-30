@@ -16,7 +16,9 @@
     "mobileAria": "Mobile",
     "token": "Token",
     "chats": "Chats",
-    "archivo": "Archive"
+    "archivo": "Archive",
+    "cikEyebrow": "On-chain security",
+    "cikDesc": "Is this token a trap, or is this account delegated to a sweeper? The AI that lives on Monad tells you."
   },
   "lang": {
     "label": "Language"
@@ -2466,8 +2468,55 @@
       "analizando": "Asking cik…",
       "ejemplos": "Examples:",
       "malaDireccion": "That is not an address: 0x followed by 40 hexadecimal characters.",
-      "noContrato": "There is no code at that address: it is a wallet, not a contract. cik only judges contracts.",
+      "noContrato": "There is no code at that address: it is a wallet without an EIP-7702 delegation, not a contract. cik judges contracts; delegations, further down.",
       "error": "Could not read from the chain. Try again in a few seconds."
+    },
+    "delegacion": {
+      "title": "EIP-7702 delegations",
+      "sub": "With EIP-7702 a normal account runs another contract's code, which can take everything it holds without asking for a single approval. Paste an account to see who it is delegated to before you send it anything, or the contract you are asked to delegate to before you sign.",
+      "hueco": "0x… an account or a contract",
+      "boton": "Check",
+      "error": "Could not read the chain. Try again in a moment.",
+      "ejemploConocida": "Account delegated to MetaMask",
+      "ejemploBarredor": "A sweeper's account",
+      "ejemploContrato": "MetaMask contract",
+      "tipo": {
+        "cuenta": "Delegated account",
+        "delegado": "Contract",
+        "ninguna": "Account without delegation"
+      },
+      "veredicto": {
+        "ninguna": "No delegation",
+        "conocido": "Known",
+        "desconocido": "Unknown",
+        "barredor": "Sweeper"
+      },
+      "consejo": {
+        "ninguna": "This account does not run anyone's code: what it receives stays in it.",
+        "conocido": "This is a known wallet's code, from CiDelegate's fixed list. It is the only thing that is a guarantee.",
+        "desconocido": "Nobody has reviewed this code here. Do not sign a delegation to it, or send funds to an account delegated to it, without knowing what it does.",
+        "barredor": "This code does not sign like an account and empties balances: whatever reaches an account delegated to it is taken by someone else. Send it nothing and do not sign a delegation to it. If it is your account, move what is left to a new wallet."
+      },
+      "delegadoA": "Delegated to",
+      "contrato": "Contract",
+      "codigo": "Code",
+      "bytes": "{{n}} bytes",
+      "seVe": "What the code shows",
+      "bandera": {
+        "firma": "signs like an account (ERC-1271)",
+        "userop": "ERC-4337 account",
+        "call": "sends value and calls contracts",
+        "delegatecall": "delegatecall",
+        "selfdestruct": "selfdestruct",
+        "create": "creates contracts",
+        "saldo": "reads its own balance",
+        "tokens": "moves tokens (transfer)",
+        "origin": "uses tx.origin",
+        "sinCodigo": "no code: whatever gets deployed there will run in the account",
+        "cadena": "delegates to another delegated account",
+        "grande": "over 24 KB"
+      },
+      "fuente": "Said by CiDelegate on Monad, with fixed rules on the delegate's code, not cik's network. Free, via eth_call:"
     },
     "res": {
       "veredicto": "Verdict",

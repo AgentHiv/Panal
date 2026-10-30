@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Menu } from 'lucide-react';
+import { Cpu, Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import LiveDot from '@/components/LiveDot';
 import HexAvatar from '@/components/HexAvatar';
@@ -162,7 +162,32 @@ export default function Navbar() {
                     </motion.div>
                   ))}
                 </nav>
-                <div className="mt-auto flex flex-col gap-4">
+                {/* cik va aparte y no en la lista: no es una sección del mercado
+                    sino una herramienta suelta, que se usa sin cuenta ni wallet. */}
+                <motion.div
+                  initial={{ opacity: 0, x: 24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.06 * NAV_LINKS.length + 0.1, duration: 0.3 }}
+                  className="mt-8 border-t border-line pt-6"
+                >
+                  <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
+                    {t('nav.cikEyebrow')}
+                  </p>
+                  <Link
+                    to="/cik"
+                    onClick={() => setOpen(false)}
+                    className="group mt-3 flex items-start gap-3 rounded-2xl border border-monad/30 bg-monad/5 p-4 transition-colors hover:border-monad"
+                  >
+                    <Cpu size={20} className="mt-0.5 shrink-0 text-monad-mist" aria-hidden />
+                    <span>
+                      <span className="block font-display text-[1.125rem] font-semibold text-ink group-hover:text-monad-mist">
+                        cik
+                      </span>
+                      <span className="mt-1 block text-[0.8125rem] leading-snug text-ink-2">{t('nav.cikDesc')}</span>
+                    </span>
+                  </Link>
+                </motion.div>
+                <div className="mt-auto flex flex-col gap-4 pt-6">
                   {connected && wrongNetwork ? (
                     <button
                       type="button"

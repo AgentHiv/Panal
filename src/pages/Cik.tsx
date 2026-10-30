@@ -18,6 +18,7 @@ import { CIK, SOURCIFY } from '@/contracts/cik';
 import { analizar, corta, leerParametros, type Analisis, type Parametros } from '@/lib/cik';
 import { useTituloDePagina } from '@/hooks/useTituloDePagina';
 import Analizador from '@/components/cik/Analizador';
+import Delegaciones from '@/components/cik/Delegaciones';
 import Politica from '@/components/cik/Politica';
 import Atestar from '@/components/cik/Atestar';
 import { mon } from '@/components/cik/comun';
@@ -49,6 +50,7 @@ export default function Cik() {
     <>
       <Portada parametros={parametros} />
       <Analizador parametros={parametros} analisis={analisis} onAnalisis={setAnalisis} />
+      <Delegaciones />
       <Politica analisis={analisis} />
       <Atestar analisis={analisis} parametros={parametros} onCambio={refrescar} />
       <Detras parametros={parametros} />
@@ -105,6 +107,7 @@ function Detras({ parametros }: { parametros: Parametros | null }) {
     { nombre: 'CiRisk', direccion: CIK.risk },
     { nombre: 'CiModels', direccion: CIK.models },
     { nombre: 'CiProbe', direccion: CIK.probe },
+    { nombre: 'CiDelegate', direccion: CIK.delegate },
   ];
   return (
     <section id="detras" className="bg-paper py-20">

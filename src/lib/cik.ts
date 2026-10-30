@@ -24,7 +24,7 @@ import {
   type Hex,
   type PublicClient,
 } from 'viem';
-import { CIK, CI_GUARD_BYTECODE, ciAbi, ciGuardAbi, ciProbeAbi, ciRiskAbi, ciViewAbi } from '@/contracts/cik';
+import { CIK, CI_GUARD_BYTECODE, ciAbi, ciDelegateAbi, ciGuardAbi, ciProbeAbi, ciRiskAbi, ciViewAbi } from '@/contracts/cik';
 
 /** El token base de los mercados que mira la sonda (WMON): no tiene par consigo mismo. */
 export const WMON: Address = '0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A';
@@ -114,6 +114,12 @@ export interface Analisis {
   atestacion: Atestacion | null;
   /** `keyFor`: con ella se retira el stake. */
   clave: Hex | null;
+  /**
+   * Si la dirección es una cuenta delegada con EIP-7702, lo que dice `CiDelegate`.
+   * Entonces no es un token y no pasa por la red de `Ci`: esa red se entrenó con
+   * tokens y llamaba «honeypot» a una cuenta delegada a un barredor.
+   */
+  delegacion: Delegacion | null;
 }
 
 /** Los parámetros fijos de este `Ci`: no cambian nunca, se leen una vez. */
@@ -224,9 +230,13 @@ export async function analizar(cliente: PublicClient, direccion: Address): Promi
     implementacion: null,
     atestacion: null,
     clave: null,
+    delegacion: null,
   };
   const codigo = await cliente.getCode({ address: direccion });
   if (!codigo || codigo === '0x') return vacio;
+  if (esCuentaDelegada(codigo)) {
+    return { ...vacio, delegacion: (await intentar(() => delegacionDe(cliente, direccion, codigo))) ?? null };
+  }
 
   const ci = { address: CIK.ci, abi: ciAbi } as const;
   const [clase, evidencia, informe, voto, final, clave] = await Promise.all([
@@ -285,6 +295,7 @@ export async function analizar(cliente: PublicClient, direccion: Address): Promi
     simbolo,
     evidencia: evidencia ? evidencia[2] : null,
     implementacion: implementacion1167(codigo),
+    delegacion: null,
     atestacion:
       voto && voto[5]
         ? {
@@ -700,4 +711,84 @@ export async function checkEnNodo(url: string, direccion: Address): Promise<Resp
 /** «0x12ab…cdef», o la dirección entera si es corta. */
 export function corta(a: string): string {
   return a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
+}
+
+/* ── delegaciones EIP-7702: CiDelegate ──────────────────────────────────── */
+
+/**
+ * Lo que dice `CiDelegate` de una dirección.
+ *
+ * Con EIP-7702 una cuenta normal ejecuta el código de otro contrato (el
+ * delegado), que puede llevarse todo lo que tiene sin pedir un solo permiso.
+ * `CiDelegate` juzga ese código con reglas fijas, no con la red de `Ci`.
+ */
+export interface Delegacion {
+  /**
+   * `cuenta`: una cuenta ya delegada, y se juzga su delegado. `delegado`: un
+   * contrato, y se juzga qué pasaría si una cuenta se delegara en él.
+   * `ninguna`: una cuenta sin delegación, que no ejecuta el código de nadie.
+   */
+  tipo: 'cuenta' | 'delegado' | 'ninguna';
+  delegado: Address | null;
+  /** Índice de `VEREDICTOS_DELEGACION`. */
+  veredicto: number;
+  banderas: number;
+  tamano: number;
+}
+
+export const VEREDICTOS_DELEGACION = ['ninguna', 'conocido', 'desconocido', 'barredor'] as const;
+
+/** Las banderas de `CiDelegate`, con su bit. La clave es la de los textos de la página. */
+export const BANDERAS_DELEGACION = [
+  { bit: 1, clave: 'firma' },
+  { bit: 2, clave: 'userop' },
+  { bit: 4, clave: 'call' },
+  { bit: 8, clave: 'delegatecall' },
+  { bit: 16, clave: 'selfdestruct' },
+  { bit: 32, clave: 'create' },
+  { bit: 64, clave: 'saldo' },
+  { bit: 128, clave: 'tokens' },
+  { bit: 256, clave: 'origin' },
+  { bit: 512, clave: 'sinCodigo' },
+  { bit: 1024, clave: 'cadena' },
+  { bit: 2048, clave: 'grande' },
+] as const;
+
+/** Los delegados que `CiDelegate` da por conocidos: la lista fija de su despliegue. */
+export const DELEGADOS_CONOCIDOS: Record<string, string> = {
+  '0x63c0c19a282a1b52b07dd5a65b58948a07dae32b': 'MetaMask (EIP7702StatelessDeleGator)',
+  '0x000000009b1d0af20d8c6d0a44e162d11f9b8f00': 'Uniswap Calibur',
+  '0x5a7fc11397e9a8ad41bf10bf13f22b0a63f96f6d': 'Ambire',
+  '0x7702cb554e6bfb442cb743a7df23154544a7176c': 'Coinbase (EIP7702Proxy)',
+  '0x4cd241e8d1510e30b2076397afc7508ae59c66c9': 'Simple7702Account (ERC-4337 v0.8)',
+  '0x69007702764179f14f51cdce752f4f775d74e139': 'Alchemy Modular Account v2',
+};
+
+/** `0xef0100` + una dirección (23 bytes): el código de una cuenta delegada con EIP-7702. */
+export function esCuentaDelegada(codigo: Hex | undefined): boolean {
+  return !!codigo && codigo.length === 48 && codigo.toLowerCase().startsWith('0xef0100');
+}
+
+/**
+ * A quién está delegada una cuenta, o qué pasaría si una cuenta se delegara en
+ * este contrato. Por `eth_call`: gratis, y ahí `CiDelegate` recorre el código
+ * entero (el tope de 24 KB es solo para quien lo llama dentro de una transacción).
+ */
+export async function delegacionDe(cliente: PublicClient, direccion: Address, codigo?: Hex): Promise<Delegacion> {
+  const c = codigo ?? (await cliente.getCode({ address: direccion }));
+  if (!c || c === '0x') return { tipo: 'ninguna', delegado: null, veredicto: 0, banderas: 0, tamano: 0 };
+  const cuenta = esCuentaDelegada(c);
+  const r = await cliente.readContract({
+    address: CIK.delegate,
+    abi: ciDelegateAbi,
+    functionName: cuenta ? 'inspectAccount' : 'inspectDelegate',
+    args: [direccion],
+  });
+  return {
+    tipo: cuenta ? 'cuenta' : 'delegado',
+    delegado: r.delegate === CERO ? null : r.delegate,
+    veredicto: r.verdict,
+    banderas: r.flags,
+    tamano: r.codeSize,
+  };
 }
