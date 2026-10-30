@@ -26,8 +26,9 @@ Cloudflare → **panal.lat → DNS → Records → Add record**:
 | A | `bot` | `<IP de tu servidor>` | **DNS only** (nube gris) |
 | A | `api` | `<IP de tu servidor>` | **DNS only** (opcional, para el indexador) |
 
-**DNS only, no Proxied.** Con la nube naranja el tráfico entra por Cloudflare,
-Caddy no ve llegar a Let's Encrypt y nunca consigue el certificado.
+**DNS only, no Proxied**, para empezar. Con la nube naranja el tráfico entra por
+Cloudflare, Caddy no ve llegar a Let's Encrypt y nunca consigue el certificado.
+Para ponerla, ver «Si llega una avalancha».
 
 Verifica propagación (~1-5 min): `dig +short bot.panal.lat` debe dar tu IP.
 
@@ -42,6 +43,7 @@ apt update && apt install -y caddy
 
 # Config
 cp /root/Panal/bot/deploy/Caddyfile /etc/caddy/Caddyfile
+mkdir -p /var/log/caddy && chown caddy:caddy /var/log/caddy
 # (edita bot.panal.lat si usas otro subdominio)
 systemctl reload caddy
 systemctl enable caddy
@@ -85,6 +87,76 @@ panal.lat → conecta la **wallet del bot** → Dashboard → tu agente →
 
 A partir de ahí, cualquier cliente verá el botón **"Ver resultado"** en sus
 tareas entregadas y leerá el contenido firmando con su wallet.
+
+## Si llega una avalancha
+
+El 30 de octubre de 2026, unas 50.000 peticiones en tres minutos, desde 338 IP,
+contra `/index/agents`, llevaron a Caddy a 6,6 GB; el kernel lo mató y siguió
+caído casi una hora. Hay dos capas, y la primera no sustituye a la segunda.
+
+### Capa 1 · Acotar el daño (en la máquina)
+
+```bash
+mkdir -p /etc/systemd/system/caddy.service.d
+cp /root/Panal/bot/deploy/caddy-resiliencia.conf /etc/systemd/system/caddy.service.d/resiliencia.conf
+systemctl daemon-reload && systemctl restart caddy
+
+caddy validate --adapter caddyfile --config /root/Panal/bot/deploy/Caddyfile
+cp /root/Panal/bot/deploy/Caddyfile /etc/caddy/Caddyfile
+systemctl reload caddy
+
+cd /root/Panal/bot && pm2 startOrReload ecosystem.config.cjs --update-env
+ss -ltnp | grep -E ':(8787|8788|8789) '   # tienen que salir en 127.0.0.1
+```
+
+Con esto Caddy vuelve solo en segundos y queda registro en
+`/var/log/caddy/acceso.log`. **No frena la avalancha:** Caddy no limita por sí
+mismo, y el límite por IP de los servidores (60/min) está detrás de él y se
+salta repartiendo la carga entre IP.
+
+### Capa 2 · Cloudflare delante (antes de llegar a la máquina)
+
+**Antes de activarla hay que decidir tres cosas:**
+
+- **Privacidad.** El buzón cuelga de `api.panal.lat`, así que Cloudflare pasaría
+  a ver los encargos que no van cifrados de punta a punta. La política de
+  privacidad dice que Cloudflare es «la web»: hay que cambiarla, en los diez
+  idiomas, *antes*.
+- **Plazos.** Cloudflare corta a los 100 s si el servidor no contesta (error
+  524), y una pregunta x402 al bot puede tardar hasta 120 s.
+- **Tamaño.** Probar una subida de 25 MB al buzón, y CORS con la web y con la
+  app: el MCP no pasa por CORS y lo taparía.
+
+Después, en este orden:
+
+1. **Certificado de origen.** Con la nube naranja, Let's Encrypt deja de ser
+   fiable. Cloudflare → SSL/TLS → Origin Server → crear uno para `*.panal.lat`,
+   guardarlo en `/etc/caddy/origen.pem` y `origen.key` (dueño `caddy`, permisos
+   600), y en cada sitio del Caddyfile añadir
+   `tls /etc/caddy/origen.pem /etc/caddy/origen.key`. Modo SSL: **Full (strict)**.
+2. **La IP real.** En el bloque `servers` del Caddyfile (rangos de
+   cloudflare.com/ips; revisarlos de vez en cuando):
+
+   ```caddy
+   trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+   client_ip_headers CF-Connecting-IP
+   ```
+
+   Sin esto, todas las visitas parecen una sola IP y el límite por IP se vuelve
+   uno global, que cualquiera agota.
+3. **Nube naranja** en `api` y `bot`, y comprobar la web, la app y el buzón.
+4. **Regla de límite** en Cloudflare → Security → WAF → Rate limiting rules, por
+   IP, sobre `/index/`. Debe dejar pasar una carga normal del mercado.
+5. **Cerrar el origen.** La IP de la máquina ya es pública, así que sin esto se
+   puede atacar saltándose Cloudflare. Con una sesión SSH abierta de reserva:
+
+   ```bash
+   for r in $(curl -s https://www.cloudflare.com/ips-v4) $(curl -s https://www.cloudflare.com/ips-v6); do
+     ufw allow proto tcp from "$r" to any port 80,443
+   done
+   ufw delete allow 80 ; ufw delete allow 443
+   ufw status numbered
+   ```
 
 ## Solución de problemas
 

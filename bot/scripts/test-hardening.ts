@@ -17,7 +17,8 @@
 
 import { verificarDominio } from '../src/verificar-dominio.js';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
-import { allowedOrigin, assertPublicUrl, clientIp, fetchJsonLimited, sinBarraFinal } from '../src/net.js';
+import { allowedOrigin, assertPublicUrl, clientIp, crearLimitador, escuchar, fetchJsonLimited, sinBarraFinal } from '../src/net.js';
+import { createIndexServer } from '../src/indexer-http.js';
 import { untrustedBlock } from '../src/a2a.js';
 import { ContractFunctionRevertedError } from 'viem';
 import { esRevert, withRetry } from '../src/chain.js';
@@ -250,6 +251,63 @@ async function main(): Promise<void> {
       /* se espera */
     }
     check('una llamada y al momento', llamadas === 1 && Date.now() - t0 < 1000, `${llamadas} llamadas, ${Date.now() - t0} ms`);
+  }
+
+  console.log('\n── 6. El limitador olvida las IP que ya no cuentan ──');
+  {
+    let ahora = 1_000_000;
+    const lim = crearLimitador(2, 60_000, () => ahora);
+    check('deja pasar hasta el tope', lim.permite('1.1.1.1') && lim.permite('1.1.1.1'));
+    check('y corta la siguiente', !lim.permite('1.1.1.1'));
+    check('otra IP va aparte', lim.permite('2.2.2.2'));
+    for (let i = 0; i < 1000; i++) lim.permite(`10.0.${i >> 8}.${i & 255}`);
+    check('las IP de una avalancha se acumulan dentro de la ventana', lim.claves() === 1002, String(lim.claves()));
+    ahora += 60_000;
+    check('pasada la ventana, la misma IP vuelve a pasar', lim.permite('1.1.1.1'));
+    check('y las demás se han borrado', lim.claves() === 1, String(lim.claves()));
+  }
+
+  console.log('\n── 7. escuchar: en la interfaz pedida y con la cola larga ──');
+  {
+    const server = createServer((_req, res) => res.end('ok'));
+    await new Promise<void>((resolve) => escuchar(server, 0, '127.0.0.1', resolve));
+    const dir = server.address();
+    check('escucha en 127.0.0.1', typeof dir === 'object' && dir?.address === '127.0.0.1', JSON.stringify(dir));
+    check('aguanta las conexiones más que Caddy (60 s)', server.keepAliveTimeout > 60_000 && server.headersTimeout > server.keepAliveTimeout);
+    await new Promise((resolve) => server.close(resolve));
+  }
+
+  console.log('\n── 8. El catálogo se reutiliza unos segundos, y solo el que pide la web ──');
+  {
+    let montadas = 0;
+    const store = {
+      lastBlock: 1,
+      catalogo: (o: { q?: string }) => {
+        montadas++;
+        return { agents: [{ name: o.q ?? `montada-${montadas}` }], total: 1 };
+      },
+    };
+    const server = createIndexServer({ store: store as never, allowLocalhostOrigin: true, catalogoCacheMs: 200 });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const dir = server.address();
+    const base = `http://127.0.0.1:${typeof dir === 'object' ? dir?.port : 0}/index/agents`;
+    const nombre = async (query: string) => {
+      const r = await fetch(`${base}?${query}`, { headers: { origin: 'https://panal.lat' } });
+      return { cors: r.headers.get('access-control-allow-origin'), body: (await r.json()) as { agents: { name: string }[]; total: number } };
+    };
+    const a = await nombre('page=0&limit=500');
+    const b = await nombre('page=0&limit=500');
+    check('la segunda no se monta otra vez', montadas === 1 && b.body.agents[0]?.name === 'montada-1', `${montadas} montadas`);
+    check('la guardada lleva su CORS, igual que la primera', a.cors === 'https://panal.lat' && b.cors === a.cors, `${a.cors} / ${b.cors}`);
+    await nombre('page=1&limit=500');
+    check('otra página es otra entrada', montadas === 2, `${montadas} montadas`);
+    await nombre('q=lint&page=0&limit=500');
+    await nombre('q=lint&page=0&limit=500');
+    check('una búsqueda no se guarda', montadas === 4, `${montadas} montadas`);
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const c = await nombre('page=0&limit=500');
+    check('pasado el plazo, se monta de nuevo', c.body.agents[0]?.name === `montada-${montadas}` && montadas === 5, `${montadas} montadas`);
+    await new Promise((resolve) => server.close(resolve));
   }
 
   if (failures === 0) console.log('✅ Todas las comprobaciones de endurecimiento pasaron');

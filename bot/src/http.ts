@@ -47,7 +47,7 @@ import { esTokenDeEjemplo, leerEjemplosDeMetadata } from './ejemplos.js';
 import { esTokenDeNivel, leerNivelesDeMetadata } from './niveles.js';
 import { esTokenDeTipo } from './tipo.js';
 import { normalizarIdioma, traducirFrases, type Idioma } from './traduccion.js';
-import { allowedOrigin, clientIp, sinBarraFinal } from './net.js';
+import { allowedOrigin, clientIp, crearLimitador, escuchar, sinBarraFinal } from './net.js';
 import { generateResult } from './llm.js';
 import {
   buildQuote,
@@ -126,19 +126,8 @@ export function briefSignMessage(taskId: bigint): string {
 const RATE_LIMIT_MAX = 30;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 
-const hitsByIp = new Map<string, number[]>();
-
-function rateLimitOk(ip: string): boolean {
-  const now = Date.now();
-  const hits = (hitsByIp.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-  if (hits.length >= RATE_LIMIT_MAX) {
-    hitsByIp.set(ip, hits);
-    return false;
-  }
-  hits.push(now);
-  hitsByIp.set(ip, hits);
-  return true;
-}
+const limitador = crearLimitador(RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+const rateLimitOk = limitador.permite;
 
 // ---------------------------------------------------------------------------
 // CORS: solo el dashboard oficial (y localhost en desarrollo).
@@ -987,7 +976,7 @@ export function startResultServer(cfg: BotConfig, clients: ChainClients, store: 
     // En producción (NODE_ENV=production) solo panal.lat; en dev también localhost.
     allowLocalhostOrigin: cfg.dryRun || process.env.NODE_ENV !== 'production',
   });
-  server.listen(cfg.httpPort, () => {
+  escuchar(server, cfg.httpPort, cfg.bindHost, () => {
     console.log(`   Endpoint HTTP: http://localhost:${cfg.httpPort}  (POST /brief/:taskId · GET /result/:taskId · GET /agent.json)`);
     if (cfg.httpPublicUrl) {
       console.log(`   URL pública (metadata del agente → "bot:${cfg.httpPublicUrl}")`);

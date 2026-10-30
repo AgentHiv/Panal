@@ -47,7 +47,7 @@
  */
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
-import { allowedOrigin, clientIp } from './net.js';
+import { allowedOrigin, clientIp, crearLimitador, escuchar } from './net.js';
 import type { BotConfig } from './config.js';
 import type {
   AgenteEnElTablon,
@@ -150,19 +150,8 @@ const enIngles = {
 const RATE_LIMIT_MAX = 60;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 
-const hitsByIp = new Map<string, number[]>();
-
-function rateLimitOk(ip: string): boolean {
-  const now = Date.now();
-  const hits = (hitsByIp.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-  if (hits.length >= RATE_LIMIT_MAX) {
-    hitsByIp.set(ip, hits);
-    return false;
-  }
-  hits.push(now);
-  hitsByIp.set(ip, hits);
-  return true;
-}
+const limitador = crearLimitador(RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+const rateLimitOk = limitador.permite;
 
 // ---------------------------------------------------------------------------
 // CORS: solo el dashboard oficial (y localhost en desarrollo).
@@ -190,7 +179,20 @@ export interface IndexServerDeps {
   allowLocalhostOrigin: boolean;
   /** Límite de tamaño de URL aceptado (defensa ante URLs gigantes). */
   maxUrlLength?: number;
+  /** Cuánto se reutiliza una página del catálogo ya montada. 0 la apaga. */
+  catalogoCacheMs?: number;
 }
+
+/**
+ * Las páginas del catálogo que pide la web se reutilizan unos segundos.
+ *
+ * Es lo que más se pide y lo que más pesa: 500 fichas son unos 430 KB que montar
+ * por petición. Con 338 IP dentro de su límite de 60/min serían 338 por segundo,
+ * más de lo que puede un solo hilo cuando el catálogo crezca. Solo sin `q` ni
+ * `skill`, y con pocas entradas: unos segundos de retraso aquí no se notan.
+ */
+const CATALOGO_CACHE_MS = 5_000;
+const CATALOGO_CACHE_MAX = 64;
 
 const EVENTS_DEFAULT_LIMIT = 50;
 const EVENTS_MAX_LIMIT = 200;
@@ -222,6 +224,8 @@ const AGENTS_MAX_LIMIT = 500;
 export function createIndexServer(deps: IndexServerDeps): Server {
   const maxUrlLength = deps.maxUrlLength ?? 2_048;
   const { store } = deps;
+  const catalogoCacheMs = deps.catalogoCacheMs ?? CATALOGO_CACHE_MS;
+  const catalogoCache = new Map<string, { hasta: number; cuerpo: string }>();
 
   const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     // ---- CORS (incluye preflight OPTIONS) ----------------------------------
@@ -367,14 +371,23 @@ export function createIndexServer(deps: IndexServerDeps): Server {
           page = n;
         }
 
+        const includeInactive = url.searchParams.get('include_inactive') === 'true';
+        const clave = !q && !skill && catalogoCacheMs > 0 ? `${page}:${limit}:${includeInactive}` : null;
+        const guardada = clave ? catalogoCache.get(clave) : undefined;
+        if (guardada && guardada.hasta > Date.now()) {
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(guardada.cuerpo);
+          return;
+        }
+
         const { agents, total } = store.catalogo({
           q,
           skill,
-          includeInactive: url.searchParams.get('include_inactive') === 'true',
+          includeInactive,
           offset: page * limit,
           limit,
         });
-        json(res, 200, {
+        const cuerpo = JSON.stringify({
           agents,
           count: agents.length,
           total,
@@ -383,6 +396,13 @@ export function createIndexServer(deps: IndexServerDeps): Server {
           hasMore: page * limit + agents.length < total,
           lastBlock: store.lastBlock,
         });
+        if (clave) {
+          // `page` lo elige quien llama: sin tope, cada número sería una entrada más.
+          if (catalogoCache.size >= CATALOGO_CACHE_MAX) catalogoCache.clear();
+          catalogoCache.set(clave, { hasta: Date.now() + catalogoCacheMs, cuerpo });
+        }
+        res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+        res.end(cuerpo);
         return;
       }
 
@@ -573,7 +593,7 @@ export function startIndexServer(cfg: BotConfig, store: IndexStore): Server {
     // En producción (NODE_ENV=production) solo panal.lat; en dev también localhost.
     allowLocalhostOrigin: cfg.dryRun || process.env.NODE_ENV !== 'production',
   });
-  server.listen(cfg.indexHttpPort, () => {
+  escuchar(server, cfg.indexHttpPort, cfg.bindHost, () => {
     console.log(`   API del índice: http://localhost:${cfg.indexHttpPort}/index/events|agents|stats|tasks|board/…`);
   });
   return server;

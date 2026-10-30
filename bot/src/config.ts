@@ -92,6 +92,12 @@ export interface BotConfig {
   dryRun: boolean;
   storeDir: string;
   /** Puerto del servidor HTTP de entrega de resultados (0 = desactivado). */
+  /**
+   * Dónde escuchan los servidores HTTP (`HOST`). Sin definir, en todas las
+   * interfaces. Detrás de Caddy va 127.0.0.1 (ecosystem.config.cjs), para que el
+   * firewall no sea lo único que impida saltarse a Caddy.
+   */
+  bindHost?: string;
   httpPort: number;
   /** URL pública opcional del endpoint (la que el operador publica en su metadata `bot:<url>`). */
   httpPublicUrl?: string;
@@ -344,6 +350,7 @@ export function loadConfig(): BotConfig {
     dryRun,
     storeDir: env('STORE_DIR') ?? './data',
     // Servidor HTTP de resultados: activo por defecto en 8787; BOT_HTTP_PORT=0 lo apaga.
+    bindHost: process.env.HOST?.trim() || undefined,
     httpPort: envInt('BOT_HTTP_PORT', 8787, 0),
     httpPublicUrl: env('BOT_HTTP_PUBLIC_URL'),
     // API pública del indexador (la misma que usa el frontend, src/lib/indexer.ts).

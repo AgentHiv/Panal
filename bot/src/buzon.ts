@@ -72,7 +72,7 @@
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { getAddress, isAddress, isHex, keccak256, toBytes, verifyMessage, type Address, type Hex } from 'viem';
-import { allowedOrigin, clientIp, sinBarraFinal } from './net.js';
+import { allowedOrigin, clientIp, crearLimitador, escuchar, sinBarraFinal } from './net.js';
 import { leerEjemplosDeMetadata } from './ejemplos.js';
 import { leerNivelesDeMetadata } from './niveles.js';
 import {
@@ -347,19 +347,8 @@ export const MAX_OFERTA_CHARS = 500;
 
 const RATE_LIMIT_MAX = 60;
 const RATE_LIMIT_WINDOW_MS = 60_000;
-const hitsByIp = new Map<string, number[]>();
-
-function rateLimitOk(ip: string): boolean {
-  const now = Date.now();
-  const hits = (hitsByIp.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-  if (hits.length >= RATE_LIMIT_MAX) {
-    hitsByIp.set(ip, hits);
-    return false;
-  }
-  hits.push(now);
-  hitsByIp.set(ip, hits);
-  return true;
-}
+const limitador = crearLimitador(RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+const rateLimitOk = limitador.permite;
 
 function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
@@ -2130,7 +2119,7 @@ export function startBuzonServer(cfg: BotConfig, clients: ChainClients, store: B
     fetchJob: cfg.tablonAddress ? (jobId) => getTablonJob(clients, cfg.tablonAddress!, jobId) : undefined,
     fetchArbitros: arbitrosConCache(() => getArbitros(clients, cfg)),
   });
-  server.listen(cfg.buzonHttpPort, () => {
+  escuchar(server, cfg.buzonHttpPort, cfg.bindHost, () => {
     console.log(`   Buzón: http://localhost:${cfg.buzonHttpPort}/buzon/<agente>/{agent.json,brief,result,encargo,entrega}`);
   });
   return server;

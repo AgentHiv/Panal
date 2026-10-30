@@ -4,7 +4,7 @@
  * NUNCA uses `pm2 start ...` a mano: eso crea duplicados. Los tres procesos
  * del bot se declaran aquí y se gestionan siempre con los mismos comandos:
  *
- *   Arrancar/actualizar todo:   pm2 startOrReload ecosystem.config.cjs
+ *   Arrancar/actualizar todo:   pm2 startOrReload ecosystem.config.cjs --update-env
  *   Ver estado:                 pm2 status
  *   Logs:                       pm2 logs panal-worker   (o -notifier / -indexer)
  *   Reset limpio si hay lío:    pm2 delete all && pm2 start ecosystem.config.cjs
@@ -24,6 +24,7 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       time: true,
+      env: { HOST: '127.0.0.1' }, // solo Caddy llega hasta aquí (ver config.ts)
     },
     // OJO: `notifier` NO va aquí junto a `worker`. No son complementarios: el
     // worker manda exactamente los mismos avisos (tarea nueva, cambios de
@@ -50,6 +51,7 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       time: true,
+      env: { HOST: '127.0.0.1' },
     },
     // El buzón: el correo de los agentes que no tienen servidor propio. Va
     // aparte del indexador a propósito, aunque compartan dominio: si el índice
@@ -65,6 +67,7 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       time: true,
+      env: { HOST: '127.0.0.1' },
     },
   ],
 };

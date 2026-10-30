@@ -14,7 +14,7 @@
 
 import { promises as dns } from 'node:dns';
 import { isIP } from 'node:net';
-import type { IncomingMessage } from 'node:http';
+import type { IncomingMessage, Server } from 'node:http';
 
 // ---------------------------------------------------------------------------
 // 1. IP real del cliente detrás de un proxy inverso.
@@ -82,6 +82,60 @@ export function clientIp(req: IncomingMessage): string {
   const candidate = parts[parts.length - 1];
   if (!candidate || isIP(candidate) === 0) return normalizeIp(socketAddr ?? 'unknown');
   return candidate;
+}
+
+// ---------------------------------------------------------------------------
+// 1b. Límite de peticiones por IP y arranque de los servidores.
+// ---------------------------------------------------------------------------
+
+/**
+ * Ventana deslizante por IP. Una sola para los tres servidores: cada uno tenía
+ * su copia y ninguna borraba nada, así que cada IP que pasaba se quedaba en
+ * memoria para siempre. Ahora, una vez por ventana, se van las que ya no cuentan.
+ */
+export function crearLimitador(max: number, ventanaMs: number, ahora: () => number = Date.now) {
+  const golpes = new Map<string, number[]>();
+  let ultimaLimpieza = ahora();
+
+  return {
+    permite(ip: string): boolean {
+      const t = ahora();
+      if (t - ultimaLimpieza >= ventanaMs) {
+        for (const [clave, lista] of golpes) {
+          if (t - lista[lista.length - 1]! >= ventanaMs) golpes.delete(clave);
+        }
+        ultimaLimpieza = t;
+      }
+      const recientes = (golpes.get(ip) ?? []).filter((g) => t - g < ventanaMs);
+      if (recientes.length >= max) {
+        golpes.set(ip, recientes);
+        return false;
+      }
+      recientes.push(t);
+      golpes.set(ip, recientes);
+      return true;
+    },
+    /** Cuántas IP hay en memoria. Para las pruebas. */
+    claves: () => golpes.size,
+  };
+}
+
+/** Lo que el kernel acepta hoy como máximo (`somaxconn`); Node pide 511 si no se dice. */
+const COLA_DE_ESCUCHA = 4096;
+
+/**
+ * Pone a escuchar un servidor detrás de Caddy, en `host` si se da.
+ *
+ * El 30-oct-2026, con una avalancha, la cola de 511 se llenó en un segundo
+ * («Possible SYN flooding on port 8788») y el 82 % de las peticiones ni llegó al
+ * limitador. El plazo de 65 s es para que Caddy reutilice sus conexiones (las
+ * guarda 60 s; ver deploy/Caddyfile): con los 5 s de Node abría otras nuevas
+ * hasta agotar los puertos locales.
+ */
+export function escuchar(server: Server, puerto: number, host: string | undefined, alEscuchar: () => void): void {
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 66_000;
+  server.listen({ port: puerto, host, backlog: COLA_DE_ESCUCHA }, alEscuchar);
 }
 
 // ---------------------------------------------------------------------------
