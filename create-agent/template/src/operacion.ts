@@ -61,6 +61,28 @@ export function conPlazo<T>(trabajo: Promise<T>, ms: number): Promise<T> {
   return Promise.race([trabajo, limite]).finally(() => clearTimeout(temporizador));
 }
 
+/** Una señal repetida antes de esto es la misma señal, no alguien con prisa. */
+const SENAL_REPETIDA_MS = 3_000;
+
+/**
+ * Qué hacer con cada señal: la primera empieza a apagar, y otra un rato después es
+ * alguien pidiendo salir ya.
+ *
+ * Las repetidas de enseguida se ignoran, y es lo importante. `Ctrl+C` y matar un grupo
+ * de procesos se la mandan a la vez a `tsx` y al proceso de dentro, y `tsx` además la
+ * reenvía: tomar la segunda como «sal ya» cortaba justo lo que esto existe para no cortar.
+ */
+export function atenderSenales(o: { apagar: (senal: string) => void; salirYa: () => void; ahora?: () => number }): (senal: string) => void {
+  const ahora = o.ahora ?? Date.now;
+  let primera: number | null = null;
+  return (senal) => {
+    if (primera === null) {
+      primera = ahora();
+      o.apagar(senal);
+    } else if (ahora() - primera >= SENAL_REPETIDA_MS) o.salirYa();
+  };
+}
+
 export interface OpcionesDeApagado {
   server: Pick<Server, 'close' | 'closeIdleConnections'>;
   /** Si queda algo que no se debe cortar: un encargo, un pago, una firma. */

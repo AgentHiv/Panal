@@ -92,7 +92,7 @@ import { arrancarVigilante } from './vigilante.js';
 import { arrancarRetirada, opcionesDelEntorno } from './retirada.js';
 import { arrancarTablon, EncargosPropios, opcionesDelEntorno as opcionesTablon, retomarDelTablon } from './tablon.js';
 import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
-import { apagarEnOrden, conPlazo, PlazoAgotado, plazoApagadoMs, plazoX402Ms } from './operacion.js';
+import { apagarEnOrden, atenderSenales, conPlazo, PlazoAgotado, plazoApagadoMs, plazoX402Ms } from './operacion.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 // Sin HOST escucha en todas las interfaces, como siempre. Detrás de un proxy en
@@ -2220,10 +2220,8 @@ server.listen(PORT, HOST);
 // Reiniciar para desplegar no debe dejar a nadie cobrado y sin respuesta. Ojo: tu
 // gestor de procesos tiene que esperar más que `APAGADO_SEGUNDOS`, o matará el
 // proceso antes (`kill_timeout` en pm2, ver deploy/ecosystem.config.cjs).
-for (const senal of ['SIGTERM', 'SIGINT'] as const) {
-  process.on(senal, () => {
-    // La segunda vez es alguien pidiendo salir ya.
-    if (apagando) process.exit(1);
+const alRecibirSenal = atenderSenales({
+  apagar: (senal) => {
     apagando = true;
     console.log(`[panal] ${senal}: no acepto nada nuevo y espero a lo que está en curso`);
     apagarEnOrden({
@@ -2232,8 +2230,11 @@ for (const senal of ['SIGTERM', 'SIGINT'] as const) {
       plazoMs: plazoApagadoMs(),
       salir: (codigo) => process.exit(codigo),
     });
-  });
-}
+  },
+  salirYa: () => process.exit(1),
+});
+process.on('SIGTERM', () => alRecibirSenal('SIGTERM'));
+process.on('SIGINT', () => alRecibirSenal('SIGINT'));
 
 // Mientras el tablón coge un encargo la wallet está firmando, aunque `work()`
 // todavía no haya empezado. La retirada tiene que verlo: dos transacciones

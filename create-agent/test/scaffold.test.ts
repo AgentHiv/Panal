@@ -29,6 +29,8 @@ function check(label: string, ok: boolean, detail = ''): void {
   else {
     failures += 1;
     console.error(`❌ ${label}${detail ? `: ${detail}` : ''}`);
+    // En GitHub, además como anotación: se lee sin abrir el registro del trabajo.
+    if (process.env.GITHUB_ACTIONS) console.log(`::error title=${label.replace(/[\r\n:,]/g, ' ')}::${detail.replace(/\r?\n/g, ' ').slice(0, 600) || 'falló'}`);
   }
 }
 
@@ -561,7 +563,7 @@ async function main(): Promise<void> {
       const salio = new Promise<number | null>((r) => agent.once('exit', (codigo) => r(codigo)));
       if (agent.pid) process.kill(-agent.pid, 'SIGTERM');
       const codigo = await Promise.race([salio, new Promise<string>((r) => setTimeout(() => r('colgado'), 20_000))]);
-      check('con SIGTERM sale solo y limpio', codigo === 0, String(codigo));
+      check('con SIGTERM sale solo y limpio', codigo === 0, `${codigo} · ${salida.slice(-400)}`);
       check('y lo dice en el log', salida.includes('SIGTERM'), salida.slice(-200));
     } finally {
       // Se mata el GRUPO entero (el menos delante del pid), no solo el proceso:

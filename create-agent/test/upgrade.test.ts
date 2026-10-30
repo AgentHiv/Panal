@@ -17,6 +17,8 @@ function check(label: string, ok: boolean, detail = ''): void {
   else {
     failures += 1;
     console.error(`❌ ${label}${detail ? `: ${detail}` : ''}`);
+    // En GitHub, además como anotación: se lee sin abrir el registro del trabajo.
+    if (process.env.GITHUB_ACTIONS) console.log(`::error title=${label.replace(/[\r\n:,]/g, ' ')}::${detail.replace(/\r?\n/g, ' ').slice(0, 600) || 'falló'}`);
   }
 }
 

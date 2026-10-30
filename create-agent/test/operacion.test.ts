@@ -7,7 +7,7 @@
  */
 
 import { createServer, type RequestListener, type Server } from 'node:http';
-import { apagarEnOrden, conPlazo, PlazoAgotado, plazoApagadoMs, plazoX402Ms } from '../template/src/operacion.js';
+import { apagarEnOrden, atenderSenales, conPlazo, PlazoAgotado, plazoApagadoMs, plazoX402Ms } from '../template/src/operacion.js';
 import { informe, revisarEndpoint, revisarEntorno, revisarLocal } from '../template/src/doctor.js';
 
 let failures = 0;
@@ -16,6 +16,8 @@ function check(label: string, ok: boolean, detail = ''): void {
   else {
     failures += 1;
     console.error(`❌ ${label}${detail ? `: ${detail}` : ''}`);
+    // En GitHub, además como anotación: se lee sin abrir el registro del trabajo.
+    if (process.env.GITHUB_ACTIONS) console.log(`::error title=${label.replace(/[\r\n:,]/g, ' ')}::${detail.replace(/\r?\n/g, ' ').slice(0, 600) || 'falló'}`);
   }
 }
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -81,6 +83,21 @@ async function main(): Promise<void> {
     apagarEnOrden({ server: server as never, ocupado: () => true, plazoMs: 40, salir: (c) => (codigo = c), log: () => undefined, intervaloMs: 10 });
     await espera(120);
     check('con trabajo atascado, sale al agotar el plazo', codigo === 0, String(codigo));
+  }
+
+  console.log('\n── las señales ──');
+  {
+    let t = 0;
+    const veces: string[] = [];
+    let ya = 0;
+    const senal = atenderSenales({ apagar: (s) => veces.push(s), salirYa: () => (ya += 1), ahora: () => t });
+    senal('SIGINT');
+    t = 20;
+    senal('SIGINT'); // Ctrl+C: llega a tsx y al proceso, y tsx la reenvía
+    check('la señal repetida enseguida no corta nada', veces.length === 1 && ya === 0, `${veces.length} apagados, ${ya} salidas`);
+    t = 3_000;
+    senal('SIGINT');
+    check('un rato después es alguien con prisa', ya === 1);
   }
 
   console.log('\n── doctor: el .env ──');
