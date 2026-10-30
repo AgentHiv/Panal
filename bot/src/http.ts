@@ -883,7 +883,10 @@ export function createResultServer(deps: ResultServerDeps): Server {
       // agente» y en el servidor no aparecía ni la petición.
       res.setHeader(
         'access-control-allow-headers',
-        'content-type, x-panal-address, x-panal-signature, x-panal-expira',
+        // x-payment y x-payment-payer: cotizar y pagar por x402 desde un navegador. El
+        // SDK las manda y faltaban aquí, igual que el fallo de arriba: en la web y la
+        // app, LexPanal contestaba «no se pudo consultar el precio».
+        'content-type, x-panal-address, x-panal-signature, x-panal-expira, x-payment, x-payment-payer',
       );
       res.setHeader('access-control-max-age', '600');
       res.writeHead(204);

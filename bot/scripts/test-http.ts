@@ -203,6 +203,23 @@ async function main(): Promise<void> {
     `status=${r10.status} name=${b10.name}`,
   );
 
+  // El preflight deja pasar lo que manda el SDK al cotizar y pagar por x402. Fuera de
+  // un navegador nadie lo nota: el MCP no pasa por CORS.
+  const preflight = await fetch(`${base}/x402/ask`, {
+    method: 'OPTIONS',
+    headers: {
+      origin: 'https://panal.lat',
+      'access-control-request-method': 'POST',
+      'access-control-request-headers': 'content-type,x-payment,x-payment-payer',
+    },
+  });
+  const permitidas = preflight.headers.get('access-control-allow-headers') ?? '';
+  check(
+    'CORS deja cotizar y pagar por x402',
+    ['x-payment', 'x-payment-payer'].every((h) => permitidas.split(',').map((x) => x.trim()).includes(h)),
+    permitidas,
+  );
+
   // 11. Rate limit: 30 req/min por IP → la petición que excede devuelve 429.
   let got429 = false;
   let attempts = 0;
