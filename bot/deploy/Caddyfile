@@ -1,7 +1,82 @@
 # Panal Bot — HTTPS automático con Caddy (Let's Encrypt)
+#
+# Los ajustes de abajo vienen de la caída del 30-oct-2026: una avalancha contra
+# /index/agents llevó a Caddy a 6,6 GB y el kernel lo mató. Esto no la frena
+# (eso solo puede hacerse antes de llegar aquí, ver HTTPS.md, «Cloudflare
+# delante»), pero acota el daño y deja rastro. Reiniciarse solo y el tope de
+# memoria van aparte, en deploy/caddy-resiliencia.conf.
+{
+	# Los errores van a un archivo con tope: bajo avalancha son miles por segundo,
+	# y ese día journald se atascó hasta que systemd lo mató.
+	log default {
+		output file /var/log/caddy/errores.log {
+			roll_size 50MiB
+			roll_keep 3
+		}
+		level WARN
+	}
+	servers {
+		timeouts {
+			read_header 10s
+			idle 2m
+		}
+		# De 1 MB por defecto a 32 KB: las firmas de Panal caben de sobra, y cada
+		# petición a medias retiene en memoria lo que haya mandado.
+		max_header_size 32KB
+	}
+}
+
+# Hacia un servidor local. Argumento: el puerto.
+#
+# NO lleva `max_conns_per_host`: al llegar al tope, las peticiones esperan en
+# memoria sin plazo, que es lo que mató a Caddy.
+(hacia) {
+	reverse_proxy 127.0.0.1:{args[0]} {
+		# La IP que ve el limitador. Hoy es la de la conexión; con Cloudflare
+		# delante, la que Cloudflare dice (ver `trusted_proxies` en HTTPS.md).
+		# El servidor toma la entrada de más a la derecha: tiene que ser esta sola.
+		header_up X-Forwarded-For {client_ip}
+		transport http {
+			dial_timeout 2s
+			# Reutilizar conexiones: con las 32 por defecto se agotaron los puertos
+			# locales («cannot assign requested address»). 60 s, menos que los 65 s
+			# que las aguanta Node (net.ts).
+			keepalive 60s
+			keepalive_idle_conns 1024
+			keepalive_idle_conns_per_host 1024
+		}
+	}
+}
+
+# Quién pidió qué, sin cabeceras ni firmas: la política de privacidad promete IP,
+# fecha, ruta y respuesta, nada más. El mismo 30-oct no había registro ninguno.
+# Se borran solos a los 7 días (la política permite hasta 90).
+(acceso) {
+	log {
+		output file /var/log/caddy/acceso.log {
+			roll_size 100MiB
+			roll_keep 5
+			roll_keep_for 168h
+		}
+		format filter {
+			request>headers delete
+			request>tls delete
+			resp_headers delete
+			# Un cliente antiguo aún puede mandar su firma en la URL.
+			request>uri query {
+				delete address
+				delete signature
+				delete expira
+			}
+			wrap json
+		}
+	}
+}
+
 # Endpoint de resultados del bot (puerto interno 8787)
 bot.panal.lat {
-	reverse_proxy 127.0.0.1:8787
+	import acceso
+	import hacia 8787
 }
 
 # API pública del indexador (puerto interno 8788) — opcional
@@ -14,10 +89,11 @@ bot.panal.lat {
 # El prefijo NO se quita: el buzón lo espera en la ruta (y lo aceptaría igual
 # sin él, pero así lo que se ve en el log es lo que el agente publicó).
 api.panal.lat {
+	import acceso
 	handle /buzon/* {
-		reverse_proxy 127.0.0.1:8789
+		import hacia 8789
 	}
 	handle {
-		reverse_proxy 127.0.0.1:8788
+		import hacia 8788
 	}
 }

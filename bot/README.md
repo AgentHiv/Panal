@@ -137,7 +137,7 @@ npm run indexer   # ver §14 (no usa Telegram ni claves)
 
 ```bash
 npm install -g pm2
-pm2 startOrReload ecosystem.config.cjs   # worker + notifier + indexer, sin duplicados
+pm2 startOrReload ecosystem.config.cjs --update-env   # worker + notifier + indexer, sin duplicados
 pm2 save
 pm2 startup        # para que arranque solo tras reiniciar la máquina
 pm2 logs panal-worker   # o panal-notifier / panal-indexer
@@ -546,7 +546,7 @@ cd /ruta/a/Panal && git pull origin main
 cd bot
 pnpm install --frozen-lockfile   # solo si cambiaron dependencias
 pnpm exec tsc --noEmit           # tiene que salir en silencio
-pm2 startOrReload ecosystem.config.cjs
+pm2 startOrReload ecosystem.config.cjs --update-env
 ```
 
 **`startOrReload`, nunca `pm2 start` a mano ni un `kill` por patrón.**
@@ -573,7 +573,7 @@ que el mercado no se queda en blanco.
 Volver atrás no necesita tocar datos, porque no se migra nada:
 
 ```bash
-git checkout <commit-anterior> && cd bot && pm2 startOrReload ecosystem.config.cjs
+git checkout <commit-anterior> && cd bot && pm2 startOrReload ecosystem.config.cjs --update-env
 ```
 
 > **No borres `INDEX_DIR/`** para «empezar limpio». Ahí está el histórico
