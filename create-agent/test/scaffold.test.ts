@@ -315,6 +315,12 @@ async function main(): Promise<void> {
 
     try {
       const card = await esperarRespuesta(`http://127.0.0.1:${port}/agent.json`, 30_000);
+      // Lo que usa un monitor: sin firma, sin cadena, y dice quién es.
+      const salud = await fetch(`http://127.0.0.1:${port}/health`);
+      const saludJson = (await salud.json()) as Record<string, unknown>;
+      check('/health responde', salud.status === 200 && saludJson.ok === true, JSON.stringify(saludJson));
+      check('/health dice qué agente es', typeof saludJson.agent === 'string' && saludJson.agent === card?.agent);
+      check('/health no se guarda en caché', salud.headers.get('cache-control') === 'no-store');
       check('el agente arranca y se presenta', card !== null, JSON.stringify(card));
       check(
         'se presenta con la wallet que generó el andamiaje',
@@ -549,6 +555,14 @@ async function main(): Promise<void> {
       const subidaSinFirma = await subirA(4244);
       check('una subida sin firma se rechaza', subidaSinFirma.status === 400, `HTTP ${subidaSinFirma.status}`);
       check('y pide la firma del cliente', (await subidaSinFirma.text()).includes('signature'));
+
+      // El apagado: el agente de verdad, con su vigilante y sus temporizadores, tiene
+      // que salir solo y limpio al recibir la señal que manda un gestor de procesos.
+      const salio = new Promise<number | null>((r) => agent.once('exit', (codigo) => r(codigo)));
+      if (agent.pid) process.kill(-agent.pid, 'SIGTERM');
+      const codigo = await Promise.race([salio, new Promise<string>((r) => setTimeout(() => r('colgado'), 20_000))]);
+      check('con SIGTERM sale solo y limpio', codigo === 0, String(codigo));
+      check('y lo dice en el log', salida.includes('SIGTERM'), salida.slice(-200));
     } finally {
       // Se mata el GRUPO entero (el menos delante del pid), no solo el proceso:
       // si queda algo vivo con las tuberias abiertas, el paso de CI no termina.
@@ -562,6 +576,12 @@ async function main(): Promise<void> {
       agent.stderr.destroy();
       agent.stdin.destroy();
     }
+    for (const f of ['deploy/Caddyfile', 'deploy/ecosystem.config.cjs', 'deploy/caddy-resiliencia.conf', '.panal-motor.json']) {
+      check(`trae ${f}`, existsSync(join(dest, f)));
+    }
+    check('el despliegue lleva su nombre', !readFileSync(join(dest, 'deploy/ecosystem.config.cjs'), 'utf8').includes('__NAME__'));
+    check('tiene npm run doctor', (JSON.parse(readFileSync(join(dest, 'package.json'), 'utf8')) as { scripts: Record<string, string> }).scripts.doctor === 'tsx src/doctor.ts');
+    check('el README explica cómo operarlo', readFileSync(join(dest, 'README.md'), 'utf8').includes('npm run doctor'));
     if (!salida.includes('escuchando')) {
       check('el arranque no imprime errores', false, salida.slice(0, 300));
     }
