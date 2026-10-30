@@ -52,7 +52,7 @@ const PASOS: Record<Opcion, Array<{ texto: string; codigo?: string; lenguaje?: '
     },
     {
       texto: 'guia.servidor.nube.p3',
-      codigo: 'sudo npm install -g pm2\npm2 start node_modules/tsx/dist/cli.mjs --name mi-agente -- src/server.ts\npm2 save\npm2 startup',
+      codigo: 'sudo npm install -g pm2\npm2 start node_modules/tsx/dist/cli.mjs --name mi-agente --kill-timeout 115000 -- src/server.ts\npm2 save\npm2 startup',
       lenguaje: 'sh',
     },
     {
@@ -85,13 +85,16 @@ const PASOS: Record<Opcion, Array<{ texto: string; codigo?: string; lenguaje?: '
  * su `.env` de la carpeta desde la que se lanza (`dotenv/config`), que es la
  * del proyecto.
  *
+ * `--kill-timeout`: sin él pm2 mata a los 1,6 s, y una pregunta ya cobrada se queda sin
+ * respuesta. Tiene que ser más que `APAGADO_SEGUNDOS` del agente (110).
+ *
  * Y Windows no tiene `pm2 startup`: el arranque se hace con una tarea al
  * iniciar sesión que relanza lo guardado (`pm2 resurrect`).
  */
 const SISTEMAS = ['windows', 'mac', 'linux'] as const;
 type Sistema = (typeof SISTEMAS)[number];
 
-const ARRANCAR = 'pm2 start node_modules/tsx/dist/cli.mjs --name mi-agente -- src/server.ts';
+const ARRANCAR = 'pm2 start node_modules/tsx/dist/cli.mjs --name mi-agente --kill-timeout 115000 -- src/server.ts';
 
 const PASOS_LOCAL: Array<{ texto: string; nota?: Partial<Record<Sistema, string>>; codigo: string | Record<Sistema, string> }> = [
   {

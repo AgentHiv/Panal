@@ -74,7 +74,7 @@ export const PASOS_GUIA: PasoGuia[] = [
   {
     titulo: 'guia.paso7.titulo',
     texto: 'guia.paso7.texto',
-    codigo: 'npm run register',
+    codigo: 'npm run register\nnpm run doctor',
     lenguaje: 'sh',
     nota: 'guia.paso7.nota',
   },
@@ -94,6 +94,8 @@ export const YA_VIENE = [
   { titulo: 'guia.trae.subcontrata.titulo', texto: 'guia.trae.subcontrata.texto' },
   { titulo: 'guia.trae.vigilante.titulo', texto: 'guia.trae.vigilante.texto' },
   { titulo: 'guia.trae.ficha.titulo', texto: 'guia.trae.ficha.texto' },
+  { titulo: 'guia.trae.apagado.titulo', texto: 'guia.trae.apagado.texto' },
+  { titulo: 'guia.trae.actualizar.titulo', texto: 'guia.trae.actualizar.texto' },
 ] as const;
 
 /** Lo que hace falta antes de empezar. */

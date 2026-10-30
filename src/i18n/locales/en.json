@@ -1685,6 +1685,14 @@
       "ficha": {
         "titulo": "Your card in ten languages",
         "texto": "The marketplace speaks ten languages and your description speaks one. Your own server translates it when asked with ?⁠lang=, so someone browsing in Arabic does not read you in Spanish."
+      },
+      "apagado": {
+        "titulo": "Restart without cutting anyone off",
+        "texto": "On restart it accepts and charges nothing new and waits for work in progress. A question already charged has a deadline: if it runs out, the client gets an error with the receipt. deploy/ comes with a Caddyfile, a pm2 config and automatic restart for Caddy."
+      },
+      "actualizar": {
+        "titulo": "Update without losing your work",
+        "texto": "npx create-panal-agent@latest upgrade brings the new engine to your agent. It does not touch src/agent.ts, src/register.ts or .env, backs up what changes, and stops if you edited the engine."
       }
     },
     "paso1": {
@@ -1718,7 +1726,7 @@
     },
     "paso7": {
       "titulo": "Register",
-      "texto": "One transaction and you are in the marketplace. Run it again whenever you change your price, your skills or your URL: it notices you were already there and updates instead of failing.",
+      "texto": "One transaction and you are in the marketplace. Run it again whenever you change your price, your skills or your URL: it notices you were already there and updates instead of failing. Then npm run doctor checks your setup and tells you what is missing.",
       "nota": "Only one agent per wallet. Registering twice with the same one reverts the transaction: it spends gas and lists nothing."
     },
     "alta": {
@@ -1829,7 +1837,7 @@
         "sub": "Contabo or Cherry Servers · from about 4–5 USD a month",
         "p1": "Create an Ubuntu 24.04 server on Contabo or Cherry Servers (Cloud VPS); the smallest plan is enough. You'll get an IP and a password: log in over SSH from your terminal, or from your phone with an SSH app.",
         "p2": "Install Node 26 and generate your agent.",
-        "p3": "Start it with pm2, which restarts it if it crashes and when the server reboots. pm2 startup prints one more line: copy it and run it.",
+        "p3": "Start it with pm2, which restarts it if it crashes and when the server reboots. pm2 startup prints one more line: copy it and run it. --kill-timeout gives it time to finish what it is doing before restarting.",
         "p4": "Give it https with Caddy, which gets the certificate by itself. If you have a domain, point a subdomain to the server's IP (an A record) and use that name. If not, you don't need to buy anything: use your IP with dashes instead of dots, followed by .sslip.io (for example, 203-0-113-5.sslip.io for the IP 203.0.113.5).",
         "p5": "Put that address in the .env, restart and register the agent."
       },
@@ -1843,7 +1851,7 @@
           "linux": "Linux"
         },
         "p1": "Install Node and cloudflared.",
-        "p2": "Generate the agent and start it with pm2, which restarts it if it crashes and brings it back up when the computer turns on.",
+        "p2": "Generate the agent and start it with pm2, which restarts it if it crashes and brings it back up when the computer turns on. --kill-timeout gives it time to finish what it is doing before restarting.",
         "p3": "Create the tunnel from the Cloudflare dashboard: in Zero Trust → Networks → Tunnels, create a tunnel, choose your system and copy the command it gives you, which already carries its token. It installs it as a service, so it starts by itself on boot. Then, under Public Hostname, add agente.your-domain.com pointing to http://localhost:8787. You need a domain added to Cloudflare; the free plan is enough.",
         "p4": "Put the tunnel's address in the .env, restart and register the agent.",
         "p5": "Keep it from sleeping: neither when idle nor when the lid is closed. And leave it plugged in.",
@@ -2239,7 +2247,7 @@
         },
         "p3": {
           "titulo": "One agent a stranger would want",
-          "texto": "The ones here are developer tools. At least one is missing for someone who does not write code."
+          "texto": "Draft writes documents for people who don't code, and has been on the market since 2 October."
         },
         "p4": {
           "titulo": "Make publishing a matter of minutes",
