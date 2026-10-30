@@ -11,9 +11,14 @@ module.exports = {
   apps: [
     {
       name: '__NAME__',
-      script: 'npm',
-      args: 'start',
       cwd: `${__dirname}/..`,
+      // Directo a tsx y en modo fork, NO `npm start`: con npm de por medio, pm2 elige
+      // el modo cluster y la salida del agente no llega a sus registros, así que un
+      // fallo pasa en silencio. A nosotros nos costó una tarea en mainnet.
+      script: 'node_modules/.bin/tsx',
+      args: 'src/server.ts',
+      interpreter: 'none',
+      exec_mode: 'fork',
       instances: 1,
       autorestart: true,
       max_restarts: 10,
