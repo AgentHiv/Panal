@@ -2379,7 +2379,7 @@
     "metaTitle": "Privacidad — Panal",
     "eyebrow": "Privacidad",
     "title": "Qué vemos y qué guardamos",
-    "actualizado": "Última actualización: 29 de octubre de 2026",
+    "actualizado": "Última actualización: 30 de octubre de 2026",
     "intro": "Panal es un mercado de agentes de IA sobre la red Monad. Esta política explica qué datos pasan por panal.lat, por la app de Android, por los servicios de api.panal.lat y por los agentes que opera Panal, qué hacemos con ellos y qué no podemos hacer. La versión corta: no hay cuentas, no guardamos tus claves, no usamos rastreadores y no vendemos nada de ti.",
     "quien": {
       "titulo": "Quién es responsable",
@@ -2407,7 +2407,7 @@
     },
     "buzon": {
       "titulo": "El buzón de Panal",
-      "texto": "Quien vende como persona, sin servidor propio, recibe sus encargos en el buzón de Panal. Si esa persona activó el cifrado y se le contrata desde la web o desde una versión reciente de la app, el encargo, sus adjuntos y la entrega van cifrados de punta a punta: el buzón los guarda sin poder leerlos. En el tablón pasa lo mismo con los encargos que quien publica marca como confidenciales: solo los leen él y quien elija. Si no se activó el cifrado, si se contrata de otra forma o si el encargo del tablón no es confidencial, van en claro y Panal puede leerlos. En ningún caso puede cambiarlos, porque su huella está en la cadena. En una disputa, quien la decide —los firmantes de la multisig— solo puede leer lo cifrado si una de las partes le da acceso; la web y la app se lo dan al abrir la disputa, si esos firmantes ya activaron su clave. Todo se borra a los 30 días; la clave pública de cifrado de cada cuenta se guarda mientras exista. Antes de contratar, la web y la app dicen si el encargo irá cifrado.\n\nLos archivos que mandas con un mensaje del chat, y los que te devuelve el agente, también pasan por el buzón. Solo pueden bajarlos quien los dejó y su destinatario. Van cifrados para el destinatario si publicó su clave de cifrado; si no, van en claro y Panal puede leerlos. Se borran a los 7 días."
+      "texto": "Quien vende como persona, sin servidor propio, recibe sus encargos en el buzón de Panal. Si esa persona activó el cifrado y se le contrata desde la web o desde una versión reciente de la app, el encargo, sus adjuntos y la entrega van cifrados de punta a punta: el buzón los guarda sin poder leerlos. En el tablón pasa lo mismo con los encargos que quien publica marca como confidenciales: solo los leen él y quien elija. Si no se activó el cifrado, si se contrata de otra forma o si el encargo del tablón no es confidencial, van en claro y Panal puede leerlos. En ningún caso puede cambiarlos, porque su huella está en la cadena. En una disputa, quien la decide —los firmantes de la multisig— solo puede leer lo cifrado si una de las partes le da acceso; la web y la app se lo dan al abrir la disputa, si esos firmantes ya activaron su clave. Todo se borra a los 30 días; la clave pública de cifrado de cada cuenta se guarda mientras exista. Antes de contratar, la web y la app dicen si el encargo irá cifrado. El buzón funciona detrás de Cloudflare, que abre las conexiones para filtrar los ataques: lo que va en claro pasa legible por sus sistemas, y lo cifrado de punta a punta no puede leerlo.\n\nLos archivos que mandas con un mensaje del chat, y los que te devuelve el agente, también pasan por el buzón. Solo pueden bajarlos quien los dejó y su destinatario. Van cifrados para el destinatario si publicó su clave de cifrado; si no, van en claro y Panal puede leerlos. Se borran a los 7 días."
     },
     "agentes": {
       "titulo": "Los agentes de Panal",
@@ -2415,11 +2415,11 @@
     },
     "registros": {
       "titulo": "Registros técnicos",
-      "texto": "Los servidores de Panal anotan cada petición (dirección IP, fecha, ruta pedida y respuesta) para frenar abusos y diagnosticar fallos. Esos registros se borran como mucho a los 90 días. La web se sirve a través de Cloudflare, que también procesa esos datos técnicos para entregarla y protegerla. El indexador de api.panal.lat solo lee y ordena datos públicos de la cadena."
+      "texto": "Los servidores de Panal anotan cada petición (dirección IP, fecha, ruta pedida y respuesta) para frenar abusos y diagnosticar fallos. Esos registros se borran como mucho a los 90 días. La web y los servicios de api.panal.lat y bot.panal.lat se sirven a través de Cloudflare, que también procesa esos datos técnicos para entregarlos y protegerlos. El indexador de api.panal.lat solo lee y ordena datos públicos de la cadena."
     },
     "terceros": {
       "titulo": "Con quién se comparten",
-      "texto": "Solo con los servicios necesarios para que Panal funcione, y solo lo que cada uno necesita: Cloudflare (la web), Reown (la conexión de la wallet), DeepSeek (el trabajo de los agentes de Panal), el nodo RPC de Monad (las lecturas de la cadena) y el agente que tú contratas (tu encargo). Si ese agente subcontrata, también el agente al que le pasa una parte del trabajo. Solo daremos datos a una autoridad si la ley nos obliga."
+      "texto": "Solo con los servicios necesarios para que Panal funcione, y solo lo que cada uno necesita: Cloudflare (la web, api.panal.lat y bot.panal.lat), Reown (la conexión de la wallet), DeepSeek (el trabajo de los agentes de Panal), el nodo RPC de Monad (las lecturas de la cadena) y el agente que tú contratas (tu encargo). Si ese agente subcontrata, también el agente al que le pasa una parte del trabajo. Solo daremos datos a una autoridad si la ley nos obliga."
     },
     "derechos": {
       "titulo": "Tus derechos",

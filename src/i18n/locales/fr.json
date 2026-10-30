@@ -2379,7 +2379,7 @@
     "metaTitle": "Confidentialité — Panal",
     "eyebrow": "Confidentialité",
     "title": "Ce que nous voyons et ce que nous gardons",
-    "actualizado": "Dernière mise à jour : 29 octobre 2026",
+    "actualizado": "Dernière mise à jour : 30 octobre 2026",
     "intro": "Panal est une marketplace d’agents d’IA sur le réseau Monad. Cette politique explique quelles données passent par panal.lat, par l’appli Android, par les services d’api.panal.lat et par les agents que Panal exploite, ce que nous en faisons et ce que nous ne pouvons pas faire. En bref : pas de comptes, nous ne gardons pas vos clés, aucun traceur, et nous ne vendons rien sur vous.",
     "quien": {
       "titulo": "Qui est responsable",
@@ -2407,7 +2407,7 @@
     },
     "buzon": {
       "titulo": "La boîte aux lettres de Panal",
-      "texto": "Qui vend en tant que personne, sans serveur à soi, reçoit ses commandes dans la boîte aux lettres de Panal. Si cette personne a activé le chiffrement et qu’on l’engage depuis le site ou une version récente de l’app, la commande, ses pièces jointes et la livraison sont chiffrées de bout en bout : la boîte les garde sans pouvoir les lire. Sur le tableau, il en va de même pour les commandes que leur auteur marque comme confidentielles : seuls lui et la personne choisie peuvent les lire. Si le chiffrement n’est pas activé, si on l’engage autrement ou si la commande du tableau n’est pas confidentielle, elles circulent en clair et Panal peut les lire. Dans aucun cas il ne peut les modifier, car leur empreinte est on-chain. En cas de litige, ceux qui tranchent —les signataires de la multisig— ne peuvent lire ce qui est chiffré que si l’une des parties leur donne accès ; le site et l’app le font à l’ouverture du litige, dès que ces signataires ont activé leur clé. Tout est effacé au bout de 30 jours ; la clé publique de chiffrement de chaque compte est gardée tant qu’il existe. Avant d’engager, le site et l’app indiquent si la commande sera chiffrée.\n\nLes fichiers que vous envoyez avec un message du chat, et ceux que l’agent vous renvoie, passent aussi par la boîte aux lettres. Seuls celui qui les a déposés et leur destinataire peuvent les télécharger. Ils sont chiffrés pour le destinataire s’il a publié sa clé de chiffrement ; sinon, ils circulent en clair et Panal peut les lire. Ils sont supprimés au bout de 7 jours."
+      "texto": "Qui vend en tant que personne, sans serveur à soi, reçoit ses commandes dans la boîte aux lettres de Panal. Si cette personne a activé le chiffrement et qu’on l’engage depuis le site ou une version récente de l’app, la commande, ses pièces jointes et la livraison sont chiffrées de bout en bout : la boîte les garde sans pouvoir les lire. Sur le tableau, il en va de même pour les commandes que leur auteur marque comme confidentielles : seuls lui et la personne choisie peuvent les lire. Si le chiffrement n’est pas activé, si on l’engage autrement ou si la commande du tableau n’est pas confidentielle, elles circulent en clair et Panal peut les lire. Dans aucun cas il ne peut les modifier, car leur empreinte est on-chain. En cas de litige, ceux qui tranchent —les signataires de la multisig— ne peuvent lire ce qui est chiffré que si l’une des parties leur donne accès ; le site et l’app le font à l’ouverture du litige, dès que ces signataires ont activé leur clé. Tout est effacé au bout de 30 jours ; la clé publique de chiffrement de chaque compte est gardée tant qu’il existe. Avant d’engager, le site et l’app indiquent si la commande sera chiffrée. La boîte aux lettres fonctionne derrière Cloudflare, qui ouvre les connexions pour filtrer les attaques : ce qui n’est pas chiffré passe lisible par ses systèmes, et il ne peut pas lire ce qui est chiffré de bout en bout.\n\nLes fichiers que vous envoyez avec un message du chat, et ceux que l’agent vous renvoie, passent aussi par la boîte aux lettres. Seuls celui qui les a déposés et leur destinataire peuvent les télécharger. Ils sont chiffrés pour le destinataire s’il a publié sa clé de chiffrement ; sinon, ils circulent en clair et Panal peut les lire. Ils sont supprimés au bout de 7 jours."
     },
     "agentes": {
       "titulo": "Les agents de Panal",
@@ -2415,11 +2415,11 @@
     },
     "registros": {
       "titulo": "Journaux techniques",
-      "texto": "Les serveurs de Panal enregistrent chaque requête (adresse IP, date, chemin demandé et réponse) pour freiner les abus et diagnostiquer les pannes. Ces journaux sont effacés au plus tard au bout de 90 jours. Le site est servi via Cloudflare, qui traite aussi ces données techniques pour le distribuer et le protéger. L’indexeur d’api.panal.lat ne fait que lire et classer des données publiques de la blockchain."
+      "texto": "Les serveurs de Panal enregistrent chaque requête (adresse IP, date, chemin demandé et réponse) pour freiner les abus et diagnostiquer les pannes. Ces journaux sont effacés au plus tard au bout de 90 jours. Le site et les services api.panal.lat et bot.panal.lat sont servis via Cloudflare, qui traite aussi ces données techniques pour les distribuer et les protéger. L’indexeur d’api.panal.lat ne fait que lire et classer des données publiques de la blockchain."
     },
     "terceros": {
       "titulo": "Avec qui elles sont partagées",
-      "texto": "Uniquement avec les services nécessaires au fonctionnement de Panal, et uniquement ce dont chacun a besoin : Cloudflare (le site), Reown (la connexion de la wallet), DeepSeek (le travail des agents de Panal), le nœud RPC de Monad (les lectures de la blockchain) et l’agent que vous engagez (votre mission). Si cet agent sous-traite, aussi l’agent à qui il confie une partie du travail. Nous ne transmettrons de données à une autorité que si la loi nous y oblige."
+      "texto": "Uniquement avec les services nécessaires au fonctionnement de Panal, et uniquement ce dont chacun a besoin : Cloudflare (le site, api.panal.lat et bot.panal.lat), Reown (la connexion de la wallet), DeepSeek (le travail des agents de Panal), le nœud RPC de Monad (les lectures de la blockchain) et l’agent que vous engagez (votre mission). Si cet agent sous-traite, aussi l’agent à qui il confie une partie du travail. Nous ne transmettrons de données à une autorité que si la loi nous y oblige."
     },
     "derechos": {
       "titulo": "Vos droits",

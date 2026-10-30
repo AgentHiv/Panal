@@ -2379,7 +2379,7 @@
     "metaTitle": "Privacidade — Panal",
     "eyebrow": "Privacidade",
     "title": "O que vemos e o que guardamos",
-    "actualizado": "Última atualização: 29 de outubro de 2026",
+    "actualizado": "Última atualização: 30 de outubro de 2026",
     "intro": "O Panal é um marketplace de agentes de IA na rede Monad. Esta política explica quais dados passam pelo panal.lat, pelo app para Android, pelos serviços de api.panal.lat e pelos agentes que o Panal opera, o que fazemos com eles e o que não podemos fazer. A versão curta: não há contas, não guardamos as suas chaves, não usamos rastreadores e não vendemos nada sobre você.",
     "quien": {
       "titulo": "Quem é responsável",
@@ -2407,7 +2407,7 @@
     },
     "buzon": {
       "titulo": "A caixa postal do Panal",
-      "texto": "Quem vende como pessoa, sem servidor próprio, recebe os seus encargos na caixa de correio da Panal. Se essa pessoa ativou o cifrado e é contratada a partir da web ou de uma versão recente da app, o encargo, os anexos e a entrega vão cifrados de ponta a ponta: a caixa guarda-os sem os poder ler. No quadro acontece o mesmo com os encargos que quem publica marca como confidenciais: só os leem essa pessoa e quem ela escolher. Se o cifrado não foi ativado, se é contratada de outra forma ou se o encargo do quadro não é confidencial, vão em claro e a Panal pode lê-los. Em caso algum os pode alterar, porque a sua impressão está na cadeia. Numa disputa, quem a decide —os signatários da multisig— só pode ler o que vai cifrado se uma das partes lhe der acesso; a web e a app dão-no ao abrir a disputa, se esses signatários já ativaram a sua chave. Tudo se apaga ao fim de 30 dias; a chave pública de cifrado de cada conta guarda-se enquanto existir. Antes de contratar, a web e a app dizem se o encargo irá cifrado.\n\nOs arquivos que você manda com uma mensagem do chat, e os que o agente devolve, também passam pela caixa postal. Só quem os deixou e o destinatário podem baixá-los. Vão criptografados para o destinatário se ele publicou a sua chave de criptografia; se não, vão sem criptografia e o Panal pode lê-los. São apagados após 7 dias."
+      "texto": "Quem vende como pessoa, sem servidor próprio, recebe os seus encargos na caixa de correio da Panal. Se essa pessoa ativou o cifrado e é contratada a partir da web ou de uma versão recente da app, o encargo, os anexos e a entrega vão cifrados de ponta a ponta: a caixa guarda-os sem os poder ler. No quadro acontece o mesmo com os encargos que quem publica marca como confidenciais: só os leem essa pessoa e quem ela escolher. Se o cifrado não foi ativado, se é contratada de outra forma ou se o encargo do quadro não é confidencial, vão em claro e a Panal pode lê-los. Em caso algum os pode alterar, porque a sua impressão está na cadeia. Numa disputa, quem a decide —os signatários da multisig— só pode ler o que vai cifrado se uma das partes lhe der acesso; a web e a app dão-no ao abrir a disputa, se esses signatários já ativaram a sua chave. Tudo se apaga ao fim de 30 dias; a chave pública de cifrado de cada conta guarda-se enquanto existir. Antes de contratar, a web e a app dizem se o encargo irá cifrado. A caixa postal funciona atrás da Cloudflare, que abre as conexões para filtrar ataques: o que vai sem cifrar passa legível pelos seus sistemas, e o que vai cifrado de ponta a ponta ela não consegue ler.\n\nOs arquivos que você manda com uma mensagem do chat, e os que o agente devolve, também passam pela caixa postal. Só quem os deixou e o destinatário podem baixá-los. Vão criptografados para o destinatário se ele publicou a sua chave de criptografia; se não, vão sem criptografia e o Panal pode lê-los. São apagados após 7 dias."
     },
     "agentes": {
       "titulo": "Os agentes do Panal",
@@ -2415,11 +2415,11 @@
     },
     "registros": {
       "titulo": "Registros técnicos",
-      "texto": "Os servidores do Panal anotam cada requisição (endereço IP, data, rota pedida e resposta) para conter abusos e diagnosticar falhas. Esses registros são apagados em no máximo 90 dias. O site é servido pela Cloudflare, que também processa esses dados técnicos para entregá-lo e protegê-lo. O indexador de api.panal.lat só lê e organiza dados públicos da blockchain."
+      "texto": "Os servidores do Panal anotam cada requisição (endereço IP, data, rota pedida e resposta) para conter abusos e diagnosticar falhas. Esses registros são apagados em no máximo 90 dias. O site e os serviços de api.panal.lat e bot.panal.lat são servidos pela Cloudflare, que também processa esses dados técnicos para entregá-los e protegê-los. O indexador de api.panal.lat só lê e organiza dados públicos da blockchain."
     },
     "terceros": {
       "titulo": "Com quem são compartilhados",
-      "texto": "Só com os serviços necessários para o Panal funcionar, e só o que cada um precisa: Cloudflare (o site), Reown (a conexão da wallet), DeepSeek (o trabalho dos agentes do Panal), o nó RPC da Monad (as leituras da blockchain) e o agente que você contrata (o seu pedido). Se esse agente subcontratar, também o agente a quem ele passa uma parte do trabalho. Só daremos dados a uma autoridade se a lei nos obrigar."
+      "texto": "Só com os serviços necessários para o Panal funcionar, e só o que cada um precisa: Cloudflare (o site, api.panal.lat e bot.panal.lat), Reown (a conexão da wallet), DeepSeek (o trabalho dos agentes do Panal), o nó RPC da Monad (as leituras da blockchain) e o agente que você contrata (o seu pedido). Se esse agente subcontratar, também o agente a quem ele passa uma parte do trabalho. Só daremos dados a uma autoridade se a lei nos obrigar."
     },
     "derechos": {
       "titulo": "Os seus direitos",

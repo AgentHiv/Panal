@@ -116,25 +116,27 @@ salta repartiendo la carga entre IP.
 
 ### Capa 2 · Cloudflare delante (antes de llegar a la máquina)
 
-**Antes de activarla hay que decidir tres cosas:**
+**Lo que implica:**
 
-- **Privacidad.** El buzón cuelga de `api.panal.lat`, así que Cloudflare pasaría
-  a ver los encargos que no van cifrados de punta a punta. La política de
-  privacidad dice que Cloudflare es «la web»: hay que cambiarla, en los diez
-  idiomas, *antes*.
-- **Plazos.** Cloudflare corta a los 100 s si el servidor no contesta (error
-  524), y una pregunta x402 al bot puede tardar hasta 120 s.
-- **Tamaño.** Probar una subida de 25 MB al buzón, y CORS con la web y con la
-  app: el MCP no pasa por CORS y lo taparía.
+- **Privacidad.** El buzón cuelga de `api.panal.lat`, así que Cloudflare puede ver
+  lo que no va cifrado de punta a punta. La política de privacidad ya lo dice:
+  tiene que estar publicada *antes* de poner la nube naranja.
+- **Plazos.** Cloudflare corta a los 100 s si el servidor no contesta (error 524).
+  Por eso una pregunta x402 al bot tiene un plazo total de 90 s (`http.ts`).
+- **No activar** «Bot Fight Mode» ni «Under Attack Mode»: el SDK, el MCP y los
+  agentes no son navegadores y no pasan sus pruebas.
 
-Después, en este orden:
+Antes de empezar, anota lo que tarda hoy (y compáralo después):
 
-1. **Certificado de origen.** Con la nube naranja, Let's Encrypt deja de ser
-   fiable. Cloudflare → SSL/TLS → Origin Server → crear uno para `*.panal.lat`,
-   guardarlo en `/etc/caddy/origen.pem` y `origen.key` (dueño `caddy`, permisos
-   600), y en cada sitio del Caddyfile añadir
-   `tls /etc/caddy/origen.pem /etc/caddy/origen.key`. Modo SSL: **Full (strict)**.
-2. **La IP real.** En el bloque `servers` del Caddyfile (rangos de
+```bash
+for u in 'https://api.panal.lat/index/agents?page=0&limit=500' 'https://bot.panal.lat/agent.json'; do
+  for i in 1 2 3 4 5; do curl -s -o /dev/null -w "%{time_total}s  $u\n" "$u"; done
+done
+```
+
+Después, en este orden. Hasta el paso 5, volver atrás es poner la nube gris:
+
+1. **La IP real.** En el bloque `servers` del Caddyfile (rangos de
    cloudflare.com/ips; revisarlos de vez en cuando):
 
    ```caddy
@@ -144,10 +146,28 @@ Después, en este orden:
 
    Sin esto, todas las visitas parecen una sola IP y el límite por IP se vuelve
    uno global, que cualquiera agota.
-3. **Nube naranja** en `api` y `bot`, y comprobar la web, la app y el buzón.
+2. **Nube naranja** en `api` y `bot`, con el modo SSL en **Full (strict)**: el
+   certificado de Let's Encrypt que ya tiene Caddy sigue valiendo. Comprobar la
+   web, la app y el buzón.
+3. **Caché del catálogo.** Es lo que más frena: la petición de la avalancha se
+   contesta sin llegar a la máquina. Cloudflare → Caching → Cache Rules, cuando
+   `Hostname` es `api.panal.lat`, `URI Path` es `/index/agents` y `URI Query String`
+   contiene `page=`: **Eligible for cache**, Edge TTL **Use cache-control header
+   if present, bypass cache if not**. Comprobar que `cf-cache-status` sale `HIT`
+   a la segunda petición, y que `/buzon/` sale `DYNAMIC`.
 4. **Regla de límite** en Cloudflare → Security → WAF → Rate limiting rules, por
-   IP, sobre `/index/`. Debe dejar pasar una carga normal del mercado.
-5. **Cerrar el origen.** La IP de la máquina ya es pública, así que sin esto se
+   IP, sobre `/index/`. Debe dejar pasar una carga normal del mercado, y no
+   tocar `/buzon/`, por donde pasan las subidas.
+5. **Probar a fondo:** la web, la app (CORS), el MCP y una subida de 25 MB al
+   buzón. El MCP no pasa por CORS y taparía un fallo.
+6. **Certificado de origen.** Con la nube naranja, renovar el de Let's Encrypt deja
+   de ser fiable. Cloudflare → SSL/TLS → Origin Server → crear uno para
+   `*.panal.lat`, guardarlo en `/etc/caddy/origen.pem` y `origen.key` (dueño
+   `caddy`, permisos 600) y en cada sitio del Caddyfile añadir
+   `tls /etc/caddy/origen.pem /etc/caddy/origen.key`. **Solo con la nube naranja
+   ya puesta:** los navegadores no se fían de este certificado, y a partir de
+   aquí poner la nube gris tumba la API si no se quita antes.
+7. **Cerrar el origen.** Solo con todo lo anterior bien. La IP de la máquina ya es pública, así que sin esto se
    puede atacar saltándose Cloudflare. Con una sesión SSH abierta de reserva:
 
    ```bash

@@ -29,8 +29,8 @@ function sleep(ms: number): Promise<void> {
  * Genera el resultado de una tarea. `brief` es el pedido del cliente
  * (mensaje user); el system prompt viene de SYSTEM_PROMPT.
  */
-export async function generateResult(cfg: BotConfig, brief: string): Promise<string> {
-  const raw = await chatWithSystem(cfg, cfg.llm.systemPrompt, brief);
+export async function generateResult(cfg: BotConfig, brief: string, plazoTotalMs?: number): Promise<string> {
+  const raw = await chatWithSystem(cfg, cfg.llm.systemPrompt, brief, plazoTotalMs);
   // Punto único de saneado: por aquí pasan TODAS las entregas al cliente (el
   // worker y las dos rutas de composición del A2A). El system prompt ya pide
   // texto plano, pero los modelos vuelven al Markdown cada pocas respuestas y
@@ -48,8 +48,16 @@ export async function generateResult(cfg: BotConfig, brief: string): Promise<str
  * A2A, el evaluador de sub-resultados y generateResult).
  *
  * Lanza error si todos los reintentos fallan: el caller decide si reintentar.
+ *
+ * `plazoTotalMs` acota la llamada entera, reintentos y esperas incluidos, para
+ * cuando alguien espera la respuesta al otro lado de la conexión.
  */
-export async function chatWithSystem(cfg: BotConfig, systemPrompt: string, user: string): Promise<string> {
+export async function chatWithSystem(
+  cfg: BotConfig,
+  systemPrompt: string,
+  user: string,
+  plazoTotalMs?: number,
+): Promise<string> {
   const { baseUrl, apiKey, model, timeoutMs, maxRetries } = cfg.llm;
   if (!apiKey) throw new Error('LLM_API_KEY no configurada');
 
@@ -58,10 +66,12 @@ export async function chatWithSystem(cfg: BotConfig, systemPrompt: string, user:
     { role: 'user', content: user },
   ];
 
+  const limite = plazoTotalMs === undefined ? null : Date.now() + plazoTotalMs;
   let lastError: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const margen = limite === null ? timeoutMs : Math.max(limite - Date.now(), 0);
+    const timer = setTimeout(() => controller.abort(), Math.min(timeoutMs, margen));
     try {
       const res = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
@@ -94,6 +104,7 @@ export async function chatWithSystem(cfg: BotConfig, systemPrompt: string, user:
       const msg = err instanceof Error ? err.message : String(err);
       if (attempt < maxRetries) {
         const wait = Math.min(2_000 * 2 ** attempt, 30_000);
+        if (limite !== null && Date.now() + wait >= limite) break;
         console.warn(`[llm] intento ${attempt + 1}/${maxRetries + 1} falló: ${msg}. Reintento en ${wait} ms…`);
         await sleep(wait);
       }
