@@ -5,7 +5,7 @@
  * solo funciona en archivos que exportan componentes y nada más.
  */
 
-import { formatEther, isAddress, isHex, type Address, type Hex } from 'viem';
+import { formatEther, getAddress, isAddress, isHex, type Address, type Hex } from 'viem';
 import { CLASES } from '@/lib/cik';
 
 /** Pastilla de cada clase: verde ok, terracota lo malicioso, miel lo dudoso. */
@@ -31,7 +31,9 @@ export function porcentaje(bps: bigint | number): string {
 /** Lo que se pega en el campo: una dirección, sin espacios ni comillas alrededor. */
 export function direccionPegada(texto: string): Address | null {
   const t = texto.trim().replace(/^["'`]|["'`]$/g, '');
-  return isAddress(t, { strict: false }) ? (t as Address) : null;
+  // La que se devuelve es la que reconstruye viem, no el texto pegado: acaba en
+  // enlaces (href) y así no hay camino del teclado al HTML (CodeQL, #367).
+  return isAddress(t, { strict: false }) ? getAddress(t) : null;
 }
 
 /** Bytecode pegado: hexadecimal con 0x, par de cifras, sin espacios ni saltos. */

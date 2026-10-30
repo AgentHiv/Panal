@@ -17,7 +17,7 @@ import { publicClient } from '@/contracts/config';
 import { CIK, SOURCIFY } from '@/contracts/cik';
 import { analizar, corta, leerParametros, type Analisis, type Parametros } from '@/lib/cik';
 import { useTituloDePagina } from '@/hooks/useTituloDePagina';
-import Analizador from '@/components/cik/Analizador';
+import Analizador, { type PedidoAnalisis } from '@/components/cik/Analizador';
 import Delegaciones from '@/components/cik/Delegaciones';
 import Politica from '@/components/cik/Politica';
 import Atestar from '@/components/cik/Atestar';
@@ -27,6 +27,9 @@ export default function Cik() {
   useTituloDePagina('cik.metaTitle');
   const [parametros, setParametros] = useState<Parametros | null>(null);
   const [analisis, setAnalisis] = useState<Analisis | null>(null);
+  // Un token pegado en delegaciones se manda a analizar arriba, como token.
+  const [pedido, setPedido] = useState<PedidoAnalisis | null>(null);
+  const atendido = useCallback(() => setPedido(null), []);
 
   useEffect(() => {
     let vivo = true;
@@ -49,8 +52,14 @@ export default function Cik() {
   return (
     <>
       <Portada parametros={parametros} />
-      <Analizador parametros={parametros} analisis={analisis} onAnalisis={setAnalisis} />
-      <Delegaciones />
+      <Analizador
+        parametros={parametros}
+        analisis={analisis}
+        onAnalisis={setAnalisis}
+        pedido={pedido}
+        onPedidoAtendido={atendido}
+      />
+      <Delegaciones onAnalizarToken={(direccion) => setPedido({ direccion, n: Date.now() })} />
       <Politica analisis={analisis} />
       <Atestar analisis={analisis} parametros={parametros} onCambio={refrescar} />
       <Detras parametros={parametros} />

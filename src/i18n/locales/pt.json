@@ -2483,20 +2483,44 @@
       "tipo": {
         "cuenta": "Conta delegada",
         "delegado": "Contrato",
-        "ninguna": "Conta sem delegação"
+        "ninguna": "Conta sem delegação",
+        "token": "Token"
       },
       "veredicto": {
         "ninguna": "Sem delegação",
         "conocido": "Conhecido",
         "desconocido": "Desconhecido",
-        "barredor": "Varredor"
+        "barredor": "Varredor",
+        "token": "É um token"
       },
       "consejo": {
         "ninguna": "Esta conta não executa o código de ninguém: o que ela recebe fica nela.",
-        "conocido": "É o código de uma carteira conhecida, da lista fixa do CiDelegate. É a única coisa que é uma garantia.",
-        "desconocido": "Ninguém revisou este código aqui. Não assine uma delegação para ele, nem envie fundos a uma conta delegada a ele, sem saber o que ele faz.",
-        "barredor": "Este código não assina como uma conta e esvazia saldos: o que chegar a uma conta delegada a ele é levado por outro. Não envie nada nem assine uma delegação para ele. Se for sua conta, passe o que restar para uma carteira nova."
+        "token": "Para saber se é uma armadilha, analise-o como token. E se alguém pedir que você assine uma delegação EIP-7702 para este endereço, não assine: nenhuma carteira delega em um token.",
+        "cuenta": {
+          "conocido": "O código é o autêntico dessa carteira. Isso não diz quem tem a chave da conta, só que o código dela não é um varredor.",
+          "desconocido": "Não envie fundos para esta conta sem saber o que esse código faz: ele pode movê-los sem pedir permissão a ninguém.",
+          "barredor": "Não envie nada: o que chegar é levado por outro. Se for sua conta, passe o que restar para uma carteira nova."
+        },
+        "delegado": {
+          "conocido": "É o código autêntico dessa carteira. Assine a delegação só pela própria carteira, nunca porque um site pediu.",
+          "desconocido": "Não assine uma delegação para este contrato sem saber o que ele faz: ele teria o controle de tudo o que há na sua conta.",
+          "barredor": "Não assine uma delegação para este contrato: ele esvaziaria sua conta. Se já assinou, passe o que restar para uma carteira nova."
+        }
       },
+      "porQue": "Por quê",
+      "razon": {
+        "token": "{{simbolo}} é um token, não uma conta nem um contrato em que delegar. As regras do CiDelegate julgam o código em que uma conta delega, e o de um token move saldos por natureza: elas o marcariam sem que isso dissesse nada sobre ele.",
+        "conocido": "É {{nombre}}, um dos seis contratos de carteira da lista fixa do CiDelegate.",
+        "barredor": "Não tem isValidSignature nem validateUserOp, então não assina como uma conta; e ao mesmo tempo pode tirar fundos ({{mueve}}) e procura o que levar ({{vacia}}). As três coisas juntas são o formato do código de um varredor: os 8 varredores medidos o tinham, e nenhuma das carteiras conhecidas o tem.",
+        "sinCodigo": "Não há código nesse endereço. Uma conta delegada a ele não faz nada hoje, mas executará o que alguém implantar ali amanhã.",
+        "cadena": "O delegado é, por sua vez, uma conta delegada, e a EVM não segue essa cadeia: o que é executado não é o que parece.",
+        "grande": "O código passa de 24 KB e dentro de uma transação não é percorrido inteiro: sem ver tudo, não dá para chamá-lo de varredor, nem deixar de chamar.",
+        "cuentaDesconocida": "Assina como uma conta ({{cuales}}), mas não é nenhuma das carteiras da lista fixa: pode ser uma conta inteligente legítima ou uma cópia feita para enganar.",
+        "proxy": "Repassa as chamadas para outro contrato (delegatecall): o que ele faz de verdade está em outro endereço, e pode mudar sem que este código mude.",
+        "otro": "Não está na lista de conhecidos nem tem o formato de um varredor. Não parecer não o torna seguro: ninguém revisou aqui o que ele faz."
+      },
+      "sinSimbolo": "Este contrato",
+      "analizarToken": "Analisar como token",
       "delegadoA": "Delegada a",
       "contrato": "Contrato",
       "codigo": "Código",

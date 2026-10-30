@@ -2483,20 +2483,44 @@
       "tipo": {
         "cuenta": "Compte délégué",
         "delegado": "Contrat",
-        "ninguna": "Compte sans délégation"
+        "ninguna": "Compte sans délégation",
+        "token": "Token"
       },
       "veredicto": {
         "ninguna": "Sans délégation",
         "conocido": "Connu",
         "desconocido": "Inconnu",
-        "barredor": "Balayeur"
+        "barredor": "Balayeur",
+        "token": "C’est un token"
       },
       "consejo": {
         "ninguna": "Ce compte n’exécute le code de personne : ce qu’il reçoit y reste.",
-        "conocido": "C’est le code d’un portefeuille connu, de la liste fixe de CiDelegate. C’est la seule chose qui soit une garantie.",
-        "desconocido": "Personne n’a examiné ce code ici. Ne signez pas de délégation vers lui, et n’envoyez pas de fonds à un compte délégué vers lui, sans savoir ce qu’il fait.",
-        "barredor": "Ce code ne signe pas comme un compte et vide les soldes : ce qui arrive sur un compte délégué vers lui est emporté par quelqu’un d’autre. N’envoyez rien et ne signez pas de délégation vers lui. Si c’est votre compte, transférez ce qui reste vers un nouveau portefeuille."
+        "token": "Pour savoir si c’est un piège, analysez-le comme token. Et si quelqu’un vous demande de signer une délégation EIP-7702 vers cette adresse, refusez : aucun portefeuille ne délègue vers un token.",
+        "cuenta": {
+          "conocido": "Le code est l’authentique de ce portefeuille. Cela ne dit pas qui détient la clé du compte, seulement que son code n’est pas un balayeur.",
+          "desconocido": "N’envoyez pas de fonds à ce compte sans savoir ce que fait ce code : il peut les déplacer sans demander la permission à personne.",
+          "barredor": "Ne lui envoyez rien : ce qui arrive est emporté par quelqu’un d’autre. Si c’est votre compte, transférez ce qui reste vers un nouveau portefeuille."
+        },
+        "delegado": {
+          "conocido": "C’est le code authentique de ce portefeuille. Signez la délégation uniquement depuis le portefeuille lui-même, jamais parce qu’un site vous le demande.",
+          "desconocido": "Ne signez pas de délégation vers ce contrat sans savoir ce qu’il fait : il contrôlerait tout ce qu’il y a sur votre compte.",
+          "barredor": "Ne signez pas de délégation vers ce contrat : il viderait votre compte. Si vous l’avez déjà signée, transférez ce qui reste vers un nouveau portefeuille."
+        }
       },
+      "porQue": "Pourquoi",
+      "razon": {
+        "token": "{{simbolo}} est un token, pas un compte ni un contrat vers lequel déléguer. Les règles de CiDelegate jugent le code vers lequel un compte délègue, et celui d’un token déplace des soldes par nature : elles le signaleraient sans rien dire de lui.",
+        "conocido": "C’est {{nombre}}, l’un des six contrats de portefeuille de la liste fixe de CiDelegate.",
+        "barredor": "Il n’a ni isValidSignature ni validateUserOp, donc il ne signe pas comme un compte ; et en même temps il peut sortir des fonds ({{mueve}}) et cherche quoi emporter ({{vacia}}). Les trois ensemble sont la forme du code d’un balayeur : les 8 balayeurs mesurés l’avaient, aucun des portefeuilles connus ne l’a.",
+        "sinCodigo": "Il n’y a pas de code à cette adresse. Un compte délégué vers elle ne fait rien aujourd’hui, mais exécutera ce que quelqu’un y déploiera demain.",
+        "cadena": "Le délégué est lui-même un compte délégué, et l’EVM ne suit pas cette chaîne : ce qui s’exécute n’est pas ce qu’il semble.",
+        "grande": "Le code dépasse 24 Ko et n’est pas parcouru en entier dans une transaction : sans tout voir, on ne peut ni le qualifier de balayeur, ni l’écarter.",
+        "cuentaDesconocida": "Il signe comme un compte ({{cuales}}), mais ce n’est aucun des portefeuilles de la liste fixe : ce peut être un compte intelligent légitime ou une copie faite pour tromper.",
+        "proxy": "Il transmet les appels à un autre contrat (delegatecall) : ce qu’il fait vraiment se trouve à une autre adresse, et peut changer sans que ce code change.",
+        "otro": "Il n’est pas dans la liste des connus et n’a pas la forme d’un balayeur. Ne pas en avoir l’air ne le rend pas sûr : personne n’a vérifié ici ce qu’il fait."
+      },
+      "sinSimbolo": "Ce contrat",
+      "analizarToken": "L’analyser comme token",
       "delegadoA": "Délégué à",
       "contrato": "Contrat",
       "codigo": "Code",

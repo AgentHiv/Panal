@@ -7,7 +7,7 @@
  * que quien mire pueda comprobarlo él mismo.
  */
 
-import { useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowUpRight, Check, Copy, Loader2, Search } from 'lucide-react';
 import type { Address } from 'viem';
@@ -35,20 +35,40 @@ import { CaminoDecision, DesgloseRiesgo, EscalaVeredicto, MapaFeatures, MedidorR
 
 type Pestana = 'direccion' | 'codigo';
 
+/** Una dirección que otro apartado manda analizar aquí (un token pegado en delegaciones). `n` distingue dos pedidos iguales. */
+export type PedidoAnalisis = { direccion: Address; n: number };
+
 export default function Analizador({
   parametros,
   analisis,
   onAnalisis,
+  pedido,
+  onPedidoAtendido,
 }: {
   parametros: Parametros | null;
   analisis: Analisis | null;
   onAnalisis: (a: Analisis | null) => void;
+  pedido?: PedidoAnalisis | null;
+  /** Se llama al lanzar el análisis pedido: quien lo pidió lo vacía, y volver a esta pestaña no lo repite. */
+  onPedidoAtendido?: () => void;
 }) {
   const { t } = useTranslation();
   const [pestana, setPestana] = useState<Pestana>('direccion');
+  const seccion = useRef<HTMLElement>(null);
+
+  // Un pedido de fuera vuelve a la pestaña de dirección (estado derivado, en el
+  // render) y sube hasta aquí (el DOM, en un efecto).
+  const [pedidoVisto, setPedidoVisto] = useState<number | null>(null);
+  if (pedido && pedido.n !== pedidoVisto) {
+    setPedidoVisto(pedido.n);
+    setPestana('direccion');
+  }
+  useEffect(() => {
+    if (pedido) seccion.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [pedido]);
 
   return (
-    <section id="analizar" className="border-b border-line bg-cream py-20">
+    <section ref={seccion} id="analizar" className="border-b border-line bg-cream py-20">
       <div className="container-hive">
         <h2 className="display-m text-ink">{t('cik.analizar.title')}</h2>
         <p className="mt-3 max-w-2xl leading-[1.65] text-ink-2">{t('cik.analizar.sub')}</p>
@@ -73,7 +93,13 @@ export default function Analizador({
 
         <div className="mt-6">
           {pestana === 'direccion' ? (
-            <PorDireccion parametros={parametros} analisis={analisis} onAnalisis={onAnalisis} />
+            <PorDireccion
+              parametros={parametros}
+              analisis={analisis}
+              onAnalisis={onAnalisis}
+              pedido={pedido}
+              onPedidoAtendido={onPedidoAtendido}
+            />
           ) : (
             <PorCodigo />
           )}
@@ -89,31 +115,53 @@ function PorDireccion({
   parametros,
   analisis,
   onAnalisis,
+  pedido,
+  onPedidoAtendido,
 }: {
   parametros: Parametros | null;
   analisis: Analisis | null;
   onAnalisis: (a: Analisis | null) => void;
+  pedido?: PedidoAnalisis | null;
+  onPedidoAtendido?: () => void;
 }) {
   const { t } = useTranslation();
   const [texto, setTexto] = useState('');
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const lanzar = async (direccion: Address) => {
-    setCargando(true);
-    setError(null);
-    try {
-      const a = await analizar(publicClient as never, direccion);
-      onAnalisis(a);
-      // Una cuenta delegada con EIP-7702 no es un token: sale su delegación, no un error.
-      if (!a.esContrato && !a.delegacion) setError(t('cik.analizar.noContrato'));
-    } catch {
-      onAnalisis(null);
-      setError(t('cik.analizar.error'));
-    } finally {
-      setCargando(false);
-    }
-  };
+  const lanzar = useCallback(
+    async (direccion: Address) => {
+      setCargando(true);
+      setError(null);
+      try {
+        const a = await analizar(publicClient as never, direccion);
+        onAnalisis(a);
+        // Una cuenta delegada con EIP-7702 no es un token: sale su delegación, no un error.
+        if (!a.esContrato && !a.delegacion) setError(t('cik.analizar.noContrato'));
+      } catch {
+        onAnalisis(null);
+        setError(t('cik.analizar.error'));
+      } finally {
+        setCargando(false);
+      }
+    },
+    [onAnalisis, t],
+  );
+
+  // Cada pedido de fuera, una vez: la dirección va a la casilla (en el render)
+  // y se analiza (en un efecto: es leer la cadena).
+  const [pedidoVisto, setPedidoVisto] = useState<number | null>(null);
+  if (pedido && pedido.n !== pedidoVisto) {
+    setPedidoVisto(pedido.n);
+    setTexto(pedido.direccion);
+  }
+  const lanzado = useRef<number | null>(null);
+  useEffect(() => {
+    if (!pedido || pedido.n === lanzado.current) return;
+    lanzado.current = pedido.n;
+    void lanzar(pedido.direccion);
+    onPedidoAtendido?.();
+  }, [pedido, lanzar, onPedidoAtendido]);
 
   const enviar = (e: FormEvent) => {
     e.preventDefault();
