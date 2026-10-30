@@ -178,6 +178,16 @@ Después, en este orden. Hasta el paso 5, volver atrás es poner la nube gris:
    ufw status numbered
    ```
 
+### Vigilar los rangos de Cloudflare
+
+Si Cloudflare añade un rango, sus nodos no llegan a la máquina y salen errores
+intermitentes. Este script lo mira a diario, solo avisa (por el Telegram del bot) y
+no toca el firewall:
+
+```bash
+ln -s /root/Panal/bot/deploy/revisar-rangos-cloudflare.sh /etc/cron.daily/revisar-rangos-cloudflare
+```
+
 ## Solución de problemas
 
 | Síntoma | Causa típica | Fix |
