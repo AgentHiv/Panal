@@ -62,6 +62,27 @@ minimumReleaseAgeExclude:
 #   - axios < 1.20: varias de gravedad alta (DoS, prototype pollution, proxy).
 #   - ws 8.0–8.21: DoS por agotamiento de memoria.
 # Quitar de aquí cuando las dependencias que las traen ya pidan versiones buenas.
+#
+# Añadidas el 2026-10-30 (las 7 alertas de Dependabot de ese día):
+#   - follow-redirects 1.16.0 (axios): dos altas, cabeceras con credenciales que
+#     pasan a otro origen al seguir una redirección. 1.16.2 cabe en el rango de axios.
+#   - postcss-selector-parser 6.1.4 (Tailwind): selectores que cuestan tiempo
+#     cuadrático. 6.1.5 cabe en su rango, y solo corre al compilar el CSS.
+#   - uuid 7, 8 y 9 (MetaMask SDK, y xcode por la CLI de Capacitor): salto a 11,
+#     que exporta lo mismo (`v4` desde la raíz del paquete, que es lo único que usan).
+# Ninguna de estas tres entra en lo que se descarga la web o el APK: lo comprueban
+# los source maps del build. Se suben porque es gratis, no porque corriera peligro.
+#
+# Y dos que se quedan como están, a propósito:
+#   - zod 3 (abitype viejo, SDK de Coinbase, AppKit de Reown, que fija 3.22.4 aun
+#     en su última versión): el arreglo solo existe en zod 4, que cambia la API.
+#   - decode-uri-component 0.2.2 (query-string 7, de WalletConnect): el arreglo
+#     es 0.5.1, que ya es solo ESM, y query-string 7 lo carga con `require`.
+# Tampoco entran en el bundle —WalletConnect se empaqueta sin query-string y nadie
+# del bundle usa zod—, así que forzarlas rompería librerías para nada.
 overrides:
   axios: ^1.20.0
   'ws@>=8.0.0 <8.21.0': ^8.21.0
+  'follow-redirects@<1.16.2': ^1.16.2
+  'postcss-selector-parser@>=6.0.0 <6.1.5': ^6.1.5
+  'uuid@<11.1.1': ^11.1.1
