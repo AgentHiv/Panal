@@ -11,12 +11,16 @@
  * está delegada (antes de mandarle nada); con un CONTRATO, qué pasaría si
  * delegaras en él (antes de firmar la autorización). Lo dice `CiDelegate` en la
  * cadena, con reglas fijas sobre el código del delegado; la página no calcula
- * nada.
+ * el veredicto, solo dice por qué sale, con las mismas reglas.
+ *
+ * Un TOKEN no pasa por ahí: nadie delega en el código de un token, y ese código
+ * cumple la regla del barredor sin serlo. Se dice que es un token y se ofrece
+ * analizarlo como tal, arriba.
  */
 
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpRight, Loader2, ShieldAlert, ShieldCheck, ShieldQuestion, ShieldX } from 'lucide-react';
+import { ArrowUp, ArrowUpRight, Coins, Loader2, ShieldAlert, ShieldCheck, ShieldQuestion, ShieldX } from 'lucide-react';
 import type { Address } from 'viem';
 import { publicClient, EXPLORER_ADDRESS } from '@/contracts/config';
 import { CIK, SOURCIFY } from '@/contracts/cik';
@@ -48,7 +52,16 @@ const TONO: Record<(typeof VEREDICTOS_DELEGACION)[number], string> = {
 
 const ICONO = { ninguna: ShieldQuestion, conocido: ShieldCheck, desconocido: ShieldAlert, barredor: ShieldX };
 
-export default function Delegaciones() {
+/** Bits de `CiDelegate`, para decir por qué sale cada veredicto con sus mismas reglas (`_judge`). */
+const CUENTA = 1 | 2; // isValidSignature, validateUserOp
+const MUEVE = 4 | 8 | 16 | 32; // CALL, DELEGATECALL, SELFDESTRUCT, CREATE
+const VACIA = 64 | 128; // SELFBALANCE, transfer
+const DELEGATECALL = 8;
+const SIN_CODIGO = 512;
+const CADENA = 1024;
+const GRANDE = 2048;
+
+export default function Delegaciones({ onAnalizarToken }: { onAnalizarToken?: (direccion: Address) => void }) {
   const { t } = useTranslation();
   const [texto, setTexto] = useState('');
   const [cargando, setCargando] = useState(false);
@@ -118,7 +131,7 @@ export default function Delegaciones() {
         {error && <p className="mt-4 text-[0.875rem] text-terra">{error}</p>}
         {resultado && (
           <div className="mt-6">
-            <ResultadoDelegacion direccion={resultado.direccion} d={resultado.d} />
+            <ResultadoDelegacion direccion={resultado.direccion} d={resultado.d} onAnalizarToken={onAnalizarToken} />
           </div>
         )}
       </div>
@@ -126,13 +139,26 @@ export default function Delegaciones() {
   );
 }
 
-/** El veredicto de `CiDelegate`, lo que se ve en el código y qué hacer. Lo usa también el analizador. */
-export function ResultadoDelegacion({ direccion, d }: { direccion: Address; d: Delegacion }) {
+/** El veredicto de `CiDelegate`, por qué sale, qué hacer y lo que se ve en el código. Lo usa también el analizador. */
+export function ResultadoDelegacion({
+  direccion,
+  d,
+  onAnalizarToken,
+}: {
+  direccion: Address;
+  d: Delegacion;
+  onAnalizarToken?: (direccion: Address) => void;
+}) {
   const { t, i18n } = useTranslation();
+  if (d.tipo === 'token') return <ResultadoToken direccion={direccion} simbolo={d.simbolo ?? ''} onAnalizar={onAnalizarToken} />;
+
   const veredicto = VEREDICTOS_DELEGACION[d.veredicto] ?? 'desconocido';
   const Icono = ICONO[veredicto];
   const nombre = d.delegado ? DELEGADOS_CONOCIDOS[d.delegado.toLowerCase()] : undefined;
   const banderas = BANDERAS_DELEGACION.filter((b) => d.banderas & b.bit);
+  const razon = razonDe(d, veredicto, nombre, t);
+  const consejo =
+    veredicto === 'ninguna' ? t('cik.delegacion.consejo.ninguna') : t(`cik.delegacion.consejo.${d.tipo}.${veredicto}`);
 
   return (
     <div className="rounded-2xl border border-line bg-cream p-5 md:p-6">
@@ -145,9 +171,14 @@ export function ResultadoDelegacion({ direccion, d }: { direccion: Address; d: D
         <span className="text-[0.9375rem] font-semibold">{t(`cik.delegacion.veredicto.${veredicto}`)}</span>
       </div>
 
-      <p className="mt-4 max-w-2xl text-[0.9375rem] leading-[1.6] text-ink">
-        {t(`cik.delegacion.consejo.${veredicto}`, { tipo: t(`cik.delegacion.tipo.${d.tipo}`) })}
-      </p>
+      {razon && (
+        <div className="mt-4 max-w-2xl">
+          <p className="text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('cik.delegacion.porQue')}</p>
+          <p className="mt-1.5 text-[0.9375rem] leading-[1.6] text-ink-2">{razon}</p>
+        </div>
+      )}
+
+      <p className="mt-4 max-w-2xl text-[0.9375rem] font-medium leading-[1.6] text-ink">{consejo}</p>
 
       {d.delegado && (
         <dl className="mt-5 grid gap-x-6 gap-y-2 text-[0.875rem] sm:grid-cols-[auto_1fr]">
@@ -192,6 +223,77 @@ export function ResultadoDelegacion({ direccion, d }: { direccion: Address; d: D
         {t('cik.delegacion.fuente')}{' '}
         <a href={SOURCIFY(CIK.delegate)} target="_blank" rel="noreferrer" className="font-mono hover:text-honey-deep">
           CiDelegate {corta(CIK.delegate)}
+        </a>
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Por qué sale este veredicto, en el mismo orden en que lo decide `_judge`:
+ * conocido; sin código; otra cuenta delegada; demasiado grande para recorrerlo;
+ * forma de barredor; y si no, lo que más pesa de lo que se ve.
+ */
+function razonDe(
+  d: Delegacion,
+  veredicto: (typeof VEREDICTOS_DELEGACION)[number],
+  nombre: string | undefined,
+  t: (clave: string, o?: Record<string, unknown>) => string,
+): string | null {
+  const lista = (mascara: number) =>
+    BANDERAS_DELEGACION.filter((b) => d.banderas & b.bit & mascara)
+      .map((b) => t(`cik.delegacion.bandera.${b.clave}`))
+      .join(', ');
+  const f = d.banderas;
+  if (veredicto === 'ninguna') return null;
+  if (veredicto === 'conocido') return t('cik.delegacion.razon.conocido', { nombre: nombre ?? corta(d.delegado ?? '') });
+  if (veredicto === 'barredor') return t('cik.delegacion.razon.barredor', { mueve: lista(MUEVE), vacia: lista(VACIA) });
+  if (f & SIN_CODIGO) return t('cik.delegacion.razon.sinCodigo');
+  if (f & CADENA) return t('cik.delegacion.razon.cadena');
+  if (f & GRANDE) return t('cik.delegacion.razon.grande');
+  if (f & CUENTA) return t('cik.delegacion.razon.cuentaDesconocida', { cuales: lista(CUENTA) });
+  if (f & DELEGATECALL) return t('cik.delegacion.razon.proxy');
+  return t('cik.delegacion.razon.otro');
+}
+
+/** Un token pegado en la casilla de delegaciones: qué es, por qué no se juzga aquí y dónde sí. */
+function ResultadoToken({
+  direccion,
+  simbolo,
+  onAnalizar,
+}: {
+  direccion: Address;
+  simbolo: string;
+  onAnalizar?: (direccion: Address) => void;
+}) {
+  const { t } = useTranslation();
+  const nombre = simbolo || t('cik.delegacion.sinSimbolo');
+  return (
+    <div className="rounded-2xl border border-line bg-cream p-5 md:p-6">
+      <p className="font-mono text-[0.8125rem] text-ink-3">
+        {t('cik.delegacion.tipo.token')} · {corta(direccion)}
+      </p>
+      <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-line bg-paper px-3.5 py-1.5 text-ink-2">
+        <Coins size={16} aria-hidden />
+        <span className="text-[0.9375rem] font-semibold">
+          {simbolo ? `${t('cik.delegacion.veredicto.token')} · ${simbolo}` : t('cik.delegacion.veredicto.token')}
+        </span>
+      </div>
+      <div className="mt-4 max-w-2xl">
+        <p className="text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-ink-3">{t('cik.delegacion.porQue')}</p>
+        <p className="mt-1.5 text-[0.9375rem] leading-[1.6] text-ink-2">{t('cik.delegacion.razon.token', { simbolo: nombre })}</p>
+      </div>
+      <p className="mt-4 max-w-2xl text-[0.9375rem] font-medium leading-[1.6] text-ink">{t('cik.delegacion.consejo.token')}</p>
+      {onAnalizar && (
+        <button type="button" onClick={() => onAnalizar(direccion)} className={cn(BOTON_MIEL, 'mt-5 px-5 py-2.5')}>
+          <ArrowUp size={15} aria-hidden />
+          {t('cik.delegacion.analizarToken')}
+        </button>
+      )}
+      <p className="mt-5 text-[0.75rem] leading-[1.6] text-ink-3">
+        <a href={EXPLORER_ADDRESS(direccion)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono hover:text-honey-deep">
+          {direccion}
+          <ArrowUpRight size={13} aria-hidden />
         </a>
       </p>
     </div>

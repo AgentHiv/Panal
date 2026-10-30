@@ -2483,20 +2483,44 @@
       "tipo": {
         "cuenta": "Cuenta delegada",
         "delegado": "Contrato",
-        "ninguna": "Cuenta sin delegación"
+        "ninguna": "Cuenta sin delegación",
+        "token": "Token"
       },
       "veredicto": {
         "ninguna": "Sin delegación",
         "conocido": "Conocido",
         "desconocido": "Desconocido",
-        "barredor": "Barredor"
+        "barredor": "Barredor",
+        "token": "Es un token"
       },
       "consejo": {
         "ninguna": "Esta cuenta no ejecuta el código de nadie: lo que reciba se queda en ella.",
-        "conocido": "Es el código de una wallet conocida, de la lista fija de CiDelegate. Es lo único que es una garantía.",
-        "desconocido": "Nadie ha revisado aquí este código. No firmes una delegación a él, ni mandes fondos a una cuenta delegada a él, sin saber qué hace.",
-        "barredor": "Este código no firma como una cuenta y vacía saldos: lo que llegue a una cuenta delegada a él se lo lleva otro. No le mandes nada ni firmes una delegación a él. Si es tu cuenta, pasa lo que quede a una wallet nueva."
+        "token": "Para saber si es una trampa, analízalo como token. Y si alguien te pide firmar una delegación EIP-7702 a esta dirección, no lo hagas: ninguna wallet delega en un token.",
+        "cuenta": {
+          "conocido": "El código es el auténtico de esa wallet. Eso no dice quién tiene la clave de la cuenta, solo que su código no es un barredor.",
+          "desconocido": "No mandes fondos a esta cuenta sin saber qué hace ese código: puede moverlos sin pedir permiso a nadie.",
+          "barredor": "No le mandes nada: lo que llegue se lo lleva otro. Si es tu cuenta, pasa lo que quede a una wallet nueva."
+        },
+        "delegado": {
+          "conocido": "Es el código auténtico de esa wallet. Firma la delegación solo desde la propia wallet, nunca porque te lo pida una página.",
+          "desconocido": "No firmes una delegación a este contrato sin saber qué hace: tendría el control de todo lo que hay en tu cuenta.",
+          "barredor": "No firmes una delegación a este contrato: vaciaría tu cuenta. Si ya la firmaste, pasa lo que quede a una wallet nueva."
+        }
       },
+      "porQue": "Por qué",
+      "razon": {
+        "token": "{{simbolo}} es un token, no una cuenta ni un contrato en el que delegar. Las reglas de CiDelegate juzgan el código en el que se delega una cuenta, y el de un token mueve saldos por oficio: lo marcarían sin que eso dijera nada de él.",
+        "conocido": "Es {{nombre}}, uno de los seis contratos de wallet que CiDelegate tiene en su lista fija.",
+        "barredor": "No tiene isValidSignature ni validateUserOp, así que no firma como una cuenta; y a la vez puede sacar fondos ({{mueve}}) y busca qué llevarse ({{vacia}}). Las tres cosas juntas son la forma del código de un barredor: la tenían los 8 barredores medidos y ninguna de las wallets conocidas.",
+        "sinCodigo": "En esa dirección no hay código. Una cuenta delegada en ella no hace nada hoy, pero ejecutará lo que alguien despliegue ahí mañana.",
+        "cadena": "El delegado es a su vez una cuenta delegada, y la EVM no sigue esa cadena: lo que se ejecuta no es lo que parece.",
+        "grande": "El código pasa de 24 KB y dentro de una transacción no se recorre entero: sin verlo todo no se le puede llamar barredor, ni dejar de llamárselo.",
+        "cuentaDesconocida": "Firma como una cuenta ({{cuales}}), pero no es ninguna de las wallets de la lista fija: puede ser una cuenta inteligente legítima o una copia hecha para engañar.",
+        "proxy": "Reenvía las llamadas a otro contrato (delegatecall): lo que hace de verdad está en otra dirección, y puede cambiar sin que cambie este código.",
+        "otro": "No está en la lista de conocidos ni tiene la forma de un barredor. Que no lo parezca no lo hace seguro: nadie ha revisado aquí qué hace."
+      },
+      "sinSimbolo": "Este contrato",
+      "analizarToken": "Analizarlo como token",
       "delegadoA": "Delegada a",
       "contrato": "Contrato",
       "codigo": "Código",

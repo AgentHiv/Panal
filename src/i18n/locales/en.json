@@ -2483,20 +2483,44 @@
       "tipo": {
         "cuenta": "Delegated account",
         "delegado": "Contract",
-        "ninguna": "Account without delegation"
+        "ninguna": "Account without delegation",
+        "token": "Token"
       },
       "veredicto": {
         "ninguna": "No delegation",
         "conocido": "Known",
         "desconocido": "Unknown",
-        "barredor": "Sweeper"
+        "barredor": "Sweeper",
+        "token": "It is a token"
       },
       "consejo": {
         "ninguna": "This account does not run anyone's code: what it receives stays in it.",
-        "conocido": "This is a known wallet's code, from CiDelegate's fixed list. It is the only thing that is a guarantee.",
-        "desconocido": "Nobody has reviewed this code here. Do not sign a delegation to it, or send funds to an account delegated to it, without knowing what it does.",
-        "barredor": "This code does not sign like an account and empties balances: whatever reaches an account delegated to it is taken by someone else. Send it nothing and do not sign a delegation to it. If it is your account, move what is left to a new wallet."
+        "token": "To find out whether it is a trap, analyze it as a token. And if anyone asks you to sign an EIP-7702 delegation to this address, do not: no wallet delegates to a token.",
+        "cuenta": {
+          "conocido": "The code is that wallet’s genuine one. That says nothing about who holds the account’s key, only that its code is not a sweeper.",
+          "desconocido": "Do not send funds to this account without knowing what that code does: it can move them without anyone’s permission.",
+          "barredor": "Send it nothing: whatever arrives is taken by someone else. If it is your account, move what is left to a new wallet."
+        },
+        "delegado": {
+          "conocido": "It is that wallet’s genuine code. Sign the delegation only from the wallet itself, never because a website asks you to.",
+          "desconocido": "Do not sign a delegation to this contract without knowing what it does: it would control everything in your account.",
+          "barredor": "Do not sign a delegation to this contract: it would empty your account. If you already signed it, move what is left to a new wallet."
+        }
       },
+      "porQue": "Why",
+      "razon": {
+        "token": "{{simbolo}} is a token, not an account or a contract to delegate to. CiDelegate’s rules judge the code an account delegates to, and a token’s code moves balances by design: they would flag it without saying anything about it.",
+        "conocido": "It is {{nombre}}, one of the six wallet contracts on CiDelegate’s fixed list.",
+        "barredor": "It has neither isValidSignature nor validateUserOp, so it does not sign like an account; and at the same time it can take funds out ({{mueve}}) and looks for what to take ({{vacia}}). Those three together are the shape of a sweeper’s code: all 8 measured sweepers had it, and none of the known wallets do.",
+        "sinCodigo": "There is no code at that address. An account delegated to it does nothing today, but will run whatever someone deploys there tomorrow.",
+        "cadena": "The delegate is itself a delegated account, and the EVM does not follow that chain: what runs is not what it seems.",
+        "grande": "The code is over 24 KB and is not scanned in full inside a transaction: without seeing all of it, it cannot be called a sweeper, nor cleared.",
+        "cuentaDesconocida": "It signs like an account ({{cuales}}), but it is none of the wallets on the fixed list: it may be a legitimate smart account or a copy made to deceive.",
+        "proxy": "It forwards calls to another contract (delegatecall): what it really does lives at another address, and can change without this code changing.",
+        "otro": "It is not on the known list and does not have a sweeper’s shape. Not looking like one does not make it safe: nobody has reviewed here what it does."
+      },
+      "sinSimbolo": "This contract",
+      "analizarToken": "Analyze it as a token",
       "delegadoA": "Delegated to",
       "contrato": "Contract",
       "codigo": "Code",

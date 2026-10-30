@@ -31,7 +31,13 @@ export const WMON: Address = '0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A';
 
 const CERO: Address = '0x0000000000000000000000000000000000000000';
 
-const ABI_ERC20 = parseAbi(['function name() view returns (string)', 'function symbol() view returns (string)']);
+const ABI_ERC20 = parseAbi([
+  'function name() view returns (string)',
+  'function symbol() view returns (string)',
+  'function decimals() view returns (uint8)',
+  'function totalSupply() view returns (uint256)',
+  'function balanceOf(address) view returns (uint256)',
+]);
 
 /** 0 ok, 1 drainer, 2 honeypot, 3 sospechoso: el orden de `Ci`. */
 export const CLASES = ['ok', 'drainer', 'honeypot', 'sospechoso'] as const;
@@ -727,13 +733,19 @@ export interface Delegacion {
    * `cuenta`: una cuenta ya delegada, y se juzga su delegado. `delegado`: un
    * contrato, y se juzga qué pasaría si una cuenta se delegara en él.
    * `ninguna`: una cuenta sin delegación, que no ejecuta el código de nadie.
+   * `token`: un contrato que es un token. No se le pregunta a `CiDelegate`:
+   * sus reglas son para el código en el que delega una cuenta, y el de un
+   * token mueve saldos por oficio (WMON y MONAD PRINTER salían «barredor»,
+   * $PANAL y USDC, proxies, «desconocido»). Lo suyo es el analizador de tokens.
    */
-  tipo: 'cuenta' | 'delegado' | 'ninguna';
+  tipo: 'cuenta' | 'delegado' | 'ninguna' | 'token';
   delegado: Address | null;
   /** Índice de `VEREDICTOS_DELEGACION`. */
   veredicto: number;
   banderas: number;
   tamano: number;
+  /** Con `tipo: 'token'`, su símbolo; vacío si no lo da. */
+  simbolo?: string;
 }
 
 export const VEREDICTOS_DELEGACION = ['ninguna', 'conocido', 'desconocido', 'barredor'] as const;
@@ -778,6 +790,10 @@ export async function delegacionDe(cliente: PublicClient, direccion: Address, co
   const c = codigo ?? (await cliente.getCode({ address: direccion }));
   if (!c || c === '0x') return { tipo: 'ninguna', delegado: null, veredicto: 0, banderas: 0, tamano: 0 };
   const cuenta = esCuentaDelegada(c);
+  if (!cuenta) {
+    const simbolo = await simboloSiEsToken(cliente, direccion);
+    if (simbolo !== null) return { tipo: 'token', delegado: null, veredicto: 0, banderas: 0, tamano: (c.length - 2) / 2, simbolo };
+  }
   const r = await cliente.readContract({
     address: CIK.delegate,
     abi: ciDelegateAbi,
@@ -791,4 +807,25 @@ export async function delegacionDe(cliente: PublicClient, direccion: Address, co
     banderas: r.flags,
     tamano: r.codeSize,
   };
+}
+
+/**
+ * El símbolo del token, o null si la dirección no responde como un ERC-20
+ * (`totalSupply`, `decimals` y `balanceOf` a la vez). A través de un proxy
+ * también contesta, que es lo que hace falta con $PANAL o USDC.
+ *
+ * Un barredor que imitara a un token saldría aquí como token, y está bien: lo
+ * que se dice de un token es que nadie delega en él y que no se firme una
+ * delegación a esa dirección.
+ */
+async function simboloSiEsToken(cliente: PublicClient, direccion: Address): Promise<string | null> {
+  const erc20 = { address: direccion, abi: ABI_ERC20 } as const;
+  const [supply, decimales, saldo, simbolo] = await Promise.all([
+    intentar(() => cliente.readContract({ ...erc20, functionName: 'totalSupply' })),
+    intentar(() => cliente.readContract({ ...erc20, functionName: 'decimals' })),
+    intentar(() => cliente.readContract({ ...erc20, functionName: 'balanceOf', args: [CERO] })),
+    intentar(() => cliente.readContract({ ...erc20, functionName: 'symbol' })),
+  ]);
+  if (supply === undefined || decimales === undefined || saldo === undefined) return null;
+  return limpio(simbolo ?? '').slice(0, 24);
 }
