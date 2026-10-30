@@ -372,6 +372,15 @@ export function createIndexServer(deps: IndexServerDeps): Server {
         }
 
         const includeInactive = url.searchParams.get('include_inactive') === 'true';
+        // Sin búsqueda, Cloudflare puede guardarla y responder sin llegar aquí (ver
+        // HTTPS.md). Para eso no puede depender de quién pregunta: la primera
+        // petición sin Origin dejaría guardada una respuesta sin CORS, y la web se
+        // quedaría sin catálogo. Son datos públicos y no lleva credenciales.
+        if (!q && !skill) {
+          res.setHeader('access-control-allow-origin', '*');
+          res.removeHeader('vary');
+          res.setHeader('cache-control', 'public, max-age=0, s-maxage=10');
+        }
         const clave = !q && !skill && catalogoCacheMs > 0 ? `${page}:${limit}:${includeInactive}` : null;
         const guardada = clave ? catalogoCache.get(clave) : undefined;
         if (guardada && guardada.hasta > Date.now()) {

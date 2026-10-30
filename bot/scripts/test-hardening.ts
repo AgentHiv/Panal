@@ -19,6 +19,7 @@ import { verificarDominio } from '../src/verificar-dominio.js';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import { allowedOrigin, assertPublicUrl, clientIp, crearLimitador, escuchar, fetchJsonLimited, sinBarraFinal } from '../src/net.js';
 import { createIndexServer } from '../src/indexer-http.js';
+import { chatWithSystem } from '../src/llm.js';
 import { untrustedBlock } from '../src/a2a.js';
 import { ContractFunctionRevertedError } from 'viem';
 import { esRevert, withRetry } from '../src/chain.js';
@@ -293,20 +294,55 @@ async function main(): Promise<void> {
     const base = `http://127.0.0.1:${typeof dir === 'object' ? dir?.port : 0}/index/agents`;
     const nombre = async (query: string) => {
       const r = await fetch(`${base}?${query}`, { headers: { origin: 'https://panal.lat' } });
-      return { cors: r.headers.get('access-control-allow-origin'), body: (await r.json()) as { agents: { name: string }[]; total: number } };
+      return {
+        cors: r.headers.get('access-control-allow-origin'),
+        cache: r.headers.get('cache-control'),
+        vary: r.headers.get('vary'),
+        body: (await r.json()) as { agents: { name: string }[]; total: number },
+      };
     };
     const a = await nombre('page=0&limit=500');
     const b = await nombre('page=0&limit=500');
     check('la segunda no se monta otra vez', montadas === 1 && b.body.agents[0]?.name === 'montada-1', `${montadas} montadas`);
-    check('la guardada lleva su CORS, igual que la primera', a.cors === 'https://panal.lat' && b.cors === a.cors, `${a.cors} / ${b.cors}`);
+    check('sirve a cualquier origen, también la guardada', a.cors === '*' && b.cors === '*', `${a.cors} / ${b.cors}`);
+    check('Cloudflare puede guardarla, y no depende del origen', b.cache?.includes('s-maxage=10') === true && b.vary === null, `${b.cache} / ${b.vary}`);
     await nombre('page=1&limit=500');
     check('otra página es otra entrada', montadas === 2, `${montadas} montadas`);
     await nombre('q=lint&page=0&limit=500');
-    await nombre('q=lint&page=0&limit=500');
-    check('una búsqueda no se guarda', montadas === 4, `${montadas} montadas`);
+    const busqueda = await nombre('q=lint&page=0&limit=500');
+    check('una búsqueda no se guarda', montadas === 4 && busqueda.cache === null, `${montadas} montadas, ${busqueda.cache}`);
+    check('y sigue con el CORS de siempre', busqueda.cors === 'https://panal.lat', String(busqueda.cors));
     await new Promise((resolve) => setTimeout(resolve, 250));
     const c = await nombre('page=0&limit=500');
     check('pasado el plazo, se monta de nuevo', c.body.agents[0]?.name === `montada-${montadas}` && montadas === 5, `${montadas} montadas`);
+    await new Promise((resolve) => server.close(resolve));
+  }
+
+  console.log('\n── 9. Una respuesta con plazo no se pasa de él ──');
+  {
+    let llamadas = 0;
+    let modo: 'colgado' | 'error' = 'colgado';
+    const server = createServer((_req, res) => {
+      llamadas++;
+      if (modo === 'error') {
+        res.writeHead(500);
+        res.end();
+      } // colgado: nunca contesta
+    });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const dir = server.address();
+    const cfg = {
+      llm: { baseUrl: `http://127.0.0.1:${typeof dir === 'object' ? dir?.port : 0}`, apiKey: 'x', model: 'm', timeoutMs: 60_000, maxRetries: 3 },
+    } as never;
+    let t0 = Date.now();
+    await chatWithSystem(cfg, 's', 'u', 300).catch(() => undefined);
+    check('colgado: corta en el plazo, no a los 60 s', Date.now() - t0 < 1_500 && llamadas === 1, `${Date.now() - t0} ms, ${llamadas} llamadas`);
+    modo = 'error';
+    llamadas = 0;
+    t0 = Date.now();
+    await chatWithSystem(cfg, 's', 'u', 500).catch(() => undefined);
+    check('con error: no espera un reintento que no cabe', Date.now() - t0 < 1_500 && llamadas === 1, `${Date.now() - t0} ms, ${llamadas} llamadas`);
+    server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
   }
 

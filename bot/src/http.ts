@@ -163,6 +163,16 @@ export const MAX_BRIEF_CHARS = 32_000;
 const MAX_BRIEF_BODY_BYTES = MAX_BRIEF_CHARS * 4 + 4_096;
 
 /**
+ * Cuánto puede tardar la respuesta de una pregunta x402, reintentos incluidos.
+ *
+ * Aquí se cobra ANTES de responder, y quien paga está esperando: Cloudflare corta
+ * a los 100 s y el cliente abandona a los 120 s. Sin este tope, con 120 s y tres
+ * reintentos del LLM, el agente podía seguir trabajando minutos después de que
+ * el cliente, ya cobrado, se hubiera ido. Mejor un error a tiempo, con su tx.
+ */
+const X402_PLAZO_RESPUESTA_MS = 90_000;
+
+/**
  * Tope del body de POST /x402/ask. Va aparte a propósito: ahí se cobra una
  * tarifa fija por pregunta, así que un prompt enorme lo acaba pagando el
  * agente en tokens. Compartir constante con /brief ataba dos límites que
@@ -962,7 +972,7 @@ export function startResultServer(cfg: BotConfig, clients: ChainClients, store: 
           payment,
           price,
         ),
-      answer: (prompt) => generateResult(cfg, prompt),
+      answer: (prompt) => generateResult(cfg, prompt, X402_PLAZO_RESPUESTA_MS),
     };
   } else if (cfg.x402.enabled) {
     console.warn('   ⚠ X402_ENABLED pero sin wallet del bot: el cobro por llamada queda deshabilitado.');
