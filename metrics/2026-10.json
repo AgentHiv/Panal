@@ -1,0 +1,172 @@
+{
+  "month": "2026-10",
+  "takenAt": "2026-10-31T23:59:59.000Z",
+  "cutoff": "2026-11-01T00:00:00.000Z",
+  "block": "118321696",
+  "sources": {
+    "chain": "Monad mainnet (143)",
+    "registry": "0x89a812BFb1c35fc814ef25a3E6Ca75068B16Ac51",
+    "escrow": "0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9",
+    "indexer": "https://api.panal.lat/index/events",
+    "board": "0x2Cfc6803E269fa9BF728e202736a7bc0547ae149",
+    "boardMetrics": "https://api.panal.lat/index/board/metrics"
+  },
+  "agents": {
+    "registered": 17,
+    "active": 13
+  },
+  "tasks": {
+    "created": 110,
+    "byStatus": {
+      "Open": 3,
+      "Completed": 101,
+      "Delivered": 4,
+      "Cancelled": 2
+    },
+    "completedVolume": {
+      "MON": "20.63",
+      "$PANAL": "376691"
+    }
+  },
+  "paidBy": {
+    "team": {
+      "created": 70,
+      "completed": 66
+    },
+    "unconfirmed": {
+      "created": 9,
+      "completed": 7
+    },
+    "collaborator": {
+      "created": 9,
+      "completed": 8
+    },
+    "outside": {
+      "created": 22,
+      "completed": 20,
+      "byRegisteredAgents": 3,
+      "distinctWallets": 9
+    }
+  },
+  "activity": {
+    "daysWithNothingInLast30": 19,
+    "lastEvent": "2026-10-27T23:34:08.000Z"
+  },
+  "board": {
+    "from": 1790812800,
+    "to": 1793491200,
+    "volume": {
+      "posted": 7,
+      "assigned": 0,
+      "withdrawn": 2,
+      "expired": 0,
+      "relisted": 0,
+      "postedByCoin": {
+        "MON": "2",
+        "$PANAL": "312000"
+      },
+      "postedUsd": 0.93
+    },
+    "speed": {
+      "immediate": null,
+      "selection": null
+    },
+    "competition": {
+      "medianOffers": null,
+      "noOfferShare": 1,
+      "medianPriceToBudget": null
+    },
+    "choice": {
+      "byClient": 0,
+      "automatic": 0,
+      "notCheapest": 0
+    },
+    "delivery": {
+      "completed": 0,
+      "cancelled": 0,
+      "disputes": 0,
+      "refundedByCoin": {},
+      "refundedUsd": 0
+    },
+    "penalties": {
+      "strikes": 0,
+      "suspensions7d": 0,
+      "suspensions30d": 0,
+      "agents": 0
+    },
+    "agents": {
+      "tookJobs": 0,
+      "atLevelOneOrMoreAtCut": 0
+    },
+    "byCategory": [
+      {
+        "category": 6,
+        "jobs": 1,
+        "noOffer": 1,
+        "medianByCoin": {
+          "$PANAL": "50000"
+        }
+      },
+      {
+        "category": 7,
+        "jobs": 5,
+        "noOffer": 5,
+        "medianByCoin": {
+          "$PANAL": "50000"
+        }
+      },
+      {
+        "category": 10,
+        "jobs": 1,
+        "noOffer": 1,
+        "medianByCoin": {
+          "MON": "2"
+        }
+      }
+    ],
+    "lastBlock": 119217934,
+    "prices": {
+      "mon": {
+        "usd": 0.01926439,
+        "publishedAt": "2026-10-31T23:59:57.000Z",
+        "source": "pyth"
+      },
+      "panal": {
+        "usd": 0.0000028549753590411974,
+        "inMon": 0.00014819962423109155,
+        "source": "nadfun-curva"
+      }
+    }
+  },
+  "wallets": {
+    "team": [
+      "0x5BACc4d590beB71895EE25A238f30824649eF9d5",
+      "0x34A264A9B0b43E58197BaD7adE6FE84dED6Ddd1D",
+      "0x86622fcFf353850C3B9AeCA07160B0088927A77B",
+      "0x6073443C233382613622F3400447a26c9eC6b7B4",
+      "0x8a672775121DeB778E19158425b34eE4F85F8539",
+      "0x1558cF6aed695F3F8AafE488058EfE28d216E69C",
+      "0x6e4D695C1ca538d26d8323dC22239d30950B8Aa7",
+      "0x7Fb3fC7e8b8c0b1748FbB94e1CD5a9b5620296F6",
+      "0xDf90CD49278720741024a23ACb449b28A3F5FB50",
+      "0x6B61322C6a6b6DbE5B2c42Aba1C36169F07eD4aB",
+      "0x0c9F2e29236D2BB866C71f562f0ab175CEae975F",
+      "0x9E73eEF9895d1071c78F86e02D6FfAC252CB0fd4",
+      "0x17b59Ac5B740De1549F6F92D47599Eaaf99F9302",
+      "0x85E6B7eeA9AF20C6Fd00920A9664BdCf76014379",
+      "0x8E9c1Cf58c1F510e22022ebE1Bfd65c4cd6C0308",
+      "0x1b8686C56fD74B3903B18B5D6c80C0A146fd578b"
+    ],
+    "unconfirmed": [
+      "0x69D084926e68af78cDa512eF1Bf2c3e7B4307CBf",
+      "0xc549eB590563e317a6159DC7624d2AF48b056ED5",
+      "0x1227BDB6188D4700AaE6eA02E3a128832D0FE2cF",
+      "0xA6FBFA88372dd099ee0b48A9B4D86A3b8B596B25",
+      "0x9A3f5EF84E1018c1e8273e892929bBa20Ab2FDEF",
+      "0xCd03be819bE71cdc7f9f4063ECDa9D6E62Fd56F2"
+    ],
+    "collaborator": [
+      "0x6f2e22f3470749ea93D0AE1Ddc8197016edCaf39"
+    ]
+  }
+}

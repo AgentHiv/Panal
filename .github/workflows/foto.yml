@@ -12,10 +12,12 @@
 # A mano (`workflow_dispatch`) saca la de un mes concreto, siempre que sea de
 # los últimos ~5 días: más atrás, el RPC de Monad ya no sirve ese estado.
 #
-# DÓNDE ESCRIBE. Hace commit directo a `main` con el token del propio flujo. Si
-# algún día `main` se protege contra pushes directos, este paso fallará a la
-# vista —no en silencio— y habrá que cambiarlo a abrir un PR. Un push hecho con
-# ese token no dispara otros flujos, así que no relanza el CI por un JSON.
+# DÓNDE ESCRIBE. En la rama `metrics/AAAA-MM`, y abre un aviso con el enlace para
+# abrir el PR. Hasta octubre de 2026 hacía commit directo a `main`, y desde que
+# `main` exige PR (regla del 8 de octubre) el push fallaba: la foto de octubre no
+# se guardó y hubo que sacarla a mano antes de que el RPC perdiera ese estado.
+# El PR no lo abre este flujo: uno abierto con su token no lanzaría los checks
+# obligatorios y no se podría fusionar. Abierto por una persona, sí.
 
 name: Foto del mes
 
@@ -31,6 +33,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   foto:
@@ -70,14 +73,30 @@ jobs:
       - name: Sacar la foto
         run: pnpm foto -- --mes ${{ steps.toca.outputs.mes }}
 
-      - name: Guardarla en main
+      - name: Guardarla en su rama y avisar
+        env:
+          MES: ${{ steps.toca.outputs.mes }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
           git config user.name "panal-foto"
           git config user.email "panal-foto@users.noreply.github.com"
           git add metrics/
           if git diff --cached --quiet; then
-            echo "La foto no cambió nada."
+            echo "La foto no cambió nada: ya estaba en main."
             exit 0
           fi
-          git commit -m "metrics: snapshot for ${{ steps.toca.outputs.mes }}"
-          git push origin HEAD:main
+          RAMA="metrics/$MES"
+          git commit -m "metrics: snapshot for $MES"
+          # La segunda ejecución del mes escribe lo mismo: si la rama ya lo tiene,
+          # no se avisa otra vez.
+          if git fetch --depth 1 origin "$RAMA" 2>/dev/null && git diff --quiet FETCH_HEAD HEAD -- metrics/; then
+            echo "La rama $RAMA ya tiene esta foto."
+            exit 0
+          fi
+          git push --force origin "HEAD:refs/heads/$RAMA"
+          URL="https://github.com/$REPO/pull/new/$RAMA"
+          echo "La foto de $MES está en la rama $RAMA. Abre el PR: $URL" >> "$GITHUB_STEP_SUMMARY"
+          gh issue create --repo "$REPO" \
+            --title "La foto de $MES está lista para fusionar" \
+            --body "La foto del mes está en la rama \`$RAMA\`. Abre el PR y fusiónalo: $URL"
