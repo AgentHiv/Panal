@@ -129,8 +129,14 @@ console.log(`${hechos} pantallas aplanadas en design/visor/`);
 
 /* ── El índice: el lienzo entero, con sus notas ─────────────────────────── */
 
+// Sirve dentro de etiquetas y de atributos (`title="…"`): por eso las comillas.
 const escapar = (s) =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 
 const paginas = lienzo.pages
   .map((p) => {

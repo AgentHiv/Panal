@@ -126,17 +126,14 @@ export function textoDeDocx(bytes: Uint8Array): string | null {
   if (!doc) return null;
   const xml = comoTexto(doc.bytes);
   if (!xml) return null;
-  return xml
+  // Lo que sale es texto para el modelo, no HTML: nunca se pinta en una página.
+  const texto = xml
     .replace(/<w:p\b[^>]*\/>/g, '\n')
     .replace(/<\/w:p>/g, '\n')
     .replace(/<w:tab\b[^>]*\/>/g, '\t')
     .replace(/<w:br\b[^>]*\/>/g, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
+    .replace(/<[^>]+>/g, '');
+  return desescapar(texto)
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -150,15 +147,26 @@ function columnaDe(ref: string): number {
   return n - 1;
 }
 
-/** Lo que el XML trae escapado, de vuelta a texto. */
-function desescapar(s: string): string {
-  return s
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number(d)))
-    .replace(/&amp;/g, '&');
+const ENTIDADES: Record<string, string> = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
+
+/**
+ * Lo que el XML trae escapado, de vuelta a texto.
+ *
+ * En UNA sola pasada, y no con un `replace` por entidad: así cada entidad se
+ * lee una vez y lo que sale de ella ya no se vuelve a mirar. Con un reemplazo
+ * detrás de otro, un documento que hablara de HTML y escribiera «&quot;» (en
+ * el XML, `&amp;quot;`) salía como `"`, porque el `&amp;` se convertía en `&`
+ * y luego el `&quot;` resultante en comillas.
+ *
+ * Lo que no se reconoce, o un número que no es un carácter, se deja tal cual:
+ * antes un `&#99999999;` hacía saltar `fromCodePoint` y se perdía el archivo.
+ */
+export function desescapar(s: string): string {
+  return s.replace(/&(?:(lt|gt|amp|quot|apos)|#(\d{1,7})|#x([0-9a-fA-F]{1,6}));/g, (todo, nombre?: string, dec?: string, hex?: string) => {
+    if (nombre) return ENTIDADES[nombre] ?? todo;
+    const n = dec !== undefined ? Number(dec) : Number.parseInt(hex ?? '', 16);
+    return n <= 0x10ffff ? String.fromCodePoint(n) : todo;
+  });
 }
 
 /**

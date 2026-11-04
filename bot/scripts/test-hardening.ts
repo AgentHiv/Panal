@@ -134,18 +134,20 @@ async function main(): Promise<void> {
 
   let server: Server | undefined;
   try {
-    const bodies: Record<string, () => string> = {
-      '/ok': () => JSON.stringify({ resultText: 'hola' }),
-      '/enorme': () => JSON.stringify({ resultText: 'x'.repeat(200_000) }),
-      '/roto': () => 'esto no es json',
-    };
+    // El texto ya hecho, y no una función por ruta: así la URL solo elige qué
+    // se devuelve, nunca qué se ejecuta.
+    const bodies = new Map<string, string>([
+      ['/ok', JSON.stringify({ resultText: 'hola' })],
+      ['/enorme', JSON.stringify({ resultText: 'x'.repeat(200_000) })],
+      ['/roto', 'esto no es json'],
+    ]);
     server = createServer((req, res) => {
-      const make = bodies[(req.url ?? '/').split('?')[0]!];
-      if (!make) {
+      const body = bodies.get((req.url ?? '/').split('?')[0]!);
+      if (body === undefined) {
         res.writeHead(404).end('{}');
         return;
       }
-      res.writeHead(200, { 'content-type': 'application/json' }).end(make());
+      res.writeHead(200, { 'content-type': 'application/json' }).end(body);
     });
     await new Promise<void>((r) => server!.listen(0, '127.0.0.1', r));
     const port = (server.address() as { port: number }).port;
