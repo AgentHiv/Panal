@@ -50,11 +50,6 @@ interface TelegramResponse<T> {
   description?: string;
 }
 
-/** Escapa caracteres especiales del modo Markdown "legacy" de Telegram. */
-export function escapeMarkdown(text: string): string {
-  return text.replace(/([_*`[])/g, '\\$1');
-}
-
 export class Telegram {
   private readonly cfg: BotConfig;
   private readonly enabled: boolean;

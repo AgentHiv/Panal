@@ -15,7 +15,7 @@
  * aqui. Hace falta un PDF ajeno para cerrar ese hueco.
  */
 
-import { comoTexto, leerAdjuntos, textoDeDocx, textoDeXlsx, tipoDe } from '../template/src/adjuntos.js';
+import { comoTexto, desescapar, leerAdjuntos, textoDeDocx, textoDeXlsx, tipoDe } from '../template/src/adjuntos.js';
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -340,6 +340,15 @@ check('se saca el texto de un .docx', !!docx && docx.includes('Contrato de servi
 check('y las cifras que trae', !!docx && docx.includes('500'));
 check('una frase partida por Word no se rompe', !!docx && docx.includes('contratante'), String(docx));
 check('los parrafos siguen siendo parrafos', !!docx && docx.split('\n').filter(Boolean).length >= 3);
+
+console.log('\n── Entidades del XML ──\n');
+
+check('las cinco de siempre', desescapar('&lt;a&gt; &amp; &quot;b&quot; &apos;c&apos;') === `<a> & "b" 'c'`);
+check('un «&quot;» escrito en el documento no se vuelve comillas', desescapar('&amp;quot;') === '&quot;');
+check('ni un «&lt;» se vuelve <', desescapar('&amp;lt;') === '&lt;');
+check('por número, decimal y hexadecimal', desescapar('&#241;&#xF1;') === 'ññ');
+check('un número que no es carácter se queda como está', desescapar('&#99999999;') === '&#99999999;');
+check('lo desconocido, también', desescapar('&nbsp; & sola') === '&nbsp; & sola');
 
 console.log('\n── Carpetas ──\n');
 

@@ -104,8 +104,11 @@ export function dialectoDe(baseUrl: string): LlmDialecto {
   } catch {
     return 'openai';
   }
-  if (host.endsWith('anthropic.com')) return 'anthropic';
-  if (host.endsWith('googleapis.com')) return 'gemini';
+  // El dominio o un subdominio suyo, nunca un final de texto: con `endsWith`
+  // a secas, `otroanthropic.com` se tomaba por Anthropic.
+  const de = (dominio: string) => host === dominio || host.endsWith(`.${dominio}`);
+  if (de('anthropic.com')) return 'anthropic';
+  if (de('googleapis.com')) return 'gemini';
   return 'openai';
 }
 

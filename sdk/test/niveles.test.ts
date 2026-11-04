@@ -52,6 +52,8 @@ console.log('\ny da la vuelta sin ceros de relleno, que en la cadena se pagan');
 check('3e16 se escribe 0.03', weiAPrecio(30000000000000000n) === '0.03');
 check('1e18 se escribe 1', weiAPrecio(1000000000000000000n) === '1');
 check('un wei se escribe entero', weiAPrecio(1n) === '0.000000000000000001');
+check('cero se escribe 0', weiAPrecio(0n) === '0');
+check('10 enteros conservan sus ceros', weiAPrecio(10_000000000000000000n) === '10');
 const ida = ['0.03', '1', '0.5', '12.75', '0.000000000000000001'];
 check(
   'ida y vuelta para todos',

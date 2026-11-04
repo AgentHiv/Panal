@@ -100,7 +100,8 @@ export function precioAWei(precio: string): bigint | null {
 export function weiAPrecio(wei: bigint): string {
   const s = wei.toString().padStart(DECIMALES + 1, '0');
   const entera = s.slice(0, -DECIMALES);
-  const decimal = s.slice(-DECIMALES).replace(/0+$/, '');
+  let decimal = s.slice(-DECIMALES);
+  while (decimal.endsWith('0')) decimal = decimal.slice(0, -1);
   return decimal ? `${entera}.${decimal}` : entera;
 }
 

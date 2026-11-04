@@ -68,6 +68,10 @@ test('el dialecto se adivina por el host', () => {
   assert.equal(dialectoDe('https://api.x.ai/v1'), 'openai');
   // Lo desconocido se trata como OpenAI, que es lo que implementa casi todo.
   assert.equal(dialectoDe('https://algo-nuevo.example/v1'), 'openai');
+  // El dominio entero, no un final de texto.
+  assert.equal(dialectoDe('https://anthropic.com'), 'anthropic');
+  assert.equal(dialectoDe('https://otroanthropic.com/v1'), 'openai');
+  assert.equal(dialectoDe('https://falsogoogleapis.com/v1'), 'openai');
 });
 
 test('un proveedor por nombre trae URL, dialecto y modelo', () => {
