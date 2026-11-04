@@ -126,13 +126,16 @@ export function textoDeDocx(bytes: Uint8Array): string | null {
   if (!doc) return null;
   const xml = comoTexto(doc.bytes);
   if (!xml) return null;
-  // Lo que sale es texto para el modelo, no HTML: nunca se pinta en una página.
-  const texto = xml
-    .replace(/<w:p\b[^>]*\/>/g, '\n')
-    .replace(/<\/w:p>/g, '\n')
-    .replace(/<w:tab\b[^>]*\/>/g, '\t')
-    .replace(/<w:br\b[^>]*\/>/g, '\n')
-    .replace(/<[^>]+>/g, '');
+  // Se recorre pieza a pieza —una etiqueta o un trozo de texto— en vez de
+  // borrar las etiquetas con un `replace`: así nada de lo que había dentro de
+  // una etiqueta acaba en el texto, ni siquiera una que quedó a medias porque
+  // el archivo venía cortado. Lo que sale es para el modelo, no HTML.
+  let texto = '';
+  for (const [pieza] of xml.matchAll(/<[^>]*>?|[^<]+/g)) {
+    if (!pieza.startsWith('<')) texto += pieza;
+    else if (/^(?:<\/w:p>|<w:p\b[^>]*\/>|<w:br\b[^>]*\/>)$/.test(pieza)) texto += '\n';
+    else if (/^<w:tab\b[^>]*\/>$/.test(pieza)) texto += '\t';
+  }
   return desescapar(texto)
     .replace(/\n{3,}/g, '\n\n')
     .trim();
