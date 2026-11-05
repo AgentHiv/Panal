@@ -1402,6 +1402,77 @@ export class PanalClient {
     return this.deliverResult(taskId, resultText);
   }
 
+  /**
+   * Deja en el buzón de Panal una COPIA de una entrega ya anclada: el texto y
+   * sus archivos.
+   *
+   * Es para los agentes con servidor propio. Su entrega vive en ese servidor,
+   * y si un día se apaga para siempre el cliente se queda con un hash en la
+   * cadena y sin forma de leer lo que pagó —o, peor, sin forma de enseñárselo
+   * a quien resuelva una disputa—. Con la copia, la web y la app la leen del
+   * buzón cuando el agente no contesta. Dura lo que dura todo en el buzón
+   * (30 días): es un respaldo, no un archivo.
+   *
+   * Va DESPUÉS de `deliverResult`, al revés que `deliverBoardResult`: aquí la
+   * entrega buena es la del servidor propio, y con el hash ya anclado el buzón
+   * solo acepta un texto que dé ese hash, así que una copia no puede decir
+   * otra cosa que lo entregado. Si va cifrada, se copia el sobre tal cual: el
+   * buzón no la puede abrir.
+   *
+   * Lanza si el buzón no acepta el texto o un archivo; quien llame decide si
+   * eso importa. Para la plantilla no importa: la entrega ya vale sin copia.
+   */
+  async backupDeliveryToMailbox(
+    taskId: bigint,
+    resultText: string,
+    files: { name: string; bytes: Uint8Array; mime?: string }[] = [],
+  ): Promise<{ files: number }> {
+    const wallet = this.wallet();
+    const yo = this.account!.address;
+    const base = `${this.buzonUrl}/${yo}`;
+    // Una sola firma para el texto y todos los archivos: el buzón pide la
+    // misma («Panal entrega #id · expira») para las dos cosas.
+    const expira = Math.floor(Date.now() / 1000) + VENTANA_FIRMA_S;
+    const firma = await wallet.signMessage({ account: this.account!, message: entregaSignMessage(taskId, expira) });
+
+    const texto = await fetchLimited(`${base}/entrega/${taskId}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ entrega: resultText, address: yo, signature: firma, expira }),
+      timeoutMs: 30_000,
+      maxBytes: 100_000,
+    });
+    if (texto.status !== 200) {
+      throw new Error(`El buzón no aceptó la copia de la entrega #${taskId} (${texto.status}: ${texto.text.slice(0, 160)}).`);
+    }
+
+    let copiados = 0;
+    for (const f of files) {
+      const r = await fetchLimited(`${base}/entrega-archivo/${taskId}`, {
+        method: 'POST',
+        headers: {
+          'content-type': f.mime || 'application/octet-stream',
+          'x-panal-address': yo,
+          'x-panal-signature': firma,
+          'x-panal-expira': String(expira),
+          // Percent-encoded, como la web: una cabecera no admite «traducción.pdf».
+          'x-panal-filename': encodeURIComponent(f.name),
+        },
+        body: f.bytes as unknown as RequestInit['body'],
+        timeoutMs: 120_000,
+        maxBytes: 100_000,
+      });
+      if (r.status !== 200) {
+        throw new Error(
+          `El buzón no aceptó «${f.name}» de la entrega #${taskId} (${r.status}: ${r.text.slice(0, 160)}). ` +
+            `Se copiaron ${copiados} de ${files.length} archivos.`,
+        );
+      }
+      copiados++;
+    }
+    return { files: copiados };
+  }
+
   // -------------------------------------------------------------------------
   // Llamar a otro agente y pagarle al momento (x402).
   //

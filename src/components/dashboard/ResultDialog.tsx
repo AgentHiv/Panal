@@ -29,7 +29,7 @@ import {
   publicClient,
 } from '@/contracts/config';
 import { panalRegistryAbi, panalRegistryV2Abi } from '@/contracts/abis';
-import { buildResultUrl, cabecerasFirma, expiraEn, extractBotUrl, resultSignMessage } from '@/lib/botEndpoint';
+import { buildResultUrl, cabecerasFirma, esBuzon, expiraEn, extractBotUrl, resultSignMessage, urlDeBuzon } from '@/lib/botEndpoint';
 import { useWallet } from '@/hooks/useWallet';
 import type { RealTask } from '@/hooks/useMyTasks';
 import { cn } from '@/lib/utils';
@@ -39,6 +39,7 @@ import AvisoEjecutable from '@/components/AvisoEjecutable';
 import {
   FileVerificationError,
   downloadDeliveredFile,
+  enLaCopiaDelBuzon,
   formatBytes,
   parseFilesManifest,
   stripFilesManifest,
@@ -91,6 +92,11 @@ export default function ResultDialog({ task }: { task: RealTask }) {
   const [signature, setSignature] = useState<{ firma: string; expira: number } | null>(null);
   /** Si lo que se ve salió del navegador y no del agente, ahora mismo. */
   const [deCopia, setDeCopia] = useState(copia !== null);
+  /**
+   * La entrega se leyó de la copia que el agente dejó en el buzón de Panal,
+   * porque él no contestó. Se dice en pantalla, y los archivos se piden ahí.
+   */
+  const [deLaCopiaDelBuzon, setDeLaCopiaDelBuzon] = useState(false);
   /** Si la entrega venía cifrada: sus archivos también, y hay que abrirlos. */
   const [cifrada, setCifrada] = useState(() => copia?.claro !== undefined);
   /** Estado de cada descarga, por nombre de archivo. */
@@ -152,7 +158,7 @@ export default function ResultDialog({ task }: { task: RealTask }) {
 
   // 2+3. Firmar y descargar.
   const signAndFetch = async () => {
-    if (!botUrl || !address) return;
+    if (!address) return;
     try {
       setPhase('signing');
       // La firma caduca, y la caducidad va dentro de lo firmado. Se guarda con
@@ -160,17 +166,33 @@ export default function ResultDialog({ task }: { task: RealTask }) {
       // la MISMA firma abre luego cada archivo de la entrega.
       const { firma, expira } = await conFirma();
       setPhase('fetching');
-      const res = await fetch(buildResultUrl(botUrl, task.id), {
-        headers: cabecerasFirma(address, firma, expira),
-      });
-      if (res.status === 403) {
+      const cabeceras = cabecerasFirma(address, firma, expira);
+      // Primero el agente, que es donde vive la entrega. Si no contesta —o ya
+      // no publica dónde—, la copia que dejó en el buzón de Panal: la misma
+      // firma la abre, y su hash se comprueba igual que el de aquí.
+      const delAgente = botUrl
+        ? await fetch(buildResultUrl(botUrl, task.id), { headers: cabeceras }).catch(() => null)
+        : null;
+      if (delAgente?.status === 403) {
         setPhase('forbidden');
         return;
       }
-      if (!res.ok) {
+      let res = delAgente?.ok ? delAgente : null;
+      let usoLaCopia = false;
+      if (!res && !(botUrl && esBuzon(botUrl))) {
+        const copiaDelBuzon = await fetch(buildResultUrl(urlDeBuzon(task.worker), task.id), { headers: cabeceras }).catch(
+          () => null,
+        );
+        if (copiaDelBuzon?.ok) {
+          res = copiaDelBuzon;
+          usoLaCopia = true;
+        }
+      }
+      if (!res) {
         setPhase('fetchError');
         return;
       }
+      setDeLaCopiaDelBuzon(usoLaCopia);
       const body = (await res.json()) as ResultPayload;
       const text = typeof body.resultText === 'string' ? body.resultText : '';
       // Verificación local contra el hash anclado on-chain (tupla tasks()). Si
@@ -212,12 +234,28 @@ export default function ResultDialog({ task }: { task: RealTask }) {
    * entregó, y el cliente tiene con qué abrir una disputa.
    */
   const bajarArchivo = async (file: DeliveredFile) => {
-    if (!botUrl || !address) return;
+    if (!address) return;
     setDescargas((d) => ({ ...d, [file.name]: 'bajando' }));
     try {
       // Aquí puede pedirse la firma por primera vez: leyendo una copia guardada
       // no ha hecho falta ninguna hasta ahora.
-      const bajado = await downloadDeliveredFile(file, botUrl, address, await conFirma());
+      const credencial = await conFirma();
+      const delBuzon = () =>
+        downloadDeliveredFile(enLaCopiaDelBuzon(file, task.id), urlDeBuzon(task.worker), address, credencial);
+      let bajado: Blob;
+      if (!botUrl || deLaCopiaDelBuzon) {
+        bajado = await delBuzon();
+      } else {
+        try {
+          bajado = await downloadDeliveredFile(file, botUrl, address, credencial);
+        } catch (err) {
+          // Unos bytes que no cuadran no se van a buscar a otra parte: eso es
+          // motivo de disputa, no de reintento. Un agente que no contesta, sí.
+          const roto = err instanceof FileVerificationError && /hash|size/.test(err.message);
+          if (roto || esBuzon(botUrl)) throw err;
+          bajado = await delBuzon();
+        }
+      }
       // Los bytes ya están comprobados contra el hash de la entrega; si van
       // cifrados, se abren aquí, en el navegador.
       const blob = cifrada
@@ -259,6 +297,14 @@ export default function ResultDialog({ task }: { task: RealTask }) {
         <div className="flex flex-col items-center gap-3 rounded-xl border border-line bg-cream px-4 py-8 text-center">
           <AlertTriangle size={24} className="text-honey-deep" />
           <p className="max-w-sm text-[0.875rem] text-ink-2">{t('tasks.resultNoEndpoint')}</p>
+          {/* Sin servidor publicado puede quedar la copia del buzón. */}
+          <button
+            type="button"
+            onClick={() => void signAndFetch()}
+            className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+          >
+            {t('tasks.resultTryBackup')}
+          </button>
         </div>
       )}
 
@@ -380,6 +426,10 @@ export default function ResultDialog({ task }: { task: RealTask }) {
               se lee aunque el agente haya apagado su bot, y por eso mismo puede
               no ser lo último si el agente volvió a entregar. El botón vuelve a
               pedírsela a él —solo si publica endpoint, claro—. */}
+          {deLaCopiaDelBuzon && (
+            <p className="text-[0.75rem] leading-snug text-ink-3">{t('tasks.resultFromBackup')}</p>
+          )}
+
           {deCopia && copia && (
             <p className="text-[0.75rem] leading-snug text-ink-3">
               {t('tasks.resultFromCopy', {

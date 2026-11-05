@@ -112,6 +112,7 @@ export interface Catalog {
     x402: string;
     seguridad: string;
     operacion: string;
+    copia: string;
     subcontrata: string;
     vigilante: string;
     retirada: string;
@@ -182,6 +183,7 @@ The language is taken from --lang, then PANAL_LANG, then your system locale.`,
   },
   env: {
     operacion: "Paid questions and restarts. You charge before working, so X402_PLAZO_SEGUNDOS caps the wait: on timeout the client gets an error with the receipt. Use 85 behind Cloudflare, which cuts at 100 s. On SIGTERM your agent waits APAGADO_SEGUNDOS for work in progress; your process manager must wait longer.",
+    copia: "Delivery backup. After anchoring a delivery, your agent leaves a copy (text and files) in the Panal mailbox, which keeps it 30 days: if you ever switch this server off, your clients can still read what they paid for, and so can whoever resolves a dispute. The mailbox checks that it matches the anchored hash and cannot open encrypted ones. COPIA_EN_BUZON=no turns it off.",
     key: 'Private key of your agent\'s DEDICATED wallet.\nIt is the one that gets paid and signs deliveries. Do not use your personal\nwallet: this one lives on a server. It only needs a little MON for gas.',
     port: 'Server port. Many hosts inject it themselves.',
     host: 'Where it listens. Empty, on every interface, as always. With a proxy on the same machine (Caddy, nginx), put HOST=127.0.0.1: then the port can only be reached through the proxy, not just thanks to the firewall.',
@@ -307,6 +309,7 @@ El idioma sale de --lang, luego de PANAL_LANG, y si no del locale del sistema.`,
   },
   env: {
     operacion: "Preguntas de pago y reinicios. Cobras antes de trabajar, así que X402_PLAZO_SEGUNDOS limita la espera: si se agota, el cliente recibe un error con el comprobante. Usa 85 detrás de Cloudflare, que corta a los 100 s. Al recibir SIGTERM tu agente espera APAGADO_SEGUNDOS a lo que esté en curso; tu gestor de procesos debe esperar más.",
+    copia: "Copia de las entregas. Después de anclar una entrega, tu agente deja una copia (texto y archivos) en el buzón de Panal, que la guarda 30 días: si un día apagas este servidor, tus clientes siguen pudiendo leer lo que pagaron, y quien resuelva una disputa también. El buzón comprueba que dé el hash anclado y no puede abrir las cifradas. COPIA_EN_BUZON=no la desactiva.",
     key: 'Clave privada de la wallet DEDICADA de tu agente.\nEs la que cobra y la que firma las entregas. No uses tu wallet personal:\nesta vive en un servidor. Solo necesita un poco de MON para el gas.',
     port: 'Puerto del servidor. Muchos hostings lo inyectan solos.',
     host: 'Dónde escucha. Vacío, en todas las interfaces, como siempre. Con un proxy en la misma máquina (Caddy, nginx), pon HOST=127.0.0.1: así al puerto solo se llega por el proxy, y no solo gracias al cortafuegos.',
@@ -433,6 +436,7 @@ const zh: Catalog = {
   },
   env: {
     operacion: "付费提问与重启。你在工作前就收款，所以 X402_PLAZO_SEGUNDOS 限制等待时间：超时后客户会收到带收据的错误。在 Cloudflare 之后请用 85，它在 100 秒时切断。收到 SIGTERM 时，智能体会等待进行中的工作 APAGADO_SEGUNDOS 秒；进程管理器必须等待更久。",
+    copia: "交付备份。锚定交付后，你的智能体会在 Panal 邮箱中留一份副本（文本和文件），保存 30 天：即使有一天你关闭这台服务器，你的客户仍能读到他们付费的内容，处理争议的人也能。邮箱会核对它与锚定的哈希一致，且无法打开加密的交付。COPIA_EN_BUZON=no 可关闭。",
     key: '你的代理【专用】钱包的私钥。\n它负责收款并为交付签名。不要使用你的个人钱包：这个私钥要放在服务器上。\n它只需要少量 MON 用于支付 gas。',
     port: '服务端口。很多托管平台会自动注入。',
     host: '监听地址。留空则在所有网络接口上监听，和以前一样。如果同一台机器上有代理（Caddy、nginx），请设 HOST=127.0.0.1：这样端口只能通过代理访问，而不只是靠防火墙挡住。',
@@ -554,6 +558,7 @@ const hi: Catalog = {
   },
   env: {
     operacion: "पेड सवाल और रीस्टार्ट। आप काम से पहले चार्ज करते हैं, इसलिए X402_PLAZO_SEGUNDOS इंतज़ार सीमित करता है: समय खत्म होने पर क्लाइंट को रसीद के साथ एरर मिलता है। Cloudflare के पीछे 85 रखें, वह 100 सेकंड पर काट देता है। SIGTERM मिलने पर एजेंट चल रहे काम के लिए APAGADO_SEGUNDOS रुकता है; प्रोसेस मैनेजर को इससे ज़्यादा रुकना चाहिए।",
+    copia: "डिलीवरी का बैकअप। डिलीवरी एंकर करने के बाद आपका एजेंट उसकी एक कॉपी (टेक्स्ट और फ़ाइलें) Panal मेलबॉक्स में छोड़ता है, जो उसे 30 दिन रखता है: अगर आप कभी यह सर्वर बंद कर दें, तब भी आपके क्लाइंट वह पढ़ सकते हैं जिसके लिए उन्होंने भुगतान किया, और विवाद सुलझाने वाला भी। मेलबॉक्स जाँचता है कि वह एंकर किए गए हैश से मेल खाए और एन्क्रिप्टेड डिलीवरी नहीं खोल सकता। COPIA_EN_BUZON=no इसे बंद करता है।",
     key: 'आपके एजेंट के लिए समर्पित (DEDICATED) वॉलेट की निजी कुंजी।\nयही भुगतान पाती है और डिलीवरी पर हस्ताक्षर करती है। अपना निजी वॉलेट न लगाएँ:\nयह कुंजी सर्वर पर रहती है। इसे गैस के लिए बस थोड़ा MON चाहिए।',
     port: 'सर्वर पोर्ट। कई होस्टिंग इसे खुद भेजते हैं।',
     host: 'यह कहाँ सुनता है। खाली छोड़ें तो सभी इंटरफ़ेस पर, पहले की तरह। अगर उसी मशीन पर प्रॉक्सी है (Caddy, nginx), तो HOST=127.0.0.1 रखें: तब पोर्ट तक सिर्फ़ प्रॉक्सी से पहुँचा जा सकता है, सिर्फ़ फ़ायरवॉल के भरोसे नहीं।',
@@ -679,6 +684,7 @@ const ar: Catalog = {
   },
   env: {
     operacion: "الأسئلة المدفوعة وإعادة التشغيل. أنت تتقاضى قبل العمل، لذا يحدّ X402_PLAZO_SEGUNDOS من الانتظار: عند انتهاء المهلة يتلقى العميل خطأ مع الإيصال. استخدم 85 خلف Cloudflare، الذي يقطع عند 100 ثانية. عند SIGTERM ينتظر وكيلك APAGADO_SEGUNDOS للعمل الجاري؛ ويجب أن ينتظر مدير العمليات أكثر.",
+    copia: "نسخة احتياطية من التسليمات. بعد تثبيت التسليم، يترك وكيلك نسخة منه (النص والملفات) في صندوق بريد Panal الذي يحتفظ بها 30 يومًا: إذا أوقفت هذا الخادم يومًا ما، يظل عملاؤك قادرين على قراءة ما دفعوا ثمنه، وكذلك من يفصل في أي نزاع. يتحقق الصندوق من مطابقتها للهاش المثبت ولا يستطيع فتح التسليمات المشفرة. COPIA_EN_BUZON=no يعطلها.",
     key: 'المفتاح الخاص بمحفظة وكيلك المخصّصة.\nهي التي تتقاضى الأجر وتوقّع عمليات التسليم. لا تستخدم محفظتك الشخصية:\nهذا المفتاح يعيش على خادم. يكفيه قليل من MON لدفع الرسوم.',
     port: 'منفذ الخادم. كثير من الاستضافات تضبطه تلقائيًا.',
     host: 'أين يستمع. إن تُرك فارغًا فعلى كل الواجهات، كما كان دائمًا. وإن كان هناك وكيل عكسي على الجهاز نفسه (Caddy أو nginx) فضع HOST=127.0.0.1: عندها لا يُوصل إلى المنفذ إلا عبر الوكيل، لا بفضل الجدار الناري وحده.',
@@ -803,6 +809,7 @@ La langue vient de --lang, puis de PANAL_LANG, puis de la locale du système.`,
   },
   env: {
     operacion: "Questions payantes et redémarrages. Vous encaissez avant de travailler, donc X402_PLAZO_SEGUNDOS limite l’attente : à l’expiration, le client reçoit une erreur avec le reçu. Utilisez 85 derrière Cloudflare, qui coupe à 100 s. À la réception de SIGTERM, l’agent attend APAGADO_SEGUNDOS le travail en cours ; votre gestionnaire de processus doit attendre plus longtemps.",
+    copia: "Copie des livraisons. Après avoir ancré une livraison, votre agent en laisse une copie (texte et fichiers) dans la boîte aux lettres de Panal, qui la garde 30 jours : si vous éteignez un jour ce serveur, vos clients peuvent toujours lire ce qu’ils ont payé, et la personne qui tranche un litige aussi. La boîte vérifie qu’elle correspond au hash ancré et ne peut pas ouvrir les livraisons chiffrées. COPIA_EN_BUZON=no la désactive.",
     key: 'Clé privée du portefeuille DÉDIÉ de votre agent.\nC\'est elle qui encaisse et qui signe les livraisons. N\'utilisez pas votre\nportefeuille personnel : celle-ci vit sur un serveur. Un peu de MON suffit.',
     port: 'Port du serveur. Beaucoup d\'hébergeurs l\'injectent eux-mêmes.',
     host: 'Où il écoute. Vide, sur toutes les interfaces, comme toujours. Avec un proxy sur la même machine (Caddy, nginx), mettez HOST=127.0.0.1 : le port n\'est alors joignable que par le proxy, et pas seulement grâce au pare-feu.',
@@ -931,6 +938,7 @@ O idioma vem de --lang, depois de PANAL_LANG e, por fim, do locale do sistema.`,
   },
   env: {
     operacion: "Perguntas pagas e reinícios. Você cobra antes de trabalhar, então X402_PLAZO_SEGUNDOS limita a espera: ao esgotar, o cliente recebe um erro com o comprovante. Use 85 atrás da Cloudflare, que corta aos 100 s. Ao receber SIGTERM, seu agente espera APAGADO_SEGUNDOS pelo que está em curso; seu gerenciador de processos deve esperar mais.",
+    copia: "Cópia das entregas. Depois de ancorar uma entrega, seu agente deixa uma cópia (texto e arquivos) na caixa postal da Panal, que a guarda por 30 dias: se um dia você desligar este servidor, seus clientes continuam podendo ler o que pagaram, e quem resolver uma disputa também. A caixa confere que ela bate com o hash ancorado e não consegue abrir as cifradas. COPIA_EN_BUZON=no a desativa.",
     key: 'Chave privada da carteira DEDICADA do seu agente.\nÉ ela que recebe e que assina as entregas. Não use a sua carteira pessoal:\nesta vive num servidor. Só precisa de um pouco de MON para o gas.',
     port: 'Porta do servidor. Muitos alojamentos injetam-na sozinhos.',
     host: 'Onde escuta. Vazio, em todas as interfaces, como sempre. Com um proxy na mesma máquina (Caddy, nginx), põe HOST=127.0.0.1: assim à porta só se chega pelo proxy, e não apenas graças à firewall.',
@@ -1057,6 +1065,7 @@ const ru: Catalog = {
   },
   env: {
     operacion: "Платные вопросы и перезапуски. Вы берёте оплату до работы, поэтому X402_PLAZO_SEGUNDOS ограничивает ожидание: по истечении клиент получает ошибку с квитанцией. За Cloudflare, который обрывает на 100 с, ставьте 85. При SIGTERM агент ждёт текущую работу APAGADO_SEGUNDOS; менеджер процессов должен ждать дольше.",
+    copia: "Копия выдач. После закрепления выдачи агент оставляет её копию (текст и файлы) в почтовом ящике Panal, который хранит её 30 дней: если вы когда-нибудь выключите этот сервер, клиенты всё равно смогут прочитать то, за что заплатили, как и тот, кто разрешает спор. Ящик проверяет совпадение с закреплённым хешем и не может открыть зашифрованные выдачи. COPIA_EN_BUZON=no отключает это.",
     key: 'Приватный ключ ВЫДЕЛЕННОГО кошелька вашего агента.\nИменно он получает оплату и подписывает сдачу работы. Не используйте личный\nкошелёк: этот ключ живёт на сервере. Ему нужно немного MON только на газ.',
     port: 'Порт сервера. Многие хостинги подставляют его сами.',
     host: 'Где он слушает. Пусто — на всех интерфейсах, как и раньше. Если на той же машине стоит прокси (Caddy, nginx), укажите HOST=127.0.0.1: тогда до порта можно добраться только через прокси, а не только благодаря файрволу.',
@@ -1184,6 +1193,7 @@ const bn: Catalog = {
   },
   env: {
     operacion: "পেইড প্রশ্ন ও রিস্টার্ট। আপনি কাজের আগে চার্জ করেন, তাই X402_PLAZO_SEGUNDOS অপেক্ষা সীমিত করে: সময় শেষ হলে ক্লায়েন্ট রসিদসহ ত্রুটি পায়। Cloudflare-এর পেছনে 85 ব্যবহার করুন, এটি 100 সেকেন্ডে কেটে দেয়। SIGTERM পেলে এজেন্ট চলমান কাজের জন্য APAGADO_SEGUNDOS অপেক্ষা করে; প্রসেস ম্যানেজারকে আরও বেশি অপেক্ষা করতে হবে।",
+    copia: "ডেলিভারির ব্যাকআপ। ডেলিভারি অ্যাঙ্কর করার পর আপনার এজেন্ট তার একটি কপি (টেক্সট ও ফাইল) Panal মেইলবক্সে রাখে, যা সেটি 30 দিন রাখে: কোনোদিন এই সার্ভার বন্ধ করলেও আপনার ক্লায়েন্টরা যার জন্য টাকা দিয়েছেন তা পড়তে পারবেন, বিরোধ মীমাংসাকারীও পারবেন। মেইলবক্স যাচাই করে যে এটি অ্যাঙ্কর করা হ্যাশের সাথে মেলে এবং এনক্রিপ্ট করা ডেলিভারি খুলতে পারে না। COPIA_EN_BUZON=no এটি বন্ধ করে।",
     key: 'আপনার এজেন্টের নিবেদিত (DEDICATED) ওয়ালেটের প্রাইভেট কী।\nএটিই অর্থ গ্রহণ করে এবং ডেলিভারিতে স্বাক্ষর করে। ব্যক্তিগত ওয়ালেট ব্যবহার\nকরবেন না: এটি সার্ভারে থাকে। গ্যাসের জন্য সামান্য MON হলেই চলে।',
     port: 'সার্ভারের পোর্ট। অনেক হোস্টিং নিজেই এটি দেয়।',
     host: 'কোথায় শোনে। খালি রাখলে সব ইন্টারফেসে, আগের মতোই। একই মেশিনে প্রক্সি থাকলে (Caddy, nginx) HOST=127.0.0.1 দিন: তখন পোর্টে শুধু প্রক্সি দিয়েই পৌঁছানো যায়, শুধু ফায়ারওয়ালের ভরসায় নয়।',
@@ -1308,6 +1318,7 @@ const ur: Catalog = {
   },
   env: {
     operacion: "پیڈ سوال اور ری اسٹارٹ۔ آپ کام سے پہلے چارج کرتے ہیں، اس لیے X402_PLAZO_SEGUNDOS انتظار محدود کرتا ہے: وقت ختم ہونے پر کلائنٹ کو رسید کے ساتھ ایرر ملتا ہے۔ Cloudflare کے پیچھے 85 رکھیں، وہ 100 سیکنڈ پر کاٹ دیتا ہے۔ SIGTERM پر ایجنٹ جاری کام کے لیے APAGADO_SEGUNDOS انتظار کرتا ہے؛ پروسیس مینیجر کو زیادہ انتظار کرنا چاہیے۔",
+    copia: "ڈیلیوری کا بیک اپ۔ ڈیلیوری اینکر کرنے کے بعد آپ کا ایجنٹ اس کی ایک کاپی (متن اور فائلیں) Panal میل باکس میں چھوڑتا ہے، جو اسے 30 دن رکھتا ہے: اگر آپ کبھی یہ سرور بند کر دیں تو بھی آپ کے کلائنٹ وہ پڑھ سکتے ہیں جس کی انہوں نے ادائیگی کی، اور تنازع حل کرنے والا بھی۔ میل باکس جانچتا ہے کہ یہ اینکر شدہ ہیش سے ملے اور خفیہ کردہ ڈیلیوری نہیں کھول سکتا۔ COPIA_EN_BUZON=no اسے بند کرتا ہے۔",
     key: 'آپ کے ایجنٹ کے مخصوص (DEDICATED) والیٹ کی نجی کلید۔\nیہی ادائیگی وصول کرتی ہے اور ڈیلیوری پر دستخط کرتی ہے۔ اپنا ذاتی والیٹ نہ\nاستعمال کریں: یہ کلید سرور پر رہتی ہے۔ اسے گیس کے لیے تھوڑا سا MON چاہیے۔',
     port: 'سرور کا پورٹ۔ بہت سی ہوسٹنگ خود ہی دے دیتی ہیں۔',
     host: 'یہ کہاں سنتا ہے۔ خالی چھوڑیں تو تمام انٹرفیسز پر، پہلے کی طرح۔ اگر اسی مشین پر پراکسی ہو (Caddy، nginx) تو HOST=127.0.0.1 رکھیں: تب پورٹ تک صرف پراکسی کے ذریعے پہنچا جا سکتا ہے، صرف فائر وال کے بھروسے نہیں۔',

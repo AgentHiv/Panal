@@ -211,5 +211,71 @@ console.log('\ndeliverBoardResult: al buzón PROPIO, que es donde busca el clien
   check('sin canal publicado, tampoco', msg.includes('no publica ningún canal') && escrituras.length === 0, msg);
 }
 
+console.log('\nbackupDeliveryToMailbox: la copia de un agente con servidor propio');
+{
+  const { panal, escrituras, peticiones } = montar({ '1': { worker: yo.address } }, true, 'https://mi-agente.example');
+  let cuerpo: Record<string, unknown> = {};
+  const archivos: { nombre: string; tipo: string; bytes: number; firma: string }[] = [];
+  buzon(
+    {
+      '/entrega/1': (init) => {
+        cuerpo = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return { status: 200, body: { ok: true } };
+      },
+      '/entrega-archivo/1': (init) => {
+        const h = init?.headers as Record<string, string>;
+        archivos.push({
+          nombre: decodeURIComponent(h['x-panal-filename'] ?? ''),
+          tipo: h['content-type'] ?? '',
+          bytes: (init?.body as Uint8Array).byteLength,
+          firma: h['x-panal-signature'] ?? '',
+        });
+        return { status: 200, body: { ok: true } };
+      },
+    },
+    peticiones,
+  );
+  const r = await panal.backupDeliveryToMailbox(1n, 'informe', [
+    { name: 'traducción.pdf', bytes: new Uint8Array([1, 2, 3]), mime: 'application/pdf' },
+    { name: 'datos.csv', bytes: new Uint8Array([4, 5]) },
+  ]);
+  check(
+    'deja el texto en el buzón de quien entregó, aunque tenga servidor propio',
+    peticiones[0] === `POST https://buzon.prueba/buzon/${yo.address}/entrega/1`,
+    peticiones.join(' | '),
+  );
+  check('con la firma de entrega', cuerpo.entrega === 'informe' && cuerpo.address === yo.address && typeof cuerpo.signature === 'string');
+  check(
+    'y cada archivo, con su nombre, su tipo y la misma firma',
+    archivos.length === 2 &&
+      archivos[0]!.nombre === 'traducción.pdf' &&
+      archivos[0]!.tipo === 'application/pdf' &&
+      archivos[0]!.bytes === 3 &&
+      archivos[1]!.tipo === 'application/octet-stream' &&
+      archivos[0]!.firma === cuerpo.signature,
+    JSON.stringify(archivos),
+  );
+  check('cuenta los archivos copiados', r.files === 2);
+  check('no ancla nada: la entrega ya estaba anclada', escrituras.length === 0, escrituras.join(', '));
+}
+{
+  const { panal, peticiones } = montar({ '1': { worker: yo.address } }, true, 'https://mi-agente.example');
+  buzon(
+    {
+      '/entrega/1': () => ({ status: 200, body: { ok: true } }),
+      '/entrega-archivo/1': () => ({ status: 413, body: { error: 'too large' } }),
+    },
+    peticiones,
+  );
+  const msg = await lanza(() => panal.backupDeliveryToMailbox(1n, 'informe', [{ name: 'enorme.zip', bytes: new Uint8Array(4) }]));
+  check('si el buzón rechaza un archivo, lo dice con su nombre', msg.includes('enorme.zip') && msg.includes('0 de 1'), msg);
+}
+{
+  const { panal, peticiones } = montar({ '1': { worker: yo.address } }, true, 'https://mi-agente.example');
+  buzon({ '/entrega/1': () => ({ status: 409, body: { error: 'delivery hash mismatch' } }) }, peticiones);
+  const msg = await lanza(() => panal.backupDeliveryToMailbox(1n, 'otro texto'));
+  check('si el texto no da el hash anclado, el buzón lo rechaza y se dice', msg.includes('409') && msg.includes('hash'), msg);
+}
+
 console.log(fallos === 0 ? '\n✅ tablón: todo bien' : `\n❌ tablón: ${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

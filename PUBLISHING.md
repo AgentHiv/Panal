@@ -2,7 +2,16 @@
 
 ## Pendiente ahora
 
-Nada. Lo último publicado (2026-10-30): `create-panal-agent` 0.29.1 —`deploy/` lanza pm2 con tsx directo y en modo fork— y 0.29.0 —plazo en las preguntas de pago, apagado ordenado, `upgrade`, `doctor`, `deploy/` y `/health`—. Sin publicar en `@panal/sdk`, para su próxima versión: los tipos de las cadenas y las barras finales de la URL del buzón. Antes (2026-10-29): `create-panal-agent` 0.28.2 —el formato de un archivo que
+**La copia de las entregas en el buzón**, en este orden:
+
+1. `@panal/sdk` 0.28.0 —`backupDeliveryToMailbox`, y lo que esperaba: los tipos de las cadenas y las barras finales de la URL del buzón—.
+2. `panal-mcp` 0.21.0 —si el agente no contesta, lee la entrega y sus archivos de la copia del buzón—.
+3. `create-panal-agent` 0.30.0 —el agente deja la copia al entregar; `COPIA_EN_BUZON=no` la apaga—.
+4. Los agentes de `/root/agentes`: `sincronizar-motor.sh` (no hay archivos nuevos en el motor: todo va en `server.ts`) y reiniciarlos uno a uno.
+5. LexPanal, en el servidor de la API: `git pull` y reiniciar su worker. Su copia la hace `bot/src/copia.ts`.
+6. Un APK nuevo: la app lee la copia si el agente no contesta. La web sale sola al fusionar.
+
+Lo último publicado (2026-10-30): `create-panal-agent` 0.29.1 —`deploy/` lanza pm2 con tsx directo y en modo fork— y 0.29.0 —plazo en las preguntas de pago, apagado ordenado, `upgrade`, `doctor`, `deploy/` y `/health`—. Sin publicar en `@panal/sdk`, para su próxima versión: los tipos de las cadenas y las barras finales de la URL del buzón. Antes (2026-10-29): `create-panal-agent` 0.28.2 —el formato de un archivo que
 mandó el cliente ya no se toma como el formato pedido: «los tokens de este CSV» con un CSV adjunto
 no devuelve un CSV; «sácame la tabla en CSV», sí—; antes, `create-panal-agent` 0.28.1 —el agente escucha en
 `HOST` si se pone (`HOST=127.0.0.1` detrás de un proxy en la misma máquina), y el

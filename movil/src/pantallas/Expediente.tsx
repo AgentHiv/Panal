@@ -11,8 +11,10 @@ import {
   buildResultUrl,
   cabecerasFirma,
   enviarBriefConReintento,
+  esBuzon,
   expiraEn,
   resultSignMessage,
+  urlDeBuzon,
 } from '@/lib/botEndpoint';
 import { getTaskBrief, getTaskSobre } from '@/lib/taskBriefs';
 import { descifrarTexto, esTextoCifrado } from '@panal/sdk';
@@ -22,6 +24,7 @@ import { esDelTablon } from '@/lib/tablonReglas';
 import {
   FileVerificationError,
   downloadDeliveredFile,
+  enLaCopiaDelBuzon,
   formatBytes,
 } from '@/lib/deliveredFiles';
 import type { DeliveredFile } from '@/lib/deliveredFiles';
@@ -152,8 +155,8 @@ export default function Expediente(): React.ReactElement {
    * con qué abrir una disputa.
    */
   const bajarArchivo = async (archivo: DeliveredFile): Promise<void> => {
-    const botUrl = datosAgente?.botUrl;
-    if (!botUrl || !address || !tarea) {
+    const botUrl = datosAgente?.botUrl ?? null;
+    if (!address || !tarea) {
       setFallo(T.expediente.sinEndpoint);
       return;
     }
@@ -161,7 +164,23 @@ export default function Expediente(): React.ReactElement {
     setAviso(null);
     try {
       const cred = await pedirCredencial(tarea.id);
-      const bajado = await downloadDeliveredFile(archivo, botUrl, address, cred);
+      // Del agente; y si no contesta o ya no publica dónde, de la copia que
+      // dejó en el buzón de Panal. Unos bytes que no cuadran no se van a
+      // buscar a otra parte: eso es motivo de disputa, no de reintento.
+      const delBuzon = () =>
+        downloadDeliveredFile(enLaCopiaDelBuzon(archivo, tarea.id), urlDeBuzon(tarea.worker), address, cred);
+      let bajado: Blob;
+      if (!botUrl) {
+        bajado = await delBuzon();
+      } else {
+        try {
+          bajado = await downloadDeliveredFile(archivo, botUrl, address, cred);
+        } catch (err) {
+          const roto = err instanceof FileVerificationError && /hash|size/.test(err.message);
+          if (roto || esBuzon(botUrl)) throw err;
+          bajado = await delBuzon();
+        }
+      }
       // Comprobado contra el hash de la entrega; si iba cifrada, se abre aquí.
       const blob = e.local.entregaCifrada
         ? new Blob(
@@ -251,8 +270,8 @@ export default function Expediente(): React.ReactElement {
    */
   const alTraer = async (): Promise<void> => {
     // `useAgente` ya lo sacó del registro con `extractBotUrl`.
-    const botUrl = datosAgente?.botUrl;
-    if (!botUrl || !address || !tarea) {
+    const botUrl = datosAgente?.botUrl ?? null;
+    if (!address || !tarea) {
       setFallo(T.expediente.sinEndpoint);
       return;
     }
@@ -260,14 +279,31 @@ export default function Expediente(): React.ReactElement {
     setFallo(null);
     try {
       const { firma, expira } = await pedirCredencial(tarea.id);
-      const res = await fetch(buildResultUrl(botUrl, tarea.id), {
-        headers: cabecerasFirma(address, firma, expira),
-      });
-      if (!res.ok) {
+      const cabeceras = cabecerasFirma(address, firma, expira);
+      // Primero el agente. Si no contesta —o ya no publica dónde—, la copia
+      // que dejó en el buzón de Panal: la misma firma la abre, y abajo se
+      // comprueba contra la cadena igual que lo que viene del agente.
+      const delAgente = botUrl
+        ? await fetch(buildResultUrl(botUrl, tarea.id), { headers: cabeceras }).catch(() => null)
+        : null;
+      if (delAgente?.status === 403) {
+        setFallo(T.expediente.firmaRechazada);
+        return;
+      }
+      let res = delAgente?.ok ? delAgente : null;
+      if (!res && !(botUrl && esBuzon(botUrl))) {
+        const copia = await fetch(buildResultUrl(urlDeBuzon(tarea.worker), tarea.id), { headers: cabeceras }).catch(
+          () => null,
+        );
+        if (copia?.ok) res = copia;
+      }
+      if (!res) {
         setFallo(
-          res.status === 403
-            ? T.expediente.firmaRechazada
-            : `El agente respondió ${res.status}.`,
+          !botUrl
+            ? T.expediente.sinEndpoint
+            : delAgente
+              ? `El agente respondió ${delAgente.status}.`
+              : T.expediente.noSePudoHablar,
         );
         return;
       }

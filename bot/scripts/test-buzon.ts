@@ -55,6 +55,7 @@ import {
   tablonResultadoSignMessage,
 } from '../src/buzon.js';
 import { BuzonStore } from '../src/buzon-store.js';
+import { copiarEntregaAlBuzon } from '../src/copia.js';
 import { NATIVE_CURRENCY, TaskStatus, tablonAbi, type RegistryAgent, type Task, type TrabajoTablon } from '../src/chain.js';
 
 // Cuentas bien conocidas (Anvil/Hardhat), solo para este test.
@@ -980,6 +981,52 @@ async function main(): Promise<void> {
     const guardado = store.leerArchivoDeConsulta(para, hash);
     check('se guarda por destinatario y hash, con quién lo dejó', guardado?.meta.de === cliente.address.toLowerCase() && guardado.meta.name === 'recibo ñ.pdf');
     check('y caduca: la limpieza se lo lleva pasada su retención', store.limpiar(Date.now() + 8 * 86_400_000) >= 1 && store.leerArchivoDeConsulta(para, hash) === null);
+  }
+
+  console.log('\nla copia de un agente con servidor propio (copia.ts)');
+  {
+    // La tarea #2 ya tiene la entrega anclada. El buzón no mira dónde vive
+    // el agente: acepta la copia si la firma es del trabajador y el texto da
+    // el hash, y se la da al cliente como a cualquier otro.
+    const buzonUrl = `http://127.0.0.1:${dir_.port}/buzon/`;
+    const firmar = (mensaje: string) => persona.signMessage({ message: mensaje });
+    let error = '';
+    try {
+      await copiarEntregaAlBuzon({ buzonUrl, agente: AGENTE, taskId: 2n, texto: ENTREGA, firmar });
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+    }
+    check('el buzón acepta la copia de lo anclado', error === '', error);
+    const expira = Math.floor(Date.now() / 1000) + 300;
+    const r = await fetch(`http://127.0.0.1:${dir_.port}/buzon/${AGENTE}/result/2`, {
+      headers: {
+        'x-panal-address': cliente.address,
+        'x-panal-signature': await cliente.signMessage({ message: resultSignMessageConCaducidad(2n, expira) }),
+        'x-panal-expira': String(expira),
+      },
+    });
+    const cuerpo = (await r.json()) as { resultText?: string };
+    check('y el cliente se la lleva con su firma de siempre', r.status === 200 && cuerpo.resultText === ENTREGA, String(r.status));
+    let rechazo = '';
+    try {
+      await copiarEntregaAlBuzon({ buzonUrl, agente: AGENTE, taskId: 2n, texto: OTRA_ENTREGA, firmar });
+    } catch (e) {
+      rechazo = e instanceof Error ? e.message : String(e);
+    }
+    check('una copia que no da el hash anclado se rechaza', rechazo.includes('409'), rechazo);
+    let ajena = '';
+    try {
+      await copiarEntregaAlBuzon({
+        buzonUrl,
+        agente: AGENTE,
+        taskId: 2n,
+        texto: ENTREGA,
+        firmar: (mensaje) => intruso.signMessage({ message: mensaje }),
+      });
+    } catch (e) {
+      ajena = e instanceof Error ? e.message : String(e);
+    }
+    check('y una firmada por quien no es el trabajador, también', ajena.includes('403'), ajena);
   }
 
   server.close();

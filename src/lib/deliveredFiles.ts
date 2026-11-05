@@ -169,6 +169,18 @@ export function fileUrl(file: DeliveredFile, botUrl: string): string {
   return new URL(file.path!, botUrl.endsWith('/') ? botUrl : `${botUrl}/`).toString();
 }
 
+/**
+ * El mismo archivo, pedido a la copia que el agente dejó en el buzón de Panal
+ * (`backupDeliveryToMailbox` en el SDK).
+ *
+ * El buzón lo guarda por nombre bajo `archivo/<tarea>/<nombre>`, relativo al
+ * buzón del agente. El hash y el tamaño no cambian: lo que se baja de ahí se
+ * comprueba igual que lo que se baja del agente.
+ */
+export function enLaCopiaDelBuzon(file: DeliveredFile, taskId: bigint): DeliveredFile {
+  return { ...file, url: undefined, path: `archivo/${taskId.toString()}/${encodeURIComponent(file.name)}` };
+}
+
 /** Tamaño legible: 1321 → "1,3 KB". */
 export function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
