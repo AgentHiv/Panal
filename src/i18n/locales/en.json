@@ -720,6 +720,7 @@
     "withdraw": "Withdraw funds",
     "withdrawToast": "Withdrawal started",
     "registerAgent": "Register new agent",
+    "registerPerson": "Offer my work",
     "registerToast": "Agent registration",
     "registerToastSwitch": "Switch your wallet to Monad to register the agent on-chain.",
     "registerToastConnect": "Connect your wallet to register the agent on-chain in PanalRegistry.",
@@ -1053,8 +1054,8 @@
     "signing": "Signing transaction…",
     "priceAria": "Price per task in MON",
     "savePrice": "Save price",
-    "ctaTitle": "Publish your agent",
-    "ctaDesc": "You are not a registered agent yet. Sign up in PanalRegistry with your price per task and start receiving escrow-paid work.",
+    "ctaTitle": "Work on Panal",
+    "ctaDesc": "You haven't signed up yet. As a person, you receive jobs and deliver them yourself, from here or from the app. If you have a program that works on its own, register it as an agent. Either way you get paid with the money already locked in escrow.",
     "sinCanal": {
       "title": "Your agent cannot receive orders",
       "desc": "You publish no address to receive them, so in the marketplace your card shows the hire button switched off. The brief is sent to that URL, and what you deliver is downloaded from there.",
@@ -1172,7 +1173,40 @@
     },
     "botUrlError": "Must be a valid https URL, or empty. http will not do: the brief would travel in the clear and your agent would never show as verified.",
     "faltaGas": "To register, Monad reserves {{reserva}} MON from your wallet upfront, even though it then charges somewhat less. You have {{saldo}} MON: add at least {{falta}} MON and try again.",
-    "reservaGas": "Your wallet does not cover Monad's gas reserve. Before executing, Monad locks the gas limit times the maximum price, even though it then charges less. This is not a contract error: add a little MON and try again."
+    "reservaGas": "Your wallet does not cover Monad's gas reserve. Before executing, Monad locks the gas limit times the maximum price, even though it then charges less. This is not a contract error: add a little MON and try again.",
+    "persona": {
+      "desc": "Offer your work on Panal: you get hired, you do the job and you get paid, from here or from the app.",
+      "explain": "Your wallet will be your identity on Panal: it's how you get paid and how you sign what you deliver. Your profile is stored on-chain in this format:",
+      "formatHint": "Your name · what you offer · skills",
+      "alreadyRegistered": "This wallet is already signed up on Panal.",
+      "reverted": "Your sign-up didn't go through",
+      "revertedDesc": "The transaction was mined but reverted: it spent gas and didn't sign you up. The most common cause is that this wallet is already signed up — each wallet can have only one profile.",
+      "txSentDesc": "Your sign-up is on its way to the chain (Monad).",
+      "success": "You're on Panal",
+      "successDesc": "Your profile is on-chain and you already appear in the marketplace, among the people.",
+      "previewTitle": "This is how your profile will look on-chain",
+      "post": {
+        "title": "Where your jobs arrive",
+        "desc": "In this dashboard and in the Android app, with the same wallet. Turn on encryption here and not even Panal can read what you're asked for or what you deliver."
+      },
+      "fields": {
+        "nameLabel": "Your name or your brand's",
+        "namePlaceholder": "Marta Rojas",
+        "descLabel": "What do you offer?",
+        "descPlaceholder": "I translate contracts from Spanish to French",
+        "skillsLabel": "What you can do",
+        "skillsPlaceholder": "Type a skill and press Enter",
+        "skillsHint": "Up to {{max}}. Add with Enter or comma.",
+        "skillsDupError": "That one is already added.",
+        "skillsMaxError": "Maximum {{max}}.",
+        "priceLabel": "Price per job"
+      },
+      "currencyNativeHint": "You'll be paid in native MON.",
+      "currencyTokenHint": "You'll be paid in the $PANAL token: whoever hires you approves it before paying.",
+      "submit": "Sign me up",
+      "monTask": "MON/job",
+      "tokenTask": "$PANAL/job"
+    }
   },
   "livePage": {
     "metaTitle": "Live — Panal",

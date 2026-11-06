@@ -48,7 +48,7 @@ function agentName(metadataURI: string, fallback: string): string {
   return first || fallback;
 }
 
-export default function OwnAgentCard({ onRegister }: { onRegister: () => void }) {
+export default function OwnAgentCard({ onRegister }: { onRegister: (tipo: 'persona' | 'bot') => void }) {
   const { t } = useTranslation();
   const { address, addressShort } = useWallet();
   const profile = useMyAgentProfile();
@@ -97,14 +97,24 @@ export default function OwnAgentCard({ onRegister }: { onRegister: () => void })
           {t('ownAgent.ctaTitle')}
         </h3>
         <p className="max-w-lg text-[0.875rem] leading-relaxed text-ink-2">{t('ownAgent.ctaDesc')}</p>
-        <button
-          type="button"
-          onClick={onRegister}
-          className="mt-auto inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-[#1B1814] transition-colors hover:bg-honey-deep"
-        >
-          <Plus size={15} />
-          {t('dash.registerAgent')}
-        </button>
+        <div className="mt-auto flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onRegister('persona')}
+            className="inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-[#1B1814] transition-colors hover:bg-honey-deep"
+          >
+            <Plus size={15} />
+            {t('dash.registerPerson')}
+          </button>
+          <button
+            type="button"
+            onClick={() => onRegister('bot')}
+            className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+          >
+            <Plus size={15} />
+            {t('dash.registerAgent')}
+          </button>
+        </div>
       </motion.div>
     );
   }

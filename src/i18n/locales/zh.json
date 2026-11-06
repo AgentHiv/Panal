@@ -720,6 +720,7 @@
     "withdraw": "提取资金",
     "withdrawToast": "提取已开始",
     "registerAgent": "注册新智能体",
+    "registerPerson": "提供我的服务",
     "registerToast": "智能体注册",
     "registerToastSwitch": "将你的 wallet 切换到 Monad 主网，以在链上注册智能体。",
     "registerToastConnect": "连接你的 wallet，以在 PanalRegistry 中链上注册智能体。",
@@ -1053,8 +1054,8 @@
     "signing": "正在签名交易…",
     "priceAria": "以 MON 计的任务单价",
     "savePrice": "保存价格",
-    "ctaTitle": "发布你的代理",
-    "ctaDesc": "你还不是注册代理。在 PanalRegistry 中注册你的任务单价，开始接收托管付款的工作。",
+    "ctaTitle": "在 Panal 工作",
+    "ctaDesc": "你还没有注册。作为个人，你接收委托并亲自交付，可以在这里或在应用中完成。如果你有一个能自主工作的程序，请把它注册为智能体。两种情况下，你都会在款项已锁定于托管合约后收款。",
     "sinCanal": {
       "title": "你的代理无法接单",
       "desc": "你没有公布接收委托的地址，所以在市场里你的名片上雇用按钮是关着的。委托会发到那个网址，你交付的内容也从那里下载。",
@@ -1172,7 +1173,40 @@
     },
     "botUrlError": "必须是有效的 https 网址，或留空。http 不行：任务内容将以明文传输，且你的代理永远不会显示为已验证。",
     "faltaGas": "注册时，Monad 会预先从你的钱包预留 {{reserva}} MON，实际扣费会略少一些。你现在有 {{saldo}} MON：请至少再充值 {{falta}} MON 后重试。",
-    "reservaGas": "你的钱包不足以支付 Monad 的 Gas 预留。执行交易前，Monad 会锁定 Gas 上限乘以最高单价的金额，实际扣费会更少。这不是合约错误：充值少量 MON 后重试即可。"
+    "reservaGas": "你的钱包不足以支付 Monad 的 Gas 预留。执行交易前，Monad 会锁定 Gas 上限乘以最高单价的金额，实际扣费会更少。这不是合约错误：充值少量 MON 后重试即可。",
+    "persona": {
+      "desc": "在 Panal 提供你的服务：有人雇用你，你完成工作并收款，可以在这里或在应用中完成。",
+      "explain": "你的钱包就是你在 Panal 的身份：你用它收款，也用它签署你的交付。你的资料会以这种格式保存在链上：",
+      "formatHint": "你的名字 · 你提供的服务 · 技能",
+      "alreadyRegistered": "这个钱包已经在 Panal 注册过了。",
+      "reverted": "你的注册没有完成",
+      "revertedDesc": "交易已被打包但被回滚：消耗了 gas，却没有完成注册。最常见的原因是这个钱包已经注册过：每个钱包只能有一份资料。",
+      "txSentDesc": "你的注册正在上链（Monad）。",
+      "success": "你已加入 Panal",
+      "successDesc": "你的资料已在链上，你已经出现在市场的“个人”中。",
+      "previewTitle": "你的资料在链上会是这样",
+      "post": {
+        "title": "委托会送到哪里",
+        "desc": "在这个面板和 Android 应用中，使用同一个钱包。在这里开启加密后，连 Panal 也无法读取别人委托你的内容和你交付的内容。"
+      },
+      "fields": {
+        "nameLabel": "你的名字或品牌名",
+        "namePlaceholder": "Marta Rojas",
+        "descLabel": "你提供什么服务？",
+        "descPlaceholder": "我把合同从西班牙语翻译成法语",
+        "skillsLabel": "你擅长的事",
+        "skillsPlaceholder": "输入一项技能后按回车",
+        "skillsHint": "最多 {{max}} 项。用回车或逗号添加。",
+        "skillsDupError": "这一项已经添加过了。",
+        "skillsMaxError": "最多 {{max}} 项。",
+        "priceLabel": "每份委托的价格"
+      },
+      "currencyNativeHint": "你将收到原生 MON。",
+      "currencyTokenHint": "你将收到 $PANAL 代币：雇用你的人会在付款前授权。",
+      "submit": "注册",
+      "monTask": "MON/委托",
+      "tokenTask": "$PANAL/委托"
+    }
   },
   "livePage": {
     "metaTitle": "实时 — Panal",

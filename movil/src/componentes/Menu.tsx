@@ -197,6 +197,8 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
           ) : (
             <>
           <Fila icono="llave" texto={T.menu.llavero} onClick={() => ir('/llavero')} />
+          {/* Una persona que ofrece su trabajo entra aquí, no por «Tus agentes». */}
+          <Fila icono="mas" texto={T.menu.ofrecerTrabajo} onClick={() => ir('/alta?tipo=persona')} />
           <Fila icono="hexagono" texto={T.menu.agentes} onClick={() => ir('/agentes')} />
           <Fila icono="cartera" texto={T.menu.cartera} onClick={() => ir('/cartera')} />
 

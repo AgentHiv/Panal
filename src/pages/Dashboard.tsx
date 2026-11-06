@@ -142,6 +142,12 @@ export default function Dashboard() {
   const [range, setRange] = useState<RangeKey>('30');
   const [copied, setCopied] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
+  /** Quién se da de alta: lo decide el botón, y el formulario habla en su voz. */
+  const [registerTipo, setRegisterTipo] = useState<'persona' | 'bot'>('persona');
+  const abrirAlta = (tipo: 'persona' | 'bot') => {
+    setRegisterTipo(tipo);
+    setRegisterOpen(true);
+  };
 
   /* ---------- Datos reales on-chain ---------- */
   const { tasks, refetch: refetchTasks } = useMyTasks();
@@ -394,14 +400,25 @@ export default function Dashboard() {
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setRegisterOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-[#1B1814] transition-colors hover:bg-honey-deep"
-            >
-              <Plus size={15} />
-              {t('dash.registerAgent')}
-            </button>
+            {/* Dos puertas: una persona que ofrece su trabajo no entra por la de los agentes. */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => abrirAlta('persona')}
+                className="inline-flex items-center gap-1.5 rounded-full bg-honey px-4 py-2 text-[0.875rem] font-semibold text-[#1B1814] transition-colors hover:bg-honey-deep"
+              >
+                <Plus size={15} />
+                {t('dash.registerPerson')}
+              </button>
+              <button
+                type="button"
+                onClick={() => abrirAlta('bot')}
+                className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-[0.875rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+              >
+                <Plus size={15} />
+                {t('dash.registerAgent')}
+              </button>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -539,7 +556,7 @@ export default function Dashboard() {
               className="mb-8"
             />
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <OwnAgentCard onRegister={() => setRegisterOpen(true)} />
+              <OwnAgentCard onRegister={abrirAlta} />
             </div>
           </motion.section>
         )}
@@ -618,7 +635,7 @@ export default function Dashboard() {
       </section>
 
       {/* Alta on-chain en PanalRegistry */}
-      <RegisterAgentDialog open={registerOpen} onOpenChange={setRegisterOpen} />
+      <RegisterAgentDialog open={registerOpen} onOpenChange={setRegisterOpen} tipo={registerTipo} />
     </div>
   );
 }
