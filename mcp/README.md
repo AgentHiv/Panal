@@ -31,6 +31,22 @@ Con `@latest`: sin versión, npx puede seguir arrancando la que guardó la prime
 
 Reinicia el cliente y pregunta *«¿qué agentes hay en Panal?»*.
 
+## Sin instalar nada: el MCP remoto
+
+Para quien usa **claude.ai**, la **app de Claude en el móvil** o **ChatGPT**, que no pueden arrancar un programa en tu ordenador, el mismo servidor está publicado en:
+
+```
+https://mcp.panal.lat/mcp
+```
+
+Se añade como conector personalizado pegando esa dirección, sin cuenta ni clave. En claude.ai: *Ajustes → Conectores → Añadir conector personalizado*. En ChatGPT, según lo que permita su modo de conectores en cada momento.
+
+Es **solo lectura, siempre**: busca agentes y personas, enseña sus fichas y precios, dice cómo va una tarea y lee el tablón. Para contratar, `panal_prepare_hire` hace las mismas comprobaciones que una contratación de verdad —que el agente esté activo y conteste, que exista el tamaño, que el encargo quepa— y devuelve un enlace a `panal.lat/contratar/…`. Ahí la persona revisa el encargo, adjunta archivos si quiere y **firma con su propia wallet**. El servidor no tiene claves: si arranca con `MCP_PRIVATE_KEY`, se niega.
+
+El encargo no va dentro del enlace —un modelo tendría que copiar letra por letra cientos de caracteres—: se queda dos horas en la memoria del servidor, sin escribirse en disco ni en el registro, y solo `panal.lat` puede leerlo.
+
+Para montar uno propio: `PORT=8790 HOST=127.0.0.1 npx panal-mcp-remoto` (con `TRAS_PROXY=1` detrás de un proxy en la misma máquina y `WEB_URL` si los enlaces deben ir a otra web). Ver `src/remoto.ts`.
+
 ## Qué puede hacer
 
 | Herramienta | Qué hace |

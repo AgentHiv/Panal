@@ -70,6 +70,7 @@ import {
 } from '@/contracts/config';
 import { panalEscrowAbi, panalEscrowV2Abi, panalRegistryAbi, panalRegistryV2Abi, panalTokenAbi } from '@/contracts/abis';
 import { respondeElAgente } from '@/lib/reachability';
+import type { BorradorDeContratacion } from '@/lib/borrador';
 
 export interface HireDialogProps {
   agent: Agent | null;
@@ -91,6 +92,12 @@ export interface HireDialogProps {
    * tiempo, quien preguntó cancela y el escrow le devuelve todo.
    */
   pregunta?: boolean;
+  /**
+   * Un encargo que preparó un asistente con el MCP remoto (ver
+   * `src/lib/borrador.ts`): el texto, el tamaño y el plazo llegan rellenos.
+   * Todo se puede cambiar y nada se paga hasta que la persona firma.
+   */
+  borrador?: BorradorDeContratacion | null;
 }
 
 const STEP_TITLES = ['hire.step1.title', 'hire.step2.title', 'hire.step3.title'];
@@ -104,12 +111,19 @@ const DEADLINE_OPTIONS = [6, 24, 72, 168] as const;
  * así cada apertura empieza de cero. TODO es real: solo agentes on-chain y solo
  * con wallet conectada (fail-closed, sin sellado simulado).
  */
-export default function HireDialog({ agent, open, onOpenChange, nivel = null, pregunta = false }: HireDialogProps) {
+export default function HireDialog({
+  agent,
+  open,
+  onOpenChange,
+  nivel = null,
+  pregunta = false,
+  borrador = null,
+}: HireDialogProps) {
   if (!agent) return null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto border-line bg-paper p-0 sm:rounded-2xl">
-        <HireWizard agent={agent} onOpenChange={onOpenChange} nivel={nivel} pregunta={pregunta} />
+        <HireWizard agent={agent} onOpenChange={onOpenChange} nivel={nivel} pregunta={pregunta} borrador={borrador} />
       </DialogContent>
     </Dialog>
   );
@@ -120,11 +134,13 @@ function HireWizard({
   onOpenChange,
   nivel,
   pregunta,
+  borrador,
 }: {
   agent: Agent;
   onOpenChange: (open: boolean) => void;
   nivel: Nivel | null;
   pregunta: boolean;
+  borrador: BorradorDeContratacion | null;
 }) {
   const { t, i18n } = useTranslation();
   const [step, setStep] = useState(0);
@@ -146,9 +162,15 @@ function HireWizard({
    * leer la prop y no hay estado viejo que arrastrar.
    */
   const [elegido, setElegido] = useState<Nivel | null>(nivel);
-  const [taskText, setTaskText] = useState('');
+  const [taskText, setTaskText] = useState(borrador?.encargo ?? '');
   /** Plazo de la tarea en horas (deadline on-chain elegido por el cliente). */
-  const [deadlineHours, setDeadlineHours] = useState<number>(pregunta ? PLAZO_DE_PREGUNTA_HORAS : 72);
+  const [deadlineHours, setDeadlineHours] = useState<number>(
+    pregunta
+      ? PLAZO_DE_PREGUNTA_HORAS
+      : borrador && (DEADLINE_OPTIONS as readonly number[]).includes(borrador.horas)
+        ? borrador.horas
+        : 72,
+  );
   const [params, setParams] = useState('');
   /** Lo que el cliente adjunta. Sus hashes viajan DENTRO del encargo. */
   const [adjuntos, setAdjuntos] = useState<Adjunto[]>([]);
@@ -340,7 +362,13 @@ function HireWizard({
         // Si se entró por el botón grande no hay nivel elegido, y el que toca
         // por defecto es el más barato: debería costar lo que el agente tiene
         // registrado, así que quien no toque nada bloquea lo de siempre.
-        setElegido((previo) => previo ?? suyos[0] ?? null);
+        // El que eligió el asistente, si se llegó con un borrador: por precio,
+        // que no se traduce, y si no cuadra, por nombre.
+        const delBorrador = borrador?.nivelWei
+          ? (suyos.find((n) => n.wei.toString() === borrador.nivelWei) ??
+            suyos.find((n) => !!n.name && n.name.toLowerCase() === borrador.nivel?.toLowerCase()))
+          : undefined;
+        setElegido((previo) => previo ?? delBorrador ?? suyos[0] ?? null);
       } catch {
         // Falla cerrado, igual que `leerCapacidades`.
         if (vigente) setAceptaAdjuntos('no');
@@ -349,7 +377,7 @@ function HireWizard({
     return () => {
       vigente = false;
     };
-  }, [agent, i18n.language]);
+  }, [agent, i18n.language, borrador]);
 
   /**
    * El encargo, tal y como se va a hashear. Se compone AQUÍ y en ningún otro
@@ -896,6 +924,11 @@ function HireWizard({
             >
               {step === 0 && (
                 <div className="flex flex-col gap-4">
+                  {borrador && (
+                    <p className="rounded-xl border border-honey/40 bg-honey-soft px-4 py-3 text-[0.8125rem] leading-snug text-ink">
+                      {t('contratar.aviso')}
+                    </p>
+                  )}
                   {/* agente resumido */}
                   <div className="flex items-center gap-3 rounded-xl border border-line bg-cream px-4 py-3">
                     <HexAvatar seed={agent.wallet} size={40} logo={marcaDe(agent).logo} alt={agent.name} />

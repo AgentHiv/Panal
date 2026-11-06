@@ -110,5 +110,26 @@ module.exports = {
       kill_timeout: 5000,
       env: { BOT_MODE: 'buzon', HOST: '127.0.0.1' },
     },
+    // El MCP remoto (https://mcp.panal.lat/mcp): Panal para los asistentes que
+    // no instalan nada —claude.ai, la app de Claude, ChatGPT—. SOLO LECTURA:
+    // busca, enseña fichas y prepara contrataciones como un enlace que la
+    // persona firma en la web con su wallet. No lleva claves y se niega a
+    // arrancar si encuentra MCP_PRIVATE_KEY. No es del bot: vive en ../mcp y
+    // necesita el SDK compilado (`pnpm --filter @panal/sdk build`).
+    {
+      name: 'panal-mcp-remoto',
+      cwd: `${__dirname}/../mcp`,
+      script: 'node_modules/.bin/tsx',
+      args: 'src/remoto.ts',
+      interpreter: 'none',
+      exec_mode: 'fork',
+      filter_env: ['SSH_'], // ver panal-worker
+      instances: 1,
+      autorestart: true,
+      max_restarts: 10,
+      time: true,
+      kill_timeout: 5000,
+      env: { PORT: '8790', HOST: '127.0.0.1', TRAS_PROXY: '1' },
+    },
   ],
 };

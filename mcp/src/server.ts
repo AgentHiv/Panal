@@ -57,6 +57,7 @@ import {
   formatearDolares,
   erc20Abi,
   leerEjemplosDeMetadata,
+  leerTipo,
   matchAttachment,
   parseAttachmentsManifest,
   parseFilesManifest,
@@ -106,7 +107,7 @@ const SERVER_NAME = 'panal';
  * 0.1.0 mientras el paquete iba por 0.1.3, y un servidor que se anuncia con
  * una versión falsa hace imposible saber qué está corriendo el usuario.
  */
-const SERVER_VERSION = ((): string => {
+export const SERVER_VERSION = ((): string => {
   try {
     const aqui = dirname(fileURLToPath(import.meta.url));
     return (JSON.parse(readFileSync(resolve(aqui, '..', 'package.json'), 'utf8')) as { version: string }).version;
@@ -115,12 +116,12 @@ const SERVER_VERSION = ((): string => {
   }
 })();
 /** Versiones del protocolo que sabemos hablar; la primera es la preferida. */
-const SUPPORTED_PROTOCOLS = ['2025-06-18', '2025-03-26', '2024-11-05'];
+export const SUPPORTED_PROTOCOLS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 
 const EXPLORER = 'https://monadvision.com';
 
 /** Registro. SIEMPRE por stderr: stdout es del protocolo. */
-function log(msg: string): void {
+export function log(msg: string): void {
   process.stderr.write(`[panal-mcp] ${msg}\n`);
 }
 
@@ -152,7 +153,7 @@ const account = (() => {
   return privateKeyToAccount(key as `0x${string}`);
 })();
 
-const panal: PanalClient = createPanalClient({
+export const panal: PanalClient = createPanalClient({
   rpcUrl: process.env.RPC_URL?.trim(),
   // Solo para probar contra un buzón propio; sin ella, el de Panal.
   buzonUrl: process.env.BUZON_URL?.trim() || undefined,
@@ -182,7 +183,7 @@ function deTercero(quien: string, texto: string): string {
   ].join('\n');
 }
 
-function recibeEnElBuzon(botUrl: string | null | undefined): boolean {
+export function recibeEnElBuzon(botUrl: string | null | undefined): boolean {
   if (!botUrl) return false;
   const url = sinBarraFinal(botUrl).toLowerCase();
   return [BUZON_URL, panal.buzonUrl].some((b) => url.startsWith(sinBarraFinal(b).toLowerCase()));
@@ -217,7 +218,7 @@ function esNativa(currency: Address): boolean {
  * en un token enseñando otro. Lo que no está en la lista se nombra por su
  * dirección, que es lo único que se sabe de verdad.
  */
-function symbolOf(currency: Address): string {
+export function symbolOf(currency: Address): string {
   return esNativa(currency) ? 'MON' : (x402Currency(currency)?.symbol ?? currency);
 }
 
@@ -240,7 +241,7 @@ function fmt(amount: bigint, currency: Address): string {
  */
 let preciosCache: { leidos: number; valor: Precios | null } = { leidos: 0, valor: null };
 
-async function refrescarPrecios(): Promise<void> {
+export async function refrescarPrecios(): Promise<void> {
   if (Date.now() - preciosCache.leidos < 30_000) return;
   preciosCache = { leidos: Date.now(), valor: await panal.precios().catch(() => null) };
 }
@@ -249,7 +250,7 @@ async function refrescarPrecios(): Promise<void> {
  * « (≈ $0.60)» si hay un precio de menos de cinco minutos para esa moneda;
  * nada si no. Las estables ya son dólares y no llevan nada.
  */
-function usd(amount: bigint, currency: Address): string {
+export function usd(amount: bigint, currency: Address): string {
   const sym = symbolOf(currency);
   if (sym !== 'MON' && sym !== '$PANAL') return '';
   const d = enDolares(amount, sym, preciosCache.valor);
@@ -384,6 +385,9 @@ function renderAgent(agent: Agent, niveles: Nivel[] = [], detallado = false): st
   const skills = agent.metadata.skills.length ? agent.metadata.skills.join(', ') : '(no skills declared)';
   return [
     `${agent.metadata.name || '(no name)'} — ${agent.address}`,
+    // Quién hace el trabajo, dicho por la ficha: quien contrata tiene que saber
+    // si le contesta un programa al momento o una persona, con sus horas.
+    `  Who: ${leerTipo(agent.metadataURI) === 'persona' ? 'a person, who does the work themselves' : 'an AI agent (a program)'}`,
     `  Status: ${agent.active ? 'active' : 'DELISTED (does not take jobs)'}`,
     trustLine(agent),
     // "Per task" y no "Price" a secas: hay dos precios (tarea por escrow y
@@ -424,10 +428,14 @@ function renderTask(task: Awaited<ReturnType<PanalClient['getTask']>>): string {
 // Herramientas
 // ---------------------------------------------------------------------------
 
-interface Tool {
+export interface Tool {
   name: string;
+  /** Nombre para personas, el que enseñan los clientes que lo muestran. */
+  title?: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  /** Pistas del protocolo (readOnlyHint, destructiveHint…): las piden los directorios de conectores. */
+  annotations?: Record<string, unknown>;
   handler: (args: Record<string, unknown>) => Promise<string>;
 }
 
@@ -583,7 +591,131 @@ async function accesoEnDisputa(taskId: bigint): Promise<string | null> {
   }
 }
 
-const READ_TOOLS: Tool[] = [
+/** Lo que queda decidido de un encargo antes de pagar nada. */
+export interface EncargoResuelto {
+  symbol: string;
+  /** Los tamaños que vende, si vende varios; vacío si tiene un solo precio. */
+  niveles: Nivel[];
+  /** El tamaño que se compra, o null si no vende tamaños. */
+  elegido: Nivel | null;
+  /** Lo que se bloquearía en el escrow, en unidades mínimas. */
+  amount: bigint;
+  limites: LimitesDelAgente;
+}
+
+/**
+ * Las comprobaciones de un encargo que no dependen de quién paga: que haya a
+ * dónde mandarlo, que alguien conteste, qué tamaño se compra y que el texto
+ * quepa. Las usan la cotización de este servidor y el enlace del remoto
+ * (`remoto.ts`), y por eso viven aquí y no dentro de una de las dos: si se
+ * separaran, el remoto acabaría mandando a firmar encargos que este rechaza.
+ *
+ * Todas pasan ANTES de que haya dinero de por medio. El encargo se entrega
+ * después de crear la tarea, así que cualquiera de estos fallos descubierto
+ * pagando dejaría el dinero bloqueado hasta el plazo.
+ */
+export async function resolverEncargo(
+  agent: Agent,
+  brief: string,
+  tierPedido: string | undefined,
+): Promise<EncargoResuelto | { error: string }> {
+  const nombre = agent.metadata.name || agent.address;
+
+  // ---- Sin canal no se presupuesta --------------------------------------
+  //
+  // Esto NO le exige a nadie montar un servidor: quien vende como persona
+  // recibe su buzón al darse de alta —`bot:https://api.panal.lat/buzon/0x…`—
+  // y eso ya es un canal publicado. Lo que queda fuera es una ficha
+  // registrada y dejada a medias.
+  if (!agent.metadata.botUrl) {
+    return {
+      error:
+        `${nombre} publishes no endpoint —no "bot:" in its on-chain card— so there is nowhere to send ` +
+        `the job after paying, and the payment would sit locked until the deadline. Nothing was quoted ` +
+        `and nothing was spent.`,
+    };
+  }
+
+  const symbol = symbolOf(agent.currency);
+
+  // ---- La ficha, una sola vez -------------------------------------------
+  //
+  // De aquí salen tres cosas del mismo JSON: si contesta alguien, cuánto
+  // texto acepta y cómo se llaman sus niveles. Se lee ANTES de mirar el
+  // importe porque ya no es siempre el precio del registro: con niveles, lo
+  // que se bloquea es el del nivel elegido.
+  const limites = await fetchAgentLimits(agent.metadata.botUrl);
+  if (limites.alcanzable === false) {
+    return {
+      error:
+        `${nombre} publishes ${agent.metadata.botUrl} but nothing answers there, so the job could not be ` +
+        `delivered even after paying. Nothing was quoted and nothing was spent. Try again when the agent ` +
+        `is back up.`,
+    };
+  }
+
+  // ---- Qué tamaño se compra ---------------------------------------------
+  const niveles = nivelesDeAgente(agent.metadataURI, limites.niveles);
+  let elegido: Nivel | null = null;
+  if (niveles.length > 0) {
+    if (tierPedido) {
+      elegido = buscarNivel(niveles, tierPedido);
+      if (!elegido) {
+        return {
+          error: [
+            `${nombre} does not sell a "${tierPedido}" size. Nothing was quoted.`,
+            ...renderNiveles(niveles, symbol),
+          ].join('\n'),
+        };
+      }
+    } else {
+      // El más barato, que es lo que compra quien contrata sin elegir: su
+      // precio DEBERÍA ser el del registro, pero es el nivel quien manda —si
+      // el agente puso el suyo más caro, pagar el del registro sería pagar por
+      // debajo del mínimo que acepta, y rechazaría el encargo con el dinero ya
+      // bloqueado.
+      elegido = niveles[0]!;
+    }
+  } else if (tierPedido) {
+    // Pedir un nivel a quien no vende ninguno casi siempre es haberse
+    // equivocado de agente. Cobrar el precio suelto y callarlo sería
+    // contratar una cosa distinta de la que se pidió.
+    return {
+      error:
+        `${nombre} does not sell sizes: it has one price for any job, ${formatEther(agent.pricePerTask)} ` +
+        `${symbol}. Nothing was quoted. Ask again without \`tier\` if that is what you want.`,
+    };
+  }
+
+  const amount = elegido?.wei ?? agent.pricePerTask;
+
+  // El tope del nivel elegido manda sobre el general de la ficha: un agente
+  // que vende tamaños declara en cada uno cuánto texto acepta, y comprobar
+  // contra el grande dejaría pasar un encargo que el pequeño rechaza con un
+  // 400 — ya con el pago bloqueado.
+  const tope = elegido?.maxBriefChars ?? limites.maxBriefChars;
+  if (tope !== null && brief.length > tope) {
+    // Si hay un tamaño mayor donde SÍ cabe, se dice cuál. La alternativa es
+    // mandar a acortar un texto cuando lo que faltaba era pagar el nivel que
+    // ese texto necesita, que es justo lo que el agente vende.
+    const cabe = niveles.find((n) => (n.maxBriefChars ?? 0) >= brief.length);
+    const dondeSiCabe =
+      cabe && cabe !== elegido
+        ? ` Its "${cabe.name}" size takes ${cabe.maxBriefChars} for ${precioDeNivel(cabe, symbol)}: ` +
+          `ask the person if they want that one.`
+        : '';
+    return {
+      error:
+        `That job does not fit: ${nombre}${elegido ? ` at the "${elegido.name}" size` : ''} accepts ${tope} ` +
+        `characters and this brief is ${brief.length}. Nothing was quoted and nothing was spent. Shorten it ` +
+        `by ${brief.length - tope} characters and ask again.${dondeSiCabe}`,
+    };
+  }
+
+  return { symbol, niveles, elegido, amount, limites };
+}
+
+export const READ_TOOLS: Tool[] = [
   {
     name: 'panal_search_agents',
     description:
@@ -934,113 +1066,11 @@ const WRITE_TOOLS: Tool[] = [
         adjuntos.map((a) => a.file),
       );
 
-      // ---- Sin canal no se presupuesta ------------------------------------
-      //
-      // El brief se entrega DESPUÉS de crear la tarea. Si la ficha no publica
-      // `bot:`, no hay dónde entregarlo: contratar dejaría el pago bloqueado en
-      // una tarea que nadie puede empezar, y el cliente lo descubriría pagando.
-      // Aquí no cuesta nada decirlo.
-      //
-      // Esto NO le exige a nadie montar un servidor: quien vende como persona
-      // recibe su buzón al darse de alta —`bot:https://api.panal.lat/buzon/0x…`—
-      // y eso ya es un canal publicado. Lo que queda fuera es una ficha
-      // registrada y dejada a medias.
-      if (!agent.metadata.botUrl) {
-        return (
-          `${agent.metadata.name || address} publishes no endpoint —no "bot:" in its on-chain card— so ` +
-          `there is nowhere to send the job after paying, and the payment would sit locked until the ` +
-          `deadline. Nothing was quoted and nothing was spent.`
-        );
-      }
-
-      const symbol = symbolOf(agent.currency);
-
-      // ---- La ficha, una sola vez -----------------------------------------
-      //
-      // De aquí salen tres cosas del mismo JSON: si contesta alguien, cuánto
-      // texto acepta y cómo se llaman sus niveles. Se lee ANTES de mirar el
-      // presupuesto porque el importe ya no es siempre el precio del registro:
-      // con niveles, lo que se bloquea es el del nivel elegido, y comprobar el
-      // tope contra un número que todavía no se sabe no comprueba nada.
-      // Ya no puede faltar: sin `bot:` se ha vuelto arriba.
-      let limites: LimitesDelAgente = { alcanzable: null, maxBriefChars: null, niveles: [] };
-      {
-        limites = await fetchAgentLimits(agent.metadata.botUrl);
-        // Que el endpoint no conteste descalifica el encargo entero: el brief se
-        // entrega DESPUÉS de crear la tarea, así que contratar ahora dejaría el
-        // pago bloqueado en una tarea que nadie puede empezar. Aquí no cuesta
-        // nada y basta con reintentar cuando el agente vuelva.
-        if (limites.alcanzable === false) {
-          return (
-            `${agent.metadata.name || address} publishes ${agent.metadata.botUrl} but nothing answers there, ` +
-            `so the job could not be delivered even after paying. Nothing was quoted and nothing was spent. ` +
-            `Try again when the agent is back up.`
-          );
-        }
-      }
-
-      // ---- Qué tamaño se compra -------------------------------------------
-      const niveles = nivelesDeAgente(agent.metadataURI, limites.niveles);
-      const pedido = str(args.tier);
-      let elegido: Nivel | null = null;
-      if (niveles.length > 0) {
-        if (pedido) {
-          elegido = buscarNivel(niveles, pedido);
-          if (!elegido) {
-            return [
-              `${agent.metadata.name || address} does not sell a "${pedido}" size. Nothing was quoted.`,
-              ...renderNiveles(niveles, symbol),
-            ].join('\n');
-          }
-        } else {
-          // El más barato, que es lo que compra quien contrata sin elegir: su
-          // precio DEBERÍA ser el del registro, pero es el nivel quien manda —
-          // si el agente puso el suyo más caro, pagar el del registro sería
-          // pagar por debajo del mínimo que acepta y que rechazara el encargo
-          // con el dinero ya bloqueado.
-          elegido = niveles[0]!;
-        }
-      } else if (pedido) {
-        // Pedir un nivel a quien no vende ninguno casi siempre es haberse
-        // equivocado de agente. Cobrar el precio suelto y callarlo sería
-        // contratar una cosa distinta de la que se pidió.
-        return (
-          `${agent.metadata.name || address} does not sell sizes: it has one price for any job, ` +
-          `${formatEther(agent.pricePerTask)} ${symbol}. Nothing was quoted. Ask again without \`tier\` ` +
-          `if that is what you want.`
-        );
-      }
-
-      const amount = elegido?.wei ?? agent.pricePerTask;
+      const resuelto = await resolverEncargo(agent, brief, str(args.tier));
+      if ('error' in resuelto) return resuelto.error;
+      const { symbol, niveles, elegido, amount } = resuelto;
       const negativa = revisarPresupuesto(agent.currency, amount, symbol);
       if (negativa) return negativa;
-
-      // El tope del brief se pregunta ANTES de presupuestar. Si no cabe, el
-      // agente lo rechazaría con un 400 al recibirlo — pero eso ocurre ya con
-      // el pago bloqueado, porque el encargo se entrega después de crear la
-      // tarea. Aquí no cuesta nada y evita dejar dinero atrapado hasta que
-      // vence el plazo.
-      // El tope del nivel elegido manda sobre el general de la ficha: un agente
-      // que vende tamaños declara en cada uno cuánto texto acepta, y comprobar
-      // contra el grande dejaría pasar un encargo que el pequeño rechaza.
-      const tope = elegido?.maxBriefChars ?? limites.maxBriefChars;
-      if (tope !== null && brief.length > tope) {
-        // Si hay un tamaño mayor donde SÍ cabe, se dice cuál. La alternativa
-        // es mandar a acortar un texto cuando lo que faltaba era pagar el nivel
-        // que ese texto necesita, que es justo lo que el agente vende.
-        const cabe = niveles.find((n) => (n.maxBriefChars ?? 0) >= brief.length);
-        const dondeSiCabe =
-          cabe && cabe !== elegido
-            ? ` Its "${cabe.name}" size takes ${cabe.maxBriefChars} for ${precioDeNivel(cabe, symbol)}: ` +
-              `ask the person if they want that one.`
-            : '';
-        return (
-          `That job does not fit: ${agent.metadata.name || address}` +
-          `${elegido ? ` at the "${elegido.name}" size` : ''} accepts ${tope} characters ` +
-          `and this brief is ${brief.length}. Nothing was quoted and nothing was spent. ` +
-          `Shorten it by ${brief.length - tope} characters and ask again.${dondeSiCabe}`
-        );
-      }
 
       // Con quien recibe en el buzón de Panal y publicó su clave, el encargo,
       // sus archivos y la entrega van cifrados de punta a punta, como desde la
@@ -1962,7 +1992,7 @@ const WRITE_TOOLS: Tool[] = [
 ];
 
 /** El tablón con reglas (tablon.ts), con los mismos guardas y presupuesto que el resto. */
-const TABLON = herramientasDelTablon({
+export const TABLON = herramientasDelTablon({
   panal,
   cuenta: account?.address ?? null,
   escrituraCerrada: writesBlockedReason,
@@ -1989,7 +2019,7 @@ const TOOLS: Tool[] = [...READ_TOOLS, ...TABLON.lectura, ...WRITE_TOOLS, ...TABL
 // JSON-RPC 2.0 sobre stdio
 // ---------------------------------------------------------------------------
 
-interface RpcRequest {
+export interface RpcRequest {
   jsonrpc?: string;
   id?: number | string | null;
   method?: string;
@@ -2000,67 +2030,86 @@ function send(payload: Record<string, unknown>): void {
   process.stdout.write(`${JSON.stringify(payload)}\n`);
 }
 
-function reply(id: RpcRequest['id'], result: unknown): void {
-  if (id === undefined || id === null) return; // notificación: no se contesta
-  send({ jsonrpc: '2.0', id, result });
+/** Lo que hace falta para contestar: las herramientas que se ofrecen y, si se quiere, cómo usarlas. */
+export interface OpcionesRespuesta {
+  tools: Tool[];
+  /** Texto para el modelo con el modo de uso; va en la respuesta a `initialize`. */
+  instructions?: string;
 }
 
-function replyError(id: RpcRequest['id'], code: number, message: string): void {
-  if (id === undefined || id === null) return;
-  send({ jsonrpc: '2.0', id, error: { code, message } });
-}
+const ok = (id: RpcRequest['id'], result: unknown) =>
+  id === undefined || id === null ? null : { jsonrpc: '2.0', id, result };
+const fallo = (id: RpcRequest['id'], code: number, message: string) =>
+  id === undefined || id === null ? null : { jsonrpc: '2.0', id, error: { code, message } };
 
-async function handle(req: RpcRequest): Promise<void> {
+/**
+ * La respuesta a un mensaje JSON-RPC, o null si es una notificación (que no
+ * se contesta). No escribe nada en ningún sitio: la usan el servidor por
+ * stdio de aquí abajo y el remoto por HTTP (`remoto.ts`), cada uno con su
+ * transporte y su lista de herramientas.
+ */
+export async function responder(req: RpcRequest, opciones: OpcionesRespuesta): Promise<Record<string, unknown> | null> {
   switch (req.method) {
     case 'initialize': {
       const asked = typeof req.params?.protocolVersion === 'string' ? req.params.protocolVersion : undefined;
       const version = asked && SUPPORTED_PROTOCOLS.includes(asked) ? asked : SUPPORTED_PROTOCOLS[0]!;
-      reply(req.id, {
+      return ok(req.id, {
         protocolVersion: version,
         capabilities: { tools: {} },
         serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
+        ...(opciones.instructions ? { instructions: opciones.instructions } : {}),
       });
-      return;
     }
 
     case 'notifications/initialized':
     case 'initialized':
-      return;
+      return null;
 
     case 'ping':
-      reply(req.id, {});
-      return;
+      return ok(req.id, {});
 
     case 'tools/list':
-      reply(req.id, {
-        tools: TOOLS.map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })),
+      return ok(req.id, {
+        tools: opciones.tools.map((t) => ({
+          name: t.name,
+          ...(t.title ? { title: t.title } : {}),
+          description: t.description,
+          inputSchema: t.inputSchema,
+          ...(t.annotations ? { annotations: t.annotations } : {}),
+        })),
       });
-      return;
 
     case 'tools/call': {
       const name = typeof req.params?.name === 'string' ? req.params.name : '';
-      const tool = TOOLS.find((t) => t.name === name);
-      if (!tool) {
-        replyError(req.id, -32602, `There is no tool named "${name}".`);
-        return;
-      }
+      const tool = opciones.tools.find((t) => t.name === name);
+      if (!tool) return fallo(req.id, -32602, `There is no tool named "${name}".`);
       const args = (req.params?.arguments as Record<string, unknown> | undefined) ?? {};
       try {
         const text = await tool.handler(args);
-        reply(req.id, { content: [{ type: 'text', text }] });
+        return ok(req.id, { content: [{ type: 'text', text }] });
       } catch (err) {
         // Un error se devuelve como resultado con isError, no como error del
         // protocolo: así el modelo lo lee y puede explicárselo a la persona.
         const msg = err instanceof Error ? err.message : String(err);
         log(`${name} falló: ${msg}`);
-        reply(req.id, { content: [{ type: 'text', text: `Error en ${name}: ${msg}` }], isError: true });
+        return ok(req.id, { content: [{ type: 'text', text: `Error en ${name}: ${msg}` }], isError: true });
       }
-      return;
     }
 
     default:
-      replyError(req.id, -32601, `Método no soportado: ${req.method}`);
+      // Una notificación que no se conoce se ignora: no tiene a quién contestar.
+      return fallo(req.id, -32601, `Método no soportado: ${req.method}`);
   }
+}
+
+async function handle(req: RpcRequest): Promise<void> {
+  const respuesta = await responder(req, { tools: TOOLS });
+  if (respuesta) send(respuesta);
+}
+
+function replyError(id: RpcRequest['id'], code: number, message: string): void {
+  const r = fallo(id, code, message);
+  if (r) send(r);
 }
 
 function main(): void {
@@ -2092,7 +2141,10 @@ function main(): void {
   rl.on('close', () => process.exit(0));
 }
 
-main();
+// El remoto (`remoto.ts`) importa este módulo para reutilizar las herramientas
+// y la respuesta, y no debe ponerse a leer stdin: bajo pm2 stdin está cerrado,
+// y `rl.on('close')` terminaría el proceso nada más arrancar.
+if (process.env.PANAL_MCP_REMOTO !== '1') main();
 
 // Solo para las pruebas: permite invocar una herramienta sin levantar el stdio.
 export const _tools = TOOLS;

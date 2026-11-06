@@ -82,6 +82,16 @@ bot.panal.lat {
 	import hacia 8787
 }
 
+# El MCP remoto (puerto interno 8790): Panal para asistentes como claude.ai o
+# ChatGPT, que se conectan a https://mcp.panal.lat/mcp. Solo lectura y sin
+# claves; ver mcp/src/remoto.ts. Con la nube naranja, como api y bot: los
+# asistentes llaman desde sus servidores y Cloudflare filtra lo demás. NO
+# activar Bot Fight Mode: bloquearía justo a esos servidores.
+mcp.panal.lat {
+	import acceso
+	import hacia 8790
+}
+
 # API pública del indexador (puerto interno 8788) — opcional
 #
 # El buzón cuelga del mismo dominio, en /buzon/*, y va a OTRO proceso (8789).
