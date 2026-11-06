@@ -20,7 +20,7 @@ import { createPublicClient, createWalletClient, formatEther, getAddress, http, 
 import type { Abi, Account, Address, Hex, PublicClient, TransactionReceipt, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, namesAbi, registryAbi } from './abis.js';
 import { leerX402 } from './agent-card.js';
-import { assertPublicUrl, fetchBytesLimited, fetchLimited, rutaDeAgente, sinBarraFinal } from './net.js';
+import { assertPublicUrl, fetchBytesLimited, fetchLimited, fetchQueEsperaAlRpc, rutaDeAgente, sinBarraFinal } from './net.js';
 import {
   MAX_FILE_BYTES,
   appendAttachmentsManifest,
@@ -163,6 +163,8 @@ const TOPE_GAS_TABLON = 3_000_000n;
 const REGISTRY_PAGE = 50n;
 /** Tope duro de agentes recorridos, por si el registro crece mucho. */
 const REGISTRY_MAX = 500;
+/** Fichas del registro leídas a la vez. Con todas de golpe, el RPC público responde 429. */
+const LECTURAS_A_LA_VEZ = 5;
 
 export interface HireParams {
   /** Dirección del agente que hará el trabajo. */
@@ -281,7 +283,8 @@ export class PanalClient {
     this.indexerUrl = options.indexerUrl === undefined ? 'https://api.panal.lat' : options.indexerUrl;
     this.buzonUrl = sinBarraFinal(options.buzonUrl ?? BUZON_URL);
 
-    const transport = http(options.rpcUrl ?? chain.rpcUrls.default.http[0]);
+    // Con un fetch que espera cuando el RPC dice 429: ver `fetchQueEsperaAlRpc`.
+    const transport = http(options.rpcUrl ?? chain.rpcUrls.default.http[0], { fetchFn: fetchQueEsperaAlRpc() });
     this.publicClient = createPublicClient({ chain, transport });
     this.account = options.account;
     if (options.account) {
@@ -633,7 +636,12 @@ export class PanalClient {
     // contra un RPC que corta sobre 50 concurrentes, y buscar el nombre de cada
     // uno las triplicaria. Quien quiera el nombre de uno concreto llama a
     // getAgent(); quien quiera el de todos tiene el indexador, que ya lo trae.
-    return Promise.all(addresses.map((address) => this.leerAgente(address)));
+    // Y de cinco en cinco: con todas a la vez, el RPC público responde 429.
+    const agentes: Agent[] = [];
+    for (let i = 0; i < addresses.length; i += LECTURAS_A_LA_VEZ) {
+      agentes.push(...(await Promise.all(addresses.slice(i, i + LECTURAS_A_LA_VEZ).map((a) => this.leerAgente(a)))));
+    }
+    return agentes;
   }
 
   /**
@@ -1400,6 +1408,77 @@ export class PanalClient {
     }
 
     return this.deliverResult(taskId, resultText);
+  }
+
+  /**
+   * Deja en el buzón de Panal una COPIA de una entrega ya anclada: el texto y
+   * sus archivos.
+   *
+   * Es para los agentes con servidor propio. Su entrega vive en ese servidor,
+   * y si un día se apaga para siempre el cliente se queda con un hash en la
+   * cadena y sin forma de leer lo que pagó —o, peor, sin forma de enseñárselo
+   * a quien resuelva una disputa—. Con la copia, la web y la app la leen del
+   * buzón cuando el agente no contesta. Dura lo que dura todo en el buzón
+   * (30 días): es un respaldo, no un archivo.
+   *
+   * Va DESPUÉS de `deliverResult`, al revés que `deliverBoardResult`: aquí la
+   * entrega buena es la del servidor propio, y con el hash ya anclado el buzón
+   * solo acepta un texto que dé ese hash, así que una copia no puede decir
+   * otra cosa que lo entregado. Si va cifrada, se copia el sobre tal cual: el
+   * buzón no la puede abrir.
+   *
+   * Lanza si el buzón no acepta el texto o un archivo; quien llame decide si
+   * eso importa. Para la plantilla no importa: la entrega ya vale sin copia.
+   */
+  async backupDeliveryToMailbox(
+    taskId: bigint,
+    resultText: string,
+    files: { name: string; bytes: Uint8Array; mime?: string }[] = [],
+  ): Promise<{ files: number }> {
+    const wallet = this.wallet();
+    const yo = this.account!.address;
+    const base = `${this.buzonUrl}/${yo}`;
+    // Una sola firma para el texto y todos los archivos: el buzón pide la
+    // misma («Panal entrega #id · expira») para las dos cosas.
+    const expira = Math.floor(Date.now() / 1000) + VENTANA_FIRMA_S;
+    const firma = await wallet.signMessage({ account: this.account!, message: entregaSignMessage(taskId, expira) });
+
+    const texto = await fetchLimited(`${base}/entrega/${taskId}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ entrega: resultText, address: yo, signature: firma, expira }),
+      timeoutMs: 30_000,
+      maxBytes: 100_000,
+    });
+    if (texto.status !== 200) {
+      throw new Error(`El buzón no aceptó la copia de la entrega #${taskId} (${texto.status}: ${texto.text.slice(0, 160)}).`);
+    }
+
+    let copiados = 0;
+    for (const f of files) {
+      const r = await fetchLimited(`${base}/entrega-archivo/${taskId}`, {
+        method: 'POST',
+        headers: {
+          'content-type': f.mime || 'application/octet-stream',
+          'x-panal-address': yo,
+          'x-panal-signature': firma,
+          'x-panal-expira': String(expira),
+          // Percent-encoded, como la web: una cabecera no admite «traducción.pdf».
+          'x-panal-filename': encodeURIComponent(f.name),
+        },
+        body: f.bytes as unknown as RequestInit['body'],
+        timeoutMs: 120_000,
+        maxBytes: 100_000,
+      });
+      if (r.status !== 200) {
+        throw new Error(
+          `El buzón no aceptó «${f.name}» de la entrega #${taskId} (${r.status}: ${r.text.slice(0, 160)}). ` +
+            `Se copiaron ${copiados} de ${files.length} archivos.`,
+        );
+      }
+      copiados++;
+    }
+    return { files: copiados };
   }
 
   // -------------------------------------------------------------------------

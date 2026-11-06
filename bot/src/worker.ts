@@ -33,6 +33,7 @@ import {
   type Task,
 } from './chain.js';
 import { generateResult } from './llm.js';
+import { copiarEntregaAlBuzon } from './copia.js';
 import { A2aManager } from './a2a.js';
 import {
   buildStatusSummary,
@@ -98,6 +99,23 @@ export async function runWorker(
 
     const txHash = await deliverResult(clients, cfg, taskId, resultHash);
     console.log(`[worker] #${taskId} entregada on-chain. tx: ${txHash}`);
+
+    // Una copia en el buzón de Panal, por si este servidor se apaga un día
+    // (ver copia.ts). Sin esperarla y sin que un fallo toque la entrega.
+    const wallet = clients.walletClient;
+    if (wallet?.account) {
+      void copiarEntregaAlBuzon({
+        buzonUrl: cfg.buzonPublicUrl,
+        agente: cfg.agentAddress,
+        taskId,
+        texto: resultText,
+        firmar: (mensaje) => wallet.signMessage({ account: wallet.account!, message: mensaje }),
+      })
+        .then(() => console.log(`[worker] #${taskId}: copia en el buzón de Panal`))
+        .catch((err: unknown) =>
+          console.warn(`[worker] #${taskId}: no se dejó copia en el buzón (${err instanceof Error ? err.message : err})`),
+        );
+    }
 
     await telegram.send(t(cfg.lang, 'worker.delivered', { id: taskId.toString(), tx: txHash }));
     // Enviar el resultado completo al dueño (Telegram limita a ~4096 chars;

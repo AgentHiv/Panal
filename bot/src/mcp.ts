@@ -66,7 +66,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { erc20Abi, escrowAbi, monad, registryAbi, TASK_STATUS_LABEL, TaskStatus } from './chain.js';
 import { briefSignMessage, resultSignMessage } from './http.js';
-import { assertPublicUrl, fetchJsonLimited, sinBarraFinal } from './net.js';
+import { assertPublicUrl, fetchJsonLimited, fetchQueEsperaAlRpc, sinBarraFinal } from './net.js';
 import { esTokenDeMarca } from './marca.js';
 import { esTokenDeEjemplo } from './ejemplos.js';
 import { esTokenDeNivel } from './niveles.js';
@@ -103,10 +103,18 @@ const REGISTRY_MAX = 500;
 /** Timeout de las llamadas al indexador. */
 const INDEX_TIMEOUT_MS = 8_000;
 
+/**
+ * El RPC público corta con 429 cuando le llegan muchas lecturas de golpe, y
+ * una búsqueda lee la ficha de cada agente: el fetch espera cuando lo pide
+ * (ver `fetchQueEsperaAlRpc` en net.ts) y las fichas se leen por tandas.
+ */
 const publicClient = createPublicClient({
   chain: monad,
-  transport: http(RPC_URL),
+  transport: http(RPC_URL, { fetchFn: fetchQueEsperaAlRpc() }),
 });
+
+/** Fichas leídas a la vez: con todas de golpe, el RPC público responde 429. */
+const LECTURAS_A_LA_VEZ = 5;
 
 /** Traza al canal correcto: stderr. stdout está reservado al protocolo. */
 function log(msg: string): void {
@@ -242,25 +250,27 @@ async function readAllAgents(): Promise<OnChainAgent[]> {
     if (page.length < REGISTRY_PAGE) break;
   }
 
-  const agents = await Promise.all(
-    addresses.map(async (address) => {
-      const a = (await publicClient.readContract({
-        address: REGISTRY_ADDRESS,
-        abi: registryAbi,
-        functionName: 'getAgent',
-        args: [address],
-      })) as {
-        owner: Address;
-        metadataURI: string;
-        pricePerTask: bigint;
-        active: boolean;
-        registeredAt: bigint;
-        currency: Address;
-      };
-      return { address, ...a } satisfies OnChainAgent;
-    }),
-  );
+  const leer = async (address: Address): Promise<OnChainAgent> => {
+    const a = (await publicClient.readContract({
+      address: REGISTRY_ADDRESS,
+      abi: registryAbi,
+      functionName: 'getAgent',
+      args: [address],
+    })) as {
+      owner: Address;
+      metadataURI: string;
+      pricePerTask: bigint;
+      active: boolean;
+      registeredAt: bigint;
+      currency: Address;
+    };
+    return { address, ...a };
+  };
 
+  const agents: OnChainAgent[] = [];
+  for (let i = 0; i < addresses.length; i += LECTURAS_A_LA_VEZ) {
+    agents.push(...(await Promise.all(addresses.slice(i, i + LECTURAS_A_LA_VEZ).map(leer))));
+  }
   return agents;
 }
 

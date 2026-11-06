@@ -444,6 +444,8 @@ interface Entrega {
   botUrl: string;
   signature: string;
   expira: number;
+  /** El agente no contestó y se leyó de su copia en el buzón de Panal. */
+  desdeLaCopia?: boolean;
 }
 
 /**
@@ -473,19 +475,46 @@ async function recogerEntrega(taskId: bigint): Promise<Entrega | { error: string
   }
 
   const agent = await panal.getAgent(task.worker);
-  if (!agent.metadata.botUrl) {
-    return {
-      error:
-        `Agent ${agent.metadata.name || task.worker} publishes no endpoint, so the result cannot be downloaded ` +
-        `here. Its hash is on-chain (${task.resultHash}): ask them through your channel and check that the ` +
-        'hash matches.',
-    };
-  }
+  const delAgente = agent.metadata.botUrl || null;
+  // La copia que el agente dejó en el buzón de Panal al entregar
+  // (`backupDeliveryToMailbox`): de ahí se lee si él ya no contesta.
+  const deLaCopia = `${sinBarraFinal(panal.buzonUrl)}/${task.worker}`;
+  const esDelBuzon = delAgente !== null && delAgente.toLowerCase().startsWith(`${sinBarraFinal(panal.buzonUrl).toLowerCase()}/`);
 
-  // La firma caduca: abre el resultado y todos los archivos de la tarea.
+  // La firma caduca: abre el resultado y todos los archivos de la tarea, en el
+  // agente y en la copia.
   const expira = expiraEn();
   const signature = await account.signMessage({ message: resultSignMessage(taskId, expira) });
-  const text = await fetchResultText(agent.metadata.botUrl, taskId, account.address, signature, expira);
+  let text: string | null = null;
+  let base = delAgente;
+  let fallo: unknown = null;
+  if (delAgente) {
+    try {
+      text = await fetchResultText(delAgente, taskId, account.address, signature, expira);
+    } catch (err) {
+      fallo = err;
+    }
+  }
+  // Un 403 es que la firma no es del cliente: eso no lo arregla la copia.
+  const rechazada = fallo instanceof Error && / 403\b/.test(fallo.message);
+  if (text === null && !esDelBuzon && !rechazada) {
+    try {
+      text = await fetchResultText(deLaCopia, taskId, account.address, signature, expira);
+      base = deLaCopia;
+    } catch {
+      // Sin copia: se informa del fallo del agente, que es el que importa.
+    }
+  }
+  if (text === null) {
+    if (fallo) throw fallo;
+    return {
+      error:
+        `Agent ${agent.metadata.name || task.worker} publishes no endpoint and left no copy in the Panal mailbox, so ` +
+        `the result cannot be downloaded here. Its hash is on-chain (${task.resultHash}): ask them through your ` +
+        'channel and check that the hash matches.',
+    };
+  }
+  const desdeLaCopia = base === deLaCopia;
 
   // Lo que importa de todo esto: que el texto sea EXACTAMENTE el que se ancló.
   // Sin esta comprobación, el agente podría entregar una cosa on-chain y
@@ -505,7 +534,12 @@ async function recogerEntrega(taskId: bigint): Promise<Entrega | { error: string
   // publicó su clave): se abre aquí, con su clave, y nunca sale en claro.
   const cifrado = esTextoCifrado(text);
   const claro = cifrado ? await panal.decryptText(text) : text;
-  return { text: claro, cifrado, anclado: text, archivos: parseFilesManifest(claro), botUrl: agent.metadata.botUrl, signature, expira };
+  // Leída de la copia, los archivos también se piden ahí: el buzón los guarda
+  // por nombre, y su hash se comprueba igual al bajarlos.
+  const archivos = parseFilesManifest(claro).map((f) =>
+    desdeLaCopia ? { ...f, url: undefined, path: `archivo/${id}/${encodeURIComponent(f.name)}` } : f,
+  );
+  return { text: claro, cifrado, anclado: text, archivos, botUrl: base!, signature, expira, desdeLaCopia };
 }
 
 /**
@@ -1347,7 +1381,10 @@ const WRITE_TOOLS: Tool[] = [
         // crudo son diez lineas de `hash:` y `path:` en mitad de lo que la
         // persona queria leer.
         const limpio = stripFilesManifest(entrega.text).trim();
-        const cabecera = `Result of task #${id} (hash verified against the chain):`;
+        const cabecera = entrega.desdeLaCopia
+          ? `Result of task #${id} (hash verified against the chain). The agent did not answer, so this is the copy ` +
+            'it left in the Panal mailbox, which keeps it for 30 days after delivery:'
+          : `Result of task #${id} (hash verified against the chain):`;
         // A quien pago el agente para hacerlo. Va dentro del texto verificado,
         // asi que esta tan anclado como la entrega: no lo pudo quitar despues.
         const subcontratos = parseSubcontractsManifest(entrega.text);

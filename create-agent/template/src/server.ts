@@ -22,7 +22,7 @@
 // el generador dejó ahí y muere diciendo que falta, con el fichero delante.
 import 'dotenv/config';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -592,6 +592,46 @@ function normalizarSalida(salida: TaskResult): { text: string; files: TaskFile[]
   return { text: salida.text, files: salida.files ?? [] };
 }
 
+/**
+ * ¿Se deja copia de cada entrega en el buzón de Panal? Sí, salvo
+ * `COPIA_EN_BUZON=no`.
+ */
+const COPIA_EN_BUZON = !/^(no|0|false|off)$/i.test(process.env.COPIA_EN_BUZON?.trim() ?? '');
+
+/**
+ * Deja en el buzón de Panal una copia de lo que se acaba de anclar: el texto
+ * y los archivos que este servidor sirve por `/files/:id/:name`.
+ *
+ * La entrega buena sigue siendo la de aquí. La copia existe para el día en que
+ * este servidor se apague para siempre: sin ella, el cliente se queda con un
+ * hash en la cadena y nada que leer —ni que enseñar en una disputa—. Con ella,
+ * la web y la app la leen del buzón cuando aquí no contesta nadie, durante los
+ * 30 días que el buzón guarda las cosas.
+ *
+ * Los archivos se leen de disco y no del manifiesto: en una entrega cifrada el
+ * manifiesto va dentro del sobre, y lo que hay en disco es justo lo que se
+ * sirve. El buzón comprueba que el texto dé el hash anclado y no puede abrir
+ * lo cifrado.
+ *
+ * Nunca lanza: si el buzón no está o no acepta algo, la entrega vale igual.
+ */
+async function copiarAlBuzon(taskId: bigint, texto: string): Promise<void> {
+  if (!COPIA_EN_BUZON) return;
+  try {
+    const dir = filesDir(taskId);
+    const archivos = existsSync(dir)
+      ? readdirSync(dir).map((name) => ({ name, bytes: new Uint8Array(readFileSync(join(dir, name))) }))
+      : [];
+    const { files } = await panal.backupDeliveryToMailbox(taskId, texto, archivos);
+    console.log(`[panal] #${taskId}: copia en el buzón de Panal${files ? ` con ${files} archivo(s)` : ''}`);
+  } catch (err) {
+    console.warn(
+      `[panal] #${taskId}: no se dejó copia en el buzón (${err instanceof Error ? err.message : err}). ` +
+        'La entrega vale igual: el cliente la lee de este servidor.',
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Adjuntos: lo que el cliente manda CON el encargo
 // ---------------------------------------------------------------------------
@@ -1075,6 +1115,9 @@ async function work(
     saveResult(taskId, text);
     const { txHash } = delTablon ? await delTablon.entregar(cuerpo, paraElTablon) : await panal.deliverResult(taskId, text);
     console.log(`[panal] #${taskId} entregada${delTablon ? ' por el tablón' : ''} · tx ${txHash}`);
+    // Las del tablón ya viven en el buzón del tablón: no necesitan copia. Sin
+    // esperarla: es un respaldo y no debe retrasar nada.
+    if (!delTablon) void copiarAlBuzon(taskId, text);
     return 'entregada';
   } catch (err) {
     console.error(`[panal] #${taskId} falló: ${err instanceof Error ? err.message : err}`);
@@ -2280,6 +2323,7 @@ arrancarVigilante({
   reentregar: async (taskId, texto) => {
     const { txHash } = await panal.deliverResult(taskId, texto);
     console.log(`[vigilante] #${taskId} entregada al segundo intento · tx ${txHash}`);
+    void copiarAlBuzon(taskId, texto);
   },
   urlPublica: process.env.PUBLIC_URL?.trim(),
   // Las del tablón con reglas: su cliente en el escrow es PanalTablon, y el

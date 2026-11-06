@@ -328,6 +328,9 @@ function writeEnvExample(dest: string, t: Catalog): string {
     '# X402_PLAZO_SEGUNDOS=100',
     '# APAGADO_SEGUNDOS=110',
     '',
+    bloque(t.env.copia),
+    '# COPIA_EN_BUZON=no',
+    '',
   ].join('\n');
 
   writeFileSync(join(dest, '.env.example'), contenido, 'utf8');
