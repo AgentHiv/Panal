@@ -22,7 +22,10 @@ import CamposMarca from '~/componentes/CamposMarca';
 import type { Marca } from '@/lib/marca';
 import { resumirFicha } from '@/lib/agentMetadata';
 import { EJEMPLOS_EDITABLES, falloDeEjemplo, MAX_EJEMPLO } from '@panal/sdk';
-import { armarFicha, partirFicha, useFicha, usePendiente, useTareasDe } from '~/lib/agentes';
+import { armarFicha, partirFicha, useFicha, usePendiente, useTareasDe, type TareaDeAgente } from '~/lib/agentes';
+import HojaConversacion from '~/componentes/HojaConversacion';
+import { esBuzon } from '@/lib/botEndpoint';
+import { esDelTablon } from '@/lib/tablonReglas';
 import { revisar, cuantasUrgentes } from '~/lib/guardia';
 import { monto } from '~/lib/formato';
 import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
@@ -55,6 +58,8 @@ export default function PanelAgente(): React.ReactElement {
   const { data: tareas = [], isLoading: cargandoTareas } = useTareasDe(dir);
 
   const [hoja, setHoja] = useState<Panel>(null);
+  /** La conversación abierta de uno de sus encargos (solo quien es el agente, y si recibe en el buzón). */
+  const [conversacion, setConversacion] = useState<TareaDeAgente | null>(null);
   const T = useTextos();
 
   // El muro, aplicado: mandar sobre un agente es SER ese agente.
@@ -276,6 +281,16 @@ export default function PanelAgente(): React.ReactElement {
                   <span className="shrink-0 font-mono text-[12.5px]" style={{ color: e.color }}>
                     {monto(t.amountWei)}
                   </span>
+                  {mando && esBuzon(ficha.botUrl ?? null) && !esDelTablon(t.client) && (
+                    <button
+                      type="button"
+                      onClick={() => setConversacion(t)}
+                      aria-label={T.conversacion.boton}
+                      className="pulsable tocable -mr-1 flex h-9 w-9 shrink-0 items-center justify-center"
+                    >
+                      <Icono nombre="chat" tamano={17} color="#B7A8FC" />
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -283,6 +298,13 @@ export default function PanelAgente(): React.ReactElement {
         )}
       </div>
 
+      {conversacion && ficha.botUrl && (
+        <HojaConversacion
+          encargo={{ id: conversacion.id, client: conversacion.client, worker: conversacion.worker }}
+          base={ficha.botUrl}
+          onCerrar={() => setConversacion(null)}
+        />
+      )}
       {hoja === 'cobrar' && pendiente && (
         <HojaCobrar
           pendiente={pendiente}
