@@ -13,13 +13,14 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Hexagon, Loader2, Lock, Paperclip, RefreshCw, Star } from 'lucide-react';
+import { AlertTriangle, Hexagon, Loader2, Lock, MessageSquare, Paperclip, RefreshCw, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { formatEther, keccak256, toBytes } from 'viem';
 import type { Address } from 'viem';
 import { useReadContract, useSignMessage } from 'wagmi';
 import AvisoEjecutable from '@/components/AvisoEjecutable';
+import ConversacionDelEncargo from '@/components/dashboard/ConversacionDelEncargo';
 import HexAvatar from '@/components/HexAvatar';
 import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -237,6 +238,21 @@ export default function TasksSection({ perspective }: { perspective: Perspective
   }, [agents]);
 
   const meLc = address?.toLowerCase();
+
+  /**
+   * Dónde vive la conversación de un encargo: en el buzón de quien lo hace.
+   *
+   * Solo si recibe ahí —una persona, o un agente de buzón—: uno con servidor
+   * propio no lee el buzón, y abrir una conversación que nadie va a contestar
+   * es peor que no tenerla. Ni las del tablón, que se llevan en /tablon.
+   */
+  const [conversacion, setConversacion] = useState<RealTask | null>(null);
+  const baseDeConversacion = (task: RealTask): string | null => {
+    if (esDelTablon(task.client) || task.worker.toLowerCase() === ZERO_ADDRESS) return null;
+    if (task.role === 'worker') return miBuzon && meLc === task.worker.toLowerCase() ? miBuzon : null;
+    const botUrl = agents.find((a) => a.workerAddress.toLowerCase() === task.worker.toLowerCase())?.botUrl ?? null;
+    return esBuzon(botUrl) ? botUrl : null;
+  };
 
   /**
    * Lo aprobado que espera en el escrow, por moneda.
@@ -622,7 +638,19 @@ export default function TasksSection({ perspective }: { perspective: Perspective
                     {t('tasks.enElTablon')}
                   </Link>
                 ) : (
-                  acts.length === 0 && <span className="font-mono text-[0.75rem] text-ink-3">—</span>
+                  acts.length === 0 && !baseDeConversacion(task) && <span className="font-mono text-[0.75rem] text-ink-3">—</span>
+                )}
+                {baseDeConversacion(task) && (
+                  <button
+                    type="button"
+                    onClick={() => setConversacion(task)}
+                    aria-label={t('conversacion.boton')}
+                    title={t('conversacion.boton')}
+                    className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1.5 text-[0.75rem] font-semibold text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+                  >
+                    <MessageSquare size={13} aria-hidden />
+                    <span className="hidden lg:inline">{t('conversacion.boton')}</span>
+                  </button>
                 )}
                 {acts.map((a) => (
                   <button
@@ -778,6 +806,12 @@ export default function TasksSection({ perspective }: { perspective: Perspective
       </Tabs>
 
       {/* Diálogo de acción (deliver / approve / confirmaciones) */}
+      <ConversacionDelEncargo
+        task={conversacion}
+        base={conversacion ? baseDeConversacion(conversacion) : null}
+        onClose={() => setConversacion(null)}
+      />
+
       <Dialog open={dialog !== null} onOpenChange={(o) => !o && !action.busy && closeDialog()}>
         <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] overflow-y-auto border-line bg-paper sm:max-w-lg">
           {dialog && (

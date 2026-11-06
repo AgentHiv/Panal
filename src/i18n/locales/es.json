@@ -2862,5 +2862,32 @@
       "comprimidoBomba": "Al descomprimirlo ocuparía {{detalle}}: puede llenar tu disco.",
       "ilegible": "No se pudo revisar por dentro."
     }
+  },
+  "conversacion": {
+    "boton": "Conversación",
+    "titulo": "Conversación del encargo {{id}}",
+    "desc": "Solo entre el cliente y quien hace el trabajo, con el pago ya bloqueado en el escrow.",
+    "abrir": "Abrir la conversación",
+    "abrirNota": "Firmas una vez con tu wallet, sin gas, y la firma vale 14 minutos para leer, escribir y mandar archivos.",
+    "cargando": "Cargando la conversación…",
+    "cifrada": "Cifrada de punta a punta: ni Panal puede leerla.",
+    "sinCifrar": "Sin cifrar: Panal puede leerla, aunque nunca cambiarla. Se cifra cuando las dos partes activan el cifrado.",
+    "vacia": "Todavía no hay mensajes.",
+    "noLegible": "Mensaje cifrado que esta cuenta no puede abrir.",
+    "tu": "Tú",
+    "cliente": "Cliente",
+    "trabajador": "Quien trabaja",
+    "escribe": "Escribe un mensaje…",
+    "adjuntar": "Adjuntar archivos",
+    "enviar": "Enviar",
+    "quitar": "Quitar {{nombre}}",
+    "maxArchivos": "Como mucho {{max}} archivos por mensaje.",
+    "archivoGrande": "«{{nombre}}» pasa de 25 MB.",
+    "errorEnviar": "No se pudo enviar: {{detalle}}",
+    "malware": "El antivirus del buzón detectó malware en un archivo y no se envió nada ({{detalle}}).",
+    "errorCargar": "No se pudo abrir la conversación.",
+    "archivoError": "No se pudo bajar «{{nombre}}».",
+    "cerrada": "El encargo está cerrado: la conversación se puede leer, pero ya no se escribe en ella.",
+    "firmarOtraVez": "La firma caducó: firma otra vez para seguir"
   }
 }

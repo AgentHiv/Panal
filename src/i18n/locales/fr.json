@@ -2862,5 +2862,32 @@
       "comprimidoBomba": "Décompressé, il occuperait {{detalle}} : il peut remplir votre disque.",
       "ilegible": "Son contenu n’a pas pu être vérifié."
     }
+  },
+  "conversacion": {
+    "boton": "Conversation",
+    "titulo": "Conversation de la commande {{id}}",
+    "desc": "Uniquement entre le client et la personne qui fait le travail, avec le paiement déjà bloqué en escrow.",
+    "abrir": "Ouvrir la conversation",
+    "abrirNota": "Vous signez une fois avec votre wallet, sans gas, et la signature vaut 14 minutes pour lire, écrire et envoyer des fichiers.",
+    "cargando": "Chargement de la conversation…",
+    "cifrada": "Chiffrée de bout en bout : même Panal ne peut pas la lire.",
+    "sinCifrar": "Non chiffrée : Panal peut la lire, mais jamais la modifier. Elle est chiffrée dès que les deux parties activent le chiffrement.",
+    "vacia": "Pas encore de messages.",
+    "noLegible": "Message chiffré que ce compte ne peut pas ouvrir.",
+    "tu": "Vous",
+    "cliente": "Client",
+    "trabajador": "Prestataire",
+    "escribe": "Écrivez un message…",
+    "adjuntar": "Joindre des fichiers",
+    "enviar": "Envoyer",
+    "quitar": "Retirer {{nombre}}",
+    "maxArchivos": "{{max}} fichiers au maximum par message.",
+    "archivoGrande": "« {{nombre}} » dépasse 25 Mo.",
+    "errorEnviar": "Envoi impossible : {{detalle}}",
+    "malware": "L’antivirus de la boîte aux lettres a détecté un malware dans un fichier et rien n’a été envoyé ({{detalle}}).",
+    "errorCargar": "Impossible d’ouvrir la conversation.",
+    "archivoError": "Impossible de télécharger « {{nombre}} ».",
+    "cerrada": "La commande est close : la conversation se lit encore, mais on n’y écrit plus.",
+    "firmarOtraVez": "La signature a expiré : signez à nouveau pour continuer"
   }
 }
