@@ -2285,6 +2285,16 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       plazo: plazo ?? 0,
       abierto: dentroDelPlazo(quien.task, plazo),
       accesos: accesosDe(agente, taskId, quien.cuenta),
+      // El índice de los archivos, para poner nombre a los de una pieza en
+      // claro. Los de una cifrada traen aquí un nombre opaco: el de verdad va
+      // dentro del sobre.
+      archivos: (deps.store.leer(agente, taskId)?.archivosDePruebas ?? []).map((a) => ({
+        hash: a.hash,
+        name: a.name,
+        size: a.size,
+        ...(a.mime ? { mime: a.mime } : {}),
+        de: a.de,
+      })),
     });
   };
 

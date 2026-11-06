@@ -180,6 +180,8 @@ async function main() {
   check('una pieza no puede nombrar un archivo que no se subió', (await aportar(persona, 1n, 'con fantasma', { archivos: [{ hash: keccak256(toBytes('nada')), size: 4 }] })).status === 409);
   const bajada = await fetch(`${base}/pruebas-archivo/1/${hash}`, { headers: cabeceras(await cred(juez, 1n)) });
   check('el juez se lo baja, tal cual', bajada.status === 200 && keccak256(new Uint8Array(await bajada.arrayBuffer())) === hash);
+  const conIndice = (await (await leer(cliente, 1n)).json()) as { archivos: { hash: string; name: string; de: string }[] };
+  check('el expediente trae el índice de los archivos, con su nombre', conIndice.archivos.some((x) => x.hash === hash && x.name === 'captura ñ.txt' && x.de === 'trabajador'));
   check('un tercero no', (await fetch(`${base}/pruebas-archivo/1/${hash}`, { headers: cabeceras(await cred(intruso, 1n)) })).status === 403);
 
   console.log('\n─── el plazo ───');

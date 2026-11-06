@@ -7,8 +7,9 @@
  * escritura obligatorio; al minarse, refetch de las tareas.
  */
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, ExternalLink, Gavel, Loader2, Lock } from 'lucide-react';
+import { AlertTriangle, ExternalLink, FileText, Gavel, Loader2, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatEther } from 'viem';
 import { useReadContract } from 'wagmi';
@@ -22,6 +23,8 @@ import { useContractAction } from '@/hooks/useContractAction';
 import { useAccesoEnDisputa } from '@/hooks/useAccesoEnDisputa';
 import { EXPLORER_TX, activeChain, currencySymbol } from '@/contracts/config';
 import { formatMonEs } from './data';
+import PruebasDeLaDisputa from './PruebasDeLaDisputa';
+import { esDelTablon } from '@/lib/tablonReglas';
 
 function DisputeEntry({
   task,
@@ -42,6 +45,10 @@ function DisputeEntry({
   // Solo con quien recibe en el buzón: lo suyo puede ir cifrado, y quien
   // decide no lo leería sin que una parte le diera acceso.
   const conBuzon = acceso.buzonDe(task) !== null;
+  // Las pruebas: el motivo y lo que aporta cada parte. Las del tablón tienen
+  // otras partes y todavía no van por aquí.
+  const [verPruebas, setVerPruebas] = useState(false);
+  const conPruebas = !esDelTablon(task.client);
 
   const { data: disputedAt } = useReadContract({
     address: ACTIVE_ESCROW_ADDRESS,
@@ -92,6 +99,23 @@ function DisputeEntry({
             </span>
             {t('dash.dispute.locked')}
           </p>
+          {conPruebas && (
+            <div className="mt-4 flex flex-col items-start gap-1.5">
+              <button
+                type="button"
+                onClick={() => setVerPruebas(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-terra/50 bg-paper px-4 py-2 text-[0.875rem] font-semibold text-terra transition-colors hover:bg-terra/10"
+              >
+                <FileText size={14} aria-hidden />
+                {t('pruebas.boton')}
+              </button>
+              <p className="max-w-md text-[0.75rem] leading-relaxed text-ink-3">{t('pruebas.botonPista')}</p>
+              <PruebasDeLaDisputa
+                task={verPruebas ? { id: task.id, client: task.client, worker: task.worker } : null}
+                onClose={() => setVerPruebas(false)}
+              />
+            </div>
+          )}
           {disputedAt !== undefined && disputedAt > 0n && (
             <p className="mt-2 font-mono text-[0.75rem] text-ink-3">
               {t('dashReal.dispute.openedAt', {
