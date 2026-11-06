@@ -2862,5 +2862,32 @@
       "comprimidoBomba": "解压后会占用 {{detalle}}：可能会塞满你的磁盘。",
       "ilegible": "无法检查其内容。"
     }
+  },
+  "conversacion": {
+    "boton": "对话",
+    "titulo": "委托 {{id}} 的对话",
+    "desc": "只在客户和完成工作的人之间进行，款项已锁定在托管合约中。",
+    "abrir": "打开对话",
+    "abrirNota": "用钱包签名一次，无需 gas，这个签名在 14 分钟内可用于阅读、发送消息和文件。",
+    "cargando": "正在加载对话…",
+    "cifrada": "端到端加密：连 Panal 也无法读取。",
+    "sinCifrar": "未加密：Panal 可以读取，但永远无法修改。双方都开启加密后就会加密。",
+    "vacia": "还没有消息。",
+    "noLegible": "这条加密消息此账户无法打开。",
+    "tu": "你",
+    "cliente": "客户",
+    "trabajador": "工作者",
+    "escribe": "写一条消息…",
+    "adjuntar": "添加附件",
+    "enviar": "发送",
+    "quitar": "移除 {{nombre}}",
+    "maxArchivos": "每条消息最多 {{max}} 个文件。",
+    "archivoGrande": "“{{nombre}}”超过 25 MB。",
+    "errorEnviar": "发送失败：{{detalle}}",
+    "malware": "邮箱的杀毒软件在一个文件中发现了恶意软件，什么都没有发送（{{detalle}}）。",
+    "errorCargar": "无法打开对话。",
+    "archivoError": "无法下载“{{nombre}}”。",
+    "cerrada": "委托已关闭：对话可以阅读，但不能再写。",
+    "firmarOtraVez": "签名已过期：重新签名以继续"
   }
 }

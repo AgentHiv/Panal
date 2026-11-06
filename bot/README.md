@@ -280,6 +280,7 @@ bot/
     test-indexer-tasks.ts / test-indexer-nombres.ts  índice y nombres
     test-buzon.ts      el buzón: firmas, ventanas, archivos, tablón y caducidad
     test-antivirus.ts  el antivirus del buzón con un clamd de mentira
+    test-conversacion.ts  la conversación del encargo: quién lee, quién escribe
 ```
 
 Correrlas todas:

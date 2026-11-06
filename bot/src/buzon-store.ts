@@ -79,7 +79,31 @@ export interface Encargo {
    * no abre nada: el contenido no pasa la comprobación con otra clave.
    */
   accesos?: AccesoGuardado[];
+  /**
+   * La conversación del encargo, entre su cliente y quien lo hace. Solo existe
+   * con el dinero ya bloqueado: es lo contrario de un chat abierto a cualquiera
+   * antes de pagar. Si las dos partes publicaron su clave, cada texto es un
+   * sobre que el buzón no puede abrir.
+   */
+  mensajes?: MensajeGuardado[];
+  /** Los archivos de esa conversación. Aparte de los del encargo: no gastan su cupo. */
+  archivosDelChat?: ArchivoGuardado[];
 }
+
+export interface MensajeGuardado {
+  de: 'cliente' | 'trabajador';
+  /** El texto, o el sobre cifrado (`sdk/src/cifrado.ts`). */
+  texto: string;
+  ts: number;
+  /** Archivos ya subidos a `archivosDelChat`, por su hash. */
+  archivos?: { name: string; size: number; hash: string; mime?: string }[];
+}
+
+/** Mensajes por encargo: de sobra para trabajar, y un tope para que no sea un disco. */
+export const MAX_MENSAJES_POR_ENCARGO = 500;
+/** Archivos de la conversación de un encargo, y lo que pueden ocupar entre todos. */
+export const MAX_ARCHIVOS_DEL_CHAT = 30;
+export const MAX_BYTES_DEL_CHAT = 100 * 1024 * 1024;
 
 export interface AccesoGuardado {
   /** keccak256 de lo que abre, en minúsculas. */
@@ -463,6 +487,69 @@ export class BuzonStore {
     // Se busca por el ÍNDICE y nunca por lo que llegue en la URL: el nombre lo
     // escribe quien sube, y de él no sale ninguna ruta. La ruta sale del hash,
     // que son 64 hex escritos por nosotros.
+    if (!archivo || !HASH.test(archivo.hash)) return null;
+    try {
+      return { archivo, bytes: readFileSync(join(carpeta, `${nombreEnDisco(archivo.hash)}.bin`)) };
+    } catch {
+      return null;
+    }
+  }
+
+  /** Añade un mensaje a la conversación. `lleno` si ya hay demasiados. */
+  guardarMensaje(agente: string, taskId: bigint, mensaje: MensajeGuardado): 'ok' | 'lleno' | 'clave' {
+    let lleno = false;
+    const ok = this.escribir(agente, taskId, (p) => {
+      const mensajes = p.mensajes ?? [];
+      if (mensajes.length >= MAX_MENSAJES_POR_ENCARGO) {
+        lleno = true;
+        return p;
+      }
+      return { ...p, mensajes: [...mensajes, mensaje] };
+    });
+    if (!ok) return 'clave';
+    return lleno ? 'lleno' : 'ok';
+  }
+
+  /** La conversación de un encargo, en orden. */
+  leerMensajes(agente: string, taskId: bigint): MensajeGuardado[] {
+    return this.leer(agente, taskId)?.mensajes ?? [];
+  }
+
+  /** Un archivo de la conversación. Por su hash, como los demás; aparte en el índice. */
+  guardarArchivoDelChat(
+    agente: string,
+    taskId: bigint,
+    nombre: string,
+    bytes: Uint8Array,
+    de: 'cliente' | 'trabajador',
+    mime?: string,
+  ): { hash: string } | { error: 'clave' | 'grande' | 'demasiados' | 'lleno' } {
+    const carpeta = this.carpetaArchivos(agente, taskId);
+    if (!carpeta || !nombre) return { error: 'clave' };
+    if (bytes.byteLength > MAX_ARCHIVO_BYTES) return { error: 'grande' };
+    const hash = keccak256(bytes).toLowerCase();
+    const previos = this.leer(agente, taskId)?.archivosDelChat ?? [];
+    if (!previos.some((a) => a.hash === hash)) {
+      if (previos.length >= MAX_ARCHIVOS_DEL_CHAT) return { error: 'demasiados' };
+      if (previos.reduce((n, a) => n + a.size, 0) + bytes.byteLength > MAX_BYTES_DEL_CHAT) return { error: 'lleno' };
+    }
+    mkdirSync(carpeta, { recursive: true });
+    const destino = join(carpeta, `${nombreEnDisco(hash)}.bin`);
+    writeFileSync(`${destino}.tmp`, bytes);
+    renameSync(`${destino}.tmp`, destino);
+    const entrada: ArchivoGuardado = { name: nombre, hash, size: bytes.byteLength, ...(mime ? { mime } : {}), de, ts: Date.now() };
+    this.escribir(agente, taskId, (p) => ({
+      ...p,
+      archivosDelChat: [...(p.archivosDelChat ?? []).filter((a) => a.hash !== hash), entrada],
+    }));
+    return { hash };
+  }
+
+  /** Los bytes de un archivo de la conversación, por su hash, o null. */
+  leerArchivoDelChat(agente: string, taskId: bigint, hash: string): { archivo: ArchivoGuardado; bytes: Buffer } | null {
+    const carpeta = this.carpetaArchivos(agente, taskId);
+    if (!carpeta) return null;
+    const archivo = (this.leer(agente, taskId)?.archivosDelChat ?? []).find((a) => a.hash === hash.toLowerCase());
     if (!archivo || !HASH.test(archivo.hash)) return null;
     try {
       return { archivo, bytes: readFileSync(join(carpeta, `${nombreEnDisco(archivo.hash)}.bin`)) };

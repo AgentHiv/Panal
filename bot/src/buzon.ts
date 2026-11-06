@@ -27,6 +27,10 @@
  *     POST /buzon/:agente/entrega-archivo/:taskId  deja un archivo entregado
  *   Los dos:
  *     GET  /buzon/:agente/archivo/:taskId/:nombre  se lleva un archivo
+ *     GET  /buzon/:agente/conversacion/:taskId            los mensajes del encargo
+ *     POST /buzon/:agente/conversacion/:taskId            un mensaje (con el dinero bloqueado)
+ *     POST /buzon/:agente/conversacion-archivo/:taskId    un archivo para un mensaje
+ *     GET  /buzon/:agente/conversacion-archivo/:taskId/:hash  se lleva uno
  *
  *   El tablón con reglas (PanalTablon), bajo SU dirección y por número de
  *   encargo, no de tarea (ver `tablonConReglas` más abajo):
@@ -129,6 +133,16 @@ export function encargoSignMessage(taskId: bigint, expira: number): string {
 /** La firma con la que el TRABAJADOR deja su entrega en el buzón. */
 export function entregaSignMessage(taskId: bigint, expira: number): string {
   return `Panal entrega #${taskId.toString()} · ${expira}`;
+}
+
+/**
+ * La firma con la que una de las dos partes habla en la conversación de su
+ * encargo: leer, escribir y mandar archivos. Una sola para todo mientras no
+ * caduca —firmar cada mensaje sería una ventana de wallet por frase—. Debe
+ * coincidir con `src/lib/conversacion.ts` en la web.
+ */
+export function conversacionSignMessage(taskId: bigint, expira: number): string {
+  return `Panal conversación #${taskId.toString()} · ${expira}`;
 }
 
 /*
@@ -256,6 +270,12 @@ const MAX_VENTANA_S = 15 * 60;
  * sea un disco duro gratis, no para acotar lo que alguien puede escribir.
  */
 export const MAX_ENTREGA_CHARS = 200_000;
+/** Lo que cabe en un mensaje de la conversación, y en su sobre si va cifrado. */
+export const MAX_MENSAJE_CHARS = 4_000;
+const MAX_SOBRE_MENSAJE_CHARS = MAX_MENSAJE_CHARS * 6 + 4_000;
+const MAX_MENSAJE_BODY_BYTES = MAX_SOBRE_MENSAJE_CHARS * 4 + 8_000;
+/** Archivos que se nombran en un solo mensaje. */
+export const MAX_ARCHIVOS_POR_MENSAJE = 5;
 
 /**
  * Un texto cifrado ocupa más que el texto: base64 de sus bytes UTF-8 —hasta 4
@@ -1975,6 +1995,183 @@ export function createBuzonServer(deps: BuzonDeps): Server {
   };
 
   // ---- Enrutado -------------------------------------------------------------
+  // ---- La conversación del encargo -----------------------------------------
+  //
+  // Solo entre las dos partes de una tarea con el dinero ya bloqueado: lo
+  // contrario de un chat donde cualquiera escribe gratis antes de pagar, que es
+  // por donde entran las estafas. Escribir pide que la tarea siga viva
+  // (abierta, entregada o en disputa); leer, solo ser parte. Si las dos partes
+  // publicaron su clave, los textos y los archivos llegan cifrados y aquí se
+  // guardan sobres. Los archivos pasan por el antivirus como los demás.
+
+  /** Quién habla, con su firma comprobada, o null (y ya se ha contestado). */
+  const parteDeLaConversacion = async (
+    agente: Address,
+    taskId: bigint,
+    url: URL,
+    req: IncomingMessage,
+    res: ServerResponse,
+    cuerpo?: { address?: unknown; signature?: unknown; expira?: unknown },
+  ): Promise<{ task: Task; de: 'cliente' | 'trabajador' } | null> => {
+    const c = cuerpo
+      ? {
+          address: typeof cuerpo.address === 'string' ? cuerpo.address : '',
+          signature: typeof cuerpo.signature === 'string' ? cuerpo.signature : '',
+          expira: cuerpo.expira === undefined ? null : String(cuerpo.expira),
+        }
+      : credenciales(req, url);
+    if (!isAddress(c.address) || !isHex(c.signature)) {
+      json(res, 400, { error: 'bad credentials' });
+      return null;
+    }
+    const cuenta = getAddress(c.address);
+    if (!(await firmaVigente(cuenta, c.signature as Hex, c.expira, (e) => conversacionSignMessage(taskId, e)))) {
+      json(res, 403, { error: 'bad signature' });
+      return null;
+    }
+    const task = await tareaDe(agente, taskId, res);
+    if (!task) return null;
+    const de =
+      cuenta.toLowerCase() === task.client.toLowerCase()
+        ? 'cliente'
+        : cuenta.toLowerCase() === task.worker.toLowerCase()
+          ? 'trabajador'
+          : null;
+    if (!de) {
+      json(res, 403, { error: 'not a party' });
+      return null;
+    }
+    return { task, de };
+  };
+
+  const sigueViva = (task: Task) =>
+    task.status === TaskStatus.Open || task.status === TaskStatus.Delivered || task.status === TaskStatus.Disputed;
+
+  // GET /conversacion/:taskId — los mensajes, a cualquiera de las dos partes.
+  const darConversacion = async (agente: Address, taskId: bigint, url: URL, req: IncomingMessage, res: ServerResponse) => {
+    const quien = await parteDeLaConversacion(agente, taskId, url, req, res);
+    if (!quien) return;
+    json(res, 200, { mensajes: deps.store.leerMensajes(agente, taskId), abierta: sigueViva(quien.task) });
+  };
+
+  // POST /conversacion/:taskId — un mensaje, con los archivos que ya subió.
+  const recibirMensaje = async (agente: Address, taskId: bigint, url: URL, req: IncomingMessage, res: ServerResponse) => {
+    const raw = await readBody(req, MAX_MENSAJE_BODY_BYTES);
+    if (raw === null) {
+      json(res, 413, { error: 'body too large' });
+      return;
+    }
+    let cuerpo: Record<string, unknown>;
+    try {
+      cuerpo = JSON.parse(raw || '{}') as Record<string, unknown>;
+    } catch {
+      json(res, 400, { error: 'bad json' });
+      return;
+    }
+    const quien = await parteDeLaConversacion(agente, taskId, url, req, res, cuerpo);
+    if (!quien) return;
+    if (!sigueViva(quien.task)) {
+      json(res, 409, { error: 'task closed' });
+      return;
+    }
+    const texto = typeof cuerpo.texto === 'string' ? cuerpo.texto : '';
+    if (texto.trim().length === 0 || texto.length > topeDe(texto, MAX_MENSAJE_CHARS, MAX_SOBRE_MENSAJE_CHARS)) {
+      json(res, 400, { error: `texto requerido, máx. ${MAX_MENSAJE_CHARS} caracteres` });
+      return;
+    }
+    // Los archivos se suben antes, y aquí solo se nombran: tienen que estar.
+    const subidos = deps.store.leer(agente, taskId)?.archivosDelChat ?? [];
+    const pedidos = Array.isArray(cuerpo.archivos) ? cuerpo.archivos.slice(0, MAX_ARCHIVOS_POR_MENSAJE + 1) : [];
+    if (pedidos.length > MAX_ARCHIVOS_POR_MENSAJE) {
+      json(res, 400, { error: `máx. ${MAX_ARCHIVOS_POR_MENSAJE} archivos por mensaje` });
+      return;
+    }
+    const archivos: { name: string; size: number; hash: string; mime?: string }[] = [];
+    for (const a of pedidos) {
+      const hash = typeof (a as { hash?: unknown }).hash === 'string' ? (a as { hash: string }).hash.toLowerCase() : '';
+      const subido = subidos.find((x) => x.hash === hash);
+      if (!subido) {
+        json(res, 409, { error: 'file not uploaded' });
+        return;
+      }
+      archivos.push({ name: subido.name, size: subido.size, hash: subido.hash, ...(subido.mime ? { mime: subido.mime } : {}) });
+    }
+    const r = deps.store.guardarMensaje(agente, taskId, {
+      de: quien.de,
+      texto,
+      ts: Date.now(),
+      ...(archivos.length ? { archivos } : {}),
+    });
+    if (r !== 'ok') {
+      json(res, r === 'lleno' ? 409 : 400, { error: r === 'lleno' ? 'conversation full' : 'bad key' });
+      return;
+    }
+    json(res, 200, { ok: true });
+  };
+
+  // POST /conversacion-archivo/:taskId — los bytes de un archivo, antes del mensaje.
+  const recibirArchivoDelChat = async (agente: Address, taskId: bigint, url: URL, req: IncomingMessage, res: ServerResponse) => {
+    const quien = await parteDeLaConversacion(agente, taskId, url, req, res);
+    if (!quien) return;
+    if (!sigueViva(quien.task)) {
+      json(res, 409, { error: 'task closed' });
+      return;
+    }
+    let nombre = '';
+    try {
+      nombre = sanearNombre(decodeURIComponent((req.headers['x-panal-filename'] as string | undefined) ?? ''));
+    } catch {
+      nombre = '';
+    }
+    if (!nombre) {
+      json(res, 400, { error: 'bad filename' });
+      return;
+    }
+    const bytes = await readBytes(req, MAX_ARCHIVO_BYTES);
+    if (bytes === null) {
+      json(res, 413, { error: 'file too large' });
+      return;
+    }
+    if (bytes.byteLength === 0) {
+      json(res, 400, { error: 'empty file' });
+      return;
+    }
+    if (!(await pasaElAntivirus(bytes, res, `«${nombre}» de la conversación del #${taskId}`))) return;
+    const mime = (req.headers['content-type'] as string | undefined) ?? undefined;
+    const guardado = deps.store.guardarArchivoDelChat(
+      agente,
+      taskId,
+      nombre,
+      bytes,
+      quien.de,
+      mime && mime !== 'application/octet-stream' ? mime.slice(0, 120) : undefined,
+    );
+    if ('error' in guardado) {
+      json(res, guardado.error === 'grande' ? 413 : guardado.error === 'clave' ? 400 : 409, { error: guardado.error });
+      return;
+    }
+    json(res, 200, { ok: true, hash: guardado.hash });
+  };
+
+  // GET /conversacion-archivo/:taskId/:hash — los bytes, a las dos partes.
+  const darArchivoDelChat = async (agente: Address, taskId: bigint, hash: string, url: URL, req: IncomingMessage, res: ServerResponse) => {
+    const quien = await parteDeLaConversacion(agente, taskId, url, req, res);
+    if (!quien) return;
+    const guardado = deps.store.leerArchivoDelChat(agente, taskId, hash);
+    if (!guardado) {
+      json(res, 404, { error: 'not found' });
+      return;
+    }
+    res.writeHead(200, {
+      'content-type': guardado.archivo.mime || 'application/octet-stream',
+      'content-length': String(guardado.bytes.byteLength),
+      'content-disposition': 'attachment',
+      'x-content-type-options': 'nosniff',
+      'cache-control': 'private, no-store',
+    });
+    res.end(guardado.bytes);
+  };
+
   const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const origin = allowedOrigin(req.headers.origin, deps.allowLocalhostOrigin);
     if (origin) {
@@ -2073,6 +2270,24 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       return;
     }
     if (await rutaDeAccesoODisputa(agente, resto, false, url, req, res)) return;
+
+    // La conversación del encargo (ver más arriba).
+    const deConversacion = /^conversacion\/(\d{1,20})$/.exec(resto);
+    if (deConversacion) {
+      const id = BigInt(deConversacion[1]!);
+      if (req.method === 'GET') await darConversacion(agente, id, url, req, res);
+      else if (req.method === 'POST') await recibirMensaje(agente, id, url, req, res);
+      else json(res, 405, { error: 'method not allowed' });
+      return;
+    }
+    const deArchivoDelChat = /^conversacion-archivo\/(\d{1,20})(?:\/(0x[0-9a-fA-F]{64}))?$/.exec(resto);
+    if (deArchivoDelChat) {
+      const id = BigInt(deArchivoDelChat[1]!);
+      if (req.method === 'POST' && !deArchivoDelChat[2]) await recibirArchivoDelChat(agente, id, url, req, res);
+      else if (req.method === 'GET' && deArchivoDelChat[2]) await darArchivoDelChat(agente, id, deArchivoDelChat[2], url, req, res);
+      else json(res, 405, { error: 'method not allowed' });
+      return;
+    }
 
     const ruta = /^(brief|result|encargo|entrega|upload|entrega-archivo)\/(\d{1,20})$/.exec(resto);
     if (!ruta) {

@@ -2862,5 +2862,32 @@
       "comprimidoBomba": "Unpacked it would take {{detalle}}: it can fill your disk.",
       "ilegible": "Its contents couldn't be checked."
     }
+  },
+  "conversacion": {
+    "boton": "Conversation",
+    "titulo": "Conversation for job {{id}}",
+    "desc": "Only between the client and whoever does the work, with the payment already locked in escrow.",
+    "abrir": "Open the conversation",
+    "abrirNota": "You sign once with your wallet, with no gas, and the signature lasts 14 minutes to read, write and send files.",
+    "cargando": "Loading the conversation…",
+    "cifrada": "End-to-end encrypted: not even Panal can read it.",
+    "sinCifrar": "Not encrypted: Panal can read it, though it can never change it. It's encrypted once both parties turn on encryption.",
+    "vacia": "No messages yet.",
+    "noLegible": "An encrypted message this account can't open.",
+    "tu": "You",
+    "cliente": "Client",
+    "trabajador": "Worker",
+    "escribe": "Write a message…",
+    "adjuntar": "Attach files",
+    "enviar": "Send",
+    "quitar": "Remove {{nombre}}",
+    "maxArchivos": "At most {{max}} files per message.",
+    "archivoGrande": "“{{nombre}}” is over 25 MB.",
+    "errorEnviar": "Couldn't send it: {{detalle}}",
+    "malware": "The mailbox antivirus found malware in a file and nothing was sent ({{detalle}}).",
+    "errorCargar": "Couldn't open the conversation.",
+    "archivoError": "Couldn't download “{{nombre}}”.",
+    "cerrada": "The job is closed: the conversation can be read, but no longer written in.",
+    "firmarOtraVez": "The signature expired: sign again to continue"
   }
 }

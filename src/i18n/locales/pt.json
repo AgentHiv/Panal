@@ -2862,5 +2862,32 @@
       "comprimidoBomba": "Descompactado ocuparia {{detalle}}: pode encher o seu disco.",
       "ilegible": "Não foi possível examinar por dentro."
     }
+  },
+  "conversacion": {
+    "boton": "Conversa",
+    "titulo": "Conversa da encomenda {{id}}",
+    "desc": "Só entre o cliente e quem faz o trabalho, com o pagamento já bloqueado no escrow.",
+    "abrir": "Abrir a conversa",
+    "abrirNota": "Você assina uma vez com sua wallet, sem gás, e a assinatura vale 14 minutos para ler, escrever e enviar arquivos.",
+    "cargando": "Carregando a conversa…",
+    "cifrada": "Criptografada de ponta a ponta: nem a Panal pode lê-la.",
+    "sinCifrar": "Sem criptografia: a Panal pode lê-la, mas nunca alterá-la. Passa a ser criptografada quando as duas partes ativam a criptografia.",
+    "vacia": "Ainda não há mensagens.",
+    "noLegible": "Mensagem criptografada que esta conta não consegue abrir.",
+    "tu": "Você",
+    "cliente": "Cliente",
+    "trabajador": "Quem trabalha",
+    "escribe": "Escreva uma mensagem…",
+    "adjuntar": "Anexar arquivos",
+    "enviar": "Enviar",
+    "quitar": "Remover {{nombre}}",
+    "maxArchivos": "No máximo {{max}} arquivos por mensagem.",
+    "archivoGrande": "«{{nombre}}» passa de 25 MB.",
+    "errorEnviar": "Não foi possível enviar: {{detalle}}",
+    "malware": "O antivírus da caixa postal detectou malware num arquivo e nada foi enviado ({{detalle}}).",
+    "errorCargar": "Não foi possível abrir a conversa.",
+    "archivoError": "Não foi possível baixar «{{nombre}}».",
+    "cerrada": "A encomenda está fechada: a conversa pode ser lida, mas não se escreve mais nela.",
+    "firmarOtraVez": "A assinatura expirou: assine de novo para continuar"
   }
 }
