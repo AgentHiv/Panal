@@ -21,6 +21,8 @@ import Home from '@/pages/Home';
 const Marketplace = lazy(() => import('@/pages/Marketplace'));
 const Tablon = lazy(() => import('@/pages/Tablon'));
 const AgentDetail = lazy(() => import('@/pages/AgentDetail'));
+// Donde abre el enlace que prepara un asistente con el MCP remoto (mcp.panal.lat).
+const Contratar = lazy(() => import('@/pages/Contratar'));
 const Chat = lazy(() => import('@/pages/Chat'));
 const Chats = lazy(() => import('@/pages/Chats'));
 const Archivo = lazy(() => import('@/pages/Archivo'));
@@ -55,6 +57,7 @@ export default function App() {
         <Route path="mercado" element={<Marketplace />} />
         <Route path="tablon" element={<Tablon />} />
         <Route path="agente/:id" element={<AgentDetail />} />
+        <Route path="contratar/:id" element={<Contratar />} />
         <Route path="chats" element={<Chats />} />
         <Route path="chat/:id" element={<Chat />} />
         <Route path="archivo" element={<Archivo />} />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   BadgeCheck,
@@ -20,6 +20,7 @@ import HexAvatar from '@/components/HexAvatar';
 import AgentLinks from '@/components/AgentLinks';
 import { MAX_PREGUNTA_CHARS, precioAWei, type Nivel } from '@panal/sdk';
 import HireDialog from '@/components/HireDialog';
+import type { BorradorDeContratacion } from '@/lib/borrador';
 import LiveDot from '@/components/LiveDot';
 import RatingStars from '@/components/RatingStars';
 import StatBlock from '@/components/StatBlock';
@@ -91,10 +92,38 @@ export default function AgentDetail() {
   /** Si lo que se abre es una pregunta de pago y no un encargo (ver `openPregunta`). */
   const [pregunta, setPregunta] = useState(false);
   const [copied, setCopied] = useState(false);
+  /**
+   * El encargo que preparó un asistente, si se llegó desde `/contratar/:id`.
+   * Abre la ventana de contratar ya rellena; la persona lo revisa y firma.
+   */
+  const location = useLocation();
+  const borradorEntrante = (location.state as { borrador?: BorradorDeContratacion } | null)?.borrador ?? null;
+  const [borrador, setBorrador] = useState<BorradorDeContratacion | null>(null);
+  const [borradorVisto, setBorradorVisto] = useState<BorradorDeContratacion | null>(null);
+  // Un borrador nuevo abre la ventana en cuanto el agente está cargado. Se
+  // ajusta aquí, al pintar, y no en un efecto: es estado que se deriva de la
+  // navegación, y así no hay un pintado intermedio con la ventana cerrada.
+  if (
+    agent &&
+    borradorEntrante &&
+    borradorEntrante !== borradorVisto &&
+    borradorEntrante.agente.toLowerCase() === agent.wallet.toLowerCase()
+  ) {
+    setBorradorVisto(borradorEntrante);
+    setBorrador(borradorEntrante);
+    setNivel(null);
+    setPregunta(false);
+    setHireOpen(true);
+  }
 
   useEffect(() => {
     document.title = agent ? `${agent.name} — Panal` : t('detail.notFoundTitle');
   }, [agent, t, i18n.language]);
+
+  // Se consume: volver atrás o recargar no la vuelve a abrir sola.
+  useEffect(() => {
+    if (borradorVisto && borradorEntrante) navigate(location.pathname, { replace: true, state: null });
+  }, [borradorVisto, borradorEntrante, navigate, location.pathname]);
 
   if (!agent && onchainLoading) {
     return (
@@ -136,11 +165,13 @@ export default function AgentDetail() {
   const openHire = () => {
     setNivel(null);
     setPregunta(false);
+    setBorrador(null);
     setHireOpen(true);
   };
   const openHireConNivel = (n?: Nivel) => {
     setNivel(n ?? null);
     setPregunta(false);
+    setBorrador(null);
     setHireOpen(true);
   };
   /**
@@ -160,6 +191,7 @@ export default function AgentDetail() {
       maxAttachCharsTotal: null,
     });
     setPregunta(true);
+    setBorrador(null);
     setHireOpen(true);
   };
   /**
@@ -577,7 +609,14 @@ export default function AgentDetail() {
 
       {/* barra fija móvil + modal de contratación */}
       <MobileHireBar agent={agent} onHire={openHire} cierre={cierre} />
-      <HireDialog agent={agent} open={hireOpen} onOpenChange={setHireOpen} nivel={nivel} pregunta={pregunta} />
+      <HireDialog
+        agent={agent}
+        open={hireOpen}
+        onOpenChange={setHireOpen}
+        nivel={nivel}
+        pregunta={pregunta}
+        borrador={borrador}
+      />
     </div>
   );
 }
