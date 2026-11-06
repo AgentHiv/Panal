@@ -50,7 +50,10 @@
 
 # Quién pidió qué, sin cabeceras ni firmas: la política de privacidad promete IP,
 # fecha, ruta y respuesta, nada más. El mismo 30-oct no había registro ninguno.
-# Se borran solos a los 7 días (la política permite hasta 90).
+# Las copias que hace Caddy al llegar a 100 MiB se borran a los 7 días, pero el
+# archivo abierto solo rota por tamaño: con poco tráfico podría pasar de los 90
+# días que permite la política. Lo que pone el límite por fecha es
+# deploy/logrotate.conf, que lo rota cada día y guarda 30.
 (acceso) {
 	log {
 		output file /var/log/caddy/acceso.log {
