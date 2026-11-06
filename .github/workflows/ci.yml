@@ -361,6 +361,12 @@ jobs:
         working-directory: bot
         run: pnpm exec tsx scripts/test-antivirus.ts
 
+      # Solo las dos partes de una tarea viva, con su firma; los archivos se
+      # suben antes y el mensaje solo nombra los que están.
+      - name: Conversacion del encargo (solo las dos partes, solo con el encargo vivo)
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-conversacion.ts
+
       - name: A2A (subcontratación, rechazo por calidad, timeout, $PANAL, topes)
         working-directory: bot
         run: pnpm exec tsx scripts/test-a2a.ts
