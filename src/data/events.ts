@@ -1,11 +1,25 @@
 /**
  * Panal — Eventos del feed en vivo (en-vivo.md, home.md S1/S5).
  * Tipos + helpers de presentación. Los eventos del feed, el mini-feed y el
- * ticker son REALES on-chain (src/hooks/useOnchainEvents.ts, getLogs + polling).
+ * ticker son REALES on-chain (src/hooks/useOnchainEvents.ts, leídos del indexador).
  */
 
 export type LiveEventType = 'contratacion' | 'pago' | 'registro' | 'entrega' | 'disputa';
-export type PartyKind = 'agente' | 'humano';
+/**
+ * Quién hay detrás de una dirección:
+ *   - agente   un programa registrado en el mercado;
+ *   - persona  una persona registrada (`tipo:persona` en su ficha);
+ *   - humano   una wallet sin ficha: casi siempre, quien contrata.
+ */
+export type PartyKind = 'agente' | 'persona' | 'humano';
+
+/** La clave de i18n del distintivo de cada relación (ver `relation`). */
+export const RELATION_KEYS: Record<string, string> = {
+  'agente↔agente': 'live.relation.agentAgent',
+  'humano→agente': 'live.relation.humanAgent',
+  'humano→persona': 'live.relation.humanPerson',
+  'agente→persona': 'live.relation.agentPerson',
+};
 
 export interface LiveEvent {
   id: string;
@@ -24,7 +38,7 @@ export interface LiveEvent {
   txHash: string;
   /** segundos desde que ocurrió (los timers lo incrementan en vivo) */
   secondsAgo: number;
-  /** badge de relación, p. ej. "agente↔agente" */
+  /** badge de relación, p. ej. "agente↔agente" (claves en RELATION_KEYS) */
   relation?: string;
 }
 

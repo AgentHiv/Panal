@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import { leerTipo } from '@panal/sdk';
 import { activeChain, currencySymbol } from '@/contracts/config';
 import { marcaDe, priceKey } from '@/hooks/usePanalAgents';
 import Reveal, { WordReveal } from '@/components/home/Reveal';
@@ -36,11 +38,11 @@ import type { Agent } from '@/data/agents';
 import { formatInt, formatMon, formatRating, CATEGORY_LABELS } from '@/data/agents';
 import { timeAgo, truncateHash } from '@/data/events';
 import type { LiveEvent, TickerItem } from '@/data/events';
+import { RELATION_KEYS } from '@/data/events';
 import { EVENT_META } from '@/components/live/meta';
 import { useOnchainEvents } from '@/hooks/useOnchainEvents';
-import { useNetworkStats } from '@/hooks/useNetworkStats';
 import { useTopAgents } from '@/hooks/useTopAgents';
-import { useIndexStats } from '@/lib/indexer';
+import { fetchCatalogo, useIndexStats } from '@/lib/indexer';
 import { formatEther } from 'viem';
 import { CONTRACTS, NETWORK_COMPARISON, ROADMAP_PHASES } from '@/data/protocol';
 
@@ -187,7 +189,7 @@ function HeroTicker() {
   const { entries, fetchedAt } = useOnchainEvents();
   const [now, setNow] = useState(() => Date.now());
 
-  // Envejecido de los timestamps entre polls (12 s)
+  // Envejecido de los timestamps entre consultas (10 s)
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 5000);
     return () => window.clearInterval(id);
@@ -202,9 +204,11 @@ function HeroTicker() {
         .map((ev) => ({
           hash: ev.txHash,
           actor: ev.from,
-          target: ev.to ?? '',
+          // «X contrató a Y» solo cuando es una contratación: en un pago o una
+          // retirada salía «0xC204… contrató a 0xC204…», la misma dirección.
+          target: ev.type === 'contratacion' ? (ev.to ?? '') : '',
           task: t(EVENT_META[ev.type].label),
-          amount: `${formatMon(ev.amount as number, 5)} MON`,
+          amount: `${formatMon(ev.amount as number, 5)} ${currencySymbol(ev.currency)}`,
           time: '',
           secondsAgo: ev.secondsAgo,
         })),
@@ -246,8 +250,13 @@ function HeroTicker() {
           >
             <span>
               <span className="text-coal-mute/70">{truncateHash(item.hash)}</span>{' '}
-              <span className="text-coal-text/80">{item.actor}</span> {t('home.ticker.hired')}{' '}
-              <span className="text-coal-text/80">{item.target}</span> · {item.task} ·{' '}
+              <span className="text-coal-text/80">{item.actor}</span>{' '}
+              {item.target && (
+                <>
+                  {t('home.ticker.hired')} <span className="text-coal-text/80">{item.target}</span>{' '}
+                </>
+              )}
+              · {item.task} ·{' '}
               <span className="text-honey">{item.amount}</span> · <span className="text-olive">✓</span>{' '}
               {item.time}
             </span>
@@ -260,39 +269,71 @@ function HeroTicker() {
 }
 
 /* ============================================================
- * S2 · Banda de stats (claro) — datos REALES del indexador;
- * fallback a getAgentCount (RPC) para agentes; '—' si no hay dato.
+ * S2 · Banda de stats (claro) — datos REALES del indexador; '—' si no hay dato.
  * ============================================================ */
-function StatsBand() {
-  const { t } = useTranslation();
-  const { stats } = useIndexStats();
-  const { agentCount } = useNetworkStats();
 
-  // MON movidos en los últimos 30 días (suma de las series diarias del índice).
-  const volume30 = useMemo(() => {
+/**
+ * Cuántos programas y cuántas personas hay en el mercado, del catálogo del
+ * indexador: los que están dados de alta y activos, que es lo que se puede
+ * contratar.
+ *
+ * Antes la portada enseñaba «17 agentes registrados»: `byType.AgentRegistered`,
+ * todo lo que se ha registrado alguna vez. Contaba los dados de baja —dos
+ * LexPanal viejos, DutchAgent y la persona de prueba— y metía a las personas
+ * entre los agentes, así que una persona no aparecía en ninguna cifra.
+ */
+function useEnElMercado(): { agentes: number; personas: number } | null {
+  const { data } = useQuery({
+    queryKey: ['indexer', 'en-el-mercado'],
+    queryFn: async () => {
+      const catalogo = await fetchCatalogo();
+      if (!catalogo) return null;
+      const personas = catalogo.filter((a) => leerTipo(a.metadataURI ?? '') === 'persona').length;
+      return { agentes: catalogo.length - personas, personas };
+    },
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+  return data ?? null;
+}
+
+function StatsBand() {
+  const { t, i18n } = useTranslation();
+  const { stats } = useIndexStats();
+  const mercado = useEnElMercado();
+
+  // Lo movido en los últimos 30 días, en cada moneda (suma de las series
+  // diarias del índice). Se enseñaba solo el MON, y casi todo lo que se paga
+  // va en $PANAL: el 6-nov-2026 eran 2,95 MON —todos del 10 de octubre— y
+  // 15.700 $PANAL, así que la cifra llevaba un mes sin moverse.
+  const volumen = useMemo(() => {
     if (!stats) return null;
-    const wei = stats.daily30.reduce((acc, d) => acc + BigInt(d.monMoved), 0n);
-    return Number(formatEther(wei));
+    const suma = (k: 'monMoved' | 'panalMoved') =>
+      Number(formatEther(stats.daily30.reduce((acc, d) => acc + BigInt(d[k] ?? '0'), 0n)));
+    return { mon: suma('monMoved'), panal: suma('panalMoved') };
   }, [stats]);
 
-  // El rotulo dice «agentes registrados», asi que el numero tiene que ser ese.
-  // `totals.agents` no lo es: el indexador lo calcula como `agentStats().length`
-  // —direcciones vistas en eventos, con quien paga dentro—, y salia 14 con 13 en
-  // el registro. Se notaba en que el respaldo era MAS correcto que la fuente:
-  // `agentCount` es `getAgentCount()` de la cadena, o sea que la portada decia
-  // 14 con indexador y 13 sin el, bajo el mismo rotulo.
-  const agents = stats?.byType.AgentRegistered ?? agentCount;
   const tasks = stats?.totals.completed ?? null;
+  const fmtMon = new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 });
+  // El $PANAL delante cuando lo hay, y el MON debajo; sin $PANAL, el MON.
+  const volumeItem = !volumen
+    ? { value: null, label: t('home.stats.volume30') }
+    : volumen.panal > 0
+      ? {
+          value: volumen.panal,
+          suffix: '$PANAL',
+          label: t('home.stats.volume30'),
+          extra: volumen.mon > 0 ? `+ ${fmtMon.format(volumen.mon)} MON` : undefined,
+        }
+      : { value: volumen.mon, decimals: 2, suffix: 'MON', label: t('home.stats.volume30') };
 
-  const items: Array<{ value: number | null; decimals?: number; suffix?: string; label: string }> = [
-    { value: agents, label: t('home.stats.agents') },
+  // La finalidad de Monad ya no va aquí: no es un dato de Panal y la línea de
+  // debajo del título ya la dice. Su sitio es para las personas.
+  const items: Array<{ value: number | null; decimals?: number; suffix?: string; label: string; extra?: string }> = [
+    { value: mercado?.agentes ?? null, label: t('home.stats.agents') },
+    { value: mercado?.personas ?? null, label: t('home.stats.people') },
     { value: tasks, label: t('home.stats.tasks') },
-    { value: volume30, decimals: 2, suffix: 'MON', label: t('home.stats.volume30') },
-    // No es un dato de Panal: es lo que tarda Monad en dar un bloque por
-    // definitivo (dos bloques de 400 ms). Se decía «finalidad media de pago»
-    // con un 812 muy preciso, como si se midiera aquí; el rótulo dice ahora de
-    // quién es la cifra y la cifra es la de la red, redonda.
-    { value: 800, suffix: 'ms', label: t('home.stats.finality') },
+    volumeItem,
   ];
 
   return (
@@ -308,6 +349,7 @@ function StatsBand() {
             ) : (
               <StatBlock value={s.value} decimals={s.decimals} suffix={s.suffix} label={s.label} />
             )}
+            {s.extra && <span className="mt-1 block font-mono text-[12px] text-ink-3">{s.extra}</span>}
           </div>
         ))}
       </Reveal>
@@ -520,7 +562,7 @@ function LiveSection() {
                     )}
                     {ev.relation && (
                       <span className="rounded-full bg-honey-soft px-2 py-0.5 font-mono text-[10px] text-honey-deep">
-                        {ev.relation === 'agente↔agente' ? t('live.relation.agentAgent') : t('live.relation.humanAgent')}
+                        {t(RELATION_KEYS[ev.relation] ?? 'live.relation.humanAgent')}
                       </span>
                     )}
                   </div>

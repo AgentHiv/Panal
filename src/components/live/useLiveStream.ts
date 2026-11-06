@@ -18,7 +18,7 @@ export interface LiveStream {
   pending: number;
   paused: boolean;
   togglePause: () => void;
-  /** no-op: ya no hay generador cliente; la cadencia la marca la red (polling 12 s) */
+  /** no-op: ya no hay generador cliente; la cadencia la marca el indexador (cada 10 s) */
   setSpeed: (s: 1 | 2) => void;
   loading: boolean;
   error: Error | null;
@@ -27,7 +27,7 @@ export interface LiveStream {
 
 /**
  * Stream del feed en vivo alimentado por eventos REALES on-chain
- * (useOnchainEvents: getLogs + polling 12 s). Mantiene la API del antiguo
+ * (useOnchainEvents: el indexador, cada 10 s). Mantiene la API del antiguo
  * motor simulado: en pausa los eventos nuevos se encolan (pending) y al
  * reanudar se vierten con stagger rápido de 50 ms.
  */
@@ -96,7 +96,7 @@ export function useLiveStream(): LiveStream {
   }, [pushVisible]);
 
   const setSpeed = useCallback(() => {
-    /* no-op: el feed ya no se genera en cliente; llega del RPC cada 12 s */
+    /* no-op: el feed ya no se genera en cliente; llega del indexador cada 10 s */
   }, []) as (s: 1 | 2) => void;
 
   return useMemo(

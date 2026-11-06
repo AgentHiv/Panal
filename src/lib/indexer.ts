@@ -138,6 +138,16 @@ async function fetchJson<T>(path: string): Promise<T | null> {
 }
 
 /**
+ * Los últimos eventos que tiene el indexador, del más nuevo al más viejo, o
+ * null si no responde. Son de todos los contratos que indexa —registro,
+ * escrow y tablón— y traen la fecha de su bloque.
+ */
+export async function fetchEventosRecientes(limit: number): Promise<IndexedEvent[] | null> {
+  const r = await fetchJson<{ events: IndexedEvent[] }>(`/index/events?limit=${Math.min(Math.max(1, limit), 200)}`);
+  return r && Array.isArray(r.events) ? r.events : null;
+}
+
+/**
  * Los ids de las tareas en las que participa una dirección, como cliente o
  * como trabajador. `null` si el indexador no responde — quien llama decide
  * qué hacer con eso, y en el panel se cae al escaneo de la cadena.

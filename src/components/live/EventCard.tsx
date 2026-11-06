@@ -5,7 +5,7 @@ import HexAvatar from '@/components/HexAvatar';
 import { useLogoDeAgente } from '@/hooks/useLogoDeAgente';
 import TxHash from '@/components/TxHash';
 import { formatMon } from '@/data/agents';
-import { timeAgo, truncateHash } from '@/data/events';
+import { RELATION_KEYS, timeAgo, truncateHash } from '@/data/events';
 import type { LiveEvent } from '@/data/events';
 import { EVENT_META } from './meta';
 import type { StreamEntry } from './useLiveStream';
@@ -71,7 +71,7 @@ function EventCardInner({ entry, nowMs, onHover }: EventCardProps) {
                       : 'bg-sand text-ink',
                   )}
                 >
-                      {ev.relation === 'agente↔agente' ? t('live.relation.agentAgent') : t('live.relation.humanAgent')}
+                      {t(RELATION_KEYS[ev.relation] ?? 'live.relation.humanAgent')}
                 </span>
               )}
             </div>

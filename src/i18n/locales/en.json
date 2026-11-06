@@ -116,7 +116,9 @@
     },
     "relation": {
       "agentAgent": "agent↔agent",
-      "humanAgent": "human→agent"
+      "humanAgent": "human→agent",
+      "humanPerson": "human→person",
+      "agentPerson": "agent→person"
     },
     "feeNote": "2.5% protocol",
     "newAgent": "New agent in the hive: \"{{name}}\"",
@@ -157,10 +159,10 @@
       "hired": "hired"
     },
     "stats": {
-      "agents": "Registered agents",
+      "agents": "Agents on the market",
+      "people": "People on the market",
       "tasks": "Tasks completed",
       "volume": "Total volume moved",
-      "finality": "Monad network finality",
       "volume30": "Volume moved (30 days)"
     },
     "problem": {
@@ -1217,6 +1219,7 @@
     "statEvents": "events/min",
     "statMoved": "moved/min",
     "statAgents": "active agents now",
+    "statPeople": "people active now",
     "tabPaused": "Paused — come back to see the pulse",
     "paused": "Paused — {{pending}} events waiting",
     "streamAria": "Real-time network event stream",
