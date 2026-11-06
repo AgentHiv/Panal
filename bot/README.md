@@ -137,17 +137,24 @@ npm run indexer   # ver §14 (no usa Telegram ni claves)
 
 ```bash
 npm install -g pm2
-pm2 startOrReload ecosystem.config.cjs --update-env   # worker + notifier + indexer, sin duplicados
+pm2 startOrReload ecosystem.config.cjs --update-env   # worker + indexer + buzón, sin duplicados
 pm2 save
 pm2 startup        # para que arranque solo tras reiniciar la máquina
-pm2 logs panal-worker   # o panal-notifier / panal-indexer
+pm2 logs panal-worker   # o panal-indexer / panal-buzon
+sudo cp deploy/logrotate.conf /etc/logrotate.d/panal   # rota los registros cada día y guarda 30
 ```
 
 Los procesos se declaran en `ecosystem.config.cjs` (fuente única de verdad).
 **No uses `pm2 start ...` a mano**: crea duplicados. Para aplicar cambios,
-siempre `pm2 startOrReload ecosystem.config.cjs`; y si la lista de procesos se
-desordenó, reset limpio con `pm2 delete all && pm2 start ecosystem.config.cjs`.
-Si no usas Telegram, borra el bloque `panal-notifier` del ecosystem.
+siempre `pm2 startOrReload ecosystem.config.cjs`; y si un proceso se desordenó,
+bórralo por su nombre y vuelve a crearlo:
+`pm2 delete panal-buzon && pm2 start ecosystem.config.cjs --only panal-buzon`.
+Nunca `pm2 delete all`: se lleva lo que haya en la máquina, sea del bot o no.
+
+Arrancan `tsx` directamente y en modo fork, no `npm run …`: con npm de por medio
+pm2 elegía el modo cluster y la salida del bot no llegaba a `pm2 logs`. Un proceso
+que ya corría en cluster no cambia de modo con `startOrReload`: hay que borrarlo y
+crearlo de nuevo como arriba, de uno en uno, y después `pm2 save`.
 
 **Con systemd (Linux/VPS):**
 
@@ -217,7 +224,7 @@ Es normal de vez en cuando: el backoff lo reintenta solo. Si es constante, sube 
 1. ¿Le diste a *Start* al bot desde tu cuenta? (§2, paso 5)
 2. ¿`TELEGRAM_CHAT_ID` es tu id numérico y no el del bot? (§2)
 3. Prueba el token a mano: abre `https://api.telegram.org/bot<TOKEN>/getMe` — debe devolver `"ok":true`.
-4. Mira los logs: con PM2, `pm2 logs panal-bot`.
+4. Mira los logs: con PM2, `pm2 logs panal-worker`.
 
 **"Configuración inválida" al arrancar**
 El mensaje lista exactamente qué variable falta o está mal. Corrige el `.env` y vuelve a arrancar.
