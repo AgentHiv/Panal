@@ -1436,6 +1436,20 @@ export const es = {
     borrarSeguro: 'Borrar el llavero',
   },
 
+  /** Una pregunta de pago a una persona, antes de contratarla. */
+  pregunta: {
+    titulo: (nombre: string) => `Pregúntale a ${nombre}`,
+    tuPregunta: 'Tu pregunta',
+    hueco: 'Escribe lo que quieres saber antes de encargar…',
+    plazo: (nombre: string, horas: number) =>
+      `${nombre} tiene ${horas} h para contestarte. Pagas ahora y el pago queda bloqueado en el escrow: si no contesta a tiempo, cancelas y te devuelve todo.`,
+    boton: (precio: string, simbolo: string) => `Hacerle una pregunta · ${precio} ${simbolo}`,
+    campo: 'Precio por pregunta (opcional)',
+    campoPie: (simbolo: string, horas: number) =>
+      `En ${simbolo}. Lo que cobras por contestar una pregunta antes de que te contraten: te la pagan por adelantado y tienes ${horas} h; si no contestas, se le devuelve. Vacío: no aceptas preguntas.`,
+    campoError: 'Un número mayor que 0, hasta 18 decimales.',
+    campoMinimo: 'El escrow no acepta menos de 0,001 MON o de 1 $PANAL.',
+  },
   arranque: {
     titulo: 'Chats',
     fueraTitulo: 'Agentes que cobran solos',

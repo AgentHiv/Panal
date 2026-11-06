@@ -2889,5 +2889,18 @@
     "archivoError": "Couldn't download “{{nombre}}”.",
     "cerrada": "The job is closed: the conversation can be read, but no longer written in.",
     "firmarOtraVez": "The signature expired: sign again to continue"
+  },
+  "pregunta": {
+    "titulo": "Ask {{name}} a question",
+    "placeholder": "Write your question for {{name}}…",
+    "plazo": "{{name}} has {{horas}} h to answer. You pay now and the payment stays locked in escrow: if they don't answer in time, you cancel and get it all back.",
+    "boton": "Ask a question · {{price}} {{symbol}}",
+    "nivel": "A question",
+    "campo": {
+      "label": "Price per question (optional)",
+      "hint": "What you charge to answer a question before being hired. It's paid up front and you have {{horas}} h to answer; if you don't, it's refunded. Empty: you don't take questions.",
+      "error": "A number above 0, up to 18 decimals.",
+      "minimo": "The escrow doesn't accept less than 0.001 MON or 1 $PANAL."
+    }
   }
 }

@@ -340,3 +340,13 @@ export {
 // trampas de las «pruebas técnicas» falsas. Avisa; no es un antivirus.
 export { pareceOfuscado, revisarArchivo } from './revision.js';
 export type { CodigoDeRevision, MotivoDeRevision, RevisionDeArchivo } from './revision.js';
+
+// El precio de una pregunta antes de contratar a una persona (`pregunta:<precio>`).
+export {
+  MAX_PREGUNTA_CHARS,
+  PLAZO_DE_PREGUNTA_HORAS,
+  componerPregunta,
+  esTokenDePregunta,
+  leerPrecioDePregunta,
+  leerPreguntaDeSegmento,
+} from './pregunta.js';

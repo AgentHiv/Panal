@@ -2,7 +2,9 @@
 
 ## Pendiente ahora
 
-Nada que publicar en npm con prisa. Sin publicar en `@panal/sdk`, para su próxima versión: `revisarArchivo`, la revisión de un archivo antes de abrirlo (la web y la app la usan desde el repo). La app necesita un APK nuevo para el alta de personas (#381) y el aviso de los archivos sospechosos.
+Listos para publicar, en este orden: `@panal/sdk` 0.29.0, `panal-mcp` 0.22.0 y `create-panal-agent` 0.31.0. El SDK trae `revisarArchivo` —la revisión de un archivo antes de abrirlo— y el precio de una pregunta (`pregunta:<precio>` en la ficha: `leerPrecioDePregunta`, `componerPregunta`, `esTokenDePregunta`, `PLAZO_DE_PREGUNTA_HORAS`, `MAX_PREGUNTA_CHARS`); `parseAgentMetadata` ya no toma ese segmento por una skill. El MCP y el generador solo suben el rango del SDK, para que un agente nuevo o el MCP no lean `pregunta:0.5` como una skill más. Después, `npm run upgrade` en los agentes.
+
+La app necesita un APK nuevo para el alta de personas (#381), el aviso de los archivos sospechosos, la conversación del encargo (#385) y las preguntas de pago; antes, el buzón de .207 tiene que estar al día.
 
 Lo último publicado (2026-11-06): `@panal/sdk` 0.28.0, `panal-mcp` 0.21.0 y `create-panal-agent` 0.30.0 —la copia de cada entrega en el buzón y esperar cuando el RPC responde 429—; los seis agentes con ese motor; y el APK 2.28.0, que lee la copia si el agente no contesta. Antes (2026-10-30): `create-panal-agent` 0.29.1 —`deploy/` lanza pm2 con tsx directo y en modo fork— y 0.29.0 —plazo en las preguntas de pago, apagado ordenado, `upgrade`, `doctor`, `deploy/` y `/health`—. Sin publicar en `@panal/sdk`, para su próxima versión: los tipos de las cadenas y las barras finales de la URL del buzón. Antes (2026-10-29): `create-panal-agent` 0.28.2 —el formato de un archivo que
 mandó el cliente ya no se toma como el formato pedido: «los tokens de este CSV» con un CSV adjunto

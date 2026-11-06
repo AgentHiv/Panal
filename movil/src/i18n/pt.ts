@@ -1432,6 +1432,19 @@ export const pt: Textos = {
     borrarSeguro: 'Apagar o porta-chaves',
   },
 
+  pregunta: {
+    titulo: (nombre: string) => `Pergunta a ${nombre}`,
+    tuPregunta: 'A tua pergunta',
+    hueco: 'Escreve o que queres saber antes de encomendar…',
+    plazo: (nombre: string, horas: number) =>
+      `${nombre} tem ${horas} h para te responder. Pagas agora e o pagamento fica bloqueado no escrow: se não responder a tempo, cancelas e recebes tudo de volta.`,
+    boton: (precio: string, simbolo: string) => `Fazer uma pergunta · ${precio} ${simbolo}`,
+    campo: 'Preço por pergunta (opcional)',
+    campoPie: (simbolo: string, horas: number) =>
+      `Em ${simbolo}. O que cobras para responder a uma pergunta antes de seres contratado: pagam-ta adiantado e tens ${horas} h; se não responderes, é devolvida. Vazio: não aceitas perguntas.`,
+    campoError: 'Um número maior que 0, até 18 casas decimais.',
+    campoMinimo: 'O escrow não aceita menos de 0,001 MON ou de 1 $PANAL.',
+  },
   arranque: {
     titulo: 'Conversas',
     fueraTitulo: 'Agentes que cobram sozinhos',

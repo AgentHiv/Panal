@@ -14,6 +14,8 @@ import {
   leerEjemplosDeMetadata,
   leerNivelesDeMetadata,
   type Nivel,
+  MAX_PREGUNTA_CHARS,
+  PLAZO_DE_PREGUNTA_HORAS,
 } from '@panal/sdk';
 import { clavePublicaDe, nombreEnBuzon, publicarMiClave } from '@/lib/cifrado';
 import { ensureActiveChain } from '@/lib/ensureChain';
@@ -82,6 +84,13 @@ export interface HireDialogProps {
    * encargo lo escribe el cliente.
    */
   nivel?: Nivel | null;
+  /**
+   * Una pregunta antes de contratar, no un encargo: `nivel` trae su precio y su
+   * tope, el plazo es fijo (`PLAZO_DE_PREGUNTA_HORAS`) y la pantalla lo dice.
+   * Por debajo es un encargo pequeño como otro cualquiera: si no contesta a
+   * tiempo, quien preguntó cancela y el escrow le devuelve todo.
+   */
+  pregunta?: boolean;
 }
 
 const STEP_TITLES = ['hire.step1.title', 'hire.step2.title', 'hire.step3.title'];
@@ -95,12 +104,12 @@ const DEADLINE_OPTIONS = [6, 24, 72, 168] as const;
  * así cada apertura empieza de cero. TODO es real: solo agentes on-chain y solo
  * con wallet conectada (fail-closed, sin sellado simulado).
  */
-export default function HireDialog({ agent, open, onOpenChange, nivel = null }: HireDialogProps) {
+export default function HireDialog({ agent, open, onOpenChange, nivel = null, pregunta = false }: HireDialogProps) {
   if (!agent) return null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto border-line bg-paper p-0 sm:rounded-2xl">
-        <HireWizard agent={agent} onOpenChange={onOpenChange} nivel={nivel} />
+        <HireWizard agent={agent} onOpenChange={onOpenChange} nivel={nivel} pregunta={pregunta} />
       </DialogContent>
     </Dialog>
   );
@@ -110,10 +119,12 @@ function HireWizard({
   agent,
   onOpenChange,
   nivel,
+  pregunta,
 }: {
   agent: Agent;
   onOpenChange: (open: boolean) => void;
   nivel: Nivel | null;
+  pregunta: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const [step, setStep] = useState(0);
@@ -137,7 +148,7 @@ function HireWizard({
   const [elegido, setElegido] = useState<Nivel | null>(nivel);
   const [taskText, setTaskText] = useState('');
   /** Plazo de la tarea en horas (deadline on-chain elegido por el cliente). */
-  const [deadlineHours, setDeadlineHours] = useState(72);
+  const [deadlineHours, setDeadlineHours] = useState<number>(pregunta ? PLAZO_DE_PREGUNTA_HORAS : 72);
   const [params, setParams] = useState('');
   /** Lo que el cliente adjunta. Sus hashes viajan DENTRO del encargo. */
   const [adjuntos, setAdjuntos] = useState<Adjunto[]>([]);
@@ -869,7 +880,9 @@ function HireWizard({
             <span className="ml-2 font-mono text-[12px] text-ink-3">0{step + 1}/03</span>
           </div>
 
-          <DialogTitle className="display-m text-ink">{t(STEP_TITLES[step])}</DialogTitle>
+          <DialogTitle className="display-m text-ink">
+            {pregunta && step === 0 ? t('pregunta.titulo', { name: agent.name }) : t(STEP_TITLES[step])}
+          </DialogTitle>
           <DialogDescription className="sr-only">{t('hire.desc', { name: agent.name })}</DialogDescription>
 
           <AnimatePresence mode="wait">
@@ -903,7 +916,7 @@ function HireWizard({
                       el botón del final y la barra del móvil— y por todos
                       ellos se compraba el básico sin llegar a ver que había
                       otros. */}
-                  {niveles.length > 0 && (
+                  {niveles.length > 0 && !pregunta && (
                     <div className="flex flex-col gap-2">
                       <p className="text-[0.8125rem] font-medium text-ink-2">{t('hire.tier')}</p>
                       {niveles.map((n) => {
@@ -946,7 +959,8 @@ function HireWizard({
                     value={taskText}
                     onChange={(e) => setTaskText(e.target.value)}
                     rows={4}
-                    placeholder={t('hire.taskPlaceholder', { name: agent.name })}
+                    maxLength={pregunta ? MAX_PREGUNTA_CHARS : undefined}
+                    placeholder={pregunta ? t('pregunta.placeholder', { name: agent.name }) : t('hire.taskPlaceholder', { name: agent.name })}
                     className="w-full resize-none rounded-xl border border-line bg-paper px-4 py-3 text-[0.875rem] text-ink placeholder:text-ink-3 focus:border-honey focus:outline-none"
                   />
                   {/* Quién podrá leerlo. Si recibe en el buzón de Panal es la
@@ -969,7 +983,7 @@ function HireWizard({
                       escribe su dueño en la ficha. Al pulsar uno se copia para
                       completarlo: no es un encargo listo, le falta lo tuyo. Y
                       con algo ya escrito se esconden, para no pisarlo. */}
-                  {ejemplos.length > 0 && !taskText.trim() && (
+                  {ejemplos.length > 0 && !taskText.trim() && !pregunta && (
                     <div className="flex flex-col gap-2">
                       <p className="text-[0.75rem] text-ink-3">{t('hire.ejemplos', { name: agent.name })}</p>
                       <div className="flex flex-wrap gap-2">
@@ -986,27 +1000,33 @@ function HireWizard({
                       </div>
                     </div>
                   )}
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[0.8125rem] font-medium text-ink-2">{t('hire.deadline.label')}</span>
-                    <div className="grid grid-cols-4 gap-2">
-                      {DEADLINE_OPTIONS.map((h) => (
-                        <button
-                          key={h}
-                          type="button"
-                          onClick={() => setDeadlineHours(h)}
-                          className={cn(
-                            'rounded-full border px-2 py-2 text-[0.75rem] font-medium transition-colors',
-                            deadlineHours === h
-                              ? 'border-honey bg-honey-soft text-honey-deep'
-                              : 'border-line bg-transparent text-ink-2 hover:border-honey/50 hover:text-ink',
-                          )}
-                        >
-                          {t(`hire.deadline.h${h}`)}
-                        </button>
-                      ))}
+                  {pregunta ? (
+                    <p className="rounded-xl border border-line bg-cream px-3.5 py-2.5 text-[0.75rem] leading-relaxed text-ink-2">
+                      {t('pregunta.plazo', { name: agent.name, horas: PLAZO_DE_PREGUNTA_HORAS })}
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[0.8125rem] font-medium text-ink-2">{t('hire.deadline.label')}</span>
+                      <div className="grid grid-cols-4 gap-2">
+                        {DEADLINE_OPTIONS.map((h) => (
+                          <button
+                            key={h}
+                            type="button"
+                            onClick={() => setDeadlineHours(h)}
+                            className={cn(
+                              'rounded-full border px-2 py-2 text-[0.75rem] font-medium transition-colors',
+                              deadlineHours === h
+                                ? 'border-honey bg-honey-soft text-honey-deep'
+                                : 'border-line bg-transparent text-ink-2 hover:border-honey/50 hover:text-ink',
+                            )}
+                          >
+                            {t(`hire.deadline.h${h}`)}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="text-[0.6875rem] text-ink-3">{t('hire.deadline.hint')}</span>
                     </div>
-                    <span className="text-[0.6875rem] text-ink-3">{t('hire.deadline.hint')}</span>
-                  </div>
+                  )}
                   <input
                     value={params}
                     onChange={(e) => setParams(e.target.value)}

@@ -23,13 +23,18 @@ export interface HireCardProps {
    * al agente en directo). Sin él, lo que diga la lista.
    */
   cierre?: Cierre | null;
+  /**
+   * Abre una pregunta de pago antes de contratar. Solo si la persona tiene
+   * precio para ellas (`pregunta:` en su ficha).
+   */
+  onPregunta?: () => void;
 }
 
 /**
  * Tarjeta de contratación sticky (agente.md S1): precio, métricas, CTA grande,
  * Guardar/Compartir y nota de escrow. Entra x 40→0 (.8s, delay .2).
  */
-export default function HireCard({ agent, onHire, cierre: cierreDado }: HireCardProps) {
+export default function HireCard({ agent, onHire, cierre: cierreDado, onPregunta }: HireCardProps) {
   const { t } = useTranslation();
   const [saved, setSaved] = useState(false);
   const { connected, connecting, addressShort, connect } = useWallet();
@@ -91,7 +96,20 @@ export default function HireCard({ agent, onHire, cierre: cierreDado }: HireCard
           {t(TEXTO_CIERRE[cierre])}
         </p>
       )}
-      {!sinCanal && cierre !== 'no-responde' && (
+      {/* Una persona no contesta un chat al momento —su buzón no lo atiende—:
+          lo suyo es una pregunta pagada, con plazo, que se devuelve si no
+          contesta. */}
+      {onPregunta && isOnchainAgent(agent) && agent.pregunta && cierre === null && (
+        <button
+          type="button"
+          onClick={onPregunta}
+          className="mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-line px-5 py-3 text-[0.875rem] font-medium text-ink-2 transition-colors duration-200 hover:border-honey hover:text-ink"
+        >
+          <MessageCircle size={15} aria-hidden />
+          {t('pregunta.boton', { price: agent.pregunta, symbol: currencySymbol(agent.currency) })}
+        </button>
+      )}
+      {!sinCanal && cierre !== 'no-responde' && agent.type !== 'humano' && (
         /* Preguntar antes de encargar. Cuesta céntimos y responde al momento;
            encargar bloquea el pago y da entrega verificable. Lo normal es lo
            primero y luego, si merece la pena, lo segundo. Sin endpoint —o si
@@ -191,7 +209,7 @@ export function MobileHireBar({ agent, onHire, cierre: cierreDado }: HireCardPro
             {isOnchainAgent(agent) && <Dolares cantidad={agent.priceWei} moneda={currencySymbol(agent.currency)} />}
           </div>
           <div className="flex items-center gap-2">
-            {!sinCanal && cierre !== 'no-responde' && (
+            {!sinCanal && cierre !== 'no-responde' && agent.type !== 'humano' && (
               <Link
                 to={`/chat/${agent.id}`}
                 aria-label={t('chat.talkTo', { name: agent.name })}

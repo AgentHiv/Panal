@@ -46,6 +46,7 @@ import { esTokenDeMarca, leerMarca } from './marca.js';
 import { esTokenDeEjemplo, leerEjemplosDeMetadata } from './ejemplos.js';
 import { esTokenDeNivel, leerNivelesDeMetadata } from './niveles.js';
 import { esTokenDeTipo } from './tipo.js';
+import { esTokenDePregunta } from './pregunta.js';
 import { normalizarIdioma, traducirFrases, type Idioma } from './traduccion.js';
 import { allowedOrigin, clientIp, crearLimitador, escuchar, sinBarraFinal } from './net.js';
 import { generateResult } from './llm.js';
@@ -323,7 +324,8 @@ export function parseMetadataURI(uri: string): {
         !esTokenDeMarca(p) &&
         !esTokenDeNivel(p) &&
         !esTokenDeTipo(p) &&
-        !esTokenDeEjemplo(p),
+        !esTokenDeEjemplo(p) &&
+        !esTokenDePregunta(p),
     );
   const links = leerMarca(uri);
   return {

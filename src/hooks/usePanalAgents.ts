@@ -35,7 +35,7 @@ import {
 } from '@/contracts/config';
 import { panalNamesAbi, panalRegistryAbi, panalRegistryV2Abi, panalReputationAbi } from '@/contracts/abis';
 import type { Agent, AgentCategory } from '@/data/agents';
-import { esTokenDeNivel, esTokenDeTipo, leerTipo } from '@panal/sdk';
+import { esTokenDeEjemplo, esTokenDeNivel, esTokenDePregunta, esTokenDeTipo, leerPrecioDePregunta, leerTipo } from '@panal/sdk';
 import { useIdiomaDelDocumento } from '@/lib/idiomaActual';
 import { MARCA_VACIA, esTokenDeMarca, leerMarca, type Marca } from '@/lib/marca';
 import { canalDeFicha, extractBotUrl, type Canal } from '@/lib/botEndpoint';
@@ -74,6 +74,11 @@ export interface OnchainAgent extends Agent {
    * el indexador esté caído.
    */
   marca: Marca;
+  /**
+   * Lo que cobra por contestar una pregunta antes de que le contraten, en
+   * unidades de su moneda («0.5»), o null. Sale de `pregunta:` en su ficha.
+   */
+  pregunta: string | null;
   /**
    * Si publica una dirección por donde recibir encargos, o no se sabe.
    *
@@ -272,6 +277,11 @@ function parseMetadata(uri: string, addr: Address): { name: string; tagline: str
         !esTokenDeMarca(p) &&
         !esTokenDeNivel(p) &&
         !esTokenDeTipo(p) &&
+        // Los ejemplos y el precio de una pregunta tampoco son texto de la
+        // ficha: sin apartarlos saldrían de skill en la lectura directa del
+        // registro (el catálogo del indexador ya los apartaba).
+        !esTokenDeEjemplo(p) &&
+        !esTokenDePregunta(p) &&
         !/^bot:\s*https?:\/\//i.test(p),
     );
   if (parts.length > 0) {
@@ -407,6 +417,7 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
         // marca no lo manda: entonces `marca` queda vacía y la tarjeta se
         // pinta como siempre, que es exactamente lo que hacía antes.
         marca: leerMarca(f.metadataURI),
+        pregunta: leerPrecioDePregunta(f.metadataURI),
         // Del mismo `metadataURI`, y por eso mismo `undefined` con un indexador
         // anterior a él: entonces es «no se sabe» y no se marca nada.
         canal: canalDeFicha(f.metadataURI),
@@ -553,6 +564,7 @@ async function fetchOnchainAgents(idioma: string): Promise<OnchainAgent[]> {
       walletShort: short(addr),
       skills: meta.skills,
       marca: leerMarca(data.metadataURI),
+      pregunta: leerPrecioDePregunta(data.metadataURI),
       // Aquí la ficha viene entera de la cadena: la respuesta es sí o no.
       canal: canalDeFicha(data.metadataURI),
       botUrl: extractBotUrl(data.metadataURI),

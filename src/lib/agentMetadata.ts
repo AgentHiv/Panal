@@ -28,6 +28,9 @@
 import {
   componerEjemplo,
   componerNivel,
+  componerPregunta,
+  esTokenDePregunta,
+  leerPrecioDePregunta,
   esTokenDeEjemplo,
   esTokenDeNivel,
   esTokenDeTipo,
@@ -69,6 +72,12 @@ export interface AgentMetadataFields {
    * normal. Ver `ejemplos.ts` del SDK.
    */
   ejemplos: string[];
+  /**
+   * Lo que cobra por contestar una pregunta antes de que le contraten, en
+   * unidades de su moneda («0.5»), o '' si no contesta preguntas. Ver
+   * `sdk/src/pregunta.ts`.
+   */
+  pregunta: string;
 }
 
 /** metadataURI → campos editables (nombre, descripción, skills, botUrl). */
@@ -84,7 +93,13 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadataFields {
     const m = /^bot:\s*(\S.*)$/i.exec(seg);
     if (m && !botUrl) {
       botUrl = m[1].trim();
-    } else if (!esTokenDeMarca(seg) && !esTokenDeNivel(seg) && !esTokenDeTipo(seg) && !esTokenDeEjemplo(seg)) {
+    } else if (
+      !esTokenDeMarca(seg) &&
+      !esTokenDeNivel(seg) &&
+      !esTokenDeTipo(seg) &&
+      !esTokenDeEjemplo(seg) &&
+      !esTokenDePregunta(seg)
+    ) {
       rest.push(seg);
     }
   }
@@ -106,16 +121,18 @@ export function parseAgentMetadata(metadataURI: string): AgentMetadataFields {
     niveles: leerNivelesDeMetadata(metadataURI),
     tipo: leerTipo(metadataURI),
     ejemplos: leerEjemplosDeMetadata(metadataURI),
+    pregunta: leerPrecioDePregunta(metadataURI) ?? '',
   };
 }
 
 /** Campos → metadataURI (idéntico al compositor del registro guiado). */
 export function composeAgentMetadata(
-  fields: Omit<AgentMetadataFields, 'marca' | 'niveles' | 'tipo' | 'ejemplos'> & {
+  fields: Omit<AgentMetadataFields, 'marca' | 'niveles' | 'tipo' | 'ejemplos' | 'pregunta'> & {
     marca?: Partial<Marca>;
     niveles?: Nivel[];
     tipo?: TipoDeAgente;
     ejemplos?: string[];
+    pregunta?: string;
   },
 ): string {
   const parts = [
@@ -159,6 +176,10 @@ export function composeAgentMetadata(
     const token = componerEjemplo(ejemplo);
     if (token) composed += ` · ${token}`;
   }
+  // Y el precio de una pregunta, detrás de todo por lo mismo: un lector que no
+  // lo conozca lo ve como una skill rara al final, sin perder nada de lo demás.
+  const pregunta = fields.pregunta?.trim() ? componerPregunta(fields.pregunta) : null;
+  if (pregunta) composed += ` · ${pregunta}`;
   return composed;
 }
 
@@ -272,6 +293,21 @@ export function aNivel(e: NivelEditable): Nivel | null {
  * precio, precio sin nombre— es el fallo que hay que cantar: se firmaría una
  * ficha en la que ese nivel sencillamente no está, y su dueño creería que sí.
  */
+/**
+ * Qué le pasa al precio de una pregunta, o null si vale (vacío también vale: es
+ * no contestar preguntas). Por debajo del mínimo del escrow —0,001 MON o
+ * 1 $PANAL— el contrato rechazaría el pago, y quien preguntase se encontraría
+ * el error al firmar.
+ */
+export function falloDePregunta(precio: string, simbolo: string): 'precio' | 'minimo' | null {
+  const p = precio.replace(',', '.').trim();
+  if (!p) return null;
+  const wei = precioAWei(p);
+  if (wei === null) return 'precio';
+  const minimo = simbolo === '$PANAL' ? 10n ** 18n : 10n ** 15n;
+  return wei < minimo ? 'minimo' : null;
+}
+
 export function falloDeNivel(e: NivelEditable): 'incompleto' | 'precio' | 'separador' | null {
   const precio = e.precio.replace(',', '.').trim();
   const name = e.name.trim();

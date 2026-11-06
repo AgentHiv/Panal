@@ -140,6 +140,11 @@ jobs:
       - name: Los ejemplos de encargo se leen y se escriben igual en las cuatro capas
         run: pnpm exec tsx scripts/test-ejemplos.ts
 
+      # El precio de una pregunta (`pregunta:<precio>`), igual en las capas:
+      # ninguna se lo come como skill y editar la ficha no lo borra.
+      - name: El precio de una pregunta se lee igual en todas las capas
+        run: pnpm exec tsx scripts/test-pregunta.ts
+
       # Un agente puede vivir en la raiz de su dominio o en un subcamino (el
       # buzon), y `new URL('/brief/12', base)` se come el camino de la base.
       # Eso mandaba el encargo a una ruta de nadie: 404 leido como «no

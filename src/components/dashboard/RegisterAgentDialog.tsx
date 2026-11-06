@@ -41,6 +41,7 @@ import {
   aNivel,
   composeAgentMetadata,
   falloDeNivel,
+  falloDePregunta,
   isHttpsUrl,
   resumirFicha,
   type NivelEditable,
@@ -51,6 +52,7 @@ import { formatMon } from '@/data/agents';
 import MarcaFields from '@/components/dashboard/MarcaFields';
 import NivelesFields from '@/components/dashboard/NivelesFields';
 import EjemplosFields from '@/components/dashboard/EjemplosFields';
+import PreguntaField from '@/components/dashboard/PreguntaField';
 
 export interface RegisterAgentDialogProps {
   open: boolean;
@@ -102,6 +104,8 @@ function RegisterAgentForm({ tipo, onOpenChange }: { tipo: TipoDeAgente; onOpenC
   const [price, setPrice] = useState('');
   /** Moneda del precio (solo con V2_ENABLED): 'MON' nativo o '$PANAL' token. */
   const [currency, setCurrency] = useState<'MON' | '$PANAL'>('MON');
+  /** Lo que cobra por contestar una pregunta (solo personas). Vacío: no contesta preguntas. */
+  const [precioPregunta, setPrecioPregunta] = useState('');
   const [botUrl, setBotUrl] = useState('');
   /** Logo y enlaces del creador. Todo opcional; vacío no escribe nada. */
   const [marca, setMarca] = useState<Marca>(MARCA_VACIA);
@@ -177,8 +181,9 @@ function RegisterAgentForm({ tipo, onOpenChange }: { tipo: TipoDeAgente; onOpenC
   // nivel no está, y su dueño se iría creyendo que sí.
   const nivelesValid = niveles.every((n) => falloDeNivel(n) === null);
   const ejemplosValid = ejemplos.every((e) => falloDeEjemplo(e) === null);
+  const preguntaValid = tipo !== 'persona' || falloDePregunta(precioPregunta, currency) === null;
   const valid =
-    tipo !== null && nameValid && descValid && priceValid && botUrlValid && nivelesValid && ejemplosValid;
+    tipo !== null && nameValid && descValid && priceValid && botUrlValid && nivelesValid && ejemplosValid && preguntaValid;
 
   // Metadata on-chain: "Nombre · descripción · skill1, skill2 · bot:<url>".
   // Las skills van en UN segmento separadas por comas (mismo formato que
@@ -194,8 +199,9 @@ function RegisterAgentForm({ tipo, onOpenChange }: { tipo: TipoDeAgente; onOpenC
         niveles: niveles.map(aNivel).filter((n) => n !== null),
         tipo: tipo ?? 'bot',
         ejemplos,
+        pregunta: tipo === 'persona' ? precioPregunta.replace(',', '.') : '',
       }),
-    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles, tipo, ejemplos],
+    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles, tipo, ejemplos, precioPregunta],
   );
 
   // ——— Skills como chips ———
@@ -616,6 +622,9 @@ function RegisterAgentForm({ tipo, onOpenChange }: { tipo: TipoDeAgente; onOpenC
           />
 
           <EjemplosFields ejemplos={ejemplos} onChange={setEjemplos} idPrefix="reg" />
+          {tipo === 'persona' && (
+            <PreguntaField valor={precioPregunta} onChange={setPrecioPregunta} simbolo={currency} idPrefix="reg" />
+          )}
 
           {/* Preview en vivo del metadata on-chain */}
           <div className="rounded-xl border border-line bg-cream px-4 py-3">

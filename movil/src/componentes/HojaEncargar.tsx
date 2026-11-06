@@ -31,7 +31,16 @@ import {
   tamanoLegible,
   type Adjunto,
 } from '@/lib/adjuntos';
-import { cifrarArchivo, cifrarTexto, conEjemplosDeLaFicha, conTextoDeLaFicha, type Nivel } from '@panal/sdk';
+import {
+  MAX_PREGUNTA_CHARS,
+  PLAZO_DE_PREGUNTA_HORAS,
+  cifrarArchivo,
+  cifrarTexto,
+  conEjemplosDeLaFicha,
+  conTextoDeLaFicha,
+  precioAWei,
+  type Nivel,
+} from '@panal/sdk';
 import { useWallet } from '@/hooks/useWallet';
 import type { DatosAgente } from '~/lib/agente';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
@@ -94,15 +103,22 @@ export default function HojaEncargar({
   datos,
   onCerrar,
   onHecho,
+  pregunta = false,
 }: {
   abierta: boolean;
   agente: string;
   datos: DatosAgente | null;
   onCerrar: () => void;
   onHecho: () => void;
+  /**
+   * Una pregunta de pago antes de contratar, no un encargo: su precio sale de
+   * `pregunta:` en la ficha, el plazo es fijo y la caja se queda en mil
+   * caracteres. Ver `sdk/src/pregunta.ts`.
+   */
+  pregunta?: boolean;
 }): React.ReactElement | null {
   const [brief, setBrief] = useState('');
-  const [horas, setHoras] = useState(24);
+  const [horas, setHoras] = useState<number>(pregunta ? PLAZO_DE_PREGUNTA_HORAS : 24);
   const [adjuntos, setAdjuntos] = useState<Adjunto[]>([]);
   const [avisoArchivo, setAvisoArchivo] = useState<string | null>(null);
   /**
@@ -176,7 +192,11 @@ export default function HojaEncargar({
    * El elegido. Sin tocar nada es el más barato, que debería costar lo mismo
    * que su precio registrado: quien no elija bloquea lo de siempre.
    */
-  const elegido = nivel ?? niveles[0] ?? null;
+  const weiPregunta = pregunta && datos?.pregunta ? precioAWei(datos.pregunta) : null;
+  const elegido: Nivel | null =
+    weiPregunta !== null
+      ? { name: null, description: null, wei: weiPregunta, maxBriefChars: MAX_PREGUNTA_CHARS, maxAttachChars: null, maxAttachCharsTotal: null }
+      : (nivel ?? niveles[0] ?? null);
   /**
    * ¿Se sabe ya cómo se llaman?
    *
@@ -668,11 +688,16 @@ export default function HojaEncargar({
   }
 
   return (
-    <Hoja abierta={abierta} titulo={T.encargar.titulo} onCerrar={onCerrar} bloqueada={trabajando}>
+    <Hoja
+      abierta={abierta}
+      titulo={pregunta ? T.pregunta.titulo(datos?.nombre ?? '') : T.encargar.titulo}
+      onCerrar={onCerrar}
+      bloqueada={trabajando}
+    >
       {!pagado && (
         <>
           {/* Niveles. Sólo si el agente vende alguno; casi ninguno lo hace. */}
-          {niveles.length > 0 && (
+          {niveles.length > 0 && !pregunta && (
             <>
               <p className="mt-3 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
                 {T.encargar.nivel}
@@ -727,13 +752,14 @@ export default function HojaEncargar({
           )}
 
           <p className="mt-3 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-            {T.encargar.quePides}
+            {pregunta ? T.pregunta.tuPregunta : T.encargar.quePides}
           </p>
           <textarea
             value={brief}
             onChange={(e) => setBrief(e.target.value)}
             rows={3}
-            placeholder={T.encargar.briefHueco}
+            maxLength={pregunta ? MAX_PREGUNTA_CHARS : undefined}
+            placeholder={pregunta ? T.pregunta.hueco : T.encargar.briefHueco}
             disabled={trabajando}
             className="seleccionable mt-2 w-full resize-none rounded-[14px] border border-line bg-sand px-3.5 py-3 text-[14px] leading-[1.5] text-ink outline-none placeholder:text-ink-3"
           />
@@ -741,7 +767,7 @@ export default function HojaEncargar({
           {/* Ideas del propio agente, solo con la caja vacía: al tocar una se
               copia para completarla con lo tuyo, y con algo escrito se
               esconden para no pisarlo. */}
-          {ejemplos.length > 0 && !brief.trim() && !trabajando && (
+          {ejemplos.length > 0 && !brief.trim() && !trabajando && !pregunta && (
             <>
               <p className="mt-2.5 text-[11.5px] text-ink-3">{T.encargar.ideasDe(datos?.nombre ?? '')}</p>
               <div className="mt-1.5 flex flex-wrap gap-2">
@@ -829,28 +855,36 @@ export default function HojaEncargar({
             </p>
           )}
 
-          <p className="mt-3.5 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-            {T.encargar.plazo}
-          </p>
-          <div className="mt-2 flex gap-2">
-            {PLAZOS.map((p) => {
-              const elegido = p.horas === horas;
-              return (
-                <button
-                  key={p.horas}
-                  type="button"
-                  onClick={() => setHoras(p.horas)}
-                  disabled={trabajando}
-                  className={`pulsable h-11 grow rounded-xl border text-[13px] font-medium ${
-                    elegido ? 'border-honey bg-honey-soft text-honey' : 'border-line text-ink-2'
-                  }`}
-                >
-                  {T.encargar[p.unidad](p.cuantos)}
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-2 text-[11.5px] leading-[1.45] text-ink-3">{T.encargar.plazoPie}</p>
+          {pregunta ? (
+            <p className="mt-3.5 rounded-[14px] border border-line bg-cream p-3.5 text-[12px] leading-[1.5] text-ink-2">
+              {T.pregunta.plazo(datos?.nombre ?? '', PLAZO_DE_PREGUNTA_HORAS)}
+            </p>
+          ) : (
+            <>
+              <p className="mt-3.5 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
+                {T.encargar.plazo}
+              </p>
+              <div className="mt-2 flex gap-2">
+                {PLAZOS.map((p) => {
+                  const elegido = p.horas === horas;
+                  return (
+                    <button
+                      key={p.horas}
+                      type="button"
+                      onClick={() => setHoras(p.horas)}
+                      disabled={trabajando}
+                      className={`pulsable h-11 grow rounded-xl border text-[13px] font-medium ${
+                        elegido ? 'border-honey bg-honey-soft text-honey' : 'border-line text-ink-2'
+                      }`}
+                    >
+                      {T.encargar[p.unidad](p.cuantos)}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[11.5px] leading-[1.45] text-ink-3">{T.encargar.plazoPie}</p>
+            </>
+          )}
 
           <Tarjeta>
             <Fila

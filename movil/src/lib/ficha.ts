@@ -20,6 +20,9 @@ import {
   weiAPrecio,
   type Nivel,
   type TipoDeAgente,
+  componerPregunta,
+  esTokenDePregunta,
+  leerPrecioDePregunta,
 } from '@panal/sdk';
 import { esTokenDeMarca, leerMarca, tokensDeMarca, type Marca } from '@/lib/marca';
 
@@ -88,6 +91,7 @@ export function partirFicha(uri: string): {
   niveles: Nivel[];
   tipo: TipoDeAgente;
   ejemplos: string[];
+  pregunta: string;
 } {
   const partes = uri.split('·').map((p) => p.trim());
   const texto = partes.filter(
@@ -96,7 +100,8 @@ export function partirFicha(uri: string): {
       !esTokenDeMarca(p) &&
       !esTokenDeNivel(p) &&
       !esTokenDeTipo(p) &&
-      !esTokenDeEjemplo(p),
+      !esTokenDeEjemplo(p) &&
+      !esTokenDePregunta(p),
   );
   return {
     nombre: texto[0] ?? '',
@@ -105,6 +110,7 @@ export function partirFicha(uri: string): {
     niveles: leerNivelesDeMetadata(uri),
     tipo: leerTipo(uri),
     ejemplos: leerEjemplosDeMetadata(uri),
+    pregunta: leerPrecioDePregunta(uri) ?? '',
   };
 }
 
@@ -138,6 +144,8 @@ export function armarFicha(
   niveles: Nivel[] = [],
   tipo: TipoDeAgente = 'bot',
   ejemplos: string[] = [],
+  /** El precio de una pregunta, o ''. Se arrastra igual que los niveles: ver arriba. */
+  pregunta = '',
 ): string {
   return [
     nombre.trim(),
@@ -156,6 +164,7 @@ export function armarFicha(
       }),
     ),
     ...ejemplos.map((e) => componerEjemplo(e)),
+    pregunta.trim() ? componerPregunta(pregunta) : '',
   ]
     .filter(Boolean)
     .join(' · ');

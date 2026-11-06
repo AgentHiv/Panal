@@ -2889,5 +2889,18 @@
     "archivoError": "Impossible de télécharger « {{nombre}} ».",
     "cerrada": "La commande est close : la conversation se lit encore, mais on n’y écrit plus.",
     "firmarOtraVez": "La signature a expiré : signez à nouveau pour continuer"
+  },
+  "pregunta": {
+    "titulo": "Posez une question à {{name}}",
+    "placeholder": "Écrivez votre question pour {{name}}…",
+    "plazo": "{{name}} a {{horas}} h pour répondre. Vous payez maintenant et le paiement reste bloqué en escrow : sans réponse à temps, vous annulez et récupérez tout.",
+    "boton": "Poser une question · {{price}} {{symbol}}",
+    "nivel": "Une question",
+    "campo": {
+      "label": "Prix par question (facultatif)",
+      "hint": "Ce que vous facturez pour répondre à une question avant d’être engagé. Elle est payée d’avance et vous avez {{horas}} h pour répondre ; sinon, elle est remboursée. Vide : vous n’acceptez pas de questions.",
+      "error": "Un nombre supérieur à 0, jusqu’à 18 décimales.",
+      "minimo": "L’escrow n’accepte pas moins de 0,001 MON ou de 1 $PANAL."
+    }
   }
 }

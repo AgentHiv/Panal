@@ -35,6 +35,7 @@ import { esTokenDeMarca } from './marca.js';
 import { esTokenDeEjemplo } from './ejemplos.js';
 import { esTokenDeNivel } from './niveles.js';
 import { esTokenDeTipo } from './tipo.js';
+import { esTokenDePregunta } from './pregunta.js';
 import { fichaEnIdioma, IDIOMAS, type Idioma } from './idiomas.js';
 import type { BotConfig } from './config.js';
 import { escrowAbi, monad, politePause, withRetry, type ChainClients } from './chain.js';
@@ -716,6 +717,8 @@ function leerMetadata(metadataURI: string): {
     // Ni los encargos de ejemplo: «ejemplo:Revisa este contrato» no es una
     // skill, es una frase para un botón.
     if (esTokenDeEjemplo(seg)) continue;
+    // Ni el precio de una pregunta: «pregunta:0.5» es un precio, no una skill.
+    if (esTokenDePregunta(seg)) continue;
     resto.push(seg);
   }
   // Los campos que falten quedan vacios en vez de desplazar a los siguientes:
