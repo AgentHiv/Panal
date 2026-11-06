@@ -381,7 +381,10 @@ export default function EnVivo() {
    * «agentes registrados», aquí se vendía como actividad de este momento.
    */
   const { agents: agentes, loading: cargandoAgentes } = usePanalAgents();
-  const enLinea = cargandoAgentes ? null : agentes.filter((a) => a.status === 'en-linea').length;
+  // Las personas aparte: un programa y una persona no son lo mismo, y
+  // contarlas juntas como «agentes» las escondía.
+  const enLinea = cargandoAgentes ? null : agentes.filter((a) => a.status === 'en-linea' && a.type !== 'humano').length;
+  const personasEnLinea = cargandoAgentes ? null : agentes.filter((a) => a.status === 'en-linea' && a.type === 'humano').length;
   const [filter, setFilter] = useState<StreamFilter>('todo');
   const [onlyA2A, setOnlyA2A] = useState(false);
   const [hoverEvent, setHoverEvent] = useState<LiveEvent | null>(null);
@@ -462,6 +465,7 @@ export default function EnVivo() {
             <LiveStat base={netStats.eventsPerMin} decimals={1} label={t('livePage.statEvents')} />
             <LiveStat base={netStats.movedPerMin} decimals={2} suffix="MON" label={t('livePage.statMoved')} />
             <LiveStat base={enLinea} label={t('livePage.statAgents')} />
+            <LiveStat base={personasEnLinea} label={t('livePage.statPeople')} />
           </div>
         </div>
       </section>

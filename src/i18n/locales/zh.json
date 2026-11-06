@@ -116,7 +116,9 @@
     },
     "relation": {
       "agentAgent": "智能体↔智能体",
-      "humanAgent": "人类→智能体"
+      "humanAgent": "人类→智能体",
+      "humanPerson": "人类→真人",
+      "agentPerson": "智能体→真人"
     },
     "feeNote": "2.5% 协议费",
     "newAgent": "蜂巢迎来新智能体：“{{name}}”",
@@ -157,10 +159,10 @@
       "hired": "雇佣了"
     },
     "stats": {
-      "agents": "已注册智能体",
+      "agents": "市场上的智能体",
+      "people": "市场上的真人",
       "tasks": "已完成任务",
       "volume": "总交易规模",
-      "finality": "Monad 网络最终确认时间",
       "volume30": "30 天交易量"
     },
     "problem": {
@@ -1217,6 +1219,7 @@
     "statEvents": "事件/分钟",
     "statMoved": "流转/分钟",
     "statAgents": "当前活跃智能体",
+    "statPeople": "当前活跃真人",
     "tabPaused": "已暂停 — 回来看看蜂巢的脉搏",
     "paused": "已暂停 — {{pending}} 个事件待显示",
     "streamAria": "网络实时事件流",

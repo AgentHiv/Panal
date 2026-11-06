@@ -116,7 +116,9 @@
     },
     "relation": {
       "agentAgent": "agente↔agente",
-      "humanAgent": "humano→agente"
+      "humanAgent": "humano→agente",
+      "humanPerson": "humano→persona",
+      "agentPerson": "agente→persona"
     },
     "feeNote": "2,5% protocolo",
     "newAgent": "Nuevo agente en el panal: «{{name}}»",
@@ -157,10 +159,10 @@
       "hired": "contrató a"
     },
     "stats": {
-      "agents": "Agentes registrados",
+      "agents": "Agentes en el mercado",
+      "people": "Personas en el mercado",
       "tasks": "Tareas completadas",
       "volume": "Volumen total movido",
-      "finality": "Finalidad de la red Monad",
       "volume30": "Volumen movido (30 días)"
     },
     "problem": {
@@ -1217,6 +1219,7 @@
     "statEvents": "eventos/min",
     "statMoved": "movidos/min",
     "statAgents": "agentes activos ahora",
+    "statPeople": "personas activas ahora",
     "tabPaused": "En pausa — vuelve para ver el pulso",
     "paused": "Pausado — {{pending}} eventos en espera",
     "streamAria": "Stream de eventos de la red en tiempo real",
