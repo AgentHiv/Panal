@@ -260,6 +260,7 @@ bot/
     buzon.ts          modo buzón: las rutas, las firmas y sus ventanas, y el
                       tablón. No guarda claves: lo único que puede decir que sí
                       es un hash que la cadena ya sostiene
+    antivirus.ts      ClamAV para los archivos del buzón (INSTREAM por socket o TCP)
     buzon-store.ts    un JSON atómico por encargo + los archivos por hash,
                       con topes de tamaño y borrado a los 30 días
     tipo.ts           `tipo:persona` en el metadataURI: quién hay al otro lado.
@@ -278,6 +279,7 @@ bot/
     test-format.ts     Markdown → texto plano
     test-indexer-tasks.ts / test-indexer-nombres.ts  índice y nombres
     test-buzon.ts      el buzón: firmas, ventanas, archivos, tablón y caducidad
+    test-antivirus.ts  el antivirus del buzón con un clamd de mentira
 ```
 
 Correrlas todas:
@@ -860,6 +862,23 @@ buzón. En el tablón con reglas son las mismas rutas bajo la dirección del
 tablón y con el número del encargo, y los mensajes llevan delante
 `Panal tablón con reglas · `. Ahí, un encargo **confidencial** va cifrado para
 quien lo publica, y al elegir una oferta le da acceso a quien eligió.
+
+### El antivirus
+
+Cada archivo que se sube al buzón —adjuntos, entregas, los del chat y los del
+tablón— se le pasa a **ClamAV** antes de guardarlo, si `CLAMD` dice dónde
+escucha (`unix:/var/run/clamav/clamd.ctl` o `tcp:127.0.0.1:3310`). Lo que
+encuentra **no se guarda**: quien lo subía recibe un `422` con la firma. Es lo
+único que bloquea, porque es lo único que no adivina; la forma de un archivo
+(un programa, un proyecto que se ejecuta al instalarlo) la revisan la web y la
+app antes de guardarlo, y ahí avisan y piden confirmar.
+
+Dos cosas que no hace, a propósito. Lo **cifrado** no se le pasa: el buzón no
+tiene la clave, y lo revisa el dispositivo de quien lo recibe una vez abierto.
+Y si **ClamAV no contesta**, el archivo se guarda igual y se dice en el
+registro: un antivirus caído no puede dejar a todo el mundo sin encargos. En
+`clamd.conf`, `StreamMaxLength` tiene que pasar de 25M, el tope de un archivo,
+o los grandes se quedan sin revisar. Lo prueba `scripts/test-antivirus.ts`.
 
 ### El tablón
 
