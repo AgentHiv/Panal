@@ -10,8 +10,8 @@
  *     JSON a un POST, 202 a una notificación, 405 a un GET, la cabecera de
  *     versión, CORS;
  *   - que los límites están: cuerpo grande, tipo de contenido, JSON roto;
- *   - y que una contratación preparada deja un borrador que solo la web puede
- *     leer, con el texto tal cual.
+ *   - y que una contratación preparada deja un borrador CERRADO: el servidor
+ *     devuelve la caja sin el texto, y solo la clave del enlace la abre.
  *
  * Las lecturas tocan Monad mainnet, como las del MCP local. Las aserciones son
  * estructurales: el mercado es un sistema vivo.
@@ -19,6 +19,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { abrirBorradorEnNode } from '../src/borrador-cifrado.js';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PUERTO = 18_000 + Math.floor(Math.random() * 1_000);
@@ -163,11 +164,12 @@ try {
   let enlace: string | null = null;
   for (const a of direcciones.slice(0, 6)) {
     const t = textoDe(await llamar('panal_prepare_hire', { agent: a, brief: encargo, deadline_hours: 24 }));
-    const m = /Link: (https:\/\/panal\.lat\/contratar\/[A-Za-z0-9_-]+)/.exec(t);
+    const m = /Link: (https:\/\/panal\.lat\/contratar\/[A-Za-z0-9_-]+#[A-Za-z0-9_-]+)/.exec(t);
     if (m) {
       enlace = m[1]!;
       check('la contratación preparada dice el precio', t.includes('Price:'));
       check('y que aquí no se paga nada', t.includes('nothing is paid until they do'));
+      check('y que el enlace va entero, con lo de detrás de la #', t.includes('including the part after #'));
       break;
     }
     check(`${a.slice(0, 10)}… no da enlace, y lo explica`, t.includes('No link was made') || t.includes('delisted') || t.includes('does not fit'), t.slice(0, 160));
@@ -175,11 +177,15 @@ try {
   if (!enlace) {
     console.log('ℹ️  ningún agente de los primeros contestó: no se comprueba el borrador');
   } else {
-    const id = enlace.split('/').pop()!;
+    const [id, clave] = enlace.split('/').pop()!.split('#') as [string, string];
     const desdeLaWeb = await fetch(`${BASE}/borrador/${id}`, { headers: { origin: 'https://panal.lat' } });
-    const b = (await desdeLaWeb.json()) as { encargo?: string; horas?: number; agente?: string };
-    check('la web lee el borrador', desdeLaWeb.status === 200 && desdeLaWeb.headers.get('access-control-allow-origin') === 'https://panal.lat');
-    check('con el encargo tal cual y el plazo pedido', b.encargo === encargo && b.horas === 24);
+    const bruto = await desdeLaWeb.text();
+    const caja = JSON.parse(bruto) as { cifrado?: string };
+    check('la web recoge el borrador', desdeLaWeb.status === 200 && desdeLaWeb.headers.get('access-control-allow-origin') === 'https://panal.lat');
+    check('el servidor solo da la caja cerrada: el texto no va en la respuesta', typeof caja.cifrado === 'string' && !bruto.includes('Prueba automática'));
+    const b = abrirBorradorEnNode(caja.cifrado ?? '', clave, id);
+    check('con la clave del enlace se abre, con el encargo tal cual y el plazo pedido', b?.encargo === encargo && b?.horas === 24);
+    check('sin ella no', abrirBorradorEnNode(caja.cifrado ?? '', 'A'.repeat(22), id) === null);
     const desdeOtra = await fetch(`${BASE}/borrador/${id}`, { headers: { origin: 'https://otra.example' } });
     check('otra página no recibe permiso para leerlo', desdeOtra.headers.get('access-control-allow-origin') === null);
   }

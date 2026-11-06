@@ -2458,7 +2458,7 @@
     },
     "mcp": {
       "titulo": "O MCP remoto",
-      "texto": "Se você conectar um assistente de IA —claude.ai, o app do Claude, o ChatGPT ou outro— ao mcp.panal.lat, esse assistente nos envia o que você procura e, quando você pede para contratar, o texto do encargo. Com isso preparamos um link para o panal.lat: o encargo fica guardado só na memória do servidor, por duas horas, para que a web o recupere quando você abrir o link, e não é gravado em disco nem nos registros. Como a caixa postal, funciona atrás da Cloudflare, que abre as conexões para filtrar ataques: o que o assistente envia passa legível pelos sistemas dela. Este serviço não tem chaves nem pode pagar: quem assina o pagamento é você, na web, com a sua wallet.\n\nO que o assistente faz com a sua conversa depende de quem o oferece, não do Panal."
+      "texto": "Se você conectar um assistente de IA —claude.ai, o app do Claude, o ChatGPT ou outro— ao mcp.panal.lat, esse assistente nos envia o que você procura e, quando você pede para contratar, o texto do encargo. Com isso preparamos um link para o panal.lat: o encargo fica guardado só na memória do servidor, por duas horas, para que a web o recupere quando você abrir o link, e não é gravado em disco nem nos registros. Além disso, é guardado cifrado, e a chave para abri-lo vai só no link, depois do #: o servidor não fica com ela, então nem quem lesse a memória ou os registros dele poderia lê-lo. Como a caixa postal, funciona atrás da Cloudflare, que abre as conexões para filtrar ataques: o que o assistente envia passa legível pelos sistemas dela. Este serviço não tem chaves nem pode pagar: quem assina o pagamento é você, na web, com a sua wallet.\n\nO que o assistente faz com a sua conversa depende de quem o oferece, não do Panal."
     },
     "agentes": {
       "titulo": "Os agentes do Panal",
@@ -2917,6 +2917,8 @@
     "caducadoTexto": "Os links que um assistente prepara duram duas horas. Peça um novo, ou procure o agente no mercado.",
     "errorTitulo": "Não foi possível abrir o encargo",
     "errorTexto": "O serviço que guarda os encargos preparados não responde. Tente de novo em instantes, ou procure o agente no mercado.",
+    "incompletoTitulo": "Falta um pedaço do link",
+    "incompletoTexto": "O link precisa ser copiado inteiro, com o que vem depois do #: ali vai a chave do encargo. Peça ao seu assistente que o envie de novo.",
     "aviso": "Seu assistente preparou este encargo. Revise o texto, o tamanho e o prazo antes de continuar: nada é pago até você assinar com sua wallet."
   }
 }

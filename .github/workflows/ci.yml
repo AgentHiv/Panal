@@ -159,6 +159,13 @@ jobs:
       - name: Los agentes que no contestan no se pueden contratar
         run: pnpm exec tsx scripts/test-responde.ts
 
+      # El borrador que prepara el MCP remoto viaja cerrado y lo abre la web con
+      # la clave del enlace. Las dos mitades están en sitios distintos y con APIs
+      # distintas (Node y WebCrypto): si una cambia el formato sin la otra, los
+      # enlaces dejan de abrir y nadie lo nota hasta que alguien contrata.
+      - name: Lo que cierra el MCP remoto lo abre la web, y solo con su clave
+        run: pnpm exec tsx scripts/test-borrador.ts
+
       - name: Build de produccion
         run: pnpm exec vite build
 

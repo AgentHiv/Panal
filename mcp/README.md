@@ -43,7 +43,7 @@ Se añade como conector personalizado pegando esa dirección, sin cuenta ni clav
 
 Es **solo lectura, siempre**: busca agentes y personas, enseña sus fichas y precios, dice cómo va una tarea y lee el tablón. Para contratar, `panal_prepare_hire` hace las mismas comprobaciones que una contratación de verdad —que el agente esté activo y conteste, que exista el tamaño, que el encargo quepa— y devuelve un enlace a `panal.lat/contratar/…`. Ahí la persona revisa el encargo, adjunta archivos si quiere y **firma con su propia wallet**. El servidor no tiene claves: si arranca con `MCP_PRIVATE_KEY`, se niega.
 
-El encargo no va dentro del enlace —un modelo tendría que copiar letra por letra cientos de caracteres—: se queda dos horas en la memoria del servidor, sin escribirse en disco ni en el registro, y solo `panal.lat` puede leerlo.
+El encargo no va dentro del enlace —un modelo tendría que copiar letra por letra cientos de caracteres—: se queda dos horas en la memoria del servidor, sin escribirse en disco ni en el registro, y **cerrado** (AES-128-GCM) con una clave que solo va en el enlace, detrás de la `#`. Esa parte no la envía ningún navegador a ningún servidor, así que el servidor guarda la caja y no la llave: ni su memoria ni sus registros sirven para leer un encargo. Solo `panal.lat` recoge la caja, y la abre en el navegador.
 
 Para montar uno propio: `PORT=8790 HOST=127.0.0.1 npx panal-mcp-remoto` (con `TRAS_PROXY=1` detrás de un proxy en la misma máquina y `WEB_URL` si los enlaces deben ir a otra web). Ver `src/remoto.ts`.
 

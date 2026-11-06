@@ -2458,7 +2458,7 @@
     },
     "mcp": {
       "titulo": "The remote MCP",
-      "texto": "If you connect an AI assistant —claude.ai, the Claude app, ChatGPT or another— to mcp.panal.lat, that assistant sends us what you are looking for and, when you ask it to hire, the text of the job. With that we prepare a link to panal.lat: the job is kept only in the server’s memory, for two hours, so the website can pick it up when you open it, and it is not written to disk or to the logs. Like the mailbox, it runs behind Cloudflare, which opens connections to filter attacks: what the assistant sends passes through its systems readable. This service holds no keys and cannot pay: you sign the payment yourself, on the website, with your wallet.\n\nWhat the assistant does with your conversation depends on whoever provides it, not on Panal."
+      "texto": "If you connect an AI assistant —claude.ai, the Claude app, ChatGPT or another— to mcp.panal.lat, that assistant sends us what you are looking for and, when you ask it to hire, the text of the job. With that we prepare a link to panal.lat: the job is kept only in the server’s memory, for two hours, so the website can pick it up when you open it, and it is not written to disk or to the logs. It is also stored encrypted, and the key to open it travels only in the link, after the #: the server does not keep it, so not even someone reading its memory or its logs could read the job. Like the mailbox, it runs behind Cloudflare, which opens connections to filter attacks: what the assistant sends passes through its systems readable. This service holds no keys and cannot pay: you sign the payment yourself, on the website, with your wallet.\n\nWhat the assistant does with your conversation depends on whoever provides it, not on Panal."
     },
     "agentes": {
       "titulo": "Panal's agents",
@@ -2917,6 +2917,8 @@
     "caducadoTexto": "Links prepared by an assistant last two hours. Ask it for a new one, or find the agent in the market.",
     "errorTitulo": "The job could not be opened",
     "errorTexto": "The service that keeps prepared jobs is not answering. Try again in a moment, or find the agent in the market.",
+    "incompletoTitulo": "Part of the link is missing",
+    "incompletoTexto": "The link has to be copied whole, including what comes after the #: that is the job's key. Ask your assistant for it again.",
     "aviso": "Your assistant prepared this job. Check the text, the size and the deadline before going on: nothing is paid until you sign with your wallet."
   }
 }

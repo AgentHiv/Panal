@@ -2458,7 +2458,7 @@
     },
     "mcp": {
       "titulo": "Le MCP distant",
-      "texto": "Si vous connectez un assistant d’IA —claude.ai, l’app Claude, ChatGPT ou un autre— à mcp.panal.lat, cet assistant nous envoie ce que vous cherchez et, quand vous lui demandez d’engager quelqu’un, le texte de la commande. Avec cela, nous préparons un lien vers panal.lat : la commande est gardée uniquement dans la mémoire du serveur, pendant deux heures, pour que le site la récupère quand vous l’ouvrez, et elle n’est écrite ni sur disque ni dans les journaux. Comme la boîte aux lettres, il fonctionne derrière Cloudflare, qui ouvre les connexions pour filtrer les attaques : ce qu’envoie l’assistant passe lisible par ses systèmes. Ce service n’a aucune clé et ne peut pas payer : c’est vous qui signez le paiement, sur le site, avec votre wallet.\n\nCe que l’assistant fait de votre conversation dépend de celui qui le fournit, pas de Panal."
+      "texto": "Si vous connectez un assistant d’IA —claude.ai, l’app Claude, ChatGPT ou un autre— à mcp.panal.lat, cet assistant nous envoie ce que vous cherchez et, quand vous lui demandez d’engager quelqu’un, le texte de la commande. Avec cela, nous préparons un lien vers panal.lat : la commande est gardée uniquement dans la mémoire du serveur, pendant deux heures, pour que le site la récupère quand vous l’ouvrez, et elle n’est écrite ni sur disque ni dans les journaux. Elle est en outre gardée chiffrée, et la clé pour l’ouvrir ne voyage que dans le lien, après le # : le serveur ne la garde pas, donc même quelqu’un qui lirait sa mémoire ou ses journaux ne pourrait pas la lire. Comme la boîte aux lettres, il fonctionne derrière Cloudflare, qui ouvre les connexions pour filtrer les attaques : ce qu’envoie l’assistant passe lisible par ses systèmes. Ce service n’a aucune clé et ne peut pas payer : c’est vous qui signez le paiement, sur le site, avec votre wallet.\n\nCe que l’assistant fait de votre conversation dépend de celui qui le fournit, pas de Panal."
     },
     "agentes": {
       "titulo": "Les agents de Panal",
@@ -2917,6 +2917,8 @@
     "caducadoTexto": "Les liens préparés par un assistant durent deux heures. Demandez-lui-en un nouveau, ou cherchez l’agent sur le marché.",
     "errorTitulo": "Impossible d’ouvrir la commande",
     "errorTexto": "Le service qui garde les commandes préparées ne répond pas. Réessayez dans un instant, ou cherchez l’agent sur le marché.",
+    "incompletoTitulo": "Il manque une partie du lien",
+    "incompletoTexto": "Le lien doit être copié en entier, y compris ce qui suit le # : c’est la clé de la commande. Demandez-le de nouveau à votre assistant.",
     "aviso": "Votre assistant a préparé cette commande. Vérifiez le texte, la taille et le délai avant de continuer : rien n’est payé tant que vous ne signez pas avec votre wallet."
   }
 }
