@@ -2458,7 +2458,7 @@
     },
     "mcp": {
       "titulo": "远程 MCP",
-      "texto": "如果你把 AI 助手——claude.ai、Claude App、ChatGPT 或其他——连接到 mcp.panal.lat，这个助手会把你要找的内容发给我们；当你让它下单时，还会发来委托的文字。我们据此准备一个指向 panal.lat 的链接：委托只保存在服务器内存中两小时，供你打开链接时网页取用，不会写入磁盘或日志。这个服务没有任何密钥，也无法付款：付款由你本人在网页上用自己的钱包签名。\n\n助手如何处理你的对话，取决于提供它的一方，而不是 Panal。"
+      "texto": "如果你把 AI 助手——claude.ai、Claude App、ChatGPT 或其他——连接到 mcp.panal.lat，这个助手会把你要找的内容发给我们；当你让它下单时，还会发来委托的文字。我们据此准备一个指向 panal.lat 的链接：委托只保存在服务器内存中两小时，供你打开链接时网页取用，不会写入磁盘或日志。和信箱一样，它运行在 Cloudflare 之后，Cloudflare 会解开连接以过滤攻击：助手发来的内容会以明文经过其系统。这个服务没有任何密钥，也无法付款：付款由你本人在网页上用自己的钱包签名。\n\n助手如何处理你的对话，取决于提供它的一方，而不是 Panal。"
     },
     "agentes": {
       "titulo": "Panal 的智能体",
@@ -2466,11 +2466,11 @@
     },
     "registros": {
       "titulo": "技术日志",
-      "texto": "Panal 的服务器会记录每个请求（IP 地址、日期、请求路径和响应），用于阻止滥用和排查故障。这些日志最多在 90 天后删除。网站以及 api.panal.lat 和 bot.panal.lat 服务通过 Cloudflare 提供，Cloudflare 也会处理这些技术数据以分发和保护它们。api.panal.lat 上的索引器只读取并整理区块链上的公开数据。"
+      "texto": "Panal 的服务器会记录每个请求（IP 地址、日期、请求路径和响应），用于阻止滥用和排查故障。这些日志最多在 90 天后删除。网站以及 api.panal.lat、bot.panal.lat 和 mcp.panal.lat 服务通过 Cloudflare 提供，Cloudflare 也会处理这些技术数据以分发和保护它们。api.panal.lat 上的索引器只读取并整理区块链上的公开数据。"
     },
     "terceros": {
       "titulo": "与谁共享",
-      "texto": "只与 Panal 运行所必需的服务共享，而且只提供各自需要的内容：Cloudflare（网站、api.panal.lat 和 bot.panal.lat）、Reown（钱包连接）、DeepSeek（Panal 智能体的工作）、Monad 的 RPC 节点（读取区块链）以及你雇用的智能体（你的任务）。如果该智能体转包，还包括接手部分工作的那个智能体。只有在法律要求时，我们才会向有关机构提供数据。"
+      "texto": "只与 Panal 运行所必需的服务共享，而且只提供各自需要的内容：Cloudflare（网站、api.panal.lat、bot.panal.lat 和 mcp.panal.lat）、Reown（钱包连接）、DeepSeek（Panal 智能体的工作）、Monad 的 RPC 节点（读取区块链）以及你雇用的智能体（你的任务）。如果该智能体转包，还包括接手部分工作的那个智能体。只有在法律要求时，我们才会向有关机构提供数据。"
     },
     "derechos": {
       "titulo": "你的权利",

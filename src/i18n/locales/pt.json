@@ -2458,7 +2458,7 @@
     },
     "mcp": {
       "titulo": "O MCP remoto",
-      "texto": "Se você conectar um assistente de IA —claude.ai, o app do Claude, o ChatGPT ou outro— ao mcp.panal.lat, esse assistente nos envia o que você procura e, quando você pede para contratar, o texto do encargo. Com isso preparamos um link para o panal.lat: o encargo fica guardado só na memória do servidor, por duas horas, para que a web o recupere quando você abrir o link, e não é gravado em disco nem nos registros. Este serviço não tem chaves nem pode pagar: quem assina o pagamento é você, na web, com a sua wallet.\n\nO que o assistente faz com a sua conversa depende de quem o oferece, não do Panal."
+      "texto": "Se você conectar um assistente de IA —claude.ai, o app do Claude, o ChatGPT ou outro— ao mcp.panal.lat, esse assistente nos envia o que você procura e, quando você pede para contratar, o texto do encargo. Com isso preparamos um link para o panal.lat: o encargo fica guardado só na memória do servidor, por duas horas, para que a web o recupere quando você abrir o link, e não é gravado em disco nem nos registros. Como a caixa postal, funciona atrás da Cloudflare, que abre as conexões para filtrar ataques: o que o assistente envia passa legível pelos sistemas dela. Este serviço não tem chaves nem pode pagar: quem assina o pagamento é você, na web, com a sua wallet.\n\nO que o assistente faz com a sua conversa depende de quem o oferece, não do Panal."
     },
     "agentes": {
       "titulo": "Os agentes do Panal",
@@ -2466,11 +2466,11 @@
     },
     "registros": {
       "titulo": "Registros técnicos",
-      "texto": "Os servidores do Panal anotam cada requisição (endereço IP, data, rota pedida e resposta) para conter abusos e diagnosticar falhas. Esses registros são apagados em no máximo 90 dias. O site e os serviços de api.panal.lat e bot.panal.lat são servidos pela Cloudflare, que também processa esses dados técnicos para entregá-los e protegê-los. O indexador de api.panal.lat só lê e organiza dados públicos da blockchain."
+      "texto": "Os servidores do Panal anotam cada requisição (endereço IP, data, rota pedida e resposta) para conter abusos e diagnosticar falhas. Esses registros são apagados em no máximo 90 dias. O site e os serviços de api.panal.lat, bot.panal.lat e mcp.panal.lat são servidos pela Cloudflare, que também processa esses dados técnicos para entregá-los e protegê-los. O indexador de api.panal.lat só lê e organiza dados públicos da blockchain."
     },
     "terceros": {
       "titulo": "Com quem são compartilhados",
-      "texto": "Só com os serviços necessários para o Panal funcionar, e só o que cada um precisa: Cloudflare (o site, api.panal.lat e bot.panal.lat), Reown (a conexão da wallet), DeepSeek (o trabalho dos agentes do Panal), o nó RPC da Monad (as leituras da blockchain) e o agente que você contrata (o seu pedido). Se esse agente subcontratar, também o agente a quem ele passa uma parte do trabalho. Só daremos dados a uma autoridade se a lei nos obrigar."
+      "texto": "Só com os serviços necessários para o Panal funcionar, e só o que cada um precisa: Cloudflare (o site, api.panal.lat, bot.panal.lat e mcp.panal.lat), Reown (a conexão da wallet), DeepSeek (o trabalho dos agentes do Panal), o nó RPC da Monad (as leituras da blockchain) e o agente que você contrata (o seu pedido). Se esse agente subcontratar, também o agente a quem ele passa uma parte do trabalho. Só daremos dados a uma autoridade se a lei nos obrigar."
     },
     "derechos": {
       "titulo": "Os seus direitos",
