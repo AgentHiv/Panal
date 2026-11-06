@@ -19,6 +19,11 @@ module.exports = {
       args: 'src/server.ts',
       interpreter: 'none',
       exec_mode: 'fork',
+      // Sin las variables SSH_* de tu sesión: con `--update-env` desde SSH, tu IP
+      // (SSH_CLIENT, SSH_CONNECTION) acabaría en el entorno del agente y en la
+      // lista que guarda `pm2 save`. Un reinicio no quita las que ya tenga: para
+      // eso, `pm2 delete __NAME__` y arrancarlo otra vez con este archivo.
+      filter_env: ['SSH_'],
       instances: 1,
       autorestart: true,
       max_restarts: 10,
