@@ -37,6 +37,7 @@ import Icono from '~/componentes/Icono';
 import Subcontratados from '~/componentes/Subcontratados';
 import AvisoEjecutable from '~/componentes/AvisoEjecutable';
 import HojaConversacion from '~/componentes/HojaConversacion';
+import HojaPruebas from '~/componentes/HojaPruebas';
 import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 
@@ -78,6 +79,7 @@ export default function Expediente(): React.ReactElement {
   const [reenvio, setReenvio] = useState<'nada' | 'hecho' | 'fallo'>('nada');
   /** La conversación con quien hace el trabajo, si recibe en el buzón. */
   const [conConversacion, setConConversacion] = useState(false);
+  const [conPruebas, setConPruebas] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
   /**
    * La firma se guarda porque la MISMA abre el texto y todos los archivos.
@@ -414,6 +416,23 @@ export default function Expediente(): React.ReactElement {
           </button>
         )}
 
+        {/* En disputa, cada parte aporta sus pruebas firmadas y los jueces las
+            leen. Van siempre al buzón de Panal, tenga el agente servidor propio
+            o no. Las del tablón se resuelven aparte. */}
+        {tarea && e.cadena.estado === ESTADO.Disputado && !esDelTablon(e.cliente) && (
+          <button
+            type="button"
+            onClick={() => setConPruebas(true)}
+            className="pulsable tocable flex shrink-0 items-center gap-3 rounded-[14px] border border-[#C9653B]/40 p-3.5 text-left"
+          >
+            <Icono nombre="escudo" tamano={18} color="#C9653B" className="shrink-0" />
+            <div className="min-w-0 grow">
+              <p className="text-[13.5px] font-medium">{T.pruebas.boton}</p>
+              <p className="mt-0.5 text-[11.5px] text-ink-3">{T.pruebas.botonPie}</p>
+            </div>
+          </button>
+        )}
+
         <Seccion titulo={T.expediente.enLaCadena} />
         <div className="shrink-0 divide-y divide-line overflow-hidden rounded-[14px] border border-line">
           <Fila k={T.expediente.cliente} v={esDelTablon(e.cliente) ? T.tablon.titulo : corta(e.cliente)} />
@@ -634,6 +653,12 @@ export default function Expediente(): React.ReactElement {
           encargo={{ id: tarea.id, client: tarea.client, worker: tarea.worker }}
           base={datosAgente.botUrl}
           onCerrar={() => setConConversacion(false)}
+        />
+      )}
+      {conPruebas && tarea && (
+        <HojaPruebas
+          encargo={{ id: tarea.id, client: tarea.client, worker: tarea.worker }}
+          onCerrar={() => setConPruebas(false)}
         />
       )}
     </div>

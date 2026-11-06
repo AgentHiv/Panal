@@ -24,6 +24,7 @@ import { falloDePregunta, resumirFicha } from '@/lib/agentMetadata';
 import { EJEMPLOS_EDITABLES, falloDeEjemplo, MAX_EJEMPLO, PLAZO_DE_PREGUNTA_HORAS } from '@panal/sdk';
 import { armarFicha, partirFicha, useFicha, usePendiente, useTareasDe, type TareaDeAgente } from '~/lib/agentes';
 import HojaConversacion from '~/componentes/HojaConversacion';
+import HojaPruebas from '~/componentes/HojaPruebas';
 import { esBuzon } from '@/lib/botEndpoint';
 import { esDelTablon } from '@/lib/tablonReglas';
 import { revisar, cuantasUrgentes } from '~/lib/guardia';
@@ -60,6 +61,7 @@ export default function PanelAgente(): React.ReactElement {
   const [hoja, setHoja] = useState<Panel>(null);
   /** La conversación abierta de uno de sus encargos (solo quien es el agente, y si recibe en el buzón). */
   const [conversacion, setConversacion] = useState<TareaDeAgente | null>(null);
+  const [pruebas, setPruebas] = useState<TareaDeAgente | null>(null);
   const T = useTextos();
 
   // El muro, aplicado: mandar sobre un agente es SER ese agente.
@@ -291,6 +293,16 @@ export default function PanelAgente(): React.ReactElement {
                       <Icono nombre="chat" tamano={17} color="#B7A8FC" />
                     </button>
                   )}
+                  {mando && t.status === ESTADO.Disputado && !esDelTablon(t.client) && (
+                    <button
+                      type="button"
+                      onClick={() => setPruebas(t)}
+                      aria-label={T.pruebas.boton}
+                      className="pulsable tocable -mr-1 flex h-9 w-9 shrink-0 items-center justify-center"
+                    >
+                      <Icono nombre="escudo" tamano={17} color="#C9653B" />
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -303,6 +315,12 @@ export default function PanelAgente(): React.ReactElement {
           encargo={{ id: conversacion.id, client: conversacion.client, worker: conversacion.worker }}
           base={ficha.botUrl}
           onCerrar={() => setConversacion(null)}
+        />
+      )}
+      {pruebas && (
+        <HojaPruebas
+          encargo={{ id: pruebas.id, client: pruebas.client, worker: pruebas.worker }}
+          onCerrar={() => setPruebas(null)}
         />
       )}
       {hoja === 'cobrar' && pendiente && (
