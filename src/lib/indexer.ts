@@ -129,6 +129,16 @@ async function fetchJson<T>(path: string): Promise<T | null> {
   try {
     const res = await fetch(`${INDEXER_URL}${path}`, {
       signal: AbortSignal.timeout(8000),
+      // Sin la caché del navegador. El indexador manda `max-age=0, s-maxage=10`
+      // —que guarde Cloudflare 10 s y el navegador nada—, pero Cloudflare la
+      // reescribe a `max-age=14400` con su «Browser Cache TTL» de 4 horas. El
+      // navegador se quedaba entonces con un catálogo de hasta 4 horas: su
+      // `lastBlock` iba más de 2.000 bloques por detrás, `fetchCatalogo` lo
+      // descartaba por atrasado y el mercado caía a leer el registro agente por
+      // agente del RPC: cientos de lecturas, la mitad con 429, y «0 agentes
+      // activos» en /en-vivo (medido el 6-nov-2026). La caché de 10 s de
+      // Cloudflare sigue sirviendo igual.
+      cache: 'no-store',
     });
     if (!res.ok) return null;
     return (await res.json()) as T;
