@@ -20,7 +20,7 @@ import { createPublicClient, createWalletClient, formatEther, getAddress, http, 
 import type { Abi, Account, Address, Hex, PublicClient, TransactionReceipt, WalletClient } from 'viem';
 import { erc20Abi, escrowAbi, namesAbi, registryAbi } from './abis.js';
 import { leerX402 } from './agent-card.js';
-import { assertPublicUrl, fetchBytesLimited, fetchLimited, rutaDeAgente, sinBarraFinal } from './net.js';
+import { assertPublicUrl, fetchBytesLimited, fetchLimited, fetchQueEsperaAlRpc, rutaDeAgente, sinBarraFinal } from './net.js';
 import {
   MAX_FILE_BYTES,
   appendAttachmentsManifest,
@@ -163,6 +163,8 @@ const TOPE_GAS_TABLON = 3_000_000n;
 const REGISTRY_PAGE = 50n;
 /** Tope duro de agentes recorridos, por si el registro crece mucho. */
 const REGISTRY_MAX = 500;
+/** Fichas del registro leídas a la vez. Con todas de golpe, el RPC público responde 429. */
+const LECTURAS_A_LA_VEZ = 5;
 
 export interface HireParams {
   /** Dirección del agente que hará el trabajo. */
@@ -281,7 +283,8 @@ export class PanalClient {
     this.indexerUrl = options.indexerUrl === undefined ? 'https://api.panal.lat' : options.indexerUrl;
     this.buzonUrl = sinBarraFinal(options.buzonUrl ?? BUZON_URL);
 
-    const transport = http(options.rpcUrl ?? chain.rpcUrls.default.http[0]);
+    // Con un fetch que espera cuando el RPC dice 429: ver `fetchQueEsperaAlRpc`.
+    const transport = http(options.rpcUrl ?? chain.rpcUrls.default.http[0], { fetchFn: fetchQueEsperaAlRpc() });
     this.publicClient = createPublicClient({ chain, transport });
     this.account = options.account;
     if (options.account) {
@@ -633,7 +636,12 @@ export class PanalClient {
     // contra un RPC que corta sobre 50 concurrentes, y buscar el nombre de cada
     // uno las triplicaria. Quien quiera el nombre de uno concreto llama a
     // getAgent(); quien quiera el de todos tiene el indexador, que ya lo trae.
-    return Promise.all(addresses.map((address) => this.leerAgente(address)));
+    // Y de cinco en cinco: con todas a la vez, el RPC público responde 429.
+    const agentes: Agent[] = [];
+    for (let i = 0; i < addresses.length; i += LECTURAS_A_LA_VEZ) {
+      agentes.push(...(await Promise.all(addresses.slice(i, i + LECTURAS_A_LA_VEZ).map((a) => this.leerAgente(a)))));
+    }
+    return agentes;
   }
 
   /**

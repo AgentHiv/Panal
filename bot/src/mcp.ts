@@ -66,7 +66,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { erc20Abi, escrowAbi, monad, registryAbi, TASK_STATUS_LABEL, TaskStatus } from './chain.js';
 import { briefSignMessage, resultSignMessage } from './http.js';
-import { assertPublicUrl, fetchJsonLimited, sinBarraFinal } from './net.js';
+import { assertPublicUrl, fetchJsonLimited, fetchQueEsperaAlRpc, sinBarraFinal } from './net.js';
 import { esTokenDeMarca } from './marca.js';
 import { esTokenDeEjemplo } from './ejemplos.js';
 import { esTokenDeNivel } from './niveles.js';
@@ -105,14 +105,12 @@ const INDEX_TIMEOUT_MS = 8_000;
 
 /**
  * El RPC público corta con 429 cuando le llegan muchas lecturas de golpe, y
- * una búsqueda lee la ficha de cada agente. viem reintenta los 429 con espera
- * exponencial (o la que diga `Retry-After`), pero con su base de 150 ms los
- * tres reintentos de serie caben en un segundo y no salen de la ventana del
- * límite. Con 500 ms y seis, la última espera ronda los 16 s.
+ * una búsqueda lee la ficha de cada agente: el fetch espera cuando lo pide
+ * (ver `fetchQueEsperaAlRpc` en net.ts) y las fichas se leen por tandas.
  */
 const publicClient = createPublicClient({
   chain: monad,
-  transport: http(RPC_URL, { retryCount: 6, retryDelay: 500 }),
+  transport: http(RPC_URL, { fetchFn: fetchQueEsperaAlRpc() }),
 });
 
 /** Fichas leídas a la vez: con todas de golpe, el RPC público responde 429. */

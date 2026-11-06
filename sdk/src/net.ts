@@ -164,6 +164,44 @@ export async function fetchLimited(
 }
 
 /**
+ * `fetch` para el RPC: espera y reintenta cuando responde 429, y solo entonces.
+ *
+ * El RPC público de Monad corta con 429 en cuanto le llegan unas cuantas
+ * lecturas a la vez, y listar el mercado ya son una por agente. viem reintenta
+ * los 429, pero con 150 ms de base sus tres reintentos caen dentro de la misma
+ * ventana del límite. Subirle los reintentos a viem no sirve: también
+ * reintenta los tiempos agotados, y una llamada a un RPC caído tardaría casi
+ * dos minutos en fallar. Esto solo alarga la espera cuando el RPC la pide.
+ *
+ * Respeta `Retry-After` si viene (hasta 10 s); si no, 0,5 s, 1 s, 2 s, 4 s.
+ * Si el RPC sigue diciendo 429, se devuelve esa respuesta y viem decide.
+ */
+export function fetchQueEsperaAlRpc(
+  base: typeof fetch = (input, init) => fetch(input, init),
+  opciones: { intentos?: number; baseMs?: number } = {},
+): typeof fetch {
+  const { intentos = 4, baseMs = 500 } = opciones;
+  return async (input, init) => {
+    for (let i = 0; ; i++) {
+      const res = await base(input, init);
+      if (res.status !== 429 || i >= intentos) return res;
+      const pedida = Number.parseInt(res.headers.get('retry-after') ?? '', 10);
+      const ms = Number.isFinite(pedida) && pedida >= 0 ? Math.min(pedida, 10) * 1000 : baseMs * 2 ** i;
+      // El cuerpo de la respuesta descartada se suelta: si no, la conexión
+      // queda ocupada hasta que el recolector se acuerde de ella.
+      await res.body?.cancel().catch(() => undefined);
+      await new Promise<void>((resolve, reject) => {
+        const t = setTimeout(resolve, ms);
+        init?.signal?.addEventListener('abort', () => {
+          clearTimeout(t);
+          reject(init.signal!.reason);
+        });
+      });
+    }
+  };
+}
+
+/**
  * Una ruta del agente, colgando de DONDE está el agente.
  *
  * Parece una tontería y no lo es: `new URL('/brief/12', base)` descarta el

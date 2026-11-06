@@ -363,3 +363,39 @@ export function allowedOrigin(origin: string | undefined, allowLocalhost: boolea
   if (allowLocalhost && LOCALHOST_ORIGIN.test(origin)) return origin;
   return null;
 }
+
+/**
+ * `fetch` para el RPC: espera y reintenta cuando responde 429, y solo entonces.
+ *
+ * El RPC público de Monad corta con 429 en cuanto le llegan unas cuantas
+ * lecturas a la vez. viem reintenta los 429, pero con 150 ms de base sus tres
+ * reintentos caen dentro de la misma ventana del límite; y subirle los
+ * reintentos no sirve, porque también reintenta los tiempos agotados y una
+ * llamada a un RPC caído tardaría casi dos minutos en fallar. Esto solo alarga
+ * la espera cuando el RPC la pide.
+ *
+ * Es la misma que `fetchQueEsperaAlRpc` del SDK (`sdk/src/net.ts`); el bot no
+ * depende del SDK. Si cambias una, cambia la otra.
+ */
+export function fetchQueEsperaAlRpc(
+  base: typeof fetch = (input, init) => fetch(input, init),
+  opciones: { intentos?: number; baseMs?: number } = {},
+): typeof fetch {
+  const { intentos = 4, baseMs = 500 } = opciones;
+  return async (input, init) => {
+    for (let i = 0; ; i++) {
+      const res = await base(input, init);
+      if (res.status !== 429 || i >= intentos) return res;
+      const pedida = Number.parseInt(res.headers.get('retry-after') ?? '', 10);
+      const ms = Number.isFinite(pedida) && pedida >= 0 ? Math.min(pedida, 10) * 1000 : baseMs * 2 ** i;
+      await res.body?.cancel().catch(() => undefined);
+      await new Promise<void>((resolve, reject) => {
+        const t = setTimeout(resolve, ms);
+        init?.signal?.addEventListener('abort', () => {
+          clearTimeout(t);
+          reject(init.signal!.reason);
+        });
+      });
+    }
+  };
+}
