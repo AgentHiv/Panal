@@ -135,9 +135,14 @@ export default function Hilo(): React.ReactElement {
    * recargar la dejaría puesta para siempre.
    */
   const [params, setParams] = useSearchParams();
+  /** Si la hoja de encargar se abre para una pregunta de pago (`?pregunta=1`, desde la ficha). */
+  const [modoPregunta, setModoPregunta] = useState(false);
   useEffect(() => {
-    if (params.get('encargar') !== '1') return;
+    const encargar = params.get('encargar') === '1';
+    const preguntar = params.get('pregunta') === '1';
+    if (!encargar && !preguntar) return;
     setParams({}, { replace: true });
+    setModoPregunta(preguntar);
     if (connected) setHoja('encargar');
     else void connect();
   }, [params, setParams, connected, connect]);
@@ -385,7 +390,11 @@ export default function Hilo(): React.ReactElement {
         </Link>
         <button
           type="button"
-          onClick={() => (connected ? setHoja('encargar') : connect())}
+          onClick={() => {
+            setModoPregunta(false);
+            if (connected) setHoja('encargar');
+            else void connect();
+          }}
           className="pulsable h-[34px] shrink-0 rounded-full border border-honey px-3.5 text-[12px] font-semibold text-honey"
         >
           {T.hilo.encargar}
@@ -525,7 +534,11 @@ export default function Hilo(): React.ReactElement {
         abierta
         agente={agente}
         datos={datos ?? null}
-        onCerrar={() => setHoja(null)}
+        pregunta={modoPregunta}
+        onCerrar={() => {
+          setHoja(null);
+          setModoPregunta(false);
+        }}
         onHecho={() => {
           setHoja(null);
           refetch();

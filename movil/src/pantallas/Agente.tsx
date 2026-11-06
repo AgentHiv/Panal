@@ -245,6 +245,17 @@ export default function Agente(): React.ReactElement {
             {T.agente.botonHablar}
           </button>
         )}
+        {/* Una persona con precio por pregunta: se le pregunta antes de
+            encargar, pagando por adelantado, y se devuelve si no contesta. */}
+        {datos?.pregunta && cierre === null && (
+          <button
+            type="button"
+            onClick={() => navegar(`/chat/${direccion}?pregunta=1`)}
+            className="pulsable h-[52px] grow rounded-full border border-honey px-3 text-[14px] font-semibold text-honey"
+          >
+            {T.pregunta.boton(datos.pregunta, currencySymbol(datos.moneda))}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => navegar(`/chat/${direccion}?encargar=1`)}

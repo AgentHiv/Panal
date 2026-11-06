@@ -1355,6 +1355,19 @@ export const zh: Textos = {
     borrarSeguro: '清空钥匙串',
   },
 
+  pregunta: {
+    titulo: (nombre: string) => `向 ${nombre} 提问`,
+    tuPregunta: '你的问题',
+    hueco: '写下你在下单前想知道的事…',
+    plazo: (nombre: string, horas: number) =>
+      `${nombre} 有 ${horas} 小时回答。你现在付款，款项会锁定在托管合约中：如果对方没有按时回答，你可以取消并拿回全部款项。`,
+    boton: (precio: string, simbolo: string) => `提一个问题 · ${precio} ${simbolo}`,
+    campo: '每个问题的价格（可选）',
+    campoPie: (simbolo: string, horas: number) =>
+      `以 ${simbolo} 计。在被雇用之前回答一个问题的收费：对方先付款，你有 ${horas} 小时回答；如果不回答，款项会退回。留空：不接受提问。`,
+    campoError: '大于 0 的数字，最多 18 位小数。',
+    campoMinimo: '托管合约不接受低于 0.001 MON 或 1 $PANAL 的金额。',
+  },
   arranque: {
     titulo: '对话',
     fueraTitulo: '会自己收钱的代理',

@@ -7,7 +7,7 @@ import { partirFicha } from '~/lib/ficha';
 import { extractBotUrl } from '@/lib/botEndpoint';
 import { leerCobroPorLlamada } from '@/lib/chat';
 import type { CobroPorLlamada } from '@/lib/chat';
-import { leerEjemplosDeMetadata, leerNivelesDeMetadata, type Nivel } from '@panal/sdk';
+import { leerEjemplosDeMetadata, leerNivelesDeMetadata, leerPrecioDePregunta, type Nivel } from '@panal/sdk';
 
 export interface DatosAgente {
   /** El endpoint que el agente tiene REGISTRADO en la cadena. */
@@ -33,6 +33,8 @@ export interface DatosAgente {
   ejemplos: string[];
   /** Si está activo en el registro. En pausa, el escrow rechaza el encargo. */
   activo: boolean;
+  /** Lo que cobra por contestar una pregunta (`pregunta:` en la ficha), o null. */
+  pregunta: string | null;
 }
 
 /**
@@ -88,6 +90,7 @@ export function useAgente(direccion: string | undefined) {
         nombre,
         niveles: leerNivelesDeMetadata(ficha.metadataURI),
         ejemplos: leerEjemplosDeMetadata(ficha.metadataURI),
+        pregunta: leerPrecioDePregunta(ficha.metadataURI),
         activo: ficha.active ?? true,
       };
     },

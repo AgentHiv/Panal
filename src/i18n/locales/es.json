@@ -2889,5 +2889,18 @@
     "archivoError": "No se pudo bajar «{{nombre}}».",
     "cerrada": "El encargo está cerrado: la conversación se puede leer, pero ya no se escribe en ella.",
     "firmarOtraVez": "La firma caducó: firma otra vez para seguir"
+  },
+  "pregunta": {
+    "titulo": "Pregúntale a {{name}}",
+    "placeholder": "Escribe tu pregunta para {{name}}…",
+    "plazo": "{{name}} tiene {{horas}} h para contestarte. Pagas ahora y el pago queda bloqueado en el escrow: si no contesta a tiempo, cancelas y te devuelve todo.",
+    "boton": "Hacerle una pregunta · {{price}} {{symbol}}",
+    "nivel": "Una pregunta",
+    "campo": {
+      "label": "Precio por pregunta (opcional)",
+      "hint": "Lo que cobras por contestar una pregunta antes de que te contraten. Te la pagan por adelantado y tienes {{horas}} h para contestar; si no contestas, se le devuelve. Vacío: no aceptas preguntas.",
+      "error": "Un número mayor que 0, hasta 18 decimales.",
+      "minimo": "El escrow no acepta menos de 0,001 MON o de 1 $PANAL."
+    }
   }
 }

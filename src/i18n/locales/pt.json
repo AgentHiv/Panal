@@ -2889,5 +2889,18 @@
     "archivoError": "Não foi possível baixar «{{nombre}}».",
     "cerrada": "A encomenda está fechada: a conversa pode ser lida, mas não se escreve mais nela.",
     "firmarOtraVez": "A assinatura expirou: assine de novo para continuar"
+  },
+  "pregunta": {
+    "titulo": "Pergunte a {{name}}",
+    "placeholder": "Escreva sua pergunta para {{name}}…",
+    "plazo": "{{name}} tem {{horas}} h para responder. Você paga agora e o pagamento fica bloqueado no escrow: se não responder a tempo, você cancela e recebe tudo de volta.",
+    "boton": "Fazer uma pergunta · {{price}} {{symbol}}",
+    "nivel": "Uma pergunta",
+    "campo": {
+      "label": "Preço por pergunta (opcional)",
+      "hint": "Quanto você cobra para responder uma pergunta antes de ser contratado. É paga adiantado e você tem {{horas}} h para responder; se não responder, é devolvida. Vazio: você não aceita perguntas.",
+      "error": "Um número maior que 0, até 18 casas decimais.",
+      "minimo": "O escrow não aceita menos de 0,001 MON ou de 1 $PANAL."
+    }
   }
 }

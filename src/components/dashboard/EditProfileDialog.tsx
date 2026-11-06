@@ -27,6 +27,7 @@ import {
   aNivelEditable,
   composeAgentMetadata,
   falloDeNivel,
+  falloDePregunta,
   isHttpsUrl,
   parseAgentMetadata,
   resumirFicha,
@@ -38,6 +39,7 @@ import { urlDeBuzon } from '@/lib/botEndpoint';
 import MarcaFields from '@/components/dashboard/MarcaFields';
 import NivelesFields from '@/components/dashboard/NivelesFields';
 import EjemplosFields from '@/components/dashboard/EjemplosFields';
+import PreguntaField from '@/components/dashboard/PreguntaField';
 
 /** Máximo de skills (chips) por agente (mismo límite que el registro). */
 const MAX_SKILLS = 6;
@@ -158,6 +160,11 @@ function EditProfileForm({
    * lo mismo que los niveles: corregir una tilde no puede borrarlos.
    */
   const [ejemplos, setEjemplos] = useState<string[]>(initial.ejemplos);
+  /**
+   * El precio de una pregunta. Se arrastra el que hubiera, como los niveles:
+   * guardar la descripción no puede borrarlo.
+   */
+  const [precioPregunta, setPrecioPregunta] = useState(initial.pregunta);
   /** Campos tocados (blur): muestran su error inline. */
   const [touched, setTouched] = useState<Record<'name' | 'desc' | 'botUrl', boolean>>({
     name: false,
@@ -183,7 +190,8 @@ function EditProfileForm({
   const nivelesValid = niveles.every((n) => falloDeNivel(n) === null);
   // Igual con los ejemplos: uno con «·» o demasiado largo no se escribiría.
   const ejemplosValid = ejemplos.every((e) => falloDeEjemplo(e) === null);
-  const valid = nameValid && descValid && botUrlValid && nivelesValid && ejemplosValid;
+  const preguntaValid = falloDePregunta(precioPregunta, simbolo) === null;
+  const valid = nameValid && descValid && botUrlValid && nivelesValid && ejemplosValid && preguntaValid;
 
   // Preview en vivo: mismo formato que compone el registro guiado.
   const composed = useMemo(
@@ -197,8 +205,9 @@ function EditProfileForm({
         niveles: niveles.map(aNivel).filter((n) => n !== null),
         tipo,
         ejemplos,
+        pregunta: precioPregunta.replace(',', '.'),
       }),
-    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles, tipo, ejemplos],
+    [nameTrim, descTrim, skills, botUrlTrim, marca, niveles, tipo, ejemplos, precioPregunta],
   );
 
   // ——— Skills como chips (Enter/coma, mismo patrón del registro) ———
@@ -490,6 +499,10 @@ function EditProfileForm({
           />
 
           <EjemplosFields ejemplos={ejemplos} onChange={setEjemplos} idPrefix="edit" />
+          {/* Solo a una persona: un programa contesta al momento por el chat de pago. */}
+          {tipo === 'persona' && (
+            <PreguntaField valor={precioPregunta} onChange={setPrecioPregunta} simbolo={simbolo} idPrefix="edit" />
+          )}
 
           {/* Preview en vivo del metadata compuesto */}
           <div className="rounded-xl border border-line bg-cream px-4 py-3">

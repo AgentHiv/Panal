@@ -18,7 +18,7 @@ import { useTranslation } from 'react-i18next';
 import EmptyState from '@/components/EmptyState';
 import HexAvatar from '@/components/HexAvatar';
 import AgentLinks from '@/components/AgentLinks';
-import type { Nivel } from '@panal/sdk';
+import { MAX_PREGUNTA_CHARS, precioAWei, type Nivel } from '@panal/sdk';
 import HireDialog from '@/components/HireDialog';
 import LiveDot from '@/components/LiveDot';
 import RatingStars from '@/components/RatingStars';
@@ -88,6 +88,8 @@ export default function AgentDetail() {
   const [tab, setTab] = useState<TabValue>('resumen');
   const [hireOpen, setHireOpen] = useState(false);
   const [nivel, setNivel] = useState<Nivel | null>(null);
+  /** Si lo que se abre es una pregunta de pago y no un encargo (ver `openPregunta`). */
+  const [pregunta, setPregunta] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -133,10 +135,31 @@ export default function AgentDetail() {
   // MouseEvent.
   const openHire = () => {
     setNivel(null);
+    setPregunta(false);
     setHireOpen(true);
   };
   const openHireConNivel = (n?: Nivel) => {
     setNivel(n ?? null);
+    setPregunta(false);
+    setHireOpen(true);
+  };
+  /**
+   * Una pregunta de pago: un encargo pequeño con su precio y su tope, y plazo
+   * fijo. Ver `sdk/src/pregunta.ts`.
+   */
+  const precioPregunta = isOnchainAgent(agent) ? agent.pregunta : null;
+  const weiPregunta = precioPregunta ? precioAWei(precioPregunta) : null;
+  const openPregunta = () => {
+    if (weiPregunta === null) return;
+    setNivel({
+      name: t('pregunta.nivel'),
+      description: null,
+      wei: weiPregunta,
+      maxBriefChars: MAX_PREGUNTA_CHARS,
+      maxAttachChars: null,
+      maxAttachCharsTotal: null,
+    });
+    setPregunta(true);
     setHireOpen(true);
   };
   /**
@@ -396,7 +419,7 @@ export default function AgentDetail() {
 
             {/* tarjeta de contratación (col 4, sticky) */}
             <div className="lg:col-span-4">
-              <HireCard agent={agent} onHire={openHire} cierre={cierre} />
+              <HireCard agent={agent} onHire={openHire} cierre={cierre} onPregunta={weiPregunta !== null ? openPregunta : undefined} />
             </div>
           </div>
         </div>
@@ -554,7 +577,7 @@ export default function AgentDetail() {
 
       {/* barra fija móvil + modal de contratación */}
       <MobileHireBar agent={agent} onHire={openHire} cierre={cierre} />
-      <HireDialog agent={agent} open={hireOpen} onOpenChange={setHireOpen} nivel={nivel} />
+      <HireDialog agent={agent} open={hireOpen} onOpenChange={setHireOpen} nivel={nivel} pregunta={pregunta} />
     </div>
   );
 }

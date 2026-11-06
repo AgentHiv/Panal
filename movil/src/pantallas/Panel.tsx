@@ -20,8 +20,8 @@ import Hoja, { Boton, Nota } from '~/componentes/Hoja';
 import Icono from '~/componentes/Icono';
 import CamposMarca from '~/componentes/CamposMarca';
 import type { Marca } from '@/lib/marca';
-import { resumirFicha } from '@/lib/agentMetadata';
-import { EJEMPLOS_EDITABLES, falloDeEjemplo, MAX_EJEMPLO } from '@panal/sdk';
+import { falloDePregunta, resumirFicha } from '@/lib/agentMetadata';
+import { EJEMPLOS_EDITABLES, falloDeEjemplo, MAX_EJEMPLO, PLAZO_DE_PREGUNTA_HORAS } from '@panal/sdk';
 import { armarFicha, partirFicha, useFicha, usePendiente, useTareasDe, type TareaDeAgente } from '~/lib/agentes';
 import HojaConversacion from '~/componentes/HojaConversacion';
 import { esBuzon } from '@/lib/botEndpoint';
@@ -331,6 +331,7 @@ export default function PanelAgente(): React.ReactElement {
         <HojaFicha
           uri={ficha.metadataURI}
           direccion={dir}
+          simbolo={currencySymbol(ficha.moneda)}
           onCerrar={() => setHoja(null)}
           onHecho={() => void releerFicha()}
         />
@@ -620,15 +621,21 @@ function HojaEstado({
 function HojaFicha({
   uri,
   direccion,
+  simbolo,
   onCerrar,
   onHecho,
 }: {
   uri: string;
   direccion: string;
+  /** MON o $PANAL: el precio de una pregunta va en la moneda del agente. */
+  simbolo: string;
   onCerrar: () => void;
   onHecho: () => void;
 }): React.ReactElement {
   const inicial = partirFicha(uri);
+  /** El precio de una pregunta: se arrastra el que hubiera, y una persona lo puede cambiar. */
+  const [precioPregunta, setPrecioPregunta] = useState(inicial.pregunta);
+  const falloPregunta = falloDePregunta(precioPregunta, simbolo);
   const [nombre, setNombre] = useState(inicial.nombre);
   const [descripcion, setDescripcion] = useState(inicial.descripcion);
   /**
@@ -665,7 +672,16 @@ function HojaFicha({
   // ninguno de los dos, y sin volver a escribirlos editar la descripción desde
   // el teléfono los borraría — los niveles dejarían de cobrarse y quien se
   // registró como persona aparecería de golpe en el mercado de programas.
-  const nueva = armarFicha(nombre, descripcion, bot, marca, inicial.niveles, inicial.tipo, ejemplos);
+  const nueva = armarFicha(
+    nombre,
+    descripcion,
+    bot,
+    marca,
+    inicial.niveles,
+    inicial.tipo,
+    ejemplos,
+    precioPregunta.replace(',', '.'),
+  );
   const trabajando = isPending || recibo.isLoading;
   const T = useTextos();
 
@@ -689,6 +705,20 @@ function HojaFicha({
       )}
 
       <CamposMarca marca={marca} onCambio={setMarca} semilla={direccion} />
+
+      {/* Solo a una persona: un programa contesta al momento por el chat de pago. */}
+      {inicial.tipo === 'persona' && (
+        <>
+          <Campo etiqueta={T.pregunta.campo} valor={precioPregunta} onCambio={setPrecioPregunta} marcador="0.5" mono />
+          <p className={`mt-1 text-[11.5px] leading-[1.45] ${falloPregunta ? 'text-terra' : 'text-ink-3'}`}>
+            {falloPregunta === 'minimo'
+              ? T.pregunta.campoMinimo
+              : falloPregunta === 'precio'
+                ? T.pregunta.campoError
+                : T.pregunta.campoPie(simbolo, PLAZO_DE_PREGUNTA_HORAS)}
+          </p>
+        </>
+      )}
 
       <p className="mt-3.5 text-[11.5px] uppercase tracking-[0.06em] text-ink-3">{T.panel.ejemplos}</p>
       <p className="mt-1 text-[12px] leading-[1.45] text-ink-3">{T.panel.ejemplosNota}</p>
@@ -734,7 +764,7 @@ function HojaFicha({
               args: [nueva],
             })
           }
-          disabled={!nueva || trabajando || fallosEjemplos.some((f) => f !== null)}
+          disabled={!nueva || trabajando || fallosEjemplos.some((f) => f !== null) || falloPregunta !== null}
         >
           {trabajando ? T.panel.firmando : T.panel.firmar}
         </Boton>

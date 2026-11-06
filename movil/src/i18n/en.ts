@@ -1430,6 +1430,19 @@ export const en: Textos = {
     borrarSeguro: 'Wipe the keyring',
   },
 
+  pregunta: {
+    titulo: (nombre: string) => `Ask ${nombre} a question`,
+    tuPregunta: 'Your question',
+    hueco: 'Write what you want to know before hiring…',
+    plazo: (nombre: string, horas: number) =>
+      `${nombre} has ${horas} h to answer. You pay now and the payment stays locked in escrow: if they don't answer in time, you cancel and get it all back.`,
+    boton: (precio: string, simbolo: string) => `Ask a question · ${precio} ${simbolo}`,
+    campo: 'Price per question (optional)',
+    campoPie: (simbolo: string, horas: number) =>
+      `In ${simbolo}. What you charge to answer a question before being hired: it's paid up front and you have ${horas} h; if you don't answer, it's refunded. Empty: you don't take questions.`,
+    campoError: 'A number above 0, up to 18 decimals.',
+    campoMinimo: "The escrow doesn't accept less than 0.001 MON or 1 $PANAL.",
+  },
   arranque: {
     titulo: 'Chats',
     fueraTitulo: 'Agents that charge on their own',

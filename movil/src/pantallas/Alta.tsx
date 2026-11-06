@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { falloDePregunta } from '@/lib/agentMetadata';
 import { useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { formatEther, parseEther } from 'viem';
 import { useWallet } from '@/hooks/useWallet';
@@ -16,7 +17,7 @@ import CamposMarca from '~/componentes/CamposMarca';
 import { MARCA_VACIA, type Marca } from '@/lib/marca';
 import { resumirFicha } from '@/lib/agentMetadata';
 import { urlDeBuzon } from '@/lib/botEndpoint';
-import type { TipoDeAgente } from '@panal/sdk';
+import { PLAZO_DE_PREGUNTA_HORAS, type TipoDeAgente } from '@panal/sdk';
 import { armarFicha, useFicha } from '~/lib/agentes';
 import { listar } from '~/lib/llavero';
 import { useTextos } from '~/i18n/idiomas';
@@ -51,6 +52,9 @@ export default function Alta(): React.ReactElement {
   const tipo: TipoDeAgente = params.get('tipo') === 'persona' ? 'persona' : 'bot';
   const [precio, setPrecio] = useState('');
   const [enPanal, setEnPanal] = useState(true);
+  /** Lo que cobra por contestar una pregunta (solo personas). Vacío: no contesta preguntas. */
+  const [precioPregunta, setPrecioPregunta] = useState('');
+  const falloPregunta = tipo === 'persona' ? falloDePregunta(precioPregunta, enPanal ? '$PANAL' : 'MON') : null;
   /** Logo y enlaces del creador. Todo opcional; lo vacío no escribe nada. */
   const [marca, setMarca] = useState<Marca>(MARCA_VACIA);
   const T = useTextos();
@@ -73,7 +77,7 @@ export default function Alta(): React.ReactElement {
 
   // Una persona no escribe dirección: recibe en el buzón de Panal, a su nombre.
   const donde = tipo === 'persona' ? (address ? urlDeBuzon(address) : '') : bot;
-  const ficha = armarFicha(nombre, descripcion, donde, marca, [], tipo);
+  const ficha = armarFicha(nombre, descripcion, donde, marca, [], tipo, [], tipo === 'persona' ? precioPregunta.replace(',', '.') : '');
   const wei = parsear(precio);
   /**
    * Lo que falta para la reserva de gas de Monad, mirado antes de firmar.
@@ -82,7 +86,7 @@ export default function Alta(): React.ReactElement {
   const [faltaGas, setFaltaGas] = useState<Reserva | null>(null);
   const [mirandoGas, setMirandoGas] = useState(false);
   const trabajando = isPending || recibo.isLoading || mirandoGas;
-  const listo = connected && !!nombre.trim() && wei !== null && !yaEs?.registrado;
+  const listo = connected && !!nombre.trim() && wei !== null && !yaEs?.registrado && falloPregunta === null;
 
   return (
     <div className="flex min-h-0 grow flex-col">
@@ -235,6 +239,25 @@ export default function Alta(): React.ReactElement {
             ))}
           </div>
         </div>
+
+        {tipo === 'persona' && (
+          <>
+            <Campo
+              etiqueta={T.pregunta.campo}
+              valor={precioPregunta}
+              onCambio={setPrecioPregunta}
+              marcador="0.5"
+              mono
+            />
+            <p className={`shrink-0 text-[11.5px] leading-[1.45] ${falloPregunta ? 'text-terra' : 'text-ink-3'}`}>
+              {falloPregunta === 'minimo'
+                ? T.pregunta.campoMinimo
+                : falloPregunta === 'precio'
+                  ? T.pregunta.campoError
+                  : T.pregunta.campoPie(enPanal ? '$PANAL' : 'MON', PLAZO_DE_PREGUNTA_HORAS)}
+            </p>
+          </>
+        )}
 
         <Titulo>{A.loQueSeEscribe}</Titulo>
         <p className="seleccionable shrink-0 break-all rounded-[11px] border border-line bg-sand px-3 py-2.5 font-mono text-[11.5px] leading-[1.5] text-ink-2">
