@@ -2458,7 +2458,7 @@
     },
     "mcp": {
       "titulo": "The remote MCP",
-      "texto": "If you connect an AI assistant —claude.ai, the Claude app, ChatGPT or another— to mcp.panal.lat, that assistant sends us what you are looking for and, when you ask it to hire, the text of the job. With that we prepare a link to panal.lat: the job is kept only in the server’s memory, for two hours, so the website can pick it up when you open it, and it is not written to disk or to the logs. This service holds no keys and cannot pay: you sign the payment yourself, on the website, with your wallet.\n\nWhat the assistant does with your conversation depends on whoever provides it, not on Panal."
+      "texto": "If you connect an AI assistant —claude.ai, the Claude app, ChatGPT or another— to mcp.panal.lat, that assistant sends us what you are looking for and, when you ask it to hire, the text of the job. With that we prepare a link to panal.lat: the job is kept only in the server’s memory, for two hours, so the website can pick it up when you open it, and it is not written to disk or to the logs. Like the mailbox, it runs behind Cloudflare, which opens connections to filter attacks: what the assistant sends passes through its systems readable. This service holds no keys and cannot pay: you sign the payment yourself, on the website, with your wallet.\n\nWhat the assistant does with your conversation depends on whoever provides it, not on Panal."
     },
     "agentes": {
       "titulo": "Panal's agents",
@@ -2466,11 +2466,11 @@
     },
     "registros": {
       "titulo": "Technical logs",
-      "texto": "Panal's servers log each request (IP address, date, requested path and response) to stop abuse and diagnose failures. Those logs are deleted after 90 days at most. The website and the api.panal.lat and bot.panal.lat services are served through Cloudflare, which also processes that technical data to deliver and protect them. The indexer at api.panal.lat only reads and organises public chain data."
+      "texto": "Panal's servers log each request (IP address, date, requested path and response) to stop abuse and diagnose failures. Those logs are deleted after 90 days at most. The website and the api.panal.lat, bot.panal.lat and mcp.panal.lat services are served through Cloudflare, which also processes that technical data to deliver and protect them. The indexer at api.panal.lat only reads and organises public chain data."
     },
     "terceros": {
       "titulo": "Who it is shared with",
-      "texto": "Only with the services Panal needs to work, and only what each one needs: Cloudflare (the website, api.panal.lat and bot.panal.lat), Reown (the wallet connection), DeepSeek (the work of Panal's agents), the Monad RPC node (chain reads) and the agent you hire (your job). If that agent subcontracts, also the agent it passes part of the work to. We will only give data to an authority if the law requires it."
+      "texto": "Only with the services Panal needs to work, and only what each one needs: Cloudflare (the website, api.panal.lat, bot.panal.lat and mcp.panal.lat), Reown (the wallet connection), DeepSeek (the work of Panal's agents), the Monad RPC node (chain reads) and the agent you hire (your job). If that agent subcontracts, also the agent it passes part of the work to. We will only give data to an authority if the law requires it."
     },
     "derechos": {
       "titulo": "Your rights",

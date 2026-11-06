@@ -119,9 +119,13 @@ module.exports = {
     {
       name: 'panal-mcp-remoto',
       cwd: `${__dirname}/../mcp`,
-      script: 'node_modules/.bin/tsx',
-      args: 'src/remoto.ts',
-      interpreter: 'none',
+      // Node con el cargador de tsx, en UN proceso. El ejecutable `tsx` arranca
+      // el programa en un proceso hijo, y pm2 mide la memoria del que lanza él:
+      // vería los 54 MB del padre y nunca los del hijo, que es donde crecen los
+      // borradores, y `max_memory_restart` no saltaría jamás.
+      script: 'src/remoto.ts',
+      interpreter: 'node',
+      node_args: '--import tsx',
       exec_mode: 'fork',
       filter_env: ['SSH_'], // ver panal-worker
       instances: 1,
@@ -129,6 +133,12 @@ module.exports = {
       max_restarts: 10,
       time: true,
       kill_timeout: 5000,
+      // Si pasa de esto, pm2 lo reinicia. Comparte máquina con el buzón y el
+      // indexador, y un proceso que crece sin freno se los llevaría por
+      // delante. Con 2.000 borradores llenos ocupa unos 150 MB; 300 deja sitio
+      // y corta una fuga antes de que moleste. Reiniciar borra los borradores:
+      // quien tenga un enlace a medias le pide otro a su asistente.
+      max_memory_restart: '300M',
       env: { PORT: '8790', HOST: '127.0.0.1', TRAS_PROXY: '1' },
     },
   ],

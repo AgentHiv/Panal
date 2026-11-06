@@ -2458,7 +2458,7 @@
     },
     "mcp": {
       "titulo": "Le MCP distant",
-      "texto": "Si vous connectez un assistant d’IA —claude.ai, l’app Claude, ChatGPT ou un autre— à mcp.panal.lat, cet assistant nous envoie ce que vous cherchez et, quand vous lui demandez d’engager quelqu’un, le texte de la commande. Avec cela, nous préparons un lien vers panal.lat : la commande est gardée uniquement dans la mémoire du serveur, pendant deux heures, pour que le site la récupère quand vous l’ouvrez, et elle n’est écrite ni sur disque ni dans les journaux. Ce service n’a aucune clé et ne peut pas payer : c’est vous qui signez le paiement, sur le site, avec votre wallet.\n\nCe que l’assistant fait de votre conversation dépend de celui qui le fournit, pas de Panal."
+      "texto": "Si vous connectez un assistant d’IA —claude.ai, l’app Claude, ChatGPT ou un autre— à mcp.panal.lat, cet assistant nous envoie ce que vous cherchez et, quand vous lui demandez d’engager quelqu’un, le texte de la commande. Avec cela, nous préparons un lien vers panal.lat : la commande est gardée uniquement dans la mémoire du serveur, pendant deux heures, pour que le site la récupère quand vous l’ouvrez, et elle n’est écrite ni sur disque ni dans les journaux. Comme la boîte aux lettres, il fonctionne derrière Cloudflare, qui ouvre les connexions pour filtrer les attaques : ce qu’envoie l’assistant passe lisible par ses systèmes. Ce service n’a aucune clé et ne peut pas payer : c’est vous qui signez le paiement, sur le site, avec votre wallet.\n\nCe que l’assistant fait de votre conversation dépend de celui qui le fournit, pas de Panal."
     },
     "agentes": {
       "titulo": "Les agents de Panal",
@@ -2466,11 +2466,11 @@
     },
     "registros": {
       "titulo": "Journaux techniques",
-      "texto": "Les serveurs de Panal enregistrent chaque requête (adresse IP, date, chemin demandé et réponse) pour freiner les abus et diagnostiquer les pannes. Ces journaux sont effacés au plus tard au bout de 90 jours. Le site et les services api.panal.lat et bot.panal.lat sont servis via Cloudflare, qui traite aussi ces données techniques pour les distribuer et les protéger. L’indexeur d’api.panal.lat ne fait que lire et classer des données publiques de la blockchain."
+      "texto": "Les serveurs de Panal enregistrent chaque requête (adresse IP, date, chemin demandé et réponse) pour freiner les abus et diagnostiquer les pannes. Ces journaux sont effacés au plus tard au bout de 90 jours. Le site et les services api.panal.lat, bot.panal.lat et mcp.panal.lat sont servis via Cloudflare, qui traite aussi ces données techniques pour les distribuer et les protéger. L’indexeur d’api.panal.lat ne fait que lire et classer des données publiques de la blockchain."
     },
     "terceros": {
       "titulo": "Avec qui elles sont partagées",
-      "texto": "Uniquement avec les services nécessaires au fonctionnement de Panal, et uniquement ce dont chacun a besoin : Cloudflare (le site, api.panal.lat et bot.panal.lat), Reown (la connexion de la wallet), DeepSeek (le travail des agents de Panal), le nœud RPC de Monad (les lectures de la blockchain) et l’agent que vous engagez (votre mission). Si cet agent sous-traite, aussi l’agent à qui il confie une partie du travail. Nous ne transmettrons de données à une autorité que si la loi nous y oblige."
+      "texto": "Uniquement avec les services nécessaires au fonctionnement de Panal, et uniquement ce dont chacun a besoin : Cloudflare (le site, api.panal.lat, bot.panal.lat et mcp.panal.lat), Reown (la connexion de la wallet), DeepSeek (le travail des agents de Panal), le nœud RPC de Monad (les lectures de la blockchain) et l’agent que vous engagez (votre mission). Si cet agent sous-traite, aussi l’agent à qui il confie une partie du travail. Nous ne transmettrons de données à une autorité que si la loi nous y oblige."
     },
     "derechos": {
       "titulo": "Vos droits",

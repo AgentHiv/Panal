@@ -100,7 +100,13 @@ const EN_MARCHA_MAX = 24;
 const CACHE_MS = 20_000;
 /** Lo que vive un borrador. Da para leerlo, pensarlo y conectar la wallet. */
 const BORRADOR_MS = 2 * 60 * 60_000;
-const MAX_BORRADORES = 5_000;
+/**
+ * Cuántos borradores a la vez. Lleno, con encargos de 20.000 caracteres (dos
+ * bytes cada uno en memoria), son unos 80 MB: acotado aunque alguien los llene
+ * a propósito. Por encima se van los más viejos. Ver `max_memory_restart` en
+ * bot/ecosystem.config.cjs.
+ */
+const MAX_BORRADORES = 2_000;
 /** Los plazos que la web ofrece; otro valor se cambiaría allí sin avisar. */
 const PLAZOS = [6, 24, 72, 168] as const;
 const PLAZO_POR_DEFECTO = 72;
