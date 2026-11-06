@@ -213,7 +213,7 @@ export default function HiloChat({ agente, nombre, botUrl, onEncargar }: HiloCha
         archivo,
         firmar: (message) => walletClient.signMessage({ account: walletClient.account, message }),
       });
-      guardarComoArchivo(archivo.name, bytes, archivo.mime);
+      await guardarComoArchivo(archivo.name, bytes, archivo.mime);
     } catch (err) {
       toast.error(
         err instanceof FileVerificationError ? t('chat.files.notMatch') : t('chat.files.downloadFailed'),

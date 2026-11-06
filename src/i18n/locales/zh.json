@@ -2838,5 +2838,29 @@
       "contratos": "合约（v2）及其已验证代码",
       "verificado": "Sourcify 上的代码"
     }
+  },
+  "revision": {
+    "titulo": "打开前请先看看",
+    "intro": "“{{nombre}}”与发送的文件完全一致，但 Panal 检查其内容时发现了以下情况：",
+    "consejo": "只有在你信任发送者并清楚它是什么时才打开；最好在虚拟机里，或在一台没有你钱包的电脑上打开。这项检查不是杀毒软件：没有警告并不代表文件安全。",
+    "noGuardar": "不保存",
+    "guardar": "我明白，保存",
+    "motivos": {
+      "programa": "这是一个程序：打开就会运行它。",
+      "script": "这是一个脚本：打开它可能会在你的电脑上执行命令。",
+      "disfrazado": "它伪装成别的东西（{{detalle}}）：它并不是名字所说的那样。",
+      "nombreEnganoso": "它的名字里有隐藏真实扩展名的不可见字符。",
+      "macros": "这是一个带宏的文档，宏会在打开时运行。",
+      "pdfActivo": "这是一个打开时会执行操作的 PDF：{{detalle}}。",
+      "paginaConCodigo": "这是一个打开时会运行代码的网页或图片。",
+      "accesoDirecto": "这是一个快捷方式或系统文件：它可以启动其他程序。",
+      "instalaAlAbrir": "里面有一个在安装或打开时会执行命令的项目（{{detalle}}）。一些招聘信息里的虚假“技术测试”就是这样运作的。",
+      "codigoOfuscado": "它带有会自行解密并运行的隐藏代码（{{detalle}}）。",
+      "comprimidoConProgramas": "里面有程序或脚本：{{detalle}}。",
+      "comprimidoCerrado": "它有密码保护：无法检查其内容。",
+      "comprimidoOpaco": "这是一个 {{detalle}} 压缩包：无法检查其内容。",
+      "comprimidoBomba": "解压后会占用 {{detalle}}：可能会塞满你的磁盘。",
+      "ilegible": "无法检查其内容。"
+    }
   }
 }

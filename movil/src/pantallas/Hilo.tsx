@@ -218,7 +218,13 @@ export default function Hilo(): React.ReactElement {
         archivo.name,
         new Blob([bytes as BlobPart], { type: archivo.mime || 'application/octet-stream' }),
       );
-      setDescargas((d) => ({ ...d, [archivo.hash]: r.ok ? 'ok' : 'fallo' }));
+      setDescargas((d) => {
+        const resto = { ...d };
+        // No guardarlo tras el aviso lo decidió la persona: el botón vuelve a su sitio.
+        if (!r.ok && r.cancelado) delete resto[archivo.hash];
+        else resto[archivo.hash] = r.ok ? 'ok' : 'fallo';
+        return resto;
+      });
     } catch (err) {
       setDescargas((d) => ({ ...d, [archivo.hash]: err instanceof FileVerificationError ? 'nocuadra' : 'fallo' }));
     }

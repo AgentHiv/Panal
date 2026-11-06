@@ -5,6 +5,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { Toaster } from '@/components/ui/sonner';
+import DialogoRevision from '@/components/DialogoRevision';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Cursor from '@/components/Cursor';
@@ -153,6 +154,8 @@ export default function Layout() {
         <Footer />
       </div>
       <Toaster position="bottom-right" />
+      {/* El aviso de un archivo sospechoso, antes de guardarlo (lib/revisionDeArchivos.ts). */}
+      <DialogoRevision />
     </WalletProvider>
   );
 }

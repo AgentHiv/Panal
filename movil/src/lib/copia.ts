@@ -16,6 +16,7 @@ import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import type { Expediente } from '@/lib/expedientes';
 import { formatBytes } from '@/lib/deliveredFiles';
+import { revisarAntesDeGuardar } from '@/lib/revisionDeArchivos';
 import { monto } from '~/lib/formato';
 import { etiquetaIdioma, idioma, textos } from '~/i18n/idiomas';
 
@@ -161,7 +162,7 @@ ${hilo}
 `;
 }
 
-export type Resultado = { ok: true; donde: string } | { ok: false; porque: string };
+export type Resultado = { ok: true; donde: string } | { ok: false; porque: string; cancelado?: boolean };
 
 /**
  * Escribe la copia y la ofrece al teléfono.
@@ -249,6 +250,11 @@ function aBase64(datos: Blob): Promise<string> {
  * `sanitizeFileName` le quita las barras— así que no puede salirse de la caché.
  */
 export async function guardarArchivo(nombre: string, datos: Blob): Promise<Resultado> {
+  // Todo lo que se guarda aquí lo mandó otro: se revisa antes. Si la revisión
+  // ve algo, la hoja de aviso pregunta; decir que no es `cancelado`, no un fallo.
+  if (!(await revisarAntesDeGuardar(nombre, new Uint8Array(await datos.arrayBuffer()), datos.type))) {
+    return { ok: false, porque: textos().revision.noGuardado, cancelado: true };
+  }
   if (!Capacitor.isNativePlatform()) {
     try {
       const url = URL.createObjectURL(datos);

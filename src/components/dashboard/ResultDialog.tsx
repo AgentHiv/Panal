@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils';
 import { guardarEntrega, leerEntrega, textoDeEntrega } from '@/lib/expedientes';
 import SubcontratosDeLaEntrega from '@/components/dashboard/SubcontratosDeLaEntrega';
 import AvisoEjecutable from '@/components/AvisoEjecutable';
+import { guardarComoArchivo } from '@/lib/archivosTablon';
 import {
   FileVerificationError,
   downloadDeliveredFile,
@@ -270,15 +271,15 @@ export default function ResultDialog({ task }: { task: RealTask }) {
             { type: file.mime || 'application/octet-stream' },
           )
         : bajado;
-      const href = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = href;
-      a.download = file.name;
-      a.click();
-      // Sin revocar, el blob se queda en memoria hasta que se recarga la
-      // pestaña; con un vídeo de 20 MB eso se nota.
-      URL.revokeObjectURL(href);
-      setDescargas((d) => ({ ...d, [file.name]: 'ok' }));
+      // Se revisa antes de guardarlo; si quien lo baja dice que no, el botón
+      // vuelve a estar como antes.
+      const guardado = await guardarComoArchivo(file.name, new Uint8Array(await blob.arrayBuffer()), file.mime);
+      setDescargas((d) => {
+        const resto = { ...d };
+        if (guardado) resto[file.name] = 'ok';
+        else delete resto[file.name];
+        return resto;
+      });
     } catch (err) {
       const roto = err instanceof FileVerificationError && /hash|size/.test(err.message);
       setDescargas((d) => ({ ...d, [file.name]: roto ? 'mismatch' : 'error' }));

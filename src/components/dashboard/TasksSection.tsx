@@ -71,6 +71,7 @@ import {
 } from '@/contracts/config';
 import type { Perspective } from './data';
 import { formatMonEs } from './data';
+import { guardarComoArchivo } from '@/lib/archivosTablon';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const STATUS_META: Record<number, { label: string; className: string; pulse?: boolean }> = {
@@ -393,12 +394,8 @@ export default function TasksSection({ perspective }: { perspective: Perspective
             { type: archivo.mime || 'application/octet-stream' },
           )
         : bajado;
-      const href = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = href;
-      a.download = archivo.name;
-      a.click();
-      URL.revokeObjectURL(href);
+      // Se revisa antes de guardarlo: lo que manda un cliente puede ser una trampa.
+      await guardarComoArchivo(archivo.name, new Uint8Array(await blob.arrayBuffer()), archivo.mime);
     } catch {
       toast.error(t('tasks.buzon.archivoError', { name: archivo.name }));
     } finally {

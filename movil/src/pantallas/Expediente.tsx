@@ -195,8 +195,14 @@ export default function Expediente(): React.ReactElement {
           )
         : bajado;
       const r = await guardarArchivo(archivo.name, blob);
-      setDescargas((d) => ({ ...d, [archivo.hash]: r.ok ? 'ok' : 'fallo' }));
-      if (!r.ok) setAviso(r.porque);
+      setDescargas((d) => {
+        const resto = { ...d };
+        // No guardarlo tras el aviso lo decidió la persona: el botón vuelve a su sitio.
+        if (!r.ok && r.cancelado) delete resto[archivo.hash];
+        else resto[archivo.hash] = r.ok ? 'ok' : 'fallo';
+        return resto;
+      });
+      if (!r.ok && !r.cancelado) setAviso(r.porque);
     } catch (err) {
       const roto = err instanceof FileVerificationError && /hash|size/.test(err.message);
       const msg = err instanceof Error ? err.message : String(err);

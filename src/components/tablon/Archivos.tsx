@@ -152,7 +152,7 @@ export function ListaDeArchivos({
       try {
         const bajados = await bajarArchivoDelTablon(jobId, f, de, await credencial(), cifrado);
         const bytes = cifrado && abrir ? await abrir(bajados) : bajados;
-        guardarComoArchivo(f.name, bytes, f.mime);
+        await guardarComoArchivo(f.name, bytes, f.mime);
       } catch {
         setErrores((e) => ({ ...e, [f.name]: true }));
       } finally {

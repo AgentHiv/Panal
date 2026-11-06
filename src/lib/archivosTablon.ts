@@ -9,6 +9,7 @@
 
 import type { ArchivoParaSubir } from '@panal/sdk';
 import { crearZip } from '@/lib/zip';
+import { revisarAntesDeGuardar } from '@/lib/revisionDeArchivos';
 
 /** Los archivos elegidos, con sus bytes. */
 export async function archivosElegidos(lista: FileList | File[]): Promise<ArchivoParaSubir[]> {
@@ -47,8 +48,15 @@ export function tamano(bytes: number): string {
   return `${bytes} B`;
 }
 
-/** Guarda unos bytes como archivo en el navegador. */
-export function guardarComoArchivo(nombre: string, bytes: Uint8Array, mime?: string): void {
+/**
+ * Guarda unos bytes como archivo en el navegador, después de revisarlos.
+ *
+ * Todo lo que se baja de otro pasa por aquí: si la revisión ve algo (un
+ * programa, un PDF con JavaScript, un proyecto que se ejecuta al instalarlo…),
+ * antes de guardar se pregunta. Devuelve false si quien lo baja dice que no.
+ */
+export async function guardarComoArchivo(nombre: string, bytes: Uint8Array, mime?: string): Promise<boolean> {
+  if (!(await revisarAntesDeGuardar(nombre, bytes, mime))) return false;
   const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime || 'application/octet-stream' }));
   const a = document.createElement('a');
   a.href = url;
@@ -57,4 +65,5 @@ export function guardarComoArchivo(nombre: string, bytes: Uint8Array, mime?: str
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  return true;
 }
