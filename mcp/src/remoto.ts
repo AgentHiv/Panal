@@ -19,10 +19,11 @@
  * queda en la memoria de este proceso dos horas, para que la web lo recoja
  * (`GET /borrador/:id`, solo desde panal.lat). Meterlo en la URL obligaría al
  * modelo a copiar letra por letra cientos de caracteres de base64, y uno
- * cambiado basta para que el enlace no abra. El encargo ya pasó por aquí —el
- * modelo lo manda como argumento—, así que guardarlo dos horas en memoria no
- * enseña nada que no se haya visto: no se escribe en disco ni en el registro,
- * y un reinicio lo borra.
+ * cambiado basta para que el enlace no abra. Se guarda CERRADO, con una clave
+ * que solo va en el enlace detrás de la `#` y que aquí no se queda (ver
+ * `borrador-cifrado.ts`): el id que aparece en el registro de acceso no sirve
+ * para leerlo, ni la memoria del proceso tampoco. No se escribe en disco ni en
+ * el registro, y un reinicio lo borra.
  *
  * TRANSPORTE: «Streamable HTTP» del protocolo, sin sesiones ni stream del
  * servidor. Cada POST a /mcp trae un mensaje JSON-RPC (o varios) y se contesta
@@ -50,6 +51,7 @@ import { randomBytes } from 'node:crypto';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { isAddress } from 'viem';
 import { leerTipo, sinBarraFinal } from '@panal/sdk';
+import { cerrarBorrador, type ContenidoDelBorrador } from './borrador-cifrado.js';
 
 // ---------------------------------------------------------------------------
 // Sin claves, antes de cargar nada
@@ -107,6 +109,7 @@ const BORRADOR_MS = 2 * 60 * 60_000;
  * bot/ecosystem.config.cjs.
  */
 const MAX_BORRADORES = 2_000;
+// (Cerrado ocupa algo más que el texto: base64 de sus bytes. Sigue acotado.)
 /** Los plazos que la web ofrece; otro valor se cambiaría allí sin avisar. */
 const PLAZOS = [6, 24, 72, 168] as const;
 const PLAZO_POR_DEFECTO = 72;
@@ -117,17 +120,13 @@ const log = (msg: string) => process.stdout.write(`[panal-mcp remoto] ${msg}\n`)
 // Borradores
 // ---------------------------------------------------------------------------
 
+/**
+ * Lo que se guarda de cada borrador: la caja cerrada y hasta cuándo vale. El
+ * contenido (agente, encargo, tamaño —por precio, porque la web traduce los
+ * nombres— y plazo) va dentro y aquí no se puede leer.
+ */
 interface Borrador {
-  agente: string;
-  encargo: string;
-  nivel: string | null;
-  /**
-   * El precio del tamaño elegido. La web lo busca por precio y no por nombre:
-   * enseña los nombres traducidos al idioma de cada persona, y aquí se leen en
-   * el de la ficha.
-   */
-  nivelWei: string | null;
-  horas: number;
+  cifrado: string;
   caduca: number;
 }
 
@@ -145,12 +144,14 @@ function podarBorradores(): void {
 }
 setInterval(podarBorradores, 10 * 60_000).unref();
 
-function guardarBorrador(b: Omit<Borrador, 'caduca'>): string {
+/** Guarda el borrador cerrado; devuelve su id y la clave, que solo irá en el enlace. */
+function guardarBorrador(contenido: ContenidoDelBorrador): { id: string; clave: string } {
   podarBorradores();
   // 16 bytes al azar: no se puede adivinar el de otro.
   const id = randomBytes(16).toString('base64url');
-  borradores.set(id, { ...b, caduca: Date.now() + BORRADOR_MS });
-  return id;
+  const { cifrado, clave } = cerrarBorrador(contenido, id);
+  borradores.set(id, { cifrado, caduca: Date.now() + BORRADOR_MS });
+  return { id, clave };
 }
 
 // ---------------------------------------------------------------------------
@@ -236,14 +237,14 @@ const prepararContratacion: Tool = {
     const enBuzon = recibeEnElBuzon(agent.metadata.botUrl);
     const cifrado = enBuzon && (await panal.getPublicKey(agent.address).catch(() => null)) !== null;
 
-    const id = guardarBorrador({
+    const { id, clave } = guardarBorrador({
       agente: agent.address,
       encargo: brief,
       nivel: elegido?.name ?? null,
       nivelWei: elegido ? elegido.wei.toString() : null,
       horas: horasPedidas,
     });
-    const enlace = `${WEB_URL}/contratar/${id}`;
+    const enlace = `${WEB_URL}/contratar/${id}#${clave}`;
     log(`borrador preparado para ${agent.address}`);
 
     return [
@@ -263,7 +264,8 @@ const prepararContratacion: Tool = {
       `Link: ${enlace}`,
       '(valid for 2 hours)',
       '',
-      'Give the person this link exactly as it is. They open it, check the job, connect their wallet and ' +
+      'Give the person this link exactly as it is, including the part after # (it is the key that opens ' +
+        'the job; without it the link does not work). They open it, check the job, connect their wallet and ' +
         'sign; nothing is paid until they do. Files can be attached on that page. Once hired they follow the ' +
         'job at ' + `${WEB_URL}/dashboard` + ', and you can check its state with panal_get_task if they tell you its number.',
     ]
@@ -501,12 +503,8 @@ function atenderBorrador(req: IncomingMessage, res: ServerResponse, id: string):
     enviar(res, 404, { error: 'not found' }, cors);
     return;
   }
-  enviar(
-    res,
-    200,
-    { agente: b.agente, encargo: b.encargo, nivel: b.nivel, nivelWei: b.nivelWei, horas: b.horas, caduca: new Date(b.caduca).toISOString() },
-    cors,
-  );
+  // Solo la caja: la clave la tiene el enlace, no este servidor.
+  enviar(res, 200, { v: 1, cifrado: b.cifrado, caduca: new Date(b.caduca).toISOString() }, cors);
 }
 
 const PORTADA = [
