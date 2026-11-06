@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { formatEther, parseEther } from 'viem';
 import { useWallet } from '@/hooks/useWallet';
@@ -42,18 +42,20 @@ export default function Alta(): React.ReactElement {
   const [descripcion, setDescripcion] = useState('');
   const [bot, setBot] = useState('');
   /**
-   * Quién va a hacer el trabajo, dicho por quien se registra.
-   *
-   * Sin elegir no se firma. Decide el mercado en el que sale y si hace falta
-   * URL, y adivinarlo por el endpoint etiquetaría a alguien de lo que no es.
-   * El mismo formulario que en la web; el token lo escribe `armarFicha`.
+   * Quién se da de alta: una persona que ofrece su trabajo o un programa. Lo
+   * dice el sitio desde donde se llega (`/alta?tipo=persona` sale del menú;
+   * `/alta`, de «Tus agentes»), no un interruptor aquí dentro: una persona no
+   * tiene por qué pasar por un formulario de agentes.
    */
-  const [tipo, setTipo] = useState<TipoDeAgente | null>(null);
+  const [params] = useSearchParams();
+  const tipo: TipoDeAgente = params.get('tipo') === 'persona' ? 'persona' : 'bot';
   const [precio, setPrecio] = useState('');
   const [enPanal, setEnPanal] = useState(true);
   /** Logo y enlaces del creador. Todo opcional; lo vacío no escribe nada. */
   const [marca, setMarca] = useState<Marca>(MARCA_VACIA);
   const T = useTextos();
+  /** Los textos del alta, en la voz de quien se registra. */
+  const A = tipo === 'persona' ? { ...T.alta, ...T.altaPersona } : T.alta;
 
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const recibo = useWaitForTransactionReceipt({ hash });
@@ -71,7 +73,7 @@ export default function Alta(): React.ReactElement {
 
   // Una persona no escribe dirección: recibe en el buzón de Panal, a su nombre.
   const donde = tipo === 'persona' ? (address ? urlDeBuzon(address) : '') : bot;
-  const ficha = armarFicha(nombre, descripcion, donde, marca, [], tipo ?? 'bot');
+  const ficha = armarFicha(nombre, descripcion, donde, marca, [], tipo);
   const wei = parsear(precio);
   /**
    * Lo que falta para la reserva de gas de Monad, mirado antes de firmar.
@@ -80,9 +82,7 @@ export default function Alta(): React.ReactElement {
   const [faltaGas, setFaltaGas] = useState<Reserva | null>(null);
   const [mirandoGas, setMirandoGas] = useState(false);
   const trabajando = isPending || recibo.isLoading || mirandoGas;
-  // Sin decir quién trabaja no se firma: de eso dependen el mercado en el que
-  // sale y si hace falta URL, y no es algo que deba quedar por defecto.
-  const listo = connected && tipo !== null && !!nombre.trim() && wei !== null && !yaEs?.registrado;
+  const listo = connected && !!nombre.trim() && wei !== null && !yaEs?.registrado;
 
   return (
     <div className="flex min-h-0 grow flex-col">
@@ -91,17 +91,17 @@ export default function Alta(): React.ReactElement {
           type="button"
           onClick={() => navegar(-1)}
           className="pulsable tocable -ml-1 flex h-9 w-9 items-center justify-center"
-          aria-label={T.alta.volver}
+          aria-label={A.volver}
         >
           <Icono nombre="atras" tamano={19} color="#F2EFFA" />
         </button>
         <h1 className="font-display text-[19px] font-semibold -tracking-[0.015em]">
-          {T.alta.titulo}
+          {A.titulo}
         </h1>
       </header>
 
       <div className="flex min-h-0 grow flex-col gap-3 overflow-y-auto px-5 py-4">
-        <Titulo>{T.alta.quienSera}</Titulo>
+        <Titulo>{A.quienSera}</Titulo>
 
         {connected ? (
           <div className="shrink-0 rounded-[14px] border border-line bg-cream p-3.5">
@@ -110,12 +110,12 @@ export default function Alta(): React.ReactElement {
             </p>
             <p className="mt-1 text-[11.5px] text-ink-3">
               {delLlavero.some((w) => w.direccion.toLowerCase() === address!.toLowerCase())
-                ? T.alta.delLlavero
-                : T.alta.laConectada}
+                ? A.delLlavero
+                : A.laConectada}
             </p>
             {yaEs?.registrado && (
               <p className="mt-2 text-[12px] leading-[1.5] text-terra">
-                {T.alta.yaRegistrada(yaEs.nombre)}
+                {A.yaRegistrada(yaEs.nombre)}
               </p>
             )}
           </div>
@@ -126,17 +126,23 @@ export default function Alta(): React.ReactElement {
             disabled={connecting}
             className="pulsable tocable shrink-0 rounded-full bg-monad py-3 text-[14.5px] font-semibold text-white shadow-monad disabled:opacity-60"
           >
-            {connecting ? T.comun.conectando : T.alta.conectarLaQueSera}
+            {connecting ? T.comun.conectando : A.conectarLaQueSera}
           </button>
         )}
 
         <div className="flex shrink-0 gap-2.5 rounded-[14px] border border-honey-line bg-honey-soft p-3.5">
           <Icono nombre="info" tamano={16} color="#E29A2E" grosor={2} className="mt-px shrink-0" />
-          <p className="text-[12px] leading-[1.55] text-ink-2">
-            {T.alta.avisoClaveAntes}{' '}
-            <span className="font-semibold text-honey">{T.alta.seConvierteEn}</span>
-            {T.alta.avisoClaveDespues}
-          </p>
+          {tipo === 'persona' ? (
+            // Una persona no pone su clave en ningún servidor: el aviso de usar
+            // una wallet nueva es de los agentes, y aquí sería falso.
+            <p className="text-[12px] leading-[1.55] text-ink-2">{T.altaPersona.aviso}</p>
+          ) : (
+            <p className="text-[12px] leading-[1.55] text-ink-2">
+              {A.avisoClaveAntes}{' '}
+              <span className="font-semibold text-honey">{A.seConvierteEn}</span>
+              {A.avisoClaveDespues}
+            </p>
+          )}
         </div>
 
         {delLlavero.length > 0 && (
@@ -146,64 +152,37 @@ export default function Alta(): React.ReactElement {
             className="pulsable shrink-0 rounded-[14px] border border-dashed border-line p-3 text-left"
           >
             <p className="text-[12.5px] text-ink-2">
-              {T.alta.tienesEnLlavero(delLlavero.length)}
+              {A.tienesEnLlavero(delLlavero.length)}
             </p>
           </button>
         )}
 
-        <Titulo>{T.alta.quienTrabaja}</Titulo>
-        <div className="flex shrink-0 gap-2">
-          {(['persona', 'bot'] as const).map((opcion) => {
-            const elegida = tipo === opcion;
-            return (
-              <button
-                key={opcion}
-                type="button"
-                onClick={() => setTipo(opcion)}
-                aria-pressed={elegida}
-                className={`flex-1 rounded-[14px] border p-3 text-left transition-colors ${
-                  elegida ? 'border-honey bg-honey/10' : 'border-line bg-paper'
-                }`}
-              >
-                {/* Sin icono a propósito: no hay uno de persona ni de robot en
-                    `Icono`, y dibujar dos a ojo para esto sería peor que el
-                    texto, que ya dice exactamente lo que hay. */}
-                <span className="text-[13px] font-semibold text-ink">
-                  {opcion === 'persona' ? T.alta.soyPersona : T.alta.esBot}
-                </span>
-                <span className="mt-1 block text-[11.5px] leading-[1.5] text-ink-2">
-                  {opcion === 'persona' ? T.alta.soyPersonaDesc : T.alta.esBotDesc}
-                </span>
-              </button>
-            );
-          })}
-        </div>
         {tipo === 'persona' && (
           <div className="flex shrink-0 gap-2.5 rounded-[14px] border border-line bg-cream p-3.5">
             <Icono nombre="info" tamano={16} color="#E29A2E" grosor={2} className="mt-px shrink-0" />
-            <p className="min-w-0 text-[12px] leading-[1.55] text-ink-2">{T.alta.buzonNota}</p>
+            <p className="min-w-0 text-[12px] leading-[1.55] text-ink-2">{A.buzonNota}</p>
           </div>
         )}
 
-        <Titulo>{T.alta.suFicha}</Titulo>
+        <Titulo>{A.suFicha}</Titulo>
         <Campo
-          etiqueta={T.alta.nombre}
+          etiqueta={A.nombre}
           valor={nombre}
           onCambio={setNombre}
-          marcador={T.alta.nombreHueco}
+          marcador={A.nombreHueco}
         />
         <Campo
-          etiqueta={T.alta.queHace}
+          etiqueta={A.queHace}
           valor={descripcion}
           onCambio={setDescripcion}
-          marcador={T.alta.queHaceHueco}
+          marcador={A.queHaceHueco}
         />
         {tipo !== 'persona' && (
           <Campo
-            etiqueta={T.alta.dondeEscucha}
+            etiqueta={A.dondeEscucha}
             valor={bot}
             onCambio={setBot}
-            marcador={T.alta.dondeEscuchaHueco}
+            marcador={A.dondeEscuchaHueco}
             mono
           />
         )}
@@ -213,19 +192,24 @@ export default function Alta(): React.ReactElement {
             <Icono nombre="info" tamano={16} color="#C9653B" grosor={2} className="mt-px shrink-0" />
             <div className="min-w-0">
               <p className="text-[12.5px] font-semibold text-terra">
-                {T.alta.sinDireccionTitulo}
+                {A.sinDireccionTitulo}
               </p>
               <p className="mt-1 text-[12px] leading-[1.55] text-ink-2">
-                {T.alta.sinDireccionAntes} <span className="font-mono">bot:</span>{' '}
-                {T.alta.sinDireccionDespues}
+                {A.sinDireccionAntes} <span className="font-mono">bot:</span>{' '}
+                {A.sinDireccionDespues}
               </p>
             </div>
           </div>
         )}
 
-        <CamposMarca marca={marca} onCambio={setMarca} semilla={address ?? nombre} />
+        <CamposMarca
+          marca={marca}
+          onCambio={setMarca}
+          semilla={address ?? nombre}
+          titulo={tipo === 'persona' ? T.altaPersona.tuMarca : undefined}
+        />
 
-        <Titulo>{T.alta.loQueCobra}</Titulo>
+        <Titulo>{A.loQueCobra}</Titulo>
         <div className="flex shrink-0 items-center gap-2.5 rounded-[14px] border border-line p-3.5">
           <input
             value={precio}
@@ -252,14 +236,14 @@ export default function Alta(): React.ReactElement {
           </div>
         </div>
 
-        <Titulo>{T.alta.loQueSeEscribe}</Titulo>
+        <Titulo>{A.loQueSeEscribe}</Titulo>
         <p className="seleccionable shrink-0 break-all rounded-[11px] border border-line bg-sand px-3 py-2.5 font-mono text-[11.5px] leading-[1.5] text-ink-2">
           {resumirFicha(ficha) || '—'}
         </p>
 
         {faltaGas && (
           <p className="shrink-0 px-1 text-[12px] leading-[1.5] text-terra">
-            {T.alta.faltaGas(
+            {A.faltaGas(
               monHaciaArriba(faltaGas.reserva),
               Number(formatEther(faltaGas.saldo)).toFixed(4).replace(/\.?0+$/, ''),
               monHaciaArriba(faltaGas.falta),
@@ -270,10 +254,10 @@ export default function Alta(): React.ReactElement {
         {error && (
           <p className="shrink-0 px-1 text-[12px] text-terra">
             {esFaltaDeReserva(error)
-              ? T.alta.reservaGas
+              ? A.reservaGas
               : /rejected|denied|user/i.test(error.message)
-                ? T.alta.firmaCancelada
-                : T.alta.noSePudoFirmar}
+                ? A.firmaCancelada
+                : A.noSePudoFirmar}
           </p>
         )}
 
@@ -309,10 +293,10 @@ export default function Alta(): React.ReactElement {
           disabled={!listo || trabajando}
           className="pulsable tocable mt-1 shrink-0 rounded-full bg-monad py-3.5 text-[15px] font-semibold text-white shadow-monad disabled:opacity-40 disabled:shadow-none"
         >
-          {trabajando ? T.alta.firmando : T.alta.firmarAlta}
+          {trabajando ? A.firmando : A.firmarAlta}
         </button>
         <p className="shrink-0 px-1 text-[11.5px] leading-[1.5] text-ink-3">
-          {T.alta.pieGas}
+          {A.pieGas}
         </p>
       </div>
     </div>

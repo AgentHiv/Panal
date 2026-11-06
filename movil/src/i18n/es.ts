@@ -58,6 +58,7 @@ export const es = {
     firmaFuera: 'Firma en tu wallet',
     cambiarWallet: 'Cambiar',
     llavero: 'Tu llavero',
+    ofrecerTrabajo: 'Ofrecer tu trabajo',
     agentes: 'Tus agentes',
     cartera: 'Tu cartera',
     avisos: 'Avisos del teléfono',
@@ -607,6 +608,25 @@ export const es = {
     firmarAlta: 'Firmar el alta',
     pieGas:
       'Lo firma la wallet de arriba y paga su gas, así que necesita algo de MON. El precio y la ficha se pueden cambiar después; la dirección no.',
+  },
+  altaPersona: {
+    titulo: 'Ofrecer tu trabajo',
+    quienSera: 'Tu wallet',
+    conectarLaQueSera: 'Conectar tu wallet',
+    yaRegistrada: (nombre: string) =>
+      `Esta wallet ya está dada de alta como «${nombre}». Cada wallet puede tener una sola ficha.`,
+    aviso:
+      'Con esta wallet cobras y firmas lo que entregas, desde este teléfono o desde la web. Su clave no tiene que ir a ningún servidor: puede ser la de siempre.',
+    tuMarca: 'Tu marca',
+    suFicha: 'Tu ficha',
+    nombre: 'Tu nombre o el de tu marca',
+    nombreHueco: 'Marta Rojas',
+    queHace: 'Qué ofreces',
+    queHaceHueco: 'Traduzco contratos del español al francés',
+    loQueCobra: 'Lo que cobras por encargo',
+    firmarAlta: 'Darme de alta',
+    pieGas:
+      'Lo firma tu wallet y paga su gas, así que necesita algo de MON. El precio y la ficha se pueden cambiar después.',
   },
 
   guardia: {

@@ -9,7 +9,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bot, ExternalLink, Inbox, Loader2, TriangleAlert, User, X } from 'lucide-react';
+import { ExternalLink, Inbox, Loader2, TriangleAlert, X } from 'lucide-react';
 import { useSwitchChain, useWriteContract } from 'wagmi';
 import { formatEther, parseEther } from 'viem';
 import { toast } from 'sonner';
@@ -55,6 +55,12 @@ import EjemplosFields from '@/components/dashboard/EjemplosFields';
 export interface RegisterAgentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * Quién se da de alta: una persona o un programa. Lo decide el botón que
+   * abre el diálogo, no un interruptor dentro: una persona que ofrece su
+   * trabajo no tiene por qué pasar por un formulario de agentes.
+   */
+  tipo: TipoDeAgente;
 }
 
 /** Máximo de skills (chips) por agente. */
@@ -65,18 +71,29 @@ const MAX_SKILL_LEN = 30;
 const BOT_REPO_URL = 'https://github.com/AgentHiv/Panal/tree/main/bot';
 
 
-export default function RegisterAgentDialog({ open, onOpenChange }: RegisterAgentDialogProps) {
+export default function RegisterAgentDialog({ open, onOpenChange, tipo }: RegisterAgentDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto border-line bg-paper p-0 sm:rounded-2xl">
-        <RegisterAgentForm onOpenChange={onOpenChange} />
+        {/* `key`: cambiar de persona a programa empieza un formulario limpio. */}
+        <RegisterAgentForm key={tipo} tipo={tipo} onOpenChange={onOpenChange} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => void }) {
-  const { t } = useTranslation();
+function RegisterAgentForm({ tipo, onOpenChange }: { tipo: TipoDeAgente; onOpenChange: (open: boolean) => void }) {
+  const { t, i18n } = useTranslation();
+  /**
+   * Los textos del alta, en la voz de quien se registra. Una persona no es un
+   * agente, y el formulario no se lo hace parecer: si existe
+   * `register.persona.<clave>` se usa ese; si no, el de siempre, que vale para
+   * los dos (los errores de un campo, la moneda, el gas…).
+   */
+  const tx = (clave: string, vars?: Record<string, unknown>): string =>
+    tipo === 'persona' && i18n.exists(`register.persona.${clave}`)
+      ? t(`register.persona.${clave}`, vars)
+      : t(`register.${clave}`, vars);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
@@ -86,16 +103,6 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   /** Moneda del precio (solo con V2_ENABLED): 'MON' nativo o '$PANAL' token. */
   const [currency, setCurrency] = useState<'MON' | '$PANAL'>('MON');
   const [botUrl, setBotUrl] = useState('');
-  /**
-   * Quién va a hacer el trabajo: una persona, o un programa.
-   *
-   * Arranca SIN elegir, y sin elegir no se registra. No es fricción gratuita:
-   * de esto depende el resto del formulario —una persona no tiene URL que
-   * escribir— y el mercado en el que va a salir. Adivinarlo por el endpoint
-   * sería etiquetar a alguien de lo que no es: un bot puede usar el buzón y
-   * una persona puede montarse un servidor.
-   */
-  const [tipo, setTipo] = useState<TipoDeAgente | null>(null);
   /** Logo y enlaces del creador. Todo opcional; vacío no escribe nada. */
   const [marca, setMarca] = useState<Marca>(MARCA_VACIA);
   /**
@@ -250,8 +257,8 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
     // v1: registerAgent(metadataURI, pricePerTask) en el registry clásico.
     const onSent = {
       onSuccess: () =>
-        toast(t('register.txSent'), {
-          description: t('register.txSentDesc'),
+        toast(tx('txSent'), {
+          description: tx('txSentDesc'),
         }),
     };
     // La llamada se arma UNA vez: con ella se mira la reserva y con ella se
@@ -304,7 +311,6 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
     setPrice('');
     setCurrency('MON');
     setBotUrl('');
-    setTipo(null);
     setTouched({ name: false, desc: false, price: false, botUrl: false });
     setMarca(MARCA_VACIA);
   };
@@ -317,9 +323,11 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
 
   return (
     <div className="px-7 pb-7 pt-6">
-      <DialogTitle className="display-m text-ink">{t('dash.registerAgent')}</DialogTitle>
+      <DialogTitle className="display-m text-ink">
+        {tipo === 'persona' ? t('dash.registerPerson') : t('dash.registerAgent')}
+      </DialogTitle>
       <DialogDescription className="sr-only">
-        {t('register.desc')}
+        {tx('desc')}
       </DialogDescription>
 
       {mined && txHash ? (
@@ -336,28 +344,30 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
             <path d="M41 48.5l5 5 9-10" stroke="#F2EFFA" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <div>
-            <p className="display-m text-ink">{t('register.success')}</p>
+            <p className="display-m text-ink">{tx('success')}</p>
             <p className="mt-1 text-[0.875rem] text-ink-2">
-              {t('register.successDesc')}
+              {tx('successDesc')}
             </p>
           </div>
           <TxHash hash={txHash} className="rounded-full border border-line bg-cream px-4 py-2" />
 
           {/* Guía post-registro: bot de Panal para agentes automatizados */}
           <div className="w-full rounded-xl border border-line bg-cream px-4 py-4 text-left">
-            <p className="text-[0.875rem] font-semibold text-ink">{t('register.post.title')}</p>
+            <p className="text-[0.875rem] font-semibold text-ink">{tx('post.title')}</p>
             <p className="mt-1 text-[0.8125rem] leading-relaxed text-ink-2">
-              {t('register.post.desc')}
+              {tx('post.desc')}
             </p>
-            <a
-              href={BOT_REPO_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-flex items-center gap-1.5 text-[0.8125rem] font-medium text-honey-deep transition-colors hover:text-honey"
-            >
-              {t('register.post.link')}
-              <ExternalLink size={13} />
-            </a>
+            {tipo === 'bot' && (
+              <a
+                href={BOT_REPO_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-flex items-center gap-1.5 text-[0.8125rem] font-medium text-honey-deep transition-colors hover:text-honey"
+              >
+                {tx('post.link')}
+                <ExternalLink size={13} />
+              </a>
+            )}
           </div>
 
           <div className="flex w-full flex-col gap-2 sm:flex-row">
@@ -382,59 +392,25 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
       ) : (
         <div className="mt-5 flex flex-col gap-4">
           <p className="text-[0.8125rem] leading-relaxed text-ink-2">
-            {t('register.explain')}{' '}
-            <span className="font-mono text-[12px]">{t('register.formatHint')}</span>
+            {tx('explain')}{' '}
+            <span className="font-mono text-[12px]">{tx('formatHint')}</span>
           </p>
 
-          {/*
-            Quién va a trabajar. Lo primero, porque cambia el resto: una
-            persona no tiene URL que escribir y sale en otro mercado.
-          */}
-          <fieldset className="flex flex-col gap-1.5">
-            <legend className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">
-              {t('register.tipo.label')}
-            </legend>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {(['persona', 'bot'] as const).map((opcion) => {
-                const elegida = tipo === opcion;
-                const Icono = opcion === 'persona' ? User : Bot;
-                return (
-                  <button
-                    key={opcion}
-                    type="button"
-                    onClick={() => setTipo(opcion)}
-                    aria-pressed={elegida}
-                    className={cn(
-                      'flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors duration-200',
-                      elegida ? 'border-honey bg-honey-soft' : 'border-line bg-paper hover:border-honey',
-                    )}
-                  >
-                    <span className="flex items-center gap-2 text-[0.875rem] font-semibold text-ink">
-                      <Icono size={15} className={elegida ? 'text-honey-deep' : 'text-ink-3'} aria-hidden />
-                      {t(`register.tipo.${opcion}`)}
-                    </span>
-                    <span className="text-[0.75rem] leading-relaxed text-ink-2">
-                      {t(`register.tipo.${opcion}Desc`)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            {tipo === 'persona' && (
-              <p className="mt-1 flex items-start gap-2 rounded-xl border border-line bg-cream px-3.5 py-2.5 text-[0.75rem] leading-relaxed text-ink-2">
-                <Inbox size={14} className="mt-0.5 shrink-0 text-honey-deep" aria-hidden />
-                <span>
-                  {t('register.tipo.buzon')}{' '}
-                  <span className="font-mono text-[11px] text-ink-3">{botUrlTrim || BUZON_BASE}</span>
-                </span>
-              </p>
-            )}
-          </fieldset>
+          {/* Una persona no escribe ninguna URL: recibe en el buzón, a su nombre. */}
+          {tipo === 'persona' && (
+            <p className="mt-1 flex items-start gap-2 rounded-xl border border-line bg-cream px-3.5 py-2.5 text-[0.75rem] leading-relaxed text-ink-2">
+              <Inbox size={14} className="mt-0.5 shrink-0 text-honey-deep" aria-hidden />
+              <span>
+                {tx('tipo.buzon')}{' '}
+                <span className="break-all font-mono text-[11px] text-ink-3">{botUrlTrim || BUZON_BASE}</span>
+              </span>
+            </p>
+          )}
 
           {/* Nombre del agente */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="reg-name" className="text-[0.8125rem] font-medium text-ink-2">
-              {t('register.fields.nameLabel')}
+              {tx('fields.nameLabel')}
             </label>
             <input
               id="reg-name"
@@ -442,19 +418,19 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
               onChange={(e) => setName(e.target.value.replace(/[\r\n]/g, ''))}
               onBlur={() => touch('name')}
               maxLength={60}
-              placeholder={t('register.fields.namePlaceholder')}
+              placeholder={tx('fields.namePlaceholder')}
               aria-invalid={touched.name && !nameValid}
               className={inputClass(touched.name && !nameValid)}
             />
             {touched.name && !nameValid && (
-              <p className="text-[0.75rem] text-terra">{t('register.fields.nameError')}</p>
+              <p className="text-[0.75rem] text-terra">{tx('fields.nameError')}</p>
             )}
           </div>
 
           {/* Qué hace (descripción corta) */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="reg-desc" className="text-[0.8125rem] font-medium text-ink-2">
-              {t('register.fields.descLabel')}
+              {tx('fields.descLabel')}
             </label>
             <textarea
               id="reg-desc"
@@ -463,13 +439,13 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
               onBlur={() => touch('desc')}
               rows={2}
               maxLength={200}
-              placeholder={t('register.fields.descPlaceholder')}
+              placeholder={tx('fields.descPlaceholder')}
               aria-invalid={touched.desc && !descValid}
               className={cn(inputClass(touched.desc && !descValid), 'resize-none')}
             />
             <div className="flex items-center justify-between gap-2">
               {touched.desc && !descValid ? (
-                <p className="text-[0.75rem] text-terra">{t('register.fields.descError')}</p>
+                <p className="text-[0.75rem] text-terra">{tx('fields.descError')}</p>
               ) : (
                 <span />
               )}
@@ -482,7 +458,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
           {/* Skills como chips */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="reg-skill" className="text-[0.8125rem] font-medium text-ink-2">
-              {t('register.fields.skillsLabel')}
+              {tx('fields.skillsLabel')}
             </label>
             <div
               className={cn(
@@ -499,7 +475,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                   <button
                     type="button"
                     onClick={() => removeSkill(skill)}
-                    aria-label={t('register.fields.skillRemoveAria', { skill })}
+                    aria-label={tx('fields.skillRemoveAria', { skill })}
                     className="rounded-full p-0.5 transition-colors hover:text-terra"
                   >
                     <X size={11} />
@@ -517,19 +493,19 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                     setSkillInput('');
                   }
                 }}
-                placeholder={skills.length === 0 ? t('register.fields.skillsPlaceholder') : ''}
+                placeholder={skills.length === 0 ? tx('fields.skillsPlaceholder') : ''}
                 className="min-w-[7rem] flex-1 bg-transparent px-1 py-1 text-[0.8125rem] text-ink placeholder:text-ink-3 focus:outline-none"
               />
             </div>
             {skillError ? (
               <p className="text-[0.75rem] text-terra">
                 {skillError === 'dup'
-                  ? t('register.fields.skillsDupError')
-                  : t('register.fields.skillsMaxError', { max: MAX_SKILLS })}
+                  ? tx('fields.skillsDupError')
+                  : tx('fields.skillsMaxError', { max: MAX_SKILLS })}
               </p>
             ) : (
               <p className="text-[0.75rem] text-ink-3">
-                {t('register.fields.skillsHint', { max: MAX_SKILLS })}
+                {tx('fields.skillsHint', { max: MAX_SKILLS })}
               </p>
             )}
           </div>
@@ -537,7 +513,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
           {/* Precio */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="reg-price" className="text-[0.8125rem] font-medium text-ink-2">
-              {t('register.fields.priceLabel')}
+              {tx('fields.priceLabel')}
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -555,19 +531,25 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                 )}
               />
               <span className="shrink-0 font-mono text-[0.8125rem] text-ink-2">
-                {currency === '$PANAL' ? t('common.tokenTask') : t('common.monTask')}
+                {tipo === 'persona'
+                  ? currency === '$PANAL'
+                    ? tx('tokenTask')
+                    : tx('monTask')
+                  : currency === '$PANAL'
+                    ? t('common.tokenTask')
+                    : t('common.monTask')}
               </span>
             </div>
             {touched.price && !priceValid && (
-              <p className="text-[0.75rem] text-terra">{t('register.fields.priceError')}</p>
+              <p className="text-[0.75rem] text-terra">{tx('fields.priceError')}</p>
             )}
           </div>
 
           {/* Selector de moneda (solo contratos v2 desplegados) */}
           {V2_ENABLED && (
             <div className="flex flex-col gap-2">
-              <span className="text-[0.8125rem] font-medium text-ink-2">{t('register.currencyLabel')}</span>
-              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('register.currencyLabel')}>
+              <span className="text-[0.8125rem] font-medium text-ink-2">{tx('currencyLabel')}</span>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={tx('currencyLabel')}>
                 {(['MON', '$PANAL'] as const).map((c) => (
                   <button
                     key={c}
@@ -582,12 +564,12 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                         : 'border-line text-ink-2 hover:border-honey',
                     )}
                   >
-                    {c === 'MON' ? t('register.currencyNative') : t('register.currencyToken')}
+                    {c === 'MON' ? tx('currencyNative') : tx('currencyToken')}
                   </button>
                 ))}
               </div>
               <p className="text-[0.75rem] leading-relaxed text-ink-3">
-                {currency === '$PANAL' ? t('register.currencyTokenHint') : t('register.currencyNativeHint')}
+                {currency === '$PANAL' ? tx('currencyTokenHint') : tx('currencyNativeHint')}
               </p>
             </div>
           )}
@@ -599,7 +581,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
           */}
           <div className={cn('flex flex-col gap-1.5', tipo === 'persona' && 'hidden')}>
             <label htmlFor="reg-bot-url" className="text-[0.8125rem] font-medium text-ink-2">
-              {t('register.fields.botUrlLabel')}
+              {tx('fields.botUrlLabel')}
             </label>
             <input
               id="reg-bot-url"
@@ -617,7 +599,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
               </p>
             ) : (
               <p className="text-[0.75rem] leading-relaxed text-ink-3">
-                {t('register.fields.botUrlHint')}
+                {tx('fields.botUrlHint')}
               </p>
             )}
           </div>
@@ -637,10 +619,10 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
 
           {/* Preview en vivo del metadata on-chain */}
           <div className="rounded-xl border border-line bg-cream px-4 py-3">
-            <p className="text-[0.75rem] font-medium text-ink-2">{t('register.previewTitle')}</p>
-            <p className="mt-1 break-words font-mono text-[0.8125rem] leading-relaxed text-ink">
+            <p className="text-[0.75rem] font-medium text-ink-2">{tx('previewTitle')}</p>
+            <p className="mt-1 break-all font-mono text-[0.8125rem] leading-relaxed text-ink">
               {resumirFicha(metadataURI) || (
-                <span className="text-ink-3">{t('register.previewEmpty')}</span>
+                <span className="text-ink-3">{tx('previewEmpty')}</span>
               )}
             </p>
           </div>
@@ -648,7 +630,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
           {faltaGas && (
             <p className="flex items-start gap-2 rounded-xl border border-terra/40 bg-terra/10 px-4 py-3 text-[0.8125rem] text-terra">
               <TriangleAlert size={15} className="mt-0.5 shrink-0" />
-              {t('register.faltaGas', {
+              {tx('faltaGas', {
                 reserva: monHaciaArriba(faltaGas.reserva),
                 saldo: formatMon(Number(formatEther(faltaGas.saldo)), 4),
                 falta: monHaciaArriba(faltaGas.falta),
@@ -660,11 +642,11 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
             <p className="flex items-start gap-2 rounded-xl border border-terra/40 bg-terra/10 px-4 py-3 text-[0.8125rem] text-terra">
               <TriangleAlert size={15} className="mt-0.5 shrink-0" />
               {esFaltaDeReserva(writeError)
-                ? t('register.reservaGas')
+                ? tx('reservaGas')
                 : writeError.message.includes('User rejected')
                 ? t('hire.step3.rejected')
                 : writeError.message.includes('already registered')
-                  ? t('register.alreadyRegistered')
+                  ? tx('alreadyRegistered')
                   : writeError.message.includes('does not match the target chain')
                     ? t('wallet.chainMismatch', { network: `${activeChain.name} · ${activeChain.id}` })
                     : writeError.message.split("\n")[0]}
@@ -681,9 +663,9 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
             <div className="flex flex-col items-center gap-3 rounded-xl border border-terra/40 bg-terra/10 px-4 py-4 text-center">
               <TriangleAlert size={20} className="text-terra" aria-hidden />
               <div>
-                <p className="text-[0.875rem] font-semibold text-terra">{t('register.reverted')}</p>
+                <p className="text-[0.875rem] font-semibold text-terra">{tx('reverted')}</p>
                 <p className="mt-1 text-[0.8125rem] leading-relaxed text-ink-2">
-                  {t('register.revertedDesc')}
+                  {tx('revertedDesc')}
                 </p>
               </div>
               <TxHash hash={txHash} className="rounded-full border border-line bg-cream px-4 py-2" />
@@ -735,7 +717,7 @@ function RegisterAgentForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                   className="btn-monad inline-flex flex-1 items-center justify-center gap-2 px-5 py-3 text-[0.875rem] font-semibold disabled:opacity-40"
                 >
                   {(signing || mirandoGas) && <Loader2 size={15} className="animate-spin" aria-hidden />}
-                  {signing ? t('hire.step3.signing') : t('register.submit')}
+                  {signing ? t('hire.step3.signing') : tx('submit')}
                 </button>
               )}
             </div>

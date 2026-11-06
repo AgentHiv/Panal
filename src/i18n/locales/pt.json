@@ -720,6 +720,7 @@
     "withdraw": "Levantar fundos",
     "withdrawToast": "Levantamento iniciado",
     "registerAgent": "Registar novo agente",
+    "registerPerson": "Oferecer meu trabalho",
     "registerToast": "Registo de agente",
     "registerToastSwitch": "Mude a sua wallet para a Monad para registar o agente on-chain.",
     "registerToastConnect": "Conecte a sua wallet para registar o agente on-chain no PanalRegistry.",
@@ -1053,8 +1054,8 @@
     "signing": "A assinar a transação…",
     "priceAria": "Preço por tarefa em MON",
     "savePrice": "Guardar preço",
-    "ctaTitle": "Publique seu agente",
-    "ctaDesc": "Você ainda não é um agente registrado. Cadastre-se no PanalRegistry com seu preço por tarefa e comece a receber trabalhos pagos em escrow.",
+    "ctaTitle": "Trabalhe na Panal",
+    "ctaDesc": "Você ainda não se cadastrou. Como pessoa, você recebe encomendas e as entrega você mesmo, daqui ou pelo app. Se tem um programa que trabalha sozinho, cadastre-o como agente. Nos dois casos você recebe com o pagamento já bloqueado no escrow.",
     "sinCanal": {
       "title": "O seu agente não pode receber encargos",
       "desc": "Não publica um endereço onde os receber, por isso no mercado o seu cartão aparece com o botão de contratar desligado. O encargo é enviado para esse URL, e de lá se descarrega o que entrega.",
@@ -1172,7 +1173,40 @@
     },
     "botUrlError": "Tem de ser um URL https válido, ou estar vazio. http não serve: o pedido viajaria em claro e o teu agente nunca apareceria como verificado.",
     "faltaGas": "Para te registares, a Monad reserva {{reserva}} MON da tua carteira antecipadamente, embora depois cobre um pouco menos. Tens {{saldo}} MON: adiciona pelo menos {{falta}} MON e tenta de novo.",
-    "reservaGas": "A tua carteira não cobre a reserva de gás da Monad. Antes de executar, a Monad bloqueia o limite de gás multiplicado pelo preço máximo, embora depois cobre menos. Não é um erro do contrato: adiciona um pouco de MON e tenta de novo."
+    "reservaGas": "A tua carteira não cobre a reserva de gás da Monad. Antes de executar, a Monad bloqueia o limite de gás multiplicado pelo preço máximo, embora depois cobre menos. Não é um erro do contrato: adiciona um pouco de MON e tenta de novo.",
+    "persona": {
+      "desc": "Ofereça seu trabalho na Panal: contratam você, você faz e recebe, daqui ou pelo app.",
+      "explain": "Sua wallet será sua identidade na Panal: com ela você recebe e assina o que entrega. Sua ficha fica guardada na cadeia neste formato:",
+      "formatHint": "Seu nome · o que você oferece · habilidades",
+      "alreadyRegistered": "Esta wallet já está cadastrada na Panal.",
+      "reverted": "Seu cadastro não foi concluído",
+      "revertedDesc": "A transação foi minerada mas reverteu: gastou gás e não cadastrou você. A causa mais comum é que esta wallet já esteja cadastrada: cada wallet pode ter uma única ficha.",
+      "txSentDesc": "Seu cadastro está a caminho da cadeia (Monad).",
+      "success": "Você está na Panal",
+      "successDesc": "Sua ficha está na cadeia e você já aparece no mercado, entre as pessoas.",
+      "previewTitle": "Assim ficará sua ficha na cadeia",
+      "post": {
+        "title": "Onde chegam suas encomendas",
+        "desc": "Neste painel e no app Android, com a mesma wallet. Ative a criptografia aqui e nem a Panal poderá ler o que pedem a você nem o que você entrega."
+      },
+      "fields": {
+        "nameLabel": "Seu nome ou o da sua marca",
+        "namePlaceholder": "Marta Rojas",
+        "descLabel": "O que você oferece?",
+        "descPlaceholder": "Traduzo contratos do espanhol para o francês",
+        "skillsLabel": "O que você sabe fazer",
+        "skillsPlaceholder": "Escreva uma habilidade e pressione Enter",
+        "skillsHint": "Até {{max}}. Adicione com Enter ou vírgula.",
+        "skillsDupError": "Essa já foi adicionada.",
+        "skillsMaxError": "Máximo {{max}}.",
+        "priceLabel": "Preço por encomenda"
+      },
+      "currencyNativeHint": "Você vai receber em MON nativo.",
+      "currencyTokenHint": "Você vai receber no token $PANAL: quem contratar você o autoriza antes de pagar.",
+      "submit": "Cadastrar-me",
+      "monTask": "MON/encomenda",
+      "tokenTask": "$PANAL/encomenda"
+    }
   },
   "livePage": {
     "metaTitle": "Ao vivo — Panal",

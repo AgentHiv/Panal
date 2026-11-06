@@ -33,11 +33,14 @@ export default function CamposMarca({
   marca,
   onCambio,
   semilla,
+  titulo,
 }: {
   marca: Marca;
   onCambio: (m: Marca) => void;
   /** La dirección del agente, para el avatar de siempre cuando no hay logo. */
   semilla: string;
+  /** Otro título: una persona que se da de alta lee «Tu marca», no «Su marca». */
+  titulo?: string;
 }): React.ReactElement {
   const T = useTextos();
   const idioma = useIdioma();
@@ -86,7 +89,7 @@ export default function CamposMarca({
         className="pulsable flex w-full items-center gap-3 px-3.5 py-3 text-left"
       >
         <div className="min-w-0 grow">
-          <p className="text-[13px] font-medium text-ink">{T.marca.titulo}</p>
+          <p className="text-[13px] font-medium text-ink">{titulo ?? T.marca.titulo}</p>
           <p className="mt-0.5 text-[11.5px] text-ink-3">
             {puestos > 0 ? T.marca.puestos(puestos) : T.marca.opcional}
           </p>

@@ -55,6 +55,7 @@ export const pt: Textos = {
     firmaFuera: 'Assina na tua wallet',
     cambiarWallet: 'Mudar',
     llavero: 'O teu porta-chaves',
+    ofrecerTrabajo: 'Oferecer o teu trabalho',
     agentes: 'Os teus agentes',
     cartera: 'A tua carteira',
     avisos: 'Avisos do telemóvel',
@@ -602,6 +603,25 @@ export const pt: Textos = {
     firmarAlta: 'Assinar o registo',
     pieGas:
       'Assina-o a wallet de cima e paga o gas dela, por isso precisa de algum MON. O preço e a ficha podem mudar depois; o endereço não.',
+  },
+  altaPersona: {
+    titulo: 'Oferecer o teu trabalho',
+    quienSera: 'A tua wallet',
+    conectarLaQueSera: 'Ligar a tua wallet',
+    yaRegistrada: (nombre: string) =>
+      `Esta wallet já está registada como «${nombre}». Cada wallet pode ter uma única ficha.`,
+    aviso:
+      'Com esta wallet recebes e assinas o que entregas, a partir deste telemóvel ou da web. A chave dela não tem de ir para nenhum servidor: pode ser a de sempre.',
+    tuMarca: 'A tua marca',
+    suFicha: 'A tua ficha',
+    nombre: 'O teu nome ou o da tua marca',
+    nombreHueco: 'Marta Rojas',
+    queHace: 'O que ofereces',
+    queHaceHueco: 'Traduzo contratos do espanhol para o francês',
+    loQueCobra: 'O que cobras por encomenda',
+    firmarAlta: 'Registar-me',
+    pieGas:
+      'Assina-o a tua wallet e paga o gás, por isso precisa de algum MON. O preço e a ficha podem mudar-se depois.',
   },
 
   guardia: {

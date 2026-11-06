@@ -55,6 +55,7 @@ export const en: Textos = {
     firmaFuera: 'Signs in your wallet',
     cambiarWallet: 'Switch',
     llavero: 'Your keyring',
+    ofrecerTrabajo: 'Offer your work',
     agentes: 'Your agents',
     cartera: 'Your portfolio',
     avisos: 'Phone notifications',
@@ -602,6 +603,25 @@ export const en: Textos = {
     firmarAlta: 'Sign the registration',
     pieGas:
       'The wallet above signs it and pays its gas, so it needs some MON. The price and the profile can be changed later; the address cannot.',
+  },
+  altaPersona: {
+    titulo: 'Offer your work',
+    quienSera: 'Your wallet',
+    conectarLaQueSera: 'Connect your wallet',
+    yaRegistrada: (nombre: string) =>
+      `This wallet is already signed up as “${nombre}”. Each wallet can have only one profile.`,
+    aviso:
+      'This wallet is how you get paid and how you sign what you deliver, from this phone or from the web. Its key does not have to go to any server: it can be your usual one.',
+    tuMarca: 'Your branding',
+    suFicha: 'Your profile',
+    nombre: "Your name or your brand's",
+    nombreHueco: 'Marta Rojas',
+    queHace: 'What you offer',
+    queHaceHueco: 'I translate contracts from Spanish to French',
+    loQueCobra: 'What you charge per job',
+    firmarAlta: 'Sign me up',
+    pieGas:
+      'Your wallet signs it and pays its gas, so it needs a little MON. The price and the profile can be changed later.',
   },
 
   guardia: {

@@ -720,6 +720,7 @@
     "withdraw": "Retirar fondos",
     "withdrawToast": "Retiro iniciado",
     "registerAgent": "Registrar nuevo agente",
+    "registerPerson": "Ofrecer mi trabajo",
     "registerToast": "Registro de agente",
     "registerToastSwitch": "Cambia tu wallet a Monad para registrar el agente on-chain.",
     "registerToastConnect": "Conecta tu wallet para registrar el agente on-chain en PanalRegistry.",
@@ -1053,8 +1054,8 @@
     "signing": "Firmando transacción…",
     "priceAria": "Precio por tarea en MON",
     "savePrice": "Guardar precio",
-    "ctaTitle": "Publica tu agente",
-    "ctaDesc": "Aún no eres agente registrado. Date de alta en PanalRegistry con tu precio por tarea y empieza a recibir trabajos con pago en escrow.",
+    "ctaTitle": "Trabaja en Panal",
+    "ctaDesc": "Todavía no estás dado de alta. Como persona, recibes encargos y los entregas tú, desde aquí o desde la app. Si tienes un programa que trabaja solo, regístralo como agente. En los dos casos cobras con el pago ya bloqueado en el escrow.",
     "sinCanal": {
       "title": "Tu agente no puede recibir encargos",
       "desc": "No publicas una dirección donde recibirlos, así que en el mercado tu ficha sale con el botón de contratar apagado. El encargo se manda a esa URL y de ahí se descarga lo que entregas.",
@@ -1172,7 +1173,40 @@
     },
     "botUrlError": "Debe ser una URL https válida o estar vacío. http no vale: el encargo viajaría en claro y tu agente nunca saldría verificado.",
     "faltaGas": "Para darte de alta, Monad reserva {{reserva}} MON de tu wallet por adelantado, aunque luego cobre algo menos. Tienes {{saldo}} MON: añade al menos {{falta}} MON y vuelve a intentarlo.",
-    "reservaGas": "Tu wallet no cubre la reserva de gas de Monad. Antes de ejecutar, Monad bloquea el límite de gas multiplicado por el precio máximo, aunque luego cobre menos. No es un fallo del contrato: añade un poco de MON y vuelve a intentarlo."
+    "reservaGas": "Tu wallet no cubre la reserva de gas de Monad. Antes de ejecutar, Monad bloquea el límite de gas multiplicado por el precio máximo, aunque luego cobre menos. No es un fallo del contrato: añade un poco de MON y vuelve a intentarlo.",
+    "persona": {
+      "desc": "Ofrece tu trabajo en Panal: te contratan, lo haces y cobras, desde aquí o desde la app.",
+      "explain": "Tu wallet será tu identidad en Panal: con ella cobras y firmas lo que entregas. Tu ficha queda guardada en la cadena con este formato:",
+      "formatHint": "Tu nombre · lo que ofreces · habilidades",
+      "alreadyRegistered": "Esta wallet ya está dada de alta en Panal.",
+      "reverted": "No se completó tu alta",
+      "revertedDesc": "La transacción se minó pero revirtió: gastó gas y no te dio de alta. La causa más habitual es que esta wallet ya esté dada de alta: cada wallet puede tener una sola ficha.",
+      "txSentDesc": "Tu alta va camino de la cadena (Monad).",
+      "success": "Ya estás en Panal",
+      "successDesc": "Tu ficha está en la cadena y ya sales en el mercado, entre las personas.",
+      "previewTitle": "Así se verá tu ficha en la cadena",
+      "post": {
+        "title": "Dónde te llegan los encargos",
+        "desc": "En este panel y en la app de Android, con la misma wallet. Activa el cifrado aquí y ni Panal podrá leer lo que te piden ni lo que entregas."
+      },
+      "fields": {
+        "nameLabel": "Tu nombre o el de tu marca",
+        "namePlaceholder": "Marta Rojas",
+        "descLabel": "¿Qué ofreces?",
+        "descPlaceholder": "Traduzco contratos del español al francés",
+        "skillsLabel": "Lo que sabes hacer",
+        "skillsPlaceholder": "Escribe una habilidad y pulsa Enter",
+        "skillsHint": "Hasta {{max}}. Añade con Enter o coma.",
+        "skillsDupError": "Esa ya está añadida.",
+        "skillsMaxError": "Máximo {{max}}.",
+        "priceLabel": "Precio por encargo"
+      },
+      "currencyNativeHint": "Te pagarán en MON nativo.",
+      "currencyTokenHint": "Te pagarán en el token $PANAL: quien te contrate lo autoriza antes de pagar.",
+      "submit": "Darme de alta",
+      "monTask": "MON/encargo",
+      "tokenTask": "$PANAL/encargo"
+    }
   },
   "livePage": {
     "metaTitle": "En Vivo — Panal",
