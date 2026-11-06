@@ -113,6 +113,11 @@ export interface BotConfig {
   buzonRetencionDias: number;
   /** La URL pública del buzón, la que los agentes escriben en su ficha. */
   buzonPublicUrl: string;
+  /**
+   * Dónde escucha ClamAV para el buzón (`unix:/ruta` o `tcp:host:puerto`), o
+   * null. Ver antivirus.ts.
+   */
+  clamd: string | null;
   /** Directorio del índice (events.jsonl + state.json). Solo modo indexer. */
   indexDir: string;
   /** Intervalo del poll incremental del indexador (ms). */
@@ -361,6 +366,7 @@ export function loadConfig(): BotConfig {
     buzonDir: env('BUZON_DIR') ?? './data/buzon',
     buzonRetencionDias: envInt('BUZON_RETENCION_DIAS', 30, 1),
     buzonPublicUrl: env('BUZON_PUBLIC_URL') ?? 'https://api.panal.lat/buzon',
+    clamd: env('CLAMD') ?? null,
     indexDir: env('INDEX_DIR') ?? './data/index',
     indexPollIntervalMs: envInt('INDEX_POLL_INTERVAL_MS', 15_000, 5_000),
     // Barrido hacia atrás: presupuesto diario de ventanas (cada ventana = 2

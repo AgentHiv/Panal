@@ -354,6 +354,13 @@ jobs:
         env:
           DRY_RUN: 'true'
 
+      # Con un clamd de mentira que habla el mismo protocolo: el buzón no
+      # guarda lo que ClamAV encuentra, no le pregunta por lo cifrado y, si
+      # ClamAV no contesta, guarda igual.
+      - name: Antivirus del buzon (ClamAV rechaza lo conocido y no tumba nada)
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-antivirus.ts
+
       - name: A2A (subcontratación, rechazo por calidad, timeout, $PANAL, topes)
         working-directory: bot
         run: pnpm exec tsx scripts/test-a2a.ts

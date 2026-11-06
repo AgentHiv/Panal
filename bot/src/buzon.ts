@@ -92,6 +92,7 @@ import {
 import { MAX_BRIEF_CHARS, parseMetadataURI, type AgentJson } from './http.js';
 import type { BotConfig } from './config.js';
 import { MAX_ARCHIVO_BYTES, type AccesoGuardado, type BuzonStore } from './buzon-store.js';
+import { antivirusDeClamd, comprobarClamd, esArchivoCifrado, type Antivirus } from './antivirus.js';
 
 /* ── lo que se firma ──────────────────────────────────────────────────────
  *
@@ -478,6 +479,11 @@ export interface BuzonDeps {
    * esto, las rutas de disputa no existen.
    */
   fetchArbitros?: () => Promise<Address[]>;
+  /**
+   * ClamAV (ver antivirus.ts). Con él, un archivo que es malware conocido no
+   * se guarda: quien lo sube recibe un 422. Sin él, se guarda todo como antes.
+   */
+  antivirus?: Antivirus;
 }
 
 /**
@@ -494,6 +500,28 @@ function partes(pathname: string): { agente: Address; resto: string } | null {
 }
 
 export function createBuzonServer(deps: BuzonDeps): Server {
+  /**
+   * El antivirus, antes de guardar un archivo. Si es malware conocido contesta
+   * él (422, con la firma) y devuelve false. Lo cifrado no lo puede mirar y
+   * pasa; si ClamAV no contesta, también pasa, y se dice en el registro como
+   * mucho cada diez minutos. Ver antivirus.ts.
+   */
+  let ultimoAvisoSinAntivirus = 0;
+  const pasaElAntivirus = async (bytes: Uint8Array, res: ServerResponse, que: string): Promise<boolean> => {
+    if (!deps.antivirus || esArchivoCifrado(bytes)) return true;
+    const r = await deps.antivirus.revisar(bytes);
+    if (r.estado === 'infectado') {
+      console.warn(`[buzon] ANTIVIRUS: rechazado ${que}: ${r.firma}`);
+      json(res, 422, { error: `malware detected: ${r.firma}`, firma: r.firma });
+      return false;
+    }
+    if (r.estado === 'sin-revisar' && Date.now() - ultimoAvisoSinAntivirus > 10 * 60_000) {
+      ultimoAvisoSinAntivirus = Date.now();
+      console.warn(`[buzon] el antivirus no contesta (${r.porque}): los archivos se guardan sin revisar`);
+    }
+    return true;
+  };
+
   const maxUrlLength = deps.maxUrlLength ?? 2_048;
 
   /**
@@ -1172,6 +1200,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       return;
     }
 
+    if (!(await pasaElAntivirus(bytes, res, `«${nombre}» de ${de} en #${taskId}`))) return;
     const mime = (req.headers['content-type'] as string | undefined) ?? undefined;
     const guardado = deps.store.guardarArchivo(
       agente,
@@ -1237,6 +1266,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       json(res, 429, { error: 'daily quota exceeded' });
       return;
     }
+    if (!(await pasaElAntivirus(bytes, res, `archivo de consulta de ${de} para ${para}`))) return;
     const mime = (req.headers['content-type'] as string | undefined) ?? undefined;
     const guardado = deps.store.guardarArchivoDeConsulta(
       para,
@@ -1677,6 +1707,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       }
     }
 
+    if (!(await pasaElAntivirus(bytes, res, `«${nombre}» de ${de} en el #${jobId} del tablón`))) return;
     const mime = (req.headers['content-type'] as string | undefined) ?? undefined;
     const guardado = deps.store.guardarArchivo(
       tablon,
@@ -2118,9 +2149,21 @@ export function startBuzonServer(cfg: BotConfig, clients: ChainClients, store: B
     tablon: cfg.tablonAddress,
     fetchJob: cfg.tablonAddress ? (jobId) => getTablonJob(clients, cfg.tablonAddress!, jobId) : undefined,
     fetchArbitros: arbitrosConCache(() => getArbitros(clients, cfg)),
+    antivirus: cfg.clamd ? antivirusDeClamd(cfg.clamd) : undefined,
   });
   escuchar(server, cfg.buzonHttpPort, cfg.bindHost, () => {
     console.log(`   Buzón: http://localhost:${cfg.buzonHttpPort}/buzon/<agente>/{agent.json,brief,result,encargo,entrega}`);
   });
+  if (cfg.clamd) {
+    void comprobarClamd(cfg.clamd).then((ok) =>
+      console.log(
+        ok
+          ? `   Antivirus: ClamAV en ${cfg.clamd}`
+          : `   Antivirus: ClamAV NO contesta en ${cfg.clamd}; los archivos se guardarán sin revisar hasta que lo haga`,
+      ),
+    );
+  } else {
+    console.log('   Antivirus: apagado (sin CLAMD)');
+  }
   return server;
 }
