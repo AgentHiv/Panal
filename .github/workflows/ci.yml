@@ -166,6 +166,12 @@ jobs:
       - name: Lo que cierra el MCP remoto lo abre la web, y solo con su clave
         run: pnpm exec tsx scripts/test-borrador.ts
 
+      # El protocolo de las pruebas de una disputa está en el SDK y copiado en el
+      # buzón, que no depende del SDK. Si una copia firmara distinto, el buzón
+      # rechazaría todas las pruebas con «bad signature».
+      - name: Las pruebas de una disputa se firman igual en el SDK y en el buzón
+        run: pnpm exec tsx scripts/test-pruebas-formato.ts
+
       - name: Build de produccion
         run: pnpm exec vite build
 
@@ -378,6 +384,10 @@ jobs:
       - name: Conversacion del encargo (solo las dos partes, solo con el encargo vivo)
         working-directory: bot
         run: pnpm exec tsx scripts/test-conversacion.ts
+
+      - name: Pruebas de una disputa (firmadas, con plazo, solo las partes y los jueces)
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-pruebas.ts
 
       - name: A2A (subcontratación, rechazo por calidad, timeout, $PANAL, topes)
         working-directory: bot

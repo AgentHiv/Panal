@@ -88,7 +88,38 @@ export interface Encargo {
   mensajes?: MensajeGuardado[];
   /** Los archivos de esa conversación. Aparte de los del encargo: no gastan su cupo. */
   archivosDelChat?: ArchivoGuardado[];
+  /**
+   * Las pruebas de una disputa: el motivo, lo que aporta cada parte y su
+   * respuesta (`sdk/src/pruebas.ts`). Cada pieza va firmada por su autor sobre
+   * su contenido; si va cifrada, el buzón guarda el sobre.
+   */
+  pruebas?: PiezaGuardada[];
+  /** Los archivos de esas pruebas, aparte de los del encargo y los del chat. */
+  archivosDePruebas?: ArchivoGuardado[];
 }
+
+export interface PiezaGuardada {
+  de: 'cliente' | 'trabajador';
+  /** La dirección que firmó, con su checksum. */
+  autor: string;
+  /** El texto, o el sobre cifrado. */
+  texto: string;
+  /** Archivos ya subidos a `archivosDePruebas`, por su hash y su tamaño. */
+  archivos: { hash: string; size: number }[];
+  /** keccak256 del contenido (`contenidoDePieza`): lo que firmó, y con lo que se ven las repetidas. */
+  contenido: string;
+  /** La fecha que firmó el autor, ISO 8601 en UTC. */
+  fecha: string;
+  firma: string;
+  /** Cuándo llegó aquí. */
+  recibida: number;
+}
+
+/** Piezas por parte en una disputa (`sdk/src/pruebas.ts`, MAX_PIEZAS_POR_PARTE). */
+export const MAX_PIEZAS_POR_PARTE = 20;
+/** Archivos de las pruebas de una disputa, y lo que pueden ocupar entre todos. */
+export const MAX_ARCHIVOS_DE_PRUEBAS = 40;
+export const MAX_BYTES_DE_PRUEBAS = 100 * 1024 * 1024;
 
 export interface MensajeGuardado {
   de: 'cliente' | 'trabajador';
@@ -550,6 +581,75 @@ export class BuzonStore {
     const carpeta = this.carpetaArchivos(agente, taskId);
     if (!carpeta) return null;
     const archivo = (this.leer(agente, taskId)?.archivosDelChat ?? []).find((a) => a.hash === hash.toLowerCase());
+    if (!archivo || !HASH.test(archivo.hash)) return null;
+    try {
+      return { archivo, bytes: readFileSync(join(carpeta, `${nombreEnDisco(archivo.hash)}.bin`)) };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Añade una pieza a las pruebas de una disputa. `lleno` si esa parte ya
+   * aportó todas las que caben; `repetida` si es el mismo contenido otra vez.
+   */
+  guardarPieza(agente: string, taskId: bigint, pieza: PiezaGuardada): 'ok' | 'lleno' | 'repetida' | 'clave' {
+    let r: 'ok' | 'lleno' | 'repetida' = 'ok';
+    const ok = this.escribir(agente, taskId, (p) => {
+      const piezas = p.pruebas ?? [];
+      if (piezas.some((x) => x.contenido === pieza.contenido || x.firma.toLowerCase() === pieza.firma.toLowerCase())) {
+        r = 'repetida';
+        return p;
+      }
+      if (piezas.filter((x) => x.de === pieza.de).length >= MAX_PIEZAS_POR_PARTE) {
+        r = 'lleno';
+        return p;
+      }
+      return { ...p, pruebas: [...piezas, pieza] };
+    });
+    return ok ? r : 'clave';
+  }
+
+  /** Las pruebas de una disputa, en el orden en que llegaron. */
+  leerPiezas(agente: string, taskId: bigint): PiezaGuardada[] {
+    return this.leer(agente, taskId)?.pruebas ?? [];
+  }
+
+  /** Un archivo de las pruebas. Por su hash, como los demás; aparte en el índice. */
+  guardarArchivoDePruebas(
+    agente: string,
+    taskId: bigint,
+    nombre: string,
+    bytes: Uint8Array,
+    de: 'cliente' | 'trabajador',
+    mime?: string,
+  ): { hash: string } | { error: 'clave' | 'grande' | 'demasiados' | 'lleno' } {
+    const carpeta = this.carpetaArchivos(agente, taskId);
+    if (!carpeta || !nombre) return { error: 'clave' };
+    if (bytes.byteLength > MAX_ARCHIVO_BYTES) return { error: 'grande' };
+    const hash = keccak256(bytes).toLowerCase();
+    const previos = this.leer(agente, taskId)?.archivosDePruebas ?? [];
+    if (!previos.some((a) => a.hash === hash)) {
+      if (previos.length >= MAX_ARCHIVOS_DE_PRUEBAS) return { error: 'demasiados' };
+      if (previos.reduce((n, a) => n + a.size, 0) + bytes.byteLength > MAX_BYTES_DE_PRUEBAS) return { error: 'lleno' };
+    }
+    mkdirSync(carpeta, { recursive: true });
+    const destino = join(carpeta, `${nombreEnDisco(hash)}.bin`);
+    writeFileSync(`${destino}.tmp`, bytes);
+    renameSync(`${destino}.tmp`, destino);
+    const entrada: ArchivoGuardado = { name: nombre, hash, size: bytes.byteLength, ...(mime ? { mime } : {}), de, ts: Date.now() };
+    this.escribir(agente, taskId, (p) => ({
+      ...p,
+      archivosDePruebas: [...(p.archivosDePruebas ?? []).filter((a) => a.hash !== hash), entrada],
+    }));
+    return { hash };
+  }
+
+  /** Los bytes de un archivo de las pruebas, por su hash, o null. */
+  leerArchivoDePruebas(agente: string, taskId: bigint, hash: string): { archivo: ArchivoGuardado; bytes: Buffer } | null {
+    const carpeta = this.carpetaArchivos(agente, taskId);
+    if (!carpeta) return null;
+    const archivo = (this.leer(agente, taskId)?.archivosDePruebas ?? []).find((a) => a.hash === hash.toLowerCase());
     if (!archivo || !HASH.test(archivo.hash)) return null;
     try {
       return { archivo, bytes: readFileSync(join(carpeta, `${nombreEnDisco(archivo.hash)}.bin`)) };
