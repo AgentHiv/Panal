@@ -103,10 +103,20 @@ const REGISTRY_MAX = 500;
 /** Timeout de las llamadas al indexador. */
 const INDEX_TIMEOUT_MS = 8_000;
 
+/**
+ * El RPC público corta con 429 cuando le llegan muchas lecturas de golpe, y
+ * una búsqueda lee la ficha de cada agente. viem reintenta los 429 con espera
+ * exponencial (o la que diga `Retry-After`), pero con su base de 150 ms los
+ * tres reintentos de serie caben en un segundo y no salen de la ventana del
+ * límite. Con 500 ms y seis, la última espera ronda los 16 s.
+ */
 const publicClient = createPublicClient({
   chain: monad,
-  transport: http(RPC_URL),
+  transport: http(RPC_URL, { retryCount: 6, retryDelay: 500 }),
 });
+
+/** Fichas leídas a la vez: con todas de golpe, el RPC público responde 429. */
+const LECTURAS_A_LA_VEZ = 5;
 
 /** Traza al canal correcto: stderr. stdout está reservado al protocolo. */
 function log(msg: string): void {
@@ -242,25 +252,27 @@ async function readAllAgents(): Promise<OnChainAgent[]> {
     if (page.length < REGISTRY_PAGE) break;
   }
 
-  const agents = await Promise.all(
-    addresses.map(async (address) => {
-      const a = (await publicClient.readContract({
-        address: REGISTRY_ADDRESS,
-        abi: registryAbi,
-        functionName: 'getAgent',
-        args: [address],
-      })) as {
-        owner: Address;
-        metadataURI: string;
-        pricePerTask: bigint;
-        active: boolean;
-        registeredAt: bigint;
-        currency: Address;
-      };
-      return { address, ...a } satisfies OnChainAgent;
-    }),
-  );
+  const leer = async (address: Address): Promise<OnChainAgent> => {
+    const a = (await publicClient.readContract({
+      address: REGISTRY_ADDRESS,
+      abi: registryAbi,
+      functionName: 'getAgent',
+      args: [address],
+    })) as {
+      owner: Address;
+      metadataURI: string;
+      pricePerTask: bigint;
+      active: boolean;
+      registeredAt: bigint;
+      currency: Address;
+    };
+    return { address, ...a };
+  };
 
+  const agents: OnChainAgent[] = [];
+  for (let i = 0; i < addresses.length; i += LECTURAS_A_LA_VEZ) {
+    agents.push(...(await Promise.all(addresses.slice(i, i + LECTURAS_A_LA_VEZ).map(leer))));
+  }
   return agents;
 }
 
