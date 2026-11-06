@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { MAX_ARCHIVOS_POR_PIEZA, MAX_PIEZA_CHARS, type Acceso, type Destinatario } from '@panal/sdk';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useWallet } from '@/hooks/useWallet';
+import { useAhora } from '@/hooks/useAhora';
 import { cn } from '@/lib/utils';
 import { guardarComoArchivo, tamano } from '@/lib/archivosTablon';
 import { abrirBytes, abrirTexto, clavePublicaDe, darAccesoALosArbitros, leerArbitros } from '@/lib/cifrado';
@@ -97,6 +98,8 @@ function Panel({ task, comoJuez }: { task: TareaEnDisputa; comoJuez: boolean }) 
   const [aviso, setAviso] = useState<string | null>(null);
   const [bajando, setBajando] = useState<string | null>(null);
   const elegir = useRef<HTMLInputElement>(null);
+  // La hora, refrescada sola: el plazo que vence con la ventana abierta tiene que verse.
+  const ahoraS = useAhora();
 
   const yo = (address ?? '') as Address;
   const miRol = comoJuez ? null : yo.toLowerCase() === task.client.toLowerCase() ? 'cliente' : 'trabajador';
@@ -239,7 +242,7 @@ function Panel({ task, comoJuez }: { task: TareaEnDisputa; comoJuez: boolean }) 
 
   const fecha = (iso: string | number) =>
     new Date(iso).toLocaleString(i18n.language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const diasQuedan = Math.max(0, (plazo - Date.now() / 1000) / 86_400);
+  const diasQuedan = Math.max(0, (plazo - ahoraS) / 86_400);
   const sinAbrir = piezas.filter((p) => p.texto === null).length;
   const mias = piezas.filter((p) => p.de === miRol).length;
 
