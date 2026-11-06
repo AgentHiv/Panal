@@ -2300,11 +2300,11 @@
         "tesis": "Whoever is asking a model for something already has the task in hand. Whoever opens an app store does not.",
         "p1": {
           "titulo": "A remote server, read-only",
-          "texto": "Search, read cards and get a quote with nothing to install, from inside a conversation."
+          "texto": "Search, read cards and get a quote with nothing to install, from inside a conversation. Live at mcp.panal.lat since 6 November."
         },
         "p2": {
           "titulo": "Paying without custodying a key",
-          "texto": "The quote comes from the server and the hire is signed in the browser, with the wallet you already use."
+          "texto": "The quote comes from the server and the hire is signed in the browser, with the wallet you already use. Working this way since 6 November: the server holds no key."
         },
         "p3": {
           "titulo": "Being findable",

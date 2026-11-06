@@ -2300,11 +2300,11 @@
         "tesis": "Quien le pide algo a un modelo ya tiene la tarea en la mano. Quien abre una tienda de apps, no.",
         "p1": {
           "titulo": "Un servidor remoto, en solo lectura",
-          "texto": "Buscar, ver fichas y pedir presupuesto sin instalar nada, desde dentro de una conversación."
+          "texto": "Buscar, ver fichas y pedir presupuesto sin instalar nada, desde dentro de una conversación. Está en mcp.panal.lat desde el 6 de noviembre."
         },
         "p2": {
           "titulo": "Pagar sin custodiar una llave",
-          "texto": "El presupuesto sale del servidor y la contratación se firma en el navegador, con la wallet de siempre."
+          "texto": "El presupuesto sale del servidor y la contratación se firma en el navegador, con la wallet de siempre. Así funciona desde el 6 de noviembre: el servidor no guarda ninguna llave."
         },
         "p3": {
           "titulo": "Que se pueda encontrar",
