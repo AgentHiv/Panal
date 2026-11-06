@@ -31,6 +31,11 @@
  *     POST /buzon/:agente/conversacion/:taskId            un mensaje (con el dinero bloqueado)
  *     POST /buzon/:agente/conversacion-archivo/:taskId    un archivo para un mensaje
  *     GET  /buzon/:agente/conversacion-archivo/:taskId/:hash  se lleva uno
+ *   Las pruebas de una disputa (las dos partes aportan; las dos y los jueces leen):
+ *     GET  /buzon/:agente/pruebas/:taskId                  el expediente y su plazo
+ *     POST /buzon/:agente/pruebas/:taskId                  una pieza, firmada por su autor
+ *     POST /buzon/:agente/pruebas-archivo/:taskId          un archivo para una pieza
+ *     GET  /buzon/:agente/pruebas-archivo/:taskId/:hash    se lleva uno
  *
  *   El tablón con reglas (PanalTablon), bajo SU dirección y por número de
  *   encargo, no de tarea (ver `tablonConReglas` más abajo):
@@ -84,6 +89,7 @@ import {
   getRegistryAgent,
   esRevert,
   getArbitros,
+  getDisputedAt,
   getTablonJob,
   getTask,
   monad,
@@ -143,6 +149,37 @@ export function entregaSignMessage(taskId: bigint, expira: number): string {
  */
 export function conversacionSignMessage(taskId: bigint, expira: number): string {
   return `Panal conversación #${taskId.toString()} · ${expira}`;
+}
+
+/*
+ * Las pruebas de una disputa (`sdk/src/pruebas.ts`). Copiadas letra a letra:
+ * `scripts/test-pruebas-formato.ts` (en la raíz) comprueba que dicen lo mismo que el SDK, porque si
+ * la firma de una pieza se calculara distinto aquí y en la web, el buzón
+ * rechazaría todas las pruebas sin que nadie supiera por qué.
+ */
+export const PLAZO_DE_PRUEBAS_DIAS = 7;
+export const MAX_PIEZA_CHARS = 8_000;
+/** Cifrada va para hasta cinco cuentas —las dos partes y tres jueces—: el sobre crece. */
+const MAX_SOBRE_PIEZA_CHARS = MAX_PIEZA_CHARS * 6 + 8_000;
+const MAX_PIEZA_BODY_BYTES = MAX_SOBRE_PIEZA_CHARS * 4 + 8_000;
+export const MAX_ARCHIVOS_POR_PIEZA = 5;
+export const MARGEN_FECHA_MS = 10 * 60_000;
+
+export function pruebasSignMessage(taskId: bigint, expira: number): string {
+  return `Panal pruebas #${taskId.toString()} · ${expira}`;
+}
+
+export function contenidoDePieza(texto: string, archivos: { hash: string; size: number }[]): Hex {
+  const canonico = JSON.stringify({
+    v: 1,
+    texto,
+    archivos: archivos.map((a) => ({ hash: a.hash.toLowerCase(), size: a.size })),
+  });
+  return keccak256(toBytes(canonico));
+}
+
+export function piezaSignMessage(taskId: bigint, contenido: Hex, fecha: string): string {
+  return ['Panal · pieza de una disputa', `Tarea: #${taskId.toString()}`, `Contenido: ${contenido.toLowerCase()}`, `Fecha: ${fecha}`].join('\n');
 }
 
 /*
@@ -475,6 +512,12 @@ export interface BuzonDeps {
   store: BuzonStore;
   /** Lectura de la tarea on-chain (inyectable en las pruebas). */
   fetchTask: (taskId: bigint) => Promise<Task>;
+  /**
+   * Cuándo se abrió la disputa de una tarea (`disputedAt` del escrow, en
+   * segundos; 0 si nunca). De ahí sale el plazo de las pruebas. Sin esto, las
+   * rutas de las pruebas no existen.
+   */
+  fetchDisputedAt?: (taskId: bigint) => Promise<bigint>;
   /** Lectura de la ficha del agente en el registro (inyectable). */
   fetchAgent: (agente: Address) => Promise<RegistryAgent>;
   /** Direcciones de los contratos, para la ficha. */
@@ -2172,6 +2215,252 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     res.end(guardado.bytes);
   };
 
+  // ---- Las pruebas de una disputa -----------------------------------------
+  //
+  // El expediente que la cadena no guarda: el motivo de quien abre la disputa,
+  // lo que aporta cada parte y su respuesta (`sdk/src/pruebas.ts`). Aportan
+  // las dos partes, solo con la tarea en disputa y dentro del plazo —siete días
+  // desde el `disputedAt` del escrow—; leen las dos partes y, mientras dure la
+  // disputa, los jueces. Cada pieza va firmada por su autor sobre su contenido
+  // y su fecha, y si va cifrada aquí solo hay sobres.
+
+  /** Quién lee o sube, con su firma de sesión comprobada, o null (y ya se ha contestado). */
+  const quienEnPruebas = async (
+    agente: Address,
+    taskId: bigint,
+    url: URL,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<{ task: Task; cuenta: Address; rol: 'cliente' | 'trabajador' | 'juez' } | null> => {
+    if (agente === TABLON) {
+      // Las disputas del tablón tienen otras partes (las del encargo del
+      // tablón, no las de la tarea del escrow). Llegarán aparte.
+      json(res, 404, { error: 'not here' });
+      return null;
+    }
+    const c = credenciales(req, url);
+    if (!isAddress(c.address) || !isHex(c.signature)) {
+      json(res, 400, { error: 'bad credentials' });
+      return null;
+    }
+    const cuenta = getAddress(c.address);
+    if (!(await firmaVigente(cuenta, c.signature as Hex, c.expira, (e) => pruebasSignMessage(taskId, e)))) {
+      json(res, 403, { error: 'bad signature' });
+      return null;
+    }
+    const task = await tareaDe(agente, taskId, res);
+    if (!task) return null;
+    const yo = cuenta.toLowerCase();
+    if (yo === task.client.toLowerCase()) return { task, cuenta, rol: 'cliente' };
+    if (yo === task.worker.toLowerCase()) return { task, cuenta, rol: 'trabajador' };
+    // Un juez solo mientras la disputa siga abierta: no tiene por qué leer
+    // expedientes que nadie le ha traído.
+    if (task.status === TaskStatus.Disputed && (await arbitros()).includes(yo)) return { task, cuenta, rol: 'juez' };
+    json(res, 403, { error: 'not a party' });
+    return null;
+  };
+
+  /** Hasta cuándo se aportan pruebas (segundos), o null si no se pudo leer. */
+  const plazoDe = async (taskId: bigint): Promise<number | null> => {
+    if (!deps.fetchDisputedAt) return null;
+    try {
+      const abierta = await deps.fetchDisputedAt(taskId);
+      return abierta > 0n ? Number(abierta) + PLAZO_DE_PRUEBAS_DIAS * 86_400 : 0;
+    } catch (err) {
+      console.warn(`[buzon] no se pudo leer disputedAt(${taskId}): ${err instanceof Error ? err.message.split('\n')[0] : err}`);
+      return null;
+    }
+  };
+
+  const dentroDelPlazo = (task: Task, plazo: number | null) =>
+    task.status === TaskStatus.Disputed && plazo !== null && plazo > 0 && Date.now() / 1000 <= plazo;
+
+  // GET /pruebas/:taskId — el expediente, su plazo y los accesos de quien lee.
+  const darPruebas = async (agente: Address, taskId: bigint, url: URL, req: IncomingMessage, res: ServerResponse) => {
+    const quien = await quienEnPruebas(agente, taskId, url, req, res);
+    if (!quien) return;
+    const plazo = await plazoDe(taskId);
+    json(res, 200, {
+      piezas: deps.store.leerPiezas(agente, taskId),
+      plazo: plazo ?? 0,
+      abierto: dentroDelPlazo(quien.task, plazo),
+      accesos: accesosDe(agente, taskId, quien.cuenta),
+    });
+  };
+
+  // POST /pruebas/:taskId — una pieza, con los archivos que ya subió y su firma.
+  const recibirPieza = async (agente: Address, taskId: bigint, req: IncomingMessage, res: ServerResponse) => {
+    if (agente === TABLON) {
+      json(res, 404, { error: 'not here' });
+      return;
+    }
+    const raw = await readBody(req, MAX_PIEZA_BODY_BYTES);
+    if (raw === null) {
+      json(res, 413, { error: 'body too large' });
+      return;
+    }
+    let cuerpo: Record<string, unknown>;
+    try {
+      cuerpo = JSON.parse(raw || '{}') as Record<string, unknown>;
+    } catch {
+      json(res, 400, { error: 'bad json' });
+      return;
+    }
+    if (typeof cuerpo.address !== 'string' || !isAddress(cuerpo.address) || typeof cuerpo.firma !== 'string' || !isHex(cuerpo.firma)) {
+      json(res, 400, { error: 'bad credentials' });
+      return;
+    }
+    const autor = getAddress(cuerpo.address);
+    const texto = typeof cuerpo.texto === 'string' ? cuerpo.texto : '';
+    if (texto.trim().length === 0 || texto.length > topeDe(texto, MAX_PIEZA_CHARS, MAX_SOBRE_PIEZA_CHARS)) {
+      json(res, 400, { error: `texto requerido, máx. ${MAX_PIEZA_CHARS} caracteres` });
+      return;
+    }
+    // La fecha la pone quien firma, y tiene que ser ahora: ni una pieza
+    // antedatada para parecer anterior a otra, ni una con fecha futura.
+    const fecha = typeof cuerpo.fecha === 'string' ? cuerpo.fecha : '';
+    const enMs = Date.parse(fecha);
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/.test(fecha) || !Number.isFinite(enMs) || Math.abs(Date.now() - enMs) > MARGEN_FECHA_MS) {
+      json(res, 400, { error: 'bad date' });
+      return;
+    }
+    const task = await tareaDe(agente, taskId, res);
+    if (!task) return;
+    const yo = autor.toLowerCase();
+    const de = yo === task.client.toLowerCase() ? 'cliente' : yo === task.worker.toLowerCase() ? 'trabajador' : null;
+    if (!de) {
+      json(res, 403, { error: 'not a party' });
+      return;
+    }
+    const plazo = await plazoDe(taskId);
+    if (plazo === null) {
+      json(res, 502, { error: 'rpc error' });
+      return;
+    }
+    if (!dentroDelPlazo(task, plazo)) {
+      json(res, 409, { error: task.status === TaskStatus.Disputed ? 'evidence period over' : 'not disputed' });
+      return;
+    }
+    // Los archivos se suben antes, y aquí solo se nombran: tienen que estar.
+    const subidos = deps.store.leer(agente, taskId)?.archivosDePruebas ?? [];
+    const pedidos = Array.isArray(cuerpo.archivos) ? cuerpo.archivos.slice(0, MAX_ARCHIVOS_POR_PIEZA + 1) : [];
+    if (pedidos.length > MAX_ARCHIVOS_POR_PIEZA) {
+      json(res, 400, { error: `máx. ${MAX_ARCHIVOS_POR_PIEZA} archivos por pieza` });
+      return;
+    }
+    const archivos: { hash: string; size: number }[] = [];
+    for (const a of pedidos) {
+      const hash = typeof (a as { hash?: unknown }).hash === 'string' ? (a as { hash: string }).hash.toLowerCase() : '';
+      const subido = subidos.find((x) => x.hash === hash);
+      if (!subido) {
+        json(res, 409, { error: 'file not uploaded' });
+        return;
+      }
+      archivos.push({ hash: subido.hash, size: subido.size });
+    }
+    // La firma es sobre lo que se guarda: el texto tal cual y los archivos
+    // como se subieron. Así cualquiera —un juez— puede volver a comprobarla.
+    const contenido = contenidoDePieza(texto, archivos);
+    let firmaOk = false;
+    try {
+      firmaOk = await verifyMessage({ address: autor, message: piezaSignMessage(taskId, contenido, fecha), signature: cuerpo.firma as Hex });
+    } catch {
+      firmaOk = false;
+    }
+    if (!firmaOk) {
+      json(res, 403, { error: 'bad signature' });
+      return;
+    }
+    const r = deps.store.guardarPieza(agente, taskId, {
+      de,
+      autor,
+      texto,
+      archivos,
+      contenido: contenido.toLowerCase(),
+      fecha,
+      firma: (cuerpo.firma as string).toLowerCase(),
+      recibida: Date.now(),
+    });
+    if (r !== 'ok') {
+      json(res, r === 'clave' ? 400 : 409, { error: r === 'lleno' ? 'too many pieces' : r === 'repetida' ? 'duplicate piece' : 'bad key' });
+      return;
+    }
+    console.log(`[buzon] pieza de ${de} en la disputa #${taskId}`);
+    json(res, 200, { ok: true, contenido });
+  };
+
+  // POST /pruebas-archivo/:taskId — los bytes de un archivo, antes de la pieza.
+  const recibirArchivoDePruebas = async (agente: Address, taskId: bigint, url: URL, req: IncomingMessage, res: ServerResponse) => {
+    const quien = await quienEnPruebas(agente, taskId, url, req, res);
+    if (!quien) return;
+    if (quien.rol === 'juez') {
+      json(res, 403, { error: 'judges only read' });
+      return;
+    }
+    const plazo = await plazoDe(taskId);
+    if (plazo === null) {
+      json(res, 502, { error: 'rpc error' });
+      return;
+    }
+    if (!dentroDelPlazo(quien.task, plazo)) {
+      json(res, 409, { error: quien.task.status === TaskStatus.Disputed ? 'evidence period over' : 'not disputed' });
+      return;
+    }
+    let nombre = '';
+    try {
+      nombre = sanearNombre(decodeURIComponent((req.headers['x-panal-filename'] as string | undefined) ?? ''));
+    } catch {
+      nombre = '';
+    }
+    if (!nombre) {
+      json(res, 400, { error: 'bad filename' });
+      return;
+    }
+    const bytes = await readBytes(req, MAX_ARCHIVO_BYTES);
+    if (bytes === null) {
+      json(res, 413, { error: 'file too large' });
+      return;
+    }
+    if (bytes.byteLength === 0) {
+      json(res, 400, { error: 'empty file' });
+      return;
+    }
+    if (!(await pasaElAntivirus(bytes, res, `«${nombre}» de las pruebas de la disputa #${taskId}`))) return;
+    const mime = (req.headers['content-type'] as string | undefined) ?? undefined;
+    const guardado = deps.store.guardarArchivoDePruebas(
+      agente,
+      taskId,
+      nombre,
+      bytes,
+      quien.rol,
+      mime && mime !== 'application/octet-stream' ? mime.slice(0, 120) : undefined,
+    );
+    if ('error' in guardado) {
+      json(res, guardado.error === 'grande' ? 413 : guardado.error === 'clave' ? 400 : 409, { error: guardado.error });
+      return;
+    }
+    json(res, 200, { ok: true, hash: guardado.hash });
+  };
+
+  // GET /pruebas-archivo/:taskId/:hash — los bytes, a las partes y a los jueces.
+  const darArchivoDePruebas = async (agente: Address, taskId: bigint, hash: string, url: URL, req: IncomingMessage, res: ServerResponse) => {
+    const quien = await quienEnPruebas(agente, taskId, url, req, res);
+    if (!quien) return;
+    const guardado = deps.store.leerArchivoDePruebas(agente, taskId, hash);
+    if (!guardado) {
+      json(res, 404, { error: 'not found' });
+      return;
+    }
+    res.writeHead(200, {
+      'content-type': guardado.archivo.mime || 'application/octet-stream',
+      'content-length': String(guardado.bytes.byteLength),
+      'content-disposition': 'attachment',
+      'x-content-type-options': 'nosniff',
+      'cache-control': 'private, no-store',
+    });
+    res.end(guardado.bytes);
+  };
+
   const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const origin = allowedOrigin(req.headers.origin, deps.allowLocalhostOrigin);
     if (origin) {
@@ -2289,6 +2578,27 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       return;
     }
 
+    // Las pruebas de una disputa (ver más arriba). Sin `fetchDisputedAt` no hay
+    // plazo que comprobar, y entonces estas rutas no existen.
+    if (deps.fetchDisputedAt) {
+      const dePruebas = /^pruebas\/(\d{1,20})$/.exec(resto);
+      if (dePruebas) {
+        const id = BigInt(dePruebas[1]!);
+        if (req.method === 'GET') await darPruebas(agente, id, url, req, res);
+        else if (req.method === 'POST') await recibirPieza(agente, id, req, res);
+        else json(res, 405, { error: 'method not allowed' });
+        return;
+      }
+      const deArchivoDePruebas = /^pruebas-archivo\/(\d{1,20})(?:\/(0x[0-9a-fA-F]{64}))?$/.exec(resto);
+      if (deArchivoDePruebas) {
+        const id = BigInt(deArchivoDePruebas[1]!);
+        if (req.method === 'POST' && !deArchivoDePruebas[2]) await recibirArchivoDePruebas(agente, id, url, req, res);
+        else if (req.method === 'GET' && deArchivoDePruebas[2]) await darArchivoDePruebas(agente, id, deArchivoDePruebas[2], url, req, res);
+        else json(res, 405, { error: 'method not allowed' });
+        return;
+      }
+    }
+
     const ruta = /^(brief|result|encargo|entrega|upload|entrega-archivo)\/(\d{1,20})$/.exec(resto);
     if (!ruta) {
       json(res, 404, { error: 'not found' });
@@ -2351,6 +2661,7 @@ export function startBuzonServer(cfg: BotConfig, clients: ChainClients, store: B
   const server = createBuzonServer({
     store,
     fetchTask: (taskId) => getTask(clients, cfg, taskId),
+    fetchDisputedAt: (taskId) => getDisputedAt(clients, cfg, taskId),
     fetchAgent: (agente) => getRegistryAgent(clients, cfg, agente),
     contratos: {
       escrow: cfg.escrowAddress,

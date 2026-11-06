@@ -391,6 +391,21 @@ export async function getTask(clients: ChainClients, cfg: BotConfig, taskId: big
 }
 
 /**
+ * Cuándo se abrió la disputa de una tarea (`disputedAt` del escrow, segundos;
+ * 0 si nunca se abrió). De ahí cuenta el plazo de las pruebas del buzón.
+ */
+export async function getDisputedAt(clients: ChainClients, cfg: BotConfig, taskId: bigint): Promise<bigint> {
+  return withRetry(`disputedAt(${taskId})`, () =>
+    clients.publicClient.readContract({
+      address: cfg.escrowAddress,
+      abi: parseAbi(['function disputedAt(uint256) view returns (uint256)']),
+      functionName: 'disputedAt',
+      args: [taskId],
+    }),
+  );
+}
+
+/**
  * Quiénes deciden las disputas del escrow: su `arbitrator` y, si es una
  * multisig, sus firmantes (`owners(i)` hasta que revierta). El propio
  * arbitrator va en la lista: si algún día es una cuenta, es ella quien decide.

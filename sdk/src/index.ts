@@ -350,3 +350,21 @@ export {
   leerPrecioDePregunta,
   leerPreguntaDeSegmento,
 } from './pregunta.js';
+
+// Las pruebas de una disputa: el expediente que guarda el buzón (motivo,
+// pruebas y respuestas firmadas por cada parte, con plazo de siete días).
+export {
+  MARGEN_FECHA_MS,
+  MAX_ARCHIVOS_POR_PIEZA,
+  MAX_PIEZA_CHARS,
+  MAX_PIEZAS_POR_PARTE,
+  PLAZO_DE_PRUEBAS_DIAS,
+  contenidoDePieza,
+  piezaSignMessage,
+  plazoDePruebas,
+  pruebasSignMessage,
+  verificarPieza,
+  type ArchivoDePieza,
+  type ExpedienteDeDisputa,
+  type PiezaDeDisputa,
+} from './pruebas.js';
