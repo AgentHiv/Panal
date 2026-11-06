@@ -93,13 +93,23 @@ export function lineaDeNiveles(niveles: Nivel[], symbol: string): string | null 
  * mandaría a la persona a repetir su elección sin motivo. Lo que NO se hace es
  * adivinar: si no casa con ninguno, se dice y se listan.
  */
+/** a-z, `$` o espacio en blanco: lo que puede ir detrás del número de un precio. */
+function esLetraOSimbolo(c: number): boolean {
+  return (c >= 97 && c <= 122) || c === 36 || c === 32 || c === 9 || c === 10 || c === 13 || c === 11 || c === 12;
+}
+
 export function buscarNivel(niveles: Nivel[], pedido: string): Nivel | null {
   const limpio = pedido.trim().toLowerCase().replace(/\s+/g, ' ');
   if (!limpio) return null;
   const porNombre = niveles.find((n) => (n.name ?? '').toLowerCase().replace(/\s+/g, ' ') === limpio);
   if (porNombre) return porNombre;
   // "0.3", "0.3 mon": el símbolo sobra, el número es la identidad del nivel.
-  const soloNumero = limpio.replace(/[a-z$\s]+$/, '').trim();
+  // Se recorta a mano desde el final y no con /[a-z$\s]+$/: esa expresión
+  // tarda en cuadrado con «aaaa…a1», y este texto lo escribe quien llama —un
+  // modelo, y desde el MCP remoto, cualquiera—.
+  let fin = limpio.length;
+  while (fin > 0 && esLetraOSimbolo(limpio.charCodeAt(fin - 1))) fin--;
+  const soloNumero = limpio.slice(0, fin).trim();
   const porPrecio = niveles.find((n) => formatEther(n.wei) === soloNumero);
   if (porPrecio) return porPrecio;
   const i = Number(limpio);

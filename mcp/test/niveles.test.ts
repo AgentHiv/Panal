@@ -120,5 +120,16 @@ check('sin niveles, el precio del registro', importe([], null, parseEther('0.07'
 check('un precio con muchos decimales se busca igual', buscarNivel([nivel('Fino', '0.000123')], '0.000123') !== null);
 check('  y se enseña sin ceros de relleno', formatEther(parseEther('0.03')) === '0.03');
 
+// Quien escribe el nombre del tamaño es un modelo, y desde el MCP remoto,
+// cualquiera. Con la expresión /[a-z$\s]+$/ de antes, 40.000 letras y un
+// número tardaban casi 3 s, y el remoto atiende de una en una por proceso.
+{
+  const t0 = Date.now();
+  const r = buscarNivel(tres, `${'a'.repeat(200_000)}1`);
+  const ms = Date.now() - t0;
+  check('un nombre enorme no lo frena', r === null && ms < 200, `${ms} ms`);
+  check('  y el recorte sigue quitando el símbolo', buscarNivel(tres, '0.3 $panal ') === tres[1]);
+}
+
 console.log(fallos === 0 ? '\n✅ todo bien' : `\n❌ ${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

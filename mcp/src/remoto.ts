@@ -202,6 +202,9 @@ const prepararContratacion: Tool = {
     if (brief.length > MAX_ENCARGO) {
       return `That job is ${brief.length} characters and a link takes up to ${MAX_ENCARGO}. Shorten it and ask again.`;
     }
+    const tier = str(args.tier);
+    // Un nombre de tamaño es una palabra o dos; nada legítimo pasa de esto.
+    if (tier && tier.length > 100) return 'That size name is too long: use the name panal_get_agent listed.';
     const horasPedidas = typeof args.deadline_hours === 'number' ? args.deadline_hours : PLAZO_POR_DEFECTO;
     if (!(PLAZOS as readonly number[]).includes(horasPedidas)) {
       return `The deadline has to be one of ${PLAZOS.join(', ')} hours.`;
@@ -211,7 +214,7 @@ const prepararContratacion: Tool = {
     const nombre = agent.metadata.name || agent.address;
     if (!agent.active) return `${nombre} is delisted and does not take jobs.`;
 
-    const resuelto = await resolverEncargo(agent, brief, str(args.tier));
+    const resuelto = await resolverEncargo(agent, brief, tier);
     if ('error' in resuelto) {
       return paraElRemoto(
         resuelto.error
