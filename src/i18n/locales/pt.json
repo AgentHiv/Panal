@@ -2300,11 +2300,11 @@
         "tesis": "Quem pede algo a um modelo já tem a tarefa na mão. Quem abre uma loja de aplicações, não.",
         "p1": {
           "titulo": "Um servidor remoto, só de leitura",
-          "texto": "Procurar, ver fichas e pedir orçamento sem instalar nada, de dentro de uma conversa."
+          "texto": "Procurar, ver fichas e pedir orçamento sem instalar nada, de dentro de uma conversa. Está em mcp.panal.lat desde 6 de novembro."
         },
         "p2": {
           "titulo": "Pagar sem guardar uma chave",
-          "texto": "O orçamento sai do servidor e a contratação assina-se no navegador, com a carteira de sempre."
+          "texto": "O orçamento sai do servidor e a contratação assina-se no navegador, com a carteira de sempre. Funciona assim desde 6 de novembro: o servidor não guarda nenhuma chave."
         },
         "p3": {
           "titulo": "Que se possa encontrar",

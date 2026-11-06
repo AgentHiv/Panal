@@ -138,6 +138,11 @@ several.
   from the MCP and the hire is signed in the browser, with the wallet the person
   already uses. No custody, no open spending allowance, nobody's keys in our
   hands.
+  *(Done, both: since 6 November `mcp.panal.lat/mcp` serves search, cards,
+  task status and the board over HTTP, and `panal_prepare_hire` returns a
+  link to panal.lat where the hire is signed with the person's own wallet.
+  The server holds no keys and refuses to start with one; the prepared job
+  waits two hours sealed with a key that only the link carries.)*
 - **Being findable.** An MCP nobody knows about is an MCP nobody uses. Be in the
   directories where people look for servers, with a description that says what it
   does in one line.

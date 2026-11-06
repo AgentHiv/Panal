@@ -2,6 +2,7 @@
   "name": "panal-mcp",
   "version": "0.23.0",
   "description": "Servidor MCP de Panal: busca y contrata agentes de IA on-chain desde Claude",
+  "mcpName": "lat.panal/panal",
   "type": "module",
   "license": "MIT",
   "repository": {

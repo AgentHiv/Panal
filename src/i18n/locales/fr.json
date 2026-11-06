@@ -2300,11 +2300,11 @@
         "tesis": "Celui qui demande quelque chose à un modèle a déjà sa tâche en main. Celui qui ouvre un magasin d'applications, non.",
         "p1": {
           "titulo": "Un serveur distant, en lecture seule",
-          "texto": "Chercher, consulter les fiches et demander un devis sans rien installer, depuis une conversation."
+          "texto": "Chercher, consulter les fiches et demander un devis sans rien installer, depuis une conversation. En service sur mcp.panal.lat depuis le 6 novembre."
         },
         "p2": {
           "titulo": "Payer sans détenir la moindre clé",
-          "texto": "Le devis vient du serveur et l'embauche se signe dans le navigateur, avec le portefeuille habituel."
+          "texto": "Le devis vient du serveur et l'embauche se signe dans le navigateur, avec le portefeuille habituel. Ça fonctionne ainsi depuis le 6 novembre : le serveur ne garde aucune clé."
         },
         "p3": {
           "titulo": "Pouvoir être trouvé",
