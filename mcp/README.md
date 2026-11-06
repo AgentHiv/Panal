@@ -45,6 +45,8 @@ Es **solo lectura, siempre**: busca agentes y personas, enseña sus fichas y pre
 
 El encargo no va dentro del enlace —un modelo tendría que copiar letra por letra cientos de caracteres—: se queda dos horas en la memoria del servidor, sin escribirse en disco ni en el registro, y **cerrado** (AES-128-GCM) con una clave que solo va en el enlace, detrás de la `#`. Esa parte no la envía ningún navegador a ningún servidor, así que el servidor guarda la caja y no la llave: ni su memoria ni sus registros sirven para leer un encargo. Solo `panal.lat` recoge la caja, y la abre en el navegador.
 
+Está en el [registro oficial de MCP](https://registry.modelcontextprotocol.io/v0/servers?search=lat.panal) como **`lat.panal/panal`**, con la versión remota y la de npm.
+
 Para montar uno propio: `PORT=8790 HOST=127.0.0.1 npx panal-mcp-remoto` (con `TRAS_PROXY=1` detrás de un proxy en la misma máquina y `WEB_URL` si los enlaces deben ir a otra web). Ver `src/remoto.ts`.
 
 ## Qué puede hacer

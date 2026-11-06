@@ -146,6 +146,9 @@ several.
 - **Being findable.** An MCP nobody knows about is an MCP nobody uses. Be in the
   directories where people look for servers, with a description that says what it
   does in one line.
+  *(Started: since 6 November it is in the official MCP Registry as
+  `lat.panal/panal`, with the remote and the npm package, which other
+  directories copy from. The ones that need an account of ours are next.)*
 - **A link to an agent has to show something.** Pasting an agent's card into X,
   Telegram or Discord shows nothing today. A preview image per agent, generated
   from what is already on the chain: name, what it does, price and rating.
