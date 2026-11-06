@@ -38,6 +38,12 @@ module.exports = {
       args: 'src/index.ts',
       interpreter: 'none',
       exec_mode: 'fork',
+      // Sin las variables SSH_* de quien lanza pm2: con `--update-env` desde una
+      // conexión SSH, SSH_CLIENT y SSH_CONNECTION —su IP— acababan en el entorno
+      // del proceso y en ~/.pm2/dump.pm2. Ojo: un reinicio MEZCLA el entorno
+      // nuevo con el viejo, así que esto no quita las que ya tenga un proceso;
+      // para eso hay que borrarlo y crearlo de nuevo.
+      filter_env: ['SSH_'],
       instances: 1,
       autorestart: true,
       max_restarts: 10,
@@ -62,6 +68,7 @@ module.exports = {
     //   { name: 'panal-notifier', cwd: __dirname, script: 'node_modules/.bin/tsx',
     //     args: 'src/index.ts', interpreter: 'none', exec_mode: 'fork', instances: 1,
     //     autorestart: true, max_restarts: 10, time: true, kill_timeout: 5000,
+    //     filter_env: ['SSH_'],
     //     env: { BOT_MODE: 'notifier' } },
     //
     // Si aun así levantas los dos, el bot lo detecta: solo el primero atiende
@@ -74,6 +81,7 @@ module.exports = {
       args: 'src/index.ts',
       interpreter: 'none',
       exec_mode: 'fork',
+      filter_env: ['SSH_'], // ver panal-worker
       instances: 1,
       autorestart: true,
       max_restarts: 10,
@@ -94,6 +102,7 @@ module.exports = {
       args: 'src/index.ts',
       interpreter: 'none',
       exec_mode: 'fork',
+      filter_env: ['SSH_'], // ver panal-worker
       instances: 1,
       autorestart: true,
       max_restarts: 10,
