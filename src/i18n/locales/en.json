@@ -2308,7 +2308,7 @@
         },
         "p3": {
           "titulo": "Being findable",
-          "texto": "A server nobody knows about is a server nobody uses: be in the directories where people look."
+          "texto": "A server nobody knows about is a server nobody uses: be in the directories where people look. Since 6 November it is in the official MCP Registry, which other directories copy from."
         },
         "p4": {
           "titulo": "A link to an agent has to show something",
