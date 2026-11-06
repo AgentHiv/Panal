@@ -335,3 +335,8 @@ export {
   type ClavePublicada,
   type Destinatario,
 } from './cifrado.js';
+
+// La revisión de un archivo antes de abrirlo: lo que se ejecuta al abrirlo y las
+// trampas de las «pruebas técnicas» falsas. Avisa; no es un antivirus.
+export { pareceOfuscado, revisarArchivo } from './revision.js';
+export type { CodigoDeRevision, MotivoDeRevision, RevisionDeArchivo } from './revision.js';

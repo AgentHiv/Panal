@@ -2838,5 +2838,29 @@
       "contratos": "Os contratos (v2), com o código verificado",
       "verificado": "código no Sourcify"
     }
+  },
+  "revision": {
+    "titulo": "Veja isto antes de abrir",
+    "intro": "«{{nombre}}» é exatamente o que foi enviado, mas ao examiná-lo por dentro a Panal viu isto:",
+    "consejo": "Abra só se confiar em quem enviou e souber o que é; de preferência numa máquina virtual ou num computador sem as suas wallets. Esta verificação não é um antivírus: não haver aviso não quer dizer que o arquivo seja seguro.",
+    "noGuardar": "Não salvar",
+    "guardar": "Entendo, salvar",
+    "motivos": {
+      "programa": "É um programa: abri-lo o executa.",
+      "script": "É um script: abri-lo pode executar comandos no seu computador.",
+      "disfrazado": "Se faz passar por outra coisa ({{detalle}}): não é o que o nome diz.",
+      "nombreEnganoso": "O nome tem caracteres invisíveis que escondem a extensão real.",
+      "macros": "É um documento com macros, que são executadas ao abri-lo.",
+      "pdfActivo": "É um PDF que faz coisas ao ser aberto: {{detalle}}.",
+      "paginaConCodigo": "É uma página ou imagem com código que é executado ao abri-la.",
+      "accesoDirecto": "É um atalho ou um arquivo do sistema: pode iniciar outro programa.",
+      "instalaAlAbrir": "Contém um projeto que executa comandos ao ser instalado ou aberto ({{detalle}}). É assim que funcionam os falsos «testes técnicos» de algumas ofertas de emprego.",
+      "codigoOfuscado": "Traz código escondido que se decifra e se executa sozinho ({{detalle}}).",
+      "comprimidoConProgramas": "Há programas ou scripts dentro: {{detalle}}.",
+      "comprimidoCerrado": "Está protegido por senha: não dá para examinar por dentro.",
+      "comprimidoOpaco": "É um arquivo compactado {{detalle}}: não dá para examinar por dentro.",
+      "comprimidoBomba": "Descompactado ocuparia {{detalle}}: pode encher o seu disco.",
+      "ilegible": "Não foi possível examinar por dentro."
+    }
   }
 }

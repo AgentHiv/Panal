@@ -623,6 +623,33 @@ export const en: Textos = {
     pieGas:
       'Your wallet signs it and pays its gas, so it needs a little MON. The price and the profile can be changed later.',
   },
+  revision: {
+    titulo: 'Look at this before opening it',
+    intro: (nombre: string) => `“${nombre}” is exactly the file that was sent, but when Panal looked inside it found this:`,
+    consejo:
+      'Open it only if you trust whoever sent it and know what it is — ideally in a virtual machine or on a computer that holds none of your wallets. This check is not an antivirus: no warning does not mean a file is safe.',
+    noGuardar: 'Don\'t save it',
+    guardar: 'I understand, save it',
+    noGuardado: 'Not saved.',
+    /** Con «{detalle}» donde va lo que se vio (un nombre, un tipo). */
+    motivos: {
+      programa: 'It\'s a program: opening it runs it.',
+      script: 'It\'s a script: opening it can run commands on your computer.',
+      disfrazado: 'It pretends to be something else ({detalle}): it isn\'t what its name says.',
+      nombreEnganoso: 'Its name hides its real extension with invisible characters.',
+      macros: 'It\'s a document with macros, which run when it\'s opened.',
+      pdfActivo: 'It\'s a PDF that does things when opened: {detalle}.',
+      paginaConCodigo: 'It\'s a page or an image with code that runs when it\'s opened.',
+      accesoDirecto: 'It\'s a shortcut or a system file: it can launch another program.',
+      instalaAlAbrir: 'It holds a project that runs commands when installed or opened ({detalle}). That\'s how the fake “technical tests” in some job offers work.',
+      codigoOfuscado: 'It carries hidden code that decodes and runs itself ({detalle}).',
+      comprimidoConProgramas: 'There are programs or scripts inside: {detalle}.',
+      comprimidoCerrado: 'It\'s password-protected: its contents can\'t be checked.',
+      comprimidoOpaco: 'It\'s a {detalle} archive: its contents can\'t be checked.',
+      comprimidoBomba: 'Unpacked it would take {detalle}: it can fill your disk.',
+      ilegible: 'Its contents couldn\'t be checked.',
+    },
+  },
 
   guardia: {
     volver: 'Back',

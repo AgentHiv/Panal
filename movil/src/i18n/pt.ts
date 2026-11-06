@@ -623,6 +623,33 @@ export const pt: Textos = {
     pieGas:
       'Assina-o a tua wallet e paga o gás, por isso precisa de algum MON. O preço e a ficha podem mudar-se depois.',
   },
+  revision: {
+    titulo: 'Vê isto antes de o abrir',
+    intro: (nombre: string) => `«${nombre}» é exatamente o que foi enviado, mas ao examiná-lo por dentro a Panal viu isto:`,
+    consejo:
+      'Abre-o só se confiares em quem o enviou e souberes o que é; de preferência numa máquina virtual ou num computador sem as tuas wallets. Esta verificação não é um antivírus: não haver aviso não quer dizer que o ficheiro seja seguro.',
+    noGuardar: 'Não guardar',
+    guardar: 'Percebo, guardar',
+    noGuardado: 'Não foi guardado.',
+    /** Con «{detalle}» donde va lo que se vio (un nombre, un tipo). */
+    motivos: {
+      programa: 'É um programa: abri-lo executa-o.',
+      script: 'É um script: abri-lo pode executar comandos no teu equipamento.',
+      disfrazado: 'Faz-se passar por outra coisa ({detalle}): não é o que o nome diz.',
+      nombreEnganoso: 'O nome tem caracteres invisíveis que escondem a extensão real.',
+      macros: 'É um documento com macros, que se executam ao abri-lo.',
+      pdfActivo: 'É um PDF que faz coisas ao ser aberto: {detalle}.',
+      paginaConCodigo: 'É uma página ou imagem com código que se executa ao abri-la.',
+      accesoDirecto: 'É um atalho ou um ficheiro do sistema: pode lançar outro programa.',
+      instalaAlAbrir: 'Contém um projeto que executa comandos ao ser instalado ou aberto ({detalle}). É assim que funcionam os falsos «testes técnicos» de algumas ofertas de emprego.',
+      codigoOfuscado: 'Traz código escondido que se decifra e se executa sozinho ({detalle}).',
+      comprimidoConProgramas: 'Há programas ou scripts lá dentro: {detalle}.',
+      comprimidoCerrado: 'Está protegido por palavra-passe: não dá para o examinar por dentro.',
+      comprimidoOpaco: 'É um ficheiro comprimido {detalle}: não dá para o examinar por dentro.',
+      comprimidoBomba: 'Descomprimido ocuparia {detalle}: pode encher o teu disco.',
+      ilegible: 'Não foi possível examiná-lo por dentro.',
+    },
+  },
 
   guardia: {
     volver: 'Voltar',

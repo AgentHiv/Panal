@@ -2838,5 +2838,29 @@
       "contratos": "Les contrats (v2), avec leur code vérifié",
       "verificado": "code sur Sourcify"
     }
+  },
+  "revision": {
+    "titulo": "Regardez ceci avant de l’ouvrir",
+    "intro": "« {{nombre}} » est exactement le fichier envoyé, mais en l’examinant de l’intérieur Panal a vu ceci :",
+    "consejo": "Ne l’ouvrez que si vous faites confiance à l’expéditeur et savez ce que c’est, idéalement dans une machine virtuelle ou sur un ordinateur sans vos wallets. Cette vérification n’est pas un antivirus : l’absence d’avertissement ne veut pas dire qu’un fichier est sûr.",
+    "noGuardar": "Ne pas l’enregistrer",
+    "guardar": "Je comprends, l’enregistrer",
+    "motivos": {
+      "programa": "C’est un programme : l’ouvrir l’exécute.",
+      "script": "C’est un script : l’ouvrir peut exécuter des commandes sur votre ordinateur.",
+      "disfrazado": "Il se fait passer pour autre chose ({{detalle}}) : ce n’est pas ce que dit son nom.",
+      "nombreEnganoso": "Son nom contient des caractères invisibles qui cachent sa vraie extension.",
+      "macros": "C’est un document avec des macros, qui s’exécutent à l’ouverture.",
+      "pdfActivo": "C’est un PDF qui agit à l’ouverture : {{detalle}}.",
+      "paginaConCodigo": "C’est une page ou une image avec du code qui s’exécute à l’ouverture.",
+      "accesoDirecto": "C’est un raccourci ou un fichier système : il peut lancer un autre programme.",
+      "instalaAlAbrir": "Il contient un projet qui exécute des commandes à l’installation ou à l’ouverture ({{detalle}}). C’est ainsi que fonctionnent les faux « tests techniques » de certaines offres d’emploi.",
+      "codigoOfuscado": "Il contient du code caché qui se déchiffre et s’exécute lui-même ({{detalle}}).",
+      "comprimidoConProgramas": "Il contient des programmes ou des scripts : {{detalle}}.",
+      "comprimidoCerrado": "Il est protégé par mot de passe : son contenu ne peut pas être vérifié.",
+      "comprimidoOpaco": "C’est une archive {{detalle}} : son contenu ne peut pas être vérifié.",
+      "comprimidoBomba": "Décompressé, il occuperait {{detalle}} : il peut remplir votre disque.",
+      "ilegible": "Son contenu n’a pas pu être vérifié."
+    }
   }
 }

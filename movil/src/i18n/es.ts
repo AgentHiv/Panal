@@ -628,6 +628,33 @@ export const es = {
     pieGas:
       'Lo firma tu wallet y paga su gas, así que necesita algo de MON. El precio y la ficha se pueden cambiar después.',
   },
+  revision: {
+    titulo: 'Mira esto antes de abrirlo',
+    intro: (nombre: string) => `«${nombre}» es exactamente el que se envió, pero al revisarlo por dentro Panal ha visto esto:`,
+    consejo:
+      'Ábrelo solo si confías en quien lo envió y sabes qué es; mejor en una máquina virtual o en un equipo donde no tengas tus wallets. Esta revisión no es un antivirus: que no avise de nada no quiere decir que un archivo sea seguro.',
+    noGuardar: 'No guardarlo',
+    guardar: 'Lo entiendo, guardarlo',
+    noGuardado: 'No se guardó.',
+    /** Con «{detalle}» donde va lo que se vio (un nombre, un tipo). */
+    motivos: {
+      programa: 'Es un programa: abrirlo lo ejecuta.',
+      script: 'Es un script: abrirlo puede ejecutar órdenes en tu equipo.',
+      disfrazado: 'Se hace pasar por otra cosa ({detalle}): no es lo que dice su nombre.',
+      nombreEnganoso: 'Su nombre lleva caracteres invisibles que esconden su extensión real.',
+      macros: 'Es un documento con macros, que se ejecutan al abrirlo.',
+      pdfActivo: 'Es un PDF que hace cosas al abrirlo: {detalle}.',
+      paginaConCodigo: 'Es una página o un gráfico con código que se ejecuta al abrirlo.',
+      accesoDirecto: 'Es un acceso directo o un archivo del sistema: puede lanzar otro programa.',
+      instalaAlAbrir: 'Contiene un proyecto que ejecuta órdenes al instalarlo o al abrirlo ({detalle}). Así funcionan las «pruebas técnicas» falsas de algunas ofertas de trabajo.',
+      codigoOfuscado: 'Lleva código escondido que se descifra y se ejecuta a sí mismo ({detalle}).',
+      comprimidoConProgramas: 'Dentro hay programas o scripts: {detalle}.',
+      comprimidoCerrado: 'Está cerrado con contraseña: no se puede revisar por dentro.',
+      comprimidoOpaco: 'Es un comprimido {detalle}: no se puede revisar por dentro.',
+      comprimidoBomba: 'Al descomprimirlo ocuparía {detalle}: puede llenar tu disco.',
+      ilegible: 'No se pudo revisar por dentro.',
+    },
+  },
 
   guardia: {
     volver: 'Volver',

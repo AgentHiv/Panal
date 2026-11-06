@@ -18,6 +18,7 @@ import Informe from '~/pantallas/Informe';
 import Cartera from '~/pantallas/Cartera';
 import { useAvisos } from '~/lib/usarAvisos';
 import { INICIO, SIN_PAGOS } from '~/lib/canal';
+import HojaRevision from '~/componentes/HojaRevision';
 
 /**
  * En la versión de Play no hay chats: preguntar a un agente es pagarle. Un
@@ -40,7 +41,7 @@ export default function App(): React.ReactElement {
   useAvisos();
 
   return (
-    <div className="con-barra-arriba flex h-full flex-col overflow-hidden bg-paper">
+    <div className="con-barra-arriba relative flex h-full flex-col overflow-hidden bg-paper">
       <BarraRed />
       <div className="flex min-h-0 grow flex-col">
         <Routes>
@@ -66,6 +67,8 @@ export default function App(): React.ReactElement {
         </Routes>
       </div>
       {conPestanas && <Pestanas />}
+      {/* El aviso de un archivo sospechoso, antes de guardarlo (src/lib/revisionDeArchivos.ts). */}
+      <HojaRevision />
     </div>
   );
 }

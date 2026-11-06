@@ -582,7 +582,7 @@ function Expediente({ dispute }: { dispute: DisputedTask }) {
     if (!address) return;
     setBajando(archivo.hash);
     try {
-      guardarComoArchivo(archivo.name, await bajarDelExpediente(e, archivo, texto, address, firmar), archivo.mime);
+      await guardarComoArchivo(archivo.name, await bajarDelExpediente(e, archivo, texto, address, firmar), archivo.mime);
     } catch (err) {
       toast.error(t('dashReal.arbitration.archivoError', { name: archivo.name }), {
         description: err instanceof Error ? err.message.split('\n')[0] : undefined,
