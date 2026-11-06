@@ -172,6 +172,12 @@ jobs:
       - name: Las pruebas de una disputa se firman igual en el SDK y en el buzón
         run: pnpm exec tsx scripts/test-pruebas-formato.ts
 
+      # La librería de la web contra el buzón de verdad, en el mismo proceso:
+      # cifrar para las partes y los jueces con clave, abrir, firmar, y darle
+      # acceso a un juez que activa su clave tarde.
+      - name: Las pruebas de una disputa, de la web al buzón y de vuelta
+        run: pnpm exec tsx scripts/test-pruebas-web.ts
+
       - name: Build de produccion
         run: pnpm exec vite build
 
