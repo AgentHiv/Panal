@@ -36,6 +36,7 @@ import { monto } from '~/lib/formato';
 import Icono from '~/componentes/Icono';
 import Subcontratados from '~/componentes/Subcontratados';
 import AvisoEjecutable from '~/componentes/AvisoEjecutable';
+import HojaConversacion from '~/componentes/HojaConversacion';
 import { etiquetaIdioma, useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 
@@ -75,6 +76,8 @@ export default function Expediente(): React.ReactElement {
   const [trayendo, setTrayendo] = useState(false);
   const [reenviando, setReenviando] = useState(false);
   const [reenvio, setReenvio] = useState<'nada' | 'hecho' | 'fallo'>('nada');
+  /** La conversación con quien hace el trabajo, si recibe en el buzón. */
+  const [conConversacion, setConConversacion] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
   /**
    * La firma se guarda porque la MISMA abre el texto y todos los archivos.
@@ -395,6 +398,22 @@ export default function Expediente(): React.ReactElement {
           </span>
         </div>
 
+        {/* Con quien recibe en el buzón —una persona— se puede hablar dentro
+            del encargo, que ya está pagado. Uno con servidor propio no lo lee. */}
+        {tarea && esBuzon(datosAgente?.botUrl ?? null) && !esDelTablon(e.cliente) && (
+          <button
+            type="button"
+            onClick={() => setConConversacion(true)}
+            className="pulsable tocable flex shrink-0 items-center gap-3 rounded-[14px] border border-line p-3.5 text-left"
+          >
+            <Icono nombre="chat" tamano={18} color="#B7A8FC" className="shrink-0" />
+            <div className="min-w-0 grow">
+              <p className="text-[13.5px] font-medium">{T.conversacion.boton}</p>
+              <p className="mt-0.5 text-[11.5px] text-ink-3">{T.conversacion.botonPie}</p>
+            </div>
+          </button>
+        )}
+
         <Seccion titulo={T.expediente.enLaCadena} />
         <div className="shrink-0 divide-y divide-line overflow-hidden rounded-[14px] border border-line">
           <Fila k={T.expediente.cliente} v={esDelTablon(e.cliente) ? T.tablon.titulo : corta(e.cliente)} />
@@ -610,6 +629,13 @@ export default function Expediente(): React.ReactElement {
         </p>
         {aviso && <p className="shrink-0 px-1 text-[12px] text-ink-2">{aviso}</p>}
       </div>
+      {conConversacion && tarea && datosAgente?.botUrl && (
+        <HojaConversacion
+          encargo={{ id: tarea.id, client: tarea.client, worker: tarea.worker }}
+          base={datosAgente.botUrl}
+          onCerrar={() => setConConversacion(false)}
+        />
+      )}
     </div>
   );
 }
