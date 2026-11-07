@@ -520,7 +520,7 @@ La `v` es una huella de lo que se pinta: cuando cambian el precio, la nota o el
 nombre, cambia la URL y las redes —que guardan la imagen días— piden la nueva.
 Con la `v` de ahora la imagen se guarda una semana; con otra o sin ella, diez
 minutos, y siempre sale la de ahora. Las tipografías van en `assets/fuentes/`
-(ver su `LEEME.md`); por eso el indexador depende de `@resvg/resvg-js`.
+(ver su `README.es.md`); por eso el indexador depende de `@resvg/resvg-js`.
 
 ### El tablón con reglas (PanalTablon)
 

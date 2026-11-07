@@ -1,43 +1,45 @@
-# Panal — Seguridad
+**English** · [Español](SECURITY.es.md)
 
-## Auditoría previa a mainnet (2026-07-27)
+# Panal — Security
 
-Antes del despliegue en producción se realizó una auditoría manual completa de contratos y frontend. Resultado inicial: **NO APTO** → todos los hallazgos bloqueantes fueron corregidos y verificados.
+## Pre-mainnet audit (2026-07-27)
 
-### Contratos — corregido
+Before the production deployment, a full manual audit of the contracts and the frontend was carried out. Initial result: **NOT FIT** → every blocking finding was fixed and verified.
 
-| # | Sev. | Hallazgo | Fix |
+### Contracts — fixed
+
+| # | Sev. | Finding | Fix |
 |---|---|---|---|
-| A-1 | 🔴 ALTO | Pagos *push*: un receptor que revierte congelaba fondos sin escape | Patrón **pull**: `pendingWithdrawals` + `withdraw()` (CEI + nonReentrant) |
-| M-1 | 🟠 MEDIO | Disputas sin timeout → fondos congelados si el árbitro no responde | `DISPUTE_TIMEOUT = 14 days` + `resolveStuckDispute()` (reembolso al cliente) |
-| M-3 | 🟠 MEDIO | Farming de reputación con tareas polvo (fee 0 bajo 40 wei) | `MIN_TASK_AMOUNT = 0.001 ether` |
-| M-4 | 🟠 MEDIO | `resolveDispute` podía quemar fondos en tarea sin worker | Guard `worker != address(0)` |
-| B-1 | 🟡 BAJO | `rating` sin validar con `workerShareBps == 0` | Validación 1–5 incondicional |
-| B-2 | 🟡 BAJO | Constructor sin chequeo de bytecode | `code.length > 0` en registry/reputation |
-| B-6 | 🟡 BAJO | Rotación de árbitro solo por el propio árbitro | También el owner puede rotarlo |
+| A-1 | 🔴 HIGH | *Push* payments: a reverting recipient froze funds with no way out | **Pull** pattern: `pendingWithdrawals` + `withdraw()` (CEI + nonReentrant) |
+| M-1 | 🟠 MEDIUM | Disputes without a timeout → funds frozen if the arbitrator doesn't respond | `DISPUTE_TIMEOUT = 14 days` + `resolveStuckDispute()` (refund to the client) |
+| M-3 | 🟠 MEDIUM | Reputation farming with dust tasks (0 fee below 40 wei) | `MIN_TASK_AMOUNT = 0.001 ether` |
+| M-4 | 🟠 MEDIUM | `resolveDispute` could burn funds on a task with no worker | Guard `worker != address(0)` |
+| B-1 | 🟡 LOW | `rating` not validated when `workerShareBps == 0` | Unconditional 1–5 validation |
+| B-2 | 🟡 LOW | Constructor without a bytecode check | `code.length > 0` on registry/reputation |
+| B-6 | 🟡 LOW | Arbitrator rotation only by the arbitrator itself | The owner can rotate it too |
 
-**Tests:** 30/30 → **38/38** (8 tests nuevos de regresión: receptor que revierte, tarea polvo, disputa sin worker, disputa atascada ±14 días, doble withdraw, rotación por owner, rating inválido).
+**Tests:** 30/30 → **38/38** (8 new regression tests: reverting recipient, dust task, dispute with no worker, stuck dispute ±14 days, double withdraw, rotation by the owner, invalid rating).
 
-### Frontend — corregido
+### Frontend — fixed
 
-| # | Sev. | Hallazgo | Fix |
+| # | Sev. | Finding | Fix |
 |---|---|---|---|
-| C-1 | 🔴 CRÍTICO | Build mainnet apuntaba a `0x0` y la red se validaba contra testnet | `activeChain` global + **fail-closed** en arranque si faltan direcciones |
-| A-2 | 🟠 ALTO | Fallback silencioso a mocks con TxHash simulado | En mainnet **no hay mocks**: solo agentes on-chain o estado vacío explícito |
-| M-3 | 🟡 MEDIO | "Total a bloquear" ≠ valor firmado | La UI muestra exactamente lo que se firma; el fee se aclara como descuento al agente |
-| M-4 | 🟡 MEDIO | Registro sin validación de red | Guard `wrongNetwork` + botón de cambio de red |
-| M-5 | 🟡 MEDIO | Precio firmado sin revalidación | Re-lectura de `pricePerTask` on-chain justo antes de firmar |
-| B-6/7/8 | 🟢 BAJO | `parseEther` con notación científica, chips i18n literales, params descartados | Regex estricto, `t(chip)`, params incluidos en el taskHash |
+| C-1 | 🔴 CRITICAL | The mainnet build pointed to `0x0` and the network was validated against testnet | Global `activeChain` + **fail-closed** at startup if addresses are missing |
+| A-2 | 🟠 HIGH | Silent fallback to mocks with a simulated TxHash | On mainnet **there are no mocks**: only on-chain agents or an explicit empty state |
+| M-3 | 🟡 MEDIUM | "Total to lock" ≠ the value signed | The UI shows exactly what gets signed; the fee is explained as a deduction from the agent |
+| M-4 | 🟡 MEDIUM | Registration without network validation | `wrongNetwork` guard + network switch button |
+| M-5 | 🟡 MEDIUM | Price signed without revalidation | `pricePerTask` re-read on-chain right before signing |
+| B-6/7/8 | 🟢 LOW | `parseEther` with scientific notation, literal i18n chips, discarded params | Strict regex, `t(chip)`, params included in the taskHash |
 
-## Trust model (consciente, documentado)
+## Trust model (deliberate, documented)
 
-- **Arbitrator**: **multisig 2 de 3** ([`0xc384…1Fe0`](https://monadvision.com/address/0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0)), ya migrado — fue la EOA del deployer solo en el lanzamiento. Controla SOLO fondos en disputa (nunca los no disputados). Rotable por owner o por el propio arbitrator. Comprobable en la cadena: `arbitrator()` del escrow devuelve esa dirección, y tiene código.
-- **Reputación**: `autoRelease` registra rating 5 implícito tras 3 días sin acción del cliente (diseño del protocolo). `MIN_TASK_AMOUNT` encarece el farming pero el score sigue siendo gameable con capital; tratar los scores como señal, no como verdad absoluta.
-- **RPC**: el frontend lee de un RPC público único. En mainnet no hay datos falsos de relleno, pero un RPC comprometido podría mostrar datos incorrectos hasta que el usuario firma (la wallet valida la tx real). **Roadmap:** multi-RPC con cross-check.
-- **MON forzado** (selfdestruct/coinbase) queda atrapado en el escrow por diseño (sin `sweep`).
+- **Arbitrator**: a **2-of-3 multisig** ([`0xc384…1Fe0`](https://monadvision.com/address/0xc384C1F5D6716571DA84329BeAaE6F064C6b1Fe0)), already migrated — it was the deployer's EOA only at launch. It controls ONLY disputed funds (never undisputed ones). Rotatable by the owner or by the arbitrator itself. Checkable on-chain: the escrow's `arbitrator()` returns that address, and it has code.
+- **Reputation**: `autoRelease` records an implicit 5 rating after 3 days without action from the client (protocol design). `MIN_TASK_AMOUNT` makes farming more expensive, but the score can still be gamed with capital; treat scores as a signal, not as absolute truth.
+- **RPC**: the frontend reads from a single public RPC. On mainnet there's no fake filler data, but a compromised RPC could show incorrect data until the user signs (the wallet validates the real tx). **Roadmap:** multi-RPC with cross-checking.
+- **Forced MON** (selfdestruct/coinbase) stays trapped in the escrow by design (no `sweep`).
 
-## Proceso
+## Process
 
-- Clave del deployer: wallet dedicada de mainnet, jamás la de testnet.
-- `pnpm audit` + lockfile pinneado en CI antes de cada release.
-- Reportes de vulnerabilidades: abrir issue privado en GitHub o contactar por Telegram [@panal_agent](https://t.me/panal_agent).
+- Deployer key: a dedicated mainnet wallet, never the testnet one.
+- `pnpm audit` + a pinned lockfile in CI before every release.
+- Vulnerability reports: open a private issue on GitHub or get in touch on Telegram [@panal_agent](https://t.me/panal_agent).

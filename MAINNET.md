@@ -1,35 +1,37 @@
-# Panal — Guía de despliegue a Monad Mainnet
+**English** · [Español](MAINNET.es.md)
 
-> ✅ **DESPLEGADO el 2026-07-27** (versión hardenida post-auditoría, ver SECURITY.md):
+# Panal — Monad Mainnet deployment guide
+
+> ✅ **DEPLOYED on 2026-07-27** (hardened post-audit version, see SECURITY.md):
 > - `PanalRegistry` → [`0xe13C7d97e1EBc13A296e725DA90Bf3B04fDBf496`](https://monadvision.com/address/0xe13C7d97e1EBc13A296e725DA90Bf3B04fDBf496)
 > - `PanalReputation` → [`0xadAd5582B2023aAE7a89d42d6aF0B530c6C3e4D6`](https://monadvision.com/address/0xadAd5582B2023aAE7a89d42d6aF0B530c6C3e4D6)
 > - `PanalEscrow` → [`0x80db3eD4e50e3405B7F1b9e4a0bD5c0a901e4D2d`](https://monadvision.com/address/0x80db3eD4e50e3405B7F1b9e4a0bD5c0a901e4D2d)
 > - Treasury + Arbitrator: `0x6073443C233382613622F3400447a26c9eC6b7B4`
 >
-> Este documento queda como referencia del procedimiento.
+> This document stays as a reference for the procedure.
 
-## Datos de red
+## Network data
 
-| Parámetro | Testnet (actual) | Mainnet |
+| Parameter | Testnet (current) | Mainnet |
 |---|---|---|
 | Chain ID | `10143` | `143` (`0x8f`) |
 | RPC | `https://testnet-rpc.monad.xyz` | `https://rpc.monad.xyz` |
-| Explorador | `https://testnet.monadvision.com` | `https://monadvision.com` |
-| Moneda | MON (faucet) | MON (real) |
+| Explorer | `https://testnet.monadvision.com` | `https://monadvision.com` |
+| Currency | MON (faucet) | MON (real) |
 
-## Checklist previo
+## Pre-flight checklist
 
-- [ ] **Auditoría de contratos** — los 3 contratos están testeados (30/30) pero sin auditoría externa. Para producción con fondos reales, considerar revisión profesional.
-- [ ] **Wallet de despliegue dedicada** — crear una wallet nueva exclusiva para mainnet (NO reutilizar la de testnet). Guardar la clave en un gestor de secretos.
-- [ ] **Fondos** — MON suficiente para 3 despliegues (~0.1–0.5 MON estimado según gas).
-- [ ] **Arbitro de disputas** — decidir la dirección `arbitrator` del constructor de `PanalEscrow` (multisig recomendado en producción).
-- [ ] **Fee del protocolo** — confirmar 2.5 % (`FEE_BPS = 250`) o ajustar antes de desplegar (es inmutable tras el deploy).
+- [ ] **Contract audit** — the 3 contracts are tested (30/30) but have no external audit. For production with real funds, consider a professional review.
+- [ ] **Dedicated deploy wallet** — create a new wallet exclusively for mainnet (do NOT reuse the testnet one). Keep the key in a secrets manager.
+- [ ] **Funds** — enough MON for 3 deployments (~0.1–0.5 MON estimated depending on gas).
+- [ ] **Dispute arbitrator** — decide the `arbitrator` address for the `PanalEscrow` constructor (a multisig is recommended in production).
+- [ ] **Protocol fee** — confirm 2.5% (`FEE_BPS = 250`) or adjust it before deploying (it's immutable after the deploy).
 
-## 1. Desplegar contratos
+## 1. Deploy the contracts
 
 ```bash
 cd contracts
-export PRIVATE_KEY=<clave-de-la-wallet-de-mainnet>
+export PRIVATE_KEY=<mainnet-wallet-key>
 
 forge script script/Deploy.s.sol \
   --rpc-url https://rpc.monad.xyz \
@@ -37,47 +39,47 @@ forge script script/Deploy.s.sol \
   --verify
 ```
 
-Anotar las 3 direcciones resultantes (`PanalRegistry`, `PanalReputation`, `PanalEscrow`).
+Write down the 3 resulting addresses (`PanalRegistry`, `PanalReputation`, `PanalEscrow`).
 
-## 2. Actualizar el frontend
+## 2. Update the frontend
 
-En `src/contracts/config.ts`:
+In `src/contracts/config.ts`:
 
-1. Sustituir los placeholders de `MAINNET_ADDRESSES` por las direcciones reales del paso 1.
-2. Verificar: `grep -n "0x0000" src/contracts/config.ts` → no debe quedar ningún placeholder.
+1. Replace the `MAINNET_ADDRESSES` placeholders with the real addresses from step 1.
+2. Check: `grep -n "0x0000" src/contracts/config.ts` → no placeholder should be left.
 
-## 3. Build y despliegue web
+## 3. Web build and deployment
 
-Mainnet es la red por defecto del build: no hace falta ninguna variable. Si
-alguna vez se pone una, va en Cloudflare → Workers & Pages → panal → Settings
-→ Build → Variables and secrets (las del build, no las del Worker), y se
-aplica en el siguiente despliegue, que lanza cualquier push a `main`:
+Mainnet is the build's default network: no variable is needed. If one is ever
+set, it goes in Cloudflare → Workers & Pages → panal → Settings → Build →
+Variables and secrets (the build ones, not the Worker's), and it applies on the
+next deployment, which any push to `main` triggers:
 
 ```
 VITE_CHAIN=mainnet
 ```
 
-Localmente:
+Locally:
 
 ```bash
 VITE_CHAIN=mainnet pnpm run build
 ```
 
-## 4. Verificación post-despliegue
+## 4. Post-deployment checks
 
-- [ ] Abrir el sitio → el marketplace lee `getAgentCount` de la mainnet (al inicio será 0 → cae a datos mock, es lo esperado).
-- [ ] Conectar MetaMask en mainnet → registrar el primer agente real.
-- [ ] Crear una tarea de prueba entre dos wallets propias (ciclo completo: escrow → entrega → liberación).
-- [ ] Verificar las tx en `https://monadvision.com`.
+- [ ] Open the site → the marketplace reads `getAgentCount` from mainnet (it will be 0 at first → falls back to mock data, which is expected).
+- [ ] Connect MetaMask on mainnet → register the first real agent.
+- [ ] Create a test task between two of your own wallets (full cycle: escrow → delivery → release).
+- [ ] Check the txs on `https://monadvision.com`.
 
-## 5. Activación del ecosistema
+## 5. Bringing the ecosystem online
 
-- [ ] Registrar los agentes semilla iniciales (script `seed` equivalente al de testnet).
-- [ ] Publicar el enlace oficial; actualizar README con las direcciones de mainnet.
-- [ ] Monitorización: alertas sobre eventos `TaskCreated`/`DisputeOpened` (bot de Telegram planificado en roadmap).
+- [ ] Register the initial seed agents (a `seed` script equivalent to the testnet one).
+- [ ] Publish the official link; update the README with the mainnet addresses.
+- [ ] Monitoring: alerts on `TaskCreated`/`DisputeOpened` events (Telegram bot planned in the roadmap).
 
-## Notas de seguridad
+## Security notes
 
-- La clave privada de mainnet **nunca** se pega en chats, repos ni CI en texto plano. Usar variables de entorno locales o un signer de hardware.
-- `PanalEscrow` custodia fondos reales: cualquier bug tiene consecuencias económicas. Sin auditoría externa, limitar la exposición inicial (precios bajos, período de beta).
-- El RPC público de mainnet tiene rate limits; para tráfico de producción considerar un proveedor dedicado (Alchemy, QuickNode, Ankr…).
+- The mainnet private key is **never** pasted into chats, repos or CI in plain text. Use local environment variables or a hardware signer.
+- `PanalEscrow` holds real funds: any bug has economic consequences. Without an external audit, limit the initial exposure (low prices, a beta period).
+- Mainnet's public RPC has rate limits; for production traffic consider a dedicated provider (Alchemy, QuickNode, Ankr…).

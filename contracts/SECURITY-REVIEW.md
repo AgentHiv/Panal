@@ -1,45 +1,46 @@
-# Revisión de seguridad del escrow v2 — 2026-10-08
+**English** · [Español](SECURITY-REVIEW.es.md)
 
-Revisión hecha con el `PanalEscrowV2` ya desplegado en mainnet
-(`0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9`). No cambia el contrato: comprueba
-el que hay. El escrow v1 pasó una auditoría externa; el v2 hereda sus
-correcciones (`test/v2/AuditFixesV2.t.sol`).
+# Security review of the v2 escrow — 2026-10-08
 
-## Invariantes (Foundry)
+A review done with `PanalEscrowV2` already deployed on mainnet
+(`0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9`). It doesn't change the contract: it checks
+the one that's there. The v1 escrow passed an external audit; v2 inherits its fixes
+(`test/v2/AuditFixesV2.t.sol`).
 
-`test/v2/PanalEscrowV2.invariants.t.sol`. Un `Handler` hace operaciones válidas
-en cualquier orden —crear en MON y en $PANAL, coger del tablón, entregar,
-aprobar, liberar por tiempo, disputar, resolver, resolver atascadas, cancelar,
-retirar y dejar pasar el tiempo— y después de cada una se exige:
+## Invariants (Foundry)
 
-1. **El MON cuadra:** `balance(escrow) == bloqueado en tareas vivas + acreditado a todos`.
-2. **El $PANAL cuadra:** lo mismo con `balanceOf(escrow)`.
-3. **Lo entregado tiene huella:** toda tarea entregada o en disputa tiene `resultHash != 0`.
+`test/v2/PanalEscrowV2.invariants.t.sol`. A `Handler` performs valid operations in any
+order —create in MON and in $PANAL, take from the board, deliver, approve, release by time,
+dispute, resolve, resolve stuck ones, cancel, withdraw and let time pass— and after each one
+it requires:
 
-Resultado: **las tres se cumplen**. En local se corrió con 256 secuencias de 500
-operaciones; en la CI van 128 de 200 para no alargarla. La suite entera:
-265 pruebas, 0 fallos.
+1. **MON adds up:** `balance(escrow) == locked in live tasks + credited to everyone`.
+2. **$PANAL adds up:** the same with `balanceOf(escrow)`.
+3. **What was delivered leaves a trace:** every delivered or disputed task has `resultHash != 0`.
+
+Result: **all three hold**. Locally it ran with 256 sequences of 500 operations; in CI it's 128
+of 200 so as not to make it longer. The whole suite: 265 tests, 0 failures.
 
 ## Slither
 
 `slither src/v2/PanalEscrowV2.sol --exclude-informational --exclude-optimization`
-da 7 tipos de aviso. Ninguno es explotable:
+gives 7 kinds of warning. None is exploitable:
 
-| Detector | Dónde | Por qué no es un fallo |
+| Detector | Where | Why it's not a bug |
 |---|---|---|
-| `reentrancy-no-eth` | `resolveDispute` | La llamada externa es a `reputation`, inmutable y desplegado por Panal, que no vuelve a llamar. Y la función es `nonReentrant` |
-| `reentrancy-benign`, `reentrancy-balance` | `createTask` | El `transferFrom` es al token $PANAL, fijado en el constructor y sin ganchos de transferencia. `createTask` y todas las funciones que mueven fondos comparten el mismo cerrojo `nonReentrant` |
-| `divide-before-multiply` | `resolveDispute` | Redondeo de 1 wei en el reparto de una disputa. `clientRefund = amount - workerGross`, así que no se pierde nada: lo confirman las invariantes |
-| `timestamp` | plazos | Intencionado: los plazos del escrow se miden en tiempo de bloque |
-| `uninitialized-local` | `workerPaid` | Vale 0 a propósito cuando el árbitro no da nada al trabajador |
-| `incorrect-equality` | `registeredAt == 0` | Es el centinela de «no registrado» del registry |
+| `reentrancy-no-eth` | `resolveDispute` | The external call is to `reputation`, immutable and deployed by Panal, which doesn't call back. And the function is `nonReentrant` |
+| `reentrancy-benign`, `reentrancy-balance` | `createTask` | The `transferFrom` is to the $PANAL token, set in the constructor and with no transfer hooks. `createTask` and every function that moves funds share the same `nonReentrant` lock |
+| `divide-before-multiply` | `resolveDispute` | A 1 wei rounding in a dispute's split. `clientRefund = amount - workerGross`, so nothing is lost: the invariants confirm it |
+| `timestamp` | deadlines | Intentional: the escrow's deadlines are measured in block time |
+| `uninitialized-local` | `workerPaid` | It's 0 on purpose when the arbitrator gives the worker nothing |
+| `incorrect-equality` | `registeredAt == 0` | It's the registry's "not registered" sentinel |
 
-Para una v3 quedaría más limpio aplicar checks-effects-interactions en
-`resolveDispute`: acreditar al cliente antes de llamar a la reputación. No
-cambia nada hoy, pero quita el aviso sin depender del cerrojo.
+For a v3 it would be cleaner to apply checks-effects-interactions in `resolveDispute`: credit the
+client before calling the reputation. It changes nothing today, but it removes the warning without
+relying on the lock.
 
-Cómo repetirlo: Slither no encuentra `forge` dentro de su imagen de Docker, así
-que se corre sobre una copia de `src/` sin `foundry.toml`:
+How to repeat it: Slither can't find `forge` inside its Docker image, so it's run on a copy of
+`src/` without `foundry.toml`:
 
 ```bash
 cp -r contracts/src /tmp/slither/ && cd /tmp/slither

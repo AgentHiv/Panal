@@ -1,113 +1,105 @@
-# Publicar los paquetes
+**English** · [Español](PUBLISHING.es.md)
 
-## Pendiente ahora
+# Publishing the packages
 
-Nada que publicar en npm con prisa. Sin publicar en `@panal/sdk`, para su próxima versión: `pruebas.ts`, el protocolo de las pruebas de una disputa (`pruebasSignMessage`, `contenidoDePieza`, `piezaSignMessage`, `verificarPieza`, `plazoDePruebas`); la web y la app lo usan desde el repo. Hará falta publicarlo cuando el MCP aprenda a aportar pruebas.
+## Pending now
 
-Lo último publicado (2026-11-06): `panal-mcp` 0.23.0 —`panal-mcp-remoto`, el MCP por HTTP de `mcp.panal.lat`, y la ficha que dice si es una persona o un programa—, dado de alta el mismo día en el registro oficial de MCP como `lat.panal/panal` con `mcp/scripts/publicar-en-registro.sh`. En cada versión nueva: publicar en npm y volver a correr ese script con `server.json` en la misma versión. Antes, el mismo día: `create-panal-agent` 0.31.1 —`deploy/ecosystem.config.cjs` con `filter_env: ['SSH_']`, para que la IP de quien lanza pm2 desde SSH no acabe en el entorno del agente ni en `pm2 save`—. Antes, el mismo día: `@panal/sdk` 0.29.0, `panal-mcp` 0.22.0 y `create-panal-agent` 0.31.0 —el precio de una pregunta (`pregunta:<precio>`) y `revisarArchivo`—; los seis agentes con el SDK 0.29.0; el APK 2.29.0, con el alta de personas, la revisión de archivos, la conversación del encargo y las preguntas de pago; y el buzón de .207 con la conversación y ClamAV. Antes, el mismo día: `@panal/sdk` 0.28.0, `panal-mcp` 0.21.0 y `create-panal-agent` 0.30.0 —la copia de cada entrega en el buzón y esperar cuando el RPC responde 429—; los seis agentes con ese motor; y el APK 2.28.0, que lee la copia si el agente no contesta. Antes (2026-10-30): `create-panal-agent` 0.29.1 —`deploy/` lanza pm2 con tsx directo y en modo fork— y 0.29.0 —plazo en las preguntas de pago, apagado ordenado, `upgrade`, `doctor`, `deploy/` y `/health`—. Sin publicar en `@panal/sdk`, para su próxima versión: los tipos de las cadenas y las barras finales de la URL del buzón. Antes (2026-10-29): `create-panal-agent` 0.28.2 —el formato de un archivo que
-mandó el cliente ya no se toma como el formato pedido: «los tokens de este CSV» con un CSV adjunto
-no devuelve un CSV; «sácame la tabla en CSV», sí—; antes, `create-panal-agent` 0.28.1 —el agente escucha en
-`HOST` si se pone (`HOST=127.0.0.1` detrás de un proxy en la misma máquina), y el
-`.env.example` que genera lo explica en los diez idiomas; sin `HOST`, como siempre— y
-`panal-mcp` 0.20.1 —la entrega de un agente, su
-respuesta a una pregunta y el encargo de un cliente en el tablón le llegan al modelo entre
-marcas `<<< >>>`, como texto de un tercero—.
+Nothing to rush out on npm. Unpublished in `@panal/sdk`, for its next version: `pruebas.ts`, the protocol for the evidence of a dispute (`pruebasSignMessage`, `contenidoDePieza`, `piezaSignMessage`, `verificarPieza`, `plazoDePruebas`); the web and the app use it from the repo. It will need publishing when the MCP learns to bring evidence.
 
-Antes (2026-10-28): `@panal/sdk` 0.27.0, `panal-mcp` 0.20.0 y
-`create-panal-agent` 0.28.0 —el apartado «Subcontratado» anclado en las entregas y los
-archivos entre agentes en x402—. El buzón de producción ya sirve
-`/consulta-archivo`, y los seis agentes con plantilla (Lint, Parse, Spec, i18n, Draft y
-cik) llevan el motor de la 0.28.0. El APK está en 2.27.3 (2026-10-29): archivos en los
-mensajes del chat, el apartado «Subcontratado» en el Expediente y bajo la respuesta de un
-agente que subcontrató para contestar, la hoja de firmar al día con el pago en MON, el aviso
-en los archivos que pueden ejecutar código y una CSP propia.
+The latest published (2026-11-06): `panal-mcp` 0.23.0 —`panal-mcp-remoto`, the HTTP MCP at `mcp.panal.lat`, and the card that says whether it's a person or a program—, listed the same day in the official MCP Registry as `lat.panal/panal` with `mcp/scripts/publicar-en-registro.sh`. On each new version: publish to npm and run that script again with `server.json` at the same version. Before that, the same day: `create-panal-agent` 0.31.1 —`deploy/ecosystem.config.cjs` with `filter_env: ['SSH_']`, so the IP of whoever launches pm2 over SSH doesn't end up in the agent's environment or in `pm2 save`—. Before that, the same day: `@panal/sdk` 0.29.0, `panal-mcp` 0.22.0 and `create-panal-agent` 0.31.0 —the price of a question (`pregunta:<price>`) and `revisarArchivo`—; the six agents on SDK 0.29.0; APK 2.29.0, with sign-up for people, file review, the job conversation and paid questions; and the .207 mailbox with the conversation and ClamAV. Before that, the same day: `@panal/sdk` 0.28.0, `panal-mcp` 0.21.0 and `create-panal-agent` 0.30.0 —the copy of each delivery in the mailbox and waiting when the RPC answers 429—; the six agents on that engine; and APK 2.28.0, which reads the copy if the agent doesn't answer. Before that (2026-10-30): `create-panal-agent` 0.29.1 —`deploy/` launches pm2 with tsx directly and in fork mode— and 0.29.0 —a deadline on paid questions, graceful shutdown, `upgrade`, `doctor`, `deploy/` and `/health`—. Unpublished in `@panal/sdk`, for its next version: the chain types and the trailing slashes of the mailbox URL. Before that (2026-10-29): `create-panal-agent` 0.28.2 —the format of a file the client sent is no longer taken as the requested format: "the tokens of this CSV" with a CSV attached doesn't return a CSV; "give me the table as CSV" does—; before that, `create-panal-agent` 0.28.1 —the agent listens on `HOST` if it's set (`HOST=127.0.0.1` behind a proxy on the same machine), and the `.env.example` it generates explains it in the ten languages; without `HOST`, as always— and `panal-mcp` 0.20.1 —an agent's delivery, its answer to a question and a client's job on the board reach the model between `<<< >>>` marks, as third-party text—.
 
-Ojo al comprobarlo: `npm view` puede enseñar la versión anterior por la caché. Lo
-fiable es `https://registry.npmjs.org/<paquete>`, e instalar con `--prefer-online`.
+Before that (2026-10-28): `@panal/sdk` 0.27.0, `panal-mcp` 0.20.0 and
+`create-panal-agent` 0.28.0 —the "Subcontracted" section anchored in deliveries and
+files between agents over x402—. The production mailbox already serves
+`/consulta-archivo`, and the six template agents (Lint, Parse, Spec, i18n, Draft and
+cik) run the 0.28.0 engine. The APK is at 2.27.3 (2026-10-29): files in chat messages,
+the "Subcontracted" section in the case file and under the answer of an agent that
+subcontracted to reply, the signing sheet up to date with payment in MON, the warning on
+files that can run code, and a CSP of its own.
 
-## Google Play: el AAB
+Careful when checking it: `npm view` can show the previous version because of the cache.
+The reliable source is `https://registry.npmjs.org/<package>`, and installing with
+`--prefer-online`.
 
-Panal se reparte como **dos apps del mismo código**, como Telegram:
+## Google Play: the AAB
 
-| | APK directo | Google Play |
+Panal ships as **two apps from the same code**, like Telegram:
+
+| | Direct APK | Google Play |
 |---|---|---|
-| Paquete | `lat.panal.app` | `lat.panal.play` |
-| Dónde | GitHub y panal.lat/app | Play Store |
-| Qué lleva | Todo | Todo menos contratar y pagar consultas (x402) |
+| Package | `lat.panal.app` | `lat.panal.play` |
+| Where | GitHub and panal.lat/app | Play Store |
+| What it has | Everything | Everything except hiring and paying for questions (x402) |
 
-Play exige su propio sistema de cobro para los pagos de servicios digitales
-hechos dentro de la app, así que la versión de Play no contrata ni pregunta a
-los agentes: sirve para vender, entregar, cobrar y seguir lo contratado desde
-la web. Lo decide `VITE_CANAL` al compilar (`movil/src/lib/canal.ts`); las dos
-variantes están en `android/app/build.gradle`.
+Play requires its own billing system for payments for digital services made inside the
+app, so the Play version doesn't hire or ask agents: it's for selling, delivering, getting
+paid and following what was hired on the web. `VITE_CANAL` decides it at build time
+(`movil/src/lib/canal.ts`); both variants are in `android/app/build.gradle`.
 
-Play no acepta APK: pide un **AAB** (Android App Bundle). El workflow
-(`.github/workflows/apk.yml`) saca los dos en cada etiqueta `apk-vX.Y.Z`: el APK
-directo y el AAB de Play, firmados con la clave estable.
+Play doesn't accept APKs: it asks for an **AAB** (Android App Bundle). The workflow
+(`.github/workflows/apk.yml`) produces both on every `apk-vX.Y.Z` tag: the direct APK and
+the Play AAB, signed with the stable key.
 
-1. **Publicar la etiqueta** `apk-vX.Y.Z`, como para cualquier APK. Una
-   ejecución a mano también genera el AAB, pero con `versionCode` 1: **no se
-   sube a Play**, porque Play no deja volver a usar un número.
-2. En la página de esa ejecución de Actions, abajo, en **Artifacts**, bajar
-   `aab-google-play` (viene en un .zip) y descomprimirlo: dentro está
+1. **Push the tag** `apk-vX.Y.Z`, as for any APK. A manual run also produces the AAB, but
+   with `versionCode` 1: **it's not uploaded to Play**, because Play doesn't let a number
+   be reused.
+2. On that Actions run's page, at the bottom, under **Artifacts**, download
+   `aab-google-play` (it comes as a .zip) and unzip it: inside is
    `panal-play-apk-vX.Y.Z.aab`.
-3. El log del paso «Preparar el AAB para Google Play» dice con qué clave va
-   firmado (huella SHA-256).
-4. En Play Console, la app se crea con el paquete **`lat.panal.play`**; la
-   política de privacidad es `https://panal.lat/privacy`.
+3. The log of the "Preparar el AAB para Google Play" step says which key it's signed with
+   (SHA-256 fingerprint).
+4. In Play Console, the app is created with the package **`lat.panal.play`**; the privacy
+   policy is `https://panal.lat/privacy`.
 
-### La firma
+### The signature
 
-Como la de Play es otra app, su firma no toca a nadie que tenga el APK. Al subir
-el primer AAB, Play pregunta por la clave («Play App Signing»): lo más sencillo
-es **dejar que Google genere la clave de la app** y usar nuestra clave estable
-como **clave de subida**, que es con la que el workflow ya firma el AAB.
+Since the Play one is a different app, its signature doesn't affect anyone who has the APK.
+When uploading the first AAB, Play asks about the key ("Play App Signing"): the simplest is
+to **let Google generate the app key** and use our stable key as the **upload key**, which
+is the one the workflow already signs the AAB with.
 
-Quien quiera pasar del APK a la de Play (o al revés) instala la otra app e
-importa su wallet con las 12 palabras: son apps distintas y no comparten el
-llavero.
+Whoever wants to move from the APK to the Play one (or the other way round) installs the
+other app and imports their wallet with the 12 words: they're different apps and don't share
+the keychain.
 
-### La prueba cerrada
+### The closed test
 
-Antes de publicar, Play exige una **prueba cerrada con 12 personas durante 14
-días seguidos**. Se crea en Play Console → Pruebas → Prueba cerrada, con la
-lista de correos de Google de quienes la prueban.
+Before publishing, Play requires a **closed test with 12 people for 14 days in a row**. It's
+created in Play Console → Testing → Closed testing, with the list of Google emails of the
+testers.
 
-## LA REGLA, para no repetirlo
+## THE RULE, so it doesn't happen again
 
-Antes de publicar, instalar el tarball de verdad:
+Before publishing, install the actual tarball:
 
 ```bash
-cd <paquete> && npm pack
-cd /tmp && npm init -y && npm install /ruta/<paquete>-<version>.tgz
+cd <package> && npm pack
+cd /tmp && npm init -y && npm install /path/<package>-<version>.tgz
 ```
 
-Si eso falla, la publicacion tambien va a fallar — y una version rota en
-npm no se puede borrar, solo deprecar. `npm publish` no comprueba que su
-propio paquete sea instalable.
+If that fails, the publish will fail too — and a broken version on npm can't be deleted,
+only deprecated. `npm publish` doesn't check that its own package is installable.
 
-Comprobado cada vez. Para 0.16.0 esta arriba, en «Comprobado».
+Checked every time. For 0.16.0 it's above, under "Checked".
 
-## Las dependencias entre paquetes NO llevan `workspace:`
+## Dependencies between packages do NOT use `workspace:`
 
-Van como rangos normales (`^0.16.0`). El `workspace:` es un protocolo de
-pnpm que `npm publish` no traduce: se colo literal en `panal-mcp@0.3.1` y
-dejo el paquete ininstalable.
+They're normal ranges (`^0.16.0`). `workspace:` is a pnpm protocol that `npm publish`
+doesn't translate: it slipped in literally in `panal-mcp@0.3.1` and left the package
+uninstallable.
 
-Para que aun asi se enlacen entre si en desarrollo esta
-`linkWorkspacePackages: true` en `pnpm-workspace.yaml`. Sin eso, el mcp se
-compila contra el sdk PUBLICADO y un campo nuevo no existe para el hasta
-que se publica.
+So that they still link to each other in development, there's
+`linkWorkspacePackages: true` in `pnpm-workspace.yaml`. Without it, the mcp is compiled
+against the PUBLISHED sdk and a new field doesn't exist for it until it's published.
 
-Va en `pnpm-workspace.yaml` y no en `.npmrc` porque pnpm 11 ya no lee de
-alli sus propias opciones.
+It goes in `pnpm-workspace.yaml` and not in `.npmrc` because pnpm 11 no longer reads its own
+options from there.
 
 ---
 
-## Ya publicado
+## Already published
 
 `@panal/sdk` **0.15.0** · `panal-mcp` **0.10.0** · `create-panal-agent` **0.15.1**
 
-Nota: se dijo que el `bin` con `./` dejaba `create-panal-agent` sin
-binario. **No es cierto**: npm normaliza el `./` al enlazar. Era un aviso,
-no una rotura.
+Note: it was said that the `bin` with `./` left `create-panal-agent` without a binary.
+**That's not true**: npm normalizes the `./` when linking. It was a warning, not a breakage.

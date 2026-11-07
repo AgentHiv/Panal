@@ -1,3 +1,5 @@
+[English](README.md) · **Español**
+
 # Tipografías de la vista previa
 
 Las que dibujan la imagen de cada agente (`src/vista-previa.ts`): las mismas que

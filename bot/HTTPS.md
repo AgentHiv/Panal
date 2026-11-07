@@ -1,41 +1,42 @@
-# HTTPS para el endpoint del bot (guía paso a paso)
+**English** · [Español](HTTPS.es.md)
 
-El endpoint de resultados (`/result/:id`) viaja por HTTP por defecto. Para
-producción lo exponemos con **HTTPS gratis y automático** usando
-[Caddy](https://caddyserver.com) (Let's Encrypt gestionado solo) y un
-subdominio de `panal.lat`.
+# HTTPS for the bot's endpoint (step-by-step guide)
 
-## Arquitectura
+The results endpoint (`/result/:id`) travels over HTTP by default. For production
+we expose it with **free, automatic HTTPS** using [Caddy](https://caddyserver.com)
+(it manages Let's Encrypt on its own) and a `panal.lat` subdomain.
+
+## Architecture
 
 ```
-cliente (panal.lat) ──HTTPS──> bot.panal.lat (Caddy, TLS automático)
+client (panal.lat) ──HTTPS──> bot.panal.lat (Caddy, automatic TLS)
                                     │ reverse_proxy
                                     ▼
-                              127.0.0.1:8787  (bot, sin TLS, solo localhost)
-api.panal.lat (Caddy) ──HTTPS──> 127.0.0.1:8788 (indexador, opcional)
+                              127.0.0.1:8787  (bot, no TLS, localhost only)
+api.panal.lat (Caddy) ──HTTPS──> 127.0.0.1:8788 (indexer, optional)
 ```
 
-El bot sigue escuchando SOLO en localhost:8787 — Caddy es la única puerta.
+The bot keeps listening ONLY on localhost:8787 — Caddy is the only door.
 
-## Paso 1 · DNS (en Cloudflare, donde vive el DNS de panal.lat)
+## Step 1 · DNS (in Cloudflare, where panal.lat's DNS lives)
 
 Cloudflare → **panal.lat → DNS → Records → Add record**:
 
 | Type | Name | Value | Proxy status |
 |------|------|-------|--------------|
-| A | `bot` | `<IP de tu servidor>` | **DNS only** (nube gris) |
-| A | `api` | `<IP de tu servidor>` | **DNS only** (opcional, para el indexador) |
+| A | `bot` | `<your server's IP>` | **DNS only** (grey cloud) |
+| A | `api` | `<your server's IP>` | **DNS only** (optional, for the indexer) |
 
-**DNS only, no Proxied**, para empezar. Con la nube naranja el tráfico entra por
-Cloudflare, Caddy no ve llegar a Let's Encrypt y nunca consigue el certificado.
-Para ponerla, ver «Si llega una avalancha».
+**DNS only, not Proxied**, to start with. With the orange cloud the traffic comes in
+through Cloudflare, Caddy never sees Let's Encrypt arrive and never gets the certificate.
+To turn it on, see "If a flood arrives".
 
-Verifica propagación (~1-5 min): `dig +short bot.panal.lat` debe dar tu IP.
+Check propagation (~1-5 min): `dig +short bot.panal.lat` must return your IP.
 
-## Paso 2 · Caddy en el servidor
+## Step 2 · Caddy on the server
 
 ```bash
-# Instalar Caddy (Ubuntu 24.04)
+# Install Caddy (Ubuntu 24.04)
 apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
@@ -44,57 +45,57 @@ apt update && apt install -y caddy
 # Config
 cp /root/Panal/bot/deploy/Caddyfile /etc/caddy/Caddyfile
 mkdir -p /var/log/caddy && chown caddy:caddy /var/log/caddy
-# (edita bot.panal.lat si usas otro subdominio)
+# (edit bot.panal.lat if you use another subdomain)
 systemctl reload caddy
 systemctl enable caddy
 ```
 
-Caddy pedirá el certificado a Let's Encrypt solo (tarda ~30 s). Verifica:
+Caddy will request the certificate from Let's Encrypt on its own (it takes ~30 s). Check:
 
 ```bash
-curl -I https://bot.panal.lat/result/0   # 400/403/404 son OK: TLS funciona
+curl -I https://bot.panal.lat/result/0   # 400/403/404 are OK: TLS works
 ```
 
-## Paso 3 · Firewall
+## Step 3 · Firewall
 
 ```bash
-ufw allow 80     # HTTP → redirige a HTTPS (y validación Let's Encrypt)
+ufw allow 80     # HTTP → redirects to HTTPS (and Let's Encrypt validation)
 ufw allow 443    # HTTPS
-# IMPORTANTE: quita el acceso directo al puerto del bot si lo abriste
+# IMPORTANT: remove direct access to the bot's port if you opened it
 ufw delete allow 8787
 ufw delete allow 8788
 ```
 
-## Paso 4 · Producción estricta
+## Step 4 · Strict production
 
-En tu `.env` del bot añade:
+In your bot's `.env`, add:
 
 ```ini
 NODE_ENV=production
 ```
 
-(En producción el CORS deja de aceptar localhost — solo https://panal.lat.)
+(In production CORS stops accepting localhost — only https://panal.lat.)
 
 ```bash
 pm2 restart panal-bot
 ```
 
-## Paso 5 · Publica la URL en tu agente
+## Step 5 · Publish the URL on your agent
 
-panal.lat → conecta la **wallet del bot** → Dashboard → tu agente →
-**"Edit profile"** → campo **Bot URL**: `https://bot.panal.lat` → Guardar
-(transacción `updateMetadata` on-chain).
+panal.lat → connect the **bot's wallet** → Dashboard → your agent →
+**"Edit profile"** → **Bot URL** field: `https://bot.panal.lat` → Save
+(an `updateMetadata` transaction on-chain).
 
-A partir de ahí, cualquier cliente verá el botón **"Ver resultado"** en sus
-tareas entregadas y leerá el contenido firmando con su wallet.
+From then on, any client will see the **"View result"** button on their delivered
+tasks and will read the content by signing with their wallet.
 
-## Si llega una avalancha
+## If a flood arrives
 
-El 30 de octubre de 2026, unas 50.000 peticiones en tres minutos, desde 338 IP,
-contra `/index/agents`, llevaron a Caddy a 6,6 GB; el kernel lo mató y siguió
-caído casi una hora. Hay dos capas, y la primera no sustituye a la segunda.
+On October 30, 2026, about 50,000 requests in three minutes, from 338 IPs, against
+`/index/agents`, pushed Caddy to 6.6 GB; the kernel killed it and it stayed down for
+almost an hour. There are two layers, and the first doesn't replace the second.
 
-### Capa 1 · Acotar el daño (en la máquina)
+### Layer 1 · Limit the damage (on the machine)
 
 ```bash
 mkdir -p /etc/systemd/system/caddy.service.d
@@ -106,27 +107,27 @@ cp /root/Panal/bot/deploy/Caddyfile /etc/caddy/Caddyfile
 systemctl reload caddy
 
 cd /root/Panal/bot && pm2 startOrReload ecosystem.config.cjs --update-env
-ss -ltnp | grep -E ':(8787|8788|8789) '   # tienen que salir en 127.0.0.1
+ss -ltnp | grep -E ':(8787|8788|8789) '   # they must show up on 127.0.0.1
 ```
 
-Con esto Caddy vuelve solo en segundos y queda registro en
-`/var/log/caddy/acceso.log`. **No frena la avalancha:** Caddy no limita por sí
-mismo, y el límite por IP de los servidores (60/min) está detrás de él y se
-salta repartiendo la carga entre IP.
+With this Caddy comes back on its own within seconds and a log is kept in
+`/var/log/caddy/acceso.log`. **It doesn't stop the flood:** Caddy doesn't rate-limit on its
+own, and the servers' per-IP limit (60/min) sits behind it and is bypassed by spreading the
+load across IPs.
 
-### Capa 2 · Cloudflare delante (antes de llegar a la máquina)
+### Layer 2 · Cloudflare in front (before it reaches the machine)
 
-**Lo que implica:**
+**What it implies:**
 
-- **Privacidad.** El buzón cuelga de `api.panal.lat`, así que Cloudflare puede ver
-  lo que no va cifrado de punta a punta. La política de privacidad ya lo dice:
-  tiene que estar publicada *antes* de poner la nube naranja.
-- **Plazos.** Cloudflare corta a los 100 s si el servidor no contesta (error 524).
-  Por eso una pregunta x402 al bot tiene un plazo total de 90 s (`http.ts`).
-- **No activar** «Bot Fight Mode» ni «Under Attack Mode»: el SDK, el MCP y los
-  agentes no son navegadores y no pasan sus pruebas.
+- **Privacy.** The mailbox hangs off `api.panal.lat`, so Cloudflare can see whatever isn't
+  end-to-end encrypted. The privacy policy already says so: it has to be published *before*
+  turning on the orange cloud.
+- **Timeouts.** Cloudflare cuts off after 100 s if the server doesn't answer (error 524).
+  That's why an x402 question to the bot has a total deadline of 90 s (`http.ts`).
+- **Don't turn on** "Bot Fight Mode" or "Under Attack Mode": the SDK, the MCP and the agents
+  aren't browsers and don't pass its challenges.
 
-Antes de empezar, anota lo que tarda hoy (y compáralo después):
+Before starting, write down how long it takes today (and compare afterwards):
 
 ```bash
 for u in 'https://api.panal.lat/index/agents?page=0&limit=500' 'https://bot.panal.lat/agent.json'; do
@@ -134,41 +135,39 @@ for u in 'https://api.panal.lat/index/agents?page=0&limit=500' 'https://bot.pana
 done
 ```
 
-Después, en este orden. Hasta el paso 5, volver atrás es poner la nube gris:
+Then, in this order. Up to step 5, going back is just turning the cloud grey:
 
-1. **La IP real.** En el bloque `servers` del Caddyfile (rangos de
-   cloudflare.com/ips; revisarlos de vez en cuando):
+1. **The real IP.** In the Caddyfile's `servers` block (ranges from cloudflare.com/ips;
+   check them now and then):
 
    ```caddy
    trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
    client_ip_headers CF-Connecting-IP
    ```
 
-   Sin esto, todas las visitas parecen una sola IP y el límite por IP se vuelve
-   uno global, que cualquiera agota.
-2. **Nube naranja** en `api` y `bot`, con el modo SSL en **Full (strict)**: el
-   certificado de Let's Encrypt que ya tiene Caddy sigue valiendo. Comprobar la
-   web, la app y el buzón.
-3. **Caché del catálogo.** Es lo que más frena: la petición de la avalancha se
-   contesta sin llegar a la máquina. Cloudflare → Caching → Cache Rules, cuando
-   `Hostname` es `api.panal.lat`, `URI Path` es `/index/agents` y `URI Query String`
-   contiene `page=`: **Eligible for cache**, Edge TTL **Use cache-control header
-   if present, bypass cache if not**. Comprobar que `cf-cache-status` sale `HIT`
-   a la segunda petición, y que `/buzon/` sale `DYNAMIC`.
-4. **Regla de límite** en Cloudflare → Security → WAF → Rate limiting rules, por
-   IP, sobre `/index/`. Debe dejar pasar una carga normal del mercado, y no
-   tocar `/buzon/`, por donde pasan las subidas.
-5. **Probar a fondo:** la web, la app (CORS), el MCP y una subida de 25 MB al
-   buzón. El MCP no pasa por CORS y taparía un fallo.
-6. **Certificado de origen.** Con la nube naranja, renovar el de Let's Encrypt deja
-   de ser fiable. Cloudflare → SSL/TLS → Origin Server → crear uno para
-   `*.panal.lat`, guardarlo en `/etc/caddy/origen.pem` y `origen.key` (dueño
-   `caddy`, permisos 600) y en cada sitio del Caddyfile añadir
-   `tls /etc/caddy/origen.pem /etc/caddy/origen.key`. **Solo con la nube naranja
-   ya puesta:** los navegadores no se fían de este certificado, y a partir de
-   aquí poner la nube gris tumba la API si no se quita antes.
-7. **Cerrar el origen.** Solo con todo lo anterior bien. La IP de la máquina ya es pública, así que sin esto se
-   puede atacar saltándose Cloudflare. Con una sesión SSH abierta de reserva:
+   Without this, every visit looks like a single IP and the per-IP limit becomes a global
+   one that anyone can use up.
+2. **Orange cloud** on `api` and `bot`, with SSL mode set to **Full (strict)**: the Let's
+   Encrypt certificate Caddy already has stays valid. Check the web, the app and the mailbox.
+3. **Catalog cache.** It's what slows things down the most: the flood's request gets answered
+   without reaching the machine. Cloudflare → Caching → Cache Rules, when `Hostname` is
+   `api.panal.lat`, `URI Path` is `/index/agents` and `URI Query String` contains `page=`:
+   **Eligible for cache**, Edge TTL **Use cache-control header if present, bypass cache if
+   not**. Check that `cf-cache-status` shows `HIT` on the second request, and that `/buzon/`
+   shows `DYNAMIC`.
+4. **Rate limiting rule** in Cloudflare → Security → WAF → Rate limiting rules, per IP, on
+   `/index/`. It must let a normal market load through, and not touch `/buzon/`, which uploads
+   go through.
+5. **Test thoroughly:** the web, the app (CORS), the MCP and a 25 MB upload to the mailbox. The
+   MCP doesn't go through CORS and would hide a failure.
+6. **Origin certificate.** With the orange cloud, renewing the Let's Encrypt one stops being
+   reliable. Cloudflare → SSL/TLS → Origin Server → create one for `*.panal.lat`, store it in
+   `/etc/caddy/origen.pem` and `origen.key` (owner `caddy`, permissions 600) and in each site of
+   the Caddyfile add `tls /etc/caddy/origen.pem /etc/caddy/origen.key`. **Only with the orange
+   cloud already on:** browsers don't trust this certificate, and from here on turning the cloud
+   grey takes the API down unless it's removed first.
+7. **Close the origin.** Only with everything above working. The machine's IP is already public,
+   so without this it can be attacked by going around Cloudflare. With a spare SSH session open:
 
    ```bash
    for r in $(curl -s https://www.cloudflare.com/ips-v4) $(curl -s https://www.cloudflare.com/ips-v6); do
@@ -178,21 +177,21 @@ Después, en este orden. Hasta el paso 5, volver atrás es poner la nube gris:
    ufw status numbered
    ```
 
-### Vigilar los rangos de Cloudflare
+### Watching Cloudflare's ranges
 
-Si Cloudflare añade un rango, sus nodos no llegan a la máquina y salen errores
-intermitentes. Este script lo mira a diario, solo avisa (por el Telegram del bot) y
-no toca el firewall:
+If Cloudflare adds a range, its nodes don't reach the machine and intermittent errors show up.
+This script checks it daily, only warns (through the bot's Telegram) and doesn't touch the
+firewall:
 
 ```bash
 ln -s /root/Panal/bot/deploy/revisar-rangos-cloudflare.sh /etc/cron.daily/revisar-rangos-cloudflare
 ```
 
-## Solución de problemas
+## Troubleshooting
 
-| Síntoma | Causa típica | Fix |
+| Symptom | Typical cause | Fix |
 |---|---|---|
-| `curl` a HTTPS falla | DNS sin propagar | `dig bot.panal.lat` hasta que dé tu IP |
-| Caddy no emite cert | Puerto 80 cerrado | `ufw allow 80` y `systemctl reload caddy` |
-| 502 Bad Gateway | Bot caído o no escucha 8787 | `pm2 logs panal-bot`; `BOT_HTTP_PORT=8787` en `.env` |
-| El cliente ve CORS error | Origen no permitido | `NODE_ENV=production` y usa `https://panal.lat` (no IP) |
+| `curl` over HTTPS fails | DNS not propagated | `dig bot.panal.lat` until it returns your IP |
+| Caddy doesn't issue a cert | Port 80 closed | `ufw allow 80` and `systemctl reload caddy` |
+| 502 Bad Gateway | Bot down or not listening on 8787 | `pm2 logs panal-bot`; `BOT_HTTP_PORT=8787` in `.env` |
+| The client sees a CORS error | Origin not allowed | `NODE_ENV=production` and use `https://panal.lat` (not an IP) |

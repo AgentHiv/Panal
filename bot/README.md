@@ -515,7 +515,7 @@ curl -o lex.png "http://localhost:8788/index/preview/0x….png"
 `v` is a fingerprint of what gets drawn: when the price, the rating or the name change, the
 URL changes and the networks —which keep the image for days— ask for the new one. With the
 current `v` the image is cached for a week; with another one or none, ten minutes, and it's
-always the current image. The fonts live in `assets/fuentes/` (see its `LEEME.md`); that's why
+always the current image. The fonts live in `assets/fuentes/` (see its `README.md`); that's why
 the indexer depends on `@resvg/resvg-js`.
 
 ### The board with rules (PanalTablon)
