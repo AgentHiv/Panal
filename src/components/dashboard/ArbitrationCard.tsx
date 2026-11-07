@@ -413,25 +413,25 @@ function DisputeRow({
 
       <Expediente dispute={dispute} />
 
-      {/* Lo que aporta cada parte, firmado por quien lo aporta. Solo lectura. */}
-      {!esDelTablon(dispute.client) && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-cream px-4 py-3">
-          <p className="max-w-md text-[0.8125rem] leading-relaxed text-ink-2">{t('pruebas.juezPista')}</p>
-          <button
-            type="button"
-            onClick={() => setVerPruebas(true)}
-            className="inline-flex items-center gap-2 rounded-full border border-line bg-paper px-4 py-2 text-[0.8125rem] font-semibold text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
-          >
-            <FileText size={13} aria-hidden />
-            {t('pruebas.botonJuez')}
-          </button>
-          <PruebasDeLaDisputa
-            task={verPruebas ? { id: dispute.id, client: dispute.client, worker: dispute.worker } : null}
-            comoJuez
-            onClose={() => setVerPruebas(false)}
-          />
-        </div>
-      )}
+      {/* Lo que aporta cada parte, firmado por quien lo aporta. Solo lectura.
+          También en las del tablón: van bajo quien la cogió, por la tarea del
+          escrow, y un juez las lee sin tener que decir de qué encargo son. */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-cream px-4 py-3">
+        <p className="max-w-md text-[0.8125rem] leading-relaxed text-ink-2">{t('pruebas.juezPista')}</p>
+        <button
+          type="button"
+          onClick={() => setVerPruebas(true)}
+          className="inline-flex items-center gap-2 rounded-full border border-line bg-paper px-4 py-2 text-[0.8125rem] font-semibold text-ink-2 transition-colors hover:border-honey hover:text-honey-deep"
+        >
+          <FileText size={13} aria-hidden />
+          {t('pruebas.botonJuez')}
+        </button>
+        <PruebasDeLaDisputa
+          task={verPruebas ? { id: dispute.id, client: dispute.client, worker: dispute.worker } : null}
+          comoJuez
+          onClose={() => setVerPruebas(false)}
+        />
+      </div>
 
       <div className="mt-5 border-t border-line pt-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

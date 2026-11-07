@@ -51,6 +51,7 @@ import { abrirBytes, abrirTexto, cifrarArchivos, clavePublicaDe, publicarMiClave
 import { darAccesoAlElegido, darAccesoALosArbitrosDelTablon } from '@/lib/accesos';
 import Hoja, { Boton, Fila, Nota, Tarjeta } from '~/componentes/Hoja';
 import Icono from '~/componentes/Icono';
+import HojaPruebas from '~/componentes/HojaPruebas';
 import { SIN_PAGOS } from '~/lib/canal';
 import { permitirTablon } from '~/lib/signingPolicy';
 import type { useFirmaTablon } from '~/lib/usarFirmaTablon';
@@ -79,6 +80,12 @@ export type HojaAbierta =
   | { tipo: 'entrega'; job: EncargoConReglas; texto: string; cred: CredencialTablon; cifrado?: boolean; accesos?: Acceso[] }
   /** `confidencial`: el encargo se lee con el acceso del cliente, y se entrega cifrado. */
   | { tipo: 'entregar'; job: EncargoConReglas; confidencial?: boolean }
+  /**
+   * Las pruebas de su disputa, para su cliente o para quien lo cogió. Van bajo
+   * quien lo cogió, por la tarea del escrow; el encargo le dice al buzón quién
+   * es el cliente de verdad, que en el escrow es el contrato del tablón.
+   */
+  | { tipo: 'pruebas'; job: EncargoConReglas }
   | { tipo: 'publicar' };
 
 const CAMPO =
@@ -117,6 +124,13 @@ export default function HojasDelTablon({
       return <HojaEntrega job={hoja.job} texto={hoja.texto} cred={hoja.cred} cifrado={!!hoja.cifrado} accesos={hoja.accesos ?? []} onCerrar={onCerrar} />;
     case 'entregar':
       return <HojaEntregar job={hoja.job} confidencial={!!hoja.confidencial} firma={firma} onCerrar={onCerrar} />;
+    case 'pruebas':
+      return (
+        <HojaPruebas
+          encargo={{ id: hoja.job.escrowTaskId, client: hoja.job.cliente, worker: hoja.job.agente, jobId: hoja.job.id }}
+          onCerrar={onCerrar}
+        />
+      );
     case 'publicar':
       // En Play no existe: con `SIN_PAGOS` fijado al compilar, la hoja ni
       // siquiera viaja dentro del paquete.

@@ -161,12 +161,19 @@ export async function darAccesos(
   accesos: Acceso[],
   cuenta: Address,
   firmar: Firmar,
+  /**
+   * El encargo del tablón con reglas de la tarea `id`, cuando se da acceso a
+   * las pruebas de su disputa desde el buzón de quien la cogió: allí el buzón
+   * saca de él al cliente de verdad (ver `CredencialDePruebas.job`).
+   */
+  job?: bigint,
 ): Promise<void> {
   if (accesos.length === 0) return;
   const expira = expiraEn();
   const firma = await firmar(esTablon ? tablonAccesoSignMessage(id, expira) : accesoSignMessage(id, expira));
+  const deEncargo = job !== undefined ? `?job=${job.toString()}` : '';
   for (let i = 0; i < accesos.length; i += 40) {
-    const res = await fetch(`${sinBarraFinal(base)}/access/${id.toString()}`, {
+    const res = await fetch(`${sinBarraFinal(base)}/access/${id.toString()}${deEncargo}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ accesos: accesos.slice(i, i + 40), address: cuenta, signature: firma, expira }),
@@ -219,6 +226,8 @@ export async function darAccesoALosArbitros(o: {
   accesos: Acceso[];
   cuenta: Address;
   firmar: Firmar;
+  /** Ver `darAccesos`. */
+  job?: bigint;
 }): Promise<{ arbitros: number; sinClave: Address[]; objetos: number }> {
   const cifrados = o.objetos.filter((x) => (typeof x === 'string' ? esTextoCifrado(x) : esArchivoCifrado(x)));
   if (cifrados.length === 0) return { arbitros: 0, sinClave: [], objetos: 0 };
@@ -242,6 +251,6 @@ export async function darAccesoALosArbitros(o: {
       }
     }
   }
-  await darAccesos(o.base, o.id, o.esTablon, nuevos, o.cuenta, o.firmar);
+  await darAccesos(o.base, o.id, o.esTablon, nuevos, o.cuenta, o.firmar, o.job);
   return { arbitros: conClave.length, sinClave, objetos: cifrados.length };
 }

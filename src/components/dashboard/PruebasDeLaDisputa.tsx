@@ -43,9 +43,13 @@ import {
 const MAX_BYTES = 25 * 1024 * 1024;
 
 export interface TareaEnDisputa {
+  /** La tarea del escrow. */
   id: bigint;
+  /** El cliente de verdad: en una del tablón con reglas, el de su encargo, no el contrato. */
   client: Address;
   worker: Address;
+  /** Su encargo del tablón con reglas, si viene de allí. */
+  jobId?: bigint;
 }
 
 export default function PruebasDeLaDisputa({
@@ -122,7 +126,7 @@ function Panel({ task, comoJuez }: { task: TareaEnDisputa; comoJuez: boolean }) 
     setAviso(null);
     setEstado('firmando');
     try {
-      const c = await credencialDePruebas(task.id, address, firmar);
+      const c = await credencialDePruebas(task.id, address, firmar, task.jobId);
       setCred(c);
       setEstado('cargando');
       const [destino] = await Promise.all([
@@ -230,7 +234,16 @@ function Panel({ task, comoJuez }: { task: TareaEnDisputa; comoJuez: boolean }) 
     setDandoAcceso(true);
     try {
       const objetos = await objetosParaDarAcceso({ base, taskId: task.id, piezas, cred });
-      const r = await darAccesoALosArbitros({ base, id: task.id, esTablon: false, objetos, accesos: [], cuenta: address as Address, firmar });
+      const r = await darAccesoALosArbitros({
+        base,
+        id: task.id,
+        esTablon: false,
+        objetos,
+        accesos: [],
+        cuenta: address as Address,
+        firmar,
+        job: task.jobId,
+      });
       toast.success(t('pruebas.accesoDado', { n: r.arbitros }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';

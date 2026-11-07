@@ -36,6 +36,9 @@
  *     POST /buzon/:agente/pruebas/:taskId                  una pieza, firmada por su autor
  *     POST /buzon/:agente/pruebas-archivo/:taskId          un archivo para una pieza
  *     GET  /buzon/:agente/pruebas-archivo/:taskId/:hash    se lleva uno
+ *   Las de una tarea del tablón con reglas van igual, bajo quien la cogió y
+ *   por su tarea del escrow, con `?job=<jobId>`: su cliente en el escrow es el
+ *   contrato, y el de verdad sale de ese encargo (ver `clienteDe`).
  *
  *   El tablón con reglas (PanalTablon), bajo SU dirección y por número de
  *   encargo, no de tarea (ver `tablonConReglas` más abajo):
@@ -710,6 +713,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     agente: Address,
     id: bigint,
     esTablon: boolean,
+    url: URL,
     req: IncomingMessage,
     res: ServerResponse,
   ): Promise<void> => {
@@ -751,7 +755,11 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     } else {
       const task = await tareaDe(agente, id, res);
       if (!task) return;
-      partes = [task.client, task.worker];
+      // Una tarea del tablón con reglas, por su encargo (ver `clienteDe`): las
+      // pruebas de su disputa viven aquí, bajo quien trabaja.
+      const cliente = await clienteDe(task, id, url, res);
+      if (cliente === undefined) return;
+      partes = [...(cliente ? [cliente] : []), task.worker];
     }
     partes = partes.map((x) => x.toLowerCase());
     if (!partes.includes(address.toLowerCase())) {
@@ -872,7 +880,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
   ): Promise<boolean> => {
     const deAcceso = /^access\/(\d{1,20})$/.exec(resto);
     if (deAcceso && req.method === 'POST') {
-      await recibirAccesos(agente, BigInt(deAcceso[1]!), esTablon, req, res);
+      await recibirAccesos(agente, BigInt(deAcceso[1]!), esTablon, url, req, res);
       return true;
     }
     const deDisputa = /^dispute\/(\d{1,20})(?:\/file\/(.+))?$/.exec(resto);
@@ -1664,6 +1672,37 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
   };
 
+  /**
+   * El cliente de verdad de una tarea del escrow, en minúsculas.
+   *
+   * En las del tablón con reglas el cliente del escrow es el propio contrato
+   * PanalTablon; el de verdad está en su encargo. La tarea no dice de qué
+   * encargo viene y el contrato no guarda el camino de vuelta, así que lo dice
+   * quien pregunta (`?job=<jobId>`) y aquí se comprueba en la cadena: que ese
+   * encargo existe y que su tarea del escrow es esta. Un número inventado no
+   * cuadra y deja la tarea sin cliente.
+   *
+   * null: esa tarea no tiene aquí un cliente que pueda firmar (del tablón y
+   * sin un encargo que cuadre). undefined: la cadena no contestó y ya se ha
+   * respondido.
+   */
+  const clienteDe = async (task: Task, taskId: bigint, url: URL, res: ServerResponse): Promise<string | null | undefined> => {
+    if (!deps.tablon || task.client.toLowerCase() !== deps.tablon.toLowerCase()) return task.client.toLowerCase();
+    const job = url.searchParams.get('job');
+    if (!deps.fetchJob || !job || !/^\d{1,20}$/.test(job)) return null;
+    let encargo: TrabajoTablon;
+    try {
+      encargo = await deps.fetchJob(BigInt(job));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('InvalidJob') || esRevert(err)) return null;
+      console.warn(`[buzon] no se pudo leer getJob(${job}): ${msg.split('\n')[0]}`);
+      json(res, 502, { error: 'rpc error' });
+      return undefined;
+    }
+    return encargo.escrowTaskId === taskId ? encargo.client.toLowerCase() : null;
+  };
+
   /** El texto de un POST del tablón, con su tope. */
   const textoDe = async (req: IncomingMessage, campo: string, max: number, res: ServerResponse) => {
     // Un sobre cifrado ocupa más que su texto: se le deja el mismo margen que
@@ -2233,8 +2272,8 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     res: ServerResponse,
   ): Promise<{ task: Task; cuenta: Address; rol: 'cliente' | 'trabajador' | 'juez' } | null> => {
     if (agente === TABLON) {
-      // Las disputas del tablón tienen otras partes (las del encargo del
-      // tablón, no las de la tarea del escrow). Llegarán aparte.
+      // Las pruebas van bajo quien trabaja, no bajo la dirección cero del
+      // tablón sin dueño: una tarea en disputa ya tiene a alguien que la cogió.
       json(res, 404, { error: 'not here' });
       return null;
     }
@@ -2250,8 +2289,11 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
     const task = await tareaDe(agente, taskId, res);
     if (!task) return null;
+    // En las del tablón con reglas, el de su encargo (ver `clienteDe`).
+    const cliente = await clienteDe(task, taskId, url, res);
+    if (cliente === undefined) return null;
     const yo = cuenta.toLowerCase();
-    if (yo === task.client.toLowerCase()) return { task, cuenta, rol: 'cliente' };
+    if (yo === cliente) return { task, cuenta, rol: 'cliente' };
     if (yo === task.worker.toLowerCase()) return { task, cuenta, rol: 'trabajador' };
     // Un juez solo mientras la disputa siga abierta: no tiene por qué leer
     // expedientes que nadie le ha traído.
@@ -2299,7 +2341,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
   };
 
   // POST /pruebas/:taskId — una pieza, con los archivos que ya subió y su firma.
-  const recibirPieza = async (agente: Address, taskId: bigint, req: IncomingMessage, res: ServerResponse) => {
+  const recibirPieza = async (agente: Address, taskId: bigint, url: URL, req: IncomingMessage, res: ServerResponse) => {
     if (agente === TABLON) {
       json(res, 404, { error: 'not here' });
       return;
@@ -2336,8 +2378,10 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
     const task = await tareaDe(agente, taskId, res);
     if (!task) return;
+    const cliente = await clienteDe(task, taskId, url, res);
+    if (cliente === undefined) return;
     const yo = autor.toLowerCase();
-    const de = yo === task.client.toLowerCase() ? 'cliente' : yo === task.worker.toLowerCase() ? 'trabajador' : null;
+    const de = yo === cliente ? 'cliente' : yo === task.worker.toLowerCase() ? 'trabajador' : null;
     if (!de) {
       json(res, 403, { error: 'not a party' });
       return;
@@ -2595,7 +2639,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       if (dePruebas) {
         const id = BigInt(dePruebas[1]!);
         if (req.method === 'GET') await darPruebas(agente, id, url, req, res);
-        else if (req.method === 'POST') await recibirPieza(agente, id, req, res);
+        else if (req.method === 'POST') await recibirPieza(agente, id, url, req, res);
         else json(res, 405, { error: 'method not allowed' });
         return;
       }

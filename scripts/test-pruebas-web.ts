@@ -35,7 +35,7 @@ import {
 } from '@panal/sdk';
 import { createBuzonServer } from '../bot/src/buzon';
 import { BuzonStore } from '../bot/src/buzon-store';
-import { NATIVE_CURRENCY, TaskStatus, type Task } from '../bot/src/chain';
+import { NATIVE_CURRENCY, TaskStatus, type Task, type TrabajoTablon } from '../bot/src/chain';
 import {
   abrirPieza,
   aportarPieza,
@@ -94,8 +94,25 @@ const tarea = (worker: Address): Task => ({
   status: TaskStatus.Disputed,
   currency: NATIVE_CURRENCY,
 });
-/** #1 con Marta (tiene clave); #2 con una cuenta que no la tiene. */
-const TAREAS: Record<string, Task> = { '1': tarea(persona.address), '2': tarea(sinClave.address) };
+/**
+ * El tablón con reglas: la tarea #30 es la del encargo #8. En el escrow su
+ * cliente es el contrato; el de verdad, el del encargo.
+ */
+const PANAL_TABLON = getAddress('0x7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a');
+const ENCARGO_8: TrabajoTablon = {
+  client: cliente.address,
+  state: 1,
+  agent: persona.address,
+  taskHash: keccak256(toBytes('el encargo del tablón')),
+  advertHash: keccak256(toBytes('el anuncio')),
+  escrowTaskId: 30n,
+};
+/** #1 con Marta (tiene clave); #2 con una cuenta que no la tiene; #30 la del tablón. */
+const TAREAS: Record<string, Task> = {
+  '1': tarea(persona.address),
+  '2': tarea(sinClave.address),
+  '30': { ...tarea(persona.address), client: PANAL_TABLON },
+};
 
 const server = createBuzonServer({
   store: new BuzonStore(mkdtempSync(join(tmpdir(), 'panal-pruebas-web-'))),
@@ -106,6 +123,11 @@ const server = createBuzonServer({
   },
   fetchDisputedAt: async () => ahora - 3_600n,
   fetchArbitros: async () => [juezA.address, juezB.address],
+  tablon: PANAL_TABLON,
+  fetchJob: async (id) => {
+    if (id !== 8n) throw new Error('execution reverted: InvalidJob()');
+    return ENCARGO_8;
+  },
   fetchAgent: async () => ({ owner: persona.address, metadataURI: 'Marta', pricePerTask: 1n, active: true }) as never,
   contratos: {
     escrow: getAddress('0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9'),
@@ -123,8 +145,8 @@ const raiz = `http://127.0.0.1:${dir.port}/buzon`;
 const base = buzonDePruebas(persona.address, raiz);
 
 /** Lo que ve una cuenta: el expediente abierto con lo suyo. */
-async function verComo(c: Cuenta, id: bigint, b = base): Promise<{ piezas: PiezaLegible[]; accesos: Acceso[] }> {
-  const cred = await credencialDePruebas(id, c.address, firmarCon(c));
+async function verComo(c: Cuenta, id: bigint, b = base, jobId?: bigint): Promise<{ piezas: PiezaLegible[]; accesos: Acceso[] }> {
+  const cred = await credencialDePruebas(id, c.address, firmarCon(c), jobId);
   const e = await leerPruebas(b, id, cred);
   return { piezas: await Promise.all(e.piezas.map((p) => abrirPieza(id, p, e.archivos, e.accesos, abrirTextoCon(c)))), accesos: e.accesos };
 }
@@ -211,6 +233,47 @@ try {
   check('la pieza va en claro y se lee', enClaro.piezas[0]?.cifrada === false && enClaro.piezas[0]?.texto === 'No entregó nada.');
   check('con el nombre de su archivo, del índice del buzón', enClaro.piezas[0]?.archivos[0]?.name === 'factura.pdf');
   check('y su firma', enClaro.piezas[0]?.firmaOk === true);
+
+  console.log('\n─── una disputa del tablón con reglas ───');
+  // Cifrada para el cliente DEL ENCARGO, no para el contrato del tablón.
+  const delTablon = await destinatariosDePruebas(ENCARGO_8.client, persona.address, [juezA.address, juezB.address], claveDePublicada);
+  check('se cifra para el cliente del encargo', delTablon.para?.[0]?.cuenta === cliente.address);
+  const credT = await credencialDePruebas(30n, cliente.address, firmarCon(cliente), 8n);
+  check('la credencial lleva el encargo', credT.job === '8');
+  await aportarPieza({
+    base,
+    taskId: 30n,
+    texto: 'La traducción del tablón llegó a medias.',
+    archivos: [{ name: 'lo que llegó.txt', bytes: new TextEncoder().encode('Capítulo 1 de 3'), mime: 'text/plain' }],
+    para: delTablon.para,
+    cred: credT,
+    yo: cliente.address,
+    firmar: firmarCon(cliente),
+  });
+  const vistaT = await verComo(persona, 30n);
+  check('quien lo cogió lo abre sin decir el encargo', vistaT.piezas[0]?.texto === 'La traducción del tablón llegó a medias.', String(vistaT.piezas[0]?.texto));
+  check('como pieza del cliente, firmada por él', vistaT.piezas[0]?.de === 'cliente' && vistaT.piezas[0]?.autor === cliente.address && vistaT.piezas[0]?.firmaOk);
+  const credTP = await credencialDePruebas(30n, persona.address, firmarCon(persona));
+  const archivoT = await bajarArchivoDePruebas({ base, taskId: 30n, archivo: vistaT.piezas[0]!.archivos[0]!, cred: credTP, accesos: [], abrir: abrirBytesCon(persona) });
+  check('y su archivo', new TextDecoder().decode(archivoT) === 'Capítulo 1 de 3');
+  await aportarPieza({ base, taskId: 30n, texto: 'Entregué lo que decía el anuncio.', archivos: [], para: delTablon.para, cred: credTP, yo: persona.address, firmar: firmarCon(persona) });
+  const vistaTC = await verComo(cliente, 30n, base, 8n);
+  check('el cliente lee la respuesta, con su encargo', vistaTC.piezas.length === 2 && vistaTC.piezas[1]?.texto === 'Entregué lo que decía el anuncio.');
+  const sinEncargo = await leerPruebas(base, 30n, await credencialDePruebas(30n, cliente.address, firmarCon(cliente))).catch((e: Error) => e);
+  check('sin el encargo, el buzón no sabe que es el cliente', sinEncargo instanceof Error && sinEncargo.message === 'not a party', String(sinEncargo));
+  const vistaTA = await verComo(juezA, 30n);
+  check('el juez con clave lee las dos', vistaTA.piezas.every((p) => p.texto !== null && p.firmaOk));
+  // El juez B ya tiene clave (de antes): el cliente del encargo le da acceso.
+  const objetosT = await objetosParaDarAcceso({ base, taskId: 30n, piezas: vistaTC.piezas, cred: credT });
+  const accesosT = objetosT.map((o) => concederAcceso(o, cliente.address, secretaCliente, { cuenta: juezB.address, clave: claveB.publica }, []));
+  const expiraT = Math.floor(Date.now() / 1000) + 300;
+  const cuerpoT = JSON.stringify({ accesos: accesosT, address: cliente.address, signature: await cliente.signMessage({ message: accesoSignMessage(30n, expiraT) }), expira: expiraT });
+  const sinJob = await fetch(`${base}/access/30`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: cuerpoT });
+  check('dar acceso sin decir el encargo no vale', sinJob.status === 403, String(sinJob.status));
+  const conJob = await fetch(`${base}/access/30?job=8`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: cuerpoT });
+  check('diciéndolo, sí', conJob.status === 200, String(conJob.status));
+  const vistaTB = await verComo(juezB, 30n);
+  check('y el juez B lee las dos', vistaTB.piezas.every((p) => p.texto !== null), JSON.stringify(vistaTB.piezas.map((p) => p.texto)));
 } finally {
   server.close();
 }

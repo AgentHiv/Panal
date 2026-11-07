@@ -23,9 +23,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { getAddress, keccak256, toBytes, verifyMessage, type Address, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { contenidoDePieza, createBuzonServer, piezaSignMessage, pruebasSignMessage } from '../src/buzon.js';
+import { accesoSignMessage, contenidoDePieza, createBuzonServer, piezaSignMessage, pruebasSignMessage } from '../src/buzon.js';
 import { BuzonStore } from '../src/buzon-store.js';
-import { NATIVE_CURRENCY, TaskStatus, type Task } from '../src/chain.js';
+import { NATIVE_CURRENCY, TaskStatus, type Task, type TrabajoTablon } from '../src/chain.js';
 
 /** Una pieza como la sirve el buzón (`PiezaDeDisputa` en el SDK). */
 interface Pieza {
@@ -71,9 +71,24 @@ function tarea(status: TaskStatus): Task {
     currency: NATIVE_CURRENCY,
   };
 }
-/** #1 en disputa desde ayer; #2 en disputa desde hace ocho días; #3 entregada. */
-const TAREAS: Record<string, Task> = { '1': tarea(TaskStatus.Disputed), '2': tarea(TaskStatus.Disputed), '3': tarea(TaskStatus.Delivered) };
-const ABIERTA: Record<string, bigint> = { '1': ahora - 86_400n, '2': ahora - 8n * 86_400n, '3': 0n };
+/**
+ * El tablón con reglas: en el escrow, el cliente de sus tareas es el contrato.
+ * El de verdad está en el encargo, y la tarea #10 es la del encargo #4.
+ */
+const PANAL_TABLON = getAddress('0x7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a');
+const ENCARGOS: Record<string, TrabajoTablon> = {
+  '4': { client: cliente.address, state: 1, agent: AGENTE, taskHash: keccak256(toBytes('el encargo')), advertHash: keccak256(toBytes('el anuncio')), escrowTaskId: 10n },
+  // Otro encargo, de otra tarea: no sirve para la #10.
+  '5': { client: intruso.address, state: 1, agent: AGENTE, taskHash: keccak256(toBytes('otro')), advertHash: keccak256(toBytes('otro')), escrowTaskId: 99n },
+};
+/** #1 en disputa desde ayer; #2 en disputa desde hace ocho días; #3 entregada; #10 la del tablón, en disputa. */
+const TAREAS: Record<string, Task> = {
+  '1': tarea(TaskStatus.Disputed),
+  '2': tarea(TaskStatus.Disputed),
+  '3': tarea(TaskStatus.Delivered),
+  '10': { ...tarea(TaskStatus.Disputed), client: PANAL_TABLON },
+};
+const ABIERTA: Record<string, bigint> = { '1': ahora - 86_400n, '2': ahora - 8n * 86_400n, '3': 0n, '10': ahora - 3_600n };
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = '') => {
@@ -91,6 +106,12 @@ async function main() {
     },
     fetchDisputedAt: async (taskId) => ABIERTA[taskId.toString()] ?? 0n,
     fetchArbitros: async () => [juez.address],
+    tablon: PANAL_TABLON,
+    fetchJob: async (jobId) => {
+      const j = ENCARGOS[jobId.toString()];
+      if (!j) throw new Error('execution reverted: InvalidJob()');
+      return j;
+    },
     fetchAgent: async () => ({ owner: persona.address, metadataURI: 'Marta', pricePerTask: 1n, active: true }) as never,
     contratos: {
       escrow: getAddress('0xe138A9A492CFe27A13f8b7A6D312DA831791bCe9'),
@@ -201,6 +222,59 @@ async function main() {
   const tocada = { ...visto.piezas[0]!, texto: 'El buzón cambió el motivo.' };
   check('y una pieza cambiada después no pasa', !(await verificarPieza(1n, tocada)));
   check('ni la de otra tarea', !(await verificarPieza(2n, visto.piezas[0]!)));
+
+  console.log('\n─── una disputa del tablón con reglas ───');
+  // Su cliente en el escrow es PanalTablon; el de verdad lo dice el encargo.
+  const conJob = (job?: string) => (job === undefined ? '' : `?job=${job}`);
+  const leerT = async (quien: typeof cliente, job?: string) =>
+    fetch(`${base}/pruebas/10${conJob(job)}`, { headers: cabeceras(await cred(quien, 10n)) });
+  const aportarT = async (quien: typeof cliente, texto: string, job?: string) => {
+    const fecha = new Date().toISOString();
+    const firma = await quien.signMessage({ message: piezaSignMessage(10n, contenidoDePieza(texto, []), fecha) });
+    return fetch(`${base}/pruebas/10${conJob(job)}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ address: quien.address, texto, archivos: [], fecha, firma }),
+    });
+  };
+  check('el cliente del encargo lee, diciendo cuál es', (await leerT(cliente, '4')).status === 200);
+  check('sin decirlo, no es parte', (await leerT(cliente)).status === 403);
+  check('con el encargo de otra tarea, tampoco', (await leerT(cliente, '5')).status === 403);
+  check('ni con uno que no existe (y no es un fallo de la cadena)', (await leerT(cliente, '77')).status === 403);
+  check('ni con basura en el número', (await leerT(cliente, 'x')).status === 403);
+  check('el cliente de otro encargo no lee este', (await leerT(intruso, '5')).status === 403);
+  check('el cliente aporta el motivo', (await aportarT(cliente, 'No entregó lo que pedí en el tablón.', '4')).status === 200);
+  check('sin decir el encargo, no', (await aportarT(cliente, 'otra', undefined)).status === 403);
+  check('quien lo cogió aporta sin más: ya es el trabajador del escrow', (await aportarT(persona, 'Sí lo entregué.')).status === 200);
+  check('el juez lee sin decir el encargo', (await leerT(juez)).status === 200);
+  const delTablon = (await (await leerT(juez)).json()) as { piezas: Pieza[] };
+  check('dos piezas, una de cada parte', delTablon.piezas.map((p) => p.de).join(',') === 'cliente,trabajador');
+  check('la del cliente lleva su cuenta, no la del contrato', delTablon.piezas[0]!.autor === cliente.address);
+  let firmasT = true;
+  for (const p of delTablon.piezas) firmasT &&= await verificarPieza(10n, p);
+  check('y las firmas se comprueban con la tarea del escrow', firmasT);
+
+  // Dar acceso a los jueces: el cliente del encargo también puede.
+  const acceso = {
+    o: `0x${'ab'.repeat(32)}`,
+    a: juez.address.toLowerCase(),
+    e: 'ZWZpbWVyYQ',
+    n: 'bm9uY2U',
+    k: 'Y2xhdmU',
+  };
+  const darAcceso = async (quien: typeof cliente, job?: string) => {
+    const expira = Math.floor(Date.now() / 1000) + 300;
+    const signature = await quien.signMessage({ message: accesoSignMessage(10n, expira) });
+    return fetch(`${base}/access/10${conJob(job)}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ accesos: [acceso], address: quien.address, signature, expira }),
+    });
+  };
+  check('el cliente del encargo da acceso a un juez', (await darAcceso(cliente, '4')).status === 200);
+  check('sin decir el encargo, no puede', (await darAcceso(cliente)).status === 403);
+  const accesosDelJuez = (await (await leerT(juez)).json()) as { accesos: { a: string }[] };
+  check('y el juez lo ve en su expediente', accesosDelJuez.accesos.some((x) => x.a === juez.address.toLowerCase()));
 
   server.close();
   console.log(fallos === 0 ? '\n✅ Las pruebas de una disputa: firmadas, con plazo y solo para quien toca\n' : `\n❌ ${fallos} comprobación(es) fallidas\n`);

@@ -641,6 +641,11 @@ function EncargoMio({ job, datos, yo, firma, abrir, T }: { job: EncargoConReglas
       if (libre !== null && ahora >= libre) acciones.push(directa('cerrar', 'settle'));
     } else if (tarea.estado === ESCROW.enDisputa) {
       estado = M.enDisputa;
+      acciones.push(
+        <Accion key="pruebas" tono="peligro" onClick={() => abrir({ tipo: 'pruebas', job })}>
+          {T.pruebas.boton}
+        </Accion>,
+      );
       if (botonEntrega) acciones.push(botonEntrega);
       if (confidencial) acciones.push(botonAcceso('arbitros'));
       if (reglas && ahora >= tarea.disputadaEn + reglas.disputaS) acciones.push(directa('recuperar', 'settle'));
@@ -849,6 +854,11 @@ function Trabajo({ datos, yo, esAgente, firma, abrir, T }: { datos: DatosDelTabl
                     onClick={() => void firma.ejecutar(claveCerrar, (e, c) => firmarYEsperar(e, c, enTablon('settle', [j.id])))}
                   >
                     {firma.ocupado === claveCerrar ? '…' : W.cerrar}
+                  </Accion>
+                )}
+                {tarea?.estado === ESCROW.enDisputa && (
+                  <Accion tono="peligro" onClick={() => abrir({ tipo: 'pruebas', job: j })}>
+                    {T.pruebas.boton}
                   </Accion>
                 )}
               </div>
