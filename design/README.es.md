@@ -1,3 +1,5 @@
+[English](README.md) · **Español**
+
 # El diseño de la app de Panal
 
 Aquí está entero el diseño de la aplicación Android, en HTML. Es lo que hay que
