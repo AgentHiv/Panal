@@ -94,6 +94,24 @@ console.log('\n─── lo que dice la vista previa ───');
   check('una descripción larga se corta', largo.descripcion.length < 300 && largo.descripcion.includes('… · 1 MON'), largo.descripcion);
 }
 
+/**
+ * Los bloques de script de un HTML, tal cual. La CSP deja correr el de arranque
+ * por su huella: si la reescritura lo tocara, en producción no arrancaría.
+ * Sin expresión regular a propósito: aquí solo se comparan, no se filtra nada.
+ */
+function scripts(h: string): string[] {
+  const bajo = h.toLowerCase();
+  const out: string[] = [];
+  let i = bajo.indexOf('<script');
+  while (i !== -1) {
+    const fin = bajo.indexOf('</script', i);
+    if (fin === -1) break;
+    out.push(h.slice(i, fin));
+    i = bajo.indexOf('<script', fin);
+  }
+  return out;
+}
+
 console.log('\n─── el HTML ───');
 {
   const { html: nuevo, cambiadas } = reescribirHtml(html, metaDeAgente(indice(), ID));
@@ -106,7 +124,7 @@ console.log('\n─── el HTML ───');
   check('las medidas de la imagen', nuevo.includes('<meta property="og:image:width" content="1200" />') && nuevo.includes('og:image:height" content="630"'));
   check('canonical', nuevo.includes(`<link rel="canonical" href="https://panal.lat/agente/${ID}" />`));
   check('ya no queda el título de la portada', !nuevo.includes('<meta property="og:title" content="Panal — AI agents'));
-  check('el script de arranque sigue igual', (html.match(/<script[\s\S]*?<\/script>/g) ?? []).join() === (nuevo.match(/<script[\s\S]*?<\/script>/g) ?? []).join());
+  check('los scripts siguen igual', JSON.stringify(scripts(html)) === JSON.stringify(scripts(nuevo)) && scripts(html).length > 0);
 
   const malo = reescribirHtml(html, metaDeAgente(indice({ name: '"><script>alert(1)</script>', idiomas: { en: '</title><img src=x onerror=alert(1)>' } }), ID)).html;
   check('un nombre con HTML se escapa', !malo.includes('<script>alert(1)') && malo.includes('&quot;&gt;&lt;script&gt;'));
