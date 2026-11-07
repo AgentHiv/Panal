@@ -62,6 +62,12 @@ export interface CredencialDePruebas {
   address: string;
   firma: string;
   expira: number;
+  /**
+   * El encargo del tablón con reglas de esta tarea, si es de allí. En el escrow
+   * su cliente es el contrato PanalTablon, y el buzón saca de este encargo al de
+   * verdad (lo comprueba en la cadena). Viaja como `?job=` en cada petición.
+   */
+  job?: string;
 }
 
 /** ¿Le queda vida a esta firma? Con margen, para que no caduque por el camino. */
@@ -69,9 +75,25 @@ export function sigueValiendo(c: CredencialDePruebas | null, ahoraS = Math.floor
   return !!c && c.expira - 30 > ahoraS;
 }
 
-export async function credencialDePruebas(taskId: bigint, yo: string, firmar: Firmar): Promise<CredencialDePruebas> {
+export async function credencialDePruebas(
+  taskId: bigint,
+  yo: string,
+  firmar: Firmar,
+  /** Si la tarea es de un encargo del tablón con reglas, su número. */
+  jobId?: bigint,
+): Promise<CredencialDePruebas> {
   const expira = Math.floor(Date.now() / 1000) + VIDA_FIRMA_S;
-  return { address: yo, firma: await firmar(pruebasSignMessage(taskId, expira)), expira };
+  return {
+    address: yo,
+    firma: await firmar(pruebasSignMessage(taskId, expira)),
+    expira,
+    ...(jobId !== undefined ? { job: jobId.toString() } : {}),
+  };
+}
+
+/** La ruta de una tarea en el buzón, con su encargo del tablón si lo tiene. */
+function ruta(base: string, que: string, taskId: bigint, cred: CredencialDePruebas, resto = ''): string {
+  return `${sinBarraFinal(base)}/${que}/${taskId.toString()}${resto}${cred.job ? `?job=${cred.job}` : ''}`;
 }
 
 const cabeceras = (c: CredencialDePruebas): Record<string, string> => ({
@@ -102,7 +124,7 @@ export interface ExpedienteCrudo extends ExpedienteDeDisputa {
 }
 
 export async function leerPruebas(base: string, taskId: bigint, cred: CredencialDePruebas): Promise<ExpedienteCrudo> {
-  const res = await fetch(`${sinBarraFinal(base)}/pruebas/${taskId.toString()}`, { headers: cabeceras(cred) });
+  const res = await fetch(ruta(base, 'pruebas', taskId, cred), { headers: cabeceras(cred) });
   if (!res.ok) throw await fallo(res);
   const r = (await res.json()) as Partial<ExpedienteCrudo>;
   return {
@@ -208,7 +230,7 @@ export async function destinatariosDePruebas(
 }
 
 async function subirBytes(base: string, taskId: bigint, archivo: { name: string; bytes: Uint8Array; mime?: string }, cred: CredencialDePruebas): Promise<string> {
-  const res = await fetch(`${sinBarraFinal(base)}/pruebas-archivo/${taskId.toString()}`, {
+  const res = await fetch(ruta(base, 'pruebas-archivo', taskId, cred), {
     method: 'POST',
     headers: {
       ...cabeceras(cred),
@@ -247,7 +269,7 @@ export async function aportarPieza(o: {
   const texto = o.para ? cifrarTexto(JSON.stringify({ t: o.texto, a: anunciados }), o.para) : o.texto;
   const fecha = new Date().toISOString();
   const firma = await o.firmar(piezaSignMessage(o.taskId, contenidoDePieza(texto, guardados), fecha));
-  const res = await fetch(`${sinBarraFinal(o.base)}/pruebas/${o.taskId.toString()}`, {
+  const res = await fetch(ruta(o.base, 'pruebas', o.taskId, o.cred), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ address: o.yo, texto, archivos: guardados.map((g) => ({ hash: g.hash })), fecha, firma }),
@@ -264,7 +286,7 @@ export async function bajarArchivoDePruebas(o: {
   accesos: Acceso[];
   abrir: AbrirBytes;
 }): Promise<Uint8Array> {
-  const res = await fetch(`${sinBarraFinal(o.base)}/pruebas-archivo/${o.taskId.toString()}/${o.archivo.hash}`, {
+  const res = await fetch(ruta(o.base, 'pruebas-archivo', o.taskId, o.cred, `/${o.archivo.hash}`), {
     headers: cabeceras(o.cred),
   });
   if (!res.ok) throw await fallo(res);
@@ -289,7 +311,7 @@ export async function objetosParaDarAcceso(o: {
     if (!p.cifrada || p.texto === null) continue;
     objetos.push(p.cruda.texto);
     for (const a of p.cruda.archivos) {
-      const res = await fetch(`${sinBarraFinal(o.base)}/pruebas-archivo/${o.taskId.toString()}/${a.hash}`, { headers: cabeceras(o.cred) });
+      const res = await fetch(ruta(o.base, 'pruebas-archivo', o.taskId, o.cred, `/${a.hash}`), { headers: cabeceras(o.cred) });
       if (!res.ok) continue;
       const bytes = new Uint8Array(await res.arrayBuffer());
       if (keccak256(bytes).toLowerCase() === a.hash.toLowerCase()) objetos.push(bytes);

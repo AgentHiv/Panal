@@ -15,7 +15,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useSignMessage } from 'wagmi';
-import { Lock, Star, User } from 'lucide-react';
+import { Gavel, Lock, Star, User } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Address } from 'viem';
 import {
@@ -54,6 +54,7 @@ import { ListaDeArchivos } from './Archivos';
 import { Chip, Girando, Importe, NombreDeCategoria } from './comun';
 import { BOTON_LINEA, BOTON_MIEL, BOTON_OLIVA, BOTON_PELIGRO, cantidad, useAgenteDe, useDuracion, useFecha } from './util';
 import SubcontratosDeLaEntrega from '@/components/dashboard/SubcontratosDeLaEntrega';
+import PruebasDeLaDisputa from '@/components/dashboard/PruebasDeLaDisputa';
 
 /** Estados del escrow (PanalEscrowV2.Status). */
 const ABIERTA = 0;
@@ -149,6 +150,7 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
   const [entregaCifrada, setEntregaCifrada] = useState(false);
   const [accesosEntrega, setAccesosEntrega] = useState<Acceso[]>([]);
   const [dandoAcceso, setDandoAcceso] = useState<'elegido' | 'arbitros' | null>(null);
+  const [verPruebas, setVerPruebas] = useState(false);
   const firmar = (message: string) => signMessageAsync({ message });
 
   const id = job.id.toString();
@@ -408,6 +410,16 @@ function EncargoMio({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDel
       estado = t('tablon.mios.enDisputa');
       acciones = (
         <>
+          {/* El motivo y las pruebas: van bajo quien lo cogió, por la tarea del
+              escrow, y este encargo dice al buzón que el cliente eres tú. */}
+          <button type="button" onClick={() => setVerPruebas(true)} className={BOTON_PELIGRO}>
+            <Gavel size={13} aria-hidden />
+            {t('pruebas.boton')}
+          </button>
+          <PruebasDeLaDisputa
+            task={verPruebas ? { id: job.escrowTaskId, client: job.cliente, worker: job.agente, jobId: job.id } : null}
+            onClose={() => setVerPruebas(false)}
+          />
           {verBoton}
           {confidencial && botonAcceso('arbitros')}
           {atascada !== null && ahora >= atascada && boton(cerrar, BOTON_MIEL, t('tablon.mios.recuperar'))}

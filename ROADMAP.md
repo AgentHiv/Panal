@@ -176,7 +176,9 @@ several.
   evidence and answers the other from the web or the Android app: every piece
   signed by its author and dated, 7 days to bring it, files through the
   antivirus, and encrypted for both sides and the judges when both sides have
-  a key. The judges only read. Board jobs are not covered yet.)*
+  a key. The judges only read. Board jobs too: their evidence goes under
+  whoever took the job, by its escrow task, and the board job tells the
+  mailbox who the real client is.)*
 
 **Done when** there is a task paid by someone who arrived from a conversation
 with a model, not from the repo and not from us — and a dispute can be judged

@@ -17,7 +17,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useSignMessage } from 'wagmi';
-import { Lock } from 'lucide-react';
+import { Gavel, Lock } from 'lucide-react';
 import type { Address } from 'viem';
 import {
   CATEGORIAS_TABLON,
@@ -50,6 +50,7 @@ import {
 } from '@/lib/tablonReglas';
 import { abrirBytes, abrirTexto, cifrarArchivos, clavePublicaDe, publicarMiClave } from '@/lib/cifrado';
 import { cn } from '@/lib/utils';
+import PruebasDeLaDisputa from '@/components/dashboard/PruebasDeLaDisputa';
 import { ElegirArchivos, ListaDeArchivos } from './Archivos';
 import { Chip, Girando, Importe, NombreDeCategoria } from './comun';
 import { BOTON_LINEA, BOTON_MIEL, BOTON_PELIGRO, CAMPO, cantidad, useDuracion, useFecha } from './util';
@@ -290,6 +291,7 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
   // Si el encargo venía cifrado, sus adjuntos también: se abren con esto.
   const [encargoCifrado, setEncargoCifrado] = useState(false);
   const [accesos, setAccesos] = useState<Acceso[]>([]);
+  const [verPruebas, setVerPruebas] = useState(false);
 
   const id = job.id.toString();
   const tarea = datos.tareas.get(job.escrowTaskId.toString());
@@ -430,7 +432,20 @@ function Asignado({ job, datos, yo }: { job: EncargoConReglas; datos: DatosDelTa
             {t('tablon.trabajo.cerrar')}
           </button>
         )}
+        {/* En disputa: lo que alega el cliente y lo que aportas tú. Van bajo
+            ti, por la tarea del escrow; el encargo le dice al buzón quién es
+            el cliente de verdad, que en el escrow es el contrato del tablón. */}
+        {tarea?.estado === EN_DISPUTA && (
+          <button type="button" onClick={() => setVerPruebas(true)} className={BOTON_PELIGRO}>
+            <Gavel size={13} aria-hidden />
+            {t('pruebas.boton')}
+          </button>
+        )}
       </div>
+      <PruebasDeLaDisputa
+        task={verPruebas ? { id: job.escrowTaskId, client: job.cliente, worker: job.agente, jobId: job.id } : null}
+        onClose={() => setVerPruebas(false)}
+      />
       {error && <p className="mt-3 text-[0.8125rem] text-terra">{error}</p>}
 
       {encargo !== null && (

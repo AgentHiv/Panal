@@ -42,7 +42,12 @@ export default function HojaPruebas({
   encargo,
   onCerrar,
 }: {
-  encargo: { id: bigint; client: Address; worker: Address };
+  /**
+   * `id` es la tarea del escrow. En una del tablón con reglas, `client` es el
+   * cliente de su encargo (no el contrato) y `jobId` ese encargo: el buzón saca
+   * de él quién es el cliente de verdad.
+   */
+  encargo: { id: bigint; client: Address; worker: Address; jobId?: bigint };
   onCerrar: () => void;
 }): React.ReactElement {
   const T = useTextos();
@@ -90,7 +95,7 @@ export default function HojaPruebas({
     setAviso(null);
     setEstado('firmando');
     try {
-      const c = await credencialDePruebas(encargo.id, address, firmar);
+      const c = await credencialDePruebas(encargo.id, address, firmar, encargo.jobId);
       setCred(c);
       setEstado('cargando');
       const [destino] = await Promise.all([
@@ -195,7 +200,16 @@ export default function HojaPruebas({
     setDandoAcceso(true);
     try {
       const objetos = await objetosParaDarAcceso({ base, taskId: encargo.id, piezas, cred });
-      const r = await darAccesoALosArbitros({ base, id: encargo.id, esTablon: false, objetos, accesos: [], cuenta: address as Address, firmar });
+      const r = await darAccesoALosArbitros({
+        base,
+        id: encargo.id,
+        esTablon: false,
+        objetos,
+        accesos: [],
+        cuenta: address as Address,
+        firmar,
+        job: encargo.jobId,
+      });
       setAviso(P.accesoDado(r.arbitros));
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
