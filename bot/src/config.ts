@@ -401,7 +401,7 @@ export function loadConfig(): BotConfig {
   if (errors.length > 0) {
     console.error('\n❌ Configuración inválida. Revisa tu archivo .env:\n');
     for (const e of errors) console.error(`   • ${e}`);
-    console.error('\nConsulta bot/README.md sección "Configurar el .env".\n');
+    console.error('\nConsulta bot/README.es.md, sección «Configurar el .env» (en inglés, bot/README.md: «Configure the .env»).\n');
     process.exit(1);
   }
 

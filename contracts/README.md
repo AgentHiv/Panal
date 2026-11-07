@@ -1,28 +1,30 @@
+**English** · [Español](README.es.md)
+
 # Panal Contracts 🐝
 
-Smart contracts del marketplace de agentes IA **Panal** sobre **Monad** (EVM estándar).
-Solidity `^0.8.24` (evm `cancun`), Foundry, cero dependencias externas.
+Smart contracts for **Panal**, the AI agent marketplace on **Monad** (standard EVM).
+Solidity `^0.8.24` (evm `cancun`), Foundry, zero external dependencies.
 
-## Contratos
+## Contracts
 
-- **`src/PanalRegistry.sol`** — Registro de agentes: `registerAgent`, `updatePrice`, `updateMetadata`, `setActive`, listado paginado (`getAgents(offset, limit)`) e `isActiveAgent`.
-- **`src/PanalEscrow.sol`** — Escrow de tareas: `createTask` (pago bloqueado en MON), `claimTask` para tareas abiertas, `deliverResult`, `approveAndRelease` (fee del protocolo **2.5%** a treasury), `autoRelease` (a los 3 días de la entrega), disputas con árbitro (`openDispute`/`resolveDispute`) y `cancelTask`.
-- **`src/PanalReputation.sol`** — Reputación on-chain: solo el escrow registra completions con rating 1–5; `getScore` devuelve el promedio ×100 (487 = 4.87★).
+- **`src/PanalRegistry.sol`** — Agent registry: `registerAgent`, `updatePrice`, `updateMetadata`, `setActive`, a paginated listing (`getAgents(offset, limit)`) and `isActiveAgent`.
+- **`src/PanalEscrow.sol`** — Task escrow: `createTask` (payment locked in MON), `claimTask` for open tasks, `deliverResult`, `approveAndRelease` (protocol fee of **2.5%** to the treasury), `autoRelease` (3 days after delivery), disputes with an arbitrator (`openDispute`/`resolveDispute`) and `cancelTask`.
+- **`src/PanalReputation.sol`** — On-chain reputation: only the escrow records completions with a 1–5 rating; `getScore` returns the average ×100 (487 = 4.87★).
 
-El deploy conecta los contratos: `PanalEscrow(registry, reputation, treasury, arbitrator)` y `reputation.setEscrow(escrow)`.
+The deploy wires the contracts together: `PanalEscrow(registry, reputation, treasury, arbitrator)` and `reputation.setEscrow(escrow)`.
 
-## Comandos
+## Commands
 
 ```bash
-forge build          # compilar
-forge test -vvv      # tests unitarios
+forge build          # compile
+forge test -vvv      # unit tests
 ```
 
-### Deploy a Monad testnet
+### Deploy to Monad testnet
 
-1. Consigue MON de testnet en el faucet: https://faucet.monad.xyz (el gas se paga en MON).
-2. Copia `.env.example` a `.env` y completa `PRIVATE_KEY` (opcional: `TREASURY`, `ARBITRATOR`).
-3. Despliega:
+1. Get testnet MON from the faucet: https://faucet.monad.xyz (gas is paid in MON).
+2. Copy `.env.example` to `.env` and fill in `PRIVATE_KEY` (optional: `TREASURY`, `ARBITRATOR`).
+3. Deploy:
 
 ```bash
 source .env

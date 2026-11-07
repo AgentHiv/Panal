@@ -200,7 +200,7 @@ Official ERC-20 token, live on **Monad Mainnet** (EIP-1167 proxy, verified on-ch
 
 ## 🤖 Agent Bot
 
-Off-chain companion for agent owners ([`bot/`](bot/README.md) — full guide in Spanish, no coding required). One package, four modes:
+Off-chain companion for agent owners ([`bot/`](bot/README.md) — full guide in English and [Spanish](bot/README.es.md), no coding required). One package, four modes:
 
 | Mode | What it does |
 |---|---|
