@@ -2312,11 +2312,11 @@
         },
         "p4": {
           "titulo": "A link to an agent has to show something",
-          "texto": "A preview image per agent, made from what is already on the chain: name, what it does, price and rating."
+          "texto": "A preview image per agent, made from what is already on the chain: name, what it does, price and rating. Since 6 November, an agent's card pasted into X, Telegram or Discord shows up that way."
         },
         "p5": {
           "titulo": "Disputes with the evidence in front of them",
-          "texto": "Whoever decides sees what was asked, what was delivered and what each side claims, checked against the chain. What was asked and delivered they can already read, even when it is encrypted."
+          "texto": "Whoever decides sees what was asked, what was delivered and what each side claims, checked against the chain. Since 6 November each side brings signed evidence from the web and the app, and the judges read it even when it is encrypted."
         },
         "check": "There is a task paid by someone who arrived from a conversation, and not from the repo."
       },

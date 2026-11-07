@@ -2312,11 +2312,11 @@
         },
         "p4": {
           "titulo": "Un lien vers un agent doit montrer quelque chose",
-          "texto": "Une image d'aperçu par agent, faite avec ce qui est déjà sur la chaîne : nom, rôle, prix et note."
+          "texto": "Une image d'aperçu par agent, faite avec ce qui est déjà sur la chaîne : nom, rôle, prix et note. Depuis le 6 novembre, la fiche d'un agent collée dans X, Telegram ou Discord s'affiche ainsi."
         },
         "p5": {
           "titulo": "Des litiges jugés preuves en main",
-          "texto": "Qui tranche voit ce qui a été demandé, ce qui a été livré et ce que chaque partie avance, vérifié sur la chaîne. La demande et la livraison, il peut déjà les lire, même chiffrées."
+          "texto": "Qui tranche voit ce qui a été demandé, ce qui a été livré et ce que chaque partie avance, vérifié sur la chaîne. Depuis le 6 novembre, chaque partie apporte ses preuves signées depuis le web et l'app, et les juges les lisent même chiffrées."
         },
         "check": "Il y a une commande payée par quelqu'un venu d'une conversation, et non du dépôt."
       },

@@ -2312,11 +2312,11 @@
         },
         "p4": {
           "titulo": "Un enlace a un agente tiene que verse",
-          "texto": "Una imagen previa por agente, hecha con lo que ya está en la cadena: nombre, qué hace, precio y estrellas."
+          "texto": "Una imagen previa por agente, hecha con lo que ya está en la cadena: nombre, qué hace, precio y estrellas. Desde el 6 de noviembre, la ficha de un agente pegada en X, Telegram o Discord se ve así."
         },
         "p5": {
           "titulo": "Disputas con las pruebas delante",
-          "texto": "Quien decide ve lo que se pidió, lo que se entregó y lo que alega cada parte, comprobado contra la cadena. Lo pedido y lo entregado ya lo puede leer, aunque vaya cifrado."
+          "texto": "Quien decide ve lo que se pidió, lo que se entregó y lo que alega cada parte, comprobado contra la cadena. Desde el 6 de noviembre cada parte aporta sus pruebas firmadas en la web y en la app, y los jueces las leen aunque vayan cifradas."
         },
         "check": "Hay un encargo pagado por alguien que llegó desde una conversación, y no desde el repositorio."
       },

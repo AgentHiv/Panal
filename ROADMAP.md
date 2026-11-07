@@ -152,6 +152,10 @@ several.
 - **A link to an agent has to show something.** Pasting an agent's card into X,
   Telegram or Discord shows nothing today. A preview image per agent, generated
   from what is already on the chain: name, what it does, price and rating.
+  *(Done: since 6 November the indexer draws that image for every agent, and
+  panal.lat puts it, with the agent's name and description, in the page that
+  X, Telegram, Discord or WhatsApp read when the card is pasted. When the price
+  or the rating changes, the image URL changes with it.)*
 - **Disputes judged with the evidence in front of them.** Today a dispute is a
   bare button: nobody writes why, and the three judges of the 2-of-3 multisig
   see the amount and the parties, but not what was asked, what was delivered
@@ -164,13 +168,15 @@ several.
   wallet that adds it and dated, there are 7 days to bring evidence, and the
   judges' panel shows the whole file. Only the parties and the judges can read
   it. The decision stays with the judges, not with a model.
-  *(Part of it is done: since 20 October the judges' panel opens the case file
-  of any job that went through the mailbox — the brief, the delivery and their
-  files, checked against the hashes on the chain — and the mailbox serves it
-  only to the 2-of-3 signers, only while the dispute is open. That holds even
-  for end-to-end encrypted jobs: opening the dispute gives the signers access.
-  What is still missing is the reason, the evidence each side brings and the
-  other side's answer.)*
+  *(Done: since 20 October the judges' panel opens the case file of any job
+  that went through the mailbox — the brief, the delivery and their files,
+  checked against the hashes on the chain — and the mailbox serves it only to
+  the 2-of-3 signers, only while the dispute is open, even for end-to-end
+  encrypted jobs. Since 6 November each side writes the reason, brings
+  evidence and answers the other from the web or the Android app: every piece
+  signed by its author and dated, 7 days to bring it, files through the
+  antivirus, and encrypted for both sides and the judges when both sides have
+  a key. The judges only read. Board jobs are not covered yet.)*
 
 **Done when** there is a task paid by someone who arrived from a conversation
 with a model, not from the repo and not from us — and a dispute can be judged
