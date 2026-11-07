@@ -188,6 +188,16 @@ jobs:
       - name: La CSP deja correr el script de index.html
         run: pnpm exec tsx scripts/test-csp.ts
 
+      # El Worker de panal.lat pone en la ficha de cada agente su título, su
+      # descripción y su imagen. wrangler lo empaqueta sin mirar tipos: esto sí.
+      # Y la prueba va sobre el index.html recién construido, que es el que
+      # reescribe: si una etiqueta desaparece de ahí, lo dice.
+      - name: Tipos del Worker
+        run: pnpm exec tsc -p worker/tsconfig.json
+
+      - name: La ficha de cada agente sale con su vista previa
+        run: pnpm exec tsx scripts/test-vista-previa-web.ts
+
   packages:
     name: SDK y MCP contra Monad mainnet (solo lectura)
     runs-on: ubuntu-latest
@@ -394,6 +404,10 @@ jobs:
       - name: Pruebas de una disputa (firmadas, con plazo, solo las partes y los jueces)
         working-directory: bot
         run: pnpm exec tsx scripts/test-pruebas.ts
+
+      - name: Vista previa de un agente (la imagen, su huella y sus rutas)
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-vista-previa.ts
 
       - name: A2A (subcontratación, rechazo por calidad, timeout, $PANAL, topes)
         working-directory: bot

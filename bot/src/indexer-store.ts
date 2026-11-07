@@ -446,6 +446,9 @@ export interface AgentProfile {
  * `lint` hereda el nombre y ninguna de las 200 tareas que lo hicieron valer, y
  * el cliente que lo busca por el nombre tiene derecho a enterarse.
  */
+/** Un agente tal y como sale en el catálogo: su ficha, sus cifras y su nombre. */
+export type AgenteDelCatalogo = AgentProfile & { stats: AgentStats | null; nombre: NombreDeAgente | null };
+
 export interface NombreDeAgente {
   nombre: string;
   /** Cuándo pasó a ser de esta dirección (segundos epoch). */
@@ -1467,6 +1470,22 @@ export class IndexStore {
   }
 
   /**
+   * Un agente suelto, con la misma forma que en el catálogo. También si está en
+   * pausa: un enlace suyo que ya circula tiene que seguir enseñando de quién es.
+   */
+  agente(address: string): AgenteDelCatalogo | null {
+    const p = this.profile(address);
+    if (!p) return null;
+    const s = this.stats.agents.get(p.address.toLowerCase());
+    let stats: AgentStats | null = null;
+    if (s) {
+      const { ratingSum: _ratingSum, deliverySecSum: _deliverySecSum, ...resto } = s;
+      stats = resto;
+    }
+    return { ...p, stats, nombre: this.stats.nombreDe(p.address) };
+  }
+
+  /**
    * El catálogo filtrado y paginado.
    *
    * `q` busca en nombre, descripción y skills; `skill` solo en skills, que es
@@ -1479,7 +1498,7 @@ export class IndexStore {
     includeInactive?: boolean;
     offset?: number;
     limit?: number;
-  } = {}): { agents: (AgentProfile & { stats: AgentStats | null; nombre: NombreDeAgente | null })[]; total: number } {
+  } = {}): { agents: AgenteDelCatalogo[]; total: number } {
     const stats = new Map(this.stats.agentList().map((a) => [a.address, a]));
     let lista = [...this.profiles.values()];
 

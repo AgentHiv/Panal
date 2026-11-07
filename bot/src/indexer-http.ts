@@ -15,6 +15,12 @@
  *       Agentes con stats agregadas: { agents: [{ address, tasks, completed,
  *       avgRating, ratingCount, volume: { MON, $PANAL } (wei, string),
  *       firstSeenTs, lastSeenTs }] }.
+ *   GET /index/agent?address=0x…
+ *       Un agente suelto, con la forma de una entrada del catálogo (también si
+ *       está en pausa), y `preview.image`: la ruta de su imagen de vista previa.
+ *   GET /index/preview/<address>.png[?v=<huella>]
+ *       Esa imagen, 1200×630. Con la `v` de ahora se guarda una semana; sin ella
+ *       o con otra, diez minutos. Ver `vista-previa.ts`.
  *   GET /index/stats
  *       Contadores globales + series diarias: { lastBlock, totalEvents,
  *       byType, totals: { agents, tasks, completed }, daily30, daily7 }.
@@ -48,6 +54,7 @@
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { allowedOrigin, clientIp, crearLimitador, escuchar } from './net.js';
+import { huellaDeAgente, vistaPrevia } from './vista-previa.js';
 import type { BotConfig } from './config.js';
 import type {
   AgenteEnElTablon,
@@ -259,6 +266,42 @@ export function createIndexServer(deps: IndexServerDeps): Server {
       return;
     }
     const url = new URL(rawUrl, 'http://localhost');
+
+    // ---- La imagen de vista previa de un agente ------------------------------
+    //
+    // Va aparte del `switch` porque la dirección va en la ruta: así acaba en
+    // `.png`, y Cloudflare la guarda en su borde sin reglas nuevas. Admite HEAD
+    // porque hay quien pregunta antes de bajarla.
+    const preview = /^\/index\/preview\/(0x[0-9a-fA-F]{40})\.png$/.exec(url.pathname);
+    if (preview && (req.method === 'GET' || req.method === 'HEAD')) {
+      const agente = store.agente(preview[1]!);
+      if (!agente) {
+        json(res, 404, { error: 'agent not found' });
+        return;
+      }
+      let imagen: { huella: string; png: Buffer };
+      try {
+        imagen = vistaPrevia(agente);
+      } catch (err) {
+        console.error('[index] vista previa:', err instanceof Error ? err.message : err);
+        json(res, 500, { error: 'preview failed' });
+        return;
+      }
+      // Con la huella de ahora, la URL ya no cambia de contenido: una semana. Con
+      // otra o sin ella se sirve la imagen de ahora, pero poco rato.
+      const fija = url.searchParams.get('v') === imagen.huella;
+      res.removeHeader('vary');
+      res.writeHead(200, {
+        'content-type': 'image/png',
+        'content-length': imagen.png.length,
+        'cache-control': fija ? 'public, max-age=604800, immutable' : 'public, max-age=600',
+        'access-control-allow-origin': '*',
+        'x-content-type-options': 'nosniff',
+      });
+      res.end(req.method === 'HEAD' ? undefined : imagen.png);
+      return;
+    }
+
     if (req.method !== 'GET') {
       json(res, 404, { error: 'not found' });
       return;
@@ -412,6 +455,30 @@ export function createIndexServer(deps: IndexServerDeps): Server {
         }
         res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
         res.end(cuerpo);
+        return;
+      }
+
+      // ---- Un agente suelto ---------------------------------------------------
+      //
+      // Lo pide el Worker de panal.lat para poner el título, la descripción y la
+      // imagen en la página de un agente, que es lo que leen X, Telegram o
+      // Discord al pegar el enlace. Datos públicos, como el catálogo.
+      case '/index/agent': {
+        const address = url.searchParams.get('address');
+        if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address)) {
+          json(res, 400, { error: 'address required (0x + 40 hex)' });
+          return;
+        }
+        res.setHeader('access-control-allow-origin', '*');
+        res.removeHeader('vary');
+        const agente = store.agente(address);
+        if (!agente) {
+          json(res, 404, { error: 'agent not found' });
+          return;
+        }
+        const image = `/index/preview/${agente.address.toLowerCase()}.png?v=${huellaDeAgente(agente)}`;
+        res.setHeader('cache-control', 'public, max-age=60');
+        json(res, 200, { agent: agente, preview: { image }, lastBlock: store.lastBlock });
         return;
       }
 

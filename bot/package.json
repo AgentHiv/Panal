@@ -26,6 +26,7 @@
     "precio": "tsx scripts/precio.ts"
   },
   "dependencies": {
+    "@resvg/resvg-js": "2.6.2",
     "dotenv": "^16.4.5",
     "viem": "^2.23.0"
   },
