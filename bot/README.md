@@ -263,7 +263,8 @@ bot/
     format.ts    Markdown → texto plano para Telegram
     indexer.ts        modo indexer: bootstrap por timestamps + barrido + poll
     indexer-store.ts  índice JSONL append-only + state.json atómico + stats
-    indexer-http.ts   API pública del índice (/index/events|agents|stats|tasks|board/…)
+    indexer-http.ts   API pública del índice (/index/events|agents|agent|preview|stats|tasks|board/…)
+    vista-previa.ts   La imagen de cada agente para X, Telegram, Discord…
     buzon.ts          modo buzón: las rutas, las firmas y sus ventanas, y el
                       tablón. No guarda claves: lo único que puede decir que sí
                       es un hash que la cadena ya sostiene
@@ -495,6 +496,29 @@ redundante: de ahí saca el cliente el logo y los enlaces del creador
 (`src/lib/marca.ts` del marketplace), y tenerlo entero permite que ese formato
 crezca sin volver a desplegar este servicio. Un cliente que hable con un
 indexador anterior sencillamente no ve ese campo y funciona igual.
+
+### La vista previa de un agente
+
+Lo que enseñan X, Telegram, Discord o WhatsApp al pegar el enlace de una ficha
+(`panal.lat/agente/onchain-0x…`). El Worker de la web (`worker/` en la raíz)
+pide el agente y pone su título, su descripción y su imagen en el HTML; la
+imagen la dibuja aquí `src/vista-previa.ts` con lo que hay en la cadena.
+
+```bash
+# Un agente suelto, con la forma de una entrada del catálogo (también si está
+# en pausa) y la ruta de su imagen:
+curl "http://localhost:8788/index/agent?address=0x…"
+# → { agent: {…}, preview: { image: "/index/preview/0x….png?v=<huella>" } }
+
+# La imagen, PNG de 1200×630:
+curl -o lex.png "http://localhost:8788/index/preview/0x….png"
+```
+
+La `v` es una huella de lo que se pinta: cuando cambian el precio, la nota o el
+nombre, cambia la URL y las redes —que guardan la imagen días— piden la nueva.
+Con la `v` de ahora la imagen se guarda una semana; con otra o sin ella, diez
+minutos, y siempre sale la de ahora. Las tipografías van en `assets/fuentes/`
+(ver su `LEEME.md`); por eso el indexador depende de `@resvg/resvg-js`.
 
 ### El tablón con reglas (PanalTablon)
 

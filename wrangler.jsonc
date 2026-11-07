@@ -14,10 +14,20 @@
   "name": "panal",
   "compatibility_date": "2026-09-07",
 
-  // El sitio es una SPA estática: no hay código de servidor, así que no se
-  // declara `main`. El Worker sirve `dist/` y nada más.
+  // El sitio es una SPA estática y Cloudflare sirve `dist/` sin pasar por código
+  // nuestro, con UNA excepción: las fichas de los agentes. Esas pasan por
+  // `worker/index.ts`, que les pone el título, la descripción y la imagen de
+  // cada agente para que el enlace se vea al pegarlo en X, Telegram o Discord.
+  "main": "worker/index.ts",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
+
+    // Solo estas rutas pasan por el Worker; todo lo demás se sirve como antes,
+    // sin invocarlo (y sin que cuente como petición del Worker). Con una lista
+    // aquí, Cloudflare deja de mirar `Sec-Fetch-Mode` para decidirlo: manda lo
+    // que diga la lista. Exige wrangler 4.20 o más nuevo.
+    "run_worker_first": ["/agente/*"],
 
     // Cualquier ruta que no exista como archivo devuelve index.html con un 200,
     // que es lo que necesita react-router para que /agentes/lex cargue al
@@ -32,7 +42,8 @@
     //     Line 15: Infinite loop detected in this rule.
     //
     // Si algun dia se vuelve a Pages, hay que recrearlo — `not_found_handling`
-    // es cosa solo de Workers. `public/_headers`, en cambio, vale en los dos.
+    // es cosa solo de Workers. `public/_headers`, en cambio, vale en los dos,
+    // pero NO en lo que responde el Worker: por eso `worker/cabeceras.ts`.
     "not_found_handling": "single-page-application"
   },
 

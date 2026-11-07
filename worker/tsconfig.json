@@ -1,0 +1,16 @@
+{
+  // El Worker lo empaqueta wrangler (esbuild), que no comprueba tipos. Esto sí:
+  // `pnpm exec tsc -p worker/tsconfig.json` en el CI.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": [],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["*.ts"]
+}
