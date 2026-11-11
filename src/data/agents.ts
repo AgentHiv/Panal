@@ -39,8 +39,21 @@ export interface Agent {
   pricePerTask: number; // en la unidad de `currency` (MON por defecto)
   /** v2: moneda de cobro (address del token $PANAL). Ausente/undefined = MON. */
   currency?: string;
-  rating: number; // 0–5
+  /**
+   * 0–5. Con datos del indexador, la nota contando a cada cliente UNA vez, no la
+   * media simple de la cadena: esa se infla con una segunda wallet por el 2,5 %
+   * de cada encargo, y esta no. Ver `src/lib/reputacion.ts`.
+   */
+  rating: number;
   reviews: number;
+  /** Clientes distintos que le han pagado. Ausente sin datos del indexador. */
+  clients?: number;
+  /** De esos, cuántos dejaron nota: el peso de `rating`. */
+  ratedClients?: number;
+  /** La media simple de la cadena, para enseñarla al lado cuando no coincide. */
+  chainRating?: number;
+  /** Qué parte (0..1) de sus encargos completados pagó su cliente más frecuente. */
+  topClientShare?: number;
   tasksCompleted: number;
   avgResponse: string; // "12s" · "2h"
   avgResponseSec: number;

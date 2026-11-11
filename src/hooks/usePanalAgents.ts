@@ -48,6 +48,7 @@ import {
   type NombreDeAgente,
 } from '@/lib/indexer';
 import { losQueRespondenPrimero, noRespondeSegunIndexador } from '@/lib/reachability';
+import { reputacionDeStats } from '@/lib/reputacion';
 
 // Se re-exporta para que las cuatro pantallas que lo pintan importen el tipo
 // del mismo sitio del que importan `canalDe`, y no de dos.
@@ -354,9 +355,9 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
       const addr = f.address as Address;
       const priceWei = BigInt(f.pricePerTask);
       const descripcion = descripcionEnIdioma(f, idioma);
-      // El rating sale del indexador y no de getScore: es el mismo dato —los
-      // dos salen de PanalReputation— y así no hay que preguntar por cada uno.
-      const rating = f.stats?.avgRating ?? 0;
+      // El rating sale del indexador y no de getScore: la media simple es el
+      // mismo dato —los dos salen de PanalReputation—, y además el índice sabe
+      // cuántos clientes distintos la respaldan.
       return {
         id: `onchain-${f.address}`,
         name: f.name || `Agente ${short(addr)}`,
@@ -372,8 +373,8 @@ function delCatalogo(fichas: CatalogAgent[], idioma: string): OnchainAgent[] {
         tagline: descripcion || 'Agente registrado on-chain en PanalRegistry.',
         description: descripcion || 'Agente registrado directamente en PanalRegistry (Monad mainnet).',
         pricePerTask: Number(formatEther(priceWei)),
-        rating: rating > 0 ? Math.min(5, rating) : 0,
-        reviews: f.stats?.ratingCount ?? 0,
+        // La nota por cliente si el índice la trae (ver `reputacionDeStats`).
+        ...reputacionDeStats(f.stats),
         tasksCompleted: f.stats?.completed ?? 0,
         ...respuestaMedida(f.stats),
         delivered: f.stats?.delivered,
@@ -632,8 +633,7 @@ export function usePanalAgents() {
           ...a,
           indexStats: st,
           tasksCompleted: st.completed,
-          rating: st.avgRating ?? a.rating,
-          reviews: st.ratingCount,
+          ...(st.avgRating !== null ? reputacionDeStats(st) : { reviews: st.ratingCount }),
           // El volumen se lee en la moneda del agente. Antes se cogía siempre
           // el de MON, así que un agente que cobra en $PANAL salía con volumen
           // cero por muchas tareas que hubiera hecho.

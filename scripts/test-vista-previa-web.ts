@@ -88,6 +88,8 @@ console.log('\n─── lo que dice la vista previa ───');
   check('la imagen, en el indexador', m.imagen === `https://api.panal.lat/index/preview/${AGENTE}.png?v=abcdef012345`, String(m.imagen));
   const nuevo = metaDeAgente(indice({ stats: null, active: false, idiomas: {} }), ID);
   check('en pausa y sin votos, lo dice', nuevo.descripcion === 'Paused · Resume contratos · 1 MON per task · no ratings yet · 0 jobs completed', nuevo.descripcion);
+  const conClientes = metaDeAgente(indice({ stats: { completed: 20, avgRating: 5, ratingCount: 20, clients: 2, clientRating: 4 } }), ID);
+  check('con clientes, la nota por cliente y de cuántos', conClientes.descripcion.includes('★ 4.0 from 2 clients'), conClientes.descripcion);
   const raro = metaDeAgente({ ...indice(), preview: { image: 'https://evil.example/x.png' } }, ID);
   check('una imagen que no es del indexador no se pone', raro.imagen === null);
   const largo = metaDeAgente(indice({ idiomas: { en: 'palabra '.repeat(100) } }), ID);

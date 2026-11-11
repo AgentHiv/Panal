@@ -24,7 +24,7 @@
 
 import { useMemo } from 'react';
 import { usePanalAgents, type OnchainAgent } from '@/hooks/usePanalAgents';
-import { mediaDelMercado, reputacionOrdenable } from '@/lib/reputacion';
+import { mediaDelMercado, reputacionOrdenable, respaldo } from '@/lib/reputacion';
 
 /** Agente on-chain enriquecido (alias; el enriquecimiento es de usePanalAgents). */
 export type TopAgent = OnchainAgent;
@@ -43,8 +43,10 @@ export function useTopAgents() {
       (x, y) =>
         caido(x) - caido(y) ||
         reputacionOrdenable(y, media) - reputacionOrdenable(x, media) ||
-        y.tasksCompleted - x.tasksCompleted ||
-        y.reviews - x.reviews,
+        // Desempata quien tiene más clientes distintos detrás, no más tareas:
+        // veinte encargos de la misma wallet no deben ganarle a dos de gente distinta.
+        respaldo(y) - respaldo(x) ||
+        y.tasksCompleted - x.tasksCompleted,
     );
   }, [agents]);
 

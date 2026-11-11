@@ -178,6 +178,11 @@ jobs:
       - name: Las pruebas de una disputa, de la web al buzón y de vuelta
         run: pnpm exec tsx scripts/test-pruebas-web.ts
 
+      # La nota que se enseña cuenta a cada cliente una vez, y el mercado ordena
+      # por clientes distintos: veinte reseñas de la misma wallet pesan como una.
+      - name: La reputación cuenta clientes, no solo estrellas
+        run: pnpm exec tsx scripts/test-reputacion.ts
+
       - name: Build de produccion
         run: pnpm exec vite build
 
@@ -404,6 +409,10 @@ jobs:
       - name: Pruebas de una disputa (firmadas, con plazo, solo las partes y los jueces)
         working-directory: bot
         run: pnpm exec tsx scripts/test-pruebas.ts
+
+      - name: Clientes distintos y nota por cliente de cada agente
+        working-directory: bot
+        run: pnpm exec tsx scripts/test-clientes.ts
 
       - name: Vista previa de un agente (la imagen, su huella y sus rutas)
         working-directory: bot

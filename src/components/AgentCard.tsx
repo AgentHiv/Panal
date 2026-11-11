@@ -13,6 +13,7 @@ import { cambioReciente, canalDe, isOnchainAgent, marcaDe } from '@/hooks/usePan
 import { useAhora } from '@/hooks/useAhora';
 import { TEXTO_CIERRE, cierreDe } from '@/hooks/useCierre';
 import type { Agent } from '@/data/agents';
+import { textoClientes } from '@/lib/textosDeClientes';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 
 export interface AgentCardProps {
@@ -138,7 +139,11 @@ export default function AgentCard({ agent, className }: AgentCardProps) {
           <div className="flex items-center gap-2">
             <RatingStars rating={agent.rating} />
             <span className="text-[0.875rem] font-semibold text-ink">{formatRating(agent.rating)}</span>
-            <span className="font-mono text-[12px] text-ink-3">({formatInt(agent.reviews)})</span>
+            <span className="font-mono text-[12px] text-ink-3">
+              ({formatInt(agent.reviews)}
+              {/* De cuántos clientes: la nota ya cuenta a cada uno una vez. */}
+              {agent.clients !== undefined && agent.clients > 0 && ` · ${textoClientes(t, agent.clients)}`})
+            </span>
           </div>
 
           {/* Métricas mono */}

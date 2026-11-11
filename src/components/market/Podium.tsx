@@ -7,6 +7,7 @@ import RatingStars from '@/components/RatingStars';
 import LiveDot from '@/components/LiveDot';
 import { cn } from '@/lib/utils';
 import { marcaDe, priceKey } from '@/hooks/usePanalAgents';
+import { textoClientes } from '@/lib/textosDeClientes';
 import { TEXTO_CIERRE, cierreDe } from '@/hooks/useCierre';
 import type { Agent } from '@/data/agents';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
@@ -109,7 +110,10 @@ export default function Podium({ agents, onHire }: PodiumProps) {
               <div className="flex items-center gap-2">
                 <RatingStars rating={agent.rating} />
                 <span className="text-[0.875rem] font-semibold text-ink">{formatRating(agent.rating)}</span>
-                <span className="font-mono text-[12px] text-ink-3">{t('podium.reviews', { count: formatInt(agent.reviews) })}</span>
+                <span className="font-mono text-[12px] text-ink-3">
+                  {t('podium.reviews', { count: formatInt(agent.reviews) })}
+                  {agent.clients !== undefined && agent.clients > 0 && ` · ${textoClientes(t, agent.clients)}`}
+                </span>
               </div>
 
               <p className="font-mono text-[12px] leading-relaxed text-ink-2">

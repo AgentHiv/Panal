@@ -89,6 +89,16 @@ export interface AgentStats {
   volume: Record<string, string>;
   firstSeenTs: number;
   lastSeenTs: number;
+  /*
+   * Con quién trabaja (ver `bot/src/indexer-store.ts`): clientes distintos y la
+   * nota contando a cada uno una vez. Opcionales: un indexador anterior no los
+   * trae, y entonces se usa la media simple, como antes.
+   */
+  clients?: number;
+  ratedClients?: number;
+  clientRating?: number | null;
+  /** Qué parte (0..1) de sus completadas pagó su cliente más frecuente. */
+  topClientShare?: number | null;
 }
 
 export interface DayStats {
