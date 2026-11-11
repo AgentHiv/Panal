@@ -31,7 +31,7 @@ export const ANCHO = 1200;
 export const ALTO = 630;
 
 /** Súbela si cambia el dibujo: cambia todas las URL y las redes piden la nueva. */
-const DIBUJO_V = 1;
+const DIBUJO_V = 2;
 
 const DIR_FUENTES = fileURLToPath(new URL('../assets/fuentes/', import.meta.url));
 const FUENTES = {
@@ -67,8 +67,14 @@ export interface Tarjeta {
   descripcion: string;
   /** «1 MON», «0.05 $PANAL». */
   precio: string;
+  /**
+   * La nota contando a cada cliente una vez (ver `AgentStats.clientRating`):
+   * la media simple se infla con una segunda wallet; esta no.
+   */
   nota: number | null;
   votos: number;
+  /** Clientes distintos que le han pagado: lo que no se compra con una sola wallet. */
+  clientes: number;
   completadas: number;
   verificado: boolean;
   activo: boolean;
@@ -121,6 +127,13 @@ export function cantidad(wei: string): string {
   return corta ? `${entera}.${corta}` : entera!;
 }
 
+/** Con un decimal; la de por cliente si el índice la trae, y si no la media simple. */
+function notaDe(st: AgenteDelCatalogo['stats']): number | null {
+  if (!st || st.ratingCount === 0) return null;
+  const nota = st.clientRating ?? st.avgRating;
+  return nota === null || nota === undefined ? null : Math.round(nota * 10) / 10;
+}
+
 export function tarjetaDe(a: AgenteDelCatalogo): Tarjeta {
   const direccion = a.address.toLowerCase();
 
@@ -142,8 +155,9 @@ export function tarjetaDe(a: AgenteDelCatalogo): Tarjeta {
     alias,
     descripcion,
     precio: `${cantidad(a.pricePerTask)} ${a.coin || 'MON'}`,
-    nota: st && st.ratingCount > 0 && st.avgRating !== null ? Math.round(st.avgRating * 10) / 10 : null,
+    nota: notaDe(st),
     votos: st?.ratingCount ?? 0,
+    clientes: st?.clients ?? 0,
     completadas: st?.completed ?? 0,
     verificado: a.verificado === true,
     activo: a.active,
@@ -303,7 +317,10 @@ export function svgDe(t: Tarjeta, medir: Medidor = medirConResvg): string {
   if (t.nota !== null) {
     partes.push(`<polygon points="${estrella(xNota + 17, yValor - 15, 18)}" fill="${COLOR.miel}"/>`);
     texto(xNota + 44, yValor, t.nota.toFixed(1), 'Inter', 600, 42, COLOR.tinta);
-    texto(xNota, yEtiqueta, t.votos === 1 ? '1 rating' : `${t.votos} ratings`, 'Inter', 400, 22, COLOR.tinta3);
+    // Cuántos clientes distintos, no cuántas reseñas: veinte de la misma
+    // wallet son una opinión, no veinte.
+    const deQuien = t.clientes > 0 ? (t.clientes === 1 ? 'from 1 client' : `from ${t.clientes} clients`) : t.votos === 1 ? '1 rating' : `${t.votos} ratings`;
+    texto(xNota, yEtiqueta, deQuien, 'Inter', 400, 22, COLOR.tinta3);
   } else {
     texto(xNota, yValor, 'New', 'Inter', 600, 42, COLOR.tinta);
     texto(xNota, yEtiqueta, 'no ratings yet', 'Inter', 400, 22, COLOR.tinta3);

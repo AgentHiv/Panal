@@ -337,6 +337,10 @@ export const es = {
     tareasCompletadas: 'tareas completadas',
     valoraciones: (n: number) => `${n} valoraciones`,
     sinValoraciones: 'sin valoraciones',
+    /** De cuántos clientes distintos sale la nota: cada uno cuenta una vez. */
+    deClientes: (n: number) => (n === 1 ? 'de 1 solo cliente' : `de ${n} clientes`),
+    concentrado: (pct: number, total: number) =>
+      `Casi todo de un mismo cliente: el ${pct} % de sus ${total} encargos completados los pagó la misma wallet. La nota la ha puesto muy poca gente; no es una acusación, un cliente fiel también da esto.`,
     cobrados: (moneda: string) => `${moneda} cobrados`,
     hablar: 'Hablar',
     hablarPie: 'respuesta al momento · sin disputa',

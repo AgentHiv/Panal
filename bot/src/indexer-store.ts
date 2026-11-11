@@ -102,7 +102,33 @@ export interface AgentStats {
   volume: Record<string, string>;
   firstSeenTs: number;
   lastSeenTs: number;
+  /*
+   * Con quién trabaja: lo que no se puede comprar.
+   *
+   * La media de arriba es la de la cadena, y fabricarla cuesta el 2,5 % de
+   * cada encargo: una segunda wallet contrata, aprueba con cinco estrellas y
+   * recupera el 97,5 %. Lo que no se fabrica tan barato son CLIENTES
+   * DISTINTOS: cada uno es otra wallet que tiene que pagar. Por eso estas
+   * cifras cuentan a cada cliente una vez. Salen de las tareas completadas, y
+   * en las del tablón el cliente es el de su encargo, no el contrato.
+   *
+   * Lo que no saben: si dos wallets son de la misma persona. Eso no está en la
+   * cadena; un equipo con varias wallets cuenta como varios clientes.
+   */
+  /** Clientes distintos entre sus tareas completadas. */
+  clients: number;
+  /** De esos, cuántos dejaron nota. */
+  ratedClients: number;
+  /** La nota contando a cada cliente una vez: la media de las medias de cada uno. null sin notas. */
+  clientRating: number | null;
+  /** Qué parte (0..1) de sus completadas pagó su cliente más frecuente. null sin completadas. */
+  topClientShare: number | null;
 }
+
+/** Las cifras de clientes de un agente (ver `AgentStats.clients`). */
+export type Contrapartes = Pick<AgentStats, 'clients' | 'ratedClients' | 'clientRating' | 'topClientShare'>;
+
+const SIN_CONTRAPARTES: Contrapartes = { clients: 0, ratedClients: 0, clientRating: null, topClientShare: null };
 
 /**
  * Una tarea del escrow, montada juntando sus eventos.
@@ -587,6 +613,7 @@ class StatsBuilder {
         volume: {},
         firstSeenTs: ts,
         lastSeenTs: ts,
+        ...SIN_CONTRAPARTES,
       };
       this.agents.set(key, a);
     }
@@ -1073,9 +1100,59 @@ class StatsBuilder {
     return out;
   }
 
+  /**
+   * Las cifras de clientes de cada agente, de sus tareas completadas.
+   *
+   * Se calculan al servir y no evento a evento porque el cliente de una tarea
+   * del tablón llega DESPUÉS de completarla, cuando el índice ata la tarea a su
+   * encargo (`vincular`): sumado en el momento, contaría al contrato del tablón
+   * como si fuera un cliente.
+   */
+  contrapartes(soloDe?: string): Map<string, Contrapartes> {
+    const solo = soloDe?.toLowerCase();
+    const porAgente = new Map<string, Map<string, { hechas: number; notas: number; suma: number }>>();
+    const tareas = solo
+      ? [...(this.tasksByAddress.get(solo) ?? [])].map((id) => this.tasks.get(id)).filter((t): t is IndexedTask => !!t)
+      : this.tasks.values();
+    for (const t of tareas) {
+      if (t.status !== 'completed' || !t.worker || t.worker === NATIVE) continue;
+      if (solo && t.worker !== solo) continue;
+      const cliente = (t.realClient ?? t.client).toLowerCase();
+      let porCliente = porAgente.get(t.worker);
+      if (!porCliente) {
+        porCliente = new Map();
+        porAgente.set(t.worker, porCliente);
+      }
+      const c = porCliente.get(cliente) ?? { hechas: 0, notas: 0, suma: 0 };
+      c.hechas += 1;
+      if (t.rating !== undefined) {
+        c.notas += 1;
+        c.suma += t.rating;
+      }
+      porCliente.set(cliente, c);
+    }
+    const out = new Map<string, Contrapartes>();
+    for (const [agente, porCliente] of porAgente) {
+      const clientes = [...porCliente.values()];
+      const hechas = clientes.reduce((x, c) => x + c.hechas, 0);
+      const conNota = clientes.filter((c) => c.notas > 0);
+      out.set(agente, {
+        clients: clientes.length,
+        ratedClients: conNota.length,
+        clientRating: conNota.length ? conNota.reduce((x, c) => x + c.suma / c.notas, 0) / conNota.length : null,
+        topClientShare: hechas ? Math.max(...clientes.map((c) => c.hechas)) / hechas : null,
+      });
+    }
+    return out;
+  }
+
   agentList(): AgentStats[] {
+    const contrapartes = this.contrapartes();
     return [...this.agents.values()]
-      .map(({ ratingSum: _ratingSum, deliverySecSum: _deliverySecSum, ...rest }) => rest)
+      .map(({ ratingSum: _ratingSum, deliverySecSum: _deliverySecSum, ...rest }) => ({
+        ...rest,
+        ...(contrapartes.get(rest.address) ?? SIN_CONTRAPARTES),
+      }))
       .sort((x, y) => y.tasks - x.tasks || y.completed - x.completed || y.lastSeenTs - x.lastSeenTs);
   }
 }
@@ -1480,7 +1557,7 @@ export class IndexStore {
     let stats: AgentStats | null = null;
     if (s) {
       const { ratingSum: _ratingSum, deliverySecSum: _deliverySecSum, ...resto } = s;
-      stats = resto;
+      stats = { ...resto, ...(this.stats.contrapartes(p.address).get(p.address.toLowerCase()) ?? SIN_CONTRAPARTES) };
     }
     return { ...p, stats, nombre: this.stats.nombreDe(p.address) };
   }

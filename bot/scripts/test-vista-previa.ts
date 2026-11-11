@@ -83,6 +83,13 @@ console.log('\n─── lo que se pinta ───');
     delCatalogo({ stats: { address: AGENTE, tasks: 40, completed: 37, avgRating: 4.8333, ratingCount: 12 } as AgenteDelCatalogo['stats'] }),
   );
   check('la nota con un decimal', votado.nota === 4.8 && votado.votos === 12 && votado.completadas === 37, JSON.stringify(votado));
+  const porCliente = tarjetaDe(
+    delCatalogo({
+      stats: { address: AGENTE, tasks: 20, completed: 20, avgRating: 5, ratingCount: 20, clients: 2, ratedClients: 2, clientRating: 4, topClientShare: 0.95 } as AgenteDelCatalogo['stats'],
+    }),
+  );
+  check('con clientes, la nota es la de por cliente, no la media inflada', porCliente.nota === 4 && porCliente.clientes === 2, JSON.stringify(porCliente));
+  check('y cambia la huella', huellaDe(porCliente) !== huellaDe(tarjetaDe(delCatalogo({ stats: { address: AGENTE, tasks: 20, completed: 20, avgRating: 5, ratingCount: 20, clients: 1, ratedClients: 1, clientRating: 4, topClientShare: 1 } as AgenteDelCatalogo['stats'] }))));
   check('el alias de PanalNames', tarjetaDe(delCatalogo({ nombre: { nombre: 'lex', desdeTs: 1, origen: 'reclamado' } })).alias === 'lex');
 }
 

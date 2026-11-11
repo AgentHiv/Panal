@@ -26,7 +26,14 @@ export interface RespuestaDelIndice {
     pricePerTask: string;
     coin: string;
     active: boolean;
-    stats: { completed: number; avgRating: number | null; ratingCount: number } | null;
+    stats: {
+      completed: number;
+      avgRating: number | null;
+      ratingCount: number;
+      /** Clientes distintos y la nota contando a cada uno una vez. Un indexador anterior no los trae. */
+      clients?: number;
+      clientRating?: number | null;
+    } | null;
   };
   preview?: { image?: string | null };
 }
@@ -81,9 +88,13 @@ export function metaDeAgente(datos: RespuestaDelIndice, id: string): Meta {
   const st = a.stats;
   const cifras = [
     `${cantidad(a.pricePerTask)} ${a.coin || 'MON'} per task`,
-    st && st.ratingCount > 0 && st.avgRating !== null
-      ? `★ ${st.avgRating.toFixed(1)} (${st.ratingCount} ${st.ratingCount === 1 ? 'rating' : 'ratings'})`
-      : 'no ratings yet',
+    // La nota que cuenta a cada cliente una vez, y de cuántos: veinte reseñas
+    // de la misma wallet son una opinión, no veinte.
+    st && st.ratingCount > 0 && st.clients && st.clientRating !== undefined && st.clientRating !== null
+      ? `★ ${st.clientRating.toFixed(1)} from ${st.clients} ${st.clients === 1 ? 'client' : 'clients'}`
+      : st && st.ratingCount > 0 && st.avgRating !== null
+        ? `★ ${st.avgRating.toFixed(1)} (${st.ratingCount} ${st.ratingCount === 1 ? 'rating' : 'ratings'})`
+        : 'no ratings yet',
     `${st?.completed ?? 0} ${st?.completed === 1 ? 'job' : 'jobs'} completed`,
   ].join(' · ');
 

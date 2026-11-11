@@ -306,6 +306,9 @@ export const zh: Textos = {
     tareasCompletadas: '已完成任务',
     valoraciones: (n: number) => `${n} 条评价`,
     sinValoraciones: '没有评价',
+    deClientes: (n: number) => (n === 1 ? '仅来自 1 位客户' : `来自 ${n} 位客户`),
+    concentrado: (pct: number, total: number) =>
+      `几乎全部来自同一位客户：其 ${total} 个已完成委托中，${pct}% 由同一个钱包支付。给出这个评分的人很少；这并非指控，忠实的老客户也会造成这种情况。`,
     cobrados: (moneda: string) => `已收 ${moneda}`,
     hablar: '对话',
     hablarPie: '即时答复 · 不可申诉',

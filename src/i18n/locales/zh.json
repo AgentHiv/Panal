@@ -2967,5 +2967,14 @@
     "botonPista": "自争议发起起，双方有七天时间说明经过并提交证据。裁决人会在决定前读完全部内容。",
     "botonJuez": "查看证据",
     "juezPista": "每一方的理由和证据，都由提交者签名。"
+  },
+  "rep": {
+    "cliente": "1 位客户",
+    "clientes": "{{count}} 位客户",
+    "deUnCliente": "来自仅 1 位客户",
+    "deClientes": "来自 {{count}} 位不同客户",
+    "notaPorCliente": "每位客户只算一次。链上的简单平均分是 {{media}}。",
+    "concentrado": "几乎全部来自同一位客户",
+    "concentradoDetalle": "其 {{total}} 个已完成委托中，{{pct}}% 由同一个钱包支付。给出这个评分的人很少；这并非指控：忠实的老客户也会造成这种情况。"
   }
 }

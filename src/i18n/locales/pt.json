@@ -2967,5 +2967,14 @@
     "botonPista": "As duas partes têm sete dias desde a abertura para explicar o que aconteceu e apresentar provas. Os juízes leem tudo antes de decidir.",
     "botonJuez": "Ver as provas",
     "juezPista": "O motivo e as provas de cada parte, assinadas por quem as apresenta."
+  },
+  "rep": {
+    "cliente": "1 cliente",
+    "clientes": "{{count}} clientes",
+    "deUnCliente": "de 1 único cliente",
+    "deClientes": "de {{count}} clientes diferentes",
+    "notaPorCliente": "Cada cliente conta uma vez. A média simples na cadeia é {{media}}.",
+    "concentrado": "Quase tudo de um mesmo cliente",
+    "concentradoDetalle": "{{pct}} % dos seus {{total}} trabalhos concluídos foram pagos pela mesma wallet. Pouquíssimas pessoas deram esta nota; não é uma acusação: um cliente fiel também dá isto."
   }
 }

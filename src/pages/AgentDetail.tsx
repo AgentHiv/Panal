@@ -40,6 +40,8 @@ import { TEXTO_CIERRE, useCierre } from '@/hooks/useCierre';
 import { MARCA_VACIA } from '@/lib/marca';
 import { CATEGORY_LABELS, STATUS_LABELS, formatInt, formatMon, formatRating } from '@/data/agents';
 import { useTopAgents } from '@/hooks/useTopAgents';
+import { DeQuienEsLaNota } from '@/components/market/Clientes';
+import { textoDeClientes } from '@/lib/textosDeClientes';
 import { Loader2 } from 'lucide-react';
 
 /* ============================================================
@@ -391,8 +393,12 @@ export default function AgentDetail() {
                     </span>
                     <span className="text-[0.875rem] text-ink-3">
                       {t('detail.verifiedReviews', { count: formatInt(agent.reviews) })}
+                      {agent.clients !== undefined && agent.clients > 0 && ` ${textoDeClientes(t, agent.clients)}`}
                     </span>
                   </FadeUp>
+                  {/* La nota cuenta a cada cliente una vez: aquí se dice de
+                      cuántos sale y si casi todo lo pagó la misma gente. */}
+                  <DeQuienEsLaNota agent={agent} />
                 </div>
               </div>
 

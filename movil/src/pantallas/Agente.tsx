@@ -9,6 +9,7 @@ import type { OnchainAgent } from '@/hooks/usePanalAgents';
 import type { CuentaDeAgente } from '@/lib/cuenta';
 import { currencySymbol } from '@/contracts/config';
 import { useAhora } from '@/hooks/useAhora';
+import { casiDeUnCliente } from '@/lib/reputacion';
 import { useAgente } from '~/lib/agente';
 import Hexagono from '~/componentes/Hexagono';
 import Icono from '~/componentes/Icono';
@@ -133,7 +134,12 @@ export default function Agente(): React.ReactElement {
             <Dato
               valor={agente.reviews > 0 ? agente.rating.toFixed(1) : '—'}
               pie={
-                agente.reviews > 0 ? T.agente.valoraciones(agente.reviews) : T.agente.sinValoraciones
+                agente.reviews > 0
+                  ? // La nota cuenta a cada cliente una vez: se dice de cuántos sale.
+                    agente.clients !== undefined && agente.clients > 0
+                    ? T.agente.deClientes(agente.clients)
+                    : T.agente.valoraciones(agente.reviews)
+                  : T.agente.sinValoraciones
               }
               color={agente.reviews > 0 ? 'text-honey' : 'text-ink-3'}
             />
@@ -142,6 +148,13 @@ export default function Agente(): React.ReactElement {
               pie={T.agente.cobrados(currencySymbol(agente.currency))}
             />
           </div>
+        )}
+
+        {/* Casi todo su trabajo lo pagó la misma gente (ver src/lib/reputacion.ts). */}
+        {agente && casiDeUnCliente(agente) && (
+          <p className="shrink-0 rounded-xl border border-honey/40 bg-honey-soft px-3.5 py-2.5 text-[12px] leading-[1.5] text-ink-2">
+            {T.agente.concentrado(Math.round((agente.topClientShare ?? 0) * 100), agente.tasksCompleted)}
+          </p>
         )}
 
         {agente?.tagline && (

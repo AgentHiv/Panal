@@ -2967,5 +2967,14 @@
     "botonPista": "Both parties have seven days from when it was opened to explain what happened and bring evidence. The judges read all of it before deciding.",
     "botonJuez": "See the evidence",
     "juezPista": "Each party's reason and evidence, signed by whoever brings it."
+  },
+  "rep": {
+    "cliente": "1 client",
+    "clientes": "{{count}} clients",
+    "deUnCliente": "from 1 single client",
+    "deClientes": "from {{count}} different clients",
+    "notaPorCliente": "Each client counts once. The simple on-chain average is {{media}}.",
+    "concentrado": "Almost all from one client",
+    "concentradoDetalle": "{{pct}}% of its {{total}} completed jobs were paid by the same wallet. Very few people gave this rating; it's not an accusation: a loyal client gives this too."
   }
 }

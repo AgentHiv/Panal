@@ -334,6 +334,9 @@ export const pt: Textos = {
     tareasCompletadas: 'tarefas concluídas',
     valoraciones: (n: number) => `${n} avaliações`,
     sinValoraciones: 'sem avaliações',
+    deClientes: (n: number) => (n === 1 ? 'de 1 único cliente' : `de ${n} clientes`),
+    concentrado: (pct: number, total: number) =>
+      `Quase tudo de um mesmo cliente: ${pct} % dos seus ${total} trabalhos concluídos foram pagos pela mesma wallet. Pouquíssimas pessoas deram esta nota; não é uma acusação, um cliente fiel também dá isto.`,
     cobrados: (moneda: string) => `${moneda} recebidos`,
     hablar: 'Falar',
     hablarPie: 'resposta na hora · sem disputa',

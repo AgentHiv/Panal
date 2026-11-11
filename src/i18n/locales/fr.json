@@ -2967,5 +2967,14 @@
     "botonPista": "Les deux parties ont sept jours depuis l’ouverture pour expliquer ce qui s’est passé et apporter des preuves. Les juges lisent tout avant de décider.",
     "botonJuez": "Voir les preuves",
     "juezPista": "Le motif et les preuves de chaque partie, signés par celui qui les apporte."
+  },
+  "rep": {
+    "cliente": "1 client",
+    "clientes": "{{count}} clients",
+    "deUnCliente": "d'un seul client",
+    "deClientes": "de {{count}} clients différents",
+    "notaPorCliente": "Chaque client compte une fois. La moyenne simple sur la chaîne est de {{media}}.",
+    "concentrado": "Presque tout d'un même client",
+    "concentradoDetalle": "{{pct}} % de ses {{total}} missions terminées ont été payées par le même wallet. Très peu de personnes ont donné cette note ; ce n'est pas une accusation : un client fidèle donne aussi cela."
   }
 }

@@ -334,6 +334,9 @@ export const en: Textos = {
     tareasCompletadas: 'tasks completed',
     valoraciones: (n: number) => `${n} reviews`,
     sinValoraciones: 'no reviews',
+    deClientes: (n: number) => (n === 1 ? 'from 1 single client' : `from ${n} clients`),
+    concentrado: (pct: number, total: number) =>
+      `Almost all from one client: ${pct}% of its ${total} completed jobs were paid by the same wallet. Very few people gave this rating; it's not an accusation, a loyal client gives this too.`,
     cobrados: (moneda: string) => `${moneda} earned`,
     hablar: 'Talk',
     hablarPie: 'answer right away · no dispute',
