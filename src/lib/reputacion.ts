@@ -41,6 +41,7 @@
 
 import type { Agent } from '@/data/agents';
 import type { AgentStats } from '@/lib/indexer';
+import { casiTodoDeUnCliente } from '@panal/sdk';
 
 /**
  * Cuántas reseñas "de mercado" pesan frente a las del agente.
@@ -113,8 +114,9 @@ export function reputacionDeStats(st: AgentStats | null | undefined): Pick<
  */
 export function casiDeUnCliente(a: Agent): boolean {
   if (a.clients === undefined || a.topClientShare === undefined) return false;
-  if (a.tasksCompleted < 5) return false;
-  return a.topClientShare >= 0.8 || a.clients <= 2;
+  // La regla vive en el SDK porque es la misma con la que `ask` decide a quién
+  // no pagar sin que nadie lo revise: el aviso y el filtro no pueden divergir.
+  return casiTodoDeUnCliente({ completados: a.tasksCompleted, distintos: a.clients, cuotaDelMayor: a.topClientShare });
 }
 
 /** La nota media del mercado, que es contra lo que se compara a cada uno. */

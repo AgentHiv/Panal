@@ -79,6 +79,8 @@ import {
   x402Currencies,
   x402CurrencyByName,
   sinBarraFinal,
+  NIVEL_MAXIMO_DEL_TABLON,
+  NIVEL_MINIMO_PARA_SUBCONTRATAR,
 } from '@panal/sdk';
 import { comoAdjunto } from './salida.js';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -434,6 +436,13 @@ if (X402_PRICE !== null) {
 //
 //   SUBCONTRATA_MAX=0.5     # como mucho 0,5 $PANAL por encargo
 //   SUBCONTRATA_SALTOS=2    # cuántos agentes puede encadenar (tope duro: 8)
+//   SUBCONTRATA_NIVEL_MINIMO=1  # nivel del tablón que tiene que tener a quien pagas (0–5)
+//
+// El nivel lo escribe el contrato PanalTablon: el 1 son 5 encargos completados
+// con nota media de 4,0 o más. Además no se paga a quien esté suspendido por
+// faltas ni a quien tenga casi todos sus encargos de un mismo cliente. Sin
+// esto se elegía siempre al más barato, y a un estafador le bastaba con darse
+// de alta con la skill y el precio mínimo. 0 lo quita.
 //
 const SUBCONTRATA_MAX = (() => {
   const raw = process.env.SUBCONTRATA_MAX?.trim();
@@ -450,6 +459,19 @@ const SUBCONTRATA_SALTOS = (() => {
   const n = Number(process.env.SUBCONTRATA_SALTOS?.trim() || '2');
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 2;
 })();
+// Un valor roto se queda en el de por defecto, NO en 0: equivocarse al
+// escribirlo no puede ser la forma de quitar el filtro sin darse cuenta.
+const SUBCONTRATA_NIVEL_MINIMO = (() => {
+  const raw = process.env.SUBCONTRATA_NIVEL_MINIMO?.trim();
+  if (!raw) return NIVEL_MINIMO_PARA_SUBCONTRATAR;
+  const n = Number(raw);
+  if (Number.isInteger(n) && n >= 0 && n <= NIVEL_MAXIMO_DEL_TABLON) return n;
+  console.error(
+    `SUBCONTRATA_NIVEL_MINIMO="${raw}" no es un entero del 0 al ${NIVEL_MAXIMO_DEL_TABLON}: ` +
+      `se usa ${NIVEL_MINIMO_PARA_SUBCONTRATAR}.`,
+  );
+  return NIVEL_MINIMO_PARA_SUBCONTRATAR;
+})();
 
 if (SUBCONTRATA_MAX > 0n) {
   // Se dice el estado REAL, no sólo el del dinero. Antes bastaba con tener
@@ -459,7 +481,10 @@ if (SUBCONTRATA_MAX > 0n) {
   if (SUBCONTRATA_SKILLS.length > 0) {
     console.log(
       `Subcontratación activa: hasta ${process.env.SUBCONTRATA_MAX} ${X402_SYMBOL} por encargo, ` +
-        `y sólo en: ${SUBCONTRATA_SKILLS.join(', ')}`,
+        `sólo en: ${SUBCONTRATA_SKILLS.join(', ')}, ` +
+        (SUBCONTRATA_NIVEL_MINIMO > 0
+          ? `y sólo a agentes de nivel ${SUBCONTRATA_NIVEL_MINIMO} o más en el tablón`
+          : 'y a cualquier agente, sin mirar su nivel (SUBCONTRATA_NIVEL_MINIMO=0)'),
     );
   } else {
     console.log(
@@ -833,11 +858,15 @@ async function credencialValida(
  *
  * `consultar` es lo que convierte a tu agente en cliente de otro: busca en el
  * mercado quién sabe hacer eso, pide precio a los candidatos —gratis, con el
- * 402—, se queda con el más barato que quepa en el presupuesto, le paga y
+ * 402— a los que tienen nivel en el tablón, se queda con el de más nivel y,
+ * a igual nivel, el más barato que quepa en el presupuesto, le paga y
  * devuelve su respuesta.
  *
- * Los tres límites se aplican antes de firmar ningún pago:
+ * Los cuatro límites se aplican antes de firmar ningún pago:
  *
+ *   - A QUIÉN. Solo a agentes con SUBCONTRATA_NIVEL_MINIMO o más en el
+ *     tablón, sin suspensión y sin casi todo de un mismo cliente: aquí no
+ *     mira nadie, y sin esto ganaba el más barato aunque fuera un estafador.
  *   - PRESUPUESTO. Nunca más de SUBCONTRATA_MAX, y si esta llamada viene de
  *     otro agente, nunca más de lo que quede en el sobre. Heredar una cadena
  *     no puede AMPLIAR lo que autorizó quien la empezó.
@@ -903,6 +932,9 @@ function contexto(
       asset: X402_TOKEN,
       skillsPermitidas: SUBCONTRATA_SKILLS,
       depth: SUBCONTRATA_SALTOS,
+      // A quién se le puede pagar sin que nadie lo revise: nivel del tablón,
+      // sin suspensión y sin casi todo de un mismo cliente.
+      nivelMinimo: SUBCONTRATA_NIVEL_MINIMO,
       // El sobre recibido, si lo hay. Sin él se abre una cadena nueva.
       envelope: sobre,
       // Sin esto un agente que busca su propia skill se contrataría a sí
@@ -913,7 +945,7 @@ function contexto(
       ...(archivos.length ? { files: archivos } : {}),
     });
     console.log(
-      `[panal] consulta a ${res.agent} por ${formatX402Amount(res.paid, res.currency)} ${res.currency.symbol} (${skill}) · trace ${sobre?.trace ?? 'nuevo'}`,
+      `[panal] consulta a ${res.agent}${res.nivel === null ? '' : ` (nivel ${res.nivel})`} por ${formatX402Amount(res.paid, res.currency)} ${res.currency.symbol} (${skill}) · trace ${sobre?.trace ?? 'nuevo'}`,
     );
     // A quién se pagó, y detrás a quién pagó él a su vez para responder.
     subcontratos.push(

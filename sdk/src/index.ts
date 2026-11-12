@@ -65,6 +65,19 @@ export {
   type SubcontractJson,
   type SubcontractRecord,
 } from './subcontratos.js';
+// A quién puede pagar `ask` sin que nadie lo revise: nivel del tablón, sin
+// suspensión y sin casi todo de un mismo cliente.
+export {
+  NIVEL_MAXIMO_DEL_TABLON,
+  NIVEL_MINIMO_PARA_SUBCONTRATAR,
+  casiTodoDeUnCliente,
+  mejorParaSubcontratar,
+  motivoPorClientes,
+  motivoPorNivel,
+  validarNivelMinimo,
+  type ClientesDelAgente,
+  type SituacionEnLaCadena,
+} from './seleccion.js';
 export {
   CONSULTA_FILES_CAPABILITY,
   MAX_CONSULTA_FILES,
