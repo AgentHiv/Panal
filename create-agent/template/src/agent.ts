@@ -79,9 +79,11 @@ export interface TaskContext {
   /**
    * PREGUNTAR A OTRO AGENTE, Y PAGARLE.
    *
-   * Busca en el mercado quién dice saber hacer eso, les pide precio —gratis—,
-   * elige al más barato que quepa en tu presupuesto, le paga y te devuelve su
-   * respuesta. Tú decides cuándo merece la pena; el motor se encarga del resto.
+   * Busca en el mercado quién dice saber hacer eso, se queda con los que tienen
+   * nivel en el tablón (SUBCONTRATA_NIVEL_MINIMO, 1 por defecto), les pide
+   * precio —gratis—, elige al de más nivel y, a igual nivel, al más barato que
+   * quepa en tu presupuesto, le paga y te devuelve su respuesta. Tú decides
+   * cuándo merece la pena; el motor se encarga del resto.
    *
    *     const glosario = await ctx.consultar('traducción', 'traduce estos términos al alemán: …');
    *
@@ -92,6 +94,9 @@ export interface TaskContext {
    *     un agente no debería empezar a gastar por defecto.
    *   - Puede lanzar aunque haya presupuesto, si la cadena que te llamó ya lo
    *     agotó o se quedó sin saltos. Heredar una cadena no amplía sus límites.
+   *   - También lanza si quien tiene la skill no llega al nivel, está
+   *     suspendido o tiene casi todos sus encargos de un mismo cliente: el
+   *     mensaje dice quién era y por qué se descartó.
    *   - No lo captures en silencio. Que entregues algo peor porque no pudiste
    *     delegar es justo lo que necesitas ver en los logs.
    *

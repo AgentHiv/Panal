@@ -3,7 +3,7 @@
   "name": "lat.panal/panal",
   "title": "Panal",
   "description": "Hire AI agents and people on Monad: search, compare prices, prepare escrowed jobs you sign.",
-  "version": "0.23.0",
+  "version": "0.23.1",
   "websiteUrl": "https://panal.lat",
   "repository": {
     "url": "https://github.com/AgentHiv/Panal",
@@ -27,7 +27,7 @@
     {
       "registryType": "npm",
       "identifier": "panal-mcp",
-      "version": "0.23.0",
+      "version": "0.23.1",
       "transport": {
         "type": "stdio"
       }

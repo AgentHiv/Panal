@@ -207,8 +207,32 @@ async function main(): Promise<void> {
     () => panal.ask('legal', 'hola', { maxSpend: 1n }),
     'presupuesto',
   );
+  // Lo que pide `ask` a quien paga, leído de verdad en PanalTablon: si el ABI
+  // de `levelOf` o de `agentStats` dejara de cuadrar, aquí nadie pasaría.
+  await rejects(
+    'un nivel mínimo que no existe se rechaza antes de buscar',
+    () => panal.ask('legal', 'hola', { maxSpend: 1n, nivelMinimo: 6 }),
+    'del 0 al 5',
+  );
+  // Nadie tiene el 5 (pide 1000 encargos): todos se descartan, y se dice por qué.
+  await rejects(
+    'con nivel 5 no queda nadie, y se explica',
+    () => panal.ask('legal', 'hola', { maxSpend: 1n, nivelMinimo: 5 }),
+    'ninguno llega',
+  );
+  await rejects(
+    '  diciendo el nivel que lee en la cadena',
+    () => panal.ask('legal', 'hola', { maxSpend: 1n, nivelMinimo: 5 }),
+    'y se pide 5',
+  );
+
   // Un agente no debe poder llamarse a sí mismo: sería pagarse solo y gastar gas.
   const agentes = await panal.searchAgents('legal');
+  check(
+    'el indexador da de cuántos clientes salen sus encargos',
+    agentes.length > 0 && agentes.every((a) => a.clientes !== undefined),
+    agentes.map((a) => `${a.metadata.name}: ${a.clientes?.distintos ?? '?'} clientes`).join(', '),
+  );
   if (agentes.length) {
     const yo = createPanalClient({ account: privateKeyToAccount(generatePrivateKey()) });
     check('searchAgents encuentra candidatos con endpoint', agentes.some((a) => a.metadata.botUrl), `${agentes.length} con la skill`);

@@ -121,6 +121,7 @@ async function main(): Promise<void> {
     'X402_PRICE=',
     'SUBCONTRATA_MAX=',
     'SUBCONTRATA_SALTOS=',
+    'SUBCONTRATA_NIVEL_MINIMO=',
     'VIGILANTE_SEGUNDOS=',
     'PUBLIC_URL=',
     'MEMORIA_TURNOS=',

@@ -64,6 +64,15 @@ import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type Pana
 import { leerPrecios, valorDeVenta, type OpcionesPrecios, type Precios } from './precios.js';
 import { panalTablonAbi } from './tablon-abi.js';
 import {
+  NIVEL_MINIMO_PARA_SUBCONTRATAR,
+  mejorParaSubcontratar,
+  motivoPorClientes,
+  motivoPorNivel,
+  validarNivelMinimo,
+  type ClientesDelAgente,
+  type SituacionEnLaCadena,
+} from './seleccion.js';
+import {
   EstadoTablon,
   MAX_CATEGORIAS,
   ModoTablon,
@@ -165,6 +174,11 @@ const REGISTRY_PAGE = 50n;
 const REGISTRY_MAX = 500;
 /** Fichas del registro leídas a la vez. Con todas de golpe, el RPC público responde 429. */
 const LECTURAS_A_LA_VEZ = 5;
+/**
+ * Cuántos candidatos de una skill se miran como mucho en la cadena antes de
+ * subcontratar: cada uno son dos lecturas (nivel y suspensión).
+ */
+const MAX_REVISADOS_PARA_SUBCONTRATAR = 20;
 
 export interface HireParams {
   /** Dirección del agente que hará el trabajo. */
@@ -251,6 +265,22 @@ function esNombre(v: unknown): v is { nombre: string; desdeTs: number; origen: '
     typeof n.desdeTs === 'number' &&
     (n.origen === 'reclamado' || n.origen === 'comprado' || n.origen === 'recibido')
   );
+}
+
+/**
+ * Los clientes de un agente, de las `stats` que manda el catálogo del
+ * indexador. Se valida como todo lo que viene de un servicio: un número roto o
+ * fuera de rango deja el campo sin poner, y sin él `ask` no subcontrata a ese
+ * agente. Mejor quedarse sin candidato que fiarse de un dato que no cuadra.
+ */
+function clientesDeLasStats(stats: unknown): ClientesDelAgente | undefined {
+  if (stats === null || typeof stats !== 'object') return undefined;
+  const s = stats as Record<string, unknown>;
+  const entero = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
+  if (!entero(s.completed) || !entero(s.clients)) return undefined;
+  const cuota = s.topClientShare;
+  if (cuota !== null && cuota !== undefined && !(typeof cuota === 'number' && cuota >= 0 && cuota <= 1)) return undefined;
+  return { completados: s.completed, distintos: s.clients, cuotaDelMayor: typeof cuota === 'number' ? cuota : null };
 }
 
 export class PanalClient {
@@ -696,6 +726,7 @@ export class PanalClient {
         // salen de ahí, y quedarse con ella entera es además más fiel que
         // recomponerla: lo que este SDK no entienda se conserva tal cual.
         const uri = typeof raw.metadataURI === 'string' ? raw.metadataURI : '';
+        const clientes = clientesDeLasStats(raw.stats);
         const metadata: AgentMetadata = {
           name: typeof raw.name === 'string' ? raw.name : '',
           description: typeof raw.description === 'string' ? raw.description : '',
@@ -719,6 +750,7 @@ export class PanalClient {
           // hay que hacer con una insignia de confianza.
           verificado: raw.verificado === true,
           ...(esNombre(raw.nombre) ? { nombre: raw.nombre } : {}),
+          ...(clientes ? { clientes } : {}),
         });
       }
       return out;
@@ -1620,7 +1652,10 @@ export class PanalClient {
    *     maxSpend: parseEther('0.01'),
    *   });
    *
-   * Cotiza a los candidatos —gratis, con el 402— y se queda con el más barato
+   * Solo contrata a quien tenga el nivel del tablón que pide `nivelMinimo`
+   * (1 por defecto), no esté suspendido y no tenga casi todos sus encargos de
+   * un mismo cliente (ver seleccion.ts). Cotiza a los que pasan —gratis, con
+   * el 402— y se queda con el de más nivel y, a igual nivel, el más barato
    * que quepa en el presupuesto. Los que no cobran por llamada o no responden
    * se descartan sin ruido: que un agente esté caído no debe tumbar al que
    * pregunta.
@@ -1668,10 +1703,34 @@ export class PanalClient {
       asset?: Address;
       /** Archivos para el agente que responda. Ver `askAgent`: solo se elige entre los que los aceptan. */
       files?: OutgoingFile[];
+      /**
+       * EL NIVEL DEL TABLÓN QUE TIENE QUE TENER A QUIEN SE PAGA. Por defecto 1:
+       * 5 encargos completados con nota media de 4,0 o más, escrito en el
+       * contrato PanalTablon. Además no puede estar suspendido ni tener casi
+       * todos sus encargos de un mismo cliente.
+       *
+       * Existe porque aquí no mira nadie: sin esto ganaba siempre el más
+       * barato, y a un estafador le bastaba con darse de alta con la skill y
+       * el precio mínimo para cobrar todas las subcontrataciones.
+       *
+       * 0 lo quita y vuelve a lo de antes (solo el precio). Para contratar a
+       * uno concreto que aún no tiene nivel, mejor `askAgent` con su dirección:
+       * ahí lo eliges tú, sabiendo a quién.
+       */
+      nivelMinimo?: number;
     },
-  ): Promise<AskResult & { agent: Address; skill: string }> {
+  ): Promise<AskResult & { agent: Address; skill: string; nivel: number | null }> {
     const wallet = this.wallet();
     const archivos = options.files ?? [];
+    const nivelMinimo = validarNivelMinimo(options.nivelMinimo ?? NIVEL_MINIMO_PARA_SUBCONTRATAR);
+    // Sin el contrato no hay nivel que leer, y decir «sí» a lo que no se puede
+    // comprobar es justo lo que esto existe para evitar.
+    if (nivelMinimo > 0 && !this.boardJobsAvailable) {
+      throw new X402Error(
+        `No se puede comprobar el nivel de nadie: PanalTablon no está en ${this.network}. ` +
+          'Pasa su dirección en `addresses.tablon`, o `nivelMinimo: 0` para contratar sin comprobarlo.',
+      );
+    }
     const excluded = new Set(
       [...(options.exclude ?? []), this.account!.address].map((a) => getAddress(a).toLowerCase()),
     );
@@ -1707,10 +1766,21 @@ export class PanalClient {
 
     let candidates: Agent[] = [];
     let usada = skill;
+    // El nivel de cada candidato, para el orden final. Vacío con el filtro apagado.
+    const niveles = new Map<string, number>();
+    // Quién tenía la skill pero no se puede contratar, y por qué: si al final
+    // no queda nadie, el autor tiene que poder ver que había agentes y que se
+    // descartaron, no un «no hay nadie» que no es verdad.
+    const descartados: string[] = [];
     for (const intento of variantes) {
-      candidates = (await this.searchAgents(intento, { skill: intento }))
-        .filter((a) => !excluded.has(a.address.toLowerCase()) && a.metadata.botUrl)
-        .slice(0, options.maxCandidates ?? 5);
+      const conEndpoint = (await this.searchAgents(intento, { skill: intento })).filter(
+        (a) => !excluded.has(a.address.toLowerCase()) && a.metadata.botUrl,
+      );
+      candidates =
+        nivelMinimo > 0
+          ? await this.quienSePuedeSubcontratar(conEndpoint, nivelMinimo, niveles, descartados)
+          : conEndpoint;
+      candidates = candidates.slice(0, options.maxCandidates ?? 5);
       if (candidates.length) {
         usada = intento;
         break;
@@ -1718,12 +1788,15 @@ export class PanalClient {
     }
 
     if (!candidates.length) {
-      throw new X402Error(
-        `Ningún agente activo con la skill "${skill}" publica endpoint.` +
-          (variantesDeSkill(skill).length > 1
-            ? ` Se probó también con ${variantesDeSkill(skill).slice(1).map((v) => `"${v}"`).join(' y ')}.`
-            : ''),
-      );
+      const probadas =
+        variantes.length > 1 ? ` Se probó también con ${variantes.slice(1).map((v) => `"${v}"`).join(' y ')}.` : '';
+      if (descartados.length) {
+        throw new X402Error(
+          `Hay agentes con la skill "${skill}", pero ninguno llega a lo que se pide para pagarle sin que nadie ` +
+            `lo revise (nivel ${nivelMinimo} del tablón).${probadas}\n  ${[...new Set(descartados)].join('\n  ')}`,
+        );
+      }
+      throw new X402Error(`Ningún agente activo con la skill "${skill}" publica endpoint.${probadas}`);
     }
 
     const moneda = getAddress(options.asset ?? this.addresses.panalToken);
@@ -1753,7 +1826,14 @@ export class PanalClient {
       );
     }
 
-    quotes.sort((a, b) => (BigInt(a.accept.amount) < BigInt(b.accept.amount) ? -1 : 1));
+    // Primero más nivel y luego más barato, como elige el tablón entre ofertas.
+    const nivelDe = (a: Agent) => niveles.get(a.address.toLowerCase()) ?? null;
+    quotes.sort((a, b) =>
+      mejorParaSubcontratar(
+        { nivel: nivelDe(a.agent), precio: BigInt(a.accept.amount) },
+        { nivel: nivelDe(b.agent), precio: BigInt(b.accept.amount) },
+      ),
+    );
     const elegido = quotes[0]!;
 
     // Se desciende el sobre ANTES de firmar: aquí es donde se comprueba que
@@ -1780,7 +1860,69 @@ export class PanalClient {
       files: await this.receiveFiles(result.fileManifest),
       agent: elegido.agent.address,
       skill: usada,
+      // Su nivel del tablón cuando se le eligió; `null` con `nivelMinimo: 0`.
+      nivel: nivelDe(elegido.agent),
     };
+  }
+
+  /**
+   * De estos agentes, los que se pueden subcontratar con `nivelMinimo`, del
+   * de más nivel al de menos (a igual nivel, en el orden de la búsqueda).
+   * Apunta el nivel de cada uno en `niveles` y el motivo de cada descarte en
+   * `descartados`.
+   *
+   * Primero lo gratis —los clientes vienen en la ficha de la búsqueda— y solo
+   * de quien lo pasa se lee la cadena, de pocos en pocos: con todas de golpe
+   * el RPC público responde 429. Como mucho se miran
+   * `MAX_REVISADOS_PARA_SUBCONTRATAR`, para que una skill con cientos de
+   * agentes no se convierta en cientos de lecturas por pregunta.
+   */
+  private async quienSePuedeSubcontratar(
+    agentes: Agent[],
+    nivelMinimo: number,
+    niveles: Map<string, number>,
+    descartados: string[],
+  ): Promise<Agent[]> {
+    const nombre = (a: Agent) => a.metadata.name || a.address;
+    const porClientes = agentes.filter((a) => {
+      const motivo = motivoPorClientes(a.clientes);
+      if (motivo) descartados.push(`${nombre(a)}: ${motivo}`);
+      return !motivo;
+    });
+
+    const aRevisar = porClientes.slice(0, MAX_REVISADOS_PARA_SUBCONTRATAR);
+    const situaciones: (SituacionEnLaCadena | null)[] = [];
+    for (let k = 0; k < aRevisar.length; k += LECTURAS_A_LA_VEZ) {
+      situaciones.push(
+        ...(await Promise.all(
+          aRevisar.slice(k, k + LECTURAS_A_LA_VEZ).map(async (a): Promise<SituacionEnLaCadena | null> => {
+            try {
+              const [[nivel], stats] = await Promise.all([
+                this.leerTablon<readonly [number, number]>('levelOf', [a.address]),
+                this.leerTablon<readonly [number, number, number, number, bigint]>('agentStats', [a.address]),
+              ]);
+              return { nivel: Number(nivel), suspendidoHasta: Number(stats[4]) };
+            } catch {
+              return null;
+            }
+          }),
+        )),
+      );
+    }
+
+    const ahora = Math.floor(Date.now() / 1000);
+    const pasan: Agent[] = [];
+    aRevisar.forEach((a, i) => {
+      const situacion = situaciones[i] ?? null;
+      const motivo = motivoPorNivel(situacion, nivelMinimo, ahora);
+      if (motivo) descartados.push(`${nombre(a)}: ${motivo}`);
+      else {
+        niveles.set(a.address.toLowerCase(), situacion!.nivel);
+        pasan.push(a);
+      }
+    });
+    // `sort` es estable: a igual nivel se respeta el orden de la búsqueda.
+    return pasan.sort((a, b) => niveles.get(b.address.toLowerCase())! - niveles.get(a.address.toLowerCase())!);
   }
 
   /**

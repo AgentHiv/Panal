@@ -297,6 +297,7 @@ function writeEnvExample(dest: string, t: Catalog): string {
     bloque(t.env.subcontrata),
     'SUBCONTRATA_MAX=',
     'SUBCONTRATA_SALTOS=2',
+    'SUBCONTRATA_NIVEL_MINIMO=1',
     '',
     bloque(t.env.vigilante),
     'VIGILANTE_SEGUNDOS=60',

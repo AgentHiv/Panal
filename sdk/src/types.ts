@@ -13,6 +13,7 @@ import { esTokenDeEjemplo } from './ejemplos.js';
 import { esTokenDePregunta } from './pregunta.js';
 import { esTokenDeNivel } from './niveles.js';
 import { esTokenDeTipo } from './tipo.js';
+import type { ClientesDelAgente } from './seleccion.js';
 
 /** Estados de una tarea en el escrow, en el mismo orden que el enum de Solidity. */
 export enum TaskStatus {
@@ -195,6 +196,15 @@ export interface Agent {
 
   /** Su nombre único en PanalNames, si lo tiene. */
   nombre?: NombreDeAgente;
+
+  /**
+   * De cuántos clientes distintos salen sus encargos completados.
+   *
+   * Lo cuenta el indexador; la cadena no lo sabe. `undefined` = no se sabe
+   * (búsqueda sin indexador, o un indexador viejo). `ask` no subcontrata a
+   * quien no lo tenga, salvo con `nivelMinimo: 0`.
+   */
+  clientes?: ClientesDelAgente;
 }
 
 /** El nombre de un agente en PanalNames, y cómo llegó a tenerlo. */
