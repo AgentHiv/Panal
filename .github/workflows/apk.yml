@@ -34,6 +34,10 @@ on:
   workflow_dispatch:
   push:
     tags: ['apk-v*']
+    # TEMPORAL: compilar esta rama para probar el actualizador antes de
+    # fusionar. Se quita antes del merge. Los pasos que publican solo corren
+    # con etiquetas `apk-v`, así que esto no publica nada.
+    branches: ['feat/in-app-apk-update']
   # Crear la release desde la web de GitHub también crea la etiqueta, pero no
   # siempre dispara el evento `push`. Escuchando los dos, el APK se adjunta
   # tanto si la etiqueta se publica desde la terminal como desde el navegador.
