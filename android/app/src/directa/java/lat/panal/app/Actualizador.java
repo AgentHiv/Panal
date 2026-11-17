@@ -41,8 +41,12 @@ import java.util.regex.Pattern;
  *
  * ANTES, el aviso del menú abría el APK en el navegador: se descargaba a la
  * carpeta de descargas y había que ir a buscarlo y abrirlo a mano. Ahora la
- * app lo baja ella misma, lo comprueba y le pasa el archivo al instalador del
- * sistema. Un toque y la pantalla de «¿Quieres actualizar esta app?».
+ * app lo baja ella misma y lo comprueba (`descargar`), y SOLO CUANDO YA ESTÁ
+ * BAJADO Y COMPROBADO el menú ofrece «Actualizar», que le pasa el archivo al
+ * instalador del sistema (`instalar`). Dos pasos a propósito: el instalador no
+ * salta encima de lo que se esté haciendo cuando acaba la descarga. Y
+ * `preparada` dice si ya hay una versión bajada, para que al volver a abrir la
+ * app el menú ofrezca «Actualizar» sin bajarla otra vez.
  *
  * LO QUE NO HACE: instalar sola. No puede, y no debe. Una app normal no tiene
  * forma de instalar nada sin que la persona lo confirme en la pantalla del
@@ -123,8 +127,62 @@ public class Actualizador extends Plugin {
         hilo.shutdownNow();
     }
 
+    /** Lo que hace cada método en el hilo propio, con el archivo ya comprobado. */
+    private interface Tarea {
+        JSObject hacer(File apk) throws Rechazo;
+    }
+
+    /** Baja la versión (o usa la ya bajada) y la comprueba. No abre nada. */
+    @PluginMethod
+    public void descargar(PluginCall call) {
+        enElHilo(call, apk -> respuesta("estado", "lista"));
+    }
+
+    /**
+     * Abre el instalador con la versión ya bajada.
+     *
+     * Si el archivo ya no está —Android puede vaciar la caché cuando le falta
+     * sitio—, lo vuelve a bajar antes, con su progreso.
+     */
     @PluginMethod
     public void instalar(PluginCall call) {
+        enElHilo(call, apk -> {
+            abrirInstalador(apk);
+            return respuesta("estado", "instalador");
+        });
+    }
+
+    /**
+     * ¿Hay ya una versión bajada y buena? Nunca baja nada.
+     *
+     * Para el menú al abrirse: si la persona la bajó ayer y no actualizó, hoy
+     * tiene que ver «Actualizar», no «Descargar».
+     */
+    @PluginMethod
+    public void preparada(PluginCall call) {
+        String version = call.getString("version", "");
+        if (version == null || !VERSION.matcher(version).matches()) {
+            call.reject("versión no válida", "VERSION");
+            return;
+        }
+        hilo.execute(() -> {
+            File apk = new File(new File(getContext().getCacheDir(), CARPETA), "panal-" + version + ".apk");
+            boolean lista = false;
+            if (apk.isFile() && apk.length() > 0) {
+                try {
+                    comprobar(apk, version);
+                    lista = true;
+                } catch (Rechazo | RuntimeException e) {
+                    borrar(apk);
+                }
+            }
+            JSObject r = new JSObject();
+            r.put("lista", lista);
+            call.resolve(r);
+        });
+    }
+
+    private void enElHilo(PluginCall call, Tarea tarea) {
         String version = call.getString("version", "");
         if (version == null || !VERSION.matcher(version).matches()) {
             call.reject("versión no válida", "VERSION");
@@ -136,11 +194,7 @@ public class Actualizador extends Plugin {
         }
         hilo.execute(() -> {
             try {
-                File apk = bajarYComprobar(version);
-                abrirInstalador(apk);
-                JSObject r = new JSObject();
-                r.put("estado", "instalador");
-                call.resolve(r);
+                call.resolve(tarea.hacer(bajarYComprobar(version)));
             } catch (Rechazo e) {
                 call.reject(e.getMessage(), e.codigo);
             } catch (IOException | RuntimeException e) {
@@ -151,6 +205,12 @@ public class Actualizador extends Plugin {
                 ocupado.set(false);
             }
         });
+    }
+
+    private static JSObject respuesta(String clave, String valor) {
+        JSObject r = new JSObject();
+        r.put(clave, valor);
+        return r;
     }
 
     /**
