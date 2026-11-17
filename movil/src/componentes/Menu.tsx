@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/hooks/useWallet';
 import { activeChain } from '@/contracts/config';
@@ -252,12 +252,13 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
 }
 
 /**
- * La versión nueva: instalarla desde aquí mismo.
+ * La versión nueva: bajarla y actualizar desde aquí mismo.
  *
- * En el APK directo, tocar la línea baja el APK DENTRO de la app, con el
- * progreso a la vista, y abre el instalador de Android (`lib/instalador.ts`).
- * El menú no se cierra: es donde se ve cómo va. Si se cierra, la descarga
- * sigue, y al volver a abrirlo se ve por dónde iba.
+ * En el APK directo son dos pasos (`lib/instalador.ts`): «Descargar» baja el
+ * APK DENTRO de la app, con el progreso a la vista, y solo cuando ya está
+ * bajado y comprobado aparece «Actualizar», que abre el instalador de
+ * Android. El menú no se cierra al descargar: es donde se ve cómo va. Si se
+ * cierra, la descarga sigue, y al volver a abrirlo se ve por dónde iba.
  *
  * Donde no hay actualizador —el navegador— o si la descarga falla, queda el
  * enlace de siempre: el archivo, que el navegador baja a Descargas. Si lo que
@@ -273,7 +274,14 @@ function LineaVersion({
   T: Textos;
 }): React.ReactElement {
   const estado = useInstalador();
+  const descargar = (): void => void instalador.descargar(version);
   const instalar = (): void => void instalador.instalar(version);
+
+  // Si la app se cerró con la versión ya bajada, que diga «Actualizar» y no
+  // «Descargar». Pregunta al lado nativo; no baja nada.
+  useEffect(() => {
+    void instalador.mirar(version);
+  }, [version]);
 
   // `_blank` sale al navegador del teléfono, como los enlaces de la ficha de
   // un agente. El enlace ES el APK, servido desde nuestro dominio con el
@@ -311,6 +319,19 @@ function LineaVersion({
     );
   }
 
+  if (estado.fase === 'lista') {
+    return (
+      <button
+        type="button"
+        onClick={instalar}
+        className="pulsable mt-2 flex items-center gap-1.5 text-left text-[11.5px] font-semibold text-honey"
+      >
+        <Icono nombre="bajar" tamano={13} color="#E29A2E" grosor={2} className="shrink-0" />
+        {T.menu.lista(version)} · {T.menu.actualizar}
+      </button>
+    );
+  }
+
   if (estado.fase === 'instalador') {
     return (
       <button
@@ -333,7 +354,7 @@ function LineaVersion({
       <>
         <button
           type="button"
-          onClick={instalar}
+          onClick={descargar}
           className="pulsable mt-2 flex w-full items-start gap-1.5 text-left text-[11.5px] leading-snug text-terra"
         >
           <Icono nombre="bajar" tamano={13} color="#C9653B" grosor={2} className="mt-px shrink-0" />
@@ -347,11 +368,11 @@ function LineaVersion({
   return (
     <button
       type="button"
-      onClick={instalar}
+      onClick={descargar}
       className="pulsable mt-2 flex items-center gap-1.5 text-left text-[11.5px] font-semibold text-honey"
     >
       <Icono nombre="bajar" tamano={13} color="#E29A2E" grosor={2} className="shrink-0" />
-      {T.menu.hayVersion(version)} · {T.menu.instalar}
+      {T.menu.hayVersion(version)} · {T.menu.descargar}
     </button>
   );
 }
