@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      SOLO EN EL APK DIRECTO (`lat.panal.app`).
+
+      Sin este permiso declarado, Android no deja que la app abra el instalador
+      con la versión nueva, y en los ajustes ni siquiera aparece la opción de
+      «permitir instalar apps de esta fuente». Con él declarado, la app sigue
+      sin poder instalar NADA por su cuenta: Android pide permiso la primera
+      vez y pide confirmar cada actualización. Lo usa `Actualizador.java`.
+
+      En la app de Google Play no va: es un permiso restringido en Play, y Play
+      no deja que una app se actualice por fuera de Play. El flujo del APK
+      comprueba que esté aquí y que no esté allí.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+</manifest>

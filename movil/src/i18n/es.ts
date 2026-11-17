@@ -67,6 +67,12 @@ export const es = {
     version: (v: string) => `Versión ${v}`,
     sinVersion: 'Compilación de desarrollo',
     hayVersion: (v: string) => `Versión ${v} disponible`,
+    instalar: 'Instalar',
+    descargando: (v: string) => `Descargando la versión ${v}…`,
+    siguePasos: 'Sigue los pasos de Android para instalarla. Si no se abrió nada, toca aquí.',
+    noEsNuestra: 'El archivo descargado no lleva la firma de Panal: no se ha instalado.',
+    falloDescarga: 'No se pudo descargar. Toca para volver a intentarlo.',
+    conNavegador: 'Descargar con el navegador',
     propiedad: '© 2026 Panal y Kreno · el código es MIT; el nombre y el logo, no',
   },
 

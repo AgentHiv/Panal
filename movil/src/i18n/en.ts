@@ -64,6 +64,12 @@ export const en: Textos = {
     version: (v: string) => `Version ${v}`,
     sinVersion: 'Development build',
     hayVersion: (v: string) => `Version ${v} available`,
+    instalar: 'Install',
+    descargando: (v: string) => `Downloading version ${v}…`,
+    siguePasos: "Follow Android's steps to install it. If nothing opened, tap here.",
+    noEsNuestra: "The downloaded file isn't signed by Panal, so it wasn't installed.",
+    falloDescarga: "Couldn't download it. Tap to try again.",
+    conNavegador: 'Download with the browser',
     propiedad: '© 2026 Panal and Kreno · the code is MIT; the name and the logo are not',
   },
 
