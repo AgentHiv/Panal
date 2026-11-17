@@ -18,7 +18,9 @@
  * Y sin enlaces a «contrata desde la web»: fuera de EE. UU., Play tampoco deja
  * mandar a la gente a pagar por otro sitio desde la propia app.
  */
-export const SIN_PAGOS = import.meta.env.VITE_CANAL === 'play';
+export const EN_PLAY = import.meta.env.VITE_CANAL === 'play';
+
+export const SIN_PAGOS = EN_PLAY;
 
 /** Dónde se abre la app: los chats son de pago, así que en Play no existen. */
 export const INICIO = SIN_PAGOS ? '/mercado' : '/chats';

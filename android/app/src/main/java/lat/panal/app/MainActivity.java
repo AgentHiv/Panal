@@ -32,6 +32,9 @@ public class MainActivity extends BridgeActivity {
         // dentro, y un plugin registrado después no existe para la página.
         registerPlugin(Pantalla.class);
         registerPlugin(SecureKey.class);
+        // Los que solo lleva una de las dos apps: en el APK directo, el
+        // actualizador; en la de Google Play, ninguno (`src/<canal>/`).
+        PluginsDelCanal.registrar(this);
 
         super.onCreate(savedInstanceState);
 

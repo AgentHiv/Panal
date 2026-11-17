@@ -62,6 +62,12 @@ export const zh: Textos = {
     version: (v: string) => `版本 ${v}`,
     sinVersion: '开发版',
     hayVersion: (v: string) => `有新版本 ${v}`,
+    instalar: '安装',
+    descargando: (v: string) => `正在下载 ${v} 版本…`,
+    siguePasos: '请按照 Android 的提示完成安装。如果什么都没弹出，请点这里。',
+    noEsNuestra: '下载的文件没有 Panal 的签名，因此没有安装。',
+    falloDescarga: '下载失败。点此重试。',
+    conNavegador: '用浏览器下载',
     propiedad: '© 2026 Panal 与 Kreno · 代码采用 MIT 许可；名称和标志不在其内',
   },
 

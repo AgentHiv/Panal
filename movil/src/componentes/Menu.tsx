@@ -7,6 +7,7 @@ import type { NombreIcono } from '~/componentes/Icono';
 import { avisosEncendidos, encenderAvisos, hayAvisos, pedirPermiso } from '~/lib/avisos';
 import { useSesion } from '~/lib/sesion';
 import { enlaceDeVersion, useActualizacion } from '~/lib/actualizacion';
+import { instalador, useInstalador } from '~/lib/instalador';
 import { useCambio } from '~/lib/cambio';
 import { IDIOMAS, cambiarIdioma, useIdioma, useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
@@ -237,25 +238,8 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
 
             {/* Solo cuando de verdad hay una más nueva. No hay «estás al día»:
                 una línea que aparece siempre deja de leerse, y entonces no se
-                lee tampoco el día que dice algo.
-
-                `_blank` sale al navegador del teléfono, como los enlaces de la
-                ficha de un agente. El enlace ES el APK, servido desde nuestro
-                dominio con el content-type de Android, así que al tocarlo se
-                descarga y el sistema ofrece instalarlo. Instalar lo sigue
-                decidiendo Android, pidiendo permiso: aquí no se instala nada. */}
-            {nueva && (
-              <a
-                href={enlaceDeVersion(nueva)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={onCerrar}
-                className="pulsable mt-2 flex items-center gap-1.5 text-[11.5px] font-semibold text-honey"
-              >
-                <Icono nombre="bajar" tamano={13} color="#E29A2E" grosor={2} className="shrink-0" />
-                {T.menu.hayVersion(nueva)}
-              </a>
-            )}
+                lee tampoco el día que dice algo. */}
+            {nueva && <LineaVersion version={nueva} onCerrar={onCerrar} T={T} />}
 
             {/* La regla de propiedad, como en el README y en las releases: la
                 licencia MIT cubre el código, no el nombre ni el logo. */}
@@ -264,6 +248,111 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * La versión nueva: instalarla desde aquí mismo.
+ *
+ * En el APK directo, tocar la línea baja el APK DENTRO de la app, con el
+ * progreso a la vista, y abre el instalador de Android (`lib/instalador.ts`).
+ * El menú no se cierra: es donde se ve cómo va. Si se cierra, la descarga
+ * sigue, y al volver a abrirlo se ve por dónde iba.
+ *
+ * Donde no hay actualizador —el navegador— o si la descarga falla, queda el
+ * enlace de siempre: el archivo, que el navegador baja a Descargas. Si lo que
+ * falla es la firma, en cambio, no se ofrece: vendría del mismo sitio.
+ */
+function LineaVersion({
+  version,
+  onCerrar,
+  T,
+}: {
+  version: string;
+  onCerrar: () => void;
+  T: Textos;
+}): React.ReactElement {
+  const estado = useInstalador();
+  const instalar = (): void => void instalador.instalar(version);
+
+  // `_blank` sale al navegador del teléfono, como los enlaces de la ficha de
+  // un agente. El enlace ES el APK, servido desde nuestro dominio con el
+  // content-type de Android.
+  const conNavegador = (texto: string): React.ReactElement => (
+    <a
+      href={enlaceDeVersion(version)}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onCerrar}
+      className="pulsable mt-2 flex items-center gap-1.5 text-[11.5px] font-semibold text-honey"
+    >
+      <Icono nombre="bajar" tamano={13} color="#E29A2E" grosor={2} className="shrink-0" />
+      {texto}
+    </a>
+  );
+
+  if (!instalador.disponible) return conNavegador(T.menu.hayVersion(version));
+
+  if (estado.fase === 'bajando') {
+    return (
+      <div className="mt-2" role="status" aria-live="polite">
+        <p className="flex items-center gap-1.5 text-[11.5px] font-semibold text-honey">
+          <Icono nombre="bajar" tamano={13} color="#E29A2E" grosor={2} className="shrink-0" />
+          <span className="grow">{T.menu.descargando(version)}</span>
+          {estado.pct !== null && <span className="shrink-0 tabular-nums">{estado.pct} %</span>}
+        </p>
+        <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-line">
+          <div
+            className={`h-full rounded-full bg-honey transition-[width] ${estado.pct === null ? 'w-1/3 animate-pulse' : ''}`}
+            style={estado.pct === null ? undefined : { width: `${estado.pct}%` }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (estado.fase === 'instalador') {
+    return (
+      <button
+        type="button"
+        onClick={instalar}
+        className="pulsable mt-2 flex w-full items-start gap-1.5 text-left text-[11.5px] leading-snug text-ink-2"
+      >
+        <Icono nombre="bajar" tamano={13} color="#C8C3DC" grosor={2} className="mt-px shrink-0" />
+        {T.menu.siguePasos}
+      </button>
+    );
+  }
+
+  if (estado.fase === 'error' && estado.motivo === 'noEsNuestra') {
+    return <p className="mt-2 text-[11.5px] leading-snug text-terra">{T.menu.noEsNuestra}</p>;
+  }
+
+  if (estado.fase === 'error') {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={instalar}
+          className="pulsable mt-2 flex w-full items-start gap-1.5 text-left text-[11.5px] leading-snug text-terra"
+        >
+          <Icono nombre="bajar" tamano={13} color="#C9653B" grosor={2} className="mt-px shrink-0" />
+          {T.menu.falloDescarga}
+        </button>
+        {conNavegador(T.menu.conNavegador)}
+      </>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={instalar}
+      className="pulsable mt-2 flex items-center gap-1.5 text-left text-[11.5px] font-semibold text-honey"
+    >
+      <Icono nombre="bajar" tamano={13} color="#E29A2E" grosor={2} className="shrink-0" />
+      {T.menu.hayVersion(version)} · {T.menu.instalar}
+    </button>
   );
 }
 

@@ -302,6 +302,22 @@ jobs:
             ./gradlew assembleDirectaDebug --no-daemon
           fi
 
+      # Que el APK directo lleve el permiso de abrir el instalador.
+      #
+      # Sin `REQUEST_INSTALL_PACKAGES` en el manifiesto final, el actualizador
+      # del menú (`Actualizador.java`) baja la versión nueva y Android se niega
+      # a abrir el instalador; en los ajustes ni siquiera sale la opción de
+      # permitir instalar desde Panal. No rompe la compilación: rompe las
+      # actualizaciones, y eso se ve en el teléfono de otro. Va en
+      # `android/app/src/directa/AndroidManifest.xml`.
+      - name: Comprobar el permiso de instalar del APK directo
+        run: |
+          MANIFIESTOS=$(find android/app/build/intermediates -name AndroidManifest.xml -path '*merged_manifest*' -path '*/directa[RD]*')
+          test -n "$MANIFIESTOS" || { echo "::error::no encuentro el manifiesto final de la variante directa"; exit 1; }
+          grep -q 'android.permission.REQUEST_INSTALL_PACKAGES' $MANIFIESTOS || {
+            echo "::error::el APK directo no lleva REQUEST_INSTALL_PACKAGES: el menu no podria instalar la version nueva"; exit 1; }
+          echo "permiso de instalar: si"
+
       - name: Renombrar con la versión
         run: |
           if [ "${{ steps.firma.outputs.estable }}" = "si" ]; then
@@ -355,6 +371,20 @@ jobs:
           PANAL_KEYSTORE_PASS: ${{ secrets.PANAL_KEYSTORE_PASS }}
           PANAL_KEY_ALIAS: ${{ secrets.PANAL_KEY_ALIAS || 'panal' }}
         run: ./gradlew bundlePlayRelease --no-daemon
+
+      # Y que la de Google Play NO lo lleve. Es un permiso restringido en Play,
+      # y Play no deja que una app se actualice por fuera de Play: colado aqui,
+      # la revision rechazaria la app semanas despues. Solo lo declara el
+      # manifiesto de `src/directa/`.
+      - name: Comprobar que la app de Google Play no puede instalar
+        if: steps.firma.outputs.estable == 'si'
+        run: |
+          MANIFIESTOS=$(find android/app/build/intermediates -name AndroidManifest.xml -path '*merged_manifest*' -path '*/playRelease/*')
+          test -n "$MANIFIESTOS" || { echo "::error::no encuentro el manifiesto final de la variante play"; exit 1; }
+          if grep -q 'REQUEST_INSTALL_PACKAGES' $MANIFIESTOS; then
+            echo "::error::la version de Google Play lleva REQUEST_INSTALL_PACKAGES"; exit 1
+          fi
+          echo "permiso de instalar en Play: no"
 
       - name: Preparar el AAB para Google Play
         id: aab

@@ -64,6 +64,12 @@ export const pt: Textos = {
     version: (v: string) => `Versão ${v}`,
     sinVersion: 'Compilação de desenvolvimento',
     hayVersion: (v: string) => `Versão ${v} disponível`,
+    instalar: 'Instalar',
+    descargando: (v: string) => `A descarregar a versão ${v}…`,
+    siguePasos: 'Segue os passos do Android para a instalar. Se não abriu nada, toca aqui.',
+    noEsNuestra: 'O ficheiro descarregado não tem a assinatura do Panal: não foi instalado.',
+    falloDescarga: 'Não foi possível descarregar. Toca para tentar de novo.',
+    conNavegador: 'Descarregar com o navegador',
     propiedad: '© 2026 Panal e Kreno · o código é MIT; o nome e o logo, não',
   },
 

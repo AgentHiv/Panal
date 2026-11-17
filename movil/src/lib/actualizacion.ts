@@ -12,14 +12,19 @@
  *
  * QUÉ NO HACE, Y A PROPÓSITO
  *
- * No instala nada y no interrumpe. Enseña una línea en el menú y, al tocarla,
- * descarga el APK — instalar sigue siendo una decisión que se toma fuera, con
- * Android pidiendo permiso. Una app que maneja un llavero cifrado no es el
- * sitio para inventarse un actualizador que se instala solo.
+ * No interrumpe y no instala solo. Enseña una línea en el menú y, al tocarla,
+ * la app baja el APK, comprueba que es ella misma y que lo firmó la misma
+ * clave, y abre el instalador de Android (`instalador.ts`). Instalar lo sigue
+ * confirmando la persona en la pantalla del sistema: una app que maneja un
+ * llavero cifrado no es el sitio para un actualizador que se instala solo.
  *
- * Lo que sí cambió: antes llevaba a la PÁGINA de la release y desde ahí había
- * que encontrar el `.apk` entre los adjuntos, con la lista plegada en un móvil.
- * Ahora el enlace es el archivo. Un gesto en vez de tres.
+ * Antes, tocar la línea abría el APK en el navegador, que lo dejaba en
+ * Descargas para abrirlo a mano. Eso sigue siendo el plan B: si el
+ * actualizador no está (navegador) o falla la descarga, el menú ofrece el
+ * enlace al archivo.
+ *
+ * Y NO EN LA APP DE GOOGLE PLAY: esa la actualiza Play, y el enlace llevaría
+ * al APK directo, que es OTRA app (`lat.panal.app`, no `lat.panal.play`).
  *
  * CUÁNTO SE ASOMA A LA RED
  *
@@ -37,6 +42,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { EN_PLAY } from '~/lib/canal';
 
 /**
  * De dónde se pregunta: NUESTRO dominio, no la API de GitHub.
@@ -196,7 +202,7 @@ export function useActualizacion(): string | null {
 
   useEffect(() => {
     const actual = versionInstalada();
-    if (!actual) return;
+    if (!actual || EN_PLAY) return;
 
     let vivo = true;
     void ultimaPublicada().then((publicada) => {
