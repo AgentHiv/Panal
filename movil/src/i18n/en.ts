@@ -68,7 +68,6 @@ export const en: Textos = {
     lista: (v: string) => `Version ${v} ready`,
     actualizar: 'Update',
     descargando: (v: string) => `Downloading version ${v}…`,
-    siguePasos: "Follow Android's steps to update. If nothing opened, tap here.",
     noEsNuestra: "The downloaded file isn't signed by Panal, so it wasn't installed.",
     falloDescarga: "Couldn't download it. Tap to try again.",
     conNavegador: 'Download with the browser',
