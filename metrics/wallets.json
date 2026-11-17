@@ -64,6 +64,10 @@
     {
       "address": "0x1b8686c56fd74b3903b18b5d6c80c0a146fd578b",
       "label": "Panal Scout (pays the first outside agents)"
+    },
+    {
+      "address": "0xf8dac14b1934314a8bdc4726ec33b1c09e44ec32",
+      "label": "agent: cik"
     }
   ],
   "unconfirmed": [
