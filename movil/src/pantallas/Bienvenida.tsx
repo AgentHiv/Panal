@@ -60,7 +60,12 @@ export default function Bienvenida({
         </div>
       </div>
 
-      <div className="flex min-h-0 grow flex-col justify-center px-6 pb-7 pt-2">
+      {/* Sin `min-h-0`: con él, en un teléfono bajo el bloque se encoge por
+          debajo de su contenido y `justify-center` lo desborda por ARRIBA, donde
+          no se puede desplazar: el principio queda cortado bajo la barra de
+          arriba. Sin él, el bloque mide al menos lo que su contenido y la
+          pantalla se desplaza desde arriba; si cabe, sigue centrado igual. */}
+      <div className="flex grow flex-col justify-center px-6 pb-7 pt-2">
         <Marca />
 
         <h1 className="mt-5 shrink-0 text-pretty text-center font-display text-[27px] font-semibold -tracking-[0.015em]">
