@@ -71,7 +71,6 @@ export const es = {
     lista: (v: string) => `Versión ${v} lista`,
     actualizar: 'Actualizar',
     descargando: (v: string) => `Descargando la versión ${v}…`,
-    siguePasos: 'Sigue los pasos de Android para actualizarla. Si no se abrió nada, toca aquí.',
     noEsNuestra: 'El archivo descargado no lleva la firma de Panal: no se ha instalado.',
     falloDescarga: 'No se pudo descargar. Toca para volver a intentarlo.',
     conNavegador: 'Descargar con el navegador',

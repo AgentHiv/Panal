@@ -3,8 +3,9 @@
  *
  * Lo nativo (bajar, comprobar la firma, abrir el instalador) solo se puede
  * probar en un teléfono. Lo que se prueba aquí es lo que decide qué ve la
- * persona en el menú, con un plugin de mentira: que «Actualizar» solo salga
- * cuando la versión ya está bajada, que dos toques no lancen dos descargas,
+ * persona en el menú, con un plugin de mentira: que el instalador se abra solo
+ * al terminar de bajar —y no antes—, que «Actualizar» se quede hasta que se
+ * instale, que dos toques no lancen dos descargas,
  * que una versión rara no llegue al lado nativo, que el progreso se cuente
  * bien y que un fallo de firma no se confunda con uno de red, porque al de
  * red se le ofrece el navegador y al de firma no.
@@ -77,7 +78,17 @@ await m.instalador.descargar('2.6.0');
 await m.instalador.mirar('2.6.0');
 dice('y pedirle algo no hace nada', m.instalador.leer().fase === 'quieto');
 
-console.log('\npaso 1: descargar, y «Actualizar» solo al terminar');
+/** Baja la versión y deja que el instalador se abra solo, sin que nadie instale. */
+async function bajarYAbrir(ins, f, version = '2.6.0') {
+  const d = ins.descargar(version);
+  await espera();
+  f.terminar();
+  await espera();
+  f.terminar();
+  await d;
+}
+
+console.log('\nbajar, y el instalador se abre solo al terminar');
 {
   const f = fingePlugin();
   const ins = m.crearInstalador(f.plugin);
@@ -89,13 +100,13 @@ console.log('\npaso 1: descargar, y «Actualizar» solo al terminar');
   await espera();
   dice('pasa a bajando, todavía sin número', ins.leer().fase === 'bajando' && ins.leer().pct === null);
   dice('pide al lado nativo la versión exacta', f.espia.descargas.length === 1 && f.espia.descargas[0] === '2.6.0');
-  dice('y NO abre el instalador', f.espia.instalaciones.length === 0);
+  dice('y NO abre el instalador mientras baja', f.espia.instalaciones.length === 0);
 
   f.progreso(1_054_016, 4_216_061);
   dice('cuenta el progreso: 25 %', ins.leer().pct === 25);
   f.progreso(4_216_061, 4_216_061);
   dice('y llega a 100 %', ins.leer().pct === 100);
-  dice('a 100 % todavía no dice «Actualizar»: falta comprobarla', ins.leer().fase === 'bajando');
+  dice('a 100 % todavía no abre nada: falta comprobarla', ins.leer().fase === 'bajando' && f.espia.instalaciones.length === 0);
 
   await ins.descargar('2.6.0');
   dice('un segundo toque a mitad NO lanza otra descarga', f.espia.descargas.length === 1);
@@ -103,44 +114,89 @@ console.log('\npaso 1: descargar, y «Actualizar» solo al terminar');
   dice('ni abre el instalador a medias', f.espia.instalaciones.length === 0);
 
   f.terminar();
+  await espera();
+  dice('bajada y comprobada, abre el instalador solo', f.espia.instalaciones.length === 1 && f.espia.instalaciones[0] === '2.6.0');
+  dice('sin volver a descargar', f.espia.descargas.length === 1);
+  dice('y la línea ya dice «Actualizar»', ins.leer().fase === 'lista');
+
+  const doble = ins.instalar('2.6.0');
+  await ins.descargar('2.6.0');
+  dice('mientras se abre, tocar «Actualizar» o «Descargar» no pide nada más', f.espia.instalaciones.length === 1 && f.espia.descargas.length === 1);
+  f.terminar();
   await hecho;
-  dice('al terminar queda «lista»: ahora sí sale «Actualizar»', ins.leer().fase === 'lista');
+  await doble;
+  dice('si no instala en ese momento, se queda «Actualizar»', ins.leer().fase === 'lista');
   dice('y deja de escuchar el progreso', f.espia.quitados === 1);
   dice('avisa a quien mira cada cambio', avisos >= 4);
 
-  console.log('\npaso 2: actualizar');
+  console.log('\n«Actualizar» se queda hasta que se instale');
   const abre = ins.instalar('2.6.0');
   await espera();
-  dice('«Actualizar» abre el instalador con esa versión', f.espia.instalaciones[0] === '2.6.0');
-  dice('sin volver a descargar', f.espia.descargas.length === 1);
+  dice('tocarlo abre el instalador otra vez', f.espia.instalaciones.length === 2);
+  dice('sin descargar de nuevo', f.espia.descargas.length === 1);
   dice('y sin pasar por «bajando» si el archivo ya está', ins.leer().fase === 'lista');
   f.terminar();
   await abre;
-  dice('queda «instalador»', ins.leer().fase === 'instalador');
+  dice('si lo vuelve a cancelar, sigue «Actualizar»', ins.leer().fase === 'lista');
 
   const otra = ins.instalar('2.6.0');
   await espera();
-  dice('si se canceló, se puede volver a abrir', f.espia.instalaciones.length === 2);
+  dice('y se puede abrir las veces que haga falta', f.espia.instalaciones.length === 3);
   f.terminar();
   await otra;
   quitar();
 }
 
-console.log('\nsi la caché se vació, «Actualizar» la vuelve a bajar y se ve');
+console.log('\nsi la app no está a la vista al terminar');
+{
+  const f = fingePlugin();
+  const ins = m.crearInstalador(f.plugin, { aLaVista: () => false });
+  const d = ins.descargar('2.6.0');
+  await espera();
+  f.terminar();
+  await d;
+  dice('no abre el instalador desde segundo plano', f.espia.instalaciones.length === 0);
+  dice('y la línea espera en «Actualizar»', ins.leer().fase === 'lista');
+}
+
+console.log('\nsi abrir el instalador solo falla');
 {
   const f = fingePlugin();
   const ins = m.crearInstalador(f.plugin);
   const d = ins.descargar('2.6.0');
   await espera();
   f.terminar();
+  await espera();
+  f.fallar('INSTALADOR');
   await d;
+  dice('no es un error: queda «Actualizar» para intentarlo a mano', ins.leer().fase === 'lista');
+}
+
+console.log('\nsi la caché se vació, «Actualizar» la vuelve a bajar y se ve');
+{
+  const f = fingePlugin();
+  const ins = m.crearInstalador(f.plugin);
+  await bajarYAbrir(ins, f);
   const abre = ins.instalar('2.6.0');
   await espera();
   f.progreso(2_108_031, 4_216_061);
   dice('enseña el progreso de esa segunda descarga', ins.leer().fase === 'bajando' && ins.leer().pct === 50);
   f.terminar();
   await abre;
-  dice('y acaba en el instalador', ins.leer().fase === 'instalador');
+  dice('y vuelve a «Actualizar»', ins.leer().fase === 'lista');
+}
+
+console.log('\nsi falla al tocar «Actualizar»');
+{
+  const f = fingePlugin();
+  const ins = m.crearInstalador(f.plugin);
+  await bajarYAbrir(ins, f);
+  const abre = ins.instalar('2.6.0');
+  await espera();
+  f.fallar('RED');
+  await abre;
+  const e = ins.leer();
+  dice('ese fallo sí se enseña, con el navegador de plan B', e.fase === 'error' && e.motivo === 'fallo');
 }
 
 console.log('\nal abrir el menú con la versión ya bajada');
@@ -151,6 +207,7 @@ console.log('\nal abrir el menú con la versión ya bajada');
   dice('pregunta al lado nativo', f.espia.miradas === 1);
   dice('y ofrece «Actualizar» directamente', ins.leer().fase === 'lista');
   dice('sin descargar nada', f.espia.descargas.length === 0);
+  dice('y sin abrir el instalador solo', f.espia.instalaciones.length === 0);
 }
 {
   const f = fingePlugin({ preparada: false });
@@ -165,6 +222,8 @@ console.log('\nal abrir el menú con la versión ya bajada');
   await espera();
   await ins.mirar('2.6.0');
   dice('a mitad de una descarga, mirar no pisa el progreso', ins.leer().fase === 'bajando' && f.espia.miradas === 0);
+  f.terminar();
+  await espera();
   f.terminar();
   await d;
 }

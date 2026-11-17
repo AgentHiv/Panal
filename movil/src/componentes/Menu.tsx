@@ -254,11 +254,12 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
 /**
  * La versión nueva: bajarla y actualizar desde aquí mismo.
  *
- * En el APK directo son dos pasos (`lib/instalador.ts`): «Descargar» baja el
- * APK DENTRO de la app, con el progreso a la vista, y solo cuando ya está
- * bajado y comprobado aparece «Actualizar», que abre el instalador de
- * Android. El menú no se cierra al descargar: es donde se ve cómo va. Si se
- * cierra, la descarga sigue, y al volver a abrirlo se ve por dónde iba.
+ * En el APK directo (`lib/instalador.ts`), «Descargar» baja el APK DENTRO de
+ * la app, con el progreso a la vista, y al terminar abre el instalador de
+ * Android solo. Si la persona no instala entonces, aquí mismo, donde estaba
+ * «Descargar», queda «Versión X lista · Actualizar» hasta que la instale. El
+ * menú no se cierra al descargar: es donde se ve cómo va. Si se cierra, la
+ * descarga sigue, y al volver a abrirlo se ve por dónde iba.
  *
  * Donde no hay actualizador —el navegador— o si la descarga falla, queda el
  * enlace de siempre: el archivo, que el navegador baja a Descargas. Si lo que
@@ -328,19 +329,6 @@ function LineaVersion({
       >
         <Icono nombre="bajar" tamano={13} color="#E29A2E" grosor={2} className="shrink-0" />
         {T.menu.lista(version)} · {T.menu.actualizar}
-      </button>
-    );
-  }
-
-  if (estado.fase === 'instalador') {
-    return (
-      <button
-        type="button"
-        onClick={instalar}
-        className="pulsable mt-2 flex w-full items-start gap-1.5 text-left text-[11.5px] leading-snug text-ink-2"
-      >
-        <Icono nombre="bajar" tamano={13} color="#C8C3DC" grosor={2} className="mt-px shrink-0" />
-        {T.menu.siguePasos}
       </button>
     );
   }

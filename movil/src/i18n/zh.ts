@@ -66,7 +66,6 @@ export const zh: Textos = {
     lista: (v: string) => `${v} 版本已就绪`,
     actualizar: '更新',
     descargando: (v: string) => `正在下载 ${v} 版本…`,
-    siguePasos: '请按照 Android 的提示完成更新。如果什么都没弹出，请点这里。',
     noEsNuestra: '下载的文件没有 Panal 的签名，因此没有安装。',
     falloDescarga: '下载失败。点此重试。',
     conNavegador: '用浏览器下载',

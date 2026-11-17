@@ -68,7 +68,6 @@ export const pt: Textos = {
     lista: (v: string) => `Versão ${v} pronta`,
     actualizar: 'Atualizar',
     descargando: (v: string) => `A descarregar a versão ${v}…`,
-    siguePasos: 'Segue os passos do Android para a atualizar. Se não abriu nada, toca aqui.',
     noEsNuestra: 'O ficheiro descarregado não tem a assinatura do Panal: não foi instalado.',
     falloDescarga: 'Não foi possível descarregar. Toca para tentar de novo.',
     conNavegador: 'Descarregar com o navegador',

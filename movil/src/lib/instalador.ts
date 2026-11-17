@@ -3,16 +3,24 @@
  *
  * El menú avisa cuando hay una versión más nueva (`actualizacion.ts`). Antes,
  * tocar el aviso abría el APK en el navegador: se bajaba a Descargas y había
- * que ir a buscarlo y abrirlo a mano. Ahora son dos pasos dentro de la app:
+ * que ir a buscarlo y abrirlo a mano. Ahora se hace dentro de la app:
  *
  *   1. «Descargar»: la app lo baja, con el progreso a la vista, y lo comprueba.
- *   2. Solo cuando ya está bajado y comprobado aparece «Actualizar», que abre
- *      el instalador de Android.
+ *   2. En cuanto está bajado y comprobado, abre el instalador de Android solo.
+ *   3. Si la persona no instala en ese momento, no pasa nada: la línea del menú
+ *      se queda en «Versión X lista · Actualizar» hasta que la instale, también
+ *      si cierra la app (`mirar`). Al instalarla, la app arranca con la versión
+ *      nueva, ya no hay nada que anunciar y la línea desaparece.
  *
- * Dos pasos y no uno a propósito: así el instalador no salta encima de lo que
- * se esté haciendo cuando acaba la descarga. El trabajo de verdad —bajar,
- * comprobar que es ESTA app y que lo firmó la misma clave, abrir el
- * instalador— lo hace `android/app/src/directa/.../Actualizador.java`.
+ * Que se abra solo es decisión del fundador (2026-11-17): antes había que tocar
+ * «Actualizar» después de la descarga, y eso era un paso de más. Solo se abre
+ * si la app está a la vista: si la persona se fue a otra app mientras bajaba,
+ * Android no deja abrir pantallas desde segundo plano, y la línea se queda en
+ * «Actualizar» para cuando vuelva.
+ *
+ * El trabajo de verdad —bajar, comprobar que es ESTA app y que lo firmó la
+ * misma clave, abrir el instalador— lo hace
+ * `android/app/src/directa/.../Actualizador.java`.
  *
  * Instalar lo sigue confirmando la persona en la pantalla del sistema: la
  * primera vez, Android pide permiso para instalar desde Panal, y cada vez,
@@ -26,7 +34,7 @@
  * menú; si se vuelve a abrir, tiene que enseñar el progreso que lleva, no un
  * botón de «descargar» que lanzaría otra descarga encima. Y si la app se
  * cerró con la versión ya bajada, `mirar` lo pregunta al abrir el menú para
- * ofrecer «Actualizar» directamente.
+ * ofrecer «Actualizar» directamente, sin volver a abrir el instalador solo.
  */
 
 import { useSyncExternalStore } from 'react';
@@ -38,7 +46,6 @@ export type EstadoInstalador =
   | { fase: 'quieto' }
   | { fase: 'bajando'; pct: number | null }
   | { fase: 'lista' }
-  | { fase: 'instalador' }
   | { fase: 'error'; motivo: MotivoDelFallo };
 
 /**
@@ -83,15 +90,27 @@ export interface Instalador {
   suscribir(oyente: () => void): () => void;
   /** Si ya hay una versión bajada y buena, pasa a «lista». Nunca baja nada. */
   mirar(version: string): Promise<void>;
-  /** Paso 1: bajarla y comprobarla. Termina en «lista». */
+  /** Bajarla, comprobarla y abrir el instalador. Termina en «lista». */
   descargar(version: string): Promise<void>;
-  /** Paso 2: abrir el instalador de Android con lo ya bajado. */
+  /** «Actualizar»: abrir el instalador con lo ya bajado. Sigue en «lista». */
   instalar(version: string): Promise<void>;
 }
 
+/** Si la app está en pantalla. En las pruebas, y fuera de un navegador, sí. */
+function aLaVistaDeVerdad(): boolean {
+  return typeof document === 'undefined' || document.visibilityState !== 'hidden';
+}
+
 /** Separado del plugin de verdad para poder probarlo con uno de mentira. */
-export function crearInstalador(plugin: PluginActualizador | null): Instalador {
+export function crearInstalador(
+  plugin: PluginActualizador | null,
+  { aLaVista = aLaVistaDeVerdad }: { aLaVista?: () => boolean } = {},
+): Instalador {
   let estado: EstadoInstalador = { fase: 'quieto' };
+  // Mientras se abre el instalador, un toque en «Actualizar» no pide otro: el
+  // lado nativo hace una cosa cada vez y le contestaría «ocupado», que el
+  // menú enseñaría como un fallo.
+  let abriendo = false;
   const oyentes = new Set<() => void>();
   const poner = (nuevo: EstadoInstalador): void => {
     estado = nuevo;
@@ -143,13 +162,31 @@ export function crearInstalador(plugin: PluginActualizador | null): Instalador {
     },
     async descargar(version) {
       // Dos toques seguidos no lanzan dos descargas.
-      if (!plugin || !VERSION.test(version) || estado.fase === 'bajando') return;
+      if (!plugin || !VERSION.test(version) || estado.fase === 'bajando' || abriendo) return;
       poner({ fase: 'bajando', pct: null });
       await conProgreso(plugin, () => plugin.descargar({ version }), { fase: 'lista' });
+      // Bajada y comprobada: el instalador se abre solo. Si no se puede, no es
+      // un error: la línea ya dice «Actualizar», y tocarla lo vuelve a intentar.
+      if (estado.fase !== 'lista' || !aLaVista()) return;
+      abriendo = true;
+      try {
+        await plugin.instalar({ version });
+      } catch {
+        /* se queda en «Actualizar» */
+      } finally {
+        abriendo = false;
+      }
     },
     async instalar(version) {
-      if (!plugin || !VERSION.test(version) || estado.fase === 'bajando') return;
-      await conProgreso(plugin, () => plugin.instalar({ version }), { fase: 'instalador' });
+      if (!plugin || !VERSION.test(version) || estado.fase === 'bajando' || abriendo) return;
+      abriendo = true;
+      try {
+        // Termina otra vez en «lista»: si la persona cancela el instalador, el
+        // botón sigue ahí hasta que la instale.
+        await conProgreso(plugin, () => plugin.instalar({ version }), { fase: 'lista' });
+      } finally {
+        abriendo = false;
+      }
     },
   };
 }
