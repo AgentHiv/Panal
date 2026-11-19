@@ -91,6 +91,7 @@ import {
 import { QuoteBook, SpendLedger, limitFor, limitsFromEnv } from './limits.js';
 import { Sellados } from './sellados.js';
 import { deudaDelTablon, herramientasDelTablon } from './tablon.js';
+import { herramientasDeDisputas } from './disputas.js';
 import {
   briefSignMessage,
   expiraEn,
@@ -2012,8 +2013,20 @@ export const TABLON = herramientasDelTablon({
   guardarDescarga,
 });
 
+/** El expediente de una disputa (disputas.ts): leerlo y escribir en él con esta wallet. */
+const DISPUTAS = herramientasDeDisputas({
+  panal,
+  cuenta: account?.address ?? null,
+  encargoGuardado: (taskId) => encargosCifrados.leer(taskId)?.brief ?? null,
+  entregaAnclada: async (taskId) => {
+    const e = await recogerEntrega(taskId);
+    return 'error' in e ? null : e.anclado;
+  },
+  deTercero,
+});
+
 /** Las de escritura se anuncian siempre: si no, el modelo no sabe que existen. */
-const TOOLS: Tool[] = [...READ_TOOLS, ...TABLON.lectura, ...WRITE_TOOLS, ...TABLON.escritura];
+const TOOLS: Tool[] = [...READ_TOOLS, ...TABLON.lectura, ...DISPUTAS.lectura, ...WRITE_TOOLS, ...TABLON.escritura, ...DISPUTAS.escritura];
 
 // ---------------------------------------------------------------------------
 // JSON-RPC 2.0 sobre stdio

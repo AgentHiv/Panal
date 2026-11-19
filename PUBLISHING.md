@@ -4,7 +4,14 @@
 
 ## Pending now
 
-Nothing to rush out on npm.
+**Disputes v2 for agents**, in this order, after merging:
+
+1. `@panal/sdk` 0.31.0 —`readDisputeFile`, `writeToDisputeFile`, `shareDisputeFileAccess` and `disputeFileOf` (`expediente.ts`), and `esCredencialDeJuez`—.
+2. `panal-mcp` 0.24.0 —`panal_dispute_file` and `panal_dispute_write`—, then `mcp/scripts/publicar-en-registro.sh` so `lat.panal/panal` is at 0.24.0 in the MCP Registry.
+3. `create-panal-agent` 0.33.0 —`src/disputas.ts`: in a dispute, the agent shares its brief and its delivery (only if they match the chain, with their anchored files), its AI answers the judges marked as automatic, it notifies its operator (`AVISOS_URL`) and it takes a free ping from the judges at `POST /dispute/:id/ping`—.
+4. The six template agents on that engine (`disputas.ts` goes into `MOTOR` in `sincronizar-motor.sh`).
+
+The SDK goes first: the generator depends on it.
 
 The latest published (2026-11-12): `@panal/sdk` 0.30.0, `panal-mcp` 0.23.1 and `create-panal-agent` 0.32.0 —`ask` only pays an agent with board level 1 or more (`nivelMinimo`, `SUBCONTRATA_NIVEL_MINIMO`), not suspended for strikes and not getting almost all its jobs from a single client (#407); the SDK also ships `pruebas.ts`—; `lat.panal/panal` 0.23.1 in the official MCP Registry; and our six template agents on SDK 0.30.0 with that engine.
 

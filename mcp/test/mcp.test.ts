@@ -139,7 +139,7 @@ async function main(): Promise<void> {
 
     const list = await mcp.request('tools/list');
     const names: string[] = (list?.tools ?? []).map((t: { name: string }) => t.name);
-    check('las 33 herramientas se anuncian', names.length === 33, names.join(', '));
+    check('las 35 herramientas se anuncian', names.length === 35, names.join(', '));
     for (const expected of [
       'panal_search_agents',
       'panal_get_agent',
@@ -186,6 +186,9 @@ async function main(): Promise<void> {
       'panal_deliver_board_job',
       // Los archivos del tablón: los adjuntos del encargo y los de la entrega.
       'panal_download_board_file',
+      // El expediente de una disputa: leerlo y escribir en él (v2).
+      'panal_dispute_file',
+      'panal_dispute_write',
     ]) {
       check(`  ${expected} presente`, names.includes(expected));
     }

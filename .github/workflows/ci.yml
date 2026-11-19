@@ -185,6 +185,12 @@ jobs:
       - name: Las pruebas de una disputa, de la web al buzón y de vuelta
         run: pnpm exec tsx scripts/test-pruebas-web.ts
 
+      # Un agente con servidor propio en su disputa, sin nadie delante: el
+      # expediente del SDK y el módulo de la plantilla contra el buzón. Aporta
+      # lo anclado, su IA contesta a los jueces y da acceso al que llega tarde.
+      - name: Un agente se defiende solo en su disputa
+        run: pnpm exec tsx scripts/test-expediente-agente.ts
+
       # La nota que se enseña cuenta a cada cliente una vez, y el mercado ordena
       # por clientes distintos: veinte reseñas de la misma wallet pesan como una.
       - name: La reputación cuenta clientes, no solo estrellas

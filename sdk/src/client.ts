@@ -64,6 +64,15 @@ import { NATIVE_CURRENCY, addressesFor, chainFor, type PanalAddresses, type Pana
 import { leerPrecios, valorDeVenta, type OpcionesPrecios, type Precios } from './precios.js';
 import { panalTablonAbi } from './tablon-abi.js';
 import {
+  darAccesosDelExpediente,
+  escribirEnExpediente,
+  leerExpediente,
+  type DepsDelExpediente,
+  type ExpedienteAbierto,
+  type PiezaNueva,
+  type TareaDelExpediente,
+} from './expediente.js';
+import {
   NIVEL_MINIMO_PARA_SUBCONTRATAR,
   mejorParaSubcontratar,
   motivoPorClientes,
@@ -635,6 +644,95 @@ export class PanalClient {
     }
     await this.dejarAccesos(o.base, o.id, o.tablon === true, nuevos);
     return { arbitros: conClave.length, sinClave, objetos: cifrados.length };
+  }
+
+  // -------------------------------------------------------------------------
+  // El expediente de una disputa (v2): lo que hace la web, desde un programa.
+  // Para que un agente autónomo pueda aportar su encargo y su entrega, y
+  // contestar a los jueces, sin una persona delante.
+  // -------------------------------------------------------------------------
+
+  /** Lo que `expediente.ts` necesita de esta cuenta. */
+  private depsDelExpediente(): DepsDelExpediente {
+    this.wallet();
+    return {
+      buzonUrl: this.buzonUrl,
+      yo: this.account!.address,
+      firmar: (mensaje) => this.wallet().signMessage({ account: this.account!, message: mensaje }),
+      secreta: async () => (await this.encryptionKey()).secreta,
+      claveDe: (cuenta) => this.getPublicKey(cuenta),
+    };
+  }
+
+  /**
+   * El encargo del tablón con reglas que creó la tarea `taskId`, o null si no
+   * viene de él. En esas el cliente en el escrow es el contrato del tablón y el
+   * de verdad es el de su encargo; se busca de los más nuevos a los más viejos.
+   */
+  private async jobDeLaTarea(taskId: bigint): Promise<{ job: bigint; cliente: Address } | null> {
+    if (!this.boardJobsAvailable) return null;
+    const n = await this.getBoardJobCount();
+    for (let j = n - 1n; j >= 0n && j >= n - 500n; j--) {
+      const e = await this.getBoardJob(j);
+      if (e.escrowTaskId === taskId && e.cliente !== NATIVE_CURRENCY) return { job: j, cliente: e.cliente };
+      if (j === 0n) break;
+    }
+    return null;
+  }
+
+  /** La tarea con lo que necesita su expediente: partes, huellas y jueces. */
+  async disputeFileOf(taskId: bigint, opciones: { job?: bigint } = {}): Promise<TareaDelExpediente> {
+    const t = await this.getTask(taskId);
+    let cliente = t.client;
+    let job = opciones.job;
+    if (this.boardJobsAvailable && t.client.toLowerCase() === this.addresses.tablon.toLowerCase()) {
+      if (job !== undefined) {
+        cliente = (await this.getBoardJob(job)).cliente;
+      } else {
+        const hallado = await this.jobDeLaTarea(taskId);
+        if (!hallado) throw new Error(`La tarea #${taskId} viene del tablón y no se encontró su encargo: pásalo en \`job\`.`);
+        job = hallado.job;
+        cliente = hallado.cliente;
+      }
+    }
+    return {
+      id: taskId,
+      cliente,
+      trabajador: t.worker,
+      taskHash: t.taskHash,
+      resultHash: t.resultHash,
+      jueces: await this.getArbitrators(),
+      ...(job !== undefined ? { job } : {}),
+    };
+  }
+
+  /**
+   * El expediente de la disputa de una tarea, abierto con la clave de esta
+   * cuenta: cada pieza con su autor, su tipo, si su firma cuadra y, si es el
+   * encargo o la entrega, si su texto es el anclado. Lo que esta cuenta no
+   * puede abrir sale con `texto: null`. Solo para las partes y los jueces.
+   */
+  async readDisputeFile(taskId: bigint, opciones: { job?: bigint; tarea?: TareaDelExpediente } = {}): Promise<ExpedienteAbierto> {
+    return leerExpediente(this.depsDelExpediente(), opciones.tarea ?? (await this.disputeFileOf(taskId, opciones)));
+  }
+
+  /**
+   * Escribe en el expediente: un mensaje, el encargo o la entrega (su texto
+   * EXACTO, que quien lee comparará con la cadena) o, siendo juez, una
+   * petición. Va cifrado para todos los del expediente con clave; esta cuenta
+   * tiene que haber publicado la suya (`publishEncryptionKey`). Archivos, solo
+   * quien hizo el trabajo y solo los anclados.
+   */
+  async writeToDisputeFile(taskId: bigint, pieza: PiezaNueva, opciones: { job?: bigint; tarea?: TareaDelExpediente } = {}): Promise<void> {
+    await escribirEnExpediente(this.depsDelExpediente(), opciones.tarea ?? (await this.disputeFileOf(taskId, opciones)), pieza);
+  }
+
+  /**
+   * Da acceso a lo que esta cuenta abre del expediente a quienes activaron su
+   * clave después y todavía no lo pueden leer. Devuelve cuántos accesos dejó.
+   */
+  async shareDisputeFileAccess(taskId: bigint, opciones: { job?: bigint; tarea?: TareaDelExpediente } = {}): Promise<number> {
+    return darAccesosDelExpediente(this.depsDelExpediente(), opciones.tarea ?? (await this.disputeFileOf(taskId, opciones)));
   }
 
   // -------------------------------------------------------------------------

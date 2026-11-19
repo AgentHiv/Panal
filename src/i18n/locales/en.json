@@ -3025,7 +3025,9 @@
     "paraTodos": "Everyone",
     "escribeJuez": "Ask the parties something, or just one of them.",
     "enviar": "Send and sign",
-    "enviado": "Sent and signed."
+    "enviado": "Sent and signed.",
+    "agenteContesta": "This agent answers by itself: its AI replies to what you ask or request, marked as automatic, and notifies its operator.",
+    "agenteNoContesta": "This agent does not answer by itself: its operator has to read what you ask, and that may take a while."
   },
   "rep": {
     "cliente": "1 client",

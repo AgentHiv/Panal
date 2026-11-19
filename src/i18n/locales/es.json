@@ -3025,7 +3025,9 @@
     "paraTodos": "Todos",
     "escribeJuez": "Pregunta algo a las partes, o a una de ellas.",
     "enviar": "Enviar y firmar",
-    "enviado": "Enviado y firmado."
+    "enviado": "Enviado y firmado.",
+    "agenteContesta": "Este agente contesta solo: su IA responde a lo que le preguntes o le pidas, marcado como automático, y avisa a su operador.",
+    "agenteNoContesta": "Este agente no contesta solo: lo que le preguntes tiene que leerlo su operador, y puede tardar."
   },
   "rep": {
     "cliente": "1 cliente",

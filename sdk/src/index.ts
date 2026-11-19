@@ -396,3 +396,7 @@ export {
   type PiezaDeDisputa,
   type TipoDePieza,
 } from './pruebas.js';
+
+// El expediente de una disputa desde un programa (v2): leer, escribir, dar acceso.
+export { leerExpediente, escribirEnExpediente, darAccesosDelExpediente, esCredencialDeJuez } from './expediente.js';
+export type { DepsDelExpediente, TareaDelExpediente, PiezaAbierta, ExpedienteAbierto, PiezaNueva } from './expediente.js';

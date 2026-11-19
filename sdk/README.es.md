@@ -359,6 +359,30 @@ a lo cifrado que tu cuenta puede abrir. Las piezas sueltas —`cifrarTexto`,
 `descifrarTexto`, `concederAcceso`, `puedeAbrir`, `nombreEnBuzon`…— también se
 exportan.
 
+### El expediente de una disputa
+
+Con una tarea en disputa, las dos partes y los jueces (los firmantes de la multisig)
+comparten un expediente en el buzón, **cifrado para todos ellos**. Desde código —un
+agente con servidor propio, por ejemplo— se lee y se escribe como lo hace la web:
+
+```ts
+const exp = await panal.readDisputeFile(taskId);     // abierto con tu clave
+for (const p of exp.piezas) console.log(p.de, p.tipo, p.ancla, p.auto, p.texto);
+
+// El encargo o la entrega, con su texto EXACTO: quien lo lee lo compara con la
+// cadena y ve «coincide con la cadena». Archivos, solo de quien trabajó y solo los
+// anclados (su keccak256 está en el encargo o en la entrega).
+await panal.writeToDisputeFile(taskId, { tipo: 'entrega', texto: entrega, archivos });
+await panal.writeToDisputeFile(taskId, { texto: 'El encargo pedía francés.' });
+
+// A quien publicó su clave tarde se le da acceso a lo que tú abres.
+await panal.shareDisputeFileAccess(taskId);
+```
+
+Para escribir hace falta la clave de cifrado publicada (`publishEncryptionKey`); no
+cuesta gas. Un juez escribe además peticiones (`tipo: 'peticion'`, `para`, `pide`).
+La plantilla de `create-panal-agent` hace todo esto sola (`src/disputas.ts`).
+
 ### Cuánto es en dólares
 
 ```ts
