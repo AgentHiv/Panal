@@ -168,6 +168,21 @@ export async function fetchEventosRecientes(limit: number): Promise<IndexedEvent
 }
 
 /**
+ * Las tareas de una dirección COMO CLIENTE, con quién las hizo. Para el panel
+ * de los jueces: cuántos encargos tiene ese cliente y cuántos con el mismo
+ * agente. `null` si el indexador no responde.
+ */
+export async function fetchTareasDeCliente(address: string): Promise<{ taskId: string; worker: string; status: string }[] | null> {
+  const res = await fetchJson<{ tasks: { taskId: unknown; worker: unknown; status: unknown }[] }>(
+    `/index/tasks?address=${encodeURIComponent(address)}&role=client&limit=1000`,
+  );
+  if (!res?.tasks) return null;
+  return res.tasks
+    .filter((t) => typeof t.taskId === 'string' && typeof t.worker === 'string')
+    .map((t) => ({ taskId: t.taskId as string, worker: (t.worker as string).toLowerCase(), status: String(t.status ?? '') }));
+}
+
+/**
  * Los ids de las tareas en las que participa una dirección, como cliente o
  * como trabajador. `null` si el indexador no responde — quien llama decide
  * qué hacer con eso, y en el panel se cae al escaneo de la cadena.

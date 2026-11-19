@@ -9,6 +9,7 @@
  * contenido, el buzón rechazaría todas las pruebas con «bad signature» y nadie
  * sabría por qué.
  */
+import { keccak256, toBytes } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import * as sdk from '@panal/sdk';
 import * as bot from '../bot/src/buzon';
@@ -50,6 +51,61 @@ const firma = await cuenta.signMessage({ message: bot.piezaSignMessage(9n, conte
 const pieza = { de: 'cliente' as const, autor: cuenta.address, texto: casos[1]!.texto, archivos: casos[1]!.archivos, fecha, firma, recibida: Date.now() };
 check('lo que firma el buzón lo comprueba el SDK', await sdk.verificarPieza(9n, pieza));
 check('y con otra fecha no', !(await sdk.verificarPieza(9n, { ...pieza, fecha: '2020-01-01T00:00:00.000Z' })));
+
+console.log('\n─── v2: los destinatarios de un sobre de verdad ───');
+const otras = [
+  privateKeyToAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'),
+  privateKeyToAccount('0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6'),
+];
+const para: sdk.Destinatario[] = [];
+for (const c of [cuenta, ...otras]) {
+  const clave = sdk.claveDesdeFirma(c.address, await c.signMessage({ message: sdk.mensajeParaDerivarClave(c.address) }));
+  para.push({ cuenta: c.address, clave: clave.publica });
+}
+const cuerpo = sdk.cuerpoDePieza({ tipo: 'peticion', texto: '¿Me pasas la entrega?', para: 'trabajador', pide: 'entrega' });
+const sobreV2 = sdk.cifrarTexto(JSON.stringify(cuerpo), para);
+check('el mismo tope de lo anclado', sdk.MAX_TEXTO_ANCLADO_CHARS === bot.MAX_TEXTO_ANCLADO_CHARS);
+check('el buzón lo reconoce como cifrado', bot.esTextoCifrado(sobreV2));
+check(
+  'y saca los mismos destinatarios que el SDK',
+  JSON.stringify(bot.destinatariosDelSobre(sobreV2)) === JSON.stringify(sdk.destinatariosDe(sobreV2)) && sdk.destinatariosDe(sobreV2).length === 3,
+);
+check('un texto en claro no tiene destinatarios', bot.destinatariosDelSobre('hola').length === 0);
+
+console.log('\n─── v2: lo que va dentro de cada pieza ───');
+const yo = sdk.claveDesdeFirma(cuenta.address, await cuenta.signMessage({ message: sdk.mensajeParaDerivarClave(cuenta.address) }));
+const leido = sdk.leerCuerpoDePieza(sdk.descifrarTexto(sobreV2, cuenta.address, yo.secreta));
+check('una petición se lee como se escribió', leido.k === 'peticion' && leido.para === 'trabajador' && leido.pide === 'entrega' && leido.t === '¿Me pasas la entrega?');
+const v1 = sdk.leerCuerpoDePieza(JSON.stringify({ t: 'una de la v1', a: [{ name: 'a.pdf', size: 3, hash: '0xAB' }] }));
+check('una pieza de la v1 sale como mensaje, con sus archivos', v1.k === 'mensaje' && v1.t === 'una de la v1' && v1.a[0]?.hash === '0xab');
+check('un texto que no es JSON sale como mensaje, tal cual', sdk.leerCuerpoDePieza('en claro').t === 'en claro');
+check('un tipo desconocido sale como mensaje', sdk.leerCuerpoDePieza(JSON.stringify({ v: 2, k: 'veredicto', t: 'x', a: [] })).k === 'mensaje');
+check('«auto» solo si es true', sdk.leerCuerpoDePieza(JSON.stringify({ v: 2, k: 'mensaje', t: 'x', a: [], auto: 'si' })).auto === undefined);
+
+console.log('\n─── v2: solo cuenta lo anclado ───');
+const adjunto = sdk.attachmentFrom('plano.pdf', new TextEncoder().encode('el plano'));
+const encargo = sdk.appendAttachmentsManifest('Tradúceme el contrato al francés.', [adjunto]);
+const entregado = { name: 'contrat.pdf', size: 10, hash: keccak256(new TextEncoder().encode('le contrat')), path: 'contrat.pdf' };
+const entrega = sdk.appendFilesManifest('Aquí está.', [entregado]);
+const tarea = { taskHash: keccak256(toBytes(encargo)), resultHash: keccak256(toBytes(entrega)) };
+const deEncargo = sdk.cuerpoDePieza({ tipo: 'encargo', texto: encargo });
+check('el encargo exacto coincide con la cadena', sdk.anclaDeLaPieza(deEncargo, tarea) === 'coincide');
+check('con una coma cambiada, no', sdk.anclaDeLaPieza(sdk.cuerpoDePieza({ tipo: 'encargo', texto: encargo.replace('.', ',') }), tarea) === 'no-coincide');
+check('la entrega exacta coincide', sdk.anclaDeLaPieza(sdk.cuerpoDePieza({ tipo: 'entrega', texto: entrega }), tarea) === 'coincide');
+check('un mensaje no se compara con nada', sdk.anclaDeLaPieza(sdk.cuerpoDePieza({ tipo: 'mensaje', texto: encargo }), tarea) === null);
+check('sin entrega anclada todavía, tampoco', sdk.anclaDeLaPieza(sdk.cuerpoDePieza({ tipo: 'entrega', texto: entrega }), { ...tarea, resultHash: `0x${'0'.repeat(64)}` }) === null);
+const anclados = sdk.hashesAnclados({ encargo, entrega });
+check('los archivos anclados: el adjunto del encargo y el de la entrega', anclados.size === 2 && anclados.has(adjunto.hash.toLowerCase()) && anclados.has(entregado.hash.toLowerCase()));
+check('y ninguno más', !anclados.has(keccak256(toBytes('otro archivo'))));
+
+console.log('\n─── v2: para quién se cifra ───');
+const [c1, c2, c3] = [cuenta.address, otras[0]!.address, otras[1]!.address];
+const miembros = sdk.miembrosDelExpediente(c1, c2, [c3, c1.toLowerCase() as `0x${string}`]);
+check('los miembros, sin repetir aunque un juez sea parte', miembros.length === 3);
+const conClave: Record<string, string> = { [c1.toLowerCase()]: 'k1', [c3.toLowerCase()]: 'k3' };
+const destino = await sdk.destinatariosDelExpediente(miembros, async (m) => conClave[m.toLowerCase()] ?? null);
+check('se cifra para todos los que tienen clave', destino.para.map((d) => d.cuenta).join() === [c1, c3].join());
+check('y dice quién no la tiene todavía', destino.sinClave.join() === c2);
 
 console.log(fallos === 0 ? '\n✅ El SDK y el buzón firman las pruebas igual\n' : `\n❌ ${fallos} comprobación(es) fallidas\n`);
 process.exit(fallos === 0 ? 0 : 1);

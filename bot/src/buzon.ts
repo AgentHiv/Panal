@@ -31,7 +31,8 @@
  *     POST /buzon/:agente/conversacion/:taskId            un mensaje (con el dinero bloqueado)
  *     POST /buzon/:agente/conversacion-archivo/:taskId    un archivo para un mensaje
  *     GET  /buzon/:agente/conversacion-archivo/:taskId/:hash  se lleva uno
- *   Las pruebas de una disputa (las dos partes aportan; las dos y los jueces leen):
+ *   Las pruebas de una disputa (v2: las dos partes y los jueces escriben y leen,
+ *   todo cifrado para todos; archivos, solo los anclados y solo del agente):
  *     GET  /buzon/:agente/pruebas/:taskId                  el expediente y su plazo
  *     POST /buzon/:agente/pruebas/:taskId                  una pieza, firmada por su autor
  *     POST /buzon/:agente/pruebas-archivo/:taskId          un archivo para una pieza
@@ -162,9 +163,16 @@ export function conversacionSignMessage(taskId: bigint, expira: number): string 
  */
 export const PLAZO_DE_PRUEBAS_DIAS = 7;
 export const MAX_PIEZA_CHARS = 8_000;
-/** Cifrada va para hasta cinco cuentas —las dos partes y tres jueces—: el sobre crece. */
-const MAX_SOBRE_PIEZA_CHARS = MAX_PIEZA_CHARS * 6 + 8_000;
-const MAX_PIEZA_BODY_BYTES = MAX_SOBRE_PIEZA_CHARS * 4 + 8_000;
+/**
+ * La v2 trae el encargo y la entrega con su texto exacto, que puede ser más
+ * largo que un mensaje (`MAX_TEXTO_ANCLADO_CHARS` del SDK). Va siempre
+ * cifrado para hasta cinco cuentas —las dos partes y tres jueces—, y dentro
+ * del sobre el texto va escapado como JSON: de ahí el margen.
+ */
+export const MAX_TEXTO_ANCLADO_CHARS = 64_000;
+const MAX_SOBRE_PIEZA_CHARS = MAX_TEXTO_ANCLADO_CHARS * 8 + 16_000;
+/** El sobre es JSON en ASCII: un carácter, un byte. */
+const MAX_PIEZA_BODY_BYTES = MAX_SOBRE_PIEZA_CHARS + 16_000;
 export const MAX_ARCHIVOS_POR_PIEZA = 5;
 export const MARGEN_FECHA_MS = 10 * 60_000;
 
@@ -341,6 +349,15 @@ export function esTextoCifrado(texto: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** Para quién va un sobre: sus cuentas, en minúsculas. Copia de `destinatariosDe`. */
+export function destinatariosDelSobre(sobre: string): string[] {
+  if (!esTextoCifrado(sobre)) return [];
+  const para = (JSON.parse(sobre) as { para: unknown[] }).para;
+  return para
+    .map((x) => (x && typeof x === 'object' && typeof (x as { a?: unknown }).a === 'string' ? (x as { a: string }).a.toLowerCase() : ''))
+    .filter((a) => a !== '');
 }
 
 /** El tope de un texto, según vaya en claro o cifrado. */
@@ -705,7 +722,11 @@ export function createBuzonServer(deps: BuzonDeps): Server {
    * POST /access/:id — una PARTE da acceso a lo cifrado de su encargo.
    *
    * Solo a quien tiene que leerlo: la otra parte (en el tablón, quien lo cogió)
-   * o un árbitro. Dar acceso es sacar la clave de un sobre que ya se puede
+   * o un árbitro. Desde la v2 de las pruebas, en una tarea EN DISPUTA también
+   * lo da un juez: lo que escribe un juez va cifrado para quien tenía clave en
+   * ese momento, y una parte que la publique después solo puede leerlo si
+   * alguien que ya lo abre le da acceso (si la otra parte no tiene clave, solo
+   * pueden los jueces). Dar acceso es sacar la clave de un sobre que ya se puede
    * abrir; el buzón no puede hacerlo ni sacarle partido, y uno inventado no
    * abre nada.
    */
@@ -748,6 +769,7 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       return;
     }
     let partes: string[];
+    let enDisputa = false;
     if (esTablon) {
       const job = await trabajoDe(id, res);
       if (!job) return;
@@ -760,13 +782,15 @@ export function createBuzonServer(deps: BuzonDeps): Server {
       const cliente = await clienteDe(task, id, url, res);
       if (cliente === undefined) return;
       partes = [...(cliente ? [cliente] : []), task.worker];
+      enDisputa = task.status === TaskStatus.Disputed;
     }
     partes = partes.map((x) => x.toLowerCase());
-    if (!partes.includes(address.toLowerCase())) {
+    const jueces = await arbitros();
+    if (!partes.includes(address.toLowerCase()) && !(enDisputa && jueces.includes(address.toLowerCase()))) {
       json(res, 403, { error: 'not a party' });
       return;
     }
-    const permitidos = new Set([...partes, ...(await arbitros())]);
+    const permitidos = new Set([...partes, ...jueces]);
     if (lista.some((x) => !permitidos.has(x.a))) {
       json(res, 400, { error: 'recipient not allowed' });
       return;
@@ -2364,8 +2388,14 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     }
     const autor = getAddress(cuerpo.address);
     const texto = typeof cuerpo.texto === 'string' ? cuerpo.texto : '';
-    if (texto.trim().length === 0 || texto.length > topeDe(texto, MAX_PIEZA_CHARS, MAX_SOBRE_PIEZA_CHARS)) {
-      json(res, 400, { error: `texto requerido, máx. ${MAX_PIEZA_CHARS} caracteres` });
+    // v2: nada en claro. Lo que se escribe en una disputa lo leen las dos
+    // partes y los jueces, y nadie más; tampoco este buzón.
+    if (!esTextoCifrado(texto)) {
+      json(res, 400, { error: 'pieces must be encrypted' });
+      return;
+    }
+    if (texto.length > MAX_SOBRE_PIEZA_CHARS) {
+      json(res, 400, { error: 'piece too large' });
       return;
     }
     // La fecha la pone quien firma, y tiene que ser ahora: ni una pieza
@@ -2381,9 +2411,36 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     const cliente = await clienteDe(task, taskId, url, res);
     if (cliente === undefined) return;
     const yo = autor.toLowerCase();
-    const de = yo === cliente ? 'cliente' : yo === task.worker.toLowerCase() ? 'trabajador' : null;
+    const jueces = await arbitros();
+    // Un juez escribe (pregunta, pide) mientras la disputa siga abierta; el
+    // plazo de abajo lo cierra para todos a la vez.
+    const de: 'cliente' | 'trabajador' | 'juez' | null =
+      yo === cliente
+        ? 'cliente'
+        : yo === task.worker.toLowerCase()
+          ? 'trabajador'
+          : task.status === TaskStatus.Disputed && jueces.includes(yo)
+            ? 'juez'
+            : null;
     if (!de) {
       json(res, 403, { error: 'not a party' });
+      return;
+    }
+    // Para TODOS: el autor y cada miembro del expediente que tenga clave. Así
+    // nadie le esconde una pieza a la otra parte ni a un juez, y cada uno puede
+    // volver a leer lo suyo. Al que publique su clave después le da acceso
+    // quien pueda abrir lo anterior.
+    const para = new Set(destinatariosDelSobre(texto));
+    if (!para.has(yo)) {
+      json(res, 400, { error: 'author not among recipients' });
+      return;
+    }
+    // (En una del tablón sin `?job=` no se sabe quién es el cliente: entonces
+    // no puede exigirse su clave, y él tampoco puede escribir.)
+    const miembros = [...new Set([...(cliente ? [cliente] : []), task.worker.toLowerCase(), ...jueces])];
+    const faltan = miembros.filter((m) => !para.has(m) && deps.store.leerClave(m) !== null);
+    if (faltan.length > 0) {
+      json(res, 409, { error: 'missing recipients', faltan });
       return;
     }
     const plazo = await plazoDe(taskId);
@@ -2400,6 +2457,13 @@ export function createBuzonServer(deps: BuzonDeps): Server {
     const pedidos = Array.isArray(cuerpo.archivos) ? cuerpo.archivos.slice(0, MAX_ARCHIVOS_POR_PIEZA + 1) : [];
     if (pedidos.length > MAX_ARCHIVOS_POR_PIEZA) {
       json(res, 400, { error: `máx. ${MAX_ARCHIVOS_POR_PIEZA} archivos por pieza` });
+      return;
+    }
+    // Archivos, solo los del agente, y solo los anclados en la cadena: los
+    // adjuntos de su encargo y los de su entrega. Este buzón no puede abrirlos
+    // para comprobarlo; quien lee sí, y el que no está anclado no se ofrece.
+    if (pedidos.length > 0 && de !== 'trabajador') {
+      json(res, 403, { error: 'only the agent shares files, and only anchored ones' });
       return;
     }
     const archivos: { hash: string; size: number }[] = [];
@@ -2447,8 +2511,11 @@ export function createBuzonServer(deps: BuzonDeps): Server {
   const recibirArchivoDePruebas = async (agente: Address, taskId: bigint, url: URL, req: IncomingMessage, res: ServerResponse) => {
     const quien = await quienEnPruebas(agente, taskId, url, req, res);
     if (!quien) return;
-    if (quien.rol === 'juez') {
-      json(res, 403, { error: 'judges only read' });
+    // Solo el agente: los archivos anclados (los del encargo y los de la
+    // entrega) los tiene él. El cliente comparte su encargo en texto, y nadie
+    // sube archivos de fuera.
+    if (quien.rol !== 'trabajador') {
+      json(res, 403, { error: 'only the agent shares files, and only anchored ones' });
       return;
     }
     const plazo = await plazoDe(taskId);

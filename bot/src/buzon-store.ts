@@ -99,7 +99,8 @@ export interface Encargo {
 }
 
 export interface PiezaGuardada {
-  de: 'cliente' | 'trabajador';
+  /** Una de las dos partes o, desde la v2, un juez de la multisig. */
+  de: 'cliente' | 'trabajador' | 'juez';
   /** La dirección que firmó, con su checksum. */
   autor: string;
   /** El texto, o el sobre cifrado. */
@@ -117,6 +118,8 @@ export interface PiezaGuardada {
 
 /** Piezas por parte en una disputa (`sdk/src/pruebas.ts`, MAX_PIEZAS_POR_PARTE). */
 export const MAX_PIEZAS_POR_PARTE = 20;
+/** Y por juez: cada uno las suyas (`MAX_PIEZAS_POR_JUEZ`). */
+export const MAX_PIEZAS_POR_JUEZ = 20;
 /** Archivos de las pruebas de una disputa, y lo que pueden ocupar entre todos. */
 export const MAX_ARCHIVOS_DE_PRUEBAS = 40;
 export const MAX_BYTES_DE_PRUEBAS = 100 * 1024 * 1024;
@@ -601,7 +604,13 @@ export class BuzonStore {
         r = 'repetida';
         return p;
       }
-      if (piezas.filter((x) => x.de === pieza.de).length >= MAX_PIEZAS_POR_PARTE) {
+      // Las de una parte cuentan juntas (es una sola, aunque firme con otra
+      // cuenta del mismo papel); las de los jueces, cada uno las suyas.
+      const yaTiene =
+        pieza.de === 'juez'
+          ? piezas.filter((x) => x.de === 'juez' && x.autor.toLowerCase() === pieza.autor.toLowerCase()).length
+          : piezas.filter((x) => x.de === pieza.de).length;
+      if (yaTiene >= (pieza.de === 'juez' ? MAX_PIEZAS_POR_JUEZ : MAX_PIEZAS_POR_PARTE)) {
         r = 'lleno';
         return p;
       }

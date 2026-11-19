@@ -15,28 +15,43 @@
  * minutos para leer y subir archivos. Cada pieza lleva ADEMÁS la suya, sobre
  * su contenido y su fecha: es la que demuestra después quién dijo qué y cuándo.
  *
- * CIFRADO. Si las dos partes publicaron su clave, cada pieza es un sobre para
- * las dos y para los jueces que tengan la suya, y lleva dentro `{ t, a }`: el
- * texto y los archivos con su nombre de verdad (que viajan cifrados y con
- * nombre opaco). Si a una parte le falta, va en claro y la pantalla lo dice.
+ * CIFRADO. Desde la v2, SIEMPRE: cada pieza es un sobre para todos los del
+ * expediente que tengan clave (las dos partes y los jueces), su autor incluido,
+ * y lleva dentro el `CuerpoDePieza` del SDK: qué es (mensaje, encargo, entrega,
+ * petición), el texto y los archivos con su nombre de verdad (que viajan
+ * cifrados y con nombre opaco). Sin clave no se escribe: primero se activa.
+ * Las de la v1 que fueron en claro se siguen leyendo.
+ *
+ * LO ANCLADO. Una pieza de encargo o de entrega se compara con el `taskHash` o
+ * el `resultHash` de la tarea (`ancla`), y un archivo solo cuenta si su hash
+ * figura en el encargo o la entrega ya comprobados (`marcarAnclados`).
  */
 
 import {
   BUZON_URL,
+  anclaDeLaPieza,
   cifrarArchivo,
   cifrarTexto,
   contenidoDePieza,
+  cuerpoDePieza,
   destinatariosDe,
+  destinatariosDelExpediente,
   esTextoCifrado,
+  hashesAnclados,
+  leerCuerpoDePieza,
+  miembrosDelExpediente,
   nombreEnBuzon,
   piezaSignMessage,
   pruebasSignMessage,
   sinBarraFinal,
   verificarPieza,
   type Acceso,
+  type AutorDePieza,
   type Destinatario,
   type ExpedienteDeDisputa,
+  type ParteDeLaTarea,
   type PiezaDeDisputa,
+  type TipoDePieza,
 } from '@panal/sdk';
 import { getAddress, keccak256, type Address, type Hex } from 'viem';
 
@@ -119,6 +134,12 @@ export interface ArchivoDelExpediente {
   de: 'cliente' | 'trabajador';
 }
 
+/** Las huellas de la tarea en el escrow, para comprobar lo anclado. */
+export interface HuellasDeLaTarea {
+  taskHash: string;
+  resultHash: string;
+}
+
 export interface ExpedienteCrudo extends ExpedienteDeDisputa {
   archivos: ArchivoDelExpediente[];
 }
@@ -142,11 +163,28 @@ export interface ArchivoDePiezaLegible {
   name: string;
   size: number;
   mime?: string;
+  /** El hash con el que se ancló (dentro del sobre). */
+  h?: string;
+  /**
+   * Si está anclado: su `h` figura en el encargo o la entrega ya comprobados
+   * contra la cadena. Uno que no lo está no se ofrece para abrir.
+   */
+  anclado?: boolean;
 }
 
 /** Una pieza para la pantalla. */
 export interface PiezaLegible {
-  de: 'cliente' | 'trabajador';
+  de: AutorDePieza;
+  /** Qué es: un mensaje, el encargo, la entrega o una petición de un juez. */
+  tipo: TipoDePieza;
+  /** A qué parte va un mensaje o una petición de un juez (sin él, a todos). */
+  dirigida?: ParteDeLaTarea;
+  /** Qué pide una petición. */
+  pide?: 'encargo' | 'entrega';
+  /** La escribió la IA de un agente, sola. */
+  auto: boolean;
+  /** Si es el encargo o la entrega: si su texto es el anclado en la cadena. */
+  ancla: 'coincide' | 'no-coincide' | null;
   autor: Address;
   fecha: string;
   recibida: number;
@@ -173,9 +211,14 @@ export async function abrirPieza(
   indice: ArchivoDelExpediente[],
   accesos: Acceso[],
   abrir: AbrirTexto,
+  /** Las huellas de la tarea: sin ellas, el encargo y la entrega no se comprueban. */
+  tarea?: HuellasDeLaTarea,
 ): Promise<PiezaLegible> {
   const base = {
     de: pieza.de,
+    tipo: 'mensaje' as TipoDePieza,
+    auto: false,
+    ancla: null,
     autor: getAddress(pieza.autor),
     fecha: pieza.fecha,
     recibida: pieza.recibida,
@@ -193,40 +236,67 @@ export async function abrirPieza(
   const para = destinatariosDe(pieza.texto).map((x) => x.toLowerCase());
   const legible = await abrir(pieza.texto, accesos).catch(() => null);
   if (legible === null) return { ...base, cifrada: true, texto: null, archivos: [], para };
-  try {
-    const dentro = JSON.parse(legible) as { t?: unknown; a?: unknown };
-    const anunciados = Array.isArray(dentro.a) ? (dentro.a as ArchivoDePiezaLegible[]) : [];
-    return {
-      ...base,
-      cifrada: true,
-      texto: typeof dentro.t === 'string' ? dentro.t : '',
-      archivos: anunciados.filter((a) => typeof a?.hash === 'string' && subidos.has(a.hash.toLowerCase())),
-      para,
-    };
-  } catch {
-    return { ...base, cifrada: true, texto: legible, archivos: [], para };
-  }
+  const cuerpo = leerCuerpoDePieza(legible);
+  return {
+    ...base,
+    tipo: cuerpo.k,
+    ...(cuerpo.para ? { dirigida: cuerpo.para } : {}),
+    ...(cuerpo.pide ? { pide: cuerpo.pide } : {}),
+    auto: cuerpo.auto === true,
+    ancla: tarea ? anclaDeLaPieza(cuerpo, tarea) : null,
+    cifrada: true,
+    texto: cuerpo.t,
+    // Solo los que el buzón dice que llegaron con ese hash.
+    archivos: cuerpo.a.filter((a) => subidos.has(a.hash.toLowerCase())),
+    para,
+  };
 }
 
 /**
- * Para quién se cifra: las dos partes y los jueces que tengan clave, si las
- * dos partes la tienen. Si a una le falta, null: irá en claro.
+ * Marca qué archivos están anclados: los que figuran en el encargo o en la
+ * entrega cuyas piezas ya coinciden con la cadena. Se hace con todas las
+ * piezas abiertas, porque el archivo puede venir en otra pieza que la del
+ * texto que lo nombra.
+ */
+export function marcarAnclados(piezas: PiezaLegible[]): PiezaLegible[] {
+  const comprobado = (tipo: 'encargo' | 'entrega') =>
+    piezas.find((p) => p.tipo === tipo && p.ancla === 'coincide' && p.firmaOk && p.texto !== null)?.texto ?? null;
+  const anclados = hashesAnclados({ encargo: comprobado('encargo'), entrega: comprobado('entrega') });
+  return piezas.map((p) => ({
+    ...p,
+    archivos: p.archivos.map((a) => ({ ...a, anclado: !!a.h && anclados.has(a.h.toLowerCase()) })),
+  }));
+}
+
+/**
+ * Para quién se cifra (v2): todos los del expediente que tengan clave, las dos
+ * partes y los jueces. El buzón no admite una pieza a la que le falte alguno.
+ * `sinClave` son los que aún no la tienen: cuando la publiquen, quien pueda
+ * abrir lo anterior les da acceso. Quien escribe tiene que estar en `para`:
+ * si no, primero activa su clave.
  */
 export async function destinatariosDePruebas(
   cliente: Address,
   trabajador: Address,
   jueces: Address[],
   claveDe: (cuenta: Address) => Promise<string | null>,
-): Promise<{ para: Destinatario[] | null; juecesSinClave: Address[] }> {
-  const [a, b, ...deJueces] = await Promise.all([claveDe(cliente), claveDe(trabajador), ...jueces.map((j) => claveDe(j))]);
-  const juecesSinClave = jueces.filter((_, i) => !deJueces[i]);
-  if (!a || !b) return { para: null, juecesSinClave };
-  const conClave = jueces
-    .map((j, i) => (deJueces[i] ? { cuenta: j, clave: deJueces[i]! } : null))
-    .filter((d): d is Destinatario => d !== null)
-    // Un juez que además fuera parte no va dos veces.
-    .filter((d) => d.cuenta.toLowerCase() !== cliente.toLowerCase() && d.cuenta.toLowerCase() !== trabajador.toLowerCase());
-  return { para: [{ cuenta: cliente, clave: a }, { cuenta: trabajador, clave: b }, ...conClave], juecesSinClave };
+): Promise<{ para: Destinatario[]; juecesSinClave: Address[]; sinClave: Address[] }> {
+  const { para, sinClave } = await destinatariosDelExpediente(miembrosDelExpediente(cliente, trabajador, jueces), claveDe);
+  const sin = new Set(sinClave.map((x) => x.toLowerCase()));
+  return { para, juecesSinClave: jueces.filter((j) => sin.has(j.toLowerCase())), sinClave };
+}
+
+/** ¿Esta cuenta puede escribir? Solo si está entre los destinatarios: tiene clave. */
+export function puedeEscribir(para: Destinatario[] | null | undefined, yo: string): boolean {
+  return !!para && para.some((d) => d.cuenta.toLowerCase() === yo.toLowerCase());
+}
+
+/**
+ * Los del expediente con clave que no pueden abrir alguna pieza que quien lee
+ * sí abre: los que la activaron después. A esos se les puede dar acceso.
+ */
+export function faltanPorAcceso(piezas: PiezaLegible[], para: Destinatario[]): Destinatario[] {
+  return para.filter((d) => piezas.some((p) => p.cifrada && p.texto !== null && !p.para.includes(d.cuenta.toLowerCase())));
 }
 
 async function subirBytes(base: string, taskId: bigint, archivo: { name: string; bytes: Uint8Array; mime?: string }, cred: CredencialDePruebas): Promise<string> {
@@ -244,8 +314,10 @@ async function subirBytes(base: string, taskId: bigint, archivo: { name: string;
 }
 
 /**
- * Aporta una pieza: sube sus archivos (cifrados si `para` trae destinatarios),
- * firma el contenido tal como se guardará y la deja en el buzón.
+ * Aporta una pieza: sube sus archivos cifrados (solo el agente, y solo los
+ * anclados), firma el contenido tal como se guardará y la deja en el buzón.
+ * Siempre cifrada para `para`, que tiene que incluir a quien escribe: si no
+ * tiene clave, lanza `sin-clave` sin firmar nada.
  */
 export async function aportarPieza(o: {
   base: string;
@@ -256,17 +328,34 @@ export async function aportarPieza(o: {
   cred: CredencialDePruebas;
   yo: Address;
   firmar: Firmar;
+  /** Qué es la pieza. Por defecto, un mensaje. */
+  tipo?: TipoDePieza;
+  /** A qué parte va (un mensaje o una petición de un juez). */
+  dirigida?: ParteDeLaTarea;
+  /** Qué pide una petición. */
+  pide?: 'encargo' | 'entrega';
 }): Promise<void> {
+  const para = o.para;
+  if (!para || !puedeEscribir(para, o.yo)) throw new Error('sin-clave');
   const anunciados: ArchivoDePiezaLegible[] = [];
   const guardados: { hash: string; size: number }[] = [];
   for (const a of o.archivos) {
-    const bytes = o.para ? new Uint8Array(cifrarArchivo(a.bytes, o.para)) : a.bytes;
-    const subido = { name: o.para ? nombreEnBuzon(keccak256(bytes)) : a.name, bytes, ...(o.para ? {} : a.mime ? { mime: a.mime } : {}) };
+    const bytes = new Uint8Array(cifrarArchivo(a.bytes, para));
+    const subido = { name: nombreEnBuzon(keccak256(bytes)), bytes };
     const hash = await subirBytes(o.base, o.taskId, subido, o.cred);
     guardados.push({ hash, size: bytes.byteLength });
-    anunciados.push({ name: a.name, size: bytes.byteLength, hash, ...(a.mime ? { mime: a.mime } : {}) });
+    // `h`: el hash de los bytes como se anclaron, para que quien lee compruebe
+    // que el archivo es uno del encargo o de la entrega.
+    anunciados.push({ name: a.name, size: bytes.byteLength, hash, h: keccak256(a.bytes), ...(a.mime ? { mime: a.mime } : {}) });
   }
-  const texto = o.para ? cifrarTexto(JSON.stringify({ t: o.texto, a: anunciados }), o.para) : o.texto;
+  const cuerpo = cuerpoDePieza({
+    tipo: o.tipo ?? 'mensaje',
+    texto: o.texto,
+    archivos: anunciados,
+    ...(o.dirigida ? { para: o.dirigida } : {}),
+    ...(o.pide ? { pide: o.pide } : {}),
+  });
+  const texto = cifrarTexto(JSON.stringify(cuerpo), para);
   const fecha = new Date().toISOString();
   const firma = await o.firmar(piezaSignMessage(o.taskId, contenidoDePieza(texto, guardados), fecha));
   const res = await fetch(ruta(o.base, 'pruebas', o.taskId, o.cred), {
