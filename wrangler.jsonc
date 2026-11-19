@@ -65,28 +65,5 @@
     "logs": {
       "enabled": true
     }
-  },
-
-  // test.panal.lat: una copia de la web para probar un cambio ANTES de
-  // fusionarlo. Es OTRO Worker (`panal-test`), conectado al mismo repo en el
-  // panel con `npx wrangler deploy --env test` como comando de despliegue, para
-  // `main` y para las ramas: cada push a una rama la publica ahí (gana el
-  // último) y al fusionar vuelve a quedar `main`. panal.lat no se entera.
-  //
-  // NO es pública: el dominio va detrás de Cloudflare Access (Zero Trust →
-  // Access → Applications), que pide un correo de la lista antes de servir nada.
-  // Habla con los contratos REALES de Monad: lo que se paga ahí es dinero de
-  // verdad. Por eso la API la acepta como origen (`bot/src/net.ts`) y la app de
-  // Panal NO la acepta como web que firma (`movil/src/lib/puente.ts`).
-  //
-  // Lo demás se hereda de arriba. Aquí van solo las dos cosas que TIENEN que ser
-  // distintas: el nombre, para no desplegar encima de panal.lat, y los dominios,
-  // porque un despliegue que declarase los de producción se los quitaría al
-  // Worker `panal`.
-  "env": {
-    "test": {
-      "name": "panal-test",
-      "routes": [{ "pattern": "test.panal.lat", "custom_domain": true }]
-    }
   }
 }
