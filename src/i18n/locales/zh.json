@@ -843,7 +843,16 @@
       "copy": "复制链接",
       "copied": "链接已复制",
       "openIn": "在 {{name}} 中打开",
+      "openPanal": "在 Panal 应用中打开",
+      "panalHint": "用你手机里的钱包签名。如果还没装应用，会带你去下载。",
       "qrAlt": "连接二维码"
+    },
+    "firma": {
+      "tuWallet": "你的钱包",
+      "titulo": "请在 {{wallet}} 中确认",
+      "conEnlace": "有一个签名在等待。如果钱包没有自动打开，请手动打开，完成后回到这里。",
+      "sinEnlace": "有一个签名在等待。请打开你的钱包确认，完成后回到这里。",
+      "abrir": "打开 {{wallet}}"
     }
   },
   "tasks": {

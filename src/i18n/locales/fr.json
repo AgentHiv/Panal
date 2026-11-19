@@ -843,7 +843,16 @@
       "copy": "Copier le lien",
       "copied": "Lien copié",
       "openIn": "Ouvrir dans {{name}}",
+      "openPanal": "Ouvrir dans l'app Panal",
+      "panalHint": "Signez avec le portefeuille de votre téléphone. Sans l'app, vous serez redirigé pour la télécharger.",
       "qrAlt": "QR code de connexion"
+    },
+    "firma": {
+      "tuWallet": "votre portefeuille",
+      "titulo": "Approuvez dans {{wallet}}",
+      "conEnlace": "Une signature attend. S'il ne s'est pas ouvert tout seul, ouvrez-le et revenez ici une fois terminé.",
+      "sinEnlace": "Une signature attend. Ouvrez votre portefeuille pour l’approuver et revenez ici une fois terminé.",
+      "abrir": "Ouvrir {{wallet}}"
     }
   },
   "tasks": {

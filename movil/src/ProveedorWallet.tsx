@@ -8,6 +8,7 @@ import { activeChain } from '@/contracts/config';
 import { WALLETCONNECT_ID } from '@/lib/wallets';
 import HojaWallet from '~/componentes/HojaWallet';
 import AvisoFirma from '~/componentes/AvisoFirma';
+import HojaPuente from '~/componentes/HojaPuente';
 import { abrirFuera } from '~/lib/wallets';
 import { PIDE_FIRMA, enlaceDeVuelta, olvidarWallet, walletRecordada } from '~/lib/regreso';
 import type { Redireccion } from '~/lib/regreso';
@@ -795,6 +796,10 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
 
       {/* Con la wallet del teléfono no hay a dónde ir: se firma aquí. */}
       <AvisoFirma visible={firmando && !sesion.abierta} enlace={vuelta} />
+
+      {/* La app como wallet de panal.lat abierta en el navegador: conectar y
+          cada firma que pida la web. Espera a que se haya puesto el PIN. */}
+      <HojaPuente esperandoPin={!!pidiendoPin} />
     </WalletContext.Provider>
   );
 }

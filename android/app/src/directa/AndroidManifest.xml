@@ -15,4 +15,27 @@
       comprueba que esté aquí y que no esté allí.
     -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!--
+      Los enlaces `panal://`, también solo aquí: con ellos panal.lat, abierta
+      en el navegador del teléfono, conecta con esta app y le pide firmas
+      (`Enlaces.java`, `movil/src/lib/puente.ts`). La app de Play no firma
+      pagos para la web, así que tampoco se anuncia para estos enlaces.
+
+      `exported` explícito aunque el manifiesto principal ya lo diga: es la
+      misma actividad, y exportada tiene que estar para que el navegador la
+      abra. Sin repetirlo aquí, CodeQL lee este archivo solo y lo marca como
+      exportada «sin querer». Lo que llega por un enlace no firma nada: solo
+      empareja con panal.lat, y cada firma pasa por la hoja y la política.
+    -->
+    <application>
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="panal" />
+            </intent-filter>
+        </activity>
+    </application>
 </manifest>

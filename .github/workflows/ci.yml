@@ -152,6 +152,13 @@ jobs:
       - name: Las rutas caen donde vive cada agente
         run: pnpm exec tsx scripts/test-rutas.ts
 
+      # Los enlaces que abren la wallet del teléfono: al conectar (la URI de la
+      # sesión entera y escapada, también hacia la app de Panal) y al firmar
+      # (por dónde se la trae al frente). Mal hechos no fallan al pulsar: la
+      # wallet se abre con una sesión rota, o no se abre y la web parece colgada.
+      - name: Los enlaces llevan a la wallet del teléfono
+        run: pnpm exec tsx scripts/test-deeplinks.ts
+
       # «Activo» en la cadena no es «en linea»: lo pone el dueño y se queda
       # aunque su servidor lleve semanas apagado. El mercado lo lee del
       # indexador y la hoja de contratar se lo pregunta al agente antes de dejar

@@ -317,6 +317,13 @@ jobs:
           grep -q 'android.permission.REQUEST_INSTALL_PACKAGES' $MANIFIESTOS || {
             echo "::error::el APK directo no lleva REQUEST_INSTALL_PACKAGES: el menu no podria instalar la version nueva"; exit 1; }
           echo "permiso de instalar: si"
+          # Y los enlaces `panal://`, con los que panal.lat abierta en el
+          # navegador conecta con la app y le pide firmas (`Enlaces.java`).
+          # Sin ellos, «Abrir en la app de Panal» de la web lleva a la página
+          # de descargar aunque la app esté instalada.
+          grep -q 'android:scheme="panal"' $MANIFIESTOS || {
+            echo "::error::el APK directo no se anuncia para los enlaces panal://: la web no podria conectar con la app"; exit 1; }
+          echo "enlaces panal://: si"
 
       - name: Renombrar con la versión
         run: |
@@ -385,6 +392,12 @@ jobs:
             echo "::error::la version de Google Play lleva REQUEST_INSTALL_PACKAGES"; exit 1
           fi
           echo "permiso de instalar en Play: no"
+          # La de Play no paga consultas, así que tampoco firma pagos para la
+          # web: no se anuncia para `panal://` (solo lo hace `src/directa/`).
+          if grep -q 'android:scheme="panal"' $MANIFIESTOS; then
+            echo "::error::la version de Google Play se anuncia para panal://"; exit 1
+          fi
+          echo "enlaces panal:// en Play: no"
 
       - name: Preparar el AAB para Google Play
         id: aab

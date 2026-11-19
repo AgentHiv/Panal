@@ -16,16 +16,25 @@
  *
  * Y en los dos, copiar la URI a mano, que funciona con cualquier wallet que no
  * esté en la lista.
+ *
+ * En Android hay una más, la primera: la app de Panal, que firma con el
+ * llavero del propio teléfono. Solo en Android porque solo ahí existe.
+ *
+ * Al tocar una wallet se recuerda cuál fue (`recordarWallet`): es lo que usa
+ * `WalletProvider` para traerla al frente en cada firma. Sin eso, conectar
+ * abría la wallet y firmar ya no, porque la redirección de WalletConnect
+ * depende de una clave que solo escribe el modal de Reown.
  */
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'qrcode';
-import { Check, Copy, Loader2, Smartphone } from 'lucide-react';
+import { Check, Copy, Hexagon, Loader2, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { WALLETS_MOVIL, enlaceWallet, esMovil } from '@/lib/deepLinks';
+import { VUELTA, WALLETS_MOVIL, enlaceAppPanal, enlaceWallet, esAndroid, esMovil } from '@/lib/deepLinks';
+import { olvidarWallet, recordarWallet } from '@/lib/vueltaWallet';
 
 export interface WalletConnectDialogProps {
   /** La URI de la sesión, o null mientras el conector todavía la prepara. */
@@ -46,6 +55,7 @@ export default function WalletConnectDialog({ uri, open, onOpenChange }: WalletC
   const [qr, setQr] = useState<{ uri: string; dataUrl: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
   const movil = esMovil();
+  const android = esAndroid();
 
   // El QR solo hace falta en escritorio, y se regenera si la URI cambia: una
   // sesión caducada y su QR viejo se parecen demasiado.
@@ -69,6 +79,8 @@ export default function WalletConnectDialog({ uri, open, onOpenChange }: WalletC
 
   const copiar = (): void => {
     if (!uri) return;
+    // Copiando, la wallet es cualquiera: no se sabe a cuál volver.
+    olvidarWallet();
     void navigator.clipboard.writeText(uri).then(() => {
       setCopiado(true);
       toast(t('wallet.wc.copied'));
@@ -105,6 +117,24 @@ export default function WalletConnectDialog({ uri, open, onOpenChange }: WalletC
             </div>
           ) : movil ? (
             <div className="flex w-full flex-col gap-3">
+              {android && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    recordarWallet(VUELTA.panal);
+                    window.location.href = enlaceAppPanal(uri);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl border border-honey/50 bg-honey/10 px-4 py-3 text-left transition-colors hover:bg-honey/15"
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-honey/20 text-honey">
+                    <Hexagon className="size-4.5" aria-hidden />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-ink">{t('wallet.wc.openPanal')}</span>
+                    <span className="block text-[0.75rem] leading-snug text-ink-3">{t('wallet.wc.panalHint')}</span>
+                  </span>
+                </button>
+              )}
               {WALLETS_MOVIL.map((w) => (
                 <Button
                   key={w.id}
@@ -114,6 +144,7 @@ export default function WalletConnectDialog({ uri, open, onOpenChange }: WalletC
                   // Enlace directo, no window.open: en iOS una pestaña nueva
                   // se interpone entre el toque y la app, y a veces la bloquea.
                   onClick={() => {
+                    recordarWallet(VUELTA[w.id]);
                     window.location.href = enlaceWallet(w.id, uri);
                   }}
                 >

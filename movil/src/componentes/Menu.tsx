@@ -9,6 +9,7 @@ import { useSesion } from '~/lib/sesion';
 import { enlaceDeVersion, useActualizacion } from '~/lib/actualizacion';
 import { instalador, useInstalador } from '~/lib/instalador';
 import { useCambio } from '~/lib/cambio';
+import { desconectarWeb, usePuente } from '~/lib/puente';
 import { IDIOMAS, cambiarIdioma, useIdioma, useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 
@@ -56,6 +57,7 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
   const { cambiar } = useCambio();
   const T = useTextos();
   const idioma = useIdioma();
+  const puente = usePuente();
   const [avisos, setAvisos] = useState(() => avisosEncendidos());
   const [eligiendoIdioma, setEligiendoIdioma] = useState(false);
   // Se pregunta al abrir el menú, que es cuando este componente se monta.
@@ -227,6 +229,25 @@ function Panel({ onCerrar }: { onCerrar: () => void }): React.ReactElement {
               <span className="grow text-[13.5px]">{T.menu.avisos}</span>
               <Interruptor encendido={avisos} />
             </button>
+          )}
+
+          {/* panal.lat conectada a esta app como wallet (lib/puente.ts). Cortar
+              desde aquí hace que la web vuelva a ofrecer «Conectar». */}
+          {puente.sesiones.length > 0 && (
+            <div className="flex w-full items-center gap-3 border-t border-line px-4 py-3">
+              <Icono nombre="eslabon" tamano={17} color="#948DAE" className="shrink-0" />
+              <span className="min-w-0 grow">
+                <span className="block text-[13.5px]">{T.puente.conectada}</span>
+                <span className="block text-[12px] text-ink-3">panal.lat</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => void Promise.all(puente.sesiones.map((x) => desconectarWeb(x.topic)))}
+                className="pulsable tocable shrink-0 rounded-full border border-line px-3 py-1.5 text-[12.5px] font-medium text-terra"
+              >
+                {T.puente.desconectar}
+              </button>
+            </div>
           )}
 
             </>

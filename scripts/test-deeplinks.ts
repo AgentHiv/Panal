@@ -10,7 +10,8 @@
  * Lo que se comprueba es que la URI viaje ENTERA y escapada: lleva `?`, `&` y
  * `=` dentro, y sin escapar el sistema operativo se queda con el primer tramo.
  */
-import { WALLETS_MOVIL, enlaceWallet } from '../src/lib/deepLinks.js';
+import { VUELTA, WALLETS_MOVIL, enlaceAppPanal, enlaceWallet } from '../src/lib/deepLinks.js';
+import { PIDE_FIRMA, enlaceDeVuelta } from '../src/lib/vueltaWallet.js';
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -62,6 +63,40 @@ check(
   'los caracteres de una URI se escapan y no se pierden',
   decodeURIComponent(enlaceWallet('trust', 'wc:a@2?x=1&y=2').split('?uri=')[1]!) === 'wc:a@2?x=1&y=2',
 );
+
+console.log('\n── La app de Panal ──\n');
+
+{
+  const enlace = enlaceAppPanal(URI);
+  const uriParte = enlace.slice('intent://wc?uri='.length, enlace.indexOf('#Intent;'));
+  check('es un intent de Chrome para Android', enlace.startsWith('intent://wc?uri=') && enlace.endsWith(';end'), enlace);
+  check('la URI se recupera intacta', decodeURIComponent(uriParte) === URI, decodeURIComponent(uriParte));
+  check('no quedan & ni = sin escapar en la URI', !uriParte.includes('&') && !uriParte.includes('='), uriParte);
+  check('abre el esquema panal del APK directo', enlace.includes('#Intent;scheme=panal;package=lat.panal.app;'), enlace);
+  const vuelta = /S\.browser_fallback_url=([^;]+);/.exec(enlace)?.[1];
+  check(
+    'sin la app instalada, lleva a la página para descargarla',
+    vuelta !== undefined && decodeURIComponent(vuelta) === 'https://panal.lat/app',
+    String(vuelta),
+  );
+  check(
+    'no está en la lista de wallets de fuera (la app se ofrecería a sí misma)',
+    !WALLETS_MOVIL.some((w) => (w.id as string) === 'panal'),
+  );
+}
+
+console.log('\n── Volver a la wallet para firmar ──\n');
+
+check('cada wallet tiene su esquema para volver', Object.values(VUELTA).every((v) => /^[a-z]+:\/\/$/.test(v)));
+check('la de Panal vuelve por panal://', VUELTA.panal === 'panal://');
+check(
+  'lo que manda la wallet al conectar gana a lo que se tocó',
+  enlaceDeVuelta({ native: 'metamask://' }, VUELTA.trust) === 'metamask://',
+);
+check('sin nada de la wallet, vale lo que se tocó', enlaceDeVuelta(undefined, VUELTA.panal) === 'panal://');
+check('sin nada de nada, no hay enlace', enlaceDeVuelta(undefined, null) === null);
+check('firmar y cambiar de red llevan a la wallet', PIDE_FIRMA.has('eth_signTypedData_v4') && PIDE_FIRMA.has('eth_sendTransaction'));
+check('una lectura no saca a nadie de la página', !PIDE_FIRMA.has('eth_chainId') && !PIDE_FIRMA.has('eth_call'));
 
 console.log(
   fallos === 0

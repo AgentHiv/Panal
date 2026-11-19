@@ -10,11 +10,14 @@
  *     VITE_WALLETCONNECT_PROJECT_ID.
  *
  * Con varias opciones se abre un picker; con una sola se conecta directo.
+ *
+ * Con WalletConnect en un teléfono, además, va a buscar a la wallet en cada
+ * firma (ver «Ir a buscar a la wallet» más abajo).
  * Añade detección de red incorrecta con acción para cambiar a la red activa
  * (Monad mainnet por defecto).
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -25,12 +28,36 @@ import type { WalletState } from '@/hooks/useWallet';
 import InstallWalletDialog from '@/components/InstallWalletDialog';
 import WalletPickerDialog from '@/components/WalletPickerDialog';
 import WalletConnectDialog from '@/components/WalletConnectDialog';
+import AvisoFirmaWallet from '@/components/AvisoFirmaWallet';
 import { activeChain } from '@/contracts/config';
 import { elegirWallets, WALLETCONNECT_ID } from '@/lib/wallets';
+import { esMovil } from '@/lib/deepLinks';
+import { PIDE_FIRMA, enlaceDeVuelta, olvidarWallet, walletRecordada } from '@/lib/vueltaWallet';
+import type { Redireccion } from '@/lib/vueltaWallet';
+
+/** Lo poco que hace falta saber del proveedor de WalletConnect. */
+interface ProveedorWC {
+  request: (args: { method: string; params?: unknown }) => Promise<unknown>;
+  session?: { peer?: { metadata?: { name?: string; redirect?: Redireccion } } };
+  __panalEnvuelto?: boolean;
+}
+
+/**
+ * Trae la wallet al frente.
+ *
+ * Un esquema propio (`metamask://`, `panal://`) se abre con `location.href`:
+ * es una navegación que Android entrega a la app sin que la página se vaya a
+ * ninguna parte. Un https NO: si el sistema no lo asocia a la app, cargaría la
+ * web de la wallet EN ESTA pestaña, en mitad de una firma. Ese va a otra.
+ */
+function abrirWallet(enlace: string): void {
+  if (/^https?:/i.test(enlace)) window.open(enlace, '_blank', 'noopener,noreferrer');
+  else window.location.href = enlace;
+}
 
 export default function WalletProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
-  const { address, isConnected, status } = useAccount();
+  const { address, isConnected, status, connector: enMarcha } = useAccount();
   const chainId = useChainId();
   const { connect, connectors, isPending: conectando } = useConnect();
 
@@ -60,6 +87,10 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
   /** La URI de la sesión de WalletConnect, mientras se espera aprobación. */
   const [wcUri, setWcUri] = useState<string | null>(null);
   const [wcOpen, setWcOpen] = useState(false);
+  /** Hay una firma esperando en la wallet del teléfono, y cómo ir a ella. */
+  const [firma, setFirma] = useState<{ enlace: string | null; nombre: string } | null>(null);
+  /** Cuántas firmas siguen en camino: el aviso se quita con la última, no con la primera. */
+  const enCamino = useRef(0);
 
   /**
    * La URI de WalletConnect llega por un evento, no por la promesa de
@@ -166,8 +197,73 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
   }, [connectWith, isConnected, connecting, walletOptions]);
 
   const doDisconnect = useCallback(() => {
+    // Solo aquí, y no al ver `isConnected` en falso: eso también pasa un
+    // instante al recargar, mientras wagmi recupera la sesión.
+    olvidarWallet();
     disconnect();
   }, [disconnect]);
+
+  /**
+   * Ir a buscar a la wallet cuando sale una firma, y decirlo en pantalla.
+   *
+   * EL FALLO. En el Chrome de un teléfono, conectar abría la wallet, pero
+   * después cada firma —pagar un mensaje, encargar, aprobar— viajaba por el
+   * relé hasta una wallet que estaba en segundo plano. Nadie la traía al
+   * frente: la web se quedaba esperando y parecía colgada. WalletConnect lo
+   * resuelve solo si encuentra la clave que escribe el modal de Reown, y esta
+   * web no usa ese modal (ver `WalletConnectDialog`).
+   *
+   * Así que se hace como en la app (`movil/src/ProveedorWallet.tsx`): se
+   * envuelve `request` una sola vez por proveedor, y cada petición que pide
+   * firma abre la wallet con el enlace que ella misma mandó al conectar, o con
+   * el que se tocó en el diálogo. Y mientras espera, un aviso con un botón,
+   * porque una redirección sin gesto de la persona puede bloquearla el
+   * navegador, y quedarse sin saber que hay algo esperando es el fallo.
+   *
+   * Solo en un teléfono: en un escritorio la wallet está en otro aparato y el
+   * QR ya dijo dónde mirar.
+   */
+  useEffect(() => {
+    if (!isConnected || !enMarcha || enMarcha.id !== WALLETCONNECT_ID || !esMovil()) return;
+    let vivo = true;
+    let deshacer: (() => void) | null = null;
+
+    void (async () => {
+      const p = (await enMarcha.getProvider()) as ProveedorWC;
+      if (!vivo || p.__panalEnvuelto) return;
+
+      const meta = p.session?.peer?.metadata;
+      const salida = enlaceDeVuelta(meta?.redirect, walletRecordada());
+      const nombre = meta?.name?.trim() || t('wallet.firma.tuWallet');
+
+      const original = p.request.bind(p);
+      p.__panalEnvuelto = true;
+      p.request = async (args) => {
+        if (!PIDE_FIRMA.has(args.method)) return original(args);
+        enCamino.current += 1;
+        setFirma({ enlace: salida, nombre });
+        if (salida) abrirWallet(salida);
+        try {
+          return await original(args);
+        } finally {
+          enCamino.current = Math.max(0, enCamino.current - 1);
+          if (enCamino.current === 0) setFirma(null);
+        }
+      };
+
+      deshacer = () => {
+        Reflect.deleteProperty(p, 'request');
+        Reflect.deleteProperty(p, '__panalEnvuelto');
+      };
+    })();
+
+    return () => {
+      vivo = false;
+      deshacer?.();
+      enCamino.current = 0;
+      setFirma(null);
+    };
+  }, [isConnected, enMarcha, t]);
 
   const wrongNetwork = isConnected && chainId !== activeChain.id;
 
@@ -203,6 +299,7 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
         onSelect={connectWith}
       />
       <WalletConnectDialog uri={wcUri} open={wcOpen} onOpenChange={setWcOpen} />
+      <AvisoFirmaWallet firma={firma} onAbrir={abrirWallet} />
       <InstallWalletDialog open={installOpen} onOpenChange={setInstallOpen} />
     </WalletContext.Provider>
   );

@@ -843,7 +843,16 @@
       "copy": "Copy link",
       "copied": "Link copied",
       "openIn": "Open in {{name}}",
+      "openPanal": "Open in the Panal app",
+      "panalHint": "Sign with your phone's own wallet. If you don't have the app, it takes you to download it.",
       "qrAlt": "Connection QR code"
+    },
+    "firma": {
+      "tuWallet": "your wallet",
+      "titulo": "Approve in {{wallet}}",
+      "conEnlace": "A signature is waiting. If it didn't open by itself, open it and come back here when you're done.",
+      "sinEnlace": "A signature is waiting. Open your wallet to approve it and come back here when you're done.",
+      "abrir": "Open {{wallet}}"
     }
   },
   "tasks": {

@@ -49,6 +49,55 @@ export function enlaceWallet(id: WalletMovil['id'], uri: string): string {
 }
 
 /**
+ * Con qué se trae cada wallet al frente cuando ya está conectada.
+ *
+ * Para CONECTAR se usan los enlaces universales de arriba: si la app no está,
+ * al menos se abre su web. Para VOLVER a firmar ya no hace falta, porque la
+ * wallet está instalada (acabamos de conectar con ella), y el esquema propio
+ * no deja una pestaña en blanco por el camino como sí hace el universal.
+ *
+ * Es el respaldo de lo que la wallet manda de sí misma al conectar (su
+ * `redirect`): la mayoría lo manda, y entonces manda lo suyo.
+ */
+export const VUELTA: Readonly<Record<WalletMovil['id'] | 'panal', string>> = {
+  metamask: 'metamask://',
+  trust: 'trust://',
+  panal: 'panal://',
+};
+
+/**
+ * La app de Panal para Android, como wallet de esta web.
+ *
+ * No está en `WALLETS_MOVIL` a propósito: esa lista la usa también la app para
+ * ofrecer wallets de fuera, y ofrecerse a sí misma sería un botón que abre la
+ * app que ya está abierta.
+ *
+ * El enlace es un `intent:` de Chrome para Android y no un `panal://` a secas:
+ * si la app no está instalada, un esquema propio deja un error del navegador,
+ * y el `intent:` cae en `browser_fallback_url`, que es la página para
+ * descargarla. Lleva el paquete del APK directo (`lat.panal.app`) porque es la
+ * única que firma para la web: la de Google Play no puede cobrar ni pagar.
+ */
+export const PAQUETE_APP_PANAL = 'lat.panal.app';
+export const DESCARGAR_APP_PANAL = 'https://panal.lat/app';
+
+export function enlaceAppPanal(uri: string): string {
+  return (
+    `intent://wc?uri=${encodeURIComponent(uri)}` +
+    `#Intent;scheme=panal;package=${PAQUETE_APP_PANAL};` +
+    `S.browser_fallback_url=${encodeURIComponent(DESCARGAR_APP_PANAL)};end`
+  );
+}
+
+/**
+ * ¿Es Android? La app de Panal solo existe ahí, así que en un iPhone no se
+ * ofrece: sería un botón que lleva a una página que dice «no hay app».
+ */
+export function esAndroid(): boolean {
+  return typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+}
+
+/**
  * ¿Estamos en un teléfono?
  *
  * Decide si se enseña el QR o los enlaces, y no hay forma no fea de saberlo:
