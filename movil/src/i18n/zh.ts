@@ -160,7 +160,7 @@ export const zh: Textos = {
     bloqueadoExplicacion: '你存在这台手机上的钱包。什么都不会离开这里。',
     hastaDonde: '这个 PIN 能挡到哪一步',
     hastaDondeTexto:
-      '私钥用它加密后存在应用的私有目录里：别的应用读不到，也不再进 Google 的备份。这个 PIN 挡不住的，是拿着你已解锁的手机、又有时间的人。那需要手机的安全芯片，而 WebView 不写原生代码就够不到。这里放你要用的，不是你要存的。',
+      '私钥用它加密，外面再加一层手机安全芯片里的密钥，那把密钥拿不出手机：别的应用读不到，不进 Google 的备份，复制到电脑上也没法用来猜 PIN。这个 PIN 挡不住的，是知道它的人，或者拿着你已解锁的手机、有时间在应用里一个个试的人。如果开启指纹，手机上保存的任何指纹也都能打开。这里放你要用的，不是你要存的。',
     palabrasTitulo: (n: number) => `你的 ${n} 个助记词`,
     claveTitulo: '它的私钥',
     palabrasTexto: (nombre: string) =>

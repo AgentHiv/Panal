@@ -172,7 +172,7 @@ export const en: Textos = {
     bloqueadoExplicacion: 'The wallets you keep on this phone. Nothing leaves here.',
     hastaDonde: 'How far this PIN goes',
     hastaDondeTexto:
-      "The keys are encrypted with it inside the app's private storage: no other app reads them, and they no longer travel in Google's backup. What the PIN does NOT stop is somebody with your phone unlocked and time to spare. That needs the phone's secure chip, and the WebView cannot reach it without writing native code. Keep here what you use, not what you keep.",
+      "The keys are encrypted with it and, on top, with a key from the phone's secure chip that cannot be taken out of it: no other app reads them, they don't travel in Google's backup, and copying them to a computer doesn't help guess the PIN. What the PIN does NOT stop is somebody who knows it, or somebody with your phone unlocked and time to try PINs in the app itself, one by one. If you turn on the fingerprint, any fingerprint saved on the phone opens it too. Keep here what you use, not what you keep.",
     palabrasTitulo: (n: number) => `Your ${n} words`,
     claveTitulo: 'Its private key',
     palabrasTexto: (nombre: string) =>

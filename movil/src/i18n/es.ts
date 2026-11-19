@@ -175,7 +175,7 @@ export const es = {
     bloqueadoExplicacion: 'Las wallets que guardas en este teléfono. Nada sale de aquí.',
     hastaDonde: 'Hasta dónde llega este PIN',
     hastaDondeTexto:
-      'Las claves están cifradas con él dentro del cajón privado de la app: ninguna otra app las lee, y ya no salen en la copia de Google. Lo que el PIN NO para es a alguien con tu teléfono desbloqueado y tiempo. Para eso hace falta el chip seguro del móvil, y a eso el WebView no llega sin escribir un trozo nativo. Guarda aquí lo que usas, no lo que guardas.',
+      'Las claves están cifradas con él y, encima, con una clave del chip seguro del teléfono que no se puede sacar de él: ninguna otra app las lee, no salen en la copia de Google, y copiarlas a un ordenador no sirve para adivinar el PIN. Lo que el PIN NO para es a quien lo sepa, o a alguien con tu teléfono desbloqueado y tiempo para probar PINs en la propia app, uno a uno. Si activas la huella, también lo abre cualquier huella guardada en el teléfono. Guarda aquí lo que usas, no lo que guardas.',
     palabrasTitulo: (n: number) => `Tus ${n} palabras`,
     claveTitulo: 'Su clave privada',
     palabrasTexto: (nombre: string) =>

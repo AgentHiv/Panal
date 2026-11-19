@@ -172,7 +172,7 @@ export const pt: Textos = {
     bloqueadoExplicacion: 'As wallets que guardas neste telemóvel. Nada sai daqui.',
     hastaDonde: 'Até onde chega este PIN',
     hastaDondeTexto:
-      'As chaves estão cifradas com ele dentro da gaveta privada da app: mais nenhuma app as lê, e já não vão na cópia de segurança da Google. O que o PIN NÃO trava é alguém com o teu telemóvel desbloqueado e tempo. Para isso é preciso o chip seguro do telemóvel, e o WebView não lá chega sem escrever código nativo. Guarda aqui o que usas, não o que guardas.',
+      'As chaves estão cifradas com ele e, por cima, com uma chave do chip seguro do telemóvel que não se pode tirar de lá: mais nenhuma app as lê, não vão na cópia de segurança da Google, e copiá-las para um computador não serve para adivinhar o PIN. O que o PIN NÃO trava é quem o saiba, ou alguém com o teu telemóvel desbloqueado e tempo para tentar PINs na própria app, um a um. Se ativares a impressão digital, também o abre qualquer impressão digital guardada no telemóvel. Guarda aqui o que usas, não o que guardas.',
     palabrasTitulo: (n: number) => `As tuas ${n} palavras`,
     claveTitulo: 'A chave privada dela',
     palabrasTexto: (nombre: string) =>
