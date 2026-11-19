@@ -843,7 +843,16 @@
       "copy": "Copiar ligação",
       "copied": "Ligação copiada",
       "openIn": "Abrir em {{name}}",
+      "openPanal": "Abrir na app da Panal",
+      "panalHint": "Assina com a carteira do teu telemóvel. Se não tens a app, leva-te a descarregá-la.",
       "qrAlt": "Código QR da ligação"
+    },
+    "firma": {
+      "tuWallet": "a tua carteira",
+      "titulo": "Aprova em {{wallet}}",
+      "conEnlace": "Há uma assinatura à espera. Se não abriu sozinha, abre-a tu e volta aqui quando terminares.",
+      "sinEnlace": "Há uma assinatura à espera. Abre a tua carteira para a aprovar e volta aqui quando terminares.",
+      "abrir": "Abrir {{wallet}}"
     }
   },
   "tasks": {

@@ -1557,6 +1557,58 @@ export const es = {
     fallo: 'No se pudo leer la huella. Usa el PIN.',
     noSeActivo: 'No se activó la huella. Puedes hacerlo desde el llavero.',
   },
+  puente: {
+    conectarTitulo: 'Conectar con panal.lat',
+    conectarTexto:
+      'La web de Panal que tienes abierta en el navegador quiere usar esta wallet. Cada firma que pida te la enseñaremos aquí antes, y solo se firma lo que la app firmaría para ti.',
+    web: 'Web',
+    wallet: 'Wallet',
+    comprobada: 'Comprobada',
+    sinComprobar:
+      'No se pudo comprobar que la petición venga de panal.lat. Conecta solo si acabas de pulsar «Abrir en la app de Panal» en la web.',
+    conectar: 'Conectar',
+    noConectar: 'No conectar',
+    firmarTitulo: 'La web pide una firma',
+    firmarTexto: 'Esto es lo que panal.lat quiere firmar con tu wallet. Al terminar vuelves al navegador.',
+    enCola: (n: number) => (n === 1 ? 'Hay 1 más esperando.' : `Hay ${n} más esperando.`),
+    firmar: 'Firmar',
+    enviar: 'Aprobar y enviar',
+    rechazar: 'Rechazar',
+    otraWallet: (nombre: string) =>
+      `La web está conectada con otra wallet (${nombre}). Ábrela en el llavero para firmar, o rechaza.`,
+    sinLlavero: 'Para firmar para la web hace falta tener abierta una wallet del llavero de esta app.',
+    que: 'Qué',
+    importe: 'Importe',
+    para: 'Para',
+    agente: 'Agente',
+    noEsAgente: 'No es un agente de Panal',
+    caduca: (min: number) => `Caduca en ${min} min`,
+    tipos: {
+      mensaje: 'Firmar un mensaje de Panal',
+      permit: 'Pagar un mensaje a un agente',
+      pagoMon: 'Pagar un mensaje en MON',
+      encargo: 'Contratar un encargo',
+      aprobarEscrow: 'Dejar que el escrow use tu $PANAL',
+      aprobarTablon: 'Dejar que el tablón use tu $PANAL',
+      escrow: (f: string) => `Escrow · ${f}`,
+      tablon: (f: string) => `Tablón · ${f}`,
+      registro: (f: string) => `Registro · ${f}`,
+    },
+    avisoPagoMon:
+      'Es una transferencia de MON a secas. Apruébala solo si es el pago de un mensaje que acabas de mandar en la web.',
+    avisos: {
+      otraWeb: (origen: string) =>
+        `Una web que no es panal.lat (${origen}) intentó conectarse. La app solo se conecta con panal.lat, así que se rechazó.`,
+      falsa: (origen: string) => `Una web se hizo pasar por panal.lat (${origen}). Se rechazó.`,
+      estafa: (origen: string) => `WalletConnect marca esta web como estafa (${origen}). Se rechazó.`,
+      caducado: 'El enlace para conectar ya caducó. Vuelve a la web y pulsa «Abrir en la app de Panal» otra vez.',
+      sinRed: 'No se pudo conectar con la web. Revisa la conexión y vuelve a intentarlo desde la web.',
+      rechazada: (detalle: string) => `La app no firmó lo que pidió la web: ${detalle}`,
+    },
+    entendido: 'Entendido',
+    conectada: 'Web conectada',
+    desconectar: 'Desconectar',
+  },
 };
 
 export type Textos = typeof es;

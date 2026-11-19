@@ -843,7 +843,16 @@
       "copy": "Copiar enlace",
       "copied": "Enlace copiado",
       "openIn": "Abrir en {{name}}",
+      "openPanal": "Abrir en la app de Panal",
+      "panalHint": "Firma con la wallet de tu teléfono. Si no tienes la app, te lleva a descargarla.",
       "qrAlt": "Código QR de la conexión"
+    },
+    "firma": {
+      "tuWallet": "tu wallet",
+      "titulo": "Aprueba en {{wallet}}",
+      "conEnlace": "Hay una firma esperando. Si no se abrió sola, ábrela tú y vuelve aquí al terminar.",
+      "sinEnlace": "Hay una firma esperando. Abre tu wallet para aprobarla y vuelve aquí al terminar.",
+      "abrir": "Abrir {{wallet}}"
     }
   },
   "tasks": {
