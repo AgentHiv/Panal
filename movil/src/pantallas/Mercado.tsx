@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { cuentaDe, marcaDe, usePanalAgents } from '@/hooks/usePanalAgents';
 import { currencySymbol } from '@/contracts/config';
-import type { Agent } from '@/data/agents';
+import type { Agent, AgentCategory } from '@/data/agents';
 import type { CuentaDeAgente } from '@/lib/cuenta';
 import { TRAZOS_MARCA } from '@/lib/iconosMarca';
 import Hexagono from '~/componentes/Hexagono';
+import { tonoDeSemilla } from '~/lib/tono';
+import Vacio from '~/componentes/Vacio';
 import Icono from '~/componentes/Icono';
 import { precio } from '~/lib/formato';
 import Menu from '~/componentes/Menu';
@@ -26,15 +28,28 @@ import type { Textos } from '~/i18n/idiomas';
 export default function Mercado(): React.ReactElement {
   const { agents, loading } = usePanalAgents();
   const [busca, setBusca] = useState('');
+  const [categoria, setCategoria] = useState<AgentCategory | null>(null);
   const T = useTextos();
+
+  /**
+   * Las categorías que HAY, con cuántos agentes tiene cada una, de más a menos.
+   * Una fila con las ocho aunque seis estén vacías sería ofrecer filtros que
+   * llevan a una lista vacía.
+   */
+  const categorias = useMemo(() => {
+    const cuenta = new Map<AgentCategory, number>();
+    for (const a of agents) cuenta.set(a.category, (cuenta.get(a.category) ?? 0) + 1);
+    return [...cuenta.entries()].sort((x, y) => y[1] - x[1]);
+  }, [agents]);
 
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    if (!q) return agents;
     return agents.filter(
-      (a) => a.name.toLowerCase().includes(q) || (a.tagline ?? '').toLowerCase().includes(q),
+      (a) =>
+        (categoria === null || a.category === categoria) &&
+        (!q || a.name.toLowerCase().includes(q) || (a.tagline ?? '').toLowerCase().includes(q)),
     );
-  }, [agents, busca]);
+  }, [agents, busca, categoria]);
 
   return (
     <div className="flex min-h-0 grow flex-col">
@@ -65,19 +80,37 @@ export default function Mercado(): React.ReactElement {
         </div>
       </div>
 
+      {/* Solo con dos o más: un filtro con una sola opción no filtra nada. */}
+      {categorias.length > 1 && (
+        <div className="flex shrink-0 gap-2 overflow-x-auto px-3 pb-2.5 pt-0.5">
+          <Filtro activo={categoria === null} onPulsar={() => setCategoria(null)}>
+            {T.mercado.todos} · {agents.length}
+          </Filtro>
+          {categorias.map(([c, n]) => (
+            <Filtro key={c} activo={categoria === c} onPulsar={() => setCategoria(categoria === c ? null : c)} color={COLOR_CATEGORIA[c]}>
+              {T.tablon.cat[c]} · {n}
+            </Filtro>
+          ))}
+        </div>
+      )}
+
       <div className="min-h-0 grow overflow-y-auto px-3 pb-4">
         {loading && agents.length === 0 && <Esqueletos />}
 
-        {!loading && agents.length === 0 && (
-          <p className="px-2 pt-6 text-center text-[13.5px] leading-relaxed text-ink-3">
-            {T.mercado.sinAgentes}
-          </p>
-        )}
+        {!loading && agents.length === 0 && <Vacio icono="bolsa" titulo={T.mercado.sinAgentes} />}
 
         {agents.length > 0 && lista.length === 0 && (
-          <p className="px-2 pt-6 text-center text-[13.5px] leading-relaxed text-ink-3">
-            {T.mercado.sinResultados}
-          </p>
+          <Vacio
+            icono="buscar"
+            titulo={T.mercado.sinResultados}
+            accion={{
+              texto: T.mercado.limpiar,
+              onPulsar: () => {
+                setBusca('');
+                setCategoria(null);
+              },
+            }}
+          />
         )}
 
         <ul className="flex flex-col gap-2">
@@ -92,62 +125,121 @@ export default function Mercado(): React.ReactElement {
   );
 }
 
+/**
+ * El color de cada categoría, para la etiqueta de la ficha y su filtro.
+ *
+ * Los de la marca primero (miel, Monad, oliva, terracota) y dos de fuera para
+ * las que no caben: ninguna categoría manda sobre otra, así que ninguna se
+ * queda el morado de los botones de pagar ni el gris de lo desactivado.
+ */
+const COLOR_CATEGORIA: Record<AgentCategory, string> = {
+  codigo: '#9C8BFB',
+  datos: '#7FC8A9',
+  texto: '#C8C3DC',
+  vision: '#6FB3E0',
+  legal: '#D98A63',
+  defi: '#E29A2E',
+  creativo: '#E58FB5',
+  humanos: '#A9BA7C',
+};
+
+function Filtro({
+  activo,
+  onPulsar,
+  color,
+  children,
+}: {
+  activo: boolean;
+  onPulsar: () => void;
+  color?: string;
+  children: React.ReactNode;
+}): React.ReactElement {
+  return (
+    <button
+      type="button"
+      onClick={onPulsar}
+      className={`pulsable flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-[12.5px] ${
+        activo ? 'border-honey bg-honey-soft font-medium text-honey' : 'border-line text-ink-2'
+      }`}
+    >
+      {color && <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} aria-hidden />}
+      {children}
+    </button>
+  );
+}
+
 function Tarjeta({ agente, T }: { agente: Agent; T: Textos }): React.ReactElement {
   const moneda = currencySymbol(agente.currency);
   // Escribía «0 MON / tarea» para casi todos, y no porque no tuvieran precio:
   // `formatMon(x, 0)` redondea a cero cualquier cosa por debajo de 1 MON, que
   // es lo que cobra la mayoría. Decía «gratis» de un servicio de pago.
   const tarifa = precio(agente.pricePerTask);
+  const colorCategoria = COLOR_CATEGORIA[agente.category];
 
   return (
-    <Link to={`/agente/${agente.wallet}`} className="pulsable block rounded-2xl bg-cream p-3.5">
-      <div className="flex items-start gap-3">
+    <Link
+      to={`/agente/${agente.wallet}`}
+      className="pulsable relative block overflow-hidden rounded-2xl border border-line/60 bg-cream p-3.5"
+    >
+      {/* Un reflejo del color del agente detrás de su logo. Distingue una
+          ficha de otra al pasar la lista sin pintar cada una de un color. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -left-12 -top-12 h-36 w-36 rounded-full opacity-[.14] blur-2xl"
+        style={{ backgroundColor: tonoDeSemilla(agente.wallet) }}
+      />
+
+      <div className="relative flex items-start gap-3">
         <Hexagono
           semilla={agente.wallet}
           inicial={agente.name.slice(0, 1)}
-          tamano={44}
+          tamano={48}
           logo={marcaDe(agente).logo}
         />
 
         <div className="min-w-0 grow">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="truncate text-[15px] font-semibold">{agente.name}</h2>
+            <h2 className="truncate text-[15.5px] font-semibold">{agente.name}</h2>
             <Sello estado={agente.verification} cuenta={cuentaDe(agente)} T={T} />
           </div>
 
-          <p className="mt-1 line-clamp-2 text-[13px] leading-[1.45] text-ink-2">{agente.tagline}</p>
+          <span
+            className="mt-1 inline-flex items-center rounded-full px-2 py-[3px] text-[10.5px] font-semibold uppercase tracking-[0.05em]"
+            style={{ color: colorCategoria, backgroundColor: `${colorCategoria}1F` }}
+          >
+            {T.tablon.cat[agente.category]}
+          </span>
 
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-            {/* La CIFRA en monoespaciada y la palabra no: la mono es para
-                datos —importes, direcciones, hashes— y meter prosa dentro es
-                lo que hacía que «0,05 $PANAL · encargo» pesara lo mismo que el
-                nombre del agente. Ahora el precio destaca y «encargo» explica. */}
-            {tarifa ? (
-              <>
-                <span className="font-mono text-[13px] font-medium text-monad-mist">
-                  {tarifa} {moneda}
-                </span>
-                <span className="text-[11.5px] text-ink-3">{T.mercado.porEncargo}</span>
-              </>
-            ) : (
-              <span className="text-[11.5px] text-ink-3">{T.mercado.sinPrecio}</span>
-            )}
-            {/* Y nada cuando no hay nada. Antes escribía «sin valoraciones» en
-                TODAS las tarjetas —ninguna tiene todavía— así que la misma
-                frase gris se repetía siete veces diciendo lo mismo: nada. Un
-                hueco vacío informa igual y no compite con el precio. */}
-            {agente.reviews > 0 && (
-              <span className="font-mono text-[11.5px] text-honey">
-                {agente.rating.toFixed(1)} ★
-              </span>
-            )}
-            {agente.tasksCompleted > 0 && (
-              <span className="text-[11px] text-ink-3">{T.mercado.tareas(agente.tasksCompleted)}</span>
-            )}
-          </div>
+          <p className="mt-1.5 line-clamp-2 text-[13px] leading-[1.45] text-ink-2">{agente.tagline}</p>
         </div>
+      </div>
 
-        <Icono nombre="atras" tamano={16} color="#4A4363" className="mt-3 shrink-0 rotate-180" />
+      <div className="relative mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 border-t border-line/60 pt-2.5">
+        {/* La CIFRA en monoespaciada y la palabra no: la mono es para datos
+            —importes, direcciones, hashes— y meter prosa dentro es lo que
+            hacía que «0,05 $PANAL · encargo» pesara lo mismo que el nombre del
+            agente. Ahora el precio destaca y «encargo» explica. */}
+        {tarifa ? (
+          <span className="flex items-baseline gap-1.5 rounded-full bg-monad/15 px-2.5 py-1">
+            <span className="font-mono text-[12.5px] font-medium text-monad-mist">
+              {tarifa} {moneda}
+            </span>
+            <span className="text-[11px] text-ink-3">{T.mercado.porEncargo}</span>
+          </span>
+        ) : (
+          <span className="text-[11.5px] text-ink-3">{T.mercado.sinPrecio}</span>
+        )}
+        <span className="grow" />
+        {/* Y nada cuando no hay nada. Antes escribía «sin valoraciones» en
+            TODAS las tarjetas —ninguna tiene todavía— así que la misma frase
+            gris se repetía siete veces diciendo lo mismo: nada. Un hueco vacío
+            informa igual y no compite con el precio. */}
+        {agente.reviews > 0 && (
+          <span className="font-mono text-[12px] font-medium text-honey">★ {agente.rating.toFixed(1)}</span>
+        )}
+        {agente.tasksCompleted > 0 && (
+          <span className="text-[11.5px] text-ink-3">{T.mercado.tareas(agente.tasksCompleted)}</span>
+        )}
       </div>
     </Link>
   );
@@ -226,7 +318,7 @@ function Esqueletos(): React.ReactElement {
   return (
     <ul className="flex flex-col gap-2" aria-hidden>
       {[0, 1, 2, 3, 4].map((i) => (
-        <li key={i} className="h-[100px] animate-pulse rounded-2xl bg-cream" />
+        <li key={i} className="h-[132px] animate-pulse rounded-2xl bg-cream" />
       ))}
     </ul>
   );

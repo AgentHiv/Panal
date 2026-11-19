@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
@@ -23,6 +23,7 @@ import Olvidado from '~/componentes/Olvidado';
 import { useTextos } from '~/i18n/idiomas';
 import type { WalletGuardada } from '~/lib/llavero';
 import { INICIO } from '~/lib/canal';
+import { huella, useHuella } from '~/lib/huella';
 
 /**
  * El mismo contrato que la web, la interfaz de nadie.
@@ -123,6 +124,14 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
   const [abriendo, setAbriendo] = useState<WalletGuardada | null>(null);
   const [errorPin, setErrorPin] = useState<string | null>(null);
   const [ocupadoPin, setOcupadoPin] = useState(false);
+  const estadoHuella = useHuella();
+  /**
+   * Ofrecer la huella justo después de abrir con el PIN: es el único momento
+   * en que la app tiene el PIN bueno en la mano sin pedirlo otra vez. Se
+   * guarda aquí, en memoria, solo hasta que la persona conteste a la hoja.
+   */
+  const [ofreciendoHuella, setOfreciendoHuella] = useState(false);
+  const pinParaHuella = useRef<string | null>(null);
   /** La pantalla de «he olvidado el PIN», que es la única salida del cerrojo. */
   const [olvidado, setOlvidado] = useState(false);
   /** Ya eligió en la bienvenida y está creando o trayendo su wallet. */
@@ -286,7 +295,7 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
    * solo cuando ya hay una cuenta lista se le dice a wagmi que conecte.
    */
   const conLaDelTelefono = useCallback(
-    async (pin: string, cual: WalletGuardada): Promise<void> => {
+    async (pin: string, cual: WalletGuardada, deHuella = false): Promise<void> => {
       setOcupadoPin(true);
       // Un respiro para que React pinte el sexto punto antes de que PBKDF2
       // bloquee el hilo medio segundo.
@@ -294,7 +303,10 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
       const llave = await abrirLlavero(pin);
       if (!llave) {
         setOcupadoPin(false);
-        setErrorPin(T.llavero.pinMalo);
+        // Con la huella, un PIN que no abre es un PIN guardado que ya no vale
+        // (el llavero se rehízo con otro). Fuera, para no volver a usarlo.
+        if (deHuella) huella.desactivar();
+        setErrorPin(deHuella ? T.huella.yaNoVale : T.llavero.pinMalo);
         return;
       }
       try {
@@ -313,6 +325,13 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
         setAbriendo(null);
         setErrorPin(null);
         setHoja(false);
+        if (!deHuella) {
+          void huella.ofrecer().then((si) => {
+            if (!si) return;
+            pinParaHuella.current = pin;
+            setOfreciendoHuella(true);
+          });
+        }
       } catch {
         setErrorPin(T.importar.noSePudoAbrir);
       } finally {
@@ -321,6 +340,40 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
     },
     [T, disconnect, enMarcha, isConnected],
   );
+
+  /** Abrir con el dedo: el PIN sale del chip y sigue el camino de siempre. */
+  const conHuella = useCallback(
+    async (cual: WalletGuardada): Promise<void> => {
+      const r = await huella.pin({
+        titulo: T.huella.dialogoTitulo,
+        subtitulo: T.huella.dialogoTexto,
+        cancelar: T.huella.usarPin,
+      });
+      if ('pin' in r) {
+        await conLaDelTelefono(r.pin, cual, true);
+        return;
+      }
+      // Cancelar no es un error: queda el teclado y no se dice nada.
+      if (r.fallo === 'invalidada') setErrorPin(T.huella.invalidada);
+      else if (r.fallo === 'bloqueada') setErrorPin(T.huella.bloqueada);
+      else if (r.fallo === 'fallo') setErrorPin(T.huella.fallo);
+    },
+    [T, conLaDelTelefono],
+  );
+
+  const cerrarOferta = (activar: boolean, noVolver: boolean): void => {
+    const pin = pinParaHuella.current;
+    pinParaHuella.current = null;
+    setOfreciendoHuella(false);
+    if (noVolver) huella.noOfrecer();
+    if (activar && pin) {
+      void huella.activar(pin, {
+        titulo: T.huella.activarTitulo,
+        subtitulo: T.huella.activarTexto,
+        cancelar: T.comun.cancelar,
+      });
+    }
+  };
 
   /**
    * Quien abra la sesión, conecta.
@@ -536,6 +589,42 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
     abriendo ?? guardadas.find((w) => w.id === idRecordado()) ?? guardadas[0] ?? null;
   const pidiendoPin = abriendo ?? (cerrojo ? paraAbrir : null);
 
+  /**
+   * Con la huella activada, el diálogo sale solo en cuanto aparece el candado:
+   * al abrir la app, y cuando la sesión se cierra por inactividad. Una vez por
+   * candado. Si se cancela, queda el teclado con su tecla de huella, y no se
+   * vuelve a abrir solo: hacerlo al volver a la app podía encadenar diálogos
+   * en los teléfonos que ponen la app en pausa mientras lo enseñan.
+   *
+   * Si el candado aparece con la app en segundo plano, espera a que vuelva:
+   * Android no deja enseñar el diálogo desde detrás.
+   */
+  const huellaLista = estadoHuella.disponible && estadoHuella.activada;
+  const idPidiendo = pidiendoPin?.id ?? null;
+  const autoHuella = useRef<string | null>(null);
+  const ultimo = useRef({ pidiendoPin, conHuella });
+  // Antes del efecto de abajo: los efectos corren en orden, así que cuando
+  // ese lea, esto ya tiene lo de este pintado.
+  useEffect(() => {
+    ultimo.current = { pidiendoPin, conHuella };
+  });
+  useEffect(() => {
+    if (!idPidiendo || !huellaLista) {
+      autoHuella.current = null;
+      return;
+    }
+    const lanzar = (): void => {
+      if (document.visibilityState === 'hidden' || autoHuella.current === idPidiendo) return;
+      const { pidiendoPin: w, conHuella: pedir } = ultimo.current;
+      if (!w) return;
+      autoHuella.current = idPidiendo;
+      void pedir(w);
+    };
+    lanzar();
+    document.addEventListener('visibilitychange', lanzar);
+    return () => document.removeEventListener('visibilitychange', lanzar);
+  }, [idPidiendo, huellaLista]);
+
   return (
     <WalletContext.Provider value={valor}>
       <CambioContext.Provider value={cambio}>{children}</CambioContext.Provider>
@@ -655,7 +744,52 @@ export default function ProveedorWallet({ children }: { children: ReactNode }): 
             onCompleto={(pin) => void conLaDelTelefono(pin, pidiendoPin)}
             error={errorPin}
             ocupado={ocupadoPin}
+            huella={huellaLista ? { onPulsar: () => void conHuella(pidiendoPin), etiqueta: T.huella.boton } : null}
           />
+        </div>
+      )}
+
+      {/* La oferta de la huella, una vez, después de abrir con el PIN. Tocar
+          fuera la cierra sin más (se volverá a ofrecer); «Ahora no» la cierra
+          para siempre, y desde el llavero se puede activar igual. */}
+      {ofreciendoHuella && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-[rgba(12,10,18,.72)]">
+          <button type="button" aria-label={T.comun.cerrar} className="grow" onClick={() => cerrarOferta(false, false)} />
+          <div className="aparecer con-barra-abajo rounded-t-[22px] border-t border-line bg-cream px-5 pt-2.5 shadow-hoja">
+            <div className="mx-auto mb-5 h-1 w-[38px] rounded-full bg-line" />
+            <div className="flex flex-col items-center text-center">
+              <span className="relative flex h-16 w-16 items-center justify-center">
+                <span className="absolute inset-0 rounded-full bg-honey/20 blur-xl" aria-hidden />
+                <span className="relative flex h-16 w-16 items-center justify-center rounded-full border border-honey-line bg-honey-soft">
+                  <Icono nombre="huella" tamano={34} color="#E29A2E" grosor={1.6} />
+                </span>
+              </span>
+              <h2 className="mt-4 font-display text-[21px] font-semibold -tracking-[0.015em]">
+                {T.huella.ofrecerTitulo}
+              </h2>
+              <p className="mt-2 max-w-[320px] text-pretty text-[13.5px] leading-[1.55] text-ink-2">
+                {T.huella.ofrecerTexto}
+              </p>
+              <p className="mt-2 max-w-[320px] text-pretty text-[12px] leading-[1.5] text-ink-3">
+                {T.huella.ofrecerPie}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => cerrarOferta(true, false)}
+              className="pulsable mt-6 flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-honey text-[15px] font-semibold text-[#1B1814]"
+            >
+              <Icono nombre="huella" tamano={18} color="#1B1814" grosor={2} />
+              {T.huella.activar}
+            </button>
+            <button
+              type="button"
+              onClick={() => cerrarOferta(false, true)}
+              className="pulsable tocable mt-1.5 w-full rounded-full py-3 text-[14px] font-medium text-ink-3"
+            >
+              {T.huella.ahoraNo}
+            </button>
+          </div>
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Icono from '~/componentes/Icono';
 import Hoja from '~/componentes/Hoja';
@@ -29,6 +29,7 @@ import { useSinCapturas } from '~/lib/pantalla';
 import { useTextos } from '~/i18n/idiomas';
 import type { Textos } from '~/i18n/idiomas';
 import { INICIO } from '~/lib/canal';
+import { huella, useHuella } from '~/lib/huella';
 
 /**
  * El llavero.
@@ -79,6 +80,12 @@ type Paso =
   | { que: 'estrenar'; primero: string | null }
   | { que: 'bloqueado' }
   | { que: 'abierto' }
+  /**
+   * El PIN otra vez, estando ya dentro: para ver las palabras si se entró con
+   * la huella, o para activarla (hace falta el PIN para guardarlo).
+   */
+  | { que: 'pin'; para: 'secreto'; wallet: WalletGuardada }
+  | { que: 'pin'; para: 'huella' }
   | { que: 'secreto'; wallet: WalletGuardada; secreto: Secreto; recien: boolean };
 
 const SIN_SALDO: Par = { mon: 0n, panal: 0n, estables: [] };
@@ -105,6 +112,13 @@ export default function Llavero(): React.ReactElement {
   const [enviando, setEnviando] = useState<WalletGuardada | null>(null);
   const [recibiendo, setRecibiendo] = useState<WalletGuardada | null>(null);
   const [importando, setImportando] = useState(false);
+  /**
+   * Si se abrió con la huella. Entonces las doce palabras piden el PIN: el
+   * dedo abre el llavero para usarlo —mandar, recibir, cambiar de wallet—,
+   * pero sacar la wallet entera del teléfono tiene que seguir costando el PIN.
+   */
+  const [conHuella, setConHuella] = useState(false);
+  const estadoHuella = useHuella();
 
   // Antes de los `return` de abajo: los hooks no admiten atajos. Con el
   // llavero cerrado la lista está vacía y la consulta ni sale.
@@ -151,7 +165,7 @@ export default function Llavero(): React.ReactElement {
     }
   };
 
-  const alAbrir = async (pin: string): Promise<void> => {
+  const alAbrir = async (pin: string, deHuella = false): Promise<void> => {
     setOcupado(true);
     // Un respiro antes de derivar: PBKDF2 bloquea el hilo medio segundo en un
     // teléfono, y sin esto React no llega a pintar el sexto punto.
@@ -159,10 +173,14 @@ export default function Llavero(): React.ReactElement {
     const k = await abrir(pin);
     setOcupado(false);
     if (!k) {
-      setError(T.llavero.pinMalo);
+      // Con la huella, un PIN que no abre es un PIN guardado que ya no vale:
+      // fuera, para no volver a ofrecerlo.
+      if (deHuella) huella.desactivar();
+      setError(deHuella ? T.huella.yaNoVale : T.llavero.pinMalo);
       return;
     }
     setLlave(k);
+    setConHuella(deHuella);
     setError(null);
     refrescar();
     setPaso({ que: 'abierto' });
@@ -224,7 +242,83 @@ export default function Llavero(): React.ReactElement {
   const alVerSecreto = async (w: WalletGuardada): Promise<void> => {
     if (!llave) return;
     setAbierta(null);
+    if (conHuella) {
+      setError(null);
+      setPaso({ que: 'pin', para: 'secreto', wallet: w });
+      return;
+    }
     setPaso({ que: 'secreto', wallet: w, secreto: await verSecreto(llave, w.id), recien: false });
+  };
+
+  /** El diálogo del sistema, en el idioma de la app. */
+  const dialogo = { titulo: T.huella.dialogoTitulo, subtitulo: T.huella.dialogoTexto, cancelar: T.huella.usarPin };
+
+  const alPonerElDedo = async (): Promise<void> => {
+    const r = await huella.pin(dialogo);
+    if ('pin' in r) {
+      await alAbrir(r.pin, true);
+      return;
+    }
+    if (r.fallo === 'invalidada') setError(T.huella.invalidada);
+    else if (r.fallo === 'bloqueada') setError(T.huella.bloqueada);
+    else if (r.fallo === 'fallo') setError(T.huella.fallo);
+  };
+
+  /**
+   * Al llegar al candado con la huella activada, el diálogo sale solo: es a
+   * lo que se viene. Una vez por candado; si se cancela, queda el teclado con
+   * su tecla de huella.
+   */
+  const huellaLista = estadoHuella.disponible && estadoHuella.activada;
+  const yaPedida = useRef(false);
+  useEffect(() => {
+    if (paso.que !== 'bloqueado' || !huellaLista) {
+      yaPedida.current = false;
+      return;
+    }
+    if (yaPedida.current || document.visibilityState === 'hidden') return;
+    yaPedida.current = true;
+    void alPonerElDedo();
+    // Solo al entrar en el candado o al quedar lista la huella.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paso.que, huellaLista]);
+
+  /** El PIN otra vez, estando dentro: para ver las palabras o para activar la huella. */
+  const alConfirmarPin = async (pin: string): Promise<void> => {
+    if (paso.que !== 'pin') return;
+    setOcupado(true);
+    await new Promise((r) => setTimeout(r, 30));
+    const k = await abrir(pin);
+    if (!k) {
+      setOcupado(false);
+      setError(T.llavero.pinMalo);
+      return;
+    }
+    setError(null);
+    if (paso.para === 'secreto') {
+      const w = paso.wallet;
+      const secreto = await verSecreto(k, w.id);
+      setOcupado(false);
+      setPaso({ que: 'secreto', wallet: w, secreto, recien: false });
+      return;
+    }
+    setOcupado(false);
+    setPaso({ que: 'abierto' });
+    const r = await huella.activar(pin, {
+      titulo: T.huella.activarTitulo,
+      subtitulo: T.huella.activarTexto,
+      cancelar: T.comun.cancelar,
+    });
+    if (r !== 'ok' && r !== 'cancelado') setError(T.huella.noSeActivo);
+  };
+
+  const alCambiarHuella = (): void => {
+    if (estadoHuella.activada) {
+      huella.desactivar();
+      return;
+    }
+    setError(null);
+    setPaso({ que: 'pin', para: 'huella' });
   };
 
   if (paso.que === 'estrenar') {
@@ -239,14 +333,42 @@ export default function Llavero(): React.ReactElement {
     );
   }
 
+  if (paso.que === 'pin') {
+    return (
+      <div className="flex min-h-0 grow flex-col">
+        <div className="flex shrink-0 px-4 pt-3">
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+              setPaso({ que: 'abierto' });
+            }}
+            className="pulsable tocable flex h-9 w-9 items-center justify-center rounded-full border border-line"
+            aria-label={T.comun.cancelar}
+          >
+            <Icono nombre="atras" tamano={16} color="#C8C3DC" grosor={1.9} />
+          </button>
+        </div>
+        <Teclado
+          titulo={T.huella.confirmaPin}
+          explicacion={paso.para === 'secreto' ? T.huella.confirmaPinSecreto : T.huella.confirmaPinTexto}
+          onCompleto={(pin) => void alConfirmarPin(pin)}
+          error={error}
+          ocupado={ocupado}
+        />
+      </div>
+    );
+  }
+
   if (paso.que === 'bloqueado') {
     return (
       <Teclado
         titulo={T.llavero.bloqueadoTitulo}
         explicacion={T.llavero.bloqueadoExplicacion}
-        onCompleto={alAbrir}
+        onCompleto={(pin) => void alAbrir(pin)}
         error={error}
         ocupado={ocupado}
+        huella={huellaLista ? { onPulsar: () => void alPonerElDedo(), etiqueta: T.huella.boton } : null}
       />
     );
   }
@@ -295,6 +417,7 @@ export default function Llavero(): React.ReactElement {
             onClick={() => {
               // Cerrar es tirar la clave descifrada. Lo guardado sigue cifrado.
               setLlave(null);
+              setConHuella(false);
               setError(null);
               setPaso({ que: 'bloqueado' });
             }}
@@ -401,6 +524,41 @@ export default function Llavero(): React.ReactElement {
           <p className="shrink-0 px-1 text-[12px] leading-[1.5] text-terra">
             {T.llavero.noSePudoLeer}
           </p>
+        )}
+
+        {/* La huella, donde está lo que abre. Sale si el teléfono puede, o si
+            ya estaba activada (para poder quitarla aunque se hayan borrado
+            las huellas del teléfono). */}
+        {(estadoHuella.disponible || estadoHuella.activada) && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={estadoHuella.activada}
+            onClick={alCambiarHuella}
+            className="pulsable flex shrink-0 items-center gap-3 rounded-[14px] border border-line p-3.5 text-left"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-honey-soft">
+              <Icono nombre="huella" tamano={19} color="#E29A2E" grosor={1.8} />
+            </span>
+            <div className="min-w-0 grow">
+              <p className="text-[13.5px] font-medium">{T.huella.ajuste}</p>
+              <p className="mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">
+                {estadoHuella.activada ? T.huella.ajusteSi : T.huella.ajusteNo}
+              </p>
+            </div>
+            <span
+              className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${
+                estadoHuella.activada ? 'bg-honey' : 'bg-line'
+              }`}
+              aria-hidden
+            >
+              <span
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${
+                  estadoHuella.activada ? 'left-[18px]' : 'left-0.5'
+                }`}
+              />
+            </span>
+          </button>
         )}
 
         {/* El límite, dicho donde se decide y no en letra pequeña. */}

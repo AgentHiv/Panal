@@ -120,6 +120,7 @@ export const pt: Textos = {
   },
 
   saldo: {
+    paraQueSirve: 'Para que serve cada uma',
     enEscrow: (importe: string) => `${importe} esperam por ti no escrow`,
     enEscrowPie: 'Aprovado não é recebido: não entra neste saldo até o levantares. Um toque no teu painel e é teu.',
     enviar: 'Enviar',
@@ -171,7 +172,7 @@ export const pt: Textos = {
     bloqueadoExplicacion: 'As wallets que guardas neste telemóvel. Nada sai daqui.',
     hastaDonde: 'Até onde chega este PIN',
     hastaDondeTexto:
-      'As chaves estão cifradas com ele dentro da gaveta privada da app: mais nenhuma app as lê, e já não vão na cópia de segurança da Google. O que o PIN NÃO trava é alguém com o teu telemóvel desbloqueado e tempo. Para isso é preciso o chip seguro do telemóvel, e o WebView não lá chega sem escrever código nativo. Guarda aqui o que usas, não o que guardas.',
+      'As chaves estão cifradas com ele e, por cima, com uma chave do chip seguro do telemóvel que não se pode tirar de lá: mais nenhuma app as lê, não vão na cópia de segurança da Google, e copiá-las para um computador não serve para adivinhar o PIN. O que o PIN NÃO trava é quem o saiba, ou alguém com o teu telemóvel desbloqueado e tempo para tentar PINs na própria app, um a um. Se ativares a impressão digital, também o abre qualquer impressão digital guardada no telemóvel. Guarda aqui o que usas, não o que guardas.',
     palabrasTitulo: (n: number) => `As tuas ${n} palavras`,
     claveTitulo: 'A chave privada dela',
     palabrasTexto: (nombre: string) =>
@@ -271,6 +272,7 @@ export const pt: Textos = {
   },
 
   mercado: {
+    todos: 'Todos',
     titulo: 'Mercado',
     buscar: 'Procurar um agente',
     limpiar: 'Limpar',
@@ -282,6 +284,7 @@ export const pt: Textos = {
   },
 
   archivo: {
+    sinNadaTitulo: 'Aqui vão ficar os teus processos',
     titulo: 'Os teus processos',
     subtitulo: 'O que a cadeia não guarda de cada encomenda',
     conectaTitulo: 'Liga a tua wallet',
@@ -485,6 +488,7 @@ export const pt: Textos = {
   },
 
   hilo: {
+    sinHablarTitulo: 'Começa a conversa',
     hoy: 'Hoje',
     ayer: 'Ontem',
     volver: 'Voltar',
@@ -1160,6 +1164,7 @@ export const pt: Textos = {
   },
 
   tablon: {
+    vacioTexto: 'Publica o que precisas: fica com ele um agente ou uma pessoa, e o pagamento fica em depósito até à entrega.',
     titulo: 'Quadro',
     vistas: { abiertos: 'Abertos', mios: 'Meus', trabajo: 'O meu trabalho' },
     cargando: 'A ler o quadro…',
@@ -1266,6 +1271,7 @@ export const pt: Textos = {
       enviar: 'Enviar oferta',
     },
     mios: {
+      vacioTexto: 'O que publicares aparece aqui, com as ofertas e como está a correr.',
       porCobrar: 'O quadro deve-lhe dinheiro: o que sobrou de uma oferta mais barata, um encargo retirado ou expirado, ou uma devolução.',
       cobrar: (n: string, moneda: string) => `Receber ${n} ${moneda}`,
       enMarcha: (n: number) => `Em curso (${n})`,
@@ -1519,5 +1525,29 @@ export const pt: Textos = {
       '$PANAL troca-se na nad.fun e o MON trá-lo para o teu endereço de onde já o tenhas. O Panal não vende nenhum dos dois.',
     verMercado: 'Ver o mercado',
     verMercadoPie: 'Ver os agentes e os seus preços não custa nada.',
+  },
+  huella: {
+    boton: 'Entrar com a impressão digital',
+    dialogoTitulo: 'Abrir o Panal',
+    dialogoTexto: 'Coloca o dedo no sensor',
+    activarTitulo: 'Ativar a impressão digital',
+    activarTexto: 'Coloca o dedo para confirmar',
+    usarPin: 'Usar o PIN',
+    ofrecerTitulo: 'Entra com a tua impressão digital',
+    ofrecerTexto: 'Da próxima vez, abre o Panal com a impressão digital em vez de escreveres o PIN. O PIN continua a valer.',
+    ofrecerPie: 'Serve qualquer impressão digital guardada neste telemóvel. Se for adicionada uma nova, volta a ser pedido o PIN.',
+    activar: 'Ativar a impressão digital',
+    ahoraNo: 'Agora não',
+    ajuste: 'Desbloquear com impressão digital',
+    ajusteSi: 'Ativada. O PIN continua a valer.',
+    ajusteNo: 'Abre o porta-chaves sem escrever o PIN.',
+    confirmaPin: 'Confirma o teu PIN',
+    confirmaPinTexto: 'Para ativar a impressão digital é preciso o PIN uma vez.',
+    confirmaPinSecreto: 'Para ver as palavras ou a chave é preciso o PIN, mesmo que tenhas entrado com a impressão digital.',
+    invalidada: 'As impressões digitais do telemóvel mudaram. Entra com o PIN e volta a ativá-la.',
+    yaNoVale: 'A impressão digital já não abre o porta-chaves. Entra com o PIN e volta a ativá-la.',
+    bloqueada: 'Demasiadas tentativas com a impressão digital. Usa o PIN.',
+    fallo: 'Não foi possível ler a impressão digital. Usa o PIN.',
+    noSeActivo: 'A impressão digital não foi ativada. Podes fazê-lo no porta-chaves.',
   },
 };

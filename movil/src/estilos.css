@@ -178,3 +178,56 @@
     min-height: 44px;
   }
 }
+
+/**
+ * Movimiento, poco y con motivo.
+ *
+ * `sacudir`: el PIN equivocado. Los puntos tiemblan, que es como lo dice
+ * cualquier teléfono, y se entiende antes de leer el aviso.
+ * `aparecer`: lo que entra en una pantalla ya pintada (la hoja de la huella,
+ * un estado vacío), para que no salte de golpe.
+ */
+@keyframes sacudir {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+.sacudir {
+  animation: sacudir 380ms ease;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.aparecer {
+  animation: aparecer 260ms ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sacudir,
+  .aparecer {
+    animation: none;
+  }
+}

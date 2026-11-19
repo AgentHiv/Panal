@@ -5,6 +5,7 @@ import { useMyTasks } from '@/hooks/useMyTasks';
 import { usePanalAgents } from '@/hooks/usePanalAgents';
 import { currencySymbol } from '@/contracts/config';
 import { ESTADO } from '@/lib/conversaciones';
+import Vacio from '~/componentes/Vacio';
 import Icono from '~/componentes/Icono';
 import { armar, salud } from '@/lib/expedientes';
 import type { Expediente } from '@/lib/expedientes';
@@ -163,9 +164,12 @@ export default function Archivo(): React.ReactElement {
         )}
 
         {!loading && expedientes.length === 0 && (
-          <p className="shrink-0 px-1 text-[12.5px] leading-[1.55] text-ink-2">
-            {T.archivo.sinNada}
-          </p>
+          <Vacio
+            icono="carpeta"
+            titulo={T.archivo.sinNadaTitulo}
+            texto={T.archivo.sinNada}
+            accion={{ texto: T.arranque.verMercado, icono: 'bolsa', onPulsar: () => navegar('/mercado') }}
+          />
         )}
 
         {lista.map((e) => {

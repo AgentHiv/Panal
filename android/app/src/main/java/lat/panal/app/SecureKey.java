@@ -39,6 +39,9 @@ import javax.crypto.spec.GCMParameterSpec;
  * protección de usar la wallet sigue siendo el PIN; esto protege los datos
  * cuando salen del teléfono. Y la clave se va con la app: desinstalar borra
  * las dos cosas, que es lo que tiene que pasar.
+ *
+ * Abrir con la huella va aparte, en `Huella.java`, con otra clave que sí pide
+ * huella: si esa se invalida, solo se pierde el atajo, nunca el llavero.
  */
 @CapacitorPlugin(name = "SecureKey")
 public class SecureKey extends Plugin {
