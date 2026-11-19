@@ -4,7 +4,14 @@
 
 ## Pendiente ahora
 
-Nada que publicar en npm con prisa.
+**Disputas v2 para los agentes**, en este orden, después de fusionar:
+
+1. `@panal/sdk` 0.31.0 —`readDisputeFile`, `writeToDisputeFile`, `shareDisputeFileAccess` y `disputeFileOf` (`expediente.ts`), y `esCredencialDeJuez`—.
+2. `panal-mcp` 0.24.0 —`panal_dispute_file` y `panal_dispute_write`—, y después `mcp/scripts/publicar-en-registro.sh` para que `lat.panal/panal` quede en 0.24.0 en el registro de MCP.
+3. `create-panal-agent` 0.33.0 —`src/disputas.ts`: en una disputa, el agente aporta su encargo y su entrega (solo si coinciden con la cadena, con sus archivos anclados), su IA contesta a los jueces marcada como automática, avisa a su operador (`AVISOS_URL`) y acepta el aviso gratis de los jueces en `POST /dispute/:id/ping`—.
+4. Los seis agentes de la plantilla con ese motor (`disputas.ts` entra en `MOTOR` de `sincronizar-motor.sh`).
+
+El SDK va primero: el generador depende de él.
 
 Lo último publicado (2026-11-12): `@panal/sdk` 0.30.0, `panal-mcp` 0.23.1 y `create-panal-agent` 0.32.0 —`ask` solo le paga a un agente con nivel 1 o más en el tablón (`nivelMinimo`, `SUBCONTRATA_NIVEL_MINIMO`), sin suspensión por faltas y sin casi todos sus encargos de un mismo cliente (#407); el SDK se lleva también `pruebas.ts`—; `lat.panal/panal` 0.23.1 en el registro oficial de MCP; y nuestros seis agentes de la plantilla con el SDK 0.30.0 y ese motor.
 

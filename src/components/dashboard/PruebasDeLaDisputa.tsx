@@ -26,11 +26,14 @@ import { useTranslation } from 'react-i18next';
 import { BadgeCheck, Bot, FileDown, Gavel, Loader2, Lock, Send, ShieldAlert, ShieldCheck, ShieldX, Share2 } from 'lucide-react';
 import { keccak256, toBytes, type Address, type Hex } from 'viem';
 import { useReadContract, useSignMessage } from 'wagmi';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { MAX_PIEZA_CHARS, anclaDeLaPieza, cuerpoDePieza, type Acceso, type Destinatario } from '@panal/sdk';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useWallet } from '@/hooks/useWallet';
 import { useAhora } from '@/hooks/useAhora';
+import { usePanalAgents } from '@/hooks/usePanalAgents';
+import { esBuzon } from '@/lib/botEndpoint';
 import { cn } from '@/lib/utils';
 import { guardarComoArchivo, tamano } from '@/lib/archivosTablon';
 import { abrirBytes, abrirTexto, clavePublicaDe, darAccesoA, leerArbitros, publicarMiClave } from '@/lib/cifrado';
@@ -40,7 +43,9 @@ import { panalEscrowV2Abi } from '@/contracts/abis';
 import { PANAL_ESCROW_V2_ADDRESS, activeChain } from '@/contracts/config';
 import {
   abrirPieza,
+  agenteContestaSolo,
   aportarPieza,
+  avisarAlAgente,
   bajarArchivoDePruebas,
   buzonDePruebas,
   credencialDePruebas,
@@ -110,6 +115,18 @@ function Panel({ task, comoJuez }: { task: TareaEnDisputa; comoJuez: boolean }) 
   const { signMessageAsync } = useSignMessage();
   const firmar = useCallback((mensaje: string) => signMessageAsync({ message: mensaje }), [signMessageAsync]);
   const base = buzonDePruebas(task.worker);
+
+  // El agente con servidor propio: a ese se le avisa cuando un juez escribe, y
+  // su tarjeta dice si su IA contesta sola. Uno del buzón (una persona) no.
+  const { agents } = usePanalAgents();
+  const urlDelAgente = agents.find((a) => a.workerAddress.toLowerCase() === task.worker.toLowerCase())?.botUrl ?? null;
+  const agenteFuera = urlDelAgente && !esBuzon(urlDelAgente) ? urlDelAgente : null;
+  const { data: contestaSolo } = useQuery({
+    queryKey: ['contesta-solo', agenteFuera],
+    queryFn: () => agenteContestaSolo(agenteFuera!),
+    enabled: comoJuez && !!agenteFuera,
+    staleTime: 5 * 60_000,
+  });
 
   // Las huellas de la tarea: con ellas se comprueba el encargo y la entrega.
   const { data: enCadena } = useReadContract({
@@ -265,6 +282,8 @@ function Panel({ task, comoJuez }: { task: TareaEnDisputa; comoJuez: boolean }) 
         if (!(err instanceof Error) || err.message !== 'missing recipients') throw err;
         await enviar(await destinatarios(jueces));
       }
+      // Un juez que escribe al agente (o a todos): se le avisa para que mire ya.
+      if (comoJuez && agenteFuera && o.dirigida !== 'cliente') void avisarAlAgente(agenteFuera, task.id, cred);
       await cargar(cred);
       return true;
     } catch (err) {
@@ -638,6 +657,12 @@ function Panel({ task, comoJuez }: { task: TareaEnDisputa; comoJuez: boolean }) 
             )
           )}
 
+          {comoJuez && agenteFuera && contestaSolo !== undefined && (
+            <p className="flex items-start gap-1.5 text-[0.75rem] leading-snug text-ink-3">
+              <Bot className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              {contestaSolo ? t('pruebas.agenteContesta') : t('pruebas.agenteNoContesta')}
+            </p>
+          )}
           {comoJuez && (
             <div className="flex flex-wrap items-center gap-1.5 text-[0.75rem] text-ink-3">
               {t('pruebas.para')}

@@ -3025,7 +3025,9 @@
     "paraTodos": "Tous",
     "escribeJuez": "Posez une question aux parties, ou à l'une d'elles.",
     "enviar": "Envoyer et signer",
-    "enviado": "Envoyé et signé."
+    "enviado": "Envoyé et signé.",
+    "agenteContesta": "Cet agent répond seul : son IA répond à ce que vous demandez, en le marquant comme automatique, et prévient son opérateur.",
+    "agenteNoContesta": "Cet agent ne répond pas seul : son opérateur doit lire ce que vous demandez, et cela peut prendre du temps."
   },
   "rep": {
     "cliente": "1 client",

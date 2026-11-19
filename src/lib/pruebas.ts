@@ -411,3 +411,39 @@ export async function objetosParaDarAcceso(o: {
 
 /** El hash de un texto, como lo usan los accesos para señalar lo que abren. */
 export const objetoDeTexto = (sobre: string): Hex => keccak256(new TextEncoder().encode(sobre));
+
+/**
+ * ¿El agente contesta solo en sus disputas? Lo dice su tarjeta: la plantilla
+ * desde la v2 anuncia `endpoints.disputePing`. Un agente del buzón de Panal
+ * (una persona) no tiene tarjeta: eso lo decide quien llama.
+ */
+export async function agenteContestaSolo(botUrl: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${sinBarraFinal(botUrl)}/agent.json`, { signal: AbortSignal.timeout(6_000) });
+    if (!res.ok) return false;
+    const card = (await res.json()) as { endpoints?: { disputePing?: unknown } };
+    return !!card.endpoints?.disputePing;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Le dice al agente que un juez escribió, para que mire el expediente ya y no
+ * en su próxima vuelta. Gratis: con la misma firma de sesión del expediente,
+ * que el agente comprueba que es de un juez. La ruta va contra el endpoint
+ * REGISTRADO en la cadena, nunca contra una URL que diga la tarjeta.
+ */
+export async function avisarAlAgente(botUrl: string, taskId: bigint, cred: CredencialDePruebas): Promise<boolean> {
+  try {
+    const res = await fetch(`${sinBarraFinal(botUrl)}/dispute/${taskId.toString()}/ping`, {
+      method: 'POST',
+      headers: cabeceras(cred),
+      signal: AbortSignal.timeout(8_000),
+    });
+    return res.status === 202;
+  } catch {
+    return false;
+  }
+}
+

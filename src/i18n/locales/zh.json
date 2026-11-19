@@ -3025,7 +3025,9 @@
     "paraTodos": "所有人",
     "escribeJuez": "向双方或其中一方提问。",
     "enviar": "发送并签名",
-    "enviado": "已发送并签名。"
+    "enviado": "已发送并签名。",
+    "agenteContesta": "该代理会自行回复：其 AI 会回答你的提问或请求，标记为自动回复，并通知其运营者。",
+    "agenteNoContesta": "该代理不会自行回复：你的提问需要由其运营者阅读，可能需要一些时间。"
   },
   "rep": {
     "cliente": "1 位客户",

@@ -91,6 +91,7 @@ import { handleTask, NIVELES, SUBCONTRATA_SKILLS } from './agent.js';
 import { frasesGuardadas, pedirTraduccion } from './traduccion.js';
 import type { AdjuntoRecibido, ArchivoParaConsultar, NivelPropio, TaskContext, TaskFile, TaskResult } from './agent.js';
 import { arrancarVigilante } from './vigilante.js';
+import { arrancarDisputas } from './disputas.js';
 import { arrancarRetirada, opcionesDelEntorno } from './retirada.js';
 import { arrancarTablon, EncargosPropios, opcionesDelEntorno as opcionesTablon, retomarDelTablon } from './tablon.js';
 import { historialParaElModelo, recordarTurno, type Turno } from './memoria.js';
@@ -1480,6 +1481,12 @@ async function clienteDeTarea(taskId: bigint): Promise<Address> {
   return task.client;
 }
 
+/**
+ * Las disputas (disputas.ts). Arranca junto al vigilante, después de escuchar;
+ * hasta entonces un ping de un juez recibe 503 y el juez puede repetirlo.
+ */
+let disputas: ReturnType<typeof arrancarDisputas> = { ping: async () => 503, parar: () => {} };
+
 const server = createServer((req, res) => {
   void (async () => {
     const url = new URL(req.url ?? '/', 'http://localhost');
@@ -1692,6 +1699,18 @@ const server = createServer((req, res) => {
             signMessage: 'Panal resultado #<taskId> · <epoch>  (EIP-191, cabeceras X-Panal-*)',
           },
           ...(x402 ? { x402Ask: x402 } : {}),
+          // Que contesta solo en sus disputas: los jueces le avisan aquí,
+          // gratis, cuando escriben en el expediente (disputas.ts).
+          ...(process.env.DISPUTAS === 'off'
+            ? {}
+            : {
+                disputePing: {
+                  method: 'POST',
+                  path: '/dispute/:taskId/ping',
+                  signMessage: 'la firma de sesión del expediente (pruebasSignMessage), en las cabeceras X-Panal-*; solo jueces',
+                  version: 2,
+                },
+              }),
         },
         // Los niveles, sólo si este agente vende alguno. Ausente significa que
         // no los ofrece, y quien lee NO debe inventárselos a partir del precio.
@@ -1932,6 +1951,30 @@ const server = createServer((req, res) => {
     // no llega: móvil, wallet que se traga la firma, pestaña cerrada a medias.
     // Se sirve desde el propio agente a propósito: mismo origen, sin CORS de
     // por medio, y funciona dentro del navegador de una wallet.
+    // ---- Disputas: un juez avisa de que escribió en el expediente ------------
+    //
+    // GRATIS y solo para los jueces: la misma firma de sesión con la que leen
+    // el expediente en el buzón (cabeceras X-Panal-*), de una cuenta que firma
+    // en la multisig que arbitra. No trae nada: solo hace que el agente mire
+    // el expediente YA en vez de en su próxima vuelta (disputas.ts).
+    const pingDisputa = /^\/dispute\/(\d+)\/ping$/.exec(url.pathname);
+    if (pingDisputa && req.method === 'POST') {
+      const cred = {
+        address: String(req.headers['x-panal-address'] ?? ''),
+        firma: String(req.headers['x-panal-signature'] ?? ''),
+        expira: String(req.headers['x-panal-expira'] ?? ''),
+      };
+      let codigo = 404;
+      try {
+        codigo = await disputas.ping(BigInt(pingDisputa[1]!), cred);
+      } catch (err) {
+        console.error(`[disputa] ping: ${err instanceof Error ? err.message : err}`);
+        codigo = 503;
+      }
+      json(res, codigo, codigo === 202 ? { ok: true } : { error: codigo === 403 ? 'judges only' : codigo === 404 ? 'not in dispute' : 'try again' });
+      return;
+    }
+
     if (url.pathname === '/reenviar' && req.method === 'GET') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       res.end(PAGINA_REENVIO);
@@ -2383,6 +2426,17 @@ arrancarVigilante({
         },
       }
     : undefined,
+});
+
+// Las disputas: aporta lo anclado y su IA contesta a los jueces.
+disputas = arrancarDisputas({
+  panal,
+  yo: account.address,
+  dataDir: DATA_DIR,
+  briefGuardado: loadBrief,
+  resultadoGuardado: loadResult,
+  adjuntosGuardados: (taskId, brief) => repasarAdjuntos(taskId, brief).recibidos,
+  archivosEntregados: archivosGuardados,
 });
 
 // La retirada automática: lo que el escrow acredita por cada encargo aprobado
