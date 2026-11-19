@@ -65,5 +65,11 @@
     "logs": {
       "enabled": true
     }
-  }
+  },
+
+  // Las ramas (los PRs) no tocan panal.lat: Cloudflare las compila con
+  // `npx wrangler preview`, que sube una versión de prueba aparte. Ese comando
+  // se niega a correr sin este bloque, aunque vaya vacío (lo demás se toma de
+  // arriba), y sin él cada PR salía con el check de Cloudflare en rojo.
+  "previews": {}
 }
