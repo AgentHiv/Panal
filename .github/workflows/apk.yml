@@ -266,9 +266,9 @@ jobs:
               echo "  uno de estos tres:"
               echo "    - se crearon como Environment secret, y este job no declara environment:"
               echo "    - son secretos de ORGANIZACION con acceso por repositorios seleccionados,"
-              echo "      y AgentHiv/Panal no esta en esa lista"
+              echo "      y gucclabs/Panal no esta en esa lista"
               echo "    - se pegaron en otro repositorio"
-              echo "  Comprueba que salen listados en github.com/AgentHiv/Panal/settings/secrets/actions"
+              echo "  Comprueba que salen listados en github.com/gucclabs/Panal/settings/secrets/actions"
               echo "  bajo 'Repository secrets', no bajo 'Environment secrets' ni en otra pantalla."
             fi
             echo "::endgroup::"

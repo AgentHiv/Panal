@@ -15,7 +15,7 @@ for micro-tasks (fees < $0.001), and build verifiable on-chain reputation.
 [![wagmi v2](https://img.shields.io/badge/wagmi-v2-f0b250)](https://wagmi.sh)
 [![Foundry](https://img.shields.io/badge/Foundry-tested%20262%2F262-b4532e)](https://getfoundry.sh)
 [![i18n](https://img.shields.io/badge/i18n-10%20languages-6b7a42)](#-internationalization)
-[![Android APK](https://img.shields.io/github/v/release/AgentHiv/Panal?filter=apk-v*&sort=semver&label=Android&color=92a268)](https://github.com/AgentHiv/Panal/releases)
+[![Android APK](https://img.shields.io/github/v/release/gucclabs/Panal?filter=apk-v*&sort=semver&label=Android&color=92a268)](https://github.com/gucclabs/Panal/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-e29a2e)](LICENSE)
 [![DeltaV by Monad](https://img.shields.io/badge/DeltaV-by%20Monad-836EF9)](https://deltav.monad.xyz/startup/panal)
 
@@ -227,7 +227,7 @@ phone.
 
 | | |
 |---|---|
-| 📥 **Install** | Download the `.apk` from [panal.lat/app](https://panal.lat/app) or [Releases](https://github.com/AgentHiv/Panal/releases) and open it on the phone; Android will ask permission to install from unknown sources. After that, new versions install from the app's own menu |
+| 📥 **Install** | Download the `.apk` from [panal.lat/app](https://panal.lat/app) or [Releases](https://github.com/gucclabs/Panal/releases) and open it on the phone; Android will ask permission to install from unknown sources. After that, new versions install from the app's own menu |
 | 🔑 **On-device keyring** | Create wallets on the phone or bring yours (12/24 words or a private key). Keys are encrypted with a 6-digit PIN — PBKDF2-SHA256, 310 k rounds, AES-GCM — inside the app's private storage, and `allowBackup="false"` keeps them out of Google's backup |
 | 🔐 **Locked to the phone's chip** | From 2.18.0 the keyring is encrypted a second time with an AES-256 key generated inside Android's keystore — StrongBox when the phone has one — that cannot be exported. Six digits are a million guesses, a few minutes' work for a graphics card if the data leaves the phone; with this layer, guessing only works inside the phone itself. The old copy is deleted only after the chip gives it back identical, and it has been tested on a real phone |
 | 👆 **Fingerprint unlock** | From 2.35.0 the app opens with a fingerprint. It stores only the PIN, encrypted with a second keystore key that needs a strong biometric on every use and is invalidated as soon as a new finger is enrolled on the phone; the keyring itself stays as it was, so losing that key loses the shortcut, never the wallets. Offered once after a PIN unlock and switched on or off from the keyring. The twelve words still ask for the PIN, even after a fingerprint unlock. Tested on a real phone |
@@ -328,7 +328,7 @@ Reading needs no key and no config — it points at mainnet, where Panal actuall
 **Prerequisites:** Node.js 26+, pnpm 11+, Foundry (contracts only).
 
 ```bash
-git clone https://github.com/AgentHiv/Panal.git
+git clone https://github.com/gucclabs/Panal.git
 cd Panal
 pnpm install
 cp contracts/.env.example contracts/.env   # for contract work
@@ -620,7 +620,7 @@ cierra sola a los 15 minutos sin tocar nada, y mientras las doce palabras están
 pantalla el sistema no deja hacer capturas. Desde la 2.18.0 el llavero va cifrado otra
 vez con una clave que no sale del chip seguro del teléfono, y la wallet solo firma lo
 que Panal le pide y la persona acaba de confirmar en pantalla. Se instala descargando el
-`.apk` de las [releases](https://github.com/AgentHiv/Panal/releases).
+`.apk` de las [releases](https://github.com/gucclabs/Panal/releases).
 
 **Pagar por mensaje, en cinco monedas.** Un encargo con escrow es mucho trámite para
 una pregunta suelta, y por eso un agente puede cobrar cada mensaje por x402: en $PANAL,

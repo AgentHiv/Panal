@@ -170,7 +170,7 @@ The language is taken from --lang, then PANAL_LANG, then your system locale.`,
   s3Register: 'PUBLIC_URL=https://your-domain npm run register',
   warnLabel: 'Careful:',
   warnBody: 'the endpoint must be public https. Without it the client cannot send you\nthe brief or download the result, and the agent is decoration.',
-  docs: 'Full guide: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  docs: 'Full guide: https://github.com/gucclabs/Panal/tree/main/create-agent',
   logoWritten: 'Logo: logo.svg, with your initial. Overwrite it with yours.',
   brand: {
     title: 'Your shop window. All optional — press Enter to skip.',
@@ -245,7 +245,7 @@ is deliberate: it is what an arbitrator relies on in a dispute.
 **No https.** The client sends the brief to your endpoint and downloads the
 result from it. Without a public certificate, neither happens.
 
-Guide: https://github.com/AgentHiv/Panal/tree/main/create-agent
+Guide: https://github.com/gucclabs/Panal/tree/main/create-agent
 `,
 };
 
@@ -296,7 +296,7 @@ El idioma sale de --lang, luego de PANAL_LANG, y si no del locale del sistema.`,
   s3Register: 'PUBLIC_URL=https://tu-dominio npm run register',
   warnLabel: 'Ojo:',
   warnBody: 'el endpoint tiene que ser https y público. Sin él el cliente no puede\nmandarte el encargo ni descargar su resultado, y el agente queda de adorno.',
-  docs: 'Guía completa: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  docs: 'Guía completa: https://github.com/gucclabs/Panal/tree/main/create-agent',
   logoWritten: 'Logo: logo.svg, con tu inicial. Sobrescríbelo con el tuyo.',
   brand: {
     title: 'Tu escaparate. Todo es opcional: pulsa Enter para saltar.',
@@ -372,7 +372,7 @@ propósito: es lo que mira un árbitro en una disputa.
 **No tener https.** El cliente manda el encargo a tu endpoint y descarga de él
 el resultado. Sin certificado público, no ocurre ninguna de las dos cosas.
 
-Guía: https://github.com/AgentHiv/Panal/tree/main/create-agent
+Guía: https://github.com/gucclabs/Panal/tree/main/create-agent
 `,
 };
 
@@ -423,7 +423,7 @@ const zh: Catalog = {
   s3Register: 'PUBLIC_URL=https://你的域名 npm run register',
   warnLabel: '注意：',
   warnBody: '端点必须是公网 https。否则客户既无法把任务发给你，也无法下载结果，\n这个代理就只是摆设。',
-  docs: '完整指南：https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  docs: '完整指南：https://github.com/gucclabs/Panal/tree/main/create-agent',
   logoWritten: 'Logo：logo.svg，用了你名字的首字母。换成你自己的即可。',
   brand: {
     title: '你的门面。全部可选——直接回车跳过。',
@@ -494,7 +494,7 @@ PUBLIC_URL=https://你的域名 npm run register
 
 **没有 https。** 客户通过你的端点发送任务并下载结果。没有公开证书，两者都无法完成。
 
-指南：https://github.com/AgentHiv/Panal/tree/main/create-agent
+指南：https://github.com/gucclabs/Panal/tree/main/create-agent
 `,
 };
 
@@ -545,7 +545,7 @@ const hi: Catalog = {
   s3Register: 'PUBLIC_URL=https://आपका-डोमेन npm run register',
   warnLabel: 'ध्यान दें:',
   warnBody: 'एंडपॉइंट सार्वजनिक https होना चाहिए। इसके बिना क्लाइंट न आपको काम भेज सकता है\nन परिणाम डाउनलोड कर सकता है, और एजेंट बेकार रह जाता है।',
-  docs: 'पूरी गाइड: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  docs: 'पूरी गाइड: https://github.com/gucclabs/Panal/tree/main/create-agent',
   logoWritten: 'लोगो: logo.svg, आपके नाम के पहले अक्षर के साथ। अपना डालने के लिए इसे बदल दें।',
   brand: {
     title: 'आपकी पहचान। सब वैकल्पिक — छोड़ने के लिए Enter दबाएँ।',
@@ -620,7 +620,7 @@ PUBLIC_URL=https://आपका-डोमेन npm run register
 **https न होना।** क्लाइंट आपके एंडपॉइंट पर काम भेजता है और वहीं से परिणाम लेता है।
 सार्वजनिक प्रमाणपत्र के बिना दोनों में से कुछ नहीं होता।
 
-गाइड: https://github.com/AgentHiv/Panal/tree/main/create-agent
+गाइड: https://github.com/gucclabs/Panal/tree/main/create-agent
 `,
 };
 
@@ -671,7 +671,7 @@ const ar: Catalog = {
   s3Register: 'PUBLIC_URL=https://نطاقك npm run register',
   warnLabel: 'انتبه:',
   warnBody: 'يجب أن تكون نقطة النهاية https وعامة. بدونها لا يستطيع العميل إرسال الطلب\nإليك ولا تنزيل النتيجة، ويبقى الوكيل بلا فائدة.',
-  docs: 'الدليل الكامل: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  docs: 'الدليل الكامل: https://github.com/gucclabs/Panal/tree/main/create-agent',
   logoWritten: 'الشعار: logo.svg بالحرف الأول من اسمك. استبدله بشعارك.',
   brand: {
     title: 'واجهتك. كل هذا اختياري — اضغط Enter للتخطي.',
@@ -745,7 +745,7 @@ PUBLIC_URL=https://نطاقك npm run register
 **غياب https.** يرسل العميل الطلب إلى نقطة النهاية وينزّل النتيجة منها. وبلا
 شهادة عامة لا يحدث أيٌّ منهما.
 
-الدليل: https://github.com/AgentHiv/Panal/tree/main/create-agent
+الدليل: https://github.com/gucclabs/Panal/tree/main/create-agent
 `,
 };
 
@@ -796,7 +796,7 @@ La langue vient de --lang, puis de PANAL_LANG, puis de la locale du système.`,
   s3Register: 'PUBLIC_URL=https://votre-domaine npm run register',
   warnLabel: 'Attention :',
   warnBody: 'le point d\'entrée doit être en https public. Sans lui, le client ne peut ni\nvous envoyer la commande ni récupérer le résultat : l\'agent ne sert à rien.',
-  docs: 'Guide complet : https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  docs: 'Guide complet : https://github.com/gucclabs/Panal/tree/main/create-agent',
   logoWritten: 'Logo : logo.svg, avec ton initiale. Remplace-le par le tien.',
   brand: {
     title: 'Ta vitrine. Tout est facultatif — Entrée pour passer.',
@@ -874,7 +874,7 @@ litige.
 **Pas de https.** Le client envoie la commande à votre point d'entrée et y
 récupère le résultat. Sans certificat public, ni l'un ni l'autre n'arrive.
 
-Guide : https://github.com/AgentHiv/Panal/tree/main/create-agent
+Guide : https://github.com/gucclabs/Panal/tree/main/create-agent
 `,
 };
 
@@ -925,7 +925,7 @@ O idioma vem de --lang, depois de PANAL_LANG e, por fim, do locale do sistema.`,
   s3Register: 'PUBLIC_URL=https://o-seu-dominio npm run register',
   warnLabel: 'Atenção:',
   warnBody: 'o endpoint tem de ser https e público. Sem ele o cliente não consegue\nenviar-lhe o pedido nem descarregar o resultado, e o agente fica inútil.',
-  docs: 'Guia completo: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  docs: 'Guia completo: https://github.com/gucclabs/Panal/tree/main/create-agent',
   logoWritten: 'Logótipo: logo.svg, com a sua inicial. Substitua-o pelo seu.',
   brand: {
     title: 'A sua montra. Tudo opcional — Enter para saltar.',
@@ -1001,7 +1001,7 @@ propósito: é isso que um árbitro olha numa disputa.
 **Não ter https.** O cliente envia o pedido para o seu endpoint e descarrega
 dele o resultado. Sem certificado público, não acontece nenhuma das duas coisas.
 
-Guia: https://github.com/AgentHiv/Panal/tree/main/create-agent
+Guia: https://github.com/gucclabs/Panal/tree/main/create-agent
 `,
 };
 
@@ -1052,7 +1052,7 @@ const ru: Catalog = {
   s3Register: 'PUBLIC_URL=https://ваш-домен npm run register',
   warnLabel: 'Важно:',
   warnBody: 'эндпоинт должен быть публичным и по https. Без этого клиент не сможет ни\nотправить вам заказ, ни скачать результат, и агент останется декорацией.',
-  docs: 'Полное руководство: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  docs: 'Полное руководство: https://github.com/gucclabs/Panal/tree/main/create-agent',
   logoWritten: 'Логотип: logo.svg с первой буквой имени. Замените его своим.',
   brand: {
     title: 'Ваша витрина. Всё необязательно — Enter, чтобы пропустить.',
@@ -1129,7 +1129,7 @@ PUBLIC_URL=https://ваш-домен npm run register
 **Отсутствие https.** Клиент отправляет заказ на ваш эндпоинт и оттуда же
 скачивает результат. Без публичного сертификата не произойдёт ни то, ни другое.
 
-Руководство: https://github.com/AgentHiv/Panal/tree/main/create-agent
+Руководство: https://github.com/gucclabs/Panal/tree/main/create-agent
 `,
 };
 
@@ -1180,7 +1180,7 @@ const bn: Catalog = {
   s3Register: 'PUBLIC_URL=https://আপনার-ডোমেইন npm run register',
   warnLabel: 'খেয়াল রাখুন:',
   warnBody: 'এন্ডপয়েন্ট অবশ্যই সর্বজনীন https হতে হবে। নইলে ক্লায়েন্ট আপনাকে কাজ পাঠাতেও\nপারবে না, ফলাফল নামাতেও পারবে না — এজেন্ট অকেজো থেকে যাবে।',
-  docs: 'সম্পূর্ণ গাইড: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  docs: 'সম্পূর্ণ গাইড: https://github.com/gucclabs/Panal/tree/main/create-agent',
   logoWritten: 'লোগো: logo.svg, আপনার নামের প্রথম অক্ষর দিয়ে। নিজেরটা দিয়ে বদলে নিন।',
   brand: {
     title: 'আপনার সাইনবোর্ড। সবই ঐচ্ছিক — বাদ দিতে Enter চাপুন।',
@@ -1254,7 +1254,7 @@ PUBLIC_URL=https://আপনার-ডোমেইন npm run register
 **https না থাকা।** ক্লায়েন্ট আপনার এন্ডপয়েন্টে কাজ পাঠায় এবং সেখান থেকেই
 ফলাফল নামায়। সর্বজনীন সার্টিফিকেট ছাড়া কোনোটাই ঘটে না।
 
-গাইড: https://github.com/AgentHiv/Panal/tree/main/create-agent
+গাইড: https://github.com/gucclabs/Panal/tree/main/create-agent
 `,
 };
 
@@ -1305,7 +1305,7 @@ const ur: Catalog = {
   s3Register: 'PUBLIC_URL=https://آپ-کا-ڈومین npm run register',
   warnLabel: 'خیال رکھیں:',
   warnBody: 'اینڈ پوائنٹ کا عوامی https ہونا ضروری ہے۔ اس کے بغیر کلائنٹ نہ آپ کو کام بھیج\nسکتا ہے نہ نتیجہ اتار سکتا ہے، اور ایجنٹ بےکار رہ جاتا ہے۔',
-  docs: 'مکمل رہنما: https://github.com/AgentHiv/Panal/tree/main/create-agent',
+  docs: 'مکمل رہنما: https://github.com/gucclabs/Panal/tree/main/create-agent',
   logoWritten: 'لوگو: logo.svg، آپ کے نام کے پہلے حرف کے ساتھ۔ اسے اپنے لوگو سے بدل دیں۔',
   brand: {
     title: 'آپ کی پہچان۔ سب اختیاری — چھوڑنے کے لیے Enter دبائیں۔',
@@ -1381,7 +1381,7 @@ PUBLIC_URL=https://آپ-کا-ڈومین npm run register
 **https کا نہ ہونا۔** کلائنٹ آپ کے اینڈ پوائنٹ پر کام بھیجتا ہے اور وہیں سے
 نتیجہ اتارتا ہے۔ عوامی سرٹیفکیٹ کے بغیر ان میں سے کچھ نہیں ہوتا۔
 
-رہنما: https://github.com/AgentHiv/Panal/tree/main/create-agent
+رہنما: https://github.com/gucclabs/Panal/tree/main/create-agent
 `,
 };
 

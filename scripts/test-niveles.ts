@@ -60,7 +60,7 @@ const check = (nombre: string, ok: boolean, detalle = ''): void => {
 const FICHA =
   'Lint · Reviews source code and tells you what it does, what breaks, and the exact input that breaks it · ' +
   'code, review, security · bot:https://lint.panal.lat · logo:https://lint.panal.lat/logo.svg · ' +
-  'github:AgentHiv/Panal · nivel:0.03|Un archivo|Un fichero o un fragmento · ' +
+  'github:gucclabs/Panal · nivel:0.03|Un archivo|Un fichero o un fragmento · ' +
   'nivel:0.09|Un módulo|Varios ficheros relacionados|60000|60000|120000 · ' +
   'nivel:0.3|El repositorio|Un proyecto entero comprimido|120000|120000|200000';
 

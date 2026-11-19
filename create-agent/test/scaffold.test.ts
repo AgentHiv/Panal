@@ -176,12 +176,12 @@ async function main(): Promise<void> {
   // lo peligroso no.
   const conMarca = 'agente-con-marca';
   const marcado = run(
-    [conMarca, '--github', 'AgentHiv/Panal', '--x=@panal', '--web', 'https://panal.lat', '--telegram', "roto'; process.exit(1); //"],
+    [conMarca, '--github', 'gucclabs/Panal', '--x=@panal', '--web', 'https://panal.lat', '--telegram', "roto'; process.exit(1); //"],
     work,
   );
   check('se genera con banderas', marcado.code === 0);
   const regMarca = readFileSync(join(work, conMarca, 'src', 'register.ts'), 'utf8');
-  check('el GitHub llega al perfil', regMarca.includes("github: 'AgentHiv/Panal',"));
+  check('el GitHub llega al perfil', regMarca.includes("github: 'gucclabs/Panal',"));
   check('la forma --x=valor también', regMarca.includes("x: '@panal',"));
   check('y la web', regMarca.includes("web: 'https://panal.lat',"));
   check(
