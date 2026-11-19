@@ -14,9 +14,9 @@
  * Se importan desde `src/assets` y no se sirven desde `public/`: así Vite les
  * pone un hash en el nombre y entran en la caché larga de `/assets/*`.
  *
- * Para volver a sacarlas: `movil/` compilada, el recorrido de capturas a
- * 360 × 760 y escala 1,5, en WebP (ver el README de `apkpurelistin/` en el
- * repositorio de agentes).
+ * Para volver a sacarlas: `apkpurelistin/web/` en el repositorio privado de
+ * agentes, con su README (360 × 760 a escala 1,5, en WebP; el bloqueo con la
+ * huella pide una compilación aparte con el sensor simulado).
  */
 
 export type PantallaApp = 'bloqueo' | 'mercado' | 'agente' | 'saldo';
