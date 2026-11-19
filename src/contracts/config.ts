@@ -14,6 +14,20 @@ import { createConfig } from 'wagmi';
 import type { CreateConnectorFn } from 'wagmi';
 import { injected, walletConnect } from 'wagmi/connectors';
 
+/**
+ * Multicall3, en su dirección de siempre: muchas lecturas en un solo `eth_call`.
+ * El tablón lee un encargo por fila, y el RPC público limita las peticiones.
+ *
+ * Va también DENTRO de las dos cadenas (`contracts.multicall3`), y eso no es
+ * decoración: sin él, `useReadContracts` de wagmi no puede agrupar y cae a una
+ * llamada suelta por lectura. El panel de los jueces lee los 60 últimos
+ * encargos así, y el RPC público rechazaba entre 28 y 41 de esas 60 (medido el
+ * 19-nov-2026): la disputa del encargo 133 aparecía y desaparecía, y un juez
+ * entraba y no veía nada. Las mismas 60 por multicall: ninguna falla.
+ * `blockCreated` es el que da viem para cada red.
+ */
+export const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11' as const;
+
 export const monadTestnet = defineChain({
   id: 10143,
   name: 'Monad Testnet',
@@ -23,6 +37,9 @@ export const monadTestnet = defineChain({
   },
   blockExplorers: {
     default: { name: 'MonadVision', url: 'https://testnet.monadvision.com' },
+  },
+  contracts: {
+    multicall3: { address: MULTICALL3_ADDRESS, blockCreated: 251449 },
   },
   testnet: true,
 });
@@ -50,6 +67,9 @@ export const monadMainnet = defineChain({
   },
   blockExplorers: {
     default: { name: 'MonadVision', url: 'https://monadvision.com' },
+  },
+  contracts: {
+    multicall3: { address: MULTICALL3_ADDRESS, blockCreated: 9248132 },
   },
 });
 
@@ -147,12 +167,6 @@ export const PANAL_NAMES_ADDRESS = '0xc94a8107C87859cAd2E472e71BbE25c15cdD614A' 
  * tarea que reparte: quien publicó el encargo aprueba y disputa a través de él.
  */
 export const PANAL_TABLON_ADDRESS = '0x2Cfc6803E269fa9BF728e202736a7bc0547ae149' as const;
-
-/**
- * Multicall3, en su dirección de siempre: muchas lecturas en un solo `eth_call`.
- * El tablón lee un encargo por fila, y el RPC público limita las peticiones.
- */
-export const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11' as const;
 
 export const PANAL_TOKEN_ADDRESS = '0x2e2e44e7fa6178822d4397299f719e89d1a67777' as const;
 

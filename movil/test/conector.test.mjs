@@ -406,5 +406,17 @@ try { await cliente.signMessage({ message: 'hola' }); } catch { trasCerrar = tru
 dice('y ya no firma nada', trasCerrar);
 dice('pero la wallet sigue en el llavero', ll.listar().length === 1);
 
+// La cadena es la misma para la web y la app (`src/contracts/config.ts`).
+// Sin Multicall3 dentro, wagmi no agrupa las lecturas y el RPC público tumba
+// la mitad: el panel de los jueces llegó a no enseñar una disputa abierta.
+console.log('\nla cadena lleva Multicall3');
+const cfg = await import('@/contracts/config');
+for (const cadena of [cfg.monadMainnet, cfg.monadTestnet]) {
+  dice(
+    `${cadena.name}: multicall3 en ${cfg.MULTICALL3_ADDRESS}`,
+    cadena.contracts?.multicall3?.address === cfg.MULTICALL3_ADDRESS && cadena.contracts.multicall3.blockCreated > 0,
+  );
+}
+
 console.log(`\n${bien} bien · ${mal} mal\n`);
 process.exit(mal === 0 ? 0 : 1);
