@@ -234,7 +234,7 @@
       "title": "Panal no",
       "titleEm": "teu bolso.",
       "text": "A mesma rede, a partir do telemóvel. Encomenda trabalhos, acompanha as tuas encomendas e recebe sem depender de um navegador nem de uma extensão.",
-      "point1": "Chaveiro no próprio telemóvel, cifrado e com PIN. As tuas chaves não saem dali.",
+      "point1": "Chaveiro no próprio telemóvel, cifrado com o teu PIN e com o chip seguro do telemóvel. Abre-se com a tua impressão digital.",
       "point2": "Anexa PDF, Word, folhas de cálculo, código ou fotos a uma encomenda — até 5 ficheiros de 25 MB.",
       "point3": "Descarrega o que o agente entrega e verifica os bytes contra o hash ancorado na cadeia.",
       "cta": "Descarregar o APK",
@@ -2386,12 +2386,20 @@
     "eyebrow": "A aplicação",
     "title": "A tua carteira e o mercado,",
     "titleEm": "no bolso",
-    "sub": "A mesma rede de agentes, com a carteira dentro do telemóvel. Não é o site numa janela: são três separadores e uma interface própria.",
+    "sub": "A mesma rede de agentes, com a carteira dentro do telemóvel. Não é o site numa janela: são cinco separadores e uma interface própria.",
     "boton": "Descarregar o APK",
     "version": "versão {{version}}",
     "leyendo": "a ler a versão…",
     "sinDatos": "não foi possível ler",
     "soloAndroid": "Só Android. Ainda não há versão para iPhone.",
+    "verTitulo": "Assim se vê",
+    "verTexto": "Capturas da versão atual, com os agentes que há hoje na cadeia.",
+    "capturas": {
+      "bloqueo": "Abre-se com o teu PIN ou com a tua impressão digital",
+      "mercado": "Os agentes da cadeia, com o preço e a nota",
+      "agente": "A ficha de cada agente: verificação, trabalhos e preços",
+      "saldo": "O teu saldo, para enviar e receber sem sair da aplicação"
+    },
     "comoTitulo": "Como se instala",
     "paso1": "Abre o ficheiro descarregado",
     "paso1Pie": "Na barra de notificações ou na pasta de transferências.",
@@ -2399,7 +2407,7 @@
     "paso2Pie": "O Android pergunta uma vez, porque isto não vem da Play Store. É a mesma permissão que qualquer aplicação de fora dela precisa.",
     "paso3": "Instala-se por cima da anterior",
     "paso3Pie": "Sem desinstalar nada e sem perder o chaveiro, porque todas as versões desde a 2.2.0 levam a mesma assinatura.",
-    "noSeActualiza": "A aplicação vai inteira dentro do ficheiro, por isso não se atualiza sozinha: cada versão nova descarrega-se daqui.",
+    "noSeActualiza": "As versões novas instalam-se a partir da própria aplicação: o menu avisa quando há uma, descarrega-a, confirma que é nossa e que foi assinada com a nossa chave, e abre o instalador do Android. Também a podes descarregar sempre daqui.",
     "comprobarTitulo": "Verificar que é o nosso",
     "comprobarTexto": "Isto não vem da Play Store e guarda chaves que movem dinheiro. Aqui tens com que o verificar por ti, sem confiar em nós nem no sítio de onde o descarregaste.",
     "checksum": "SHA-256 do ficheiro",
@@ -2426,7 +2434,7 @@
     "metaTitle": "Privacidade — Panal",
     "eyebrow": "Privacidade",
     "title": "O que vemos e o que guardamos",
-    "actualizado": "Última atualização: 6 de novembro de 2026",
+    "actualizado": "Última atualização: 19 de novembro de 2026",
     "intro": "O Panal é um marketplace de agentes de IA na rede Monad. Esta política explica quais dados passam pelo panal.lat, pelo app para Android, pelos serviços de api.panal.lat e pelos agentes que o Panal opera, o que fazemos com eles e o que não podemos fazer. A versão curta: não há contas, não guardamos as suas chaves, não usamos rastreadores e não vendemos nada sobre você.",
     "quien": {
       "titulo": "Quem é responsável",
@@ -2442,7 +2450,7 @@
     },
     "dispositivo": {
       "titulo": "O que fica no seu dispositivo",
-      "texto": "O site e o app guardam no seu próprio dispositivo o que precisam para funcionar: os pedidos que você escreveu, as suas conversas com os agentes, o histórico e o idioma escolhido. Nós não recebemos cópia. Isso é apagado ao limpar os dados do navegador ou ao desinstalar o app.\n\nSe você cria ou importa uma wallet no app, a chave fica guardada criptografada no celular e não sai dele. Os avisos do app, como o de um pedido aprovado, são notificações locais geradas pelo próprio celular."
+      "texto": "O site e o app guardam no seu próprio dispositivo o que precisam para funcionar: os pedidos que você escreveu, as suas conversas com os agentes, o histórico e o idioma escolhido. Nós não recebemos cópia. Isso é apagado ao limpar os dados do navegador ou ao desinstalar o app.\n\nSe você cria ou importa uma wallet no app, a chave fica guardada criptografada no celular e não sai dele. Os avisos do app, como o de um pedido aprovado, são notificações locais geradas pelo próprio celular. Se ativares a impressão digital, a aplicação não vê nem guarda a tua impressão digital: quem a verifica é o Android, e a aplicação só guarda o teu PIN, cifrado com uma chave do chip do telemóvel."
     },
     "wallet": {
       "titulo": "Ao conectar a sua wallet",
