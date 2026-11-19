@@ -202,9 +202,6 @@ async function main(): Promise<void> {
   check('permite el dominio raíz', allowedOrigin('https://panal.lat', false) === 'https://panal.lat');
   check('permite www', allowedOrigin('https://www.panal.lat', false) === 'https://www.panal.lat');
   check('refleja el origen recibido, no uno fijo', allowedOrigin('https://www.panal.lat', false) !== 'https://panal.lat');
-  // test.panal.lat es la copia para probar un PR antes de fusionarlo.
-  check('permite test.panal.lat', allowedOrigin('https://test.panal.lat', false) === 'https://test.panal.lat');
-  check('no permite otro subdominio de panal.lat', allowedOrigin('https://otro.panal.lat', false) === null);
   check('rechaza un dominio ajeno', allowedOrigin('https://evil.example', false) === null);
   check('rechaza un subdominio inventado', allowedOrigin('https://api.panal.lat.evil.com', false) === null);
   check('rechaza http en vez de https', allowedOrigin('http://panal.lat', false) === null);

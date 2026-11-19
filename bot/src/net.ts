@@ -352,14 +352,8 @@ export async function fetchJsonLimited<T>(
  * La corrección de fondo es que `www` redirija al dominio raíz en el hosting,
  * para que exista un único origen canónico. Esta lista es la red de seguridad:
  * mientras los dos dominios respondan, los dos deben funcionar.
- *
- * `test.panal.lat` es la copia de la web donde se prueba un PR antes de
- * fusionarlo (el entorno `test` de `wrangler.jsonc`), detrás de Cloudflare
- * Access. Sin ella aquí, esa copia cargaría la portada pero no el mercado, ni
- * el chat, ni los encargos: justo lo que hay que probar. Es un dominio nuestro,
- * así que dejarla pasar no abre la API a nadie más.
  */
-const PROD_ORIGINS = ['https://panal.lat', 'https://www.panal.lat', 'https://test.panal.lat'];
+const PROD_ORIGINS = ['https://panal.lat', 'https://www.panal.lat'];
 const LOCALHOST_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
 /** Devuelve el origen si está permitido (para reflejarlo en la cabecera), o null. */
