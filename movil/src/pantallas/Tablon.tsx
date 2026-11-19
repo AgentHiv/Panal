@@ -31,6 +31,7 @@ import { hayEntrega } from '@/lib/expedientes';
 import { abrirTexto, clavePublicaDe, publicarMiClave } from '@/lib/cifrado';
 import { darAccesoAlElegido, darAccesoALosArbitrosDelTablon } from '@/lib/accesos';
 import Menu from '~/componentes/Menu';
+import Vacio from '~/componentes/Vacio';
 import Icono from '~/componentes/Icono';
 import HojasDelTablon, { type HojaAbierta } from '~/componentes/tablon/Hojas';
 import { Accion, Categoria, Etiqueta, Importe } from '~/componentes/tablon/Piezas';
@@ -270,7 +271,16 @@ function Abiertos({
         ))}
       </select>
 
-      {lista.length === 0 && <p className="px-2 pt-6 text-center text-[13.5px] leading-relaxed text-ink-3">{T.tablon.vacio}</p>}
+      {lista.length === 0 && (
+        <Vacio
+          icono="tablon"
+          titulo={T.tablon.vacio}
+          texto={T.tablon.vacioTexto}
+          // Publicar desde aquí solo si desde arriba también se puede: con
+          // wallet y en la app que paga.
+          accion={!SIN_PAGOS && yo ? { texto: T.tablon.publicar.titulo, icono: 'mas', onPulsar: () => abrir({ tipo: 'publicar' }) } : null}
+        />
+      )}
 
       <ul className="flex flex-col gap-2">
         {lista.map((j) => {
@@ -407,7 +417,15 @@ function Mios({ datos, yo, firma, abrir, T }: { datos: DatosDelTablon; yo: Addre
       )}
 
       <h2 className="px-1 pt-1 text-[15px] font-semibold">{T.tablon.mios.enMarcha(enMarcha.length)}</h2>
-      {enMarcha.length === 0 && <p className="px-1 text-[13px] text-ink-3">{T.tablon.mios.vacio}</p>}
+      {enMarcha.length === 0 && (
+        <Vacio
+          compacto
+          icono="tablon"
+          titulo={T.tablon.mios.vacio}
+          texto={T.tablon.mios.vacioTexto}
+          accion={SIN_PAGOS ? null : { texto: T.tablon.publicar.titulo, icono: 'mas', onPulsar: () => abrir({ tipo: 'publicar' }) }}
+        />
+      )}
       <ul className="flex flex-col gap-2">
         {enMarcha.map((j) => (
           <EncargoMio key={j.id.toString()} job={j} datos={datos} yo={yo} firma={firma} abrir={abrir} T={T} />

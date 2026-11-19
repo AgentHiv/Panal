@@ -112,6 +112,7 @@ export const zh: Textos = {
   },
 
   saldo: {
+    paraQueSirve: '每种币的用途',
     enEscrow: (importe: string) => `${importe} 正在托管合约中等你`,
     enEscrowPie: '已批准不等于已到账：提取之前，这笔钱不会计入此余额。在你的面板里点一下就归你了。',
     enviar: '转出',
@@ -248,6 +249,7 @@ export const zh: Textos = {
   },
 
   mercado: {
+    todos: '全部',
     titulo: '市场',
     buscar: '找一个代理',
     limpiar: '清空',
@@ -259,6 +261,7 @@ export const zh: Textos = {
   },
 
   archivo: {
+    sinNadaTitulo: '你的档案会出现在这里',
     titulo: '你的档案',
     subtitulo: '链上不会保存的那部分委托内容',
     conectaTitulo: '连接你的钱包',
@@ -448,6 +451,7 @@ export const zh: Textos = {
   },
 
   hilo: {
+    sinHablarTitulo: '开始对话',
     hoy: '今天',
     ayer: '昨天',
     volver: '返回',
@@ -1083,6 +1087,7 @@ export const zh: Textos = {
   },
 
   tablon: {
+    vacioTexto: '发布你需要的事：由代理或个人接手，款项托管到交付为止。',
     titulo: '任务板',
     vistas: { abiertos: '开放中', mios: '我的委托', trabajo: '我的工作' },
     cargando: '正在读取任务板…',
@@ -1188,6 +1193,7 @@ export const zh: Textos = {
       enviar: '提交报价',
     },
     mios: {
+      vacioTexto: '你发布的委托会出现在这里，附带报价和进度。',
       porCobrar: '任务板欠你一笔钱：较便宜报价的余额、撤回或过期的委托，或一笔退款。',
       cobrar: (n: string, moneda: string) => `领取 ${n} ${moneda}`,
       enMarcha: (n: number) => `进行中（${n}）`,
@@ -1440,5 +1446,29 @@ export const zh: Textos = {
     dondeSeCompra: '$PANAL 在 nad.fun 上兑换，MON 从你已有的地方转到你的地址。两样 Panal 都不卖。',
     verMercado: '看看市场',
     verMercadoPie: '看代理和它们的价格不花钱。',
+  },
+  huella: {
+    boton: '用指纹解锁',
+    dialogoTitulo: '打开 Panal',
+    dialogoTexto: '请将手指放在传感器上',
+    activarTitulo: '开启指纹',
+    activarTexto: '放上手指以确认',
+    usarPin: '使用 PIN',
+    ofrecerTitulo: '用指纹进入',
+    ofrecerTexto: '下次打开 Panal 时，用指纹代替输入 PIN。PIN 照样可以用。',
+    ofrecerPie: '这部手机上保存的任何指纹都能解锁。如果新增了指纹，会重新要求输入 PIN。',
+    activar: '开启指纹',
+    ahoraNo: '以后再说',
+    ajuste: '用指纹解锁',
+    ajusteSi: '已开启。PIN 照样可以用。',
+    ajusteNo: '不用输入 PIN 就能打开钥匙串。',
+    confirmaPin: '确认你的 PIN',
+    confirmaPinTexto: '开启指纹需要输入一次 PIN。',
+    confirmaPinSecreto: '查看助记词或私钥需要输入 PIN，即使你是用指纹进来的。',
+    invalidada: '手机的指纹有变动。请用 PIN 进入，然后重新开启。',
+    yaNoVale: '指纹已无法打开钥匙串。请用 PIN 进入，然后重新开启。',
+    bloqueada: '指纹尝试次数过多。请使用 PIN。',
+    fallo: '无法读取指纹。请使用 PIN。',
+    noSeActivo: '指纹没有开启。你可以在钥匙串里开启。',
   },
 };

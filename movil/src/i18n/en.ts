@@ -120,6 +120,7 @@ export const en: Textos = {
   },
 
   saldo: {
+    paraQueSirve: 'What each one is for',
     enEscrow: (importe: string) => `${importe} waiting for you in the escrow`,
     enEscrowPie: 'Approved is not paid: it does not show in this balance until you withdraw it. One tap in your panel and it is yours.',
     enviar: 'Send',
@@ -271,6 +272,7 @@ export const en: Textos = {
   },
 
   mercado: {
+    todos: 'All',
     titulo: 'Market',
     buscar: 'Find an agent',
     limpiar: 'Clear',
@@ -282,6 +284,7 @@ export const en: Textos = {
   },
 
   archivo: {
+    sinNadaTitulo: 'Your records will go here',
     titulo: 'Your records',
     subtitulo: "What the chain does not keep about each job",
     conectaTitulo: 'Connect your wallet',
@@ -485,6 +488,7 @@ export const en: Textos = {
   },
 
   hilo: {
+    sinHablarTitulo: 'Start the conversation',
     hoy: 'Today',
     ayer: 'Yesterday',
     volver: 'Back',
@@ -1158,6 +1162,7 @@ export const en: Textos = {
   },
 
   tablon: {
+    vacioTexto: 'Post what you need: an agent or a person takes it, and the payment stays in escrow until delivery.',
     titulo: 'Board',
     vistas: { abiertos: 'Open', mios: 'Mine', trabajo: 'My work' },
     cargando: 'Reading the board…',
@@ -1264,6 +1269,7 @@ export const en: Textos = {
       enviar: 'Send offer',
     },
     mios: {
+      vacioTexto: 'What you post shows up here, with its offers and how it is going.',
       porCobrar: 'The board owes you money: what was left from a cheaper offer, a withdrawn or expired job, or a refund.',
       cobrar: (n: string, moneda: string) => `Claim ${n} ${moneda}`,
       enMarcha: (n: number) => `In progress (${n})`,
@@ -1517,5 +1523,29 @@ export const en: Textos = {
       '$PANAL is traded on nad.fun, and you bring MON to your address from wherever you already have it. Panal sells neither.',
     verMercado: 'See the market',
     verMercadoPie: 'Looking at the agents and their prices costs nothing.',
+  },
+  huella: {
+    boton: 'Unlock with fingerprint',
+    dialogoTitulo: 'Open Panal',
+    dialogoTexto: 'Touch the fingerprint sensor',
+    activarTitulo: 'Turn on fingerprint',
+    activarTexto: 'Touch the sensor to confirm',
+    usarPin: 'Use PIN',
+    ofrecerTitulo: 'Unlock with your fingerprint',
+    ofrecerTexto: 'Next time, open Panal with your fingerprint instead of typing your PIN. Your PIN still works the same.',
+    ofrecerPie: 'Any fingerprint saved on this phone will work. If a new one is added, the PIN is asked for again.',
+    activar: 'Turn on fingerprint',
+    ahoraNo: 'Not now',
+    ajuste: 'Unlock with fingerprint',
+    ajusteSi: 'On. Your PIN still works.',
+    ajusteNo: 'Open the keyring without typing your PIN.',
+    confirmaPin: 'Confirm your PIN',
+    confirmaPinTexto: 'Turning on the fingerprint needs your PIN once.',
+    confirmaPinSecreto: 'Seeing the words or the key needs your PIN, even if you came in with your fingerprint.',
+    invalidada: 'The phone\'s fingerprints changed. Use your PIN and turn it on again.',
+    yaNoVale: 'The fingerprint no longer opens the keyring. Use your PIN and turn it on again.',
+    bloqueada: 'Too many fingerprint attempts. Use your PIN.',
+    fallo: 'Couldn\'t read the fingerprint. Use your PIN.',
+    noSeActivo: 'Fingerprint wasn\'t turned on. You can do it from the keyring.',
   },
 };

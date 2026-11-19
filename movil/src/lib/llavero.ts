@@ -60,6 +60,7 @@ import type { HDAccount, PrivateKeyAccount } from 'viem';
 import { claseDeSecreto, limpiarClave, limpiarFrase, validarPalabras } from '~/lib/envio';
 import { textos } from '~/i18n/idiomas';
 import { capaDelChip, type CapaSegura, type Sobre } from '~/lib/secureKey';
+import { CLAVE_HUELLA } from '~/lib/huella';
 
 const CLAVE = 'panal:llavero:v1';
 
@@ -576,6 +577,9 @@ export function borrarLlavero(): void {
   try {
     localStorage.removeItem(CLAVE);
     localStorage.removeItem(CLAVE_CHIP);
+    // El PIN guardado con la huella era el de ESTE llavero. Con uno nuevo no
+    // abriría nada, y no tiene por qué quedarse por ahí.
+    localStorage.removeItem(CLAVE_HUELLA);
   } catch {
     /* si no se puede escribir, tampoco se pudo guardar nada */
   }

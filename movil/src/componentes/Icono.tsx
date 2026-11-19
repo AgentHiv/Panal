@@ -48,6 +48,16 @@ const TRAZOS: Record<string, string[]> = {
   reloj: ['M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17z', 'M12 7.5V12l3 1.8'],
   info: ['M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17z', 'M12 11v5', 'M12 7.8h.01'],
   check: ['M4.5 12.5l5 5L20 7'],
+  // Una huella: arcos que se cierran hacia arriba, como la yema de un dedo.
+  huella: [
+    'M5 8.6a8.4 8.4 0 0 1 14 0',
+    'M6.4 17.6V12.4a5.6 5.6 0 0 1 11.2 0v1.8',
+    'M9.2 20V12.4a2.8 2.8 0 0 1 5.6 0v2.4c0 2.1-.4 3.8-1.2 5.2',
+    'M12 12.6v2.8c0 1.6-.3 3-.9 4.4',
+    'M17.6 17.2c-.1.9-.3 1.8-.6 2.6',
+  ],
+  // Borrar el último dígito, la tecla de siempre.
+  borrar: ['M9.4 5.5h9.4a1.7 1.7 0 0 1 1.7 1.7v9.6a1.7 1.7 0 0 1-1.7 1.7H9.4L3.6 12z', 'M12.6 9.6l4.8 4.8', 'M17.4 9.6l-4.8 4.8'],
 
   // Archivo y llavero
   papelera: ['M5 7h14', 'M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7', 'M6.5 7l.8 11.6A1.6 1.6 0 0 0 8.9 20h6.2a1.6 1.6 0 0 0 1.6-1.4L17.5 7'],

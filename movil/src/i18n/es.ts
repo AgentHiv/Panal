@@ -123,6 +123,7 @@ export const es = {
   },
 
   saldo: {
+    paraQueSirve: 'Para qué sirve cada una',
     enEscrow: (importe: string) => `${importe} te esperan en el escrow`,
     enEscrowPie: 'Aprobado no es cobrado: no entra en este saldo hasta que lo retires. Un toque en tu panel y es tuyo.',
     enviar: 'Enviar',
@@ -274,6 +275,7 @@ export const es = {
   },
 
   mercado: {
+    todos: 'Todos',
     titulo: 'Mercado',
     buscar: 'Buscar un agente',
     limpiar: 'Limpiar',
@@ -285,6 +287,7 @@ export const es = {
   },
 
   archivo: {
+    sinNadaTitulo: 'Aquí irán tus expedientes',
     titulo: 'Tus expedientes',
     subtitulo: 'Lo que la cadena no guarda de cada encargo',
     conectaTitulo: 'Conecta tu wallet',
@@ -491,6 +494,7 @@ export const es = {
   },
 
   hilo: {
+    sinHablarTitulo: 'Empieza la conversación',
     hoy: 'Hoy',
     ayer: 'Ayer',
     volver: 'Volver',
@@ -1166,6 +1170,7 @@ export const es = {
   },
 
   tablon: {
+    vacioTexto: 'Publica lo que necesitas: lo coge un agente o una persona, y el pago queda en depósito hasta la entrega.',
     titulo: 'Tablón',
     vistas: { abiertos: 'Abiertos', mios: 'Míos', trabajo: 'Mi trabajo' },
     cargando: 'Leyendo el tablón…',
@@ -1272,6 +1277,7 @@ export const es = {
       enviar: 'Enviar oferta',
     },
     mios: {
+      vacioTexto: 'Lo que publiques aparece aquí, con sus ofertas y cómo va.',
       porCobrar: 'El tablón te debe dinero: lo que sobró de una oferta más barata, un encargo retirado o caducado, o una devolución.',
       cobrar: (n: string, moneda: string) => `Cobrar ${n} ${moneda}`,
       enMarcha: (n: number) => `En marcha (${n})`,
@@ -1526,6 +1532,30 @@ export const es = {
       '$PANAL se cambia en nad.fun y MON lo traes a tu dirección desde donde ya tengas. Panal no vende ninguna de las dos.',
     verMercado: 'Ver el mercado',
     verMercadoPie: 'Mirar los agentes y sus precios no cuesta nada.',
+  },
+  huella: {
+    boton: 'Entrar con la huella',
+    dialogoTitulo: 'Abrir Panal',
+    dialogoTexto: 'Pon el dedo en el sensor',
+    activarTitulo: 'Activar la huella',
+    activarTexto: 'Pon el dedo para confirmar',
+    usarPin: 'Usar el PIN',
+    ofrecerTitulo: 'Entra con tu huella',
+    ofrecerTexto: 'La próxima vez, abre Panal con la huella en vez de teclear el PIN. El PIN sigue valiendo igual.',
+    ofrecerPie: 'Servirá cualquier huella guardada en este teléfono. Si se añade una nueva, se vuelve a pedir el PIN.',
+    activar: 'Activar la huella',
+    ahoraNo: 'Ahora no',
+    ajuste: 'Desbloquear con huella',
+    ajusteSi: 'Activada. El PIN sigue valiendo.',
+    ajusteNo: 'Abre el llavero sin teclear el PIN.',
+    confirmaPin: 'Confirma tu PIN',
+    confirmaPinTexto: 'Para activar la huella hace falta el PIN una vez.',
+    confirmaPinSecreto: 'Para ver las palabras o la clave hace falta el PIN, aunque hayas entrado con la huella.',
+    invalidada: 'Cambiaron las huellas del teléfono. Entra con el PIN y vuelve a activarla.',
+    yaNoVale: 'La huella ya no abre el llavero. Entra con el PIN y vuelve a activarla.',
+    bloqueada: 'Demasiados intentos con la huella. Usa el PIN.',
+    fallo: 'No se pudo leer la huella. Usa el PIN.',
+    noSeActivo: 'No se activó la huella. Puedes hacerlo desde el llavero.',
   },
 };
 

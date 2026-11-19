@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { tonoDeSemilla } from '~/lib/tono';
 
 /**
  * El avatar del panal. La celda es la forma de la marca, y la inicial evita
@@ -10,7 +11,6 @@ import { useState } from 'react';
  * inicial sin decir nada: un hueco sería peor, y quien mira no puede hacer nada
  * al respecto porque el archivo es del agente.
  */
-const TONOS = ['#E29A2E', '#836EF9', '#92A268', '#C9653B', '#B7A8FC'];
 
 export default function Hexagono({
   semilla,
@@ -23,10 +23,7 @@ export default function Hexagono({
   tamano?: number;
   logo?: string;
 }): React.ReactElement {
-  // Determinista: el mismo agente sale siempre del mismo color.
-  let suma = 0;
-  for (let i = 0; i < semilla.length; i += 1) suma = (suma * 31 + semilla.charCodeAt(i)) >>> 0;
-  const tono = TONOS[suma % TONOS.length];
+  const tono = tonoDeSemilla(semilla);
 
   /**
    * Un logo que no carga deja de intentarlo y cede el sitio al generado.

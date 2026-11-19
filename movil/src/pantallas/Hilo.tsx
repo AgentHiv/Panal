@@ -30,6 +30,7 @@ import { avisandoAlFirmar } from '~/lib/firma';
 import { permitirPago } from '~/lib/signingPolicy';
 import { guardarArchivo } from '~/lib/copia';
 import Hexagono from '~/componentes/Hexagono';
+import Vacio from '~/componentes/Vacio';
 import Icono from '~/componentes/Icono';
 import Subcontratados from '~/componentes/Subcontratados';
 import AvisoEjecutable from '~/componentes/AvisoEjecutable';
@@ -406,9 +407,8 @@ export default function Hilo(): React.ReactElement {
             respuesta, «todavía no habéis hablado» contradice a la burbuja que
             hay justo debajo. */}
         {entradas.length === 0 && enVuelo === null && (
-          <p className="mt-8 text-center text-[13.5px] leading-relaxed text-ink-3">
-            {T.hilo.sinHablar}
-          </p>
+          // Sin botón: lo que hay que hacer es escribir, y la caja está justo debajo.
+          <Vacio icono="chat" titulo={T.hilo.sinHablarTitulo} texto={T.hilo.sinHablar} />
         )}
         {entradas.map((e, i) => (
           <Fragment key={claveDeEntrada(e)}>

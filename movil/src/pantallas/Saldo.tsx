@@ -81,26 +81,18 @@ export default function Saldo(): React.ReactElement {
             </div>
           )}
 
-          <Moneda
-            simbolo="$PANAL"
-            color="#E29A2E"
-            valor={panal?.texto ?? null}
-            wei={panal?.valor}
+          {/* La tarjeta del saldo: lo que hay, de quién es y los dos botones que
+              se buscan al entrar. Las dos monedas juntas pero cada una con su
+              cifra: no se suman, porque no se gastan en lo mismo (abajo). */}
+          <TarjetaSaldo
+            nombre={sesion.wallet?.nombre ?? null}
+            direccion={addressShort}
+            firmaAqui={sesion.abierta}
+            panal={panal ?? null}
+            mon={mon ?? null}
             cargando={cargando}
-            paraQue={T.saldo.panalParaQue}
-            pie={T.saldo.panalPie}
-          />
-
-          <Moneda
-            simbolo="MON"
-            color="#B7A8FC"
-            valor={mon?.texto ?? null}
-            wei={mon?.valor}
-            cargando={cargando}
-            paraQue={T.saldo.monParaQue}
-            pie={T.saldo.monPie}
-          />
-
+            T={T}
+          >
           {/* Mandar y recibir, que es lo primero que se busca en una cartera.
               Estaban SOLO dentro del llavero, una pantalla más adentro, así que
               desde aquí —donde se mira el saldo— no había forma de mover nada.
@@ -114,53 +106,41 @@ export default function Saldo(): React.ReactElement {
               desbloqueo en esta pantalla sería duplicar la parte delicada. Con
               una wallet de fuera no sale: mandar desde ella se hace en su app,
               que es la que tiene su clave. */}
-          <div className="flex shrink-0 gap-2.5">
-            {sesion.wallet && (
+              {sesion.wallet && (
+                <button
+                  type="button"
+                  onClick={() => navegar('/llavero?hacer=enviar')}
+                  className="pulsable tocable flex grow items-center justify-center gap-2 rounded-full bg-monad py-3 text-[14px] font-semibold text-white shadow-monad"
+                >
+                  <Icono nombre="fuera" tamano={16} color="#fff" />
+                  {T.saldo.enviar}
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => navegar('/llavero?hacer=enviar')}
-                className="pulsable tocable flex grow items-center justify-center gap-2 rounded-full bg-monad py-3 text-[14px] font-semibold text-white shadow-monad"
+                onClick={() => setRecibiendo(true)}
+                className="pulsable tocable flex grow items-center justify-center gap-2 rounded-full border border-honey py-3 text-[14px] font-semibold text-honey"
               >
-                <Icono nombre="fuera" tamano={16} color="#fff" />
-                {T.saldo.enviar}
+                <Icono nombre="mas" tamano={16} color="#E29A2E" />
+                {T.saldo.recibir}
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setRecibiendo(true)}
-              className="pulsable tocable flex grow items-center justify-center gap-2 rounded-full border border-honey py-3 text-[14px] font-semibold text-honey"
-            >
-              <Icono nombre="mas" tamano={16} color="#E29A2E" />
-              {T.saldo.recibir}
-            </button>
+          </TarjetaSaldo>
+
+          <div className="shrink-0 rounded-[16px] border border-line p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">
+              {T.saldo.paraQueSirve}
+            </p>
+            <Uso simbolo="$PANAL" color="#E29A2E" texto={T.saldo.panalParaQue} pie={T.saldo.panalPie} />
+            <div className="my-3 h-px bg-line" />
+            <Uso simbolo="MON" color="#B7A8FC" texto={T.saldo.monParaQue} pie={T.saldo.monPie} />
           </div>
 
           {/* La dirección va abajo y entera: es para recibir, no para mirarla. */}
           <div className="shrink-0 rounded-[14px] border border-line p-3.5">
-            <div className="flex items-center justify-between gap-2">
-              {/* Con nombre, el nombre: es lo que se le puso para reconocerla,
-                  y «Tu dirección» ya lo dice la línea de abajo entera.
-                  Sin `uppercase`, que es como venía este rótulo: un nombre lo
-                  escribe una persona, y «Nómina» convertido en «NÓMINA» ya no
-                  es el que puso. Las mayúsculas son para las etiquetas. */}
-              {sesion.wallet ? (
-                <p className="min-w-0 truncate text-[13px] font-semibold">{sesion.wallet.nombre}</p>
-              ) : (
-                <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">
-                  {T.comun.tuDireccion}
-                </p>
-              )}
-              {/* Cuál de las dos está firmando. No es un detalle: decide si al
-                  aprobar algo se abre otra app o no se abre nada. */}
-              <span className="flex items-center gap-1.5 text-[11px] text-ink-3">
-                <Icono
-                  nombre={sesion.abierta ? 'llave' : 'eslabon'}
-                  tamano={12}
-                  color={sesion.abierta ? '#E29A2E' : '#948DAE'}
-                />
-                {sesion.abierta ? T.menu.firmaAqui : T.menu.firmaFuera}
-              </span>
-            </div>
+            {/* Solo «tu dirección»: el nombre de la wallet y quién firma ya los
+                dice la tarjeta de arriba, y aquí repetidos competían con lo
+                único que esta tarjeta tiene que dar, que es la dirección entera. */}
+            <p className="text-[11.5px] uppercase tracking-[0.06em] text-ink-3">{T.comun.tuDireccion}</p>
             <p className="seleccionable mt-2 break-all font-mono text-[12.5px] leading-[1.5] text-ink-2">
               {address}
             </p>
@@ -274,41 +254,164 @@ export default function Saldo(): React.ReactElement {
   );
 }
 
-function Moneda({
+interface Cantidad {
+  texto: string;
+  valor: bigint;
+}
+
+function TarjetaSaldo({
+  nombre,
+  direccion,
+  firmaAqui,
+  panal,
+  mon,
+  cargando,
+  T,
+  children,
+}: {
+  nombre: string | null;
+  direccion: string | null;
+  firmaAqui: boolean;
+  panal: Cantidad | null;
+  mon: Cantidad | null;
+  cargando: boolean;
+  T: Textos;
+  children: React.ReactNode;
+}): React.ReactElement {
+  return (
+    <div
+      className="relative shrink-0 overflow-hidden rounded-[22px] border border-honey-line/70 p-[18px]"
+      style={{
+        background:
+          'radial-gradient(130% 90% at 100% 0%, rgba(131,110,249,.30) 0%, rgba(131,110,249,0) 55%), radial-gradient(120% 90% at 0% 100%, rgba(226,154,46,.20) 0%, rgba(226,154,46,0) 60%), #1A1726',
+      }}
+    >
+      <PanalDeFondo />
+
+      <div className="relative flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 40 40" className="shrink-0" aria-hidden>
+            <polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="#E29A2E" />
+          </svg>
+          {/* Sin `uppercase`: un nombre lo escribe una persona, y «Nómina»
+              convertido en «NÓMINA» ya no es el que puso. */}
+          <p className="truncate text-[14px] font-semibold">{nombre ?? T.comun.tuDireccion}</p>
+        </div>
+        {/* Cuál de las dos está firmando. No es un detalle: decide si al
+            aprobar algo se abre otra app o no se abre nada. */}
+        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-black/25 px-2.5 py-1 text-[10.5px] text-ink-2">
+          <Icono nombre={firmaAqui ? 'llave' : 'eslabon'} tamano={11} color={firmaAqui ? '#E29A2E' : '#948DAE'} />
+          {firmaAqui ? T.menu.firmaAqui : T.menu.firmaFuera}
+        </span>
+      </div>
+      {direccion && <p className="relative mt-1 pl-[26px] font-mono text-[11.5px] text-ink-3">{direccion}</p>}
+
+      <div className="relative mt-5 grid grid-cols-2 gap-2.5">
+        <Cifra simbolo="$PANAL" color="#E29A2E" cantidad={panal} cargando={cargando} />
+        <Cifra simbolo="MON" color="#B7A8FC" cantidad={mon} cargando={cargando} />
+      </div>
+
+      <div className="relative mt-4 flex gap-2.5">{children}</div>
+    </div>
+  );
+}
+
+function Cifra({
   simbolo,
   color,
-  valor,
-  wei,
+  cantidad,
   cargando,
-  paraQue,
+}: {
+  simbolo: string;
+  color: string;
+  cantidad: Cantidad | null;
+  cargando: boolean;
+}): React.ReactElement {
+  const texto = cantidad?.texto ?? null;
+  return (
+    <div className="min-w-0 rounded-[14px] bg-black/25 px-3 py-2.5">
+      <p className="flex items-center gap-1.5 text-[11.5px] font-semibold" style={{ color }}>
+        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} aria-hidden />
+        {simbolo}
+      </p>
+      {cargando && texto === null ? (
+        <span className="mt-1.5 block h-6 w-16 animate-pulse rounded bg-sand" />
+      ) : (
+        // Las cifras largas bajan de tamaño en vez de cortarse: en media
+        // tarjeta, «1.234.567,8» a 24 px no cabe, y un saldo cortado miente.
+        <p
+          className={`mt-1.5 truncate font-mono font-medium leading-none ${
+            (texto ?? '').length > 9 ? 'text-[18px]' : 'text-[24px]'
+          }`}
+          style={{ color }}
+        >
+          {texto ?? '—'}
+        </p>
+      )}
+      {cantidad && cantidad.valor > 0n ? (
+        <Dolares wei={cantidad.valor} simbolo={simbolo} className="mt-1.5 block truncate" />
+      ) : (
+        <span className="mt-1.5 block h-[15px]" aria-hidden />
+      )}
+    </div>
+  );
+}
+
+/** Para qué sirve cada moneda, en una línea y su letra pequeña. */
+function Uso({
+  simbolo,
+  color,
+  texto,
   pie,
 }: {
   simbolo: string;
   color: string;
-  valor: string | null;
-  wei?: bigint;
-  cargando: boolean;
-  paraQue: string;
+  texto: string;
   pie: string;
 }): React.ReactElement {
   return (
-    <div className="shrink-0 rounded-[18px] border border-line bg-cream p-[18px]">
-      <div className="flex items-baseline gap-2">
-        {cargando && valor === null ? (
-          <span className="my-1 block h-7 w-24 animate-pulse rounded bg-sand" />
-        ) : (
-          <span className="font-mono text-[30px] font-medium leading-none" style={{ color }}>
-            {valor ?? '—'}
-          </span>
-        )}
-        <span className="text-[14px] font-semibold" style={{ color }}>
-          {simbolo}
-        </span>
+    <div className="mt-2.5 flex gap-3">
+      <span
+        className="mt-0.5 shrink-0 self-start rounded-full px-2 py-0.5 font-mono text-[10.5px] font-semibold"
+        style={{ color, backgroundColor: `${color}1F` }}
+      >
+        {simbolo}
+      </span>
+      <div className="min-w-0">
+        <p className="text-[13px] leading-[1.5] text-ink-2">{texto}</p>
+        <p className="mt-0.5 text-[11.5px] leading-[1.5] text-ink-3">{pie}</p>
       </div>
-      {wei !== undefined && wei > 0n && <Dolares wei={wei} simbolo={simbolo} className="mt-1.5 block text-[12.5px]" />}
-      <p className="mt-2.5 text-[13px] leading-[1.5] text-ink-2">{paraQue}</p>
-      <p className="mt-1 text-[11.5px] leading-[1.5] text-ink-3">{pie}</p>
     </div>
+  );
+}
+
+/** Un panal apenas marcado en la esquina de la tarjeta: la marca, sin ruido. */
+function PanalDeFondo(): React.ReactElement {
+  const celdas: [number, number][] = [
+    [0, 0],
+    [32, 0],
+    [64, 0],
+    [16, 27],
+    [48, 27],
+    [80, 27],
+    [32, 54],
+    [64, 54],
+    [48, -27],
+    [80, -27],
+  ];
+  return (
+    <svg
+      viewBox="-20 -50 120 130"
+      className="pointer-events-none absolute -right-10 -top-10 h-[150px] w-[140px]"
+      fill="none"
+      aria-hidden
+    >
+      <g stroke="rgba(226,154,46,.09)" strokeWidth="1.1">
+        {celdas.map(([x, y]) => (
+          <polygon key={`${x},${y}`} points="0,-18 16,-9 16,9 0,18 -16,9 -16,-9" transform={`translate(${x},${y})`} />
+        ))}
+      </g>
+    </svg>
   );
 }
 
