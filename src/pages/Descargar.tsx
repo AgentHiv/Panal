@@ -10,6 +10,8 @@ import {
   tamanoLegible,
   type ManifiestoApk,
 } from '@/data/descarga';
+import { Telefono } from '@/components/CapturasApp';
+import { capturaApp, type PantallaApp } from '@/lib/capturasApp';
 
 /**
  * Panal para Android (/app).
@@ -34,6 +36,7 @@ import {
  * ============================================================ */
 function Portada({ manifiesto, cargando }: { manifiesto: ManifiestoApk | null; cargando: boolean }) {
   const { t, i18n } = useTranslation();
+  const idioma = i18n.resolvedLanguage ?? i18n.language;
 
   const detalle = manifiesto
     ? `${t('descargar.version', { version: manifiesto.version })} · ${tamanoLegible(manifiesto.bytes, i18n.language)}`
@@ -42,8 +45,8 @@ function Portada({ manifiesto, cargando }: { manifiesto: ManifiestoApk | null; c
       : t('descargar.sinDatos');
 
   return (
-    <section className="border-b border-line bg-cream pt-32 pb-20 md:pt-40 md:pb-24">
-      <div className="container-hive">
+    <section className="overflow-hidden border-b border-line bg-cream pt-32 pb-20 md:pt-40 md:pb-24">
+      <div className="container-hive grid items-center gap-14 md:grid-cols-[minmax(0,1fr)_auto]">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -79,6 +82,58 @@ function Portada({ manifiesto, cargando }: { manifiesto: ManifiestoApk | null; c
             {t('descargar.soloAndroid')}
           </p>
         </motion.div>
+
+        {/* La pantalla con la que se abre la app cada vez: el PIN, o la huella. */}
+        <motion.div
+          initial={{ opacity: 0, y: 40, rotate: 0 }}
+          animate={{ opacity: 1, y: 0, rotate: 3 }}
+          transition={{ duration: 0.9, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          className="mx-auto w-[220px] md:mr-6 md:w-[250px]"
+        >
+          <Telefono brillo src={capturaApp(idioma, 'bloqueo')} alt={t('descargar.capturas.bloqueo')} />
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+ * S1b · Así se ve: tres pantallas de la app de verdad
+ * ============================================================ */
+function AsiSeVe() {
+  const { t, i18n } = useTranslation();
+  const idioma = i18n.resolvedLanguage ?? i18n.language;
+  const pantallas: PantallaApp[] = ['mercado', 'agente', 'saldo'];
+
+  return (
+    <section className="border-b border-line py-20 md:py-24">
+      <div className="container-hive">
+        <h2 className="display-md text-ink">{t('descargar.verTitulo')}</h2>
+        <p className="mt-3 max-w-2xl leading-[1.65] text-ink-2">{t('descargar.verTexto')}</p>
+
+        {/* En un teléfono, una fila que se desliza con el dedo; desde `sm`,
+            las tres a la vista. */}
+        <ul className="-mx-6 mt-10 flex snap-x snap-mandatory gap-6 overflow-x-auto px-6 pb-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-8 sm:overflow-visible sm:px-0 md:gap-12">
+          {pantallas.map((pantalla, i) => (
+            <motion.li
+              key={pantalla}
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-10%' }}
+              transition={{ duration: 0.7, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
+              className="w-[68%] shrink-0 snap-center sm:w-auto"
+            >
+              <Telefono
+                src={capturaApp(idioma, pantalla)}
+                alt={t(`descargar.capturas.${pantalla}`)}
+                className="mx-auto max-w-[260px]"
+              />
+              <p className="mx-auto mt-5 max-w-[260px] text-center text-[0.9375rem] leading-[1.5] text-ink-2">
+                {t(`descargar.capturas.${pantalla}`)}
+              </p>
+            </motion.li>
+          ))}
+        </ul>
       </div>
     </section>
   );
@@ -199,6 +254,7 @@ export default function Descargar() {
   return (
     <>
       <Portada manifiesto={manifiesto} cargando={cargando} />
+      <AsiSeVe />
       <Instalar />
       <Comprobar manifiesto={manifiesto} />
     </>

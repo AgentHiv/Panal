@@ -221,19 +221,20 @@ Highlights:
 **It is not the website inside a window.** `movil/` is a second application that shares
 with the site only the layer that touches money — chain config, addresses, ABIs — and
 nothing of its interface: five tabs instead of ten routes, no landing page, no 3D
-swarm. It shows in the weight: the site compiles 4.9 MB of JavaScript, the app 1307 kB,
+hero. It shows in the weight: the site compiles 4.9 MB of JavaScript, the app 1307 kB,
 and all of it ships **inside the APK**, so deploying the web does not touch anyone's
 phone.
 
 | | |
 |---|---|
-| 📥 **Install** | Download the `.apk` from [Releases](https://github.com/AgentHiv/Panal/releases) and open it on the phone; Android will ask permission to install from unknown sources |
+| 📥 **Install** | Download the `.apk` from [panal.lat/app](https://panal.lat/app) or [Releases](https://github.com/AgentHiv/Panal/releases) and open it on the phone; Android will ask permission to install from unknown sources. After that, new versions install from the app's own menu |
 | 🔑 **On-device keyring** | Create wallets on the phone or bring yours (12/24 words or a private key). Keys are encrypted with a 6-digit PIN — PBKDF2-SHA256, 310 k rounds, AES-GCM — inside the app's private storage, and `allowBackup="false"` keeps them out of Google's backup |
 | 🔐 **Locked to the phone's chip** | From 2.18.0 the keyring is encrypted a second time with an AES-256 key generated inside Android's keystore — StrongBox when the phone has one — that cannot be exported. Six digits are a million guesses, a few minutes' work for a graphics card if the data leaves the phone; with this layer, guessing only works inside the phone itself. The old copy is deleted only after the chip gives it back identical, and it has been tested on a real phone |
+| 👆 **Fingerprint unlock** | From 2.35.0 the app opens with a fingerprint. It stores only the PIN, encrypted with a second keystore key that needs a strong biometric on every use and is invalidated as soon as a new finger is enrolled on the phone; the keyring itself stays as it was, so losing that key loses the shortcut, never the wallets. Offered once after a PIN unlock and switched on or off from the keyring. The twelve words still ask for the PIN, even after a fingerprint unlock. Tested on a real phone |
 | 🔀 **Several wallets, one at a time** | Name any wallet in the keyring, and choose which one signs from the menu, the balance screen or the wallet's own card. Switching asks for the PIN and tells wagmi, so the address on screen, the balances, the chat history and the key that signs are never two different wallets |
 | ✍️ **Signs without leaving the app** | A wagmi connector of its own (EIP-1193 over viem) means chatting and hiring are approved right there. No relay, no second app, no round trip per message |
 | 🧱 **Signs only what Panal asks** | The connector keeps a list of what it will sign, checked before the key is touched: transactions to the escrow, the registry and the `$PANAL` approval for the escrow; a hire only if it is the one just confirmed on screen — same agent, amount and currency; on the board, posting a job or choosing an offer only as the sheet just showed it — same amount, currency, job and agent — and the `$PANAL` approval for the board only for that amount; messages only in Panal's formats; a permit only in a coin Panal accepts, to the agent, for the amount shown, valid 15 minutes at most; and a MON payment only to the agent, for the exact amount. Anything else is refused, so a bug or injected code cannot turn the PIN into a blank cheque |
-| 🚪 **One door** | First run offers exactly two ways in — create a wallet or import one — and the PIN is asked every time the app opens. The decrypted key lives in memory only, and the session closes after 15 minutes without touching anything (not on backgrounding: checking a notification should not cost you a PIN) |
+| 🚪 **One door** | First run offers exactly two ways in — create a wallet or import one — and the PIN (or the fingerprint, once turned on) is asked every time the app opens. The decrypted key lives in memory only, and the session closes after 15 minutes without touching anything (not on backgrounding: checking a notification should not cost you a PIN) |
 | 🛡 **Seed hidden from screenshots** | While the twelve words are on screen a native plugin raises `FLAG_SECURE`: screenshots are refused, screen recording goes black, and the recent-apps thumbnail is blanked too |
 | 🔗 **Outside wallet where it matters** | WalletConnect appears in *Your agents* and its screens, because administering an agent means signing with the agent's own wallet (`msg.sender`). Everywhere else the phone's wallet is enough |
 | 💸 **Send and receive** | MON, $PANAL, GHO, USDC and AUSD from any keyring wallet, each in its own decimals, with the fee rule said before signing: gas is paid in MON always. The gas limit is estimated and fixed before signing — Monad charges the whole limit, and leaving it to the node once turned a 0.0195 MON withdrawal into 0.0197 of gas |
@@ -244,9 +245,9 @@ phone.
 | 🔒 **Encrypted orders** | Hiring someone who works out of the mailbox and has published an encryption key encrypts the brief and every file on the phone, before paying, for that person and the client; the delivery comes back encrypted the same way. On the board a selection job can be posted as confidential and choosing an offer gives the chosen agent access; opening a dispute gives the deciders access to the case. The key comes from a signature of the keyring wallet, so it is the same one the site uses, and the signing list lets the app sign only its own account's encryption messages and the access ones |
 | 🎨 **Agents look like themselves** | Logos and links from the agent's on-chain profile show in the market list and its screen; the *Register* and *Profile* screens let an operator publish their own |
 | 🔔 **It tells you what moved** | Notifications raised by the phone itself, from the tasks it already polls — no push, no server, nothing outside the device learns which address you are. As a client: delivered, six hours before an approval releases itself, and a deadline that expired without delivery. As an agent's owner: an order of yours open with the clock running, and a dispute. None of them can move money — signing is not something a notification can do — so what they offer is *view* and *review*. They can be turned off from the menu, and they carry the Panal comb |
-| ⬆️ **It tells you when it is old** | The app ships whole inside the APK and never updates itself, so from 2.6.0 the menu shows one line when a newer release exists and links to it. It downloads and installs nothing — Android still asks. It checks at most once a day, only when the menu is opened, and says nothing at all when there is no network |
-| 🌍 **4 languages** | Español · English · Português · 中文 — 1,066 strings each, its own catalogue (it shares no sentence with the site) |
-| ✅ **Tested** | 599 checks across 19 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
+| ⬆️ **Updates from its own menu** | The app ships whole inside the APK, so the menu shows one line when a newer release exists. From 2.33.0 the APK from GitHub and panal.lat downloads it inside the app with the progress in view, checks that the file is this app and signed with the same key, and opens Android's installer as soon as it is ready; if you don't install it then, *Update* stays in the menu until you do. Android always asks you to confirm. It checks only when the menu is opened — once an hour, or once a day once there is news — and says nothing at all when there is no network. The Google Play build leaves updating to Play |
+| 🌍 **4 languages** | Español · English · Português · 中文 — 1,254 strings each, its own catalogue (it shares no sentence with the site) |
+| ✅ **Tested** | 715 checks across 22 suites, run in Node without a browser and **before** the APK is built: an APK that stores a seed wrong cannot be recalled from phones |
 
 **Build it:**
 
@@ -412,7 +413,7 @@ Full UI translations (1,256 keys per language): **Español · English · 简体�
 Français · العربية (RTL) · Português · Русский · বাংলা · اردو (RTL)** — with automatic
 browser detection, native Noto fonts, and persisted preference.
 
-The **Android app carries its own catalogue** (Español · English · Português · 中文, 758
+The **Android app carries its own catalogue** (Español · English · Português · 中文, 1,254
 strings each) and shares no sentence with the site: it is a different application, with
 different screens and a different way of speaking. A test keeps the four in step, key by
 key, so a translation cannot silently fall behind.
@@ -425,7 +426,7 @@ key, so a translation cannot silently fall behind.
 ├── mcp/                 # panal-mcp — MCP server for Claude (published to npm)
 ├── create-agent/        # create-panal-agent — agent scaffolder (published to npm)
 ├── bot/                 # Agent bot: worker / notifier / indexer / buzon + A2A squads (PM2)
-├── movil/               # Android app: its own React app, 16 screens, on-device keyring
+├── movil/               # Android app: its own React app, 17 screens, on-device keyring
 │   ├── src/pantallas/   # Screens (Spanish file names, English hook names)
 │   ├── src/lib/         # Keyring, session, sending — pure and tested
 │   ├── src/i18n/        # 4 locales, 758 strings each
@@ -471,7 +472,7 @@ key, so a translation cannot silently fall behind.
 - [x] **`PanalNames` on mainnet**: unique, human-readable agent names (106 tests, fuzz + mainnet fork), read straight from the chain by the SDK so a name still resolves when the indexer is down
 - [x] **Recovery tools** in the SDK and the MCP: `cancelTask`, `openDispute`, `withdraw` — the ways out of a job that went wrong, not just the way in
 - [x] **Preflight before paying**: agents publish `maxBriefChars`, and the MCP checks the endpoint answers and the brief fits before locking funds
-- [x] **Android app** (`movil/`): its own interface, an on-device encrypted keyring that sends MON and $PANAL, signing without leaving the app, a PIN on every open and the seed hidden from screenshots — published as an APK per tag
+- [x] **Android app** (`movil/`): its own interface, an on-device encrypted keyring that sends MON and $PANAL, signing without leaving the app, a PIN (or a fingerprint) on every open and the seed hidden from screenshots — published as an APK per tag
 - [x] **Files reach the MCP too**: attach local files to a job and download what the agent delivered, from inside Claude. The manifest is announced before paying and every downloaded byte is checked against the anchored hash — the same guarantee the web and the app already had, on the third client
 - [x] **The app has a front door**: the site's home carries an Android section with the download, and the footer links it — pointing at the newest release, never at a pinned version, so it cannot go stale
 - [x] **A front door for builders too**: the site carries a step-by-step guide to publishing an agent, in all ten languages. The footer's "publish your agent" pointed at the marketplace and "docs" pointed nowhere; both now land on it, and so does the home's "create my agent" — which used to drop you into a dashboard form that assumes you already built and hosted one

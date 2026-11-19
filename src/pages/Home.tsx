@@ -1,3 +1,5 @@
+import { Telefono } from '@/components/CapturasApp';
+import { capturaApp } from '@/lib/capturasApp';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
@@ -46,7 +48,7 @@ import { fetchCatalogo, useIndexStats } from '@/lib/indexer';
 import { formatEther } from 'viem';
 import { CONTRACTS, NETWORK_COMPARISON, ROADMAP_PHASES } from '@/data/protocol';
 
-const HeroSwarm = lazy(() => import('@/components/home/HeroSwarm'));
+const HeroLogo = lazy(() => import('@/components/home/HeroLogo'));
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -121,7 +123,7 @@ function Hero() {
           )}
         />
         <Suspense fallback={null}>
-          <HeroSwarm onReady={() => setSwarmReady(true)} />
+          <HeroLogo onReady={() => setSwarmReady(true)} />
         </Suspense>
         {/* halo púrpura Monad ambiental */}
         <div className="glow-monad right-[-10%] top-[-15%] h-[70vh] w-[60vw]" aria-hidden />
@@ -843,7 +845,7 @@ function AndroidSection() {
   ];
 
   return (
-    <section className="border-t border-coal-line bg-coal py-24 text-coal-text md:py-32">
+    <section className="overflow-hidden border-t border-coal-line bg-coal py-24 text-coal-text md:py-32">
       <div className="container-hive grid items-center gap-14 md:grid-cols-2">
         <motion.div
           initial={{ opacity: 0, y: 28 }}
@@ -891,54 +893,62 @@ function AndroidSection() {
           </p>
         </motion.div>
 
-        {/* Ilustración: un teléfono, no una captura. Los bloques son abstractos
-            a propósito — una pantalla dibujada que imite texto real acabaría
-            enseñando una app que no es la que se baja. */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.94 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, margin: '-15%' }}
-          transition={{ duration: 0.9, ease: 'easeOut' }}
-          className="mx-auto w-[244px]"
-          aria-hidden="true"
-        >
-          <div className="ring-glow-monad rounded-[40px] border border-coal-line bg-coal-2 p-2.5">
-            <div className="overflow-hidden rounded-[32px] bg-paper px-4 pb-6 pt-3">
-              <div className="mb-5 flex justify-center">
-                <span className="h-1 w-16 rounded-full bg-line" />
-              </div>
-              <div className="flex items-center gap-3">
-                <span
-                  className="flex h-9 w-9 items-center justify-center bg-honey-soft"
-                  style={{ clipPath: 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)' }}
-                >
-                  <Hexagon size={15} className="text-honey" strokeWidth={2} />
-                </span>
-                <span className="flex flex-col gap-1.5">
-                  <span className="block h-2 w-24 rounded-full bg-line" />
-                  <span className="block h-1.5 w-16 rounded-full bg-sand" />
-                </span>
-              </div>
-              <div className="mt-5 flex flex-col gap-2">
-                <span className="block h-1.5 w-full rounded-full bg-sand" />
-                <span className="block h-1.5 w-[86%] rounded-full bg-sand" />
-                <span className="block h-1.5 w-[62%] rounded-full bg-sand" />
-              </div>
-              {/* La tarjeta de un archivo entregado: lo que la app acaba de aprender a abrir. */}
-              <div className="mt-5 flex items-center gap-2.5 rounded-[11px] border border-line bg-sand px-3 py-2.5">
-                <Paperclip size={14} className="shrink-0 text-monad" strokeWidth={2} />
-                <span className="flex grow flex-col gap-1">
-                  <span className="block h-1.5 w-20 rounded-full bg-line" />
-                  <span className="block h-1 w-12 rounded-full bg-line/60" />
-                </span>
-                <Download size={13} className="shrink-0 text-honey" strokeWidth={2.2} />
-              </div>
-              <div className="mt-4 h-8 rounded-full bg-monad/25" />
-            </div>
-          </div>
-        </motion.div>
+        {/* Tres pantallas de la app de verdad, en abanico: el bloqueo con la
+            huella, el mercado y la ficha de un agente. Antes era un teléfono
+            dibujado con bloques; ahora que hay capturas de la app compilada,
+            enseñarlas es enseñar exactamente lo que se instala. */}
+        <AbanicoApp />
       </div>
     </section>
+  );
+}
+
+/**
+ * El abanico de la sección de Android: el mercado delante, el bloqueo y la
+ * ficha de un agente detrás, girados. Entran por separado al aparecer.
+ *
+ * El posicionado va en una caja y la animación en otra, dentro: framer-motion
+ * escribe `transform` y se comería el `-translate-x-1/2` del centrado.
+ */
+function AbanicoApp() {
+  const { t, i18n } = useTranslation();
+  const idioma = i18n.resolvedLanguage ?? i18n.language;
+  const curva = [0.22, 1, 0.36, 1] as const;
+  return (
+    <div className="relative mx-auto aspect-[500/540] w-full max-w-[500px]">
+      <div className="absolute left-0 top-[11%] w-[39%]">
+        <motion.div
+          initial={{ opacity: 0, x: 60, rotate: 0 }}
+          whileInView={{ opacity: 1, x: 0, rotate: -8 }}
+          viewport={{ once: true, margin: '-10%' }}
+          transition={{ duration: 1, delay: 0.25, ease: curva }}
+          style={{ transformOrigin: '100% 100%' }}
+        >
+          <Telefono src={capturaApp(idioma, 'bloqueo')} alt={t('descargar.capturas.bloqueo')} />
+        </motion.div>
+      </div>
+      <div className="absolute right-0 top-[11%] w-[39%]">
+        <motion.div
+          initial={{ opacity: 0, x: -60, rotate: 0 }}
+          whileInView={{ opacity: 1, x: 0, rotate: 8 }}
+          viewport={{ once: true, margin: '-10%' }}
+          transition={{ duration: 1, delay: 0.35, ease: curva }}
+          style={{ transformOrigin: '0% 100%' }}
+        >
+          <Telefono src={capturaApp(idioma, 'agente')} alt={t('descargar.capturas.agente')} />
+        </motion.div>
+      </div>
+      <div className="absolute left-1/2 top-0 z-10 w-[45%] -translate-x-1/2">
+        <motion.div
+          initial={{ opacity: 0, y: 48, scale: 0.94 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: '-10%' }}
+          transition={{ duration: 0.9, ease: curva }}
+        >
+          <Telefono brillo src={capturaApp(idioma, 'mercado')} alt={t('descargar.capturas.mercado')} />
+        </motion.div>
+      </div>
+    </div>
   );
 }
 

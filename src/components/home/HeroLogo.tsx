@@ -3,24 +3,25 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 /**
- * El fondo del hero: el logo de Panal.
+ * El fondo del hero: el logo de Panal, en 3D y en movimiento.
  *
- * Una secuencia en tres tiempos:
+ * Sin partículas. Antes miles de puntos llegaban dispersos y formaban el logo;
+ * ahora el logo está desde el primer fotograma y lo que se anima es él:
  *
- *   1. ENTRADA. Miles de partículas llegan dispersas, como estrellas, y se
- *      ordenan en la silueta del logo: el hexágono exterior blanco y, dentro,
- *      el de miel desplazado a la derecha y abajo, en las proporciones exactas
- *      de `public/logo.svg`.
- *   2. IGNICIÓN. Cuando la silueta está completa, un destello y una onda de
- *      choque hexagonal; las partículas se apagan y en su sitio aparece el
- *      logo SÓLIDO, en 3D: el aro blanco con relieve y el núcleo de miel.
- *   3. EL LOGO. Flota y se inclina hacia el cursor; una luz le da la vuelta y
- *      va dejando brillos en el relieve; el núcleo late con su halo; y del
- *      logo salen anillos y ondas que encienden el panal de alrededor.
+ *   1. EL ARO. El hexágono blanco llega desde el fondo girando un tercio de
+ *      vuelta y se asienta con un rebote corto. Un hexágono es igual a sí
+ *      mismo cada 60°, así que el giro termina exactamente en su sitio.
+ *   2. EL NÚCLEO. El de miel cae desde delante hasta su hueco, desplazado a la
+ *      derecha y abajo como en `public/logo.svg`, y rebota al encajar.
+ *   3. EL ENCAJE. En ese instante, un destello y una onda de choque hexagonal;
+ *      el núcleo se enciende y el panal de alrededor se dibuja del logo hacia
+ *      fuera.
+ *   4. EL LOGO VIVO. Flota y se inclina hacia el cursor; una luz le da la
+ *      vuelta y va dejando brillos en el relieve; el núcleo late con su halo;
+ *      y del logo salen anillos y ondas que encienden el panal.
  *
- * Al terminar ya no queda ninguna partícula: solo el logo. Con
- * `prefers-reduced-motion` se pinta directamente el logo sólido, quieto.
- * Fuera de la pantalla no se dibuja nada (IntersectionObserver).
+ * Con `prefers-reduced-motion` se pinta directamente el final, quieto. Fuera
+ * de la pantalla no se dibuja nada (IntersectionObserver).
  */
 
 const REDUCED =
@@ -50,18 +51,14 @@ function equipoModesto(): boolean {
 }
 
 interface Potencia {
-  borde: number;
-  nucleo: number;
-  panal: number;
-  polvo: number;
   /** Resolución mínima y máxima del lienzo. */
   dpr: [number, number];
   antialias: boolean;
 }
 
 const POTENCIA: Potencia = equipoModesto()
-  ? { borde: 1600, nucleo: 700, panal: 1300, polvo: 250, dpr: [1, 1.5], antialias: false }
-  : { borde: 3400, nucleo: 1400, panal: 3000, polvo: 600, dpr: [1, 1.75], antialias: true };
+  ? { dpr: [1, 1.5], antialias: false }
+  : { dpr: [1, 1.75], antialias: true };
 
 /* ── la pantalla: dónde va el logo (cámara en z=10, fov 50) ── */
 
@@ -114,14 +111,14 @@ function disposicion(retrato: boolean): Disposicion {
 
 /* ── la secuencia, en segundos ── */
 
-/** Cuánto tardan las partículas en llegar a su sitio. */
-const LLEGADA = 2.4;
-/** Cuando la silueta está completa (el núcleo sale el último, a los 0,5 s). */
-const IGNICION = 0.5 + LLEGADA;
-/** Lo que dura el relevo de las partículas al logo sólido. */
-const RELEVO = 0.9;
-/** A partir de aquí las partículas ya no se calculan. */
-const SIN_PARTICULAS = IGNICION + RELEVO + 0.2;
+/** El aro llega desde el fondo girando. */
+const ARO = { desde: 0, dura: 1.1 };
+/** El núcleo cae desde delante; empieza cuando el aro ya casi está. */
+const NUCLEO = { desde: 0.55, dura: 0.75 };
+/** El instante en que el núcleo encaja: destello, onda y panal. */
+const ENCAJE = NUCLEO.desde + NUCLEO.dura * 0.72;
+/** Ya ha pasado todo lo de la entrada. */
+const FIN_ENTRADA = ENCAJE + 1.6;
 /** Cada cuánto sale una onda del logo. */
 const ONDA_S = 3.6;
 
@@ -144,21 +141,6 @@ function vertices(cx: number, cy: number, r: number): [number, number][] {
   });
 }
 
-/** Un punto del perímetro: `u` va de 0 a 6, un lado por unidad. */
-function enPerimetro(v: [number, number][], u: number): [number, number] {
-  const k = Math.floor(((u % 6) + 6) % 6);
-  const f = u - Math.floor(u);
-  const [x1, y1] = v[k];
-  const [x2, y2] = v[(k + 1) % 6];
-  return [x1 + (x2 - x1) * f, y1 + (y2 - y1) * f];
-}
-
-function dentro(px: number, py: number, cx: number, cy: number, r: number): boolean {
-  const dx = Math.abs(px - cx);
-  const dy = Math.abs(py - cy);
-  return dy <= (r * Math.sqrt(3)) / 2 && Math.sqrt(3) * dx + dy <= Math.sqrt(3) * r;
-}
-
 /** Un hexágono con las esquinas redondeadas, como el `stroke-linejoin="round"` del logo. */
 function trazarHex(p: THREE.Path, r: number, redondeo: number): void {
   const v = vertices(0, 0, r);
@@ -176,70 +158,10 @@ function trazarHex(p: THREE.Path, r: number, redondeo: number): void {
   p.closePath();
 }
 
-/* ── las partículas de la entrada ── */
+/* ── el panal de alrededor: solo sus líneas ── */
 
-interface Grupo {
-  n: number;
-  base: Float32Array;
-  desde: Float32Array;
-  color: Float32Array;
-  fase: Float32Array;
-  dist: Float32Array;
-}
-
-function grupo(
-  d: Disposicion,
-  n: number,
-  colocar: (i: number) => [number, number, number, THREE.Color, number],
-): Grupo {
-  const g: Grupo = {
-    n,
-    base: new Float32Array(n * 3),
-    desde: new Float32Array(n * 3),
-    color: new Float32Array(n * 3),
-    fase: new Float32Array(n),
-    dist: new Float32Array(n),
-  };
-  for (let i = 0; i < n; i++) {
-    const [x, y, z, col, brillo] = colocar(i);
-    g.base.set([x, y, z], i * 3);
-    const a = Math.random() * Math.PI * 2;
-    const b = Math.acos(2 * Math.random() - 1);
-    const rr = 5 + Math.random() * 6;
-    g.desde.set([d.lx + rr * Math.sin(b) * Math.cos(a), d.ly + rr * Math.sin(b) * Math.sin(a), rr * Math.cos(b)], i * 3);
-    g.color.set([col.r * brillo, col.g * brillo, col.b * brillo], i * 3);
-    g.fase[i] = Math.random() * Math.PI * 2;
-    g.dist[i] = Math.hypot(x - d.lx, y - d.ly);
-  }
-  return g;
-}
-
-function crearGrupos(d: Disposicion, pot: Potencia) {
-  const exterior = vertices(d.lx, d.ly, d.r);
-
-  const borde = grupo(d, pot.borde, () => {
-    const [x, y] = enPerimetro(exterior, Math.random() * 6);
-    const dx = x - d.lx;
-    const dy = y - d.ly;
-    const len = Math.hypot(dx, dy) || 1;
-    const off = ((Math.random() + Math.random()) / 2 - 0.5) * d.banda;
-    const col = Math.random() < 0.82 ? C.blanco : C.niebla;
-    return [x + (dx / len) * off, y + (dy / len) * off, (Math.random() - 0.5) * 0.35, col, 0.6 + Math.random() * 0.4];
-  });
-
-  const nucleo = grupo(d, pot.nucleo, () => {
-    let x = 0;
-    let y = 0;
-    do {
-      x = d.ix + (Math.random() * 2 - 1) * d.ir;
-      y = d.iy + (Math.random() * 2 - 1) * d.ir;
-    } while (!dentro(x, y, d.ix, d.iy, d.ir));
-    const rel = Math.hypot(x - d.ix, y - d.iy) / d.ir;
-    const col = rel < 0.35 ? C.caliente : rel < 0.7 ? C.mielClara : C.miel;
-    return [x, y, (Math.random() - 0.5) * 0.25, col, 0.7 + Math.random() * 0.3];
-  });
-
-  // El panal de alrededor: celdas de la misma forma, del logo hacia fuera.
+function crearPanal(d: Disposicion) {
+  // Celdas de la misma forma que el logo, del logo hacia fuera.
   const celda = d.r * 0.42;
   const centros: [number, number][] = [];
   const dxc = 1.5 * celda;
@@ -252,20 +174,6 @@ function crearGrupos(d: Disposicion, pot: Potencia) {
       if (dist > d.r * 1.22 && dist < d.r * 3.4) centros.push([x, y]);
     }
   }
-  const panal = grupo(d, pot.panal, () => {
-    const [cx, cy] = centros[Math.floor(Math.random() * centros.length)];
-    const [x, y] = enPerimetro(vertices(cx, cy, celda * 0.94), Math.random() * 6);
-    const r = Math.random();
-    const col = r < 0.25 ? C.ocaso : r < 0.65 ? C.monad : r < 0.8 ? C.niebla : C.miel;
-    return [x + (Math.random() - 0.5) * 0.03, y + (Math.random() - 0.5) * 0.03, -0.4 + (Math.random() - 0.5) * 0.5, col, 1];
-  });
-
-  const polvo = grupo(d, pot.polvo, () => {
-    const col = Math.random() < 0.6 ? C.niebla : C.mielClara;
-    return [d.lx + (Math.random() - 0.5) * 20, d.ly + (Math.random() - 0.5) * 12, -2 - Math.random() * 3, col, 0.25 + Math.random() * 0.35];
-  });
-
-  // Las líneas de las celdas, que se quedan al final: las ondas las encienden.
   const lineas = new Float32Array(centros.length * 6 * 2 * 3);
   const distLinea = new Float32Array(centros.length * 6 * 2);
   centros.forEach(([cx, cy], c) => {
@@ -279,8 +187,7 @@ function crearGrupos(d: Disposicion, pot: Potencia) {
       distLinea[i + 1] = Math.hypot(x2 - d.lx, y2 - d.ly);
     }
   });
-
-  return { borde, nucleo, panal, polvo, lineas, distLinea };
+  return { lineas, distLinea };
 }
 
 /* ── el logo sólido ── */
@@ -337,35 +244,20 @@ function sprite(): THREE.Texture {
 
 const easeInOut = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
 const easeOutBack = (p: number) => 1 + 2.2 * Math.pow(p - 1, 3) + 1.2 * Math.pow(p - 1, 2);
+const easeOutCubic = (p: number) => 1 - Math.pow(1 - p, 3);
 const tramo = (t: number, desde: number, dura: number) => Math.min(1, Math.max(0, (t - desde) / dura));
 
-function geometria(g: Grupo): THREE.BufferGeometry {
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(g.desde), 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.color), 3));
-  return geo;
-}
-
-function Logo({ d, pot, entrada }: { d: Disposicion; pot: Potencia; entrada: boolean }) {
+function Logo({ d, entrada }: { d: Disposicion; entrada: boolean }) {
   const raiz = useRef<THREE.Group>(null);
-  const grupos = useMemo(() => crearGrupos(d, pot), [d, pot]);
+  const panal = useMemo(() => crearPanal(d), [d]);
   const solido = useMemo(() => crearLogoSolido(d), [d]);
   const tex = useMemo(() => sprite(), []);
-  const geos = useMemo(
-    () => ({
-      borde: geometria(grupos.borde),
-      nucleo: geometria(grupos.nucleo),
-      panal: geometria(grupos.panal),
-      polvo: geometria(grupos.polvo),
-    }),
-    [grupos],
-  );
   const geoLineas = useMemo(() => {
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(grupos.lineas, 3));
-    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(grupos.lineas.length), 3));
+    geo.setAttribute('position', new THREE.BufferAttribute(panal.lineas, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(panal.lineas.length), 3));
     return geo;
-  }, [grupos]);
+  }, [panal]);
   const geoAnillo = useMemo(() => {
     const geo = new THREE.BufferGeometry();
     const v = vertices(0, 0, d.r);
@@ -374,9 +266,8 @@ function Logo({ d, pot, entrada }: { d: Disposicion; pot: Potencia; entrada: boo
   }, [d]);
 
   // Lo que se anima por referencia.
-  const particulas = useRef<THREE.Group>(null);
-  const matsParticulas = useRef<THREE.PointsMaterial[]>([]);
   const logo = useRef<THREE.Group>(null);
+  const aroMesh = useRef<THREE.Mesh>(null);
   const matAro = useRef<THREE.MeshPhysicalMaterial>(null);
   const matNucleo = useRef<THREE.MeshPhysicalMaterial>(null);
   const nucleoMesh = useRef<THREE.Mesh>(null);
@@ -386,32 +277,26 @@ function Logo({ d, pot, entrada }: { d: Disposicion; pot: Potencia; entrada: boo
   const anillos = useRef<(THREE.LineLoop | null)[]>([]);
   const haloMiel = useRef<THREE.Sprite>(null);
   const haloMonad = useRef<THREE.Sprite>(null);
-  const desp = useRef({
-    borde: new Float32Array(pot.borde * 3),
-    nucleo: new Float32Array(pot.nucleo * 3),
-    panal: new Float32Array(pot.panal * 3),
-  });
   const inicio = useRef<number | null>(null);
   /** Lo que se va midiendo para bajar la resolución si el aparato no llega. */
   const ritmo = useRef({ tiempo: 0, fotogramas: 0, bajadas: 0 });
 
   useEffect(
     () => () => {
-      Object.values(geos).forEach((g) => g.dispose());
       geoLineas.dispose();
       geoAnillo.dispose();
       solido.geoAro.dispose();
       solido.geoNucleo.dispose();
       tex.dispose();
     },
-    [geos, geoLineas, geoAnillo, solido, tex],
+    [geoLineas, geoAnillo, solido, tex],
   );
 
   useFrame((state, delta) => {
-    const { camera, pointer, clock, size } = state;
+    const { pointer, clock } = state;
     // Al girar el teléfono se rehace el logo en su sitio nuevo, pero sin repetir
     // la entrada: se empieza ya en el final.
-    if (inicio.current === null) inicio.current = clock.elapsedTime - (entrada ? 0 : SIN_PARTICULAS + 0.5);
+    if (inicio.current === null) inicio.current = clock.elapsedTime - (entrada ? 0 : FIN_ENTRADA);
 
     /*
      * La red de seguridad: si va lento, menos resolución.
@@ -435,9 +320,8 @@ function Logo({ d, pot, entrada }: { d: Disposicion; pot: Potencia; entrada: boo
     }
 
     // Con movimiento reducido, directamente el final, quieto.
-    const t = REDUCED ? SIN_PARTICULAS + 1 : clock.elapsedTime - inicio.current;
+    const t = REDUCED ? FIN_ENTRADA + 1 : clock.elapsedTime - inicio.current;
     const mov = REDUCED ? 0 : 1;
-    const cam = camera as THREE.PerspectiveCamera;
 
     // Inclinación suave del conjunto hacia el cursor.
     if (raiz.current && !REDUCED) {
@@ -445,165 +329,103 @@ function Logo({ d, pot, entrada }: { d: Disposicion; pot: Potencia; entrada: boo
       raiz.current.rotation.x += (-pointer.y * 0.08 - raiz.current.rotation.x) * 0.04;
     }
 
-    /* ── 1 · las partículas, hasta que el logo sólido toma el relevo ── */
+    /* ── 1 · el aro: desde el fondo, girando un tercio de vuelta ── */
 
-    const relevo = tramo(t, IGNICION, RELEVO);
-    if (particulas.current) particulas.current.visible = t < SIN_PARTICULAS;
-    if (t < SIN_PARTICULAS) {
-      const vh = 2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.position.z;
-      const vw = vh * (size.width / size.height);
-      const mx = (pointer.x * vw) / 2;
-      const my = (pointer.y * vh) / 2;
-      // Se apagan mientras aparece el sólido.
-      const apagado = 1 - easeInOut(relevo);
-      matsParticulas.current.forEach((m) => {
-        m.opacity = 0.95 * apagado;
-      });
-
-      const mover = (g: Grupo, geo: THREE.BufferGeometry, d: Float32Array | null, retraso: number, deriva: number) => {
-        const p = easeInOut(tramo(t, retraso, LLEGADA));
-        const pos = (geo.getAttribute('position') as THREE.BufferAttribute).array as Float32Array;
-        for (let i = 0; i < g.n; i++) {
-          const i3 = i * 3;
-          const f = g.fase[i];
-          const bx = g.base[i3] + (Math.sin(t * 0.5 + f) * 0.05 + Math.sin(t * 0.23 + f * 2) * 0.03) * deriva;
-          const by = g.base[i3 + 1] + Math.cos(t * 0.42 + f * 1.3) * 0.05 * deriva;
-          let x = g.desde[i3] + (bx - g.desde[i3]) * p;
-          let y = g.desde[i3 + 1] + (by - g.desde[i3 + 1]) * p;
-          if (d) {
-            const dx = x + d[i3] - mx;
-            const dy = y + d[i3 + 1] - my;
-            const dist = Math.hypot(dx, dy);
-            if (dist < 1.3 && dist > 0.0001) {
-              const fza = (1.3 - dist) * (1.3 - dist) * 0.14;
-              d[i3] += (dx / dist) * fza;
-              d[i3 + 1] += (dy / dist) * fza;
-            }
-            d[i3] *= 0.94;
-            d[i3 + 1] *= 0.94;
-            x += d[i3];
-            y += d[i3 + 1];
-          }
-          pos[i3] = x;
-          pos[i3 + 1] = y;
-          pos[i3 + 2] = g.desde[i3 + 2] + (g.base[i3 + 2] - g.desde[i3 + 2]) * p;
-        }
-        (geo.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
-      };
-      mover(grupos.polvo, geos.polvo, null, 0, 3);
-      mover(grupos.panal, geos.panal, desp.current.panal, 0, 0.6);
-      mover(grupos.borde, geos.borde, desp.current.borde, 0.25, 0.35);
-      mover(grupos.nucleo, geos.nucleo, desp.current.nucleo, 0.5, 0.25);
+    const pAro = REDUCED ? 1 : tramo(t, ARO.desde, ARO.dura);
+    const llegaAro = easeOutBack(pAro);
+    if (aroMesh.current) {
+      aroMesh.current.rotation.z = -(Math.PI * 2) / 3 * (1 - easeOutCubic(pAro));
+      aroMesh.current.position.z = -3.2 * (1 - easeOutCubic(pAro));
+      aroMesh.current.scale.setScalar(0.55 + 0.45 * llegaAro);
     }
+    if (matAro.current) matAro.current.opacity = Math.min(1, pAro * 2.2) * d.opacidad;
 
-    /* ── 2 · la ignición: destello, onda de choque y el logo sólido ── */
+    /* ── 2 · el núcleo: cae desde delante hasta su hueco ── */
 
-    const aparece = REDUCED ? 1 : tramo(t, IGNICION - 0.05, RELEVO);
-    if (logo.current) {
-      logo.current.visible = aparece > 0;
-      // Entra un poco más grande y se asienta con un rebote corto.
-      const s = REDUCED ? 1 : 1.18 - 0.18 * easeOutBack(aparece);
-      // Y después flota: un balanceo lento, en 3D, que deja ver el relieve.
-      const flota = tramo(t, IGNICION + RELEVO, 1.5) * mov;
-      logo.current.scale.setScalar(s);
-      logo.current.rotation.y = Math.sin(t * 0.45) * 0.22 * flota;
-      logo.current.rotation.x = Math.sin(t * 0.33 + 1) * 0.1 * flota;
-      logo.current.position.y = d.ly + Math.sin(t * 0.8) * 0.05 * flota;
-    }
-    if (matAro.current) matAro.current.opacity = aparece * d.opacidad;
-    if (matNucleo.current) {
-      matNucleo.current.opacity = aparece * d.opacidad;
-      // El núcleo late, más fuerte justo al encenderse.
-      const late = 0.85 + 0.08 * Math.sin(t * 1.7) * mov;
-      matNucleo.current.emissiveIntensity = late + 1.6 * Math.exp(-((t - IGNICION - 0.2) ** 2) / 0.08) * mov;
-    }
+    const pNucleo = REDUCED ? 1 : tramo(t, NUCLEO.desde, NUCLEO.dura);
+    const encajado = REDUCED || t >= ENCAJE;
     if (nucleoMesh.current) {
-      nucleoMesh.current.scale.setScalar(1 + 0.03 * Math.sin(t * 1.7) * mov);
+      const cae = easeOutBack(pNucleo);
+      nucleoMesh.current.position.z = 0.05 + 3.4 * (1 - cae);
+      // Late una vez encajado: un 3 %, al ritmo del halo.
+      const late = encajado ? 1 + 0.03 * Math.sin(t * 1.7) * mov : 1;
+      nucleoMesh.current.scale.setScalar((1.9 - 0.9 * cae) * late);
+      nucleoMesh.current.rotation.z = (Math.PI / 3) * (1 - easeOutCubic(pNucleo));
     }
+    if (matNucleo.current) {
+      matNucleo.current.opacity = Math.min(1, pNucleo * 2.5) * d.opacidad;
+      // Se enciende de golpe al encajar y se queda latiendo.
+      const late = 0.85 + 0.08 * Math.sin(t * 1.7) * mov;
+      matNucleo.current.emissiveIntensity = late + 1.6 * Math.exp(-((t - ENCAJE - 0.1) ** 2) / 0.06) * mov;
+    }
+
+    /* ── 3 · el encaje: destello y onda de choque ── */
+
     if (destello.current) {
-      const p = tramo(t, IGNICION - 0.05, 0.9);
+      const p = tramo(t, ENCAJE - 0.05, 0.85);
       const m = destello.current.material as THREE.SpriteMaterial;
-      m.opacity = REDUCED || p <= 0 || p >= 1 ? 0 : Math.sin(Math.PI * Math.min(1, p * 1.4)) * 0.9;
-      destello.current.scale.setScalar(d.r * (0.6 + 5 * easeInOut(p)));
+      m.opacity = REDUCED || p <= 0 || p >= 1 ? 0 : Math.sin(Math.PI * Math.min(1, p * 1.4)) * 0.85;
+      destello.current.scale.setScalar(d.r * (0.6 + 4.6 * easeInOut(p)));
     }
     if (choque.current) {
-      const p = tramo(t, IGNICION, 1.1);
+      const p = tramo(t, ENCAJE, 1.1);
       choque.current.scale.setScalar(1 + 2.4 * (1 - Math.pow(1 - p, 3)));
       (choque.current.material as THREE.LineBasicMaterial).opacity = REDUCED || p >= 1 || p <= 0 ? 0 : 0.95 * (1 - p);
     }
 
-    /* ── 3 · el logo vivo: la luz que gira, los halos, anillos y ondas ── */
+    /* ── 4 · el logo vivo: flota, la luz que gira, los halos, anillos y ondas ── */
 
+    if (logo.current) {
+      const flota = tramo(t, ENCAJE + 0.2, 1.5) * mov;
+      logo.current.rotation.y = Math.sin(t * 0.45) * 0.22 * flota;
+      logo.current.rotation.x = Math.sin(t * 0.33 + 1) * 0.1 * flota;
+      logo.current.position.y = d.ly + Math.sin(t * 0.8) * 0.05 * flota;
+    }
     if (luzQueGira.current) {
       const a = t * 0.9;
       luzQueGira.current.position.set(d.lx + Math.cos(a) * d.r * 1.3, d.ly + Math.sin(a) * d.r * 1.05, 2.2);
-      luzQueGira.current.intensity = 26 * aparece;
+      luzQueGira.current.intensity = 26 * Math.min(1, pAro * 1.5);
     }
-    const encendido = tramo(t, IGNICION, 1.2);
+    const encendido = REDUCED ? 1 : tramo(t, ENCAJE, 1.2);
     if (haloMiel.current) {
       (haloMiel.current.material as THREE.SpriteMaterial).opacity = encendido * (0.5 + 0.15 * Math.sin(t * 1.7) * mov);
     }
     if (haloMonad.current) {
-      (haloMonad.current.material as THREE.SpriteMaterial).opacity = encendido * 0.26;
+      (haloMonad.current.material as THREE.SpriteMaterial).opacity = (REDUCED ? 1 : Math.min(1, pAro * 1.4)) * 0.26;
     }
     anillos.current.forEach((anillo, k) => {
       if (!anillo) return;
       const p = (((t + k * (ONDA_S / 2)) % ONDA_S) / ONDA_S) * mov;
       anillo.scale.setScalar(1 + p * 1.7);
-      (anillo.material as THREE.LineBasicMaterial).opacity = REDUCED || t < IGNICION + 0.8 ? 0 : 0.42 * (1 - p);
+      (anillo.material as THREE.LineBasicMaterial).opacity = REDUCED || t < ENCAJE + 0.8 ? 0 : 0.42 * (1 - p);
     });
     {
+      // El panal se dibuja del logo hacia fuera a partir del encaje: cada
+      // línea aparece cuando la alcanza un frente que avanza a 3,4 r por segundo.
+      const frente = REDUCED ? Infinity : d.r * 1.1 + Math.max(0, t - ENCAJE) * d.r * 3.4;
       const fase = (t % ONDA_S) / ONDA_S;
       const onda = d.r * 1.15 + fase * d.r * 2.5;
       const onda2 = d.r * 1.15 + (((t + ONDA_S / 2) % ONDA_S) / ONDA_S) * d.r * 2.5;
       const lc = (geoLineas.getAttribute('color') as THREE.BufferAttribute).array as Float32Array;
-      const aparecePanal = tramo(t, 0.8, 1.6);
-      for (let i = 0; i < grupos.distLinea.length; i++) {
-        const dist = grupos.distLinea[i];
+      for (let i = 0; i < panal.distLinea.length; i++) {
+        const dist = panal.distLinea[i];
+        const visible = Math.min(1, Math.max(0, (frente - dist) / (d.r * 0.5)));
+        // El borde del frente, más brillante: es lo que se ve «dibujarse».
+        const borde = REDUCED ? 0 : Math.exp(-(((frente - dist) / (d.r * 0.25)) ** 2)) * (t < ENCAJE + 1.4 ? 1 : 0);
         const a = (dist - onda) / 0.38;
         const b = (dist - onda2) / 0.38;
-        const ola = REDUCED ? 0 : Math.exp(-a * a) + 0.45 * Math.exp(-b * b);
+        const ola = REDUCED || t < ENCAJE + 0.8 ? 0 : Math.exp(-a * a) + 0.45 * Math.exp(-b * b);
         const lejos = Math.max(0, 1 - (dist - d.r * 1.2) / (d.r * 2.4));
-        const base = 0.16 * lejos * aparecePanal;
+        const base = 0.16 * lejos;
+        const miel = (ola * 0.85 + borde * 1.1) * lejos;
         const i3 = i * 3;
-        lc[i3] = (C.ocaso.r * base + C.miel.r * ola * 0.85 * lejos) * aparecePanal;
-        lc[i3 + 1] = (C.ocaso.g * base + C.miel.g * ola * 0.85 * lejos) * aparecePanal;
-        lc[i3 + 2] = (C.ocaso.b * base * 1.6 + C.miel.b * ola * 0.85 * lejos) * aparecePanal;
+        lc[i3] = (C.ocaso.r * base + C.miel.r * miel) * visible;
+        lc[i3 + 1] = (C.ocaso.g * base + C.miel.g * miel) * visible;
+        lc[i3 + 2] = (C.ocaso.b * base * 1.6 + C.miel.b * miel) * visible;
       }
       (geoLineas.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true;
-
-      // Los puntos del panal, mientras existen, se encienden con las mismas ondas.
-      if (t < SIN_PARTICULAS) {
-        const g = grupos.panal;
-        const col = (geos.panal.getAttribute('color') as THREE.BufferAttribute).array as Float32Array;
-        for (let i = 0; i < g.n; i++) {
-          const a = (g.dist[i] - onda) / 0.32;
-          const brillo = 0.6 + 2 * Math.exp(-a * a);
-          const i3 = i * 3;
-          col[i3] = g.color[i3] * brillo;
-          col[i3 + 1] = g.color[i3 + 1] * brillo;
-          col[i3 + 2] = g.color[i3 + 2] * brillo;
-        }
-        (geos.panal.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true;
-      }
     }
   });
-
-  const material = (tam: number, opacidad = 0.95) => (
-    <pointsMaterial
-      ref={(m) => {
-        if (m && !matsParticulas.current.includes(m)) matsParticulas.current.push(m);
-      }}
-      size={tam}
-      map={tex}
-      vertexColors
-      transparent
-      opacity={opacidad}
-      depthWrite={false}
-      blending={THREE.AdditiveBlending}
-      sizeAttenuation
-    />
-  );
 
   return (
     <group ref={raiz}>
@@ -640,17 +462,10 @@ function Logo({ d, pot, entrada }: { d: Disposicion; pot: Potencia; entrada: boo
         <spriteMaterial map={tex} color="#E29A2E" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
       </sprite>
 
-      {/* Las partículas de la entrada. Desaparecen cuando llega el logo. */}
-      <group ref={particulas}>
-        <points geometry={geos.polvo}>{material(0.032, 0.8)}</points>
-        <points geometry={geos.panal}>{material(0.05)}</points>
-        <points geometry={geos.borde}>{material(0.068)}</points>
-        <points geometry={geos.nucleo}>{material(0.092)}</points>
-      </group>
-
-      {/* El logo sólido. */}
-      <group ref={logo} position={[d.lx, d.ly, 0]} visible={false}>
-        <mesh geometry={solido.geoAro}>
+      {/* El logo. Cada pieza entra por su cuenta (arriba, en useFrame); el
+          grupo es lo que flota después. */}
+      <group ref={logo} position={[d.lx, d.ly, 0]}>
+        <mesh ref={aroMesh} geometry={solido.geoAro}>
           {/* Blanco con barniz: sin entorno que reflejar, el metal salía gris.
               El barniz es lo que deja el brillo de la luz que gira. */}
           <meshPhysicalMaterial
@@ -703,7 +518,7 @@ function webglAvailable(): boolean {
   }
 }
 
-export default function HeroSwarm({ onReady }: { onReady?: () => void }) {
+export default function HeroLogo({ onReady }: { onReady?: () => void }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
   const [supported] = useState(webglAvailable);
@@ -756,7 +571,7 @@ export default function HeroSwarm({ onReady }: { onReady?: () => void }) {
         gl={{ antialias: POTENCIA.antialias, alpha: true, powerPreference: 'high-performance' }}
         onCreated={onReady}
       >
-        <Logo key={retrato ? 'vertical' : 'horizontal'} d={d} pot={POTENCIA} entrada={!recolocado} />
+        <Logo key={retrato ? 'vertical' : 'horizontal'} d={d} entrada={!recolocado} />
       </Canvas>
     </div>
   );

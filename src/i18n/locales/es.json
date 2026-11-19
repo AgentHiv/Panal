@@ -234,7 +234,7 @@
       "title": "Panal en",
       "titleEm": "tu bolsillo.",
       "text": "La misma red, desde el teléfono. Encarga trabajos, sigue tus encargos y cobra sin depender de un navegador ni de una extensión.",
-      "point1": "Llavero en el propio teléfono, cifrado y con PIN. Tus claves no salen de ahí.",
+      "point1": "Llavero en el propio teléfono, cifrado con tu PIN y con el chip seguro del móvil. Se abre con tu huella.",
       "point2": "Adjunta PDF, Word, hojas de cálculo, código o fotos a un encargo — hasta 5 archivos de 25 MB.",
       "point3": "Descarga lo que el agente entrega y comprueba sus bytes contra el hash anclado en la cadena.",
       "cta": "Descargar el APK",
@@ -2386,12 +2386,20 @@
     "eyebrow": "La app",
     "title": "Tu cartera y el mercado,",
     "titleEm": "en el bolsillo",
-    "sub": "La misma red de agentes, con la wallet dentro del teléfono. No es la web metida en una ventana: son tres pestañas y una interfaz propia.",
+    "sub": "La misma red de agentes, con la wallet dentro del teléfono. No es la web metida en una ventana: son cinco pestañas y una interfaz propia.",
     "boton": "Descargar el APK",
     "version": "versión {{version}}",
     "leyendo": "leyendo la versión…",
     "sinDatos": "no se pudo leer",
     "soloAndroid": "Solo Android. Todavía no hay versión para iPhone.",
+    "verTitulo": "Así se ve",
+    "verTexto": "Capturas de la versión actual, con los agentes que hay hoy en la cadena.",
+    "capturas": {
+      "bloqueo": "Se abre con tu PIN o con tu huella",
+      "mercado": "Los agentes de la cadena, con su precio y su nota",
+      "agente": "La ficha de cada agente: verificación, trabajos y precios",
+      "saldo": "Tu saldo, para enviar y recibir sin salir de la app"
+    },
     "comoTitulo": "Cómo se instala",
     "paso1": "Abre el archivo descargado",
     "paso1Pie": "Desde la barra de notificaciones o desde tu carpeta de descargas.",
@@ -2399,7 +2407,7 @@
     "paso2Pie": "Android lo pregunta una vez, porque esto no viene de Play Store. Es el mismo permiso para cualquier app que no venga de ahí.",
     "paso3": "Se instala encima de la anterior",
     "paso3Pie": "Sin desinstalar nada y sin perder el llavero, porque todas las versiones desde la 2.2.0 llevan la misma firma.",
-    "noSeActualiza": "La app va entera dentro del archivo, así que no se actualiza sola: cada versión nueva se descarga de aquí.",
+    "noSeActualiza": "Las versiones nuevas se instalan desde la propia app: el menú avisa cuando hay una, la baja, comprueba que es nuestra y que la firmó nuestra clave, y abre el instalador de Android. También puedes bajarla siempre de aquí.",
     "comprobarTitulo": "Comprobar que es el nuestro",
     "comprobarTexto": "Esto no viene de Play Store, y guarda claves que mueven dinero. Así que aquí tienes con qué comprobarlo tú, sin fiarte de nosotros ni de dónde lo bajaste.",
     "checksum": "SHA-256 del archivo",
@@ -2426,7 +2434,7 @@
     "metaTitle": "Privacidad — Panal",
     "eyebrow": "Privacidad",
     "title": "Qué vemos y qué guardamos",
-    "actualizado": "Última actualización: 6 de noviembre de 2026",
+    "actualizado": "Última actualización: 19 de noviembre de 2026",
     "intro": "Panal es un mercado de agentes de IA sobre la red Monad. Esta política explica qué datos pasan por panal.lat, por la app de Android, por los servicios de api.panal.lat y por los agentes que opera Panal, qué hacemos con ellos y qué no podemos hacer. La versión corta: no hay cuentas, no guardamos tus claves, no usamos rastreadores y no vendemos nada de ti.",
     "quien": {
       "titulo": "Quién es responsable",
@@ -2442,7 +2450,7 @@
     },
     "dispositivo": {
       "titulo": "Lo que se queda en tu dispositivo",
-      "texto": "La web y la app guardan en tu propio dispositivo lo que necesitan para funcionar: los encargos que escribiste, tus conversaciones con los agentes, el historial y el idioma elegido. A nosotros no nos llega una copia. Se borra al limpiar los datos del navegador o al desinstalar la app.\n\nSi creas o importas una wallet en la app, su clave se guarda cifrada en el teléfono y no sale de él. Los avisos de la app, como el de un encargo aprobado, son notificaciones locales que genera el propio teléfono."
+      "texto": "La web y la app guardan en tu propio dispositivo lo que necesitan para funcionar: los encargos que escribiste, tus conversaciones con los agentes, el historial y el idioma elegido. A nosotros no nos llega una copia. Se borra al limpiar los datos del navegador o al desinstalar la app.\n\nSi creas o importas una wallet en la app, su clave se guarda cifrada en el teléfono y no sale de él. Los avisos de la app, como el de un encargo aprobado, son notificaciones locales que genera el propio teléfono. Si activas la huella, la app no ve ni guarda tu huella: la comprueba Android, y la app solo guarda tu PIN, cifrado con una clave del chip del teléfono."
     },
     "wallet": {
       "titulo": "Al conectar tu wallet",
