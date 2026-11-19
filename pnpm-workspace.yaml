@@ -73,6 +73,12 @@ minimumReleaseAgeExclude:
 # Ninguna de estas tres entra en lo que se descarga la web o el APK: lo comprueban
 # los source maps del build. Se suben porque es gratis, no porque corriera peligro.
 #
+# Añadida el 2026-11-19:
+#   - hono 4.13.13 (porto, un conector de wagmi): cinco avisos, uno bajo y cuatro
+#     moderados, sobre middleware que se salta rutas, csrf y validación de
+#     formularios. Solo lo usa `porto/server`, el servidor de porto, que ni la web
+#     ni la app cargan. 4.13.16 es la misma versión mayor.
+#
 # Y dos que se quedan como están, a propósito:
 #   - zod 3 (abitype viejo, SDK de Coinbase, AppKit de Reown, que fija 3.22.4 aun
 #     en su última versión): el arreglo solo existe en zod 4, que cambia la API.
@@ -86,3 +92,4 @@ overrides:
   'follow-redirects@<1.16.2': ^1.16.2
   'postcss-selector-parser@>=6.0.0 <6.1.5': ^6.1.5
   'uuid@<11.1.1': ^11.1.1
+  'hono@<4.13.16': ^4.13.16
