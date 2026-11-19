@@ -43,7 +43,8 @@
  *                       es la última de X-Forwarded-For
  *   WEB_URL             la web a la que apuntan los enlaces (https://panal.lat)
  *   ORIGENES_BORRADOR   orígenes que pueden leer un borrador, separados por
- *                       comas (por defecto, los de WEB_URL con y sin www)
+ *                       comas (por defecto, los de WEB_URL con y sin www, y
+ *                       su `test.`: la copia donde se prueba un PR)
  *   RPC_URL             como en el MCP local
  */
 
@@ -84,7 +85,7 @@ const WEB_URL = sinBarraFinal(process.env.WEB_URL?.trim() || 'https://panal.lat'
 const ORIGENES_BORRADOR = new Set(
   (process.env.ORIGENES_BORRADOR?.trim()
     ? process.env.ORIGENES_BORRADOR.split(',')
-    : [WEB_URL, WEB_URL.replace('://', '://www.')]
+    : [WEB_URL, WEB_URL.replace('://', '://www.'), WEB_URL.replace('://', '://test.')]
   )
     .map((o) => sinBarraFinal(o.trim()))
     .filter(Boolean),

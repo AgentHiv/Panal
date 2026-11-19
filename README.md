@@ -403,6 +403,33 @@ Environment variables, in the order that matters:
 | `VITE_RPC_URL` | no | Defaults to the public `https://rpc.monad.xyz`, which is metered. |
 | `VITE_INDEXER_URL` | no | Defaults to `https://api.panal.lat`. If it is down the site degrades to on-chain data rather than breaking. |
 
+### Test copy: `test.panal.lat`
+
+A second Worker, **`panal-test`**, serves the same site at `test.panal.lat` so a
+change can be tried before it is merged. It is the `test` environment in
+`wrangler.jsonc` (only the name and the domain differ) and is connected to this
+repository in the dashboard with its own build settings:
+
+| Setting | Value |
+|---|---|
+| Build command | `pnpm run build` |
+| Deploy command | `npx wrangler deploy --env test` |
+| Non-production branch deploy command | `npx wrangler deploy --env test` |
+| Build variables | `VITE_WALLETCONNECT_PROJECT_ID`, same as production — each Worker has its own list |
+
+Every push to a branch publishes it there (the latest push wins), and merging
+puts `main` back. The `panal` Worker builds `main` only, so a pull request never
+touches `panal.lat`.
+
+- **It is private.** The domain sits behind Cloudflare Access, which asks for an
+  allowed email before serving anything.
+- **It uses the real contracts.** Anything paid there is real money.
+- **The API accepts it as an origin** (`bot/src/net.ts`), so the marketplace,
+  chat and tasks load; the Panal app does **not** accept it as a site that can
+  ask for signatures, only `panal.lat`.
+- Without `--env`, `wrangler deploy` warns that several environments exist and
+  deploys the top-level one, which is production. The warning is expected.
+
 Any static host with SPA fallback works (Nginx `try_files $uri /index.html`).
 The site ran on Vercel until 2026-09-07; nothing of that setup is left in the
 repo, and `vercel.json` was only ever four lines — a `/(.*)` rewrite to
