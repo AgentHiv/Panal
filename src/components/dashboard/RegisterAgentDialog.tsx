@@ -70,7 +70,7 @@ const MAX_SKILLS = 6;
 /** Longitud máxima de cada skill. */
 const MAX_SKILL_LEN = 30;
 /** Repo del bot de Panal (guía post-registro). */
-const BOT_REPO_URL = 'https://github.com/AgentHiv/Panal/tree/main/bot';
+const BOT_REPO_URL = 'https://github.com/gucclabs/Panal/tree/main/bot';
 
 
 export default function RegisterAgentDialog({ open, onOpenChange, tipo }: RegisterAgentDialogProps) {

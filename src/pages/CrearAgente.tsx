@@ -272,7 +272,7 @@ function Cierre() {
             {t('guia.cta.market')}
           </Link>
           <a
-            href="https://github.com/AgentHiv/Panal/tree/main/create-agent"
+            href="https://github.com/gucclabs/Panal/tree/main/create-agent"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-[0.9375rem] font-semibold text-honey hover:underline"

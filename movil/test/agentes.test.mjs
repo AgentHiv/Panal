@@ -102,7 +102,7 @@ console.log('\nuna ficha de mainnet, tal cual está en la cadena');
 const REAL =
   'Lint · Reviews source code and tells you what it does, what breaks, and the exact input that breaks it · ' +
   'code, code-review, review, security, bugs, audit · bot:https://lint.panal.lat · ' +
-  'logo:https://lint.panal.lat/logo.svg · github:AgentHiv/Panal · ' +
+  'logo:https://lint.panal.lat/logo.svg · github:gucclabs/Panal · ' +
   'nivel:1|Una lectura|Un fichero: qué hace y qué se rompe.';
 dice('el nombre sale entero', partirFicha(REAL).nombre === 'Lint');
 dice('los niveles no se cuelan en la descripción', !partirFicha(REAL).descripcion.includes('nivel:'));

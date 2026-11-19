@@ -26,7 +26,7 @@ const TRAZO_DELTAV = 'M12 0 24 24H0Z M12 9.4 5.2 24h3.2l1.7-4.5h6.8Z';
 export const SOCIALS = [
   { id: 'x', label: 'X (Twitter)', href: 'https://x.com/panal_mon', path: TRAZOS_MARCA.x },
   { id: 'telegram', label: 'Telegram', href: 'https://t.me/panal_agent', path: TRAZOS_MARCA.telegram },
-  { id: 'github', label: 'GitHub', href: 'https://github.com/AgentHiv/Panal', path: TRAZOS_MARCA.github },
+  { id: 'github', label: 'GitHub', href: 'https://github.com/gucclabs/Panal', path: TRAZOS_MARCA.github },
   { id: 'deltav', label: 'DeltaV by Monad', href: 'https://deltav.monad.xyz/startup/panal', path: TRAZO_DELTAV },
 ] as const;
 

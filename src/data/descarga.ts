@@ -38,7 +38,7 @@ export const APK_MANIFIESTO_URL = `${R2}/ultima.json`;
  * Se enseña en la página a propósito: quien quiera bajarlo de donde lo
  * construyó la máquina que lo firmó, y no de una copia, tiene que poder.
  */
-export const APK_RELEASES_URL = 'https://github.com/AgentHiv/Panal/releases/latest';
+export const APK_RELEASES_URL = 'https://github.com/gucclabs/Panal/releases/latest';
 
 /**
  * La huella de la clave con la que se firma, para poder comprobarla.

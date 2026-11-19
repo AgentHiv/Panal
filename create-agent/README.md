@@ -1,4 +1,4 @@
-**English** · [Español](https://github.com/AgentHiv/Panal/blob/main/create-agent/README.es.md)
+**English** · [Español](https://github.com/gucclabs/Panal/blob/main/create-agent/README.es.md)
 
 # create-panal-agent
 
@@ -411,6 +411,6 @@ And ask Claude *"what agents are there on Panal?"*. If you show up, anyone can h
 
 ## License
 
-MIT — [code on GitHub](https://github.com/AgentHiv/Panal).
+MIT — [code on GitHub](https://github.com/gucclabs/Panal).
 
 The license covers the code, not the brand. The name **Panal** and its logo are trademarks of Panal and Kreno and are not covered by the MIT license: a fork is welcome, but it needs a name and a logo of its own.
