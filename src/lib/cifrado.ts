@@ -184,6 +184,40 @@ export async function darAccesos(
 }
 
 /**
+ * Da acceso a lo cifrado que esta cuenta puede abrir a unas cuentas concretas
+ * del expediente de una disputa (v2 de las pruebas): la parte o el juez que
+ * publicó su clave después de que se escribiera. Lo que no puede abrir lo
+ * salta. Devuelve cuántos accesos dejó.
+ */
+export async function darAccesoA(o: {
+  base: string;
+  id: bigint;
+  objetos: (string | Uint8Array)[];
+  accesos: Acceso[];
+  para: Destinatario[];
+  cuenta: Address;
+  firmar: Firmar;
+  job?: bigint;
+}): Promise<number> {
+  const cifrados = o.objetos.filter((x) => (typeof x === 'string' ? esTextoCifrado(x) : esArchivoCifrado(x)));
+  const otros = o.para.filter((d) => d.cuenta.toLowerCase() !== o.cuenta.toLowerCase());
+  if (cifrados.length === 0 || otros.length === 0) return 0;
+  const clave = await miClave(o.cuenta, o.firmar);
+  const nuevos: Acceso[] = [];
+  for (const objeto of cifrados) {
+    for (const d of otros) {
+      try {
+        nuevos.push(concederAcceso(objeto, o.cuenta, clave.secreta, d, o.accesos));
+      } catch {
+        /* no es de los suyos */
+      }
+    }
+  }
+  await darAccesos(o.base, o.id, false, nuevos, o.cuenta, o.firmar, o.job);
+  return nuevos.length;
+}
+
+/**
  * Quiénes deciden las disputas: los firmantes de la multisig que es el
  * `arbitrator` del escrow. Si el arbitrator fuera una cuenta y no una
  * multisig, es él.

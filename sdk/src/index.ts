@@ -365,19 +365,34 @@ export {
 } from './pregunta.js';
 
 // Las pruebas de una disputa: el expediente que guarda el buzón (motivo,
-// pruebas y respuestas firmadas por cada parte, con plazo de siete días).
+// pruebas y respuestas firmadas por cada parte, con plazo de siete días). En
+// la v2 los jueces también preguntan y piden, todo va cifrado para todos, y el
+// encargo y la entrega se comprueban contra la cadena.
 export {
   MARGEN_FECHA_MS,
   MAX_ARCHIVOS_POR_PIEZA,
   MAX_PIEZA_CHARS,
+  MAX_PIEZAS_POR_JUEZ,
   MAX_PIEZAS_POR_PARTE,
+  MAX_TEXTO_ANCLADO_CHARS,
   PLAZO_DE_PRUEBAS_DIAS,
+  anclaDeLaPieza,
   contenidoDePieza,
+  cuerpoDePieza,
+  destinatariosDelExpediente,
+  hashesAnclados,
+  leerCuerpoDePieza,
+  miembrosDelExpediente,
   piezaSignMessage,
   plazoDePruebas,
   pruebasSignMessage,
   verificarPieza,
+  type ArchivoDeCuerpo,
   type ArchivoDePieza,
+  type AutorDePieza,
+  type CuerpoDePieza,
   type ExpedienteDeDisputa,
+  type ParteDeLaTarea,
   type PiezaDeDisputa,
+  type TipoDePieza,
 } from './pruebas.js';

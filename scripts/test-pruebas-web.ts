@@ -6,14 +6,15 @@
  *   npx tsx scripts/test-pruebas-web.ts
  *
  * Con cuatro cuentas: el cliente, quien trabaja y dos jueces, uno con su clave
- * de cifrado publicada y otro sin ella. Lo que tiene que pasar:
- *   - con las dos partes con clave, cada pieza va cifrada para ellas y para el
- *     juez que tiene clave; el buzón guarda sobres;
- *   - la otra parte y ese juez la abren, con sus archivos y su nombre de
- *     verdad, y la firma de su autor se comprueba;
- *   - el juez sin clave no abre nada… hasta que la activa y una parte le da
- *     acceso; entonces sí;
- *   - si a una parte le falta la clave, la pieza va en claro.
+ * de cifrado publicada y otro sin ella. Lo que tiene que pasar (v2):
+ *   - cada pieza va cifrada para TODOS los que tienen clave; el buzón guarda
+ *     sobres, y rechaza una a la que le falte alguno;
+ *   - un juez le pide el encargo al cliente; el cliente lo comparte y el texto
+ *     coincide con el `taskHash`; el agente comparte la entrega con su archivo,
+ *     que cuenta como anclado; otro archivo suyo, no;
+ *   - el juez sin clave no abre nada… hasta que la activa y alguien le da
+ *     acceso; entonces sí. Si la otra parte no tiene clave, se la da un juez;
+ *   - sin clave no se escribe.
  */
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -22,6 +23,9 @@ import { getAddress, keccak256, toBytes, type Address, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import {
   accesoSignMessage,
+  appendAttachmentsManifest,
+  appendFilesManifest,
+  attachmentFrom,
   claveDesdeFirma,
   concederAcceso,
   descifrarArchivo,
@@ -43,8 +47,11 @@ import {
   buzonDePruebas,
   credencialDePruebas,
   destinatariosDePruebas,
+  faltanPorAcceso,
   leerPruebas,
+  marcarAnclados,
   objetosParaDarAcceso,
+  puedeEscribir,
   type PiezaLegible,
 } from '../src/lib/pruebas';
 
@@ -83,12 +90,17 @@ const abrirBytesCon = (c: Cuenta) => async (bytes: Uint8Array, accesos: Acceso[]
   esArchivoCifrado(bytes) ? descifrarArchivo(bytes, c.address, (await claveDe(c)).secreta, accesos) : bytes;
 
 const ahora = BigInt(Math.floor(Date.now() / 1000));
+/** Lo que se pidió y lo que se entregó, con lo que se ancló en el escrow. */
+const PLANO = new TextEncoder().encode('el plano del piso');
+const ENCARGO = appendAttachmentsManifest('Tradúceme el contrato al francés.', [attachmentFrom('plano.pdf', PLANO)]);
+const CONTRATO = new TextEncoder().encode('Le contrat, en français.');
+const ENTREGA = appendFilesManifest('Aquí está la traducción.', [{ name: 'contrat.txt', size: CONTRATO.byteLength, hash: keccak256(CONTRATO), path: 'contrat.txt' }]);
+const HUELLAS = { taskHash: keccak256(toBytes(ENCARGO)), resultHash: keccak256(toBytes(ENTREGA)) };
 const tarea = (worker: Address): Task => ({
   client: cliente.address,
   worker,
   amount: 10n ** 18n,
-  taskHash: keccak256(toBytes('el encargo')),
-  resultHash: keccak256(toBytes('la entrega')),
+  ...HUELLAS,
   deadline: 1_900_000_000n,
   createdAt: 1_899_000_000n,
   status: TaskStatus.Disputed,
@@ -114,8 +126,16 @@ const TAREAS: Record<string, Task> = {
   '30': { ...tarea(persona.address), client: PANAL_TABLON },
 };
 
+const store = new BuzonStore(mkdtempSync(join(tmpdir(), 'panal-pruebas-web-')));
+/** Publicar una clave es dejarla en el buzón: él exige cifrar para quien la tiene. */
+const publicar = async (c: Cuenta) => {
+  publicadas.add(c.address.toLowerCase());
+  store.guardarClave(c.address, (await claveDe(c)).publica, '0x00');
+};
+for (const c of [cliente, persona, juezA]) await publicar(c);
+
 const server = createBuzonServer({
-  store: new BuzonStore(mkdtempSync(join(tmpdir(), 'panal-pruebas-web-'))),
+  store,
   fetchTask: async (id) => {
     const t = TAREAS[id.toString()];
     if (!t) throw new Error('no existe');
@@ -143,66 +163,103 @@ const dir = server.address();
 if (!dir || typeof dir === 'string') throw new Error('sin puerto');
 const raiz = `http://127.0.0.1:${dir.port}/buzon`;
 const base = buzonDePruebas(persona.address, raiz);
+const jueces = [juezA.address, juezB.address];
 
-/** Lo que ve una cuenta: el expediente abierto con lo suyo. */
+/** Lo que ve una cuenta: el expediente abierto con lo suyo, con lo anclado marcado. */
 async function verComo(c: Cuenta, id: bigint, b = base, jobId?: bigint): Promise<{ piezas: PiezaLegible[]; accesos: Acceso[] }> {
   const cred = await credencialDePruebas(id, c.address, firmarCon(c), jobId);
   const e = await leerPruebas(b, id, cred);
-  return { piezas: await Promise.all(e.piezas.map((p) => abrirPieza(id, p, e.archivos, e.accesos, abrirTextoCon(c)))), accesos: e.accesos };
+  const piezas = await Promise.all(e.piezas.map((p) => abrirPieza(id, p, e.archivos, e.accesos, abrirTextoCon(c), HUELLAS)));
+  return { piezas: marcarAnclados(piezas), accesos: e.accesos };
+}
+/** Escribe como lo hará la web: para todos los que tienen clave ahora. */
+async function escribir(
+  c: Cuenta,
+  id: bigint,
+  o: { texto: string; tipo?: 'mensaje' | 'encargo' | 'entrega' | 'peticion'; dirigida?: 'cliente' | 'trabajador'; pide?: 'encargo' | 'entrega'; archivos?: { name: string; bytes: Uint8Array }[] },
+  b = base,
+  trabajador: Address = persona.address,
+  jobId?: bigint,
+  clienteReal: Address = cliente.address,
+) {
+  const { para } = await destinatariosDePruebas(clienteReal, trabajador, jueces, claveDePublicada);
+  const cred = await credencialDePruebas(id, c.address, firmarCon(c), jobId);
+  await aportarPieza({ base: b, taskId: id, texto: o.texto, archivos: o.archivos ?? [], para, cred, yo: c.address, firmar: firmarCon(c), tipo: o.tipo, dirigida: o.dirigida, pide: o.pide });
 }
 
 try {
   console.log('\n─── para quién se cifra ───');
-  const jueces = [juezA.address, juezB.address];
-  const { para, juecesSinClave } = await destinatariosDePruebas(cliente.address, persona.address, jueces, claveDePublicada);
-  check('las dos partes y el juez con clave', para?.map((d) => d.cuenta).join(',') === [cliente.address, persona.address, juezA.address].join(','));
-  check('y se sabe qué juez no la tiene', juecesSinClave.length === 1 && juecesSinClave[0] === juezB.address);
+  const { para, juecesSinClave, sinClave: faltanClave } = await destinatariosDePruebas(cliente.address, persona.address, jueces, claveDePublicada);
+  check('todos los que tienen clave: las dos partes y el juez A', para.map((d) => d.cuenta).join(',') === [cliente.address, persona.address, juezA.address].join(','));
+  check('y se sabe quién no la tiene', juecesSinClave.join() === juezB.address && faltanClave.join() === juezB.address);
   const otra = await destinatariosDePruebas(cliente.address, sinClave.address, jueces, claveDePublicada);
-  check('si a una parte le falta la clave, va en claro', otra.para === null);
+  check('si a la otra parte le falta, igual se cifra (para los demás)', otra.para.map((d) => d.cuenta).join(',') === [cliente.address, juezA.address].join(','));
+  check('el cliente puede escribir; el juez B, aún no', puedeEscribir(para, cliente.address) && !puedeEscribir(para, juezB.address));
 
-  console.log('\n─── el cliente aporta el motivo, cifrado y con un archivo ───');
-  const captura = new TextEncoder().encode('Mensaje del 3 de noviembre: «tradúcelo al francés».');
+  console.log('\n─── el cliente abre la disputa ───');
+  await escribir(cliente, 1n, { texto: 'Pedí el contrato en francés y me lo entregaron en inglés.' });
   const credCliente = await credencialDePruebas(1n, cliente.address, firmarCon(cliente));
-  await aportarPieza({
-    base,
-    taskId: 1n,
-    texto: 'Pedí el contrato en francés y me lo entregaron en inglés.',
-    archivos: [{ name: 'captura del chat.txt', bytes: captura, mime: 'text/plain' }],
-    para,
-    cred: credCliente,
-    yo: cliente.address,
-    firmar: firmarCon(cliente),
-  });
   const crudo = await leerPruebas(base, 1n, credCliente);
   check('en el buzón hay un sobre, no el texto', crudo.piezas.length === 1 && esTextoCifrado(crudo.piezas[0]!.texto) && !crudo.piezas[0]!.texto.includes('francés'));
-  check('y el archivo con nombre opaco', crudo.archivos.length === 1 && !crudo.archivos[0]!.name.includes('captura'));
+  const conArchivo = await escribir(cliente, 1n, { texto: 'con una captura', archivos: [{ name: 'captura.png', bytes: new Uint8Array([1, 2, 3]) }] }).then(
+    () => 'entró',
+    (e: Error) => e.message,
+  );
+  check('el cliente no puede subir archivos', /only the agent/.test(conArchivo), conArchivo);
 
-  console.log('\n─── quien trabaja lo lee y contesta ───');
-  const vistaPersona = await verComo(persona, 1n);
-  const motivo = vistaPersona.piezas[0]!;
-  check('lo abre', motivo.texto === 'Pedí el contrato en francés y me lo entregaron en inglés.', String(motivo.texto));
-  check('con el nombre de verdad de su archivo', motivo.archivos[0]?.name === 'captura del chat.txt');
-  check('y la firma del cliente comprobada', motivo.firmaOk && motivo.autor === cliente.address);
-  const credPersona = await credencialDePruebas(1n, persona.address, firmarCon(persona));
-  const bytes = await bajarArchivoDePruebas({ base, taskId: 1n, archivo: motivo.archivos[0]!, cred: credPersona, accesos: [], abrir: abrirBytesCon(persona) });
-  check('se baja el archivo y se abre, idéntico', new TextDecoder().decode(bytes) === new TextDecoder().decode(captura));
-  await aportarPieza({ base, taskId: 1n, texto: 'El encargo decía «en inglés».', archivos: [], para, cred: credPersona, yo: persona.address, firmar: firmarCon(persona) });
+  console.log('\n─── un juez pide, y el cliente comparte su encargo ───');
+  await escribir(juezA, 1n, { texto: '¿Puedes compartir el encargo tal cual?', tipo: 'peticion', dirigida: 'cliente', pide: 'encargo' });
+  const vistaCliente1 = await verComo(cliente, 1n);
+  const peticion = vistaCliente1.piezas[1]!;
+  check('el cliente ve la petición del juez', peticion.de === 'juez' && peticion.tipo === 'peticion' && peticion.dirigida === 'cliente' && peticion.pide === 'encargo' && peticion.firmaOk);
+  await escribir(cliente, 1n, { texto: ENCARGO, tipo: 'encargo' });
+  await escribir(cliente, 1n, { texto: ENCARGO.replace('francés', 'inglés'), tipo: 'encargo' });
 
-  console.log('\n─── los jueces ───');
+  console.log('\n─── el agente comparte su entrega, con su archivo ───');
+  await escribir(persona, 1n, {
+    texto: ENTREGA,
+    tipo: 'entrega',
+    archivos: [
+      { name: 'contrat.txt', bytes: CONTRATO },
+      { name: 'otro.txt', bytes: new TextEncoder().encode('esto no se ancló') },
+    ],
+  });
+
+  console.log('\n─── lo que ve el juez A ───');
   const vistaA = await verComo(juezA, 1n);
-  check('el juez con clave lee las dos piezas', vistaA.piezas.length === 2 && vistaA.piezas.every((p) => p.texto !== null));
-  check('y las dos firmas cuadran', vistaA.piezas.every((p) => p.firmaOk));
-  const vistaB = await verComo(juezB, 1n);
-  check('el juez sin clave ve que existen, pero no las abre', vistaB.piezas.length === 2 && vistaB.piezas.every((p) => p.texto === null && p.cifrada));
+  check('cinco piezas, todas legibles y firmadas', vistaA.piezas.length === 5 && vistaA.piezas.every((p) => p.texto !== null && p.firmaOk));
+  const [, , encargoBueno, encargoMalo, entrega] = vistaA.piezas;
+  check('el encargo exacto coincide con la cadena', encargoBueno?.tipo === 'encargo' && encargoBueno.ancla === 'coincide');
+  check('el retocado, no', encargoMalo?.tipo === 'encargo' && encargoMalo.ancla === 'no-coincide');
+  check('la entrega coincide', entrega?.tipo === 'entrega' && entrega.ancla === 'coincide' && entrega.de === 'trabajador');
+  check('su archivo de la entrega cuenta como anclado', entrega?.archivos.find((a) => a.name === 'contrat.txt')?.anclado === true);
+  check('el otro, no', entrega?.archivos.find((a) => a.name === 'otro.txt')?.anclado === false);
+  const credA = await credencialDePruebas(1n, juezA.address, firmarCon(juezA));
+  const contrato = await bajarArchivoDePruebas({ base, taskId: 1n, archivo: entrega!.archivos[0]!, cred: credA, accesos: [], abrir: abrirBytesCon(juezA) });
+  check('y el juez lo abre, idéntico', new TextDecoder().decode(contrato) === new TextDecoder().decode(CONTRATO));
 
-  console.log('\n─── el juez B activa su clave y el cliente le da acceso ───');
-  publicadas.add(juezB.address.toLowerCase());
-  const claveB = await claveDe(juezB);
-  const vistaCliente = await verComo(cliente, 1n);
-  const objetos = await objetosParaDarAcceso({ base, taskId: 1n, piezas: vistaCliente.piezas, cred: credCliente });
-  check('el cliente reúne los sobres y los archivos que puede abrir', objetos.length === 3, String(objetos.length));
+  console.log('\n─── el juez B activa su clave ───');
+  const vistaB = await verComo(juezB, 1n);
+  check('sin clave ve que hay piezas, pero no las abre', vistaB.piezas.length === 5 && vistaB.piezas.every((p) => p.texto === null && p.cifrada));
+  await publicar(juezB);
+  const viejo = await aportarPieza({ base, taskId: 1n, texto: 'para los de antes', archivos: [], para, cred: credCliente, yo: cliente.address, firmar: firmarCon(cliente) }).then(
+    () => 'entró',
+    (e: Error) => e.message,
+  );
+  check('ahora una pieza que no lo incluya no entra', viejo === 'missing recipients', viejo);
+  const conB = await destinatariosDePruebas(cliente.address, persona.address, jueces, claveDePublicada);
+  const vistaCliente2 = await verComo(cliente, 1n);
+  check('el cliente ve a quién le falta acceso', faltanPorAcceso(vistaCliente2.piezas, conB.para).map((d) => d.cuenta).join() === juezB.address);
+  const objetos = await objetosParaDarAcceso({ base, taskId: 1n, piezas: vistaCliente2.piezas, cred: credCliente });
   const secretaCliente = (await claveDe(cliente)).secreta;
-  const accesos = objetos.map((o) => concederAcceso(o, cliente.address, secretaCliente, { cuenta: juezB.address, clave: claveB.publica }, []));
+  const claveB = await claveDe(juezB);
+  const accesos = objetos.flatMap((o) => {
+    try {
+      return [concederAcceso(o, cliente.address, secretaCliente, { cuenta: juezB.address, clave: claveB.publica }, [])];
+    } catch {
+      return [];
+    }
+  });
   const expira = Math.floor(Date.now() / 1000) + 300;
   const res = await fetch(`${base}/access/1`, {
     method: 'POST',
@@ -211,69 +268,58 @@ try {
   });
   check('el buzón guarda los accesos', res.status === 200, String(res.status));
   const despues = await verComo(juezB, 1n);
-  check('ahora el juez B lee las dos piezas', despues.piezas.every((p) => p.texto !== null), JSON.stringify(despues.piezas.map((p) => p.texto)));
-  const credB = await credencialDePruebas(1n, juezB.address, firmarCon(juezB));
-  const archivoB = await bajarArchivoDePruebas({ base, taskId: 1n, archivo: despues.piezas[0]!.archivos[0]!, cred: credB, accesos: despues.accesos, abrir: abrirBytesCon(juezB) });
-  check('y abre el archivo', new TextDecoder().decode(archivoB) === new TextDecoder().decode(captura));
+  check('ahora el juez B lee las cinco', despues.piezas.every((p) => p.texto !== null), JSON.stringify(despues.piezas.map((p) => p.texto?.slice(0, 20))));
+  check('y ve el encargo coincidir', despues.piezas[2]?.ancla === 'coincide');
+  await escribir(juezB, 1n, { texto: 'Al agente: ¿por qué en francés?', dirigida: 'trabajador' });
+  const ultimo = (await verComo(persona, 1n)).piezas.at(-1);
+  check('y escribe; el agente lo lee como dirigido a él', ultimo?.de === 'juez' && ultimo.dirigida === 'trabajador' && ultimo.texto === 'Al agente: ¿por qué en francés?');
 
-  console.log('\n─── sin clave en una parte, en claro ───');
+  console.log('\n─── la otra parte sin clave: le da acceso un juez ───');
   const baseOtra = buzonDePruebas(sinClave.address, raiz);
-  const credOtra = await credencialDePruebas(2n, cliente.address, firmarCon(cliente));
-  await aportarPieza({
-    base: baseOtra,
-    taskId: 2n,
-    texto: 'No entregó nada.',
-    archivos: [{ name: 'factura.pdf', bytes: new TextEncoder().encode('%PDF-1.4 factura'), mime: 'application/pdf' }],
-    para: null,
-    cred: credOtra,
-    yo: cliente.address,
-    firmar: firmarCon(cliente),
+  await escribir(cliente, 2n, { texto: 'No entregó nada.' }, baseOtra, sinClave.address);
+  await escribir(juezA, 2n, { texto: '¿El agente tiene algo que decir?', dirigida: 'trabajador' }, baseOtra, sinClave.address);
+  check('el agente sin clave no las abre', (await verComo(sinClave, 2n, baseOtra)).piezas.every((p) => p.texto === null));
+  await publicar(sinClave);
+  const vistaJuez2 = await verComo(juezA, 2n, baseOtra);
+  const todos2 = await destinatariosDePruebas(cliente.address, sinClave.address, jueces, claveDePublicada);
+  const nuevo = faltanPorAcceso(vistaJuez2.piezas, todos2.para).find((d) => d.cuenta === sinClave.address)!;
+  const credJ2 = await credencialDePruebas(2n, juezA.address, firmarCon(juezA));
+  const objetos2 = await objetosParaDarAcceso({ base: baseOtra, taskId: 2n, piezas: vistaJuez2.piezas, cred: credJ2 });
+  const secretaA = (await claveDe(juezA)).secreta;
+  const accesos2 = objetos2.map((o) => concederAcceso(o, juezA.address, secretaA, nuevo, []));
+  const expira2 = Math.floor(Date.now() / 1000) + 300;
+  const res2 = await fetch(`${baseOtra}/access/2`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ accesos: accesos2, address: juezA.address, signature: await juezA.signMessage({ message: accesoSignMessage(2n, expira2) }), expira: expira2 }),
   });
-  const enClaro = await verComo(juezA, 2n, baseOtra);
-  check('la pieza va en claro y se lee', enClaro.piezas[0]?.cifrada === false && enClaro.piezas[0]?.texto === 'No entregó nada.');
-  check('con el nombre de su archivo, del índice del buzón', enClaro.piezas[0]?.archivos[0]?.name === 'factura.pdf');
-  check('y su firma', enClaro.piezas[0]?.firmaOk === true);
+  check('el juez le da acceso', res2.status === 200, String(res2.status));
+  check('y el agente lo lee todo', (await verComo(sinClave, 2n, baseOtra)).piezas.every((p) => p.texto !== null));
+
+  console.log('\n─── sin clave no se escribe ───');
+  const nadie = await aportarPieza({ base, taskId: 1n, texto: 'hola', archivos: [], para: [], cred: credCliente, yo: cliente.address, firmar: firmarCon(cliente) }).then(
+    () => 'entró',
+    (e: Error) => e.message,
+  );
+  check('sin estar entre los destinatarios, ni se firma', nadie === 'sin-clave', nadie);
 
   console.log('\n─── una disputa del tablón con reglas ───');
   // Cifrada para el cliente DEL ENCARGO, no para el contrato del tablón.
-  const delTablon = await destinatariosDePruebas(ENCARGO_8.client, persona.address, [juezA.address, juezB.address], claveDePublicada);
-  check('se cifra para el cliente del encargo', delTablon.para?.[0]?.cuenta === cliente.address);
+  const delTablon = await destinatariosDePruebas(ENCARGO_8.client, persona.address, jueces, claveDePublicada);
+  check('se cifra para el cliente del encargo', delTablon.para[0]?.cuenta === cliente.address);
   const credT = await credencialDePruebas(30n, cliente.address, firmarCon(cliente), 8n);
   check('la credencial lleva el encargo', credT.job === '8');
-  await aportarPieza({
-    base,
-    taskId: 30n,
-    texto: 'La traducción del tablón llegó a medias.',
-    archivos: [{ name: 'lo que llegó.txt', bytes: new TextEncoder().encode('Capítulo 1 de 3'), mime: 'text/plain' }],
-    para: delTablon.para,
-    cred: credT,
-    yo: cliente.address,
-    firmar: firmarCon(cliente),
-  });
+  await escribir(cliente, 30n, { texto: 'La traducción del tablón llegó a medias.' }, base, persona.address, 8n);
   const vistaT = await verComo(persona, 30n);
   check('quien lo cogió lo abre sin decir el encargo', vistaT.piezas[0]?.texto === 'La traducción del tablón llegó a medias.', String(vistaT.piezas[0]?.texto));
   check('como pieza del cliente, firmada por él', vistaT.piezas[0]?.de === 'cliente' && vistaT.piezas[0]?.autor === cliente.address && vistaT.piezas[0]?.firmaOk);
-  const credTP = await credencialDePruebas(30n, persona.address, firmarCon(persona));
-  const archivoT = await bajarArchivoDePruebas({ base, taskId: 30n, archivo: vistaT.piezas[0]!.archivos[0]!, cred: credTP, accesos: [], abrir: abrirBytesCon(persona) });
-  check('y su archivo', new TextDecoder().decode(archivoT) === 'Capítulo 1 de 3');
-  await aportarPieza({ base, taskId: 30n, texto: 'Entregué lo que decía el anuncio.', archivos: [], para: delTablon.para, cred: credTP, yo: persona.address, firmar: firmarCon(persona) });
+  await escribir(persona, 30n, { texto: 'Entregué lo que decía el anuncio.' });
   const vistaTC = await verComo(cliente, 30n, base, 8n);
   check('el cliente lee la respuesta, con su encargo', vistaTC.piezas.length === 2 && vistaTC.piezas[1]?.texto === 'Entregué lo que decía el anuncio.');
   const sinEncargo = await leerPruebas(base, 30n, await credencialDePruebas(30n, cliente.address, firmarCon(cliente))).catch((e: Error) => e);
   check('sin el encargo, el buzón no sabe que es el cliente', sinEncargo instanceof Error && sinEncargo.message === 'not a party', String(sinEncargo));
   const vistaTA = await verComo(juezA, 30n);
-  check('el juez con clave lee las dos', vistaTA.piezas.every((p) => p.texto !== null && p.firmaOk));
-  // El juez B ya tiene clave (de antes): el cliente del encargo le da acceso.
-  const objetosT = await objetosParaDarAcceso({ base, taskId: 30n, piezas: vistaTC.piezas, cred: credT });
-  const accesosT = objetosT.map((o) => concederAcceso(o, cliente.address, secretaCliente, { cuenta: juezB.address, clave: claveB.publica }, []));
-  const expiraT = Math.floor(Date.now() / 1000) + 300;
-  const cuerpoT = JSON.stringify({ accesos: accesosT, address: cliente.address, signature: await cliente.signMessage({ message: accesoSignMessage(30n, expiraT) }), expira: expiraT });
-  const sinJob = await fetch(`${base}/access/30`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: cuerpoT });
-  check('dar acceso sin decir el encargo no vale', sinJob.status === 403, String(sinJob.status));
-  const conJob = await fetch(`${base}/access/30?job=8`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: cuerpoT });
-  check('diciéndolo, sí', conJob.status === 200, String(conJob.status));
-  const vistaTB = await verComo(juezB, 30n);
-  check('y el juez B lee las dos', vistaTB.piezas.every((p) => p.texto !== null), JSON.stringify(vistaTB.piezas.map((p) => p.texto)));
+  check('los dos jueces leen las dos', vistaTA.piezas.every((p) => p.texto !== null && p.firmaOk) && (await verComo(juezB, 30n)).piezas.every((p) => p.texto !== null));
 } finally {
   server.close();
 }

@@ -40,7 +40,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Check, Download, ExternalLink, FileSearch, FileText, Gavel, Loader2, Lock, Plus, Scale, Undo2 } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Bot, Check, Download, ExternalLink, FileSearch, FileText, Gavel, Loader2, Lock, Plus, Scale, Undo2, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import PruebasDeLaDisputa from './PruebasDeLaDisputa';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -55,6 +57,7 @@ import { guardarComoArchivo } from '@/lib/archivosTablon';
 import { esBuzon } from '@/lib/botEndpoint';
 import { clavePublicaDe, publicarMiClave } from '@/lib/cifrado';
 import { hayEntrega } from '@/lib/expedientes';
+import { fetchTareasDeCliente } from '@/lib/indexer';
 import { BUZON_DEL_TABLON, esDelTablon, leerEncargos } from '@/lib/tablonReglas';
 import { useContractAction } from '@/hooks/useContractAction';
 import { shortAddress } from '@/hooks/useWallet';
@@ -385,16 +388,6 @@ function DisputeRow({
           <p className="mt-1 font-mono text-[0.8125rem] text-ink-2">
             {formatEther(dispute.amount)} {symbol}
           </p>
-          <dl className="mt-3 grid gap-1 text-[0.8125rem] text-ink-3">
-            <div className="flex gap-2">
-              <dt>{t('dashReal.arbitration.client')}</dt>
-              <dd className="font-mono text-ink-2">{shortAddress(dispute.client)}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt>{t('dashReal.arbitration.agent')}</dt>
-              <dd className="font-mono text-ink-2">{shortAddress(dispute.worker)}</dd>
-            </div>
-          </dl>
         </div>
 
         <div className={`rounded-xl border px-4 py-3 ${urgent ? 'border-terra/40 bg-terra/5' : 'border-line'}`}>
@@ -411,11 +404,14 @@ function DisputeRow({
         </div>
       </div>
 
+      <QuienEsQuien dispute={dispute} />
+
       <Expediente dispute={dispute} />
 
-      {/* Lo que aporta cada parte, firmado por quien lo aporta. Solo lectura.
-          También en las del tablón: van bajo quien la cogió, por la tarea del
-          escrow, y un juez las lee sin tener que decir de qué encargo son. */}
+      {/* El expediente: lo que aporta cada parte y lo que preguntan y piden los
+          jueces, firmado por quien lo escribe. También en las del tablón: van
+          bajo quien la cogió, por la tarea del escrow, y un juez las lee sin
+          tener que decir de qué encargo son. */}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-cream px-4 py-3">
         <p className="max-w-md text-[0.8125rem] leading-relaxed text-ink-2">{t('pruebas.juezPista')}</p>
         <button
@@ -486,6 +482,76 @@ function DisputeRow({
         )}
       </div>
     </article>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+/**
+ * Quién es quién en una disputa: quien presta el servicio (agente de IA o
+ * persona, con su ficha, su verificación y su historial) y el cliente (cuántos
+ * encargos ha hecho y cuántos con este mismo servicio). Antes la tarjeta solo
+ * traía dos direcciones, y un juez tenía que buscar a mano a quién juzgaba.
+ */
+function QuienEsQuien({ dispute }: { dispute: DisputedTask }) {
+  const { t } = useTranslation();
+  const { agents } = usePanalAgents();
+  const agente = agents.find((a) => a.workerAddress.toLowerCase() === dispute.worker.toLowerCase());
+  const { data: delCliente } = useQuery({
+    queryKey: ['tareas-de-cliente', dispute.client.toLowerCase()],
+    queryFn: () => fetchTareasDeCliente(dispute.client),
+    staleTime: 60_000,
+  });
+  const conEste = delCliente?.filter((x) => x.worker === dispute.worker.toLowerCase()).length ?? 0;
+  const st = agente?.indexStats ?? null;
+
+  return (
+    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="rounded-xl border border-line bg-cream px-4 py-3">
+        <p className="eyebrow text-ink-3">{t('dashReal.arbitration.servicio')}</p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <span className="font-display text-[0.9375rem] font-semibold text-ink">{agente?.name ?? shortAddress(dispute.worker)}</span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-[0.6875rem] text-ink-2">
+            {agente?.type === 'humano' ? <User size={11} aria-hidden /> : <Bot size={11} aria-hidden />}
+            {agente?.type === 'humano' ? t('dashReal.arbitration.tipoPersona') : t('dashReal.arbitration.tipoIa')}
+          </span>
+          {agente?.verified && (
+            <span className="inline-flex items-center gap-1 text-[0.6875rem] text-olive">
+              <BadgeCheck size={11} aria-hidden />
+              {t('dashReal.arbitration.verificado')}
+            </span>
+          )}
+        </div>
+        {st ? (
+          <p className="mt-1 text-[0.75rem] text-ink-2">
+            {st.avgRating !== null
+              ? t('dashReal.arbitration.statsServicio', { tareas: st.tasks, nota: st.avgRating.toFixed(1), disputas: st.disputes ?? 0 })
+              : t('dashReal.arbitration.statsSinNota', { tareas: st.tasks, disputas: st.disputes ?? 0 })}
+          </p>
+        ) : (
+          !agente && <p className="mt-1 text-[0.75rem] text-ink-3">{t('dashReal.arbitration.fueraDelCatalogo')}</p>
+        )}
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-[0.75rem]">
+          <a href={EXPLORER_ADDRESS(dispute.worker)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-ink-3 hover:text-monad">
+            {shortAddress(dispute.worker)} <ExternalLink size={11} />
+          </a>
+          {agente && (
+            <Link to={`/agente/${agente.id}`} className="font-medium text-honey-deep hover:underline">
+              {t('dashReal.arbitration.verFicha')}
+            </Link>
+          )}
+        </div>
+      </div>
+      <div className="rounded-xl border border-line bg-cream px-4 py-3">
+        <p className="eyebrow text-ink-3">{t('dashReal.arbitration.client')}</p>
+        <a href={EXPLORER_ADDRESS(dispute.client)} target="_blank" rel="noreferrer" className="mt-1.5 inline-flex items-center gap-1 font-mono text-[0.875rem] text-ink-2 hover:text-monad">
+          {shortAddress(dispute.client)} <ExternalLink size={12} />
+        </a>
+        {delCliente && (
+          <p className="mt-1 text-[0.75rem] text-ink-2">{t('dashReal.arbitration.clienteEncargos', { n: delCliente.length, conEste })}</p>
+        )}
+      </div>
+    </div>
   );
 }
 

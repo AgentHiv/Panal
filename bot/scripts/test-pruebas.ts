@@ -3,8 +3,13 @@
  *
  * El expediente que la cadena no guarda: el motivo, lo que aporta cada parte y
  * su respuesta. Lo que tiene que quedar demostrado:
- *   - aportan las dos partes y nadie más; leen las dos partes y los jueces, y
- *     los jueces solo mientras dure la disputa;
+ *   - escriben las dos partes y, desde la v2, los jueces (mientras dure la
+ *     disputa); leen los mismos, y nadie más;
+ *   - v2: nada en claro, y cada pieza cifrada para TODOS los del expediente
+ *     que tengan clave, su autor incluido: no se le puede esconder nada a
+ *     nadie;
+ *   - v2: archivos, solo del agente (los anclados); el cliente y los jueces
+ *     no suben ninguno;
  *   - cada pieza lleva la firma de su autor sobre SU contenido y SU fecha: otra
  *     firma, un texto cambiado o una fecha vieja no entran, y un juez puede
  *     volver a comprobarla sin fiarse del buzón;
@@ -29,7 +34,7 @@ import { NATIVE_CURRENCY, TaskStatus, type Task, type TrabajoTablon } from '../s
 
 /** Una pieza como la sirve el buzón (`PiezaDeDisputa` en el SDK). */
 interface Pieza {
-  de: 'cliente' | 'trabajador';
+  de: 'cliente' | 'trabajador' | 'juez';
   autor: Address;
   texto: string;
   archivos: { hash: string; size: number }[];
@@ -54,6 +59,8 @@ async function verificarPieza(taskId: bigint, p: Pieza): Promise<boolean> {
 const cliente = privateKeyToAccount('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
 const persona = privateKeyToAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d');
 const juez = privateKeyToAccount('0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6');
+/** Un segundo juez, que todavía no ha publicado su clave. */
+const juez2 = privateKeyToAccount('0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a');
 const intruso = privateKeyToAccount('0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a');
 const AGENTE = persona.address;
 const ahora = BigInt(Math.floor(Date.now() / 1000));
@@ -96,16 +103,26 @@ const check = (nombre: string, ok: boolean, detalle = '') => {
   if (!ok) fallos++;
 };
 
+/**
+ * Un sobre cifrado con la forma de verdad (`sdk/src/cifrado.ts`): el buzón no
+ * lo abre, solo mira su forma y para quién va.
+ */
+const sobre = (para: { address: Address }[], relleno = 'contenido cifrado') =>
+  JSON.stringify({ v: 'panal-cifrado-1', e: 'efimera', n: 'nonce', para: para.map((x) => ({ a: x.address.toLowerCase(), k: 'envuelta' })), c: relleno });
+
 async function main() {
+  const store = new BuzonStore(mkdtempSync(join(tmpdir(), 'panal-pruebas-test-')));
+  // Las claves publicadas: las dos partes y el primer juez. El segundo, aún no.
+  for (const c of [cliente, persona, juez]) store.guardarClave(c.address, `clave-de-${c.address}`, '0x00');
   const server = createBuzonServer({
-    store: new BuzonStore(mkdtempSync(join(tmpdir(), 'panal-pruebas-test-'))),
+    store,
     fetchTask: async (taskId) => {
       const t = TAREAS[taskId.toString()];
       if (!t) throw new Error('no existe');
       return t;
     },
     fetchDisputedAt: async (taskId) => ABIERTA[taskId.toString()] ?? 0n,
-    fetchArbitros: async () => [juez.address],
+    fetchArbitros: async () => [juez.address, juez2.address],
     tablon: PANAL_TABLON,
     fetchJob: async (jobId) => {
       const j = ENCARGOS[jobId.toString()];
@@ -169,20 +186,39 @@ async function main() {
   check('ni con la firma de otra tarea', (await fetch(`${base}/pruebas/1`, { headers: cabeceras(await cred(cliente, 2n)) })).status === 403);
 
   console.log('\n─── quién aporta, y con qué firma ───');
-  const motivo = 'La entrega no es lo que pedí: el contrato está en inglés y lo pedí en francés.';
+  /** Los del expediente con clave: el cliente, quien trabaja y el primer juez. */
+  const todos = [cliente, persona, juez];
+  const motivo = sobre(todos, 'La entrega no es lo que pedí: el contrato está en inglés y lo pedí en francés.');
   const r1 = await aportar(cliente, 1n, motivo);
-  check('el cliente escribe el motivo', r1.status === 200, String(r1.status));
+  check('el cliente escribe el motivo, cifrado para todos', r1.status === 200, String(r1.status));
   check('la misma pieza dos veces no entra', (await aportar(cliente, 1n, motivo)).status === 409);
-  check('firmada por otra cuenta, no', (await aportar(cliente, 1n, 'otra pieza', { firmante: intruso })).status === 403);
-  check('con el texto cambiado después de firmar, no', (await aportar(cliente, 1n, 'lo firmado', { textoEnviado: 'lo cambiado' })).status === 403);
-  check('con una fecha de hace veinte minutos, no', (await aportar(cliente, 1n, 'antedatada', { fecha: new Date(Date.now() - 20 * 60_000).toISOString() })).status === 400);
-  check('ni con una fecha que no es una fecha', (await aportar(cliente, 1n, 'sin fecha', { fecha: 'ayer' })).status === 400);
-  check('un juez no aporta', (await aportar(juez, 1n, 'opino que…')).status === 403);
-  check('un tercero tampoco', (await aportar(intruso, 1n, 'hola')).status === 403);
-  check('una pieza vacía no entra', (await aportar(cliente, 1n, '   ')).status === 400);
-  check('ni una de más de 8000 caracteres', (await aportar(cliente, 1n, 'x'.repeat(8001))).status === 400);
-  const sobre = JSON.stringify({ v: 'panal-cifrado-1', e: 'x', n: 'y', para: [], c: 'A'.repeat(20_000) });
-  check('cifrada sí puede ser más larga: el sobre ocupa más que el texto', (await aportar(persona, 1n, sobre)).status === 200);
+  check('firmada por otra cuenta, no', (await aportar(cliente, 1n, sobre(todos, 'otra pieza'), { firmante: intruso })).status === 403);
+  check('con el texto cambiado después de firmar, no', (await aportar(cliente, 1n, sobre(todos, 'lo firmado'), { textoEnviado: sobre(todos, 'lo cambiado') })).status === 403);
+  check('con una fecha de hace veinte minutos, no', (await aportar(cliente, 1n, sobre(todos, 'antedatada'), { fecha: new Date(Date.now() - 20 * 60_000).toISOString() })).status === 400);
+  check('ni con una fecha que no es una fecha', (await aportar(cliente, 1n, sobre(todos, 'sin fecha'), { fecha: 'ayer' })).status === 400);
+  check('un tercero no aporta', (await aportar(intruso, 1n, sobre([...todos, intruso], 'hola'))).status === 403);
+
+  console.log('\n─── v2: todo cifrado, y para todos ───');
+  check('en claro no entra', (await aportar(cliente, 1n, 'Esto va en claro.')).status === 400);
+  check('ni vacía', (await aportar(cliente, 1n, '   ')).status === 400);
+  const sinLaOtraParte = await aportar(cliente, 1n, sobre([cliente, juez], 'que no lo vea el agente'));
+  const faltan = (await sinLaOtraParte.json()) as { error: string; faltan?: string[] };
+  check('escondida a la otra parte, no entra', sinLaOtraParte.status === 409 && faltan.error === 'missing recipients');
+  check('y dice a quién le falta', JSON.stringify(faltan.faltan) === JSON.stringify([persona.address.toLowerCase()]));
+  check('escondida a un juez con clave, tampoco', (await aportar(cliente, 1n, sobre([cliente, persona], 'que no lo vea el juez'))).status === 409);
+  check('sin su autor entre los destinatarios, tampoco', (await aportar(cliente, 1n, sobre([persona, juez], 'ni yo la leo'))).status === 400);
+  check('al juez que no tiene clave no hace falta incluirlo (ya le darán acceso)', (await aportar(persona, 1n, sobre(todos, 'mi respuesta'))).status === 200);
+  check('pero incluirlo de más no estorba', (await aportar(persona, 1n, sobre([...todos, juez2], 'con el segundo juez'))).status === 200);
+  check('el texto exacto de una entrega larga cabe (64 000 caracteres, escapados)', (await aportar(persona, 1n, sobre(todos, 'A'.repeat(64_000 * 6)))).status === 200);
+  check('lo que no cabe ni así, no', (await aportar(persona, 1n, sobre(todos, 'A'.repeat(530_000)))).status === 400);
+  // Un cuerpo que pasa del tope ni se lee: 413, o la conexión cortada.
+  const enorme = await aportar(persona, 1n, sobre(todos, 'A'.repeat(700_000))).then((r) => r.status, () => 413);
+  check('y uno enorme ni se lee', enorme === 413, String(enorme));
+
+  console.log('\n─── v2: los jueces escriben ───');
+  check('un juez pregunta o pide, cifrado para todos', (await aportar(juez, 1n, sobre(todos, '¿Qué idioma pedía el encargo?'))).status === 200);
+  check('el juez sin clave también puede, si cifra para los que la tienen y para él', (await aportar(juez2, 1n, sobre([...todos, juez2], 'Y yo pido la entrega.'))).status === 200);
+  check('pero no en una tarea que no está en disputa', (await aportar(juez, 3n, sobre(todos, 'sin disputa'))).status === 403);
 
   console.log('\n─── los archivos ───');
   const captura = new TextEncoder().encode('captura del mensaje donde pidió el francés');
@@ -194,11 +230,13 @@ async function main() {
     });
   const subida = await subir(persona, 1n);
   const { hash } = (await subida.json()) as { hash: string };
-  check('quien trabaja sube un archivo para su respuesta', subida.status === 200 && hash === keccak256(captura));
+  check('quien trabaja sube un archivo anclado para su pieza', subida.status === 200 && hash === keccak256(captura));
   check('un juez no sube archivos', (await subir(juez, 1n)).status === 403);
-  const respuesta = 'Pidió «contrato en inglés» en el encargo; adjunto el mensaje.';
-  check('y contesta nombrándolo', (await aportar(persona, 1n, respuesta, { archivos: [{ hash, size: captura.byteLength }] })).status === 200);
-  check('una pieza no puede nombrar un archivo que no se subió', (await aportar(persona, 1n, 'con fantasma', { archivos: [{ hash: keccak256(toBytes('nada')), size: 4 }] })).status === 409);
+  check('v2: el cliente tampoco (solo comparte su encargo, en texto)', (await subir(cliente, 1n)).status === 403);
+  const respuesta = sobre(todos, 'La entrega, con su archivo anclado.');
+  check('y la aporta nombrándolo', (await aportar(persona, 1n, respuesta, { archivos: [{ hash, size: captura.byteLength }] })).status === 200);
+  check('una pieza no puede nombrar un archivo que no se subió', (await aportar(persona, 1n, sobre(todos, 'con fantasma'), { archivos: [{ hash: keccak256(toBytes('nada')), size: 4 }] })).status === 409);
+  check('v2: el cliente no puede nombrar archivos en su pieza', (await aportar(cliente, 1n, sobre(todos, 'con el del agente'), { archivos: [{ hash, size: captura.byteLength }] })).status === 403);
   const bajada = await fetch(`${base}/pruebas-archivo/1/${hash}`, { headers: cabeceras(await cred(juez, 1n)) });
   check('el juez se lo baja, tal cual', bajada.status === 200 && keccak256(new Uint8Array(await bajada.arrayBuffer())) === hash);
   const conIndice = (await (await leer(cliente, 1n)).json()) as { archivos: { hash: string; name: string; de: string }[] };
@@ -206,20 +244,25 @@ async function main() {
   check('un tercero no', (await fetch(`${base}/pruebas-archivo/1/${hash}`, { headers: cabeceras(await cred(intruso, 1n)) })).status === 403);
 
   console.log('\n─── el plazo ───');
-  check('a los ocho días ya no se aporta nada', (await aportar(cliente, 2n, 'tarde')).status === 409);
-  check('ni se suben archivos', (await subir(cliente, 2n)).status === 409);
+  check('a los ocho días ya no se aporta nada', (await aportar(cliente, 2n, sobre(todos, 'tarde'))).status === 409);
+  check('ni un juez pregunta', (await aportar(juez, 2n, sobre(todos, 'tarde'))).status === 409);
+  check('ni se suben archivos', (await subir(persona, 2n)).status === 409);
   const tarde = (await (await leer(cliente, 2n)).json()) as { abierto: boolean };
   check('pero el expediente se sigue leyendo, cerrado', tarde.abierto === false);
-  check('sin disputa no hay pruebas que aportar', (await aportar(cliente, 3n, 'sin disputa')).status === 409);
+  check('sin disputa no hay pruebas que aportar', (await aportar(cliente, 3n, sobre(todos, 'sin disputa'))).status === 409);
 
   console.log('\n─── lo que ve el juez ───');
   const visto = (await (await leer(juez, 1n)).json()) as { piezas: Pieza[] };
-  check('tres piezas, en el orden en que llegaron', visto.piezas.length === 3 && visto.piezas.map((p) => p.de).join(',') === 'cliente,trabajador,trabajador');
-  check('con su autor', visto.piezas[0]!.autor === cliente.address && visto.piezas[2]!.autor === persona.address);
+  check(
+    'las piezas, en el orden en que llegaron',
+    visto.piezas.map((p) => p.de).join(',') === 'cliente,trabajador,trabajador,trabajador,juez,juez,trabajador',
+    visto.piezas.map((p) => p.de).join(','),
+  );
+  check('con su autor', visto.piezas[0]!.autor === cliente.address && visto.piezas[4]!.autor === juez.address && visto.piezas[5]!.autor === juez2.address);
   let todasBien = true;
   for (const p of visto.piezas) todasBien &&= await verificarPieza(1n, p);
   check('el juez comprueba cada firma, sin fiarse del buzón', todasBien);
-  const tocada = { ...visto.piezas[0]!, texto: 'El buzón cambió el motivo.' };
+  const tocada = { ...visto.piezas[0]!, texto: sobre(todos, 'El buzón cambió el motivo.') };
   check('y una pieza cambiada después no pasa', !(await verificarPieza(1n, tocada)));
   check('ni la de otra tarea', !(await verificarPieza(2n, visto.piezas[0]!)));
 
@@ -228,7 +271,8 @@ async function main() {
   const conJob = (job?: string) => (job === undefined ? '' : `?job=${job}`);
   const leerT = async (quien: typeof cliente, job?: string) =>
     fetch(`${base}/pruebas/10${conJob(job)}`, { headers: cabeceras(await cred(quien, 10n)) });
-  const aportarT = async (quien: typeof cliente, texto: string, job?: string) => {
+  const aportarT = async (quien: typeof cliente, enClaro: string, job?: string) => {
+    const texto = sobre(todos, enClaro);
     const fecha = new Date().toISOString();
     const firma = await quien.signMessage({ message: piezaSignMessage(10n, contenidoDePieza(texto, []), fecha) });
     return fetch(`${base}/pruebas/10${conJob(job)}`, {
@@ -275,6 +319,21 @@ async function main() {
   check('sin decir el encargo, no puede', (await darAcceso(cliente)).status === 403);
   const accesosDelJuez = (await (await leerT(juez)).json()) as { accesos: { a: string }[] };
   check('y el juez lo ve en su expediente', accesosDelJuez.accesos.some((x) => x.a === juez.address.toLowerCase()));
+
+  console.log('\n─── v2: un juez también da acceso, en disputa ───');
+  const darAccesoEn = async (quien: typeof cliente, id: bigint, para: string) => {
+    const expira = Math.floor(Date.now() / 1000) + 300;
+    const signature = await quien.signMessage({ message: accesoSignMessage(id, expira) });
+    return fetch(`${base}/access/${id}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ accesos: [{ ...acceso, a: para.toLowerCase() }], address: quien.address, signature, expira }),
+    });
+  };
+  check('a una parte que activó su clave tarde', (await darAccesoEn(juez, 1n, cliente.address)).status === 200);
+  check('pero no en una tarea que no está en disputa', (await darAccesoEn(juez, 3n, cliente.address)).status === 403);
+  check('ni a alguien de fuera', (await darAccesoEn(juez, 1n, intruso.address)).status === 400);
+  check('y un tercero sigue sin poder', (await darAccesoEn(intruso, 1n, cliente.address)).status === 403);
 
   server.close();
   console.log(fallos === 0 ? '\n✅ Las pruebas de una disputa: firmadas, con plazo y solo para quien toca\n' : `\n❌ ${fallos} comprobación(es) fallidas\n`);
