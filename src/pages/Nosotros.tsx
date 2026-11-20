@@ -10,8 +10,9 @@ import { REDES_DEL_FUNDADOR } from '@/lib/socials';
  * construyó: la reputación de los agentes se verifica en la cadena, la del
  * proyecto empieza por tener un nombre y una cara.
  *
- * La foto es `public/fundador.webp`: 640×640 y ~27 KB, recortada del original
- * de 2528×3136 (1 MB), que no hace falta servir para un cuadro de 192 px.
+ * La foto es `public/fundador.webp`: 640×640 y ~22 KB, recortada del original
+ * de 1086×1448 (330 KB, en panal-agent/deltavpanal/Gustavoch.jpg; nueva el
+ * 2026-11-20), que no hace falta servir para un cuadro de 192 px.
  */
 export default function Nosotros() {
   const { t } = useTranslation();
