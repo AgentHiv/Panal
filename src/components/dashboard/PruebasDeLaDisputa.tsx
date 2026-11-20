@@ -89,7 +89,11 @@ export default function PruebasDeLaDisputa({
   const { t } = useTranslation();
   return (
     <Dialog open={task !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1.5rem)] flex-col border-line bg-paper sm:max-w-xl">
+      {/* En un móvil no cabe todo: el juez tiene cuatro botones, «Para:», el
+          cuadro y «Enviar», y sin scroll aquí se salían por debajo de la
+          pantalla. Así el diálogo entero se desplaza; en pantallas grandes
+          sigue encogiéndose solo la lista, como antes. */}
+      <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1.5rem)] flex-col overflow-y-auto overscroll-contain border-line bg-paper sm:max-w-xl">
         <DialogTitle className="flex items-center gap-2 font-display text-ink">
           <Gavel size={17} className="shrink-0 text-terra" aria-hidden />
           {t('pruebas.titulo', { id: task ? `#${task.id.toString()}` : '' })}
@@ -427,7 +431,7 @@ function Panel({ task, comoJuez }: { task: TareaEnDisputa; comoJuez: boolean }) 
     'inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[0.75rem] font-medium text-ink-2 transition-colors hover:border-honey hover:text-honey-deep disabled:opacity-50';
 
   return (
-    <div className="flex min-h-0 flex-col gap-3">
+    <div className="flex shrink-0 flex-col gap-3 sm:min-h-0 sm:shrink">
       {/* El plazo */}
       <p className={cn('text-[0.8125rem]', abierto ? 'text-ink-2' : 'text-terra')}>
         {plazo === 0
@@ -487,7 +491,7 @@ function Panel({ task, comoJuez }: { task: TareaEnDisputa; comoJuez: boolean }) 
       )}
 
       {/* Las piezas */}
-      <div className="min-h-[10rem] flex-1 overflow-y-auto rounded-xl border border-line bg-cream p-3">
+      <div className="max-h-[55dvh] min-h-[10rem] flex-1 overflow-y-auto rounded-xl border border-line bg-cream p-3 sm:max-h-none">
         {vistas.length === 0 ? (
           <p className="py-8 text-center text-[0.8125rem] text-ink-3">{t('pruebas.vacio')}</p>
         ) : (
