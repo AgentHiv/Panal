@@ -54,6 +54,17 @@ import {
   puedeEscribir,
   type PiezaLegible,
 } from '../src/lib/pruebas';
+import { copiaLocalAnclada, puedeAportar, textoAncladoParaAportar } from '../src/lib/ancladoParaPruebas';
+import { BUZON_BASE, urlDeBuzon } from '../src/lib/botEndpoint';
+import { saveTaskBrief } from '../src/lib/taskBriefs';
+
+// La copia del cliente vive en el localStorage del teléfono o del navegador.
+const guardado = new Map<string, string>();
+(globalThis as { localStorage?: unknown }).localStorage = {
+  getItem: (k: string) => guardado.get(k) ?? null,
+  setItem: (k: string, v: string) => void guardado.set(k, v),
+  removeItem: (k: string) => void guardado.delete(k),
+};
 
 let fallos = 0;
 const check = (nombre: string, ok: boolean, detalle = ''): void => {
@@ -320,6 +331,36 @@ try {
   check('sin el encargo, el buzón no sabe que es el cliente', sinEncargo instanceof Error && sinEncargo.message === 'not a party', String(sinEncargo));
   const vistaTA = await verComo(juezA, 30n);
   check('los dos jueces leen las dos', vistaTA.piezas.every((p) => p.texto !== null && p.firmaOk) && (await verComo(juezB, 30n)).piezas.every((p) => p.texto !== null));
+
+  console.log('\n─── la app: lo anclado, del teléfono o del buzón ───');
+  store.guardarBrief(persona.address, 1n, ENCARGO);
+  store.guardarEntrega(persona.address, 1n, ENTREGA);
+  // El buzón de producción es este, el local: así `esBuzon` lo reconoce.
+  const fetchDeVerdad = globalThis.fetch;
+  globalThis.fetch = ((url: string | URL | Request, init?: RequestInit) =>
+    fetchDeVerdad(typeof url === 'string' && url.startsWith(BUZON_BASE) ? raiz + url.slice(BUZON_BASE.length) : url, init)) as typeof fetch;
+  try {
+    const comun = { taskId: 1n, huellas: HUELLAS, botUrl: urlDeBuzon(persona.address), delTablon: false };
+    check('quien trabaja desde el buzón puede aportar el encargo y la entrega', puedeAportar({ ...comun, que: 'encargo', rol: 'trabajador' }) && puedeAportar({ ...comun, que: 'entrega', rol: 'trabajador' }));
+    check('el cliente sin copia no puede aportar su encargo (el buzón no se lo enseña)', !puedeAportar({ ...comun, que: 'encargo', rol: 'cliente' }));
+    check('pero sí la entrega, pidiéndola', puedeAportar({ ...comun, que: 'entrega', rol: 'cliente' }));
+    check('en una del tablón no se pide nada a nadie', !puedeAportar({ ...comun, delTablon: true, que: 'entrega', rol: 'trabajador' }));
+    const delBuzon = await textoAncladoParaAportar({ ...comun, que: 'encargo', rol: 'trabajador', yo: persona.address, firmar: firmarCon(persona) });
+    check('quien trabaja saca su encargo del buzón, tal cual se ancló', delBuzon === ENCARGO);
+    const suEntrega = await textoAncladoParaAportar({ ...comun, que: 'entrega', rol: 'trabajador', yo: persona.address, firmar: firmarCon(persona) });
+    check('y su entrega', suEntrega === ENTREGA);
+    const laEntrega = await textoAncladoParaAportar({ ...comun, que: 'entrega', rol: 'cliente', yo: cliente.address, firmar: firmarCon(cliente) });
+    check('el cliente pide la entrega y cuadra con la cadena', laEntrega === ENTREGA);
+    saveTaskBrief(HUELLAS.taskHash, 'un encargo que no es el anclado');
+    check('una copia del teléfono que no cuadra no se ofrece', copiaLocalAnclada('encargo', 'cliente', 1n, HUELLAS) === null);
+    saveTaskBrief(HUELLAS.taskHash, ENCARGO);
+    check('la que cuadra, sí, sin firmar nada', copiaLocalAnclada('encargo', 'cliente', 1n, HUELLAS) === ENCARGO && puedeAportar({ ...comun, que: 'encargo', rol: 'cliente' }));
+    await escribir(persona, 1n, { texto: delBuzon!, tipo: 'encargo' });
+    const ultima = (await verComo(juezA, 1n)).piezas.at(-1);
+    check('el juez ve el encargo que aportó quien trabaja: coincide con la cadena', ultima?.tipo === 'encargo' && ultima.de === 'trabajador' && ultima.ancla === 'coincide', JSON.stringify(ultima?.ancla));
+  } finally {
+    globalThis.fetch = fetchDeVerdad;
+  }
 } finally {
   server.close();
 }

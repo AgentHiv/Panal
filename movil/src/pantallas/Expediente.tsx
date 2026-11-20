@@ -589,7 +589,7 @@ export default function Expediente(): React.ReactElement {
               {e.cadena.estado === ESTADO.Abierto && getTaskBrief(e.cadena.taskHash) !== null && (
                 <>
                   {reenvio === 'hecho' ? (
-                    <p className="mt-3 text-[12.5px] leading-[1.55] text-oliva">
+                    <p className="mt-3 text-[12.5px] leading-[1.55] text-olive">
                       {T.expediente.encargoReenviado}
                     </p>
                   ) : (
@@ -658,6 +658,7 @@ export default function Expediente(): React.ReactElement {
       {conPruebas && tarea && (
         <HojaPruebas
           encargo={{ id: tarea.id, client: tarea.client, worker: tarea.worker }}
+          botUrl={datosAgente?.botUrl ?? null}
           onCerrar={() => setConPruebas(false)}
         />
       )}

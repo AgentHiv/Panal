@@ -320,6 +320,7 @@ export default function PanelAgente(): React.ReactElement {
       {pruebas && (
         <HojaPruebas
           encargo={{ id: pruebas.id, client: pruebas.client, worker: pruebas.worker }}
+          botUrl={ficha.botUrl}
           onCerrar={() => setPruebas(null)}
         />
       )}

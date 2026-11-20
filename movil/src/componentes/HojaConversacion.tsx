@@ -188,7 +188,7 @@ export default function HojaConversacion({
       ) : (
         <div className="mt-3 flex flex-col gap-3 pb-5">
           {para !== undefined && (
-            <p className={`text-[11.5px] leading-[1.45] ${para ? 'text-oliva' : 'text-terra'}`}>
+            <p className={`text-[11.5px] leading-[1.45] ${para ? 'text-olive' : 'text-terra'}`}>
               {para ? C.cifrada : C.sinCifrar}
             </p>
           )}
