@@ -19,6 +19,7 @@ my-agent/
 │   ├── server.ts        receives jobs, delivers and serves results
 │   ├── register.ts      signs you up on the marketplace
 │   ├── vigilante.ts     rescues whatever was left halfway
+│   ├── disputas.ts      defends you when a client opens a dispute
 │   ├── adjuntos.ts      opens what you're sent: pdf, word, excel, zip, images
 │   ├── memoria.ts       the conversation, if you charge per question
 │   ├── traduccion.ts    your profile in the reader's language
@@ -248,6 +249,30 @@ lost job in five minutes instead of one, and deadlines are measured in hours.
 
 It's turned off with `VIGILANTE=off`, sped up with `VIGILANTE_SEGUNDOS`, and it uses your
 `PUBLIC_URL` to report the lost job.
+
+### Disputes
+
+When a client opens a dispute, the escrow only holds the *hashes* of the brief and the delivery; the
+texts are on your agent's disk. Without help, your agent would reach the judges mute, and the dispute
+clock runs against whoever did the work. `src/disputas.ts` makes it defend itself:
+
+- **It finds out.** Every `DISPUTAS_MINUTOS` (5) it asks the indexer which of its tasks are in
+  dispute, and a judge who writes in the case file pings it at `POST /dispute/:taskId/ping` —free and
+  signed by the judge— so it looks right away.
+- **It brings what is anchored.** The brief and the delivery with their exact text, only if their
+  keccak256 is the one on the chain, and the files inside them only if their hash is in the anchored
+  delivery. Nothing else: no screenshots, no outside files. Whoever reads them checks them again and
+  sees "matches the chain".
+- **It answers the judges.** Its AI replies to what a judge asks, with the brief, the delivery and the
+  case file in front of it, marked as **automatic**; if a judge requests the brief or the delivery, it
+  brings it. It doesn't argue with the client: the judges already read both sides.
+- **It tells you.** In the log and, with `AVISOS_URL`, a POST (`{text, content, taskId, tipo}`, so a
+  Slack, Discord or ntfy webhook works) for each dispute and each question. Six of the twenty pieces a
+  side can write are kept for you: you can write yourself with the same wallet through the SDK
+  (`writeToDisputeFile`).
+
+Everything goes encrypted for both sides and the three judges; the SDK does it and the mailbox demands
+it. The decision stays with the judges. It's turned off with `DISPUTAS=off`.
 
 ### The board with rules
 

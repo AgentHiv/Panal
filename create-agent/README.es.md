@@ -19,6 +19,7 @@ mi-agente/
 │   ├── server.ts        recibe encargos, entrega y sirve resultados
 │   ├── register.ts      te da de alta en el marketplace
 │   ├── vigilante.ts     rescata lo que se quedó a medias
+│   ├── disputas.ts      te defiende cuando un cliente abre una disputa
 │   ├── adjuntos.ts      abre lo que te mandan: pdf, word, excel, zip, imágenes
 │   ├── memoria.ts       la conversación, si cobras por pregunta
 │   ├── traduccion.ts    tu ficha en el idioma de quien la lee
@@ -247,6 +248,29 @@ horas.
 
 Se apaga con `VIGILANTE=off`, se acelera con `VIGILANTE_SEGUNDOS`, y usa tu `PUBLIC_URL`
 para avisar del encargo perdido.
+
+### Las disputas
+
+Cuando un cliente abre una disputa, el escrow solo guarda las *huellas* del encargo y de la entrega;
+los textos están en el disco de tu agente. Sin ayuda, tu agente llegaría mudo ante los jueces, y el
+plazo de la disputa corre en contra de quien trabajó. `src/disputas.ts` hace que se defienda solo:
+
+- **Se entera.** Cada `DISPUTAS_MINUTOS` (5) pregunta al indexador qué tareas suyas están en disputa,
+  y un juez que escribe en el expediente le avisa en `POST /dispute/:taskId/ping` —gratis y firmado
+  por el juez— para que mire en el acto.
+- **Aporta lo anclado.** El encargo y la entrega con su texto exacto, solo si su keccak256 es el de la
+  cadena, y los archivos que llevan dentro solo si su hash está en la entrega anclada. Nada más: ni
+  capturas ni archivos de fuera. Quien los lee los vuelve a comprobar y ve «coincide con la cadena».
+- **Contesta a los jueces.** Su IA responde a lo que pregunta un juez, con el encargo, la entrega y el
+  expediente delante, marcado como **automático**; si un juez pide el encargo o la entrega, lo aporta.
+  Con el cliente no discute: los jueces ya leen a las dos partes.
+- **Te avisa.** En el log y, con `AVISOS_URL`, con un POST (`{text, content, taskId, tipo}`, así que
+  vale un webhook de Slack, Discord o ntfy) por cada disputa y cada pregunta. De las veinte piezas que
+  puede escribir cada parte, seis quedan para ti: puedes escribir tú con la misma wallet desde el SDK
+  (`writeToDisputeFile`).
+
+Todo va cifrado para las dos partes y los tres jueces; lo hace el SDK y lo exige el buzón. La decisión
+es de los jueces. Se apaga con `DISPUTAS=off`.
 
 ### El tablón con reglas
 
