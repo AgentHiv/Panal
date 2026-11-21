@@ -7,7 +7,8 @@ import { SOCIALS } from '@/lib/socials';
  * La lista de redes, con sus trazos, vive en `@/lib/socials`. Los trazos de
  * X, Telegram y GitHub salen de `@/lib/iconosMarca`, que los comparte con la
  * ficha de cada agente.
- * X: https://x.com/panal_mon · Telegram: https://t.me/panal_agent · GitHub: el repo.
+ * X: https://x.com/panal_mon · YouTube: https://www.youtube.com/@panal-gucc ·
+ * Discord: https://discord.gg/hcjGwtUVN7 · Telegram: https://t.me/panal_agent · GitHub: el repo.
  */
 
 /** Botones circulares con iconos de redes sociales (footer oscuro por defecto). */
