@@ -103,6 +103,10 @@ main() {
   local estado
   estado=$(estado_pm2) || { echo "Couldn't read pm2. Is it installed, and is this the user that runs the processes?"; return 2; }
 
+  # Desde aquí, pase lo que pase (bien, nada que hacer, un fallo o --dry-run), se acaba con
+  # el cuadro de pm2, como el que imprimía `pm2 startOrReload` a mano.
+  trap cuadro_pm2 EXIT
+
   echo "→ Processes:"
   local -a reiniciar=()
   local nombre linea apunte desde motivo
@@ -201,6 +205,12 @@ main() {
 
   pm2_limpio save >/dev/null
   echo "✓ Up to date with $(git log -1 --format='%h %s' "$nuevo")."
+}
+
+# El cuadro de pm2 (id, nombre, estado, reinicios, CPU, memoria) de todo lo que corre aquí.
+cuadro_pm2() {
+  echo
+  pm2_limpio ls || true
 }
 
 # pm2 sin el entorno de la sesión (SSH_CLIENT, SSH_CONNECTION…), que acabaría en los procesos.
