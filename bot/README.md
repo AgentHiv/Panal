@@ -586,7 +586,8 @@ It pulls `main` and restarts **only the processes whose code changed**: the inde
 takes ~30 s to rebuild the catalog and the worker may be halfway through a task, so
 nothing restarts without a reason. Before restarting it installs dependencies and
 checks the types, and if anything fails it restarts none. Afterwards it checks that
-each process stayed up and runs `pm2 save`.
+each process stayed up, runs `pm2 save` and ends with the
+pm2 table, the same one `pm2 startOrReload` used to print.
 
 - `--dry-run` says what it would do, without touching anything.
 - `--all` restarts every Panal process, changed or not.

@@ -593,7 +593,8 @@ Trae `main` y reinicia **solo los procesos cuyo código cambió**: el indexador 
 ~30 s en rehacer el catálogo y el worker puede estar a medias de un encargo, así que
 no se reinicia nada que no haga falta. Antes de reiniciar instala dependencias y
 comprueba los tipos, y si algo falla no reinicia ninguno. Después comprueba que
-cada proceso siguió en marcha y hace `pm2 save`.
+cada proceso siguió en marcha, hace `pm2 save` y termina con
+el cuadro de pm2, el mismo que imprimía `pm2 startOrReload`.
 
 - `--dry-run` dice qué haría, sin tocar nada.
 - `--all` reinicia todos los de Panal, cambien o no.
