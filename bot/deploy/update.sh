@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Pone la máquina de la API (api.panal.lat y mcp.panal.lat) al día con main, con un solo comando:
 #
-#   bash bot/deploy/actualizar.sh           trae main y reinicia SOLO los procesos cuyo código cambió
-#   bash bot/deploy/actualizar.sh --mirar   dice qué haría, sin tocar nada
-#   bash bot/deploy/actualizar.sh --todo    reinicia todos los de Panal que corran aquí, cambien o no
+#   bash bot/deploy/update.sh             trae main y reinicia SOLO los procesos cuyo código cambió
+#   bash bot/deploy/update.sh --dry-run   dice qué haría, sin tocar nada
+#   bash bot/deploy/update.sh --all       reinicia todos los de Panal que corran aquí, cambien o no
 #
 # Solo toca los procesos de Panal que YA están en pm2 en esta máquina: no arranca ninguno
 # nuevo ni toca los demás. Los reinicia de uno en uno, por nombre, con `startOrReload` y el
@@ -12,10 +12,12 @@
 #
 # Reiniciar solo lo que cambió importa: el indexador tarda ~30 s en rehacer el catálogo y el
 # worker puede estar a medias de un encargo. Para saber con qué código arrancó cada proceso,
-# apunta el commit en .git/panal-desplegado. Sin apunte (la primera vez), compara la hora de
+# apunta el commit en .git/panal-deployed. Sin apunte (la primera vez), compara la hora de
 # arranque del proceso con la del último cambio del repo; si no puede saberlo, lo reinicia.
 #
 # Lo que no lleva pm2 (Caddy, logrotate) solo lo avisa: se instala a mano.
+#
+# Los mensajes van en inglés, como el resto de lo que se ve en GitHub.
 #
 # Salida: 0 bien · 1 algo falló (lo dice) · 2 no empezó (rama, cambios locales, otra en marcha).
 
@@ -27,38 +29,45 @@ main() {
   local modo=normal
   case "${1:-}" in
     '') ;;
-    --mirar) modo=mirar ;;
-    --todo) modo=todo ;;
-    *) echo "No conozco «$1». Usa --mirar, --todo o nada."; return 2 ;;
+    --dry-run) modo=mirar ;;
+    --all) modo=todo ;;
+    -h | --help)
+      echo "Usage: bash bot/deploy/update.sh [--dry-run | --all]"
+      echo "  (none)      pull main and restart only the Panal processes whose code changed"
+      echo "  --dry-run   show what it would do, without touching anything"
+      echo "  --all       restart every Panal process running here, changed or not"
+      return 0
+      ;;
+    *) echo "Unknown option «$1». Use --dry-run, --all or nothing (--help for more)."; return 2 ;;
   esac
 
   local raiz gitdir apuntes eco
   raiz=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
   cd "$raiz"
   gitdir=$(git rev-parse --absolute-git-dir)
-  apuntes="$gitdir/panal-desplegado"
+  apuntes="$gitdir/panal-deployed"
   eco="bot/ecosystem.config.cjs"
 
   # Una sola a la vez: dos a la par se pisarían el pnpm install y los reinicios.
-  exec 9>"$gitdir/panal-actualizar.lock"
-  flock -n 9 || { echo "Ya hay otra actualización en marcha."; return 2; }
+  exec 9>"$gitdir/panal-update.lock"
+  flock -n 9 || { echo "Another update is already running."; return 2; }
 
   local rama
   rama=$(git rev-parse --abbrev-ref HEAD)
-  [ "$rama" = main ] || { echo "El repo está en «$rama», no en main. Vuelve a main (git checkout main) y lánzalo otra vez."; return 2; }
+  [ "$rama" = main ] || { echo "The repo is on «$rama», not main. Go back to main (git checkout main) and run it again."; return 2; }
   if ! git diff --quiet || ! git diff --cached --quiet; then
-    echo "Hay cambios sin guardar en el repo y no actualizo encima de ellos:"
+    echo "The repo has unsaved changes; not updating on top of them:"
     git status --short --untracked-files=no
     return 2
   fi
 
-  echo "→ Mirando main en GitHub…"
+  echo "→ Checking main on GitHub…"
   git fetch -q origin main
   local antes nuevo
   antes=$(git rev-parse HEAD)
   nuevo=$(git rev-parse FETCH_HEAD)
   if ! git merge-base --is-ancestor "$antes" "$nuevo"; then
-    echo "El main de aquí tiene commits que no están en GitHub; no lo piso. Míralo con: git log origin/main..main"
+    echo "Local main has commits that aren't on GitHub; not overwriting them. See: git log origin/main..main"
     return 2
   fi
 
@@ -70,11 +79,11 @@ main() {
   fi
 
   if [ "$antes" = "$nuevo" ]; then
-    echo "  El código ya estaba al día ($(git log -1 --format='%h %s' "$antes"))."
+    echo "  The code was already up to date ($(git log -1 --format='%h %s' "$antes"))."
   else
     local cuantos
     cuantos=$(git rev-list --count "$antes..$nuevo")
-    if [ "$cuantos" = 1 ]; then echo "  Llega 1 commit:"; else echo "  Llegan $cuantos commits:"; fi
+    if [ "$cuantos" = 1 ]; then echo "  1 new commit:"; else echo "  $cuantos new commits:"; fi
     git log --format='    %h %s' "$antes..$nuevo" | head -n 15
     if [ "$modo" != mirar ]; then
       git merge -q --ff-only "$nuevo"
@@ -92,20 +101,20 @@ main() {
   local orden=(panal-mcp-remoto panal-buzon panal-indexer panal-worker)
 
   local estado
-  estado=$(estado_pm2) || { echo "No pude leer pm2. ¿Está instalado y es este el usuario que lleva los procesos?"; return 2; }
+  estado=$(estado_pm2) || { echo "Couldn't read pm2. Is it installed, and is this the user that runs the processes?"; return 2; }
 
-  echo "→ Procesos:"
+  echo "→ Processes:"
   local -a reiniciar=()
   local nombre linea apunte desde motivo
   for nombre in "${orden[@]}"; do
     linea=$(awk -v n="$nombre" '$1 == n' <<<"$estado")
     if [ -z "$linea" ]; then
-      echo "  $nombre: no corre en esta máquina; no lo toco."
+      echo "  $nombre: not running on this machine; leaving it alone."
       continue
     fi
     # Uno parado lo está a propósito (o por algo que hay que mirar): no se arranca de rebote.
     if [ "$(awk '{print $2}' <<<"$linea")" != online ]; then
-      echo "  $nombre: está «$(awk '{print $2}' <<<"$linea")» en pm2; no lo toco. Míralo con: pm2 logs $nombre --lines 60"
+      echo "  $nombre: «$(awk '{print $2}' <<<"$linea")» in pm2; leaving it alone. Check it with: pm2 logs $nombre --lines 60"
       continue
     fi
     apunte=$(awk -v n="$nombre" '$1 == n {print $2}' "$apuntes" 2>/dev/null || true)
@@ -117,18 +126,18 @@ main() {
     fi
 
     if [ "$modo" = todo ]; then
-      motivo="--todo"
+      motivo="--all"
     elif [ -z "$desde" ]; then
-      motivo="no sé con qué código arrancó"
+      motivo="can't tell which code it started with"
     elif ! git diff --quiet "$desde" "$nuevo" -- ${rutas[$nombre]}; then
-      motivo="cambió su código"
+      motivo="its code changed"
     else
-      echo "  $nombre: al día."
+      echo "  $nombre: up to date."
       # Queda apuntado, para no tener que deducirlo la próxima vez.
       [ "$modo" = mirar ] || apuntar "$apuntes" "$nombre" "$nuevo"
       continue
     fi
-    echo "  $nombre: hay que reiniciarlo ($motivo)."
+    echo "  $nombre: needs a restart ($motivo)."
     reiniciar+=("$nombre")
   done
 
@@ -136,16 +145,16 @@ main() {
   local manual
   manual=$(git diff --name-only "$antes" "$nuevo" -- bot/deploy/Caddyfile bot/deploy/caddy-resiliencia.conf bot/deploy/logrotate.conf)
   if [ -n "$manual" ]; then
-    echo "→ Ojo, cambió y no lo instalo yo (cópialo a su sitio y recarga lo que toque):"
+    echo "→ Heads up: these changed and aren't installed by this script (copy them into place and reload what uses them):"
     sed 's/^/    /' <<<"$manual"
   fi
 
   if [ "$modo" = mirar ]; then
-    echo "Solo miraba: no he tocado nada."
+    echo "Dry run: nothing was touched."
     return 0
   fi
   if [ ${#reiniciar[@]} -eq 0 ]; then
-    echo "✓ Nada que reiniciar."
+    echo "✓ Nothing to restart."
     return 0
   fi
 
@@ -159,14 +168,14 @@ main() {
     esac
   done
   if [ $bot = 1 ]; then
-    echo "→ Bot: dependencias y tipos…"
+    echo "→ Bot: dependencies and types…"
     if ! (cd bot && pnpm install --frozen-lockfile && pnpm exec tsc --noEmit); then
       no_reinicio "$antes" "$nuevo"
       return 1
     fi
   fi
   if [ $mcp = 1 ]; then
-    echo "→ MCP: dependencias, SDK y tipos…"
+    echo "→ MCP: dependencies, SDK and types…"
     if ! (pnpm install --frozen-lockfile && pnpm --filter @panal/sdk build && pnpm --filter panal-mcp typecheck); then
       no_reinicio "$antes" "$nuevo"
       return 1
@@ -174,24 +183,24 @@ main() {
   fi
 
   for nombre in "${reiniciar[@]}"; do
-    echo "→ Reiniciando $nombre…"
+    echo "→ Restarting $nombre…"
     pm2_limpio startOrReload "$eco" --only "$nombre" --update-env >/dev/null
     # Ocho segundos y tiene que seguir en marcha y sin haberse vuelto a reiniciar solo.
     sleep 8
     linea=$(awk -v n="$nombre" '$1 == n' <<<"$(estado_pm2 || true)")
     if awk -v ahora="$(date +%s)" '$2 == "online" && ahora - int($3 / 1000) >= 5 {ok = 1} END {exit !ok}' <<<"$linea"; then
       apuntar "$apuntes" "$nombre" "$nuevo"
-      echo "  ✓ $nombre en marcha."
+      echo "  ✓ $nombre is up."
     else
-      echo "  ✗ $nombre no ha quedado en marcha. Mira: pm2 logs $nombre --lines 60"
-      echo "    No sigo con los demás para no tirar nada más."
+      echo "  ✗ $nombre didn't stay up. Check: pm2 logs $nombre --lines 60"
+      echo "    Stopping here so nothing else goes down."
       pm2_limpio save >/dev/null
       return 1
     fi
   done
 
   pm2_limpio save >/dev/null
-  echo "✓ Al día con $(git log -1 --format='%h %s' "$nuevo")."
+  echo "✓ Up to date with $(git log -1 --format='%h %s' "$nuevo")."
 }
 
 # pm2 sin el entorno de la sesión (SSH_CLIENT, SSH_CONNECTION…), que acabaría en los procesos.
@@ -219,10 +228,10 @@ apuntar() {
 
 no_reinicio() {
   local antes=$1 nuevo=$2
-  echo "✗ No reinicio nada: los procesos siguen con el código que ya tenían cargado."
+  echo "✗ Nothing restarted: the processes keep running the code they already had loaded."
   if [ "$antes" != "$nuevo" ]; then
-    echo "  Pero el código nuevo ya está en disco, y si pm2 reiniciara alguno por su cuenta cargaría ese."
-    echo "  Para dejar el disco como estaba: git reset --hard $antes"
+    echo "  But the new code is already on disk, and if pm2 restarted one on its own it would load that."
+    echo "  To put the disk back as it was: git reset --hard $antes"
   fi
 }
 

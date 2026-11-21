@@ -586,7 +586,7 @@ En la máquina de `api.panal.lat` y `mcp.panal.lat` corren con PM2 el indexador,
 buzón, el worker y el MCP remoto. Para ponerla al día con `main` basta un comando:
 
 ```bash
-bash /root/Panal/bot/deploy/actualizar.sh
+bash /root/Panal/bot/deploy/update.sh
 ```
 
 Trae `main` y reinicia **solo los procesos cuyo código cambió**: el indexador tarda
@@ -595,8 +595,8 @@ no se reinicia nada que no haga falta. Antes de reiniciar instala dependencias y
 comprueba los tipos, y si algo falla no reinicia ninguno. Después comprueba que
 cada proceso siguió en marcha y hace `pm2 save`.
 
-- `--mirar` dice qué haría, sin tocar nada.
-- `--todo` reinicia todos los de Panal, cambien o no.
+- `--dry-run` dice qué haría, sin tocar nada.
+- `--all` reinicia todos los de Panal, cambien o no.
 
 Solo toca procesos de Panal que ya estén en pm2 y en marcha en esa máquina: no
 arranca ninguno nuevo ni toca los demás. Usa `startOrReload` por nombre y con el
@@ -606,7 +606,7 @@ cambios sin guardar. Lo que no lleva pm2 (el `Caddyfile`, la regla de logrotate)
 solo lo avisa, porque se instala a mano.
 
 Para saber qué cambió, apunta el commit con el que arrancó cada proceso en
-`.git/panal-desplegado`. Sin apunte (la primera vez), compara la hora de arranque
+`.git/panal-deployed`. Sin apunte (la primera vez), compara la hora de arranque
 del proceso con la del último cambio del repo, y si no puede saberlo lo reinicia.
 
 **`startOrReload`, nunca `pm2 start` a mano ni un `kill` por patrón.**
@@ -637,7 +637,7 @@ git checkout <commit-anterior>
 env -i HOME="$HOME" PATH="$PATH" LANG=C.UTF-8 pm2 startOrReload bot/ecosystem.config.cjs --only panal-indexer --update-env
 ```
 
-Mientras el repo no esté en `main`, `actualizar.sh` no hace nada: para volver,
+Mientras el repo no esté en `main`, `update.sh` no hace nada: para volver,
 `git checkout main` y lanzarlo otra vez.
 
 > **No borres `INDEX_DIR/`** para «empezar limpio». Ahí está el histórico
