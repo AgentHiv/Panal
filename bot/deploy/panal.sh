@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Pone la máquina de la API (api.panal.lat y mcp.panal.lat) al día con main, con un solo comando:
 #
-#   bash bot/deploy/update.sh             trae main y reinicia SOLO los procesos cuyo código cambió
-#   bash bot/deploy/update.sh --dry-run   dice qué haría, sin tocar nada
-#   bash bot/deploy/update.sh --all       reinicia todos los de Panal que corran aquí, cambien o no
+#   bash bot/deploy/panal.sh             trae main y reinicia SOLO los procesos cuyo código cambió
+#   bash bot/deploy/panal.sh --dry-run   dice qué haría, sin tocar nada
+#   bash bot/deploy/panal.sh --all       reinicia todos los de Panal que corran aquí, cambien o no
 #
 # Solo toca los procesos de Panal que YA están en pm2 en esta máquina: no arranca ninguno
 # nuevo ni toca los demás. Los reinicia de uno en uno, por nombre, con `startOrReload` y el
@@ -32,7 +32,7 @@ main() {
     --dry-run) modo=mirar ;;
     --all) modo=todo ;;
     -h | --help)
-      echo "Usage: bash bot/deploy/update.sh [--dry-run | --all]"
+      echo "Usage: bash bot/deploy/panal.sh [--dry-run | --all]"
       echo "  (none)      pull main and restart only the Panal processes whose code changed"
       echo "  --dry-run   show what it would do, without touching anything"
       echo "  --all       restart every Panal process running here, changed or not"

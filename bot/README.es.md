@@ -586,7 +586,7 @@ En la máquina de `api.panal.lat` y `mcp.panal.lat` corren con PM2 el indexador,
 buzón, el worker y el MCP remoto. Para ponerla al día con `main` basta un comando:
 
 ```bash
-bash /root/Panal/bot/deploy/update.sh
+bash /root/Panal/bot/deploy/panal.sh
 ```
 
 Trae `main` y reinicia **solo los procesos cuyo código cambió**: el indexador tarda
@@ -637,7 +637,7 @@ git checkout <commit-anterior>
 env -i HOME="$HOME" PATH="$PATH" LANG=C.UTF-8 pm2 startOrReload bot/ecosystem.config.cjs --only panal-indexer --update-env
 ```
 
-Mientras el repo no esté en `main`, `update.sh` no hace nada: para volver,
+Mientras el repo no esté en `main`, `panal.sh` no hace nada: para volver,
 `git checkout main` y lanzarlo otra vez.
 
 > **No borres `INDEX_DIR/`** para «empezar limpio». Ahí está el histórico

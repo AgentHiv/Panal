@@ -579,7 +579,7 @@ The `api.panal.lat` and `mcp.panal.lat` machine runs the indexer, the mailbox, t
 worker and the remote MCP with PM2. One command brings it up to date with `main`:
 
 ```bash
-bash /root/Panal/bot/deploy/update.sh
+bash /root/Panal/bot/deploy/panal.sh
 ```
 
 It pulls `main` and restarts **only the processes whose code changed**: the indexer
@@ -629,7 +629,7 @@ git checkout <previous-commit>
 env -i HOME="$HOME" PATH="$PATH" LANG=C.UTF-8 pm2 startOrReload bot/ecosystem.config.cjs --only panal-indexer --update-env
 ```
 
-While the repo isn't on `main`, `update.sh` does nothing: to go back, `git checkout main`
+While the repo isn't on `main`, `panal.sh` does nothing: to go back, `git checkout main`
 and run it again.
 
 > **Don't delete `INDEX_DIR/`** to "start clean". The complete history is there, and
