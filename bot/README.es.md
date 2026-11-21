@@ -580,18 +580,34 @@ también a ese chat. Cada señal se avisa una vez: lo avisado se guarda en el
 estado del índice y no se repite al reiniciar. Son señales para mirar, no
 pruebas de nada.
 
-### Actualizar el indexador desplegado
+### Actualizar la máquina de la API
 
-El indexador de `api.panal.lat` corre con PM2 en su propia máquina. Para subir
-una versión nueva:
+En la máquina de `api.panal.lat` y `mcp.panal.lat` corren con PM2 el indexador, el
+buzón, el worker y el MCP remoto. Para ponerla al día con `main` basta un comando:
 
 ```bash
-cd /ruta/a/Panal && git pull origin main
-cd bot
-pnpm install --frozen-lockfile   # solo si cambiaron dependencias
-pnpm exec tsc --noEmit           # tiene que salir en silencio
-pm2 startOrReload ecosystem.config.cjs --update-env
+bash /root/Panal/bot/deploy/panal.sh
 ```
+
+Trae `main` y reinicia **solo los procesos cuyo código cambió**: el indexador tarda
+~30 s en rehacer el catálogo y el worker puede estar a medias de un encargo, así que
+no se reinicia nada que no haga falta. Antes de reiniciar instala dependencias y
+comprueba los tipos, y si algo falla no reinicia ninguno. Después comprueba que
+cada proceso siguió en marcha y hace `pm2 save`.
+
+- `--dry-run` dice qué haría, sin tocar nada.
+- `--all` reinicia todos los de Panal, cambien o no.
+
+Solo toca procesos de Panal que ya estén en pm2 y en marcha en esa máquina: no
+arranca ninguno nuevo ni toca los demás. Usa `startOrReload` por nombre y con el
+entorno limpio (`env -i`), para que la IP de quien entra por SSH no acabe en el
+entorno de los procesos. Se niega a seguir si el repo no está en `main` o tiene
+cambios sin guardar. Lo que no lleva pm2 (el `Caddyfile`, la regla de logrotate)
+solo lo avisa, porque se instala a mano.
+
+Para saber qué cambió, apunta el commit con el que arrancó cada proceso en
+`.git/panal-deployed`. Sin apunte (la primera vez), compara la hora de arranque
+del proceso con la del último cambio del repo, y si no puede saberlo lo reinicia.
 
 **`startOrReload`, nunca `pm2 start` a mano ni un `kill` por patrón.**
 `startOrReload` es idempotente —recarga por nombre si existe, crea si no—, así
@@ -617,8 +633,12 @@ que el mercado no se queda en blanco.
 Volver atrás no necesita tocar datos, porque no se migra nada:
 
 ```bash
-git checkout <commit-anterior> && cd bot && pm2 startOrReload ecosystem.config.cjs --update-env
+git checkout <commit-anterior>
+env -i HOME="$HOME" PATH="$PATH" LANG=C.UTF-8 pm2 startOrReload bot/ecosystem.config.cjs --only panal-indexer --update-env
 ```
+
+Mientras el repo no esté en `main`, `panal.sh` no hace nada: para volver,
+`git checkout main` y lanzarlo otra vez.
 
 > **No borres `INDEX_DIR/`** para «empezar limpio». Ahí está el histórico
 > completo, y reconstruirlo obliga a rebarrer la cadena desde el bloque de

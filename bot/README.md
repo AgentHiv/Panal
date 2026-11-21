@@ -573,17 +573,34 @@ With `VIGILANCIA_TELEGRAM_CHAT_ID` (and the usual `TELEGRAM_BOT_TOKEN`) they als
 that chat. Each signal is reported once: what was reported is kept in the index's state and
 isn't repeated on restart. They're signals to look at, not proof of anything.
 
-### Updating the deployed indexer
+### Updating the API machine
 
-The `api.panal.lat` indexer runs with PM2 on its own machine. To ship a new version:
+The `api.panal.lat` and `mcp.panal.lat` machine runs the indexer, the mailbox, the
+worker and the remote MCP with PM2. One command brings it up to date with `main`:
 
 ```bash
-cd /path/to/Panal && git pull origin main
-cd bot
-pnpm install --frozen-lockfile   # only if dependencies changed
-pnpm exec tsc --noEmit           # it has to come out silent
-pm2 startOrReload ecosystem.config.cjs --update-env
+bash /root/Panal/bot/deploy/panal.sh
 ```
+
+It pulls `main` and restarts **only the processes whose code changed**: the indexer
+takes ~30 s to rebuild the catalog and the worker may be halfway through a task, so
+nothing restarts without a reason. Before restarting it installs dependencies and
+checks the types, and if anything fails it restarts none. Afterwards it checks that
+each process stayed up and runs `pm2 save`.
+
+- `--dry-run` says what it would do, without touching anything.
+- `--all` restarts every Panal process, changed or not.
+
+It only touches Panal processes that are already in pm2 and running on that machine:
+it never starts a new one and leaves the rest alone. It uses `startOrReload` by name,
+with a clean environment (`env -i`), so the IP of whoever logs in over SSH doesn't end
+up in the processes' environment. It refuses to go on if the repo isn't on `main` or
+has unsaved changes. What pm2 doesn't run (the `Caddyfile`, the logrotate rule) it
+only reports, because that is installed by hand.
+
+To know what changed, it records the commit each process started with in
+`.git/panal-deployed`. With no record (the first time), it compares the process's
+start time with the repo's last change, and if it can't tell, it restarts it.
 
 **`startOrReload`, never `pm2 start` by hand nor a `kill` by pattern.**
 `startOrReload` is idempotent —it reloads by name if it exists, creates it if not—, so it
@@ -608,8 +625,12 @@ go blank.
 Rolling back doesn't need touching any data, because nothing is migrated:
 
 ```bash
-git checkout <previous-commit> && cd bot && pm2 startOrReload ecosystem.config.cjs --update-env
+git checkout <previous-commit>
+env -i HOME="$HOME" PATH="$PATH" LANG=C.UTF-8 pm2 startOrReload bot/ecosystem.config.cjs --only panal-indexer --update-env
 ```
+
+While the repo isn't on `main`, `panal.sh` does nothing: to go back, `git checkout main`
+and run it again.
 
 > **Don't delete `INDEX_DIR/`** to "start clean". The complete history is there, and
 > rebuilding it means re-sweeping the chain from the deploy block: hours of RPC to recover
